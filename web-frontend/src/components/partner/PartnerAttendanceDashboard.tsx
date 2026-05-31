@@ -52,11 +52,12 @@ const CURRENT_YEAR = new Date().getFullYear();
 const FROM_YEAR_5 = CURRENT_YEAR - 5;
 
 // Reusable chart card wrapper
-const ChartSection: React.FC<{ title: string; children: React.ReactNode }> = ({
+const ChartSection: React.FC<{ title: string; children: React.ReactNode; testId?: string }> = ({
   title,
   children,
+  testId,
 }) => (
-  <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+  <Paper variant="outlined" sx={{ p: 3, mb: 3 }} data-testid={testId}>
     <Typography variant="subtitle1" fontWeight={600} mb={2}>
       {title}
     </Typography>
@@ -199,7 +200,10 @@ const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) =>
   );
 
   return (
-    <ChartSection title={t('portal.analytics.charts.companyVsTotal')}>
+    <ChartSection
+      title={t('portal.analytics.charts.companyVsTotal')}
+      testId="chart-attendance-per-event"
+    >
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart data={rows} margin={{ top: 4, right: 40, left: 0, bottom: 56 }}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -276,7 +280,7 @@ const Chart2YearOverYear: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }
   }, [summaries]);
 
   return (
-    <ChartSection title={t('portal.analytics.charts.yoyHeadcount')}>
+    <ChartSection title={t('portal.analytics.charts.yoyHeadcount')} testId="chart-yoy-headcount">
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={rows} margin={{ top: 4, right: 48, left: 0, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" />

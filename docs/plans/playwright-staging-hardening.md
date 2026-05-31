@@ -62,13 +62,13 @@ production deploy.
 > 8 (**speaker pool**) + 9 (**speaker portal**) MERGED — squash `ce88fbc5` (PR #697; its
 > deploy-to-staging `@smoke` gate job ran green). Slice 10 (**event workflow**) MERGED — squash
 > `3ac73833` (PR #698). **Speaker-pool GOLDEN-PATH addendum** (PO-requested intensive UI-driven
-> kanban walk) is **PR #699** (`e2e-speaker-golden-path`, off develop post-#698; green ×2 vs dev,
-> in review/auto-merging) — see "Golden-path addendum" notes; it found + fixed a real prod bug
-> (V108: content-bearing events couldn't be deleted). NOTE: this repo **auto-merges PRs once CI is green** — so each stacked
+> kanban walk) MERGED — squash `4cdc3261` (PR #699; found + fixed a real prod bug — V108:
+> content-bearing events couldn't be deleted). Slice 11 (**partners + meetings**) is **PR #700**
+> (`e2e-partners`, off develop post-#699; green ×2 vs dev = 32/32, residue-free) — see "PR 12
+> notes". NOTE: this repo **auto-merges PRs once CI is green** — so each stacked
 > PR auto-merges + deploys when targeted at develop. Per-slice loop = §C "Repeatable per-slice
 > checklist". Run locally green ×2 vs dev first (`run-playwright-tests.sh development --slice
-> <name>`, §F). **Remaining: slices 11 (partners) + 13 (cross-cutting) + 12 (admin tabs), then
-> PR 15 gate-flip.**
+> <name>`, §F). **Remaining: slices 13 (cross-cutting) + 12 (admin tabs), then PR 15 gate-flip.**
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -94,8 +94,8 @@ slice audit land as separate fix-commits in the same PR.
 | 9 | `e2e-speaker` (stacked on `e2e-sessions`) | Slice 8: speaker pool (organizer) | `organizer/speaker-{column-triage,card-primary-action}` (migrated), `speaker-pool-smoke` (new), DELETED `speaker-{brainstorming,outreach,invitation,kanban-guided-drag}`, untagged `speaker-onbehalf-vs-self-byte-identity` | `MarkContactedModal` (`contact-method-option-{email,phone,in-person}`) — kanban/drawer testids already existed | ✅ dev (5×2) | `@gate` + **`@smoke`** (log-outreach IDENTIFIED→CONTACTED) | ✅ merged (#697, `ce88fbc5`, 2026-05-30; staging gate green) | **rewrite-to-reality + reliability.** The recon's "strong testids / light" was optimistic: 3 specs were FICTIONAL (`speaker-brainstorming` asserted a non-existent `/brainstorm` route; `speaker-outreach` a non-existent `/outreach` dashboard; `speaker-invitation` mixed) and **all** specs seeded via the unset `process.env.E2E_TEST_TOKEN` (`Bearer undefined`→401) + created events through the UI with `Date.now()` titles and **no cleanup** (event-leak/run). New shared `e2e/helpers/speaker-pool-fixture.ts` (seed/status/promote/get via `readOrganizerToken()`). Kept+migrated `column-triage` (2 tests) + `card-primary-action` (2 tests: IDENTIFIED→MarkContactedModal, CONTACTED→drawer promote sub-view — fixed: the old `promote-email-field` assertion targeted the now-dead legacy `PromoteSpeakerDialog`; post-Epic-11 CONTACTED opens the drawer's `promote-submit-button`). **`@smoke` = log-outreach (IDENTIFIED→CONTACTED via MarkContactedModal)** — deliberately NOT promote-to-READY: promote provisions a Cognito/CUMS user out-of-band, an **intermittently-flaky** external write (observed 500s on dev) that would make a blocking gate spurious; also not native DnD. DELETED `kanban-guided-drag` (manual-mouse DnD, flaky). Cleanup = event-delete cascade (`speaker_pool.event_id` ON DELETE CASCADE). **Follow-up (untagged):** `speaker-onbehalf-vs-self-byte-identity` — its inline event-create 400s (NotNull gap) + walks promote; migrate to `createRegistrationEvent` + a promote-free path to gate it. See "PR 9 notes". |
 | 10 | `e2e-speaker` (stacked, with slice 8) | Slice 9: speaker portal | `speaker/{speaker-portal-dashboard,magic-link-teardown,speaker-magic-login-404}` (kept→`@gate`); DELETED 3 fixme stubs (`speaker-portal-{respond,content-submit,cross-portal-nav}`) | `SpeakerDashboardPage` (`speaker-dashboard` root) | ✅ dev (4×2, speaker project) | `@gate` only (no safe deterministic `@smoke`) | ✅ merged (#697, `ce88fbc5`, 2026-05-30) | **rewrite-to-reality + reliability.** Kept the 3 sound specs and tagged them `@gate`: dashboard renders (switched `getByRole('heading')` → new `speaker-dashboard` testid), `magic-link-teardown` (asserts no `speaker_jwt` cookie / no magic-login calls — Epic 11.F.1), `speaker-magic-login-404` (deprecated route → 404, not the old page). **DELETED all 3 fixme stubs** (no real assertions): `respond` would need an INVITED pool row provisioned via promote-to-READY (a flaky out-of-band Cognito write — same reason slice 8's `@smoke` is promote-free), `content-submit` needs an assigned-session fixture not available, `cross-portal-nav` needs a dual-role test user not provisioned. **No `@smoke`:** there is no safe + deterministic speaker-side mutation (every mutating speaker flow depends on an organizer-provisioned INVITED/assigned state via the flaky promote path); slice 9 gates read-only, like slice 7's archive. Runs under the `speaker` project (`SPEAKER_AUTH_TOKEN`; skips gracefully without it). See "PR 9 notes". |
 | 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e` (rewritten) | `workflow-status-badge` gains `data-workflow-state` (EventOverviewTab) | ✅ dev (2×2) | `@gate` + **`@smoke`** (hybrid lifecycle walk CREATED→…→ARCHIVED) | ✅ merged (#698, `3ac73833`, 2026-05-31) | **rewrite-to-reality + reliability (OQ-3 hybrid).** Replaced a 6-phase monolithic UI walk that created its event via the UI with a `Date.now()` number and **never cleaned up** (leaked event+tasks/speakers/sessions per run), drove the kanban with raw `page.mouse` native-DnD + HARDCODED organizer/speaker display names, and depended on slice-8 speaker/content flows + cron-only auto-transitions. New hybrid: force-advance state via the override transition API (`PUT /events/{code}/workflow/transition` `overrideValidation:true` — `transitionToState` skips ALL validation, so any target incl. cron-only EVENT_LIVE/EVENT_COMPLETED is reachable), UI asserts the overview `workflow-status-badge` after each step + an authoritative `GET /workflow/status` cross-check. **`@smoke` walks the FULL 7-state forward sequence** (not just the recon's 3-state subset — override makes all states equally deterministic, ~15.5s). New fixture helpers `transitionWorkflow`/`getWorkflowState` + `WORKFLOW_FORWARD_STATES` (event-fixture.ts). Cleanup = afterAll force-archive (events DELETE-able only when ARCHIVED → 409 otherwise) then `cleanupByCode`; robust even if the walk fails mid-sequence. No cron, no DnD, no content. See "PR 11 notes". |
-| 8b | `e2e-speaker-golden-path` | **Addendum:** intensive UI-driven speaker-pool kanban golden path (5 speakers, both READY paths + decline + content/quality + slot auto-assign + lifecycle→ARCHIVED) | `organizer/speaker-pool-golden-path` (new) | `add-speakers-button`, `user-option-<id>`, `invitation-response-success` | ✅ dev (11×2) | `@gate` | 🔵 (#699) | **PO-requested.** Net-new intensive kanban coverage through the FRONTEND. **Found + fixed a real prod bug — V108:** `session_content_history.session_id` FK was ON DELETE SET NULL vs a NOT NULL column (since V99) → deleting any content-bearing event 500'd; switched to ON DELETE CASCADE + Testcontainers regression test. `@gate` only (4 fresh Cognito promotes/run — flaky-on-dev; per-deploy `@smoke` stays IDENTIFIED→CONTACTED). See "Golden-path addendum" notes. |
-| 12 | `e2e-partners` | Slice 11: partners + meetings | `partner-management/*`, `organizer/partner-meetings`, `partner/*` | — | — | — | ⬜ | **no cleanup today** (residue source); needs `PARTNER_AUTH_TOKEN` |
+| 8b | `e2e-speaker-golden-path` | **Addendum:** intensive UI-driven speaker-pool kanban golden path (5 speakers, both READY paths + decline + content/quality + slot auto-assign + lifecycle→ARCHIVED) | `organizer/speaker-pool-golden-path` (new) | `add-speakers-button`, `user-option-<id>`, `invitation-response-success` | ✅ dev (11×2) | `@gate` | 🔵 (#699) | **PO-requested.** Net-new intensive kanban coverage through the FRONTEND. **Found + fixed a real prod bug — V108:** `session_content_history.session_id` FK was ON DELETE SET NULL vs a NOT NULL column (since V99) → deleting any content-bearing event 500'd; switched to ON DELETE CASCADE + Testcontainers regression test. `@gate` only (4 fresh Cognito promotes/run — flaky-on-dev; per-deploy `@smoke` stays IDENTIFIED→CONTACTED). See "Golden-path addendum" notes. ✅ merged (#699, `4cdc3261`, 2026-05-31). |
+| 12 | `e2e-partners` | Slice 11: partners + meetings | `partner/{analytics-dashboard,topic-voting}`, `partner-management/{partner-directory,partner-create-edit}`, `organizer/partner-meetings`, **NEW** `organizer/partner-topic-status` | `clear-search` (PartnerSearch), `view-mode-{grid,list}` (PartnerDirectoryScreen ToggleButtons), `tier-select-option-<TIER>` (PartnershipTierSelect MenuItems), `partnershipStartDate`/`partnershipEndDate` (PartnershipDatePicker inputs), `company-option-<name>` (CompanyAutocomplete), `chart-{attendance-per-event,yoy-headcount}` (PartnerAttendanceDashboard), `topic-planned-event-<id>` (TopicListPage), `invite-success-alert-<id>` (MeetingDetailPanel) | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI partner create→detail→cleanup) | 🔵 (#700) | **rewrite-to-reality + reliability + prod-residue fix.** `@smoke` = organizer partner create (company autocomplete→tier→save→detail) + cleanup — deterministic, NO promote. **Killed the residue source:** old `partner-create-edit` named the fixture company `tc-${random}` (NOT swept) + ad-hoc `deletePartnerViaAPI` → now `factory.partnerName()` (`brtest<6>`, swept by `pcs/partners`) + canonical `cleanupById('partners')`/`cleanupById('companies')`. Verified residue-free (companies brtest→0 explicit-delete; partners→0 canonical sweep; PCS-partner vs CUMS-company are separate services w/ no cross-FK, so the company needs explicit delete + the partner relies on the swept `brtest` name). See "PR 12 notes". |
 | 13 | `e2e-admin-tabs` | Slice 12: organizer admin tabs | `organizer/admin-settings` | 8 admin tabs, `OrganizerAnalyticsPage`, `NotificationsPage` | — | — | ⬜ | **heaviest** — zero testids |
 | 14 | `e2e-cross-cutting` | Slice 13: a11y/auth/cors sweep | `accessibility/*`, `auth/*`, `api-integration/cors-validation` | — | — | — | ⬜ | mostly non-mutating |
 | 15 | `e2e-gate-flip` | E+F: flip to blocking, deliberate-fail drill | — | — | — | — | ⬜ | owed: rollback drill |
@@ -684,6 +684,89 @@ test user — never deleted; its pool row cascades with the event. Green ×2 on 
 runs); residue-free (`events:0`, users swept). New component testids: `add-speakers-button`
 (EventSpeakersTab), `user-option-<id>` (UserAutocomplete), `invitation-response-success`
 (InvitationResponsePage) — staging validates them after this PR's frontend deploys.
+
+### PR 12 notes — partners slice (rewrite-to-reality + the residue source killed)
+
+Slice 11 had 5 specs across two projects (`chromium`: directory, create-edit, meetings;
+`partner`: analytics, topic-voting). All were touched to the quality bar; net **32 tests green
+×2 on dev**, residue-free. **`@smoke` = organizer partner create** (company autocomplete →
+tier → save → land on the detail page) + cleanup — deterministic, no Cognito provisioning, no
+promote. Everything else is `@gate`.
+
+**The prod-residue source killed (why the plan flagged this slice).** The old
+`partner-create-edit` named its fixture company `tc-${random}` (matched by NO canonical
+prefix) and "cleaned up" via ad-hoc `deletePartnerViaAPI`/`deleteCompanyViaAPI`. Now the
+fixture company is `factory.partnerName()` → `brtest<6>` (≤12 chars, the PCS
+`company_name VARCHAR(12)` bound) and teardown is the canonical helper:
+`cleanupById('partners', name)` then `cleanupById('companies', name)`.
+**Cross-service cleanup nuance verified on dev:** PCS partners and CUMS companies are
+**separate services with no cross-FK**, so deleting the CUMS company does NOT remove the PCS
+partner. The PCS `DELETE /partners/{companyName}` is an idempotent 204 that the audit already
+flagged as unreliable — but because the partner row's `company_name` IS `brtest…`, the
+`pcs/partners` `brtest` global-teardown sweep deletes it deterministically (the exact canonical
+-prefix safety the factory exists to provide). The `brtest`-named COMPANY is NOT reachable by
+the `cums/companies` `BRUNOTESTCO` sweep, so its explicit `cleanupById('companies')` delete is
+load-bearing — verified working (post-run `companies?search=brtest` → 0). Final state proven
+residue-free: `pcs/partners → 0`, no `brtest` companies.
+
+**analytics-dashboard (partner, `@gate`) — rewrite-to-reality.** The dashboard renders TWO
+Recharts `ComposedChart`s, NOT a `<table>`; the old `attendance-table` / `tbody tr` assertions
+were **fictional** → replaced by the real `kpi-attendance-rate` / `kpi-cost-per-attendee` cards
+(values derived from the mock: 18/180 = 10.0%, 555.56) + new `chart-{attendance-per-event,
+yoy-headcount}` section testids. **Reliability fix:** the page resolves `companyName` via
+`GET /partners/me` (AuthContext) when the JWT carries none — the local-dev partner user has
+none, so the page rendered `no-company-linked-alert` instead of the dashboard. The spec now
+mocks `/partners/me` (+ `/users/me` `language:en`) so it's self-contained on dev AND staging.
+**Deleted the old AC6 "403 for another company" test:** it MOCKED the very 403 it asserted and
+could not exercise real backend authz (playwright.config injects the ORGANIZER bearer via global
+`extraHTTPHeaders` for ALL projects, so a real `page.request` here runs AS ORGANIZER — which CAN
+read any company). Partner cross-company analytics authz is an API-layer concern owned by
+Bruno's partner collection.
+
+**topic-voting (partner, `@gate`) — stateful mock + a misplaced organizer test moved.** The
+optimistic vote tests failed against the old STATIC mock: the component's `onSuccess`
+invalidate→refetch immediately reverted the optimistic count to the mock's original value, so
+the assertion raced and lost. The mock is now **stateful** (a vote POST/DELETE mutates the
+in-memory topic) so the optimistic update AND the refetch settle on the same count. Added a
+`/users/me` `language:en` mock (the `topic-status` chip text assertion needs EN; LanguageSync
+was flipping the UI to the partner user's backend German). **The "Organizer Topic Status Panel"
+describe MOVED** to `e2e/organizer/partner-topic-status.spec.ts` (chromium): it navigates to the
+ORGANIZER route `/organizer/partner-topics`, so it could never pass stranded in the
+partner-project file (the partner user is guarded out). Added `topic-planned-event-<id>` testid
+to replace a `getByText(/BATbern58/)`.
+
+**partner-directory (`@gate`) — testid-only locators.** Replaced localized `getByLabel(/grid
+view/i|/list view/i|/clear search/i)` with new `view-mode-grid`/`view-mode-list` testids
+(PartnerDirectoryScreen ToggleButtons) + `clear-search` (PartnerSearch). **Reality fix:** the
+Partners nav is a collapsible GROUP (`nav-group-organizer-partners` → child
+`nav-organizer-partners`), so `navigateToPartnerDirectory` now expands the group before clicking
+the child link. All other directory tests goto `/organizer/partners` directly. Read-only, no
+cleanup.
+
+**partner-meetings (`@gate`) — mock-host fix.** Fully mocked + already testid-clean, BUT every
+`page.route` used `\`${BASE_URL}/api/v1/partner-meetings…\`` — an exact-HOST match that never
+intercepted (the app calls the API host, not the page host; this would also fail on staging
+where `www.` ≠ `api.`). Switched all to host-agnostic `**/api/v1/partner-meetings…` globs (the
+same form analytics/topic-voting already used). Replaced `getByText('BATbern57')` (redundant —
+the `meeting-row-<id>` testid already asserts the row appeared) and `getByRole('alert')` with the
+new `invite-success-alert-<id>` testid (MeetingDetailPanel).
+
+**Tests deleted (rewrite-to-reality, logged):** create-edit "AC7 date range" (the start/end
+pickers enforce `maxDate=today` / `minDate=startDate`, so an invalid range can't be ENTERED
+through the UI — the old test typed a locale date string straight into the input; range
+validation is a unit-test concern), "AC10 unsaved-changes" (asserted only inside
+`if (dialogShown)` → asserted nothing when the native confirm didn't fire), "AC12 date
+formatting" (locale-coupled regex, low value; default-date presence is covered by the `@smoke`).
+
+**Component testids added** (same commit as the specs): `clear-search`, `view-mode-grid`,
+`view-mode-list`, `tier-select-option-{TIER}`, `partnershipStartDate`/`partnershipEndDate`
+(date-picker inputs via `slotProps.textField.inputProps`), `company-option-{name}`,
+`chart-{attendance-per-event,yoy-headcount}`, `topic-planned-event-{id}`,
+`invite-success-alert-{id}`. 289 touched-component unit tests still green; tsc + eslint clean.
+`@smoke`→1 / `@gate`→31 via tag routing. Staging validates the new testids after this PR's
+frontend deploys (deploy-then-green pattern, PRs 2/4/5/8). **Partner/meetings tokens:** the
+`partner` project activates only when `PARTNER_AUTH_TOKEN` is present (confirm `STAGING_PARTNER_*`
+secrets exist — Risk #5); without it the 2 partner-project specs skip gracefully.
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

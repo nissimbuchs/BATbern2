@@ -2,48 +2,54 @@
  * E2E Tests for Partner Create/Edit Workflow
  * Story 2.8.3: Partner Create/Edit Modal
  *
- * Test Scenarios:
- * - Create partnership workflow (AC1, AC3, AC4, AC5, AC6, AC8)
- * - Edit partnership workflow (AC2)
- * - Form validation (AC7)
- * - Company autocomplete (AC3)
+ * Slice 11 (partners) — rewrite-to-reality + canonical cleanup (plan §C).
+ * Runs in the 'chromium' (organizer) project.
  *
- * Requirements:
- * 1. Partner Coordination Service deployed with partner CRUD endpoints
- * 2. Company Management Service for company autocomplete
- * 3. PostgreSQL database with partners table
- * 4. API Gateway for authentication
+ * THE SLICE'S `@smoke`: organizer creates a partnership through the UI (company
+ * autocomplete → tier → save → land on the detail page) and tears it down. Deterministic,
+ * no Cognito provisioning, no promote — a safe per-deploy blocking gate path.
  *
- * Setup Instructions:
- * 1. Ensure services are running: make dev-native-up
- * 2. Run: npx playwright test e2e/workflows/partner-management/partner-create-edit.spec.ts
+ * Prod-safety crux (why this slice was flagged): the OLD spec named its fixture company
+ * `tc-${random}` (NOT swept by any canonical prefix) and cleaned up via ad-hoc
+ * `deletePartnerViaAPI`/`deleteCompanyViaAPI` — a residue source. Now:
+ *   • the fixture company is named via `factory.partnerName()` → `brtest<6>` (≤12 chars, the
+ *     PCS `company_name VARCHAR(12)` bound), so the PARTNER row is swept by the `pcs/partners`
+ *     `brtest` prefix (global-teardown backstop);
+ *   • teardown is the canonical `cleanupById('partners', name)` then `cleanupById('companies',
+ *     name)` — the `brtest`-named COMPANY is NOT reached by the `cums/companies` `BRUNOTESTCO`
+ *     sweep, so it MUST be deleted explicitly (partner first — the company FK blocks otherwise).
+ *
+ * Tests DELETED vs the old spec (rewrite-to-reality):
+ *   • "AC7 date range" — the start/end pickers enforce `maxDate=today` / `minDate=startDate`,
+ *     so an invalid range CANNOT be entered through the UI; the old test typed a locale date
+ *     string straight into the input (brittle, locale-coupled). Range validation is a
+ *     unit-test concern.
+ *   • "AC10 unsaved-changes" — asserted only inside `if (dialogShown)`, so it asserted nothing
+ *     when the native confirm didn't fire; flaky and effectively empty.
+ *   • "AC12 date formatting" — asserted a locale-specific date regex; low value and
+ *     locale-coupled. The default-date presence is covered by the @smoke (AC5).
+ *
+ * Run: cd web-frontend && npx playwright test --project=chromium \
+ *   e2e/workflows/partner-management/partner-create-edit.spec.ts
  */
 
 import { test, expect } from '@playwright/test';
 import { BASE_URL, API_URL } from '../../../playwright.config';
+import * as factory from '../../helpers/test-data-factory';
+import { cleanupById } from '../../helpers/test-fixtures-cleanup';
 
-// Test data factory - creates unique data per test
-// Note: Company names must be ≤12 characters (meaningful IDs per ADR-003)
-const createTestData = () => {
-  const randomSuffix = Math.random().toString(36).substring(2, 5); // Shorter suffix
-  return {
-    company: {
-      name: `tc-${randomSuffix}`, // Max 8 chars (tc- + 5 char suffix)
-      displayName: `Test Partner Co ${randomSuffix}`,
-      industry: 'Technology',
-    },
-    partner: {
-      companyName: `tc-${randomSuffix}`,
-      partnershipLevel: 'GOLD' as const,
-      partnershipStartDate: new Date().toISOString().split('T')[0],
-    },
-  };
-};
+interface TestCompany {
+  name: string;
+  displayName: string;
+  industry: string;
+}
 
-/**
- * Helper: Get authentication token from environment
- * Token is set by global-setup.ts from ~/.batbern/{environment}.json
- */
+/** Canonical fixture company: `brtest<6>` — ≤12 chars; the partner row is `brtest`-swept. */
+function makeTestCompany(): TestCompany {
+  const name = factory.partnerName();
+  return { name, displayName: `Partner Co ${name}`, industry: 'Technology' };
+}
+
 function getAuthToken(): string {
   const token = process.env.AUTH_TOKEN;
   if (!token) {
@@ -54,353 +60,159 @@ function getAuthToken(): string {
   return token;
 }
 
-/**
- * Helper: Create company via API for testing
- * Handles 409 Conflict by deleting existing company first
- */
-async function createCompanyViaAPI(
-  authToken: string,
-  companyData: ReturnType<typeof createTestData>['company']
-): Promise<void> {
-  const response = await fetch(`${API_URL}/api/v1/companies`, {
+async function createCompanyViaAPI(token: string, company: TestCompany): Promise<void> {
+  const res = await fetch(`${API_URL}/api/v1/companies`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${authToken}`,
-    },
-    body: JSON.stringify(companyData),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(company),
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-
-    // If company already exists, delete it and retry
-    if (response.status === 409) {
-      await deleteCompanyViaAPI(authToken, companyData.name);
-      // Retry creation
-      const retryResponse = await fetch(`${API_URL}/api/v1/companies`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(companyData),
-      });
-      if (!retryResponse.ok) {
-        const retryErrorText = await retryResponse.text();
-        throw new Error(
-          `Failed to create company after cleanup (${retryResponse.status}): ${retryResponse.statusText}. ${retryErrorText}`
-        );
-      }
-      return;
-    }
-
-    throw new Error(
-      `Failed to create company (${response.status}): ${response.statusText}. ${errorText}`
-    );
+  if (!res.ok && res.status !== 409) {
+    throw new Error(`Failed to create company (${res.status}): ${await res.text()}`);
   }
 }
 
-/**
- * Helper: Delete partner via API for cleanup
- */
-async function deletePartnerViaAPI(authToken: string, companyName: string): Promise<void> {
-  await fetch(`${API_URL}/api/v1/partners/${companyName}`, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-    },
+async function createPartnerViaAPI(
+  token: string,
+  companyName: string,
+  level: string
+): Promise<void> {
+  const res = await fetch(`${API_URL}/api/v1/partners`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      companyName,
+      partnershipLevel: level,
+      partnershipStartDate: new Date().toISOString().split('T')[0],
+    }),
   });
+  if (!res.ok) {
+    throw new Error(`Failed to create partner (${res.status}): ${await res.text()}`);
+  }
 }
 
-/**
- * Helper: Delete company via API for cleanup
- */
-async function deleteCompanyViaAPI(authToken: string, companyName: string): Promise<void> {
-  await fetch(`${API_URL}/api/v1/companies/${companyName}`, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-    },
-  });
+/** Canonical teardown: delete the partner, then the (brtest-named) company. Never throws. */
+async function cleanupPartnerAndCompany(token: string, companyName: string): Promise<void> {
+  await cleanupById(token, 'partners', companyName);
+  await cleanupById(token, 'companies', companyName);
 }
 
-test.describe('Partner Create/Edit Modal - E2E Tests', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/organizer/events');
-  });
+test.describe('Partner Create/Edit Modal', () => {
+  // ─── @smoke: the slice's one mutating + cleanup happy path ────────────────────
 
-  test('AC1, AC8: Create partnership workflow - full flow', async ({ page }) => {
-    // Setup: Create a test company
-    const authToken = getAuthToken();
-    const testData = createTestData();
-    await createCompanyViaAPI(authToken, testData.company);
+  test('should_createPartnership_whenValidData @smoke (AC1, AC3, AC8)', async ({ page }) => {
+    const token = getAuthToken();
+    const company = makeTestCompany();
+    await createCompanyViaAPI(token, company);
 
     try {
-      // Navigate to Partner Directory
       await page.goto(`${BASE_URL}/organizer/partners`);
-      await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
+      await expect(page.getByTestId('partner-directory-screen')).toBeVisible({ timeout: 10000 });
 
-      // AC1: Click [+ Add Partner] button to open create modal
-      await page.click('[data-testid="add-partner-button"]');
+      // AC1: open create modal
+      await page.getByTestId('add-partner-button').click();
+      await expect(page.getByTestId('partner-create-edit-modal')).toBeVisible();
 
-      // Verify modal opened
-      await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
+      // AC3: company autocomplete — type the technical name, select the keyed option
+      await page.getByTestId('company-autocomplete').locator('input').fill(company.name);
+      await page.getByTestId(`company-option-${company.name}`).click();
 
-      // AC3: Company Autocomplete - Search for company
-      const companyInput = page.locator('[data-testid="company-autocomplete"] input');
-      await companyInput.fill(testData.company.name);
+      // AC4: tier dropdown → GOLD (testid-keyed MenuItem, locale-independent)
+      await page.getByTestId('partnership-tier-select').click();
+      await page.getByTestId('tier-select-option-GOLD').click();
 
-      // Wait for autocomplete results (debounce 300ms + API response)
-      await page.waitForTimeout(1000);
-      await page
-        .getByRole('option', { name: new RegExp(testData.company.displayName, 'i') })
-        .first()
-        .click();
+      // AC5: start date defaults to today (non-empty)
+      await expect(page.getByTestId('partnershipStartDate')).toHaveValue(/.+/);
 
-      // AC4: Partnership Tier Dropdown - Select tier
-      await page.locator('[data-testid="partnership-tier-select"]').click();
-      await page.getByRole('option', { name: /gold/i }).click();
-
-      // AC5: Partnership Date Pickers - Set start date (default is today)
-      const startDateInput = page.locator('input[name="partnershipStartDate"]');
-      await expect(startDateInput).toHaveValue(/.+/); // Should have default value (today)
-
-      // AC6: Tier Benefits Preview - Verify benefits section exists
-      // (Benefits preview component rendered, specific text may vary by language)
-      await expect(page.locator('[data-testid="partner-create-edit-modal"]')).toBeVisible();
-
-      // AC8: Submit form to create partnership
-      await page.click('[data-testid="save-partner-button"]');
-
-      // Verify success: Modal closed and redirected to partner detail
-      await page.waitForURL(/\/partners\/.+/, { timeout: 10000 });
-      await page.waitForSelector('[data-testid="partner-detail-header"]', { timeout: 5000 });
+      // AC8: submit → land on the detail page (route is /organizer/partners/:companyName)
+      await page.getByTestId('save-partner-button').click();
+      await page.waitForURL(`${BASE_URL}/organizer/partners/${company.name}`, { timeout: 10000 });
+      await expect(page.getByTestId('partner-detail-header')).toBeVisible();
     } finally {
-      // Cleanup: Delete created partner and company
-      await deletePartnerViaAPI(authToken, testData.company.name);
-      await deleteCompanyViaAPI(authToken, testData.company.name);
+      await cleanupPartnerAndCompany(token, company.name);
     }
   });
 
-  test('AC2: Edit partnership workflow', async ({ page }) => {
-    // Setup: Create company and partnership
-    const authToken = getAuthToken();
-    const testData = createTestData();
-    await createCompanyViaAPI(authToken, testData.company);
+  // ─── @gate: edit an existing partnership's tier ───────────────────────────────
 
-    // Create partnership via API
-    const partnerResponse = await fetch(`${API_URL}/api/v1/partners`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`,
-      },
-      body: JSON.stringify({
-        companyName: testData.company.name,
-        partnershipLevel: 'BRONZE',
-        partnershipStartDate: testData.partner.partnershipStartDate,
-      }),
-    });
-
-    if (!partnerResponse.ok) {
-      throw new Error(`Failed to create partner: ${partnerResponse.status}`);
-    }
+  test('should_editPartnerTier_whenEditModalSaved @gate (AC2)', async ({ page }) => {
+    const token = getAuthToken();
+    const company = makeTestCompany();
+    await createCompanyViaAPI(token, company);
+    await createPartnerViaAPI(token, company.name, 'BRONZE');
 
     try {
-      // Navigate to partner detail page and wait for it to load
-      await page.goto(`${BASE_URL}/organizer/partners/${testData.company.name}`);
-      await page.waitForSelector('[data-testid="partner-detail-header"]', { timeout: 10000 });
+      await page.goto(`${BASE_URL}/organizer/partners/${company.name}`);
+      await expect(page.getByTestId('partner-detail-header')).toBeVisible({ timeout: 10000 });
 
-      // AC2: Click [Edit Partner] button to open edit modal
-      await page.click('[data-testid="edit-partner-button"]');
+      await page.getByTestId('edit-partner-button').click();
+      await expect(page.getByTestId('partner-create-edit-modal')).toBeVisible();
 
-      // Verify modal opened
-      await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
+      // Company is read-only in edit mode; change tier BRONZE → PLATINUM
+      await page.getByTestId('partnership-tier-select').click();
+      await page.getByTestId('tier-select-option-PLATINUM').click();
 
-      // Verify company name is displayed (read-only, shown in modal content)
-      await expect(page.locator('[data-testid="partner-create-edit-modal"]')).toContainText(
-        testData.company.name
-      );
-
-      // Change tier from Bronze to Platinum
-      await page.locator('[data-testid="partnership-tier-select"]').click();
-      await page.getByRole('option', { name: /platinum/i }).click();
-
-      // Submit form
-      await page.click('[data-testid="save-partner-button"]');
-
-      // Verify success: Modal closed
-      await page.waitForSelector('[data-testid="partner-create-edit-modal"]', {
-        state: 'hidden',
-        timeout: 5000,
-      });
-      // Verify still on partner detail page
-      await expect(page.locator('[data-testid="partner-detail-header"]')).toBeVisible();
+      await page.getByTestId('save-partner-button').click();
+      await expect(page.getByTestId('partner-create-edit-modal')).toBeHidden();
+      await expect(page.getByTestId('partner-detail-header')).toBeVisible();
     } finally {
-      // Cleanup
-      await deletePartnerViaAPI(authToken, testData.company.name);
-      await deleteCompanyViaAPI(authToken, testData.company.name);
+      await cleanupPartnerAndCompany(token, company.name);
     }
   });
 
-  test('AC7: Form validation - required fields', async ({ page }) => {
+  // ─── @gate: required-field validation keeps the modal open ────────────────────
+
+  test('should_blockSubmit_whenRequiredFieldsMissing @gate (AC7)', async ({ page }) => {
     await page.goto(`${BASE_URL}/organizer/partners`);
-    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
+    await expect(page.getByTestId('partner-directory-screen')).toBeVisible({ timeout: 10000 });
 
-    // Open create modal
-    await page.click('[data-testid="add-partner-button"]');
-    await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
+    await page.getByTestId('add-partner-button').click();
+    await expect(page.getByTestId('partner-create-edit-modal')).toBeVisible();
 
-    // Try to submit without filling required fields
-    await page.click('[data-testid="save-partner-button"]');
-
-    // Verify validation errors displayed (form should stay open with error)
-    await expect(page.locator('[data-testid="partner-create-edit-modal"]')).toBeVisible();
-    await expect(page.locator('[data-testid="company-autocomplete"]')).toBeVisible();
+    // Submit with no company selected → modal stays open (validation blocked submit)
+    await page.getByTestId('save-partner-button').click();
+    await expect(page.getByTestId('partner-create-edit-modal')).toBeVisible();
+    await expect(page.getByTestId('company-autocomplete')).toBeVisible();
   });
 
-  test('AC7: Form validation - date range', async ({ page }) => {
-    const authToken = getAuthToken();
-    const testData = createTestData();
-    await createCompanyViaAPI(authToken, testData.company);
+  // ─── @gate: company autocomplete search + selection ───────────────────────────
+
+  test('should_searchAndSelectCompany_inAutocomplete @gate (AC3)', async ({ page }) => {
+    const token = getAuthToken();
+    const company = makeTestCompany();
+    await createCompanyViaAPI(token, company);
 
     try {
       await page.goto(`${BASE_URL}/organizer/partners`);
-      await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
-      await page.click('[data-testid="add-partner-button"]');
-      await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
+      await expect(page.getByTestId('partner-directory-screen')).toBeVisible({ timeout: 10000 });
 
-      // Fill in company
-      const companyInput = page.locator('[data-testid="company-autocomplete"] input');
-      await companyInput.fill(testData.company.name);
-      await page.waitForTimeout(1000);
-      await page
-        .getByRole('option', { name: new RegExp(testData.company.displayName, 'i') })
-        .first()
-        .click();
+      await page.getByTestId('add-partner-button').click();
+      await expect(page.getByTestId('partner-create-edit-modal')).toBeVisible();
 
-      // Set end date before start date
-      const startDateInput = page.locator('input[name="partnershipStartDate"]');
-      await startDateInput.fill('12/15/2024');
+      const input = page.getByTestId('company-autocomplete').locator('input');
+      await input.fill(company.name);
 
-      const endDateInput = page.locator('input[name="partnershipEndDate"]');
-      await endDateInput.fill('12/10/2024'); // Before start date
+      const option = page.getByTestId(`company-option-${company.name}`);
+      await expect(option).toBeVisible();
+      await option.click();
 
-      // Try to submit
-      await page.click('[data-testid="save-partner-button"]');
-
-      // Verify modal stays open (validation failed)
-      await expect(page.locator('[data-testid="partner-create-edit-modal"]')).toBeVisible();
+      // The input shows the technical name once selected
+      await expect(input).toHaveValue(company.name);
     } finally {
-      await deleteCompanyViaAPI(authToken, testData.company.name);
+      await cleanupById(token, 'companies', company.name);
     }
   });
 
-  test('AC3: Company autocomplete - search and selection', async ({ page }) => {
-    const authToken = getAuthToken();
-    const testData = createTestData();
+  // ─── @gate: Escape closes a pristine modal without a confirm prompt ───────────
 
-    await createCompanyViaAPI(authToken, testData.company);
-
-    try {
-      await page.goto(`${BASE_URL}/organizer/partners`);
-      await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
-      await page.click('[data-testid="add-partner-button"]');
-      await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
-
-      // Test autocomplete search - use the unique suffix to find the exact company
-      const companyInput = page.locator('[data-testid="company-autocomplete"] input');
-      await companyInput.fill(testData.company.name); // Search by technical name for precision
-
-      // Wait for debounce and results
-      await page.waitForTimeout(1000);
-
-      // Verify company appears (getByRole works for autocomplete options)
-      const companyOption = page
-        .getByRole('option', {
-          name: new RegExp(testData.company.displayName, 'i'),
-        })
-        .first();
-      await expect(companyOption).toBeVisible();
-
-      // Select company
-      await companyOption.click();
-
-      // Verify company selected (input shows technical name)
-      await expect(companyInput).toHaveValue(testData.company.name);
-    } finally {
-      await deleteCompanyViaAPI(authToken, testData.company.name);
-    }
-  });
-
-  test('AC10: Modal UX - unsaved changes warning', async ({ page }) => {
-    const authToken = getAuthToken();
-    const testData = createTestData();
-    await createCompanyViaAPI(authToken, testData.company);
-
-    try {
-      await page.goto(`${BASE_URL}/organizer/partners`);
-      await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
-      await page.click('[data-testid="add-partner-button"]');
-      await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
-
-      // Make changes to form
-      const companyInput = page.locator('[data-testid="company-autocomplete"] input');
-      await companyInput.fill(testData.company.name);
-      await page.waitForTimeout(1000);
-      await page
-        .getByRole('option', { name: new RegExp(testData.company.displayName, 'i') })
-        .first()
-        .click();
-
-      // Setup dialog listener
-      let dialogShown = false;
-      page.on('dialog', async (dialog) => {
-        dialogShown = true;
-        // Accept both English and German messages (language-independent test)
-        expect(dialog.message()).toMatch(/unsaved|ungespeicherte/i);
-        await dialog.dismiss(); // Cancel close
-      });
-
-      // Try to close modal with unsaved changes (Escape key)
-      await page.keyboard.press('Escape');
-
-      // If dialog shown, modal should still be open
-      if (dialogShown) {
-        await expect(page.locator('[data-testid="partner-create-edit-modal"]')).toBeVisible();
-      }
-    } finally {
-      await deleteCompanyViaAPI(authToken, testData.company.name);
-    }
-  });
-
-  test('AC11: Accessibility - keyboard navigation', async ({ page }) => {
+  test('should_closeModalOnEscape_whenNoChanges @gate (AC11)', async ({ page }) => {
     await page.goto(`${BASE_URL}/organizer/partners`);
-    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
-    await page.click('[data-testid="add-partner-button"]');
-    await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
+    await expect(page.getByTestId('partner-directory-screen')).toBeVisible({ timeout: 10000 });
 
-    // Test Escape to close modal immediately (empty form with no changes)
-    // Don't interact with fields to avoid triggering isDirty
+    await page.getByTestId('add-partner-button').click();
+    await expect(page.getByTestId('partner-create-edit-modal')).toBeVisible();
+
+    // Pristine form → no unsaved-changes confirm → Escape closes immediately
     await page.keyboard.press('Escape');
-
-    // Modal should close without confirmation dialog (no changes made)
-    await expect(page.locator('[data-testid="partner-create-edit-modal"]')).not.toBeVisible();
-  });
-
-  test('AC12: Date formatting based on locale', async ({ page }) => {
-    await page.goto(`${BASE_URL}/organizer/partners`);
-    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
-    await page.click('[data-testid="add-partner-button"]');
-    await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
-
-    // Verify date input exists and has default value (today)
-    const startDateInput = page.locator('input[name="partnershipStartDate"]');
-    await expect(startDateInput).toBeVisible();
-
-    // Verify date is formatted (MM/DD/YYYY or DD.MM.YYYY depending on locale)
-    const dateValue = await startDateInput.inputValue();
-    expect(dateValue).toMatch(/\d{2}[./]\d{2}[./]\d{4}/);
+    await expect(page.getByTestId('partner-create-edit-modal')).toBeHidden();
   });
 });

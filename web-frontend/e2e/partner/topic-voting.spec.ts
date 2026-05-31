@@ -1,228 +1,208 @@
 /**
- * E2E tests for Partner Topic Voting
- * Story 8.2: AC2, AC3, AC4 — Task 13
+ * E2E tests for Partner Topic Voting (partner side)
+ * Story 8.2: AC2, AC3, AC4
  *
  * Runs in the 'partner' Playwright project using .playwright-auth-partner.json storage state.
- * Requires PARTNER_AUTH_TOKEN env var (set via make setup-test-users).
+ * Requires PARTNER_AUTH_TOKEN. Fully MOCKED + read-only → `@gate` only.
  *
- * Run: cd web-frontend && npx playwright test --project=partner e2e/partner/topic-voting.spec.ts
+ * Reality / reliability fixes (slice 11, plan §C):
+ * - The topic list mock is now STATEFUL: a vote POST/DELETE mutates the in-memory topic, so
+ *   the component's optimistic update AND its `onSuccess` invalidate→refetch BOTH settle on
+ *   the same count. The old static mock returned the original count on refetch, which
+ *   instantly reverted the optimistic value — the assertion raced and lost.
+ * - `/api/v1/users/me` is mocked to `language: en` so LanguageSync does not flip the UI to
+ *   the partner test user's backend German preference (the status-chip text assertion needs EN).
+ * - The old "Organizer Topic Status Panel" describe lived in THIS partner-project file but
+ *   navigated to the ORGANIZER route `/organizer/partner-topics` — a partner user is guarded
+ *   out, so it could never pass here. It moved to e2e/organizer/partner-topic-status.spec.ts
+ *   (chromium project).
+ *
+ * Run: cd web-frontend && PARTNER_AUTH_TOKEN=$(jq -r .idToken ~/.batbern/staging-partner.json) \
+ *   npx playwright test --project=partner e2e/partner/topic-voting.spec.ts
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { BASE_URL } from '../../playwright.config';
 
 const TOPICS_URL = `${BASE_URL}/partners/topics`;
-const ORGANIZER_TOPICS_URL = `${BASE_URL}/organizer/partner-topics`;
 
-// ─── Topic fixtures ───────────────────────────────────────────────────────────
+interface MockTopic {
+  id: string;
+  title: string;
+  description: string | null;
+  suggestedByCompany: string;
+  voteCount: number;
+  currentPartnerHasVoted: boolean;
+  status: 'PROPOSED' | 'SELECTED' | 'DECLINED';
+  plannedEvent: string | null;
+  createdAt: string;
+}
 
-const baseTopics = [
-  {
-    id: 'e2e-topic-1',
-    title: 'Kafka Streams in Production',
-    description: 'Real-world Kafka usage',
-    suggestedByCompany: 'GoogleZH',
-    voteCount: 5,
-    currentPartnerHasVoted: false,
-    status: 'PROPOSED',
-    plannedEvent: null,
-    createdAt: '2026-01-01T10:00:00Z',
-  },
-  {
-    id: 'e2e-topic-2',
-    title: 'eBPF for Platform Engineers',
-    description: null,
-    suggestedByCompany: 'MicrosoftZH',
-    voteCount: 3,
-    currentPartnerHasVoted: false,
-    status: 'PROPOSED',
-    plannedEvent: null,
-    createdAt: '2026-01-02T10:00:00Z',
-  },
-];
+function seedTopics(): MockTopic[] {
+  return [
+    {
+      id: 'e2e-topic-1',
+      title: 'Kafka Streams in Production',
+      description: 'Real-world Kafka usage',
+      suggestedByCompany: 'GoogleZH',
+      voteCount: 5,
+      currentPartnerHasVoted: false,
+      status: 'PROPOSED',
+      plannedEvent: null,
+      createdAt: '2026-01-01T10:00:00Z',
+    },
+    {
+      id: 'e2e-topic-2',
+      title: 'eBPF for Platform Engineers',
+      description: null,
+      suggestedByCompany: 'MicrosoftZH',
+      voteCount: 3,
+      currentPartnerHasVoted: false,
+      status: 'PROPOSED',
+      plannedEvent: null,
+      createdAt: '2026-01-02T10:00:00Z',
+    },
+  ];
+}
 
-// ─── Partner tests ────────────────────────────────────────────────────────────
+/**
+ * Wire a stateful topic API onto the page. `mutate` lets a test pre-adjust the seed
+ * (e.g. mark a topic SELECTED, or pre-voted) before the page loads.
+ */
+async function mockTopicApi(page: Page, mutate?: (topics: MockTopic[]) => void): Promise<void> {
+  const topics = seedTopics();
+  mutate?.(topics);
 
-test.describe('Partner Topic Voting', () => {
-  test.beforeEach(async ({ page }) => {
-    // Mock topic list
-    await page.route('**/api/v1/partners/topics', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(baseTopics),
-        });
-      } else if (route.request().method() === 'POST') {
-        // Suggest topic
-        const body = JSON.parse(route.request().postData() ?? '{}') as {
-          title: string;
-          description?: string;
-        };
-        await route.fulfill({
-          status: 201,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            id: 'e2e-topic-new',
-            title: body.title,
-            description: body.description ?? null,
-            suggestedByCompany: 'TestCompany',
-            voteCount: 0,
-            currentPartnerHasVoted: false,
-            status: 'PROPOSED',
-            plannedEvent: null,
-            createdAt: new Date().toISOString(),
-          }),
-        });
-      } else {
-        await route.continue();
-      }
+  // Force EN so LanguageSync doesn't switch to the user's backend (German) preference.
+  await page.route('**/api/v1/users/me*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'test-partner',
+        email: 'partner@example.com',
+        preferences: { language: 'en' },
+      }),
     });
-
-    // Mock vote endpoints
-    await page.route('**/api/v1/partners/topics/*/vote', async (route) => {
-      await route.fulfill({ status: 204 });
-    });
-
-    await page.goto(TOPICS_URL);
   });
 
-  // ─── AC3: Partner submits topic ─────────────────────────────────────────────
+  // Vote toggle (POST cast / DELETE remove) — mutate state then 204.
+  await page.route('**/api/v1/partners/topics/*/vote', async (route) => {
+    const url = route.request().url();
+    const id = url.match(/topics\/([^/]+)\/vote/)?.[1];
+    const topic = topics.find((t) => t.id === id);
+    if (topic) {
+      if (route.request().method() === 'POST') {
+        topic.voteCount += 1;
+        topic.currentPartnerHasVoted = true;
+      } else if (route.request().method() === 'DELETE') {
+        topic.voteCount = Math.max(0, topic.voteCount - 1);
+        topic.currentPartnerHasVoted = false;
+      }
+    }
+    await route.fulfill({ status: 204 });
+  });
 
-  test('partner submits a topic and it appears in list (AC3)', async ({ page }) => {
-    await page.waitForSelector('[data-testid="topic-list-page"]', { timeout: 15000 });
+  // List + suggest.
+  await page.route('**/api/v1/partners/topics', async (route) => {
+    const method = route.request().method();
+    if (method === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(topics),
+      });
+    } else if (method === 'POST') {
+      const body = JSON.parse(route.request().postData() ?? '{}') as {
+        title: string;
+        description?: string;
+      };
+      const created: MockTopic = {
+        id: 'e2e-topic-new',
+        title: body.title,
+        description: body.description ?? null,
+        suggestedByCompany: 'TestCompany',
+        voteCount: 0,
+        currentPartnerHasVoted: false,
+        status: 'PROPOSED',
+        plannedEvent: null,
+        createdAt: '2026-01-03T10:00:00Z',
+      };
+      topics.push(created);
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(created),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
 
-    // Open suggestion form
+test.describe('Partner Topic Voting @gate', () => {
+  // ─── AC3: Partner submits a topic ───────────────────────────────────────────
+
+  test('partner submits a topic and the form closes (AC3)', async ({ page }) => {
+    await mockTopicApi(page);
+    await page.goto(TOPICS_URL);
+    await expect(page.getByTestId('topic-list-page')).toBeVisible({ timeout: 15000 });
+
     await page.getByTestId('suggest-topic-button').click();
-    await page.waitForSelector('[data-testid="topic-form-title"]', { timeout: 5000 });
+    await expect(page.getByTestId('topic-form-title')).toBeVisible();
 
-    // Fill in title
     await page.getByTestId('topic-form-title').locator('input').fill('My New Test Topic');
-
-    // Submit
     await page.getByTestId('topic-form-submit').click();
 
-    // After submit the form should close and the list should be refetched
-    // (the mock returns the new topic on the next GET call is handled by React Query invalidation)
+    // Form closes (the submit dialog is dismissed) and the list is still shown.
+    await expect(page.getByTestId('topic-form-title')).toBeHidden();
     await expect(page.getByTestId('topic-list-page')).toBeVisible();
   });
 
-  // ─── AC2: Partner votes → count increments ─────────────────────────────────
+  // ─── AC2: Vote increments (optimistic + refetch agree via stateful mock) ────
 
-  test('partner votes on a topic and vote count increments optimistically (AC2)', async ({
-    page,
-  }) => {
-    await page.waitForSelector('[data-testid="topic-list-page"]', { timeout: 15000 });
+  test('partner votes on a topic and the count increments (AC2)', async ({ page }) => {
+    await mockTopicApi(page);
+    await page.goto(TOPICS_URL);
+    await expect(page.getByTestId('topic-list-page')).toBeVisible({ timeout: 15000 });
 
-    // Initial vote count for topic-1 is 5
     const voteCount = page.getByTestId('vote-count-e2e-topic-1');
     await expect(voteCount).toHaveText('5');
 
-    // Click vote
     await page.getByTestId('vote-button-e2e-topic-1').click();
-
-    // Optimistic update increments to 6
     await expect(voteCount).toHaveText('6');
   });
 
-  // ─── AC2: Partner unvotes → count decrements ───────────────────────────────
+  // ─── AC2: Vote decrements when already voted ────────────────────────────────
 
-  test('partner unvotes a topic and vote count decrements optimistically (AC2)', async ({
-    page,
-  }) => {
-    // Set up topic-1 as already voted
-    await page.route('**/api/v1/partners/topics', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify([{ ...baseTopics[0], currentPartnerHasVoted: true }]),
-        });
-      } else {
-        await route.continue();
-      }
+  test('partner unvotes a topic and the count decrements (AC2)', async ({ page }) => {
+    await mockTopicApi(page, (topics) => {
+      topics[0].currentPartnerHasVoted = true;
     });
-
     await page.goto(TOPICS_URL);
-    await page.waitForSelector('[data-testid="topic-list-page"]', { timeout: 15000 });
+    await expect(page.getByTestId('topic-list-page')).toBeVisible({ timeout: 15000 });
 
     const voteCount = page.getByTestId('vote-count-e2e-topic-1');
     await expect(voteCount).toHaveText('5');
 
-    // Click unvote (already voted, so this is a remove)
     await page.getByTestId('vote-button-e2e-topic-1').click();
-
-    // Optimistic update decrements to 4
     await expect(voteCount).toHaveText('4');
   });
 
-  // ─── AC4: Organizer marks Selected → partner sees status ───────────────────
+  // ─── AC4: Partner sees Selected status + planned event ──────────────────────
 
-  test('organizer marks topic Selected with planned event; partner sees status chip (AC4)', async ({
-    page,
-  }) => {
-    // Mock topics as SELECTED
-    await page.route('**/api/v1/partners/topics', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify([
-            {
-              ...baseTopics[0],
-              status: 'SELECTED',
-              plannedEvent: 'BATbern58',
-            },
-          ]),
-        });
-      } else {
-        await route.continue();
-      }
+  test('partner sees the Selected status chip and planned event (AC4)', async ({ page }) => {
+    await mockTopicApi(page, (topics) => {
+      topics[0].status = 'SELECTED';
+      topics[0].plannedEvent = 'BATbern58';
     });
-
     await page.goto(TOPICS_URL);
-    await page.waitForSelector('[data-testid="topic-list-page"]', { timeout: 15000 });
+    await expect(page.getByTestId('topic-list-page')).toBeVisible({ timeout: 15000 });
 
-    // Status chip shows "Selected"
     const chip = page.getByTestId('topic-status-e2e-topic-1');
     await expect(chip).toBeVisible();
     await expect(chip).toHaveText('Selected');
 
-    // Planned event label visible
-    await expect(page.getByText(/BATbern58/)).toBeVisible();
-  });
-});
-
-// ─── Organizer tests ──────────────────────────────────────────────────────────
-
-test.describe('Organizer Topic Status Panel', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route('**/api/v1/partners/topics', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(baseTopics),
-        });
-      } else {
-        await route.continue();
-      }
-    });
-
-    await page.route('**/api/v1/partners/topics/*/status', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ ...baseTopics[0], status: 'SELECTED', plannedEvent: 'BATbern58' }),
-      });
-    });
-  });
-
-  test('organizer can navigate to partner-topics page (AC4)', async ({ page }) => {
-    await page.goto(ORGANIZER_TOPICS_URL);
-    await page.waitForSelector('[data-testid="topic-status-panel"]', { timeout: 15000 });
-
-    await expect(page.getByTestId('organizer-topics-table')).toBeVisible();
-    await expect(page.getByText('Kafka Streams in Production')).toBeVisible();
+    await expect(page.getByTestId('topic-planned-event-e2e-topic-1')).toContainText('BATbern58');
   });
 });

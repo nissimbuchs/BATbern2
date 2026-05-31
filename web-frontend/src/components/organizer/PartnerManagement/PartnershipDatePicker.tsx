@@ -37,6 +37,7 @@ export const PartnershipDatePicker: React.FC<PartnershipDatePickerProps> = ({
             error: !!error,
             fullWidth: true,
             'aria-describedby': error ? `${name}-error` : undefined,
+            inputProps: { 'data-testid': name },
           },
         }}
       />
