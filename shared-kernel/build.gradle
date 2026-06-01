@@ -182,13 +182,8 @@ jacocoTestCoverageVerification {
 // Coverage verification runs only during explicit test tasks, not during build
 // check.dependsOn jacocoTestCoverageVerification
 
-// Checkstyle configuration
-checkstyle {
-    toolVersion = '10.12.5'
-    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
-    ignoreFailures = true  // Allow build to succeed while generating quality reports
-    maxWarnings = 0
-}
+// Checkstyle is configured centrally in the root build.gradle
+// (subprojects { plugins.withId('checkstyle') }) so settings can't drift.
 
 // Disable Spring Boot executable jar creation for library module
 bootJar {

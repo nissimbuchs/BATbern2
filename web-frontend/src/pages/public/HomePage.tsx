@@ -45,6 +45,7 @@ import { RegistrationStatusBanner } from '@/components/public/RegistrationStatus
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
 import { getHomepagePhase, getSectionVisibility } from './homePagePhase';
+import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
@@ -102,11 +103,15 @@ const HomePage = () => {
     registrationActive ? (event?.eventCode ?? undefined) : undefined
   );
 
-  // Loading state
+  // Loading state — reserve a full viewport height so the footer starts below
+  // the fold (where it lands once content loads). Without this the short
+  // placeholder put the footer ~300px down, and swapping in the real
+  // min-h-screen hero shoved it far down → a ~0.47 CLS shift (the dominant CLS
+  // culprit, traced via a layout-shift PerformanceObserver, 2026-06-01).
   if (isLoading) {
     return (
       <PublicLayout>
-        <div className="container mx-auto px-4 py-24 flex justify-center">
+        <div className="container mx-auto px-4 py-24 flex min-h-screen items-center justify-center">
           <BATbernLoader size={96} />
         </div>
       </PublicLayout>
@@ -117,7 +122,10 @@ const HomePage = () => {
   if (error || !event) {
     return (
       <PublicLayout>
-        <div className="container mx-auto px-4 py-24 text-center" data-testid="event-load-error">
+        <div
+          className="container mx-auto px-4 py-24 text-center min-h-screen"
+          data-testid="event-load-error"
+        >
           <h2 className="text-2xl font-light text-zinc-300">
             {error ? t('public.errors.loadFailed') : t('public.errors.noEvent')}
           </h2>
@@ -315,8 +323,13 @@ const HomePage = () => {
               {eventPhotos.map((photo) => (
                 <img
                   key={photo.id}
-                  src={photo.displayUrl}
+                  src={
+                    buildCdnImageUrl(photo.displayUrl, { w: 512, h: 384, fit: 'cover' }) ??
+                    photo.displayUrl
+                  }
                   alt={photo.filename || 'BATbern event photo'}
+                  loading="lazy"
+                  decoding="async"
                   className="rounded-lg object-cover h-48 w-64 shrink-0"
                 />
               ))}
