@@ -740,10 +740,21 @@ jobs:
   deploy-to-staging:
     needs: [build-shared-kernel, build-services, build-frontend]
     # Deploy to staging on: (1) push to develop OR (2) PR to develop
-    # This allows testing PRs in staging environment before merge
+    # This allows testing PRs in staging environment before merge.
+    #
+    # Dependabot PRs are EXCLUDED from the PR-to-develop deploy gate: their runs
+    # execute with a restricted token and no access to repo secrets, so the
+    # staging auth-token fetch silently no-ops and every authenticated Bruno /
+    # Playwright assertion fails (expected 401 to equal 200). They also have no
+    # business firing a real production deploy per-PR. Build + unit-test jobs
+    # still run; the real deploy gate runs once on the push-to-develop after
+    # merge, where secrets exist. (Root-caused 2026-06-01: monthly dependabot
+    # batch left 18 PRs unmergeable + thrashed prod with concurrent deploys.)
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop')
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.base.ref == 'develop' &&
+       github.actor != 'dependabot[bot]')
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
     permissions:
