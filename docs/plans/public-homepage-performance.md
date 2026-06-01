@@ -75,6 +75,10 @@ Removes the 3,030 ms render-blocking 3rd-party request.
 
 ## Phase 4 — JS code-splitting & bundle reduction (frontend)
 
+**Status: ✅ DONE (conservative).** Lazy-loaded the 5 previously-eager auth forms (`LoginForm`, `ForgotPasswordForm`, `ResetPasswordForm`, `RegistrationWizard`, `EmailVerification`) via `React.lazy` — they were the only non-page eager imports in `App.tsx` and the public homepage never needs them. They now ship as small standalone chunks (≤3 KB gzip each); the entry `index` chunk dropped ~304 → ~297 KB gzip (raw 1247 → 1217 KB). All render inside the existing route `<Suspense>`. type-check clean; 90 App/auth tests green.
+
+**Intentionally NOT done:** splitting the single `~1.84 MB vendor` chunk. `vite.config.ts:216-232` documents that one-vendor-chunk is deliberate — finer splitting reintroduces the `@emotion`/`@mui` CJS→ESM factory-boundary init-order crash (TDZ / "Cannot set properties of undefined"). Against the auto-rollback staging gate that gamble isn't worth a few KB. The remaining homepage JS cost (`vendor` 573 KB gzip + `vendor-mui` 157 KB, both loaded because the root wraps everything in MUI `ThemeProvider`) would require separating the public app from the authed app — a larger refactor out of scope here. Skipped `rollup-plugin-visualizer` to avoid a lockfile change; sizes read from build output.
+
 Smaller critical JS → React mounts sooner → earlier hero discovery (helps LCP delay) + lower TBT.
 
 - **Lazy-load auth components** currently static in `App.tsx:18-22` (`LoginForm`, `ForgotPasswordForm`, `ResetPasswordForm`, `RegistrationWizard`) via `React.lazy` + `Suspense` — they're not needed for the homepage.
