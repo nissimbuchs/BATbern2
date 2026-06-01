@@ -24,6 +24,16 @@ on:
         required: false
         default: false
 
+# Serialize all staging deploys. The staging account (188701360969) serves
+# production traffic and CloudFormation rejects an update while a stack is in
+# UPDATE_IN_PROGRESS. A static group makes concurrent deploys (e.g. a wave of
+# merges to develop) queue instead of colliding with
+# "ValidationError: ... is in UPDATE_IN_PROGRESS state and can not be updated".
+# cancel-in-progress: false so an in-flight prod deploy is never killed mid-roll.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
 env:
   AWS_REGION: eu-central-1
   ENVIRONMENT: staging
