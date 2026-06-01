@@ -209,8 +209,12 @@ public class VenueCoordinationService {
                 .map(this::formatSalutation)
                 .filter(s -> !s.isBlank())
                 .toList();
-        if (parts.isEmpty()) return "";
-        if (parts.size() == 1) return parts.get(0);
+        if (parts.isEmpty()) {
+            return "";
+        }
+        if (parts.size() == 1) {
+            return parts.get(0);
+        }
         String connector = "en".equals(locale) ? " and " : " und ";
         return String.join(", ", parts.subList(0, parts.size() - 1))
                 + connector + parts.get(parts.size() - 1);
@@ -239,9 +243,13 @@ public class VenueCoordinationService {
      * to embed verbatim in the email body.
      */
     private static String renderNotesHtml(String notes) {
-        if (notes == null) return "";
+        if (notes == null) {
+            return "";
+        }
         String trimmed = notes.strip();
-        if (trimmed.isEmpty()) return "";
+        if (trimmed.isEmpty()) {
+            return "";
+        }
         return escapeHtml(trimmed)          // ← HTML-escape first; <br> insertion is safe after
                 .replace("\r\n", "\n")
                 .replace("\r", "\n")
@@ -249,13 +257,17 @@ public class VenueCoordinationService {
     }
 
     private String lastNameOf(String fullName) {
-        if (fullName == null || fullName.isBlank()) return "";
+        if (fullName == null || fullName.isBlank()) {
+            return "";
+        }
         String[] parts = fullName.trim().split("\\s+");
         return parts[parts.length - 1];
     }
 
     private String formatEventDate(Event event, String locale) {
-        if (event.getDate() == null) return "";
+        if (event.getDate() == null) {
+            return "";
+        }
         DateTimeFormatter fmt = "en".equals(locale) ? DATE_EN : DATE_DE;
         return fmt.format(event.getDate());
     }
@@ -365,7 +377,9 @@ public class VenueCoordinationService {
                         "Coordinator user '" + username + "' has no email — cannot apply Reply-To");
             }
             String display = (safe(user.getFirstName()) + " " + safe(user.getLastName())).trim();
-            if (display.isBlank()) display = username;
+            if (display.isBlank()) {
+                display = username;
+            }
             return new CoordinatorIdentity(display, user.getEmail());
         } catch (ResponseStatusException e) {
             throw e;
@@ -379,7 +393,9 @@ public class VenueCoordinationService {
     private record CoordinatorIdentity(String displayName, String email) {}
 
     private static String normaliseLocale(String locale) {
-        if (locale == null) return DEFAULT_LOCALE;
+        if (locale == null) {
+            return DEFAULT_LOCALE;
+        }
         String trimmed = locale.trim().toLowerCase(Locale.ROOT);
         return trimmed.startsWith("en") ? "en" : DEFAULT_LOCALE;
     }
@@ -389,14 +405,20 @@ public class VenueCoordinationService {
     }
 
     private static String mask(String email) {
-        if (email == null || email.isBlank()) return "";
+        if (email == null || email.isBlank()) {
+            return "";
+        }
         int at = email.indexOf('@');
-        if (at <= 1) return "***";
+        if (at <= 1) {
+            return "***";
+        }
         return email.charAt(0) + "***" + email.substring(at);
     }
 
     private static String escapeHtml(String s) {
-        if (s == null) return "";
+        if (s == null) {
+            return "";
+        }
         return s.replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
