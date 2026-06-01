@@ -87,6 +87,29 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Company, UUI
     int deleteUserProfilesByUsernameLike(@Param("usernamePattern") String usernamePattern);
 
     /**
+     * Delete users whose {@code email} matches the (suffix) pattern — i.e. ends in a
+     * synthetic test domain (issue #725). Reaches JIT users created by anonymous
+     * registrations whose username does NOT carry a canonical Bruno prefix, so the
+     * username sweep ({@link #deleteUserProfilesByUsernameLike(String)}) misses them.
+     *
+     * <p>Relies on ON DELETE CASCADE for {@code role_assignments} +
+     * {@code user_additional_emails} (declared in V5 + V16), exactly like the
+     * username delete. Match is case-insensitive
+     * ({@code LOWER(email) LIKE LOWER(:emailPattern)}) for defensive normalization —
+     * the caller passes {@code '%' || domain}.
+     *
+     * @param emailPattern {@code LIKE} pattern for the email column (e.g.
+     *                     {@code "%@e2e.batbern.invalid"})
+     * @return number of user_profile rows deleted (excludes cascade-deleted dependents)
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM user_profiles WHERE LOWER(email) LIKE LOWER(:emailPattern)",
+            nativeQuery = true
+    )
+    int deleteUserProfilesByEmailLike(@Param("emailPattern") String emailPattern);
+
+    /**
      * Delete additional-email rows whose {@code email} starts with the prefix.
      *
      * <p>Plan §F4: targets the {@code bruno-test-…@e2e.batbern.invalid} canonical

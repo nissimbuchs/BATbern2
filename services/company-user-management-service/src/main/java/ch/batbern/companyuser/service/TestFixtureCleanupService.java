@@ -95,12 +95,63 @@ public class TestFixtureCleanupService {
          *       but keep it for now to sweep historical leakage.</li>
          * </ul>
          */
-        ADDITIONAL_EMAILS(Pattern.compile("^bruno-test-$|^bruno-additional-$"));
+        ADDITIONAL_EMAILS(Pattern.compile("^bruno-test-$|^bruno-additional-$")),
+        /**
+         * Sweeps {@code user_profiles} by SYNTHETIC EMAIL DOMAIN (suffix match), not by
+         * username prefix. This is the only safe discriminator for JIT-created users that
+         * anonymous / quick event registrations spawn with a test email (issue #725).
+         *
+         * <p>When a registration comes in with an email but no canonical
+         * {@code firstname.lastname}, the backend derives a username like
+         * {@code user.<emaillocalpart>} (e.g. {@code bruno-test-…@e2e.batbern.invalid} ⇒
+         * {@code user.brunotest}) or the test supplies its own ({@code promote.ee},
+         * {@code test.attendee}). None of those start with {@code bruno.test}, so the
+         * {@link #USERS} username-prefix sweep can't reach them — and widening that sweep
+         * to {@code user.%} would delete REAL anonymous attendees. The synthetic email
+         * domain is the only thing that reliably separates test users from prod users.
+         *
+         * <p>The allow-list is locked to three literal values, validated against this bound
+         * regex (the request body cannot supply an arbitrary domain):
+         * <ul>
+         *   <li>{@code @e2e.batbern.invalid} — the canonical Bruno/Playwright test domain
+         *       (RFC-2606 {@code .invalid} TLD; can never be a real deliverable address).</li>
+         *   <li>{@code @batbern-test.ch} — the {@code promote-e2e-*} / {@code user.eetest}
+         *       test domain.</li>
+         *   <li>{@code zaproxy@example.com} — a single full address, the OWASP ZAP scan
+         *       artifact ({@code john.doe}). Matched as a suffix so it can never widen to
+         *       all of {@code @example.com}.</li>
+         * </ul>
+         *
+         * <p><strong>Safety:</strong> a suffix sweep on these domains can only match rows
+         * whose email ends in a domain no human would ever register under. Real attendees
+         * use real, deliverable domains, so they are structurally unreachable here.
+         */
+        USERS_BY_EMAIL(
+                Pattern.compile("^@e2e\\.batbern\\.invalid$|^@batbern-test\\.ch$|^zaproxy@example\\.com$"),
+                true
+        );
 
         private final Pattern allowedPrefix;
 
+        /**
+         * When {@code true}, the validated value is matched as a SUFFIX
+         * ({@code LIKE '%' || value}) instead of the default prefix
+         * ({@code LIKE value || '%'}). Used by {@link #USERS_BY_EMAIL} so an email
+         * domain matches the END of the email column.
+         */
+        private final boolean suffixMatch;
+
         CleanupEntityType(Pattern allowedPrefix) {
+            this(allowedPrefix, false);
+        }
+
+        CleanupEntityType(Pattern allowedPrefix, boolean suffixMatch) {
             this.allowedPrefix = allowedPrefix;
+            this.suffixMatch = suffixMatch;
+        }
+
+        public boolean isSuffixMatch() {
+            return suffixMatch;
         }
 
         public boolean validates(String prefix) {
@@ -120,7 +171,8 @@ public class TestFixtureCleanupService {
             } catch (IllegalArgumentException ex) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Unknown entityType: '" + value + "'. Allowed: companies, users, additional_emails"
+                        "Unknown entityType: '" + value
+                                + "'. Allowed: companies, users, additional_emails, users_by_email"
                 );
             }
         }
@@ -147,7 +199,11 @@ public class TestFixtureCleanupService {
         }
 
         Map<String, Integer> counts = new LinkedHashMap<>();
-        String likePattern = request.getPrefix() + "%";
+        // Suffix match for email-domain sweeps (USERS_BY_EMAIL): '%' || domain matches the
+        // END of the email column. Everything else is the canonical prefix sweep: value || '%'.
+        String likePattern = entityType.isSuffixMatch()
+                ? "%" + request.getPrefix()
+                : request.getPrefix() + "%";
 
         switch (entityType) {
             case COMPANIES:
@@ -182,6 +238,15 @@ public class TestFixtureCleanupService {
                 // matches (defensive — current canonical is lowercase).
                 int additionalEmails = repository.deleteAdditionalEmailsByEmailLike(likePattern);
                 counts.put("user_additional_emails", additionalEmails);
+                break;
+            case USERS_BY_EMAIL:
+                // Issue #725: sweeps user_profiles whose EMAIL ends in a synthetic test
+                // domain — reaches JIT users from anonymous registrations regardless of
+                // how their username was derived (user.<localpart>, promote.ee, etc.).
+                // role_assignments + user_additional_emails cascade via FK ON DELETE
+                // CASCADE, same as the USERS branch. likePattern here is '%' || domain.
+                int usersByEmail = repository.deleteUserProfilesByEmailLike(likePattern);
+                counts.put("user_profiles", usersByEmail);
                 break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);
