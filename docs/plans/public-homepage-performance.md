@@ -92,8 +92,9 @@ Smaller critical JS → React mounts sooner → earlier hero discovery (helps LC
 
 ## Phase 5 — LCP discoverability & preconnect (frontend)
 
-- Add `<link rel="preconnect" href="https://cdn.batbern.ch" crossorigin>` (+ `dns-prefetch` fallback) to `index.html` so the TLS handshake to the CDN is warm before JS resolves the hero URL.
-- Optional: once `event.themeImageUrl` is known in `HomePage.tsx`, inject `<link rel="preload" as="image" imagesrcset=…>` for the hero via the document head to shave the discovery delay further.
+**Status: ✅ DONE.** Added `<link rel="preconnect" href="https://cdn.batbern.ch">` + a `dns-prefetch` fallback to `index.html`, so the TLS handshake to the media CDN is warm before JS resolves the hero URL (report lists this origin as a preconnect candidate, ~340 ms LCP saving). No `crossorigin` — hero/logo `<img>` requests are not CORS. Build verified: both tags present in `dist/index.html`.
+
+**Skipped (optional):** injecting a `<link rel="preload" as="image">` for the dynamic hero once `event.themeImageUrl` resolves. With `fetchPriority="high"` already set, the hero now a small WebP (Phase 1), and the connection pre-warmed, the marginal gain didn't justify the added moving part (helmet head injection on a per-event URL).
 
 **Verify:** LCP "resource load delay" drops in a fresh Lighthouse run.
 

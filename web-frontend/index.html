@@ -8,6 +8,15 @@
     <meta name="description" content="BATbern - Event Management Platform" />
 
     <!--
+      Warm the connection to the media CDN before JS resolves the hero image
+      URL. The LCP element is a hero image served from cdn.batbern.ch; the
+      PageSpeed report lists this origin as a preconnect candidate (~340 ms LCP
+      saving). No crossorigin: hero/logo <img> requests are not CORS.
+    -->
+    <link rel="preconnect" href="https://cdn.batbern.ch" />
+    <link rel="dns-prefetch" href="https://cdn.batbern.ch" />
+
+    <!--
       No web-font loading: the UI renders in the system font stack
       ('Helvetica Neue'/system-ui — see src/index.css, tailwind.config.js, MUI
       theme in main.tsx). The previous Google Fonts <link> (Inter + Noto Sans JP)
