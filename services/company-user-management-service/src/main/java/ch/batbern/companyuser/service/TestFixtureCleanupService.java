@@ -118,8 +118,11 @@ public class TestFixtureCleanupService {
          *   <li>{@code @batbern-test.ch} — the {@code promote-e2e-*} / {@code user.eetest}
          *       test domain.</li>
          *   <li>{@code zaproxy@example.com} — a single full address, the OWASP ZAP scan
-         *       artifact ({@code john.doe}). Matched as a suffix so it can never widen to
-         *       all of {@code @example.com}.</li>
+         *       artifact ({@code john.doe}). Matched as a suffix ({@code %zaproxy@example.com})
+         *       so it can never widen to all of {@code @example.com}. The suffix form would
+         *       technically also match a contrived {@code …zaproxy@example.com} local part,
+         *       but no real address ends that way; an exact-match branch is not worth the
+         *       added complexity for a single known artifact.</li>
          * </ul>
          *
          * <p><strong>Safety:</strong> a suffix sweep on these domains can only match rows

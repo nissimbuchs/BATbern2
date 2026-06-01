@@ -49,4 +49,12 @@ docs {
   can't reach it. This sweep removes it by synthetic email DOMAIN (suffix match),
   the only safe discriminator from real anonymous attendees. role_assignments and
   user_additional_emails cascade via FK ON DELETE CASCADE.
+
+  Scope: this collection only ever creates @e2e.batbern.invalid JIT users (see
+  13-create-registration.bru), so only that domain is swept here. The other two
+  allow-listed domains (@batbern-test.ch, zaproxy@example.com) are produced by
+  other suites and are covered by the Playwright global-teardown sweep
+  (web-frontend/e2e/helpers/test-fixtures-cleanup.ts → SWEEP_TARGETS). If a future
+  bru step in THIS collection introduces a @batbern-test.ch user, add a matching
+  sweep request here.
 }

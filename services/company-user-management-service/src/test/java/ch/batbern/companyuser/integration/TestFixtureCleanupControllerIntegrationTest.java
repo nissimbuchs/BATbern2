@@ -518,6 +518,30 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
 
         @Test
+        @DisplayName("issue #725: email-domain match is case-insensitive (LOWER LIKE LOWER)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesJitUsersByEmailDomain_caseInsensitive() throws Exception {
+            // The DELETE uses LOWER(email) LIKE LOWER(:pattern); a mixed-case stored email
+            // must still be swept by the lowercase allow-listed domain.
+            userRepository.save(buildUser("user.mixedcase", "Bruno-Test-9@E2E.BATBERN.INVALID"));
+            userRepository.save(buildUser("bruno.linder", "bruno.linder@sbb.ch"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("users_by_email")
+                    .prefix("@e2e.batbern.invalid")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_profiles").value(1));
+
+            assertThat(userRepository.findByUsername("user.mixedcase")).isEmpty();
+            assertThat(userRepository.findByUsername("bruno.linder")).isPresent();
+        }
+
+        @Test
         @DisplayName("issue #725: deleting a JIT user cascades its user_additional_emails")
         @WithMockUser(roles = {"ORGANIZER"})
         void deletesJitUserByEmail_cascadesAdditionalEmails() throws Exception {
