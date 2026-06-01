@@ -13,6 +13,7 @@ import { AttendeeUnregisterPanel } from '@/components/public/Registration/Attend
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { CheckCircle2, Mail } from 'lucide-react';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
+import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
 
 interface HeroSectionProps {
   title: string;
@@ -184,7 +185,9 @@ export const HeroSection = ({
         <div className="absolute inset-0 z-0 w-full h-full" aria-hidden="true">
           {themeImageUrl ? (
             <img
-              src={themeImageUrl}
+              src={buildCdnImageUrl(themeImageUrl, { w: 1920, fit: 'cover' }) ?? themeImageUrl}
+              srcSet={buildCdnImageSrcSet(themeImageUrl, [768, 1280, 1920], { fit: 'cover' })}
+              sizes="100vw"
               alt=""
               className="w-full h-full object-cover"
               width={1920}

@@ -1,0 +1,144 @@
+# Public Homepage Performance Optimization
+
+> On approval, copy this file to `docs/plans/public-homepage-performance.md` (per the prod-safe-incremental-plans convention) and execute phase-by-phase.
+
+## Context
+
+Users report the public homepage (`www.batbern.ch`, `/` route) loads in 5–7s. A PageSpeed run (mobile / Slow 4G, `PageSpeed Insights.pdf`) confirms it: **Performance 25/100**, FCP 7.4s, **LCP 15.8s**, CLS 0.529, TBT 460ms. Accessibility/Best-Practices/SEO are all 96–100, so this is purely a loading-performance problem.
+
+Four root causes, in impact order:
+
+1. **Images are shipped raw and oversized.** The LCP element is a **1.36 MB PNG** hero (`HeroSection.tsx`) served at full resolution; speaker photos are 337 KB at 541×542 but displayed 67×67; company logos are e.g. 1882×734 PNGs displayed at 123×48. Est. 1,943 KiB wasted. **An image-resize Lambda@Edge already exists** (`infrastructure/lib/lambda/image-resize/index.ts`) that converts to WebP and resizes via `?w=&h=&fit=` with `Cache-Control: immutable` — but the frontend only uses it for event-photo thumbnails. Everything else sends unsized URLs.
+2. **No `Cache-Control` reaches the browser.** Every asset shows "Cache TTL: None" → 5,635 KiB re-downloaded on repeat visits. CloudFront *does* edge-cache (long `CachePolicy` TTLs), but the shared `SecurityHeaders` ResponseHeadersPolicy never emits `Cache-Control`, and S3 objects carry no metadata. Browser therefore never caches.
+3. **Render-blocking Google Fonts.** `fonts.googleapis.com` CSS is 120 KiB / **3,030 ms** on the critical path (Inter + Noto Sans JP). Noto Sans JP is only needed for Japanese.
+4. **Heavy, under-split JS.** Single `vendor` chunk ~1.84 MB; auth components (`LoginForm`, `RegistrationWizard`, `ResetPasswordForm`, `ForgotPasswordForm`) are statically imported into the entry chunk; ~566 KiB unused JS. This delays React mount, which delays hero-image discovery (LCP "resource load delay" = 2,740 ms).
+
+**Decisions (confirmed with user):** full scope incl. infra; self-host Inter + load Noto Sans JP only for `ja` locale.
+
+**Intended outcome:** mobile Performance from 25 → 80+, LCP < 2.5s, CLS < 0.1, repeat-visit transfer cut by ~5.6 MiB.
+
+## Constraints
+
+- **Staging IS production** (account 188701360969). Each phase must be independently deployable to `develop` without endangering prod.
+- **PRs to `develop` run the full deploy-staging workflow with a blocking `@smoke` Playwright gate + auto-rollback** (see `project_playwright_staging_hardening`). A flaky/failed smoke = real staging rollback. Keep `@smoke` green every phase.
+- Reuse existing infrastructure (image Lambda, CDN cache policy that already keys on `w/h/fit`). Do **not** add new image pipelines.
+- Frontend phases (1–5) are code-only → fast-path/hotswap deploy. Phase 6 is CDK → layer-based deploy (20–30 min), highest risk, goes **last**.
+
+---
+
+## Phase 1 — Route images through the existing resize Lambda (frontend, highest ROI)
+
+The single biggest win and zero infra risk — the Lambda + CDN cache policy already exist.
+
+**Status: ✅ DONE** (commit per phase). Added `cdnImage.ts` (`buildCdnImageUrl` + `buildCdnImageSrcSet`, 12 unit tests). Applied to hero (responsive `srcset` 768/1280/1920), speaker photos (`w=160 h=160`), speaker + partner logos (`h=128`/`h=256 contain`, SVGs skipped), event-photo marquee (`w=512 h=384`). type-check + lint clean; 117 component tests green.
+
+**New util:** `web-frontend/src/utils/cdnImage.ts`
+- `buildCdnImageUrl(url, { w?, h?, fit? })` — returns `url` unchanged if it's not a `cdn.batbern.ch` raster image (skip SVGs: the Lambda rasterizes them and we want logos to stay vector) or if no `w/h` given; otherwise appends `?w=&h=&fit=`. Cap at the Lambda's `MAX_DIM=2000`.
+- `buildCdnImageSrcSet(url, widths[], { fit })` — for the hero, builds a `srcset` of WebP variants.
+
+**Apply (display size → requested size, ~2× for retina):**
+- `components/public/Hero/HeroSection.tsx:185` — LCP hero. Use `srcset` (e.g. `w=768/1280/1920`, `fit=cover`) + `sizes="100vw"`, keep `fetchPriority="high"` + `width/height` + `aspect-ratio`. 1.36 MB PNG → ~120–180 KB WebP.
+- `components/public/Event/SpeakerDisplay.tsx:99` (`data-testid="speaker-photo"`) — `w=160 h=160 fit=cover` (2× of 80px). Keep `loading="lazy"`.
+- `components/public/Event/SpeakerDisplay.tsx:139` (logo) — `h=128 fit=contain`, skip if SVG.
+- `components/public/Partners/PartnerShowcaseCard.tsx:43` — `h=256 fit=contain`, skip if SVG; **also add `width`/`height`** (currently none → CLS, see Phase 2).
+- `pages/public/HomePage.tsx:174` event photos already use `?w=256&h=192&fit=cover` — refactor to the new helper for consistency.
+
+**Verify:** DevTools Network shows `image/webp`, sizes drop ~90%; existing `?w=` event-photo behavior unchanged; `@smoke` + speaker/partner Playwright still green.
+
+---
+
+## Phase 2 — CLS fixes (frontend, low risk)
+
+CLS 0.529 comes from images without intrinsic dimensions and late content pop-in.
+
+- Add explicit `width`/`height` to logo `<img>`s lacking them: `PublicNavigation.tsx:75` (`/BATbern_color_logo.svg`), `AppHeader.tsx`, `MobileDrawer.tsx`, `PartnerShowcaseCard.tsx`, `TestimonialCard.tsx` avatar.
+- Reserve vertical space (min-height / aspect-ratio) for async-loaded sections on the homepage (speaker grid, partner marquee, event-photos marquee in `HomePage.tsx`) so they don't shift the footer when data resolves.
+- Font-swap CLS is addressed in Phase 3 (`size-adjust`).
+
+**Verify:** Lighthouse CLS < 0.1 locally; visually confirm no jump as data/fonts load.
+
+---
+
+## Phase 3 — Self-host Inter, conditional Noto Sans JP (frontend)
+
+Removes the 3,030 ms render-blocking 3rd-party request.
+
+- Add `@fontsource/inter` (or local woff2 in `public/fonts/`) with `@font-face { font-display: swap; size-adjust: … }` to minimize swap-CLS. Import the latin subset in `src/index.css` / app entry.
+- **Remove** the Google Fonts `<link>` + `fonts.gstatic.com`/`fonts.googleapis.com` preconnects from `web-frontend/index.html:11-16`.
+- **Noto Sans JP**: load only when `i18n.language === 'ja'` (dynamic `@fontsource/noto-sans-jp` import or injected `<link>`), wired near `src/i18n/config.ts` / language-switch. Other locales never pay for it.
+- Point Tailwind (`tailwind.config.js`) and the MUI theme `font-family` at `Inter`.
+- Update PWA Workbox `runtimeCaching` in `vite.config.ts:35-139` — drop the now-dead Google Fonts cache entries.
+- Phase 6 follow-up: tighten CSP `font-src`/`style-src` in `frontend-stack.ts:192-194` to drop Google Fonts origins (keep until Phase 3 ships to avoid blocking).
+
+**Verify:** no `fonts.googleapis.com` request in Network; Inter renders; `ja` locale still gets JP glyphs; FCP drops.
+
+---
+
+## Phase 4 — JS code-splitting & bundle reduction (frontend)
+
+Smaller critical JS → React mounts sooner → earlier hero discovery (helps LCP delay) + lower TBT.
+
+- **Lazy-load auth components** currently static in `App.tsx:18-22` (`LoginForm`, `ForgotPasswordForm`, `ResetPasswordForm`, `RegistrationWizard`) via `React.lazy` + `Suspense` — they're not needed for the homepage.
+- Audit that heavy libs (`tinymce`, `tone`, `d3`, `recharts`, `framer-motion`) are imported **only** by already-lazy non-public routes, never pulled into the entry/`vendor` chunk. Split into async chunks where they leak in.
+- Revisit `manualChunks` in `vite.config.ts:244-260` — split safe vendors out of the single ~1.84 MB `vendor` chunk, respecting the documented CJS/ESM factory-boundary caveat (test each split; don't regress the `@mui`/`@emotion` grouping).
+- Add `rollup-plugin-visualizer` (dev-only) to measure before/after; record sizes in the plan doc.
+
+**Verify:** entry + homepage-critical JS shrinks (target the 566 KiB unused-JS finding); `npm run build` clean; full app routes still load (lazy auth/admin verified via Playwright).
+
+---
+
+## Phase 5 — LCP discoverability & preconnect (frontend)
+
+- Add `<link rel="preconnect" href="https://cdn.batbern.ch" crossorigin>` (+ `dns-prefetch` fallback) to `index.html` so the TLS handshake to the CDN is warm before JS resolves the hero URL.
+- Optional: once `event.themeImageUrl` is known in `HomePage.tsx`, inject `<link rel="preload" as="image" imagesrcset=…>` for the hero via the document head to shave the discovery delay further.
+
+**Verify:** LCP "resource load delay" drops in a fresh Lighthouse run.
+
+---
+
+## Phase 6 — Infra: viewer `Cache-Control` + verify compression (CDK, prod deploy, LAST)
+
+Recovers the 5,635 KiB repeat-visit waste. Riskiest (touches live CloudFront) → ships last, alone.
+
+**`infrastructure/lib/stacks/frontend-stack.ts`:**
+- A CloudFront behavior allows only one ResponseHeadersPolicy, and the current one is shared with the no-cache HTML behavior — so create a **second** policy `staticAssetsHeaders`: same `securityHeadersBehavior` + `customHeadersBehavior` as `SecurityHeaders` **plus** `{ header: 'Cache-Control', value: 'public, max-age=31536000, immutable', override: true }`.
+- Attach `staticAssetsHeaders` to the hashed-asset behaviors only: `/assets/*` (266), `/*.js` (275), `/*.css` (284), `/static/*` (257). **Leave the default (HTML) behavior** on the existing no-cache policy + `htmlNoCacheFunction`.
+- Optionally set `cacheControl` on the `BucketDeployment` (line ~382) as S3-metadata belt-and-suspenders.
+
+**`infrastructure/lib/stacks/storage-stack.ts` (cdn.batbern.ch):**
+- Add a ResponseHeadersPolicy to the default behavior with `Cache-Control: public, max-age=31536000, immutable` (media keys are content-addressed UUIDs → effectively immutable). The Lambda already sets this on resized responses; this covers pass-through originals/SVGs that currently get nothing.
+
+**Compression:** PageSpeed flagged "No compression applied" on the document despite `compress:true`. After deploy, `curl -sI` the HTML and an asset and confirm `content-encoding: br|gzip`; if HTML is uncompressed, investigate the `htmlNoCacheFunction` / content-type (likely a non-issue once asset headers land, but verify).
+
+- Tighten CSP `font-src`/`style-src` to drop Google Fonts origins (safe now that Phase 3 self-hosts).
+- Add/extend CDK unit tests (`infrastructure/test/unit/frontend-stack.test.ts`, `storage-stack.test.ts`) asserting the `Cache-Control` custom header on static behaviors and the no-cache HTML behavior.
+
+**Verify:** `npm run diff:staging` reviewed before deploy; post-deploy `curl -sI https://www.batbern.ch/assets/index-*.js` shows `cache-control: public, max-age=31536000, immutable`; HTML still `no-cache`; `curl -sI https://cdn.batbern.ch/<media>` shows immutable; repeat-visit PageSpeed transfer drops ~5.6 MiB.
+
+---
+
+## Overall Verification
+
+- **Per phase:** `cd web-frontend && npm run build && npm run lint && npm run type-check`; run `@smoke` before merge (`scripts/ci/run-playwright-tests.sh staging --scope smoke`) — staging gate auto-rollback makes this mandatory.
+- **End-to-end:** re-run PageSpeed on `https://batbern.ch/` (mobile). Targets: Performance 80+, LCP < 2.5s, CLS < 0.1, TBT < 200ms. Compare first-visit vs repeat-visit transfer (Phase 6 win).
+- **Bundle:** record `rollup-plugin-visualizer` before/after sizes in the plan doc.
+- **Doc drift:** per `CLAUDE.md`, any infra/behavior change consults `.github/doc-drift-mappings.yml`; pure perf refactors get `[no-doc]`.
+
+## Critical Files
+
+| File | Phase |
+|---|---|
+| `web-frontend/src/utils/cdnImage.ts` (new) | 1 |
+| `web-frontend/src/components/public/Hero/HeroSection.tsx` | 1 |
+| `web-frontend/src/components/public/Event/SpeakerDisplay.tsx` | 1 |
+| `web-frontend/src/components/public/Partners/PartnerShowcaseCard.tsx` | 1,2 |
+| `web-frontend/src/pages/public/HomePage.tsx` | 1,2,5 |
+| `web-frontend/src/components/public/Navigation/PublicNavigation.tsx` + AppHeader/MobileDrawer | 2 |
+| `web-frontend/index.html` | 3,5 |
+| `web-frontend/src/index.css`, `tailwind.config.js`, MUI theme, `src/i18n/config.ts` | 3 |
+| `web-frontend/vite.config.ts` (manualChunks, PWA caching, visualizer) | 3,4 |
+| `web-frontend/src/App.tsx` (lazy auth routes) | 4 |
+| `infrastructure/lib/stacks/frontend-stack.ts` | 6 |
+| `infrastructure/lib/stacks/storage-stack.ts` | 6 |
+| `infrastructure/test/unit/{frontend,storage}-stack.test.ts` | 6 |
+| `infrastructure/lib/lambda/image-resize/index.ts` (reference only — no change) | 1 |

@@ -45,6 +45,7 @@ import { RegistrationStatusBanner } from '@/components/public/RegistrationStatus
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
 import { getHomepagePhase, getSectionVisibility } from './homePagePhase';
+import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
@@ -315,8 +316,13 @@ const HomePage = () => {
               {eventPhotos.map((photo) => (
                 <img
                   key={photo.id}
-                  src={photo.displayUrl}
+                  src={
+                    buildCdnImageUrl(photo.displayUrl, { w: 512, h: 384, fit: 'cover' }) ??
+                    photo.displayUrl
+                  }
                   alt={photo.filename || 'BATbern event photo'}
+                  loading="lazy"
+                  decoding="async"
                   className="rounded-lg object-cover h-48 w-64 shrink-0"
                 />
               ))}
