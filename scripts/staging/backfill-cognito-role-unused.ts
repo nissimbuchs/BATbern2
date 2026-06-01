@@ -48,6 +48,42 @@ const CONFIRM_PHRASE = 'backfill unused';
 const execute = process.argv.includes('--execute');
 const dryRun = !execute;
 
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Stamp custom:role='UNUSED' on one user, retrying on Cognito throttling. A large pool
+ * can exceed the AdminUpdateUserAttributes request-rate quota; without backoff the
+ * throttled users would be tallied as permanent failures and skipped. Re-tries up to
+ * `maxRetries` times with exponential backoff (capped at 2s); non-throttle errors and
+ * exhausted retries propagate to the caller, which tallies them as failed.
+ */
+async function updateWithRetry(
+  client: CognitoIdentityProviderClient,
+  userPoolId: string,
+  username: string,
+  maxRetries = 5
+): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await client.send(
+        new AdminUpdateUserAttributesCommand({
+          UserPoolId: userPoolId,
+          Username: username,
+          UserAttributes: [{ Name: 'custom:role', Value: SENTINEL_VALUE }],
+        })
+      );
+      return;
+    } catch (error) {
+      const name = (error as { name?: string }).name ?? '';
+      const throttled = name === 'TooManyRequestsException' || name === 'ThrottlingException';
+      if (!throttled || attempt >= maxRetries) {
+        throw error;
+      }
+      await sleep(Math.min(2000, 100 * 2 ** attempt));
+    }
+  }
+}
+
 /**
  * Resolve the Cognito User Pool ID from the CloudFormation stack output.
  */
@@ -173,13 +209,7 @@ async function main() {
       continue;
     }
     try {
-      await client.send(
-        new AdminUpdateUserAttributesCommand({
-          UserPoolId: userPoolId,
-          Username: u.Username,
-          UserAttributes: [{ Name: 'custom:role', Value: SENTINEL_VALUE }],
-        })
-      );
+      await updateWithRetry(client, userPoolId, u.Username);
       updated++;
       if (updated % 25 === 0) {
         console.log(`   … ${updated}/${toUpdate.length} updated`);

@@ -167,7 +167,7 @@ describe('AuthService', () => {
       // Story 12.1: company is no longer sourced from the token (custom:companyId
       // dropped from extraction). AuthContext.hydrateUserFromDb fills it from /users/me.
       expect(result.user?.companyId).toBeUndefined();
-      // preferences defaults to an empty object at extraction; hydration fills it.
+      // preferences defaults to a complete object at extraction; hydration overrides it.
       expect(result.user?.preferences).toBeDefined();
       expect(result.accessToken).toBeDefined();
     });
@@ -547,8 +547,12 @@ describe('AuthService', () => {
       expect(user).toBeDefined();
       // companyId NOT read from the token claim
       expect(user?.companyId).toBeUndefined();
-      // preferences NOT read from the token claim — defaulted to empty (no language)
-      expect(user?.preferences?.language).toBeUndefined();
+      // preferences NOT read from the token claim — extraction returns the COMPLETE
+      // default object (language 'en', theme 'light'), NOT the token's 'fr'/'dark'.
+      // Asserting the default value (rather than undefined) proves the token claim was
+      // not sourced AND that the UserPreferences type contract holds before hydration.
+      expect(user?.preferences?.language).toBe('en');
+      expect(user?.preferences?.theme).toBe('light');
       // identity + authorization preserved
       expect(user?.username).toBe('jane.doe');
       expect(user?.role).toBe('speaker');

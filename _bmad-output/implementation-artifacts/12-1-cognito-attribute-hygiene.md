@@ -1,6 +1,6 @@
 # Story 12.1: Cognito Attribute Hygiene (SSO PR 0)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -221,3 +221,17 @@ Claude Opus 4.8 (1M context) — bmad-dev-story, 2026-05-31.
 | Date | Change |
 |---|---|
 | 2026-05-31 | Story 12.1 implemented (Cognito attribute hygiene, SSO PR 0). FE sources company/preferences from `/users/me`; gateway/CUMS/FE stop emitting/reading `custom:companyId`; `custom:role` dropped from client readAttributes + `'UNUSED'` sentinel (backfill script + post-confirmation + CUMS adminCreateUser). Docs updated. Also fixed 14 pre-existing infra test failures (post-confirmation mock drift ×13 + company-management least-privilege assertion ×1) flagged during verification. All layers green. Status → review. |
+| 2026-06-01 | Code review (bmad-code-review, 3 adversarial layers + auditor). 1 Critical + 4 hardening patches applied, 1 deferred (pre-existing), noise dismissed. All 8 ACs confirmed IMPLEMENTED. Status → done. See Review Findings below. |
+
+## Review Findings
+
+_Code review 2026-06-01 (Claude Opus 4.8 1M, bmad-code-review — Blind Hunter + Edge Case Hunter + Acceptance Auditor). All `patch` items applied this pass (user pre-authorized "fix all issues"). Verification re-run: frontend type-check + lint clean, vitest 39 passed; infra jest 357 passed (0 fail, +1 new test); backfill esbuild transpile clean._
+
+- [x] **[Review][Patch][Critical] PostConfirmation Lambda missing `cognito-idp:AdminUpdateUserAttributes` IAM grant** — `infrastructure/lib/constructs/cognito-user-sync-triggers.ts`. The handler's `AdminUpdateUserAttributesCommand` (`post-confirmation.ts:409`) had no IAM grant; because the sentinel write is deliberately non-blocking, the `AccessDeniedException` would be silently swallowed and AC6's **self-registered** chokepoint would never actually stamp `custom:role='UNUSED'` in prod (handler unit tests mask it — they mock the Cognito client). Caught independently by Blind Hunter + Edge Case Hunter. **Fix:** added an explicit `AdminUpdateUserAttributes` PolicyStatement to the post-confirmation trigger role (wildcard `userpool/*` resource to avoid the addTrigger circular dependency). New guard test `infrastructure/test/unit/cognito-user-sync-triggers.test.ts`.
+- [x] **[Review][Patch][Med] `preferences = {} as UserPreferences` violated the type contract** — `web-frontend/src/services/auth/authService.ts:432`. On the no-preferences / failed-`/users/me` path the runtime `preferences` stayed `{}` while the type requires all fields — a latent landmine for any future `user.preferences.notifications`/`.language` consumer. **Fix:** extraction now defaults to a COMPLETE `UserPreferences` object (lang `en`, theme `light`, default notifications/privacy); hydration overrides with DB values when present. Test updated to assert defaults (proving the token claim is still not sourced).
+- [x] **[Review][Patch][Low] Backfill script had no throttle/backoff** — `scripts/staging/backfill-cognito-role-unused.ts`. Back-to-back `AdminUpdateUserAttributes` calls; throttled users were tallied `failed` and skipped. **Fix:** `updateWithRetry` retries `TooManyRequestsException`/`ThrottlingException` with capped exponential backoff.
+- [x] **[Review][Patch][Low] `cognito-stack.test.ts` ReadAttributes used `toContain`, not exact set** — strengthened to assert the EXACT custom-attribute set (`custom:companyId` + `custom:preferences` only), matching the stricter exact-array standard in `company-management-stack.test.ts`, so a re-added/misspelled `custom:role` fails the test.
+- [x] **[Review][Patch][Low] Backend locale cast into the 4-locale FE union without validation** — `web-frontend/src/contexts/AuthContext.tsx`. **Fix:** added `normalizeLanguage` to coerce out-of-union backend locales (rm/es/fi/nl/ja/…) to the prior value then `en`.
+- [x] **[Review][Defer] 401 from `/users/me` during hydration redirects to `/login`** [`web-frontend/src/contexts/AuthContext.tsx` + `apiClient.ts`] — deferred, **pre-existing** (the global 401 interceptor + `getUserProfile` hydration both predate 12.1; 12.1 only widens hydration's blast radius). Not introduced by this story.
+
+**Dismissed as noise (by-design / intentional / documented):** theme→`light` coercion (FE type only supports light/dark); `UserContext.companyId` field retained (story explicitly allows it — referenced by test builders, no live reader); scope items folded into the commit (`build-infrastructure` CI gate, `VenueCoordinationService` checkstyle, pre-existing test fixes — all documented in the commit body and deliberate).

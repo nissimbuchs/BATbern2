@@ -92,9 +92,11 @@ describe('CognitoStack Tests', () => {
     const attrs = readAttrs.asArray();
     expect(attrs).toContain('email');
     expect(attrs).toContain('email_verified');
-    expect(attrs).toContain('custom:companyId');
-    expect(attrs).toContain('custom:preferences');
-    expect(attrs).not.toContain('custom:role');
+    // Assert the EXACT custom-attribute set (not just presence) so a re-added or
+    // misspelled custom:role — or any unexpected custom attribute — fails this test,
+    // matching the stricter exact-set standard used in company-management-stack.test.ts.
+    const customAttrs = attrs.filter((a: string) => a.startsWith('custom:')).sort();
+    expect(customAttrs).toEqual(['custom:companyId', 'custom:preferences']);
   });
 
   // Test 1.4: should_validateCompanyIdAttribute_when_userSignsUp

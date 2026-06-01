@@ -429,7 +429,18 @@ class AuthService {
     // no longer sourced from the token. `AuthContext.hydrateUserFromDb` fills `companyId`
     // + `preferences` from GET /users/me. The token carries only identity (sub, email) +
     // authorization (custom:role, custom:username).
-    const preferences = {} as UserPreferences;
+    //
+    // Default to a COMPLETE UserPreferences object (not `{}`): the type requires all
+    // fields and downstream consumers read `preferences.language`/`.theme` directly, so
+    // the contract must hold even when DB hydration is skipped (no `/users/me`
+    // preferences row) or fails transiently. Hydration overrides these with the DB
+    // values when available.
+    const preferences: UserPreferences = {
+      language: 'en',
+      theme: 'light',
+      notifications: { email: true, sms: false, push: true },
+      privacy: { showProfile: true, allowMessages: true },
+    };
 
     // Extract roles from custom:role claim (singular)
     // Format: "ORGANIZER,SPEAKER" -> ['organizer', 'speaker']

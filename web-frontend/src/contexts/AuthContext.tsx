@@ -72,6 +72,22 @@ export const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
  *
  * Silently no-ops on any failure, preserving the token-derived user as-is.
  */
+/**
+ * Coerce a backend locale to the frontend `UserPreferences.language` union. The backend
+ * `UserPreferences` enum carries more locales (rm/es/fi/nl/ja/…) than the frontend
+ * 4-locale union, so a blind cast would put an out-of-union value into a typed field.
+ * Values outside the union fall back to the prior value, then 'en'.
+ */
+const FE_LANGUAGES: readonly UserContext['preferences']['language'][] = ['en', 'de', 'fr', 'it'];
+function normalizeLanguage(
+  lang: string | undefined,
+  fallback: UserContext['preferences']['language'] = 'en'
+): UserContext['preferences']['language'] {
+  return (FE_LANGUAGES as readonly string[]).includes(lang ?? '')
+    ? (lang as UserContext['preferences']['language'])
+    : fallback;
+}
+
 async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
   try {
     const profile = await getUserProfile(['roles', 'company', 'preferences']);
@@ -107,9 +123,7 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
       hydrated = {
         ...hydrated,
         preferences: {
-          language: (p.language ??
-            hydrated.preferences?.language ??
-            'en') as UserContext['preferences']['language'],
+          language: normalizeLanguage(p.language, hydrated.preferences?.language ?? 'en'),
           theme: p.theme === 'dark' ? 'dark' : 'light',
           notifications: {
             email: p.emailNotifications ?? true,
