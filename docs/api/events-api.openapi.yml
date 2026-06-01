@@ -6985,6 +6985,15 @@ components:
           nullable: true
           description: Story 10.11 — registrationCapacity - confirmedCount. Null when registrationCapacity is null (unlimited).
           example: 18
+        realAttendeeCount:
+          type: integer
+          description: |
+            Count of *real* (self-registered) attendees in an active status — i.e. registrations
+            WITHOUT an `autoRegisteredFrom` metadata marker. Excludes programmatic enrollments
+            (organizers/partners auto-enrolled at event creation, and auto-registered speakers).
+            An event is deletable only when this is 0 (deleteEvent returns 409 otherwise); the
+            organizer UI uses it to enable/disable the Delete button.
+          example: 0
         organizerUsername:
           type: string
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'

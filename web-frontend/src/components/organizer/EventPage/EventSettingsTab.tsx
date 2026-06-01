@@ -625,7 +625,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               <Typography variant="body2" color="text.secondary">
                 {t(
                   'eventPage.settings.deleteEventDesc',
-                  'Permanently removes event (only if no registrations)'
+                  'Permanently removes event (only if no attendee registrations)'
                 )}
               </Typography>
             </Box>
@@ -634,17 +634,17 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               color="error"
               startIcon={<DeleteIcon />}
               onClick={() => setDeleteDialogOpen(true)}
-              disabled={(event.currentAttendeeCount || 0) > 0}
+              disabled={(event.realAttendeeCount || 0) > 0}
             >
               {t('eventPage.settings.deleteEvent', 'Delete Event')}
             </Button>
           </Stack>
 
-          {(event.currentAttendeeCount || 0) > 0 && (
+          {(event.realAttendeeCount || 0) > 0 && (
             <Alert severity="info">
               {t(
                 'eventPage.settings.cannotDelete',
-                'Cannot delete event with registrations. Cancel the event instead.'
+                'Cannot delete event with attendee registrations. Cancel the event instead.'
               )}
             </Alert>
           )}

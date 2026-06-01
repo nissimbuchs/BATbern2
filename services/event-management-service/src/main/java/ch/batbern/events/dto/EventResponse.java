@@ -66,6 +66,7 @@ public class EventResponse {
     private Integer confirmedCount;       // active registrations (registered + confirmed)
     private Integer waitlistCount;        // registrations with status=waitlist
     private Integer spotsRemaining;       // null when registrationCapacity is null
+    private Integer realAttendeeCount;    // active, non-programmatic attendees (drives delete-guard / UI button)
 
     // Optional metrics fields (populated with include=metrics)
     private Integer confirmedSpeakersCount;

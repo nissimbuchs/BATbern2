@@ -16,7 +16,7 @@ auth:bearer {
 
 body:json {
   {
-    "title": "Cloud Native Architecture {{timestamp}}",
+    "title": "bruno-test-topic-{{timestamp}}",
     "description": "Exploring cloud-native patterns and best practices for modern applications",
     "category": "technical"
   }
@@ -41,7 +41,13 @@ tests {
   test("should return created topic with initial staleness score 100 - Story 5.2 AC8", function() {
     const topic = res.getBody();
     expect(topic.topicCode).to.be.a('string');
-    expect(topic.title).to.include('Cloud Native Architecture');
+    // Canonical test-data prefix (bruno-tests/README.md): the title slugifies to a
+    // topic_code starting with `bruno-test-topic-`, so the 00a/99a prefix sweeps
+    // (LIKE 'bruno-test-topic-%') actually delete it. The old title "Cloud Native
+    // Architecture <ts>" slugified to `cloud-native-architecture-<ts>` which NO sweep
+    // matched → one leaked topic per run accumulated on staging/prod (fixed 2026-05-31).
+    expect(topic.topicCode).to.match(/^bruno-test-topic-/);
+    expect(topic.title).to.include('bruno-test-topic-');
     expect(topic.description).to.be.a('string');
     expect(topic.category).to.equal('technical');
     expect(topic.stalenessScore).to.equal(100); // New topics have max staleness (safe to use)

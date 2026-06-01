@@ -22,6 +22,7 @@ import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
+import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -1278,7 +1279,17 @@ public class EventController {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-        // Delete event
+        // Guard: only block deletion for *real* (self-registered) attendees. Programmatic
+        // registrations — organizers/partners auto-enrolled at creation and auto-registered
+        // speakers — never block deletion, otherwise no event would ever be deletable (every
+        // event auto-enrols ~15 stakeholders). Real attendees → 409, cancel the event instead.
+        long realAttendees = registrationRepository.countRealAttendees(
+                event.getId(), Registration.ACTIVE_STATUSES);
+        if (realAttendees > 0) {
+            throw new EventHasRealRegistrationsException(eventCode, realAttendees);
+        }
+
+        // Delete event (cascades programmatic registrations, sessions, etc. via FK ON DELETE CASCADE)
         eventRepository.deleteById(event.getId());
 
         return ResponseEntity.noContent().build();
@@ -1396,8 +1407,13 @@ public class EventController {
         long confirmed = registrationRepository.countByEventIdAndStatusIn(
                 eventId, Registration.CONFIRMED_STATUSES);
         long waitlisted = registrationRepository.countByEventIdAndStatus(eventId, "waitlist");
+        // Real attendees exclude programmatic enrollments (organizers/partners/speakers); drives
+        // the organizer Delete-button enable-state and mirrors the deleteEvent 409 guard.
+        long realAttendees = registrationRepository.countRealAttendees(
+                eventId, Registration.ACTIVE_STATUSES);
         response.setConfirmedCount((int) confirmed);
         response.setWaitlistCount((int) waitlisted);
+        response.setRealAttendeeCount((int) realAttendees);
         if (response.getRegistrationCapacity() != null) {
             response.setSpotsRemaining((int) (response.getRegistrationCapacity() - confirmed));
         }
