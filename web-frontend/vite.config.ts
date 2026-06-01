@@ -224,6 +224,20 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
+          // Tone.js + its audio deps run AudioContext capability tests at module
+          // init (standardized-audio-context's constant-source-node probe). Force
+          // -ing them into the eager `vendor` chunk made those probes run on every
+          // page (incl. the public homepage) → a "AudioContext was not allowed to
+          // start" autoplay-policy warning before any user gesture. Return
+          // undefined so Rollup leaves them in the chunk created by the dynamic
+          // import('tone') in useBlobSounds — loaded only on the organizer blob
+          // page, after a click. (Shared tslib/@babel-runtime stay in vendor.)
+          if (
+            id.includes('/node_modules/tone/') ||
+            id.includes('standardized-audio-context') ||
+            id.includes('automation-events')
+          )
+            return undefined;
           // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
           // <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" /> from vite-plugin-static-copy.
           // Bundling its IIFE modules causes Vite/Rollup to reorder them so plugins
