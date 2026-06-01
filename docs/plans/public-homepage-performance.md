@@ -102,6 +102,12 @@ Smaller critical JS → React mounts sooner → earlier hero discovery (helps LC
 
 ## Phase 6 — Infra: viewer `Cache-Control` + verify compression (CDK, prod deploy, LAST)
 
+**Status: ✅ CODE DONE — DEPLOY PENDING.** `frontend-stack.ts`: extracted the shared `securityHeadersBehavior` + `baseCustomHeaders` into consts, kept the existing `SecurityHeaders` policy for HTML/SEO (no Cache-Control → index.html stays uncached), and added a second `StaticAssetsHeaders` policy (security headers + `Cache-Control: public, max-age=31536000, immutable`) attached to `/assets/*`, `/*.js`, `/*.css`, `/static/*` only. `storage-stack.ts`: added a `ContentCacheHeaders` ResponseHeadersPolicy with the same immutable Cache-Control on the CDN default behavior (covers pass-through originals/SVGs the resize Lambda doesn't touch). CDK `tsc` compiles; **20 stack tests pass** incl. 5 new assertions (Cache-Control present on static-assets + CDN policies, absent on the HTML policy, 2 distinct frontend policies).
+
+**Deferred to keep this risky deploy minimal:** (1) CSP `font-src`/`style-src` tightening — leaving the now-unused Google Fonts origins is strictly safe (nothing requests them); removing risks a CSP regression that could trigger auto-rollback, not worth it in the same deploy. (2) `BucketDeployment` `cacheControl` — redundant since the ResponseHeadersPolicy overrides at CloudFront and the bucket is OAC-locked (never served directly).
+
+**⚠️ Deploy is a real prod CloudFront update (layer-based, ~20–30 min) and not yet run.** Before deploy: review `cd infrastructure && npm run diff:staging`. After deploy verify with the curl checks below.
+
 Recovers the 5,635 KiB repeat-visit waste. Riskiest (touches live CloudFront) → ships last, alone.
 
 **`infrastructure/lib/stacks/frontend-stack.ts`:**
