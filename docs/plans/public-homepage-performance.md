@@ -49,6 +49,8 @@ The single biggest win and zero infra risk — the Lambda + CDN cache policy alr
 
 ## Phase 2 — CLS fixes (frontend, low risk)
 
+**Status: ✅ DONE.** Added explicit `width`/`height` (SVG intrinsic ratio ≈ 2.363:1) to the BATbern logo `<img>` in `PublicNavigation` (189×80), `AppHeader` (95×40), `MobileDrawer` (85×36), and to the `TestimonialCard` avatar (48×48 + `loading="lazy"`). Partner-card logos already have space reserved by the fixed-height card (`max-h-32` inside `h-48`), so no fixed dims (variable aspect ratios). The dominant remaining CLS is web-font swap reflow → addressed in Phase 3 via self-host + `size-adjust`. type-check clean; 82 nav/testimonial tests green.
+
 CLS 0.529 comes from images without intrinsic dimensions and late content pop-in.
 
 - Add explicit `width`/`height` to logo `<img>`s lacking them: `PublicNavigation.tsx:75` (`/BATbern_color_logo.svg`), `AppHeader.tsx`, `MobileDrawer.tsx`, `PartnerShowcaseCard.tsx`, `TestimonialCard.tsx` avatar.
