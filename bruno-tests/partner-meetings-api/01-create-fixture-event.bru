@@ -17,7 +17,7 @@ auth:bearer {
 script:pre-request {
   const now = Date.now();
   // Keep eventNumber in the same disposable band the other collections use.
-  const eventNumber = (now % 1000000) + 940000;
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000); // reserved test range (>=10000), swept by ems/events_by_number (event-fixture leak fix)
   bru.setVar("meetingTestTimestamp", now);
   bru.setVar("meetingEventNumber", eventNumber);
 }

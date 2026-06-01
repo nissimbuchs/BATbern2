@@ -1,0 +1,54 @@
+meta {
+  name: Posttest cleanup — force-delete fixture events by reserved number range (event-fixture leak fix)
+  type: http
+  seq: 101
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "events_by_number",
+    "prefix": "10000"
+  }
+}
+
+tests {
+  test("posttest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, events deletion count is reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.events).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Event-fixture leak fix (2026-06-01). The workflow fixture (00b) creates an event with a
+  SERVER-generated BATbern{N} code, and 13-create-registration.bru stamps a genuine
+  anonymous attendee on it. That makes the per-test DELETE (98-delete-fixture-event.bru)
+  return 409 (EventController real-attendee guard) — which 98 tolerates, so the event
+  leaks forever, unreachable by the BRUNO-TEST- prefix sweep (99-posttest-cleanup.bru).
+
+  This sweep force-deletes ALL events with event_number >= 10000 (the reserved test range
+  every fixture now uses) via a native repository delete that bypasses BOTH the workflow
+  state machine and the real-attendee guard. Cascades registrations/sessions/speaker_pool.
+  Mirrored in the Playwright global-teardown (SWEEP_TARGETS) and admin-cleanup-api/14.
+}

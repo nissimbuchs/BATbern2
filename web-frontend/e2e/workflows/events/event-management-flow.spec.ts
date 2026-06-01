@@ -160,7 +160,7 @@ async function apiRequest(
  * Helper: Create test event via API
  */
 async function createTestEvent(page: Page, title: string = 'E2E Test Event'): Promise<Event> {
-  const eventNumber = Math.floor(Math.random() * 10000) + 1000;
+  const eventNumber = Math.floor(Math.random() * 90000) + 10000; // reserved test range (>=10000), swept by ems/events_by_number
   const response = await apiRequest(page, '/api/v1/events', {
     method: 'POST',
     body: JSON.stringify({
@@ -375,7 +375,7 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
 test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
   test('should_createEvent_when_validDataProvided', async ({ page }) => {
     // AC3: Create event
-    const eventNumber = Math.floor(Math.random() * 10000) + 1000;
+    const eventNumber = Math.floor(Math.random() * 90000) + 10000; // reserved test range (>=10000), swept by ems/events_by_number
     const response = await apiRequest(page, '/api/v1/events', {
       method: 'POST',
       body: JSON.stringify({

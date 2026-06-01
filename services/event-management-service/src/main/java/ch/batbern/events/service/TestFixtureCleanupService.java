@@ -58,7 +58,35 @@ public class TestFixtureCleanupService {
     public enum CleanupEntityType {
         EVENTS(Pattern.compile("^BRUNO-TEST-$")),
         SESSIONS(Pattern.compile("^bruno-test-session-$")),
-        TOPICS(Pattern.compile("^bruno-test-topic-$"));
+        TOPICS(Pattern.compile("^bruno-test-topic-$")),
+        /**
+         * Force-deletes test events by RESERVED EVENT-NUMBER RANGE rather than by
+         * {@code event_code} prefix. This is the reliable discriminator for events whose
+         * {@code event_code} is SERVER-GENERATED ({@code BATbern{event_number}}) and therefore
+         * cannot be reached by the {@link #EVENTS} {@code BRUNO-TEST-%} prefix sweep — i.e.
+         * essentially every event a fixture creates via {@code POST /events}, since the code
+         * is derived from the supplied {@code event_number}, not a canonical prefix.
+         *
+         * <p>Convention (issue: event-fixture leak, 2026-06-01): every test fixture creates
+         * events with {@code event_number} in the range {@code [10000, 99999]} (random). Real
+         * BATbern events are numbered sequentially and sit far below this (currently ≤ 60; the
+         * conference will never reach 10 000 editions), so {@code event_number >= 10000} is an
+         * unambiguous, collision-proof test marker.
+         *
+         * <p>The {@code prefix} request field carries the literal threshold sentinel
+         * {@code "10000"}, validated by the bound regex {@code ^10000$} — the request body
+         * CANNOT supply a lower (more dangerous) threshold; only the one constant we recognize.
+         * The actual deletion uses {@link #TEST_EVENT_NUMBER_THRESHOLD}.
+         *
+         * <p>Like {@link #EVENTS}, the delete is a native {@code DELETE FROM events WHERE
+         * event_number >= …} that BYPASSES the workflow-state machine AND the real-attendee
+         * delete-guard ({@code EventController} returns 409 when an event has a non-auto
+         * registration). That guard is exactly why these events leak through the normal delete
+         * path: a registration test stamps a genuine anonymous attendee on the fixture event, so
+         * the per-test {@code DELETE /events/{code}} teardown gets 409 and silently skips it.
+         * The repository-level force delete is the only safe teardown for such events.
+         */
+        EVENTS_BY_NUMBER(Pattern.compile("^10000$"));
 
         private final Pattern allowedPrefix;
 
@@ -83,11 +111,22 @@ public class TestFixtureCleanupService {
             } catch (IllegalArgumentException ex) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Unknown entityType: '" + value + "'. Allowed: events, sessions, topics"
+                        "Unknown entityType: '" + value
+                                + "'. Allowed: events, sessions, topics, events_by_number"
                 );
             }
         }
     }
+
+    /**
+     * Event numbers at or above this value are RESERVED for test fixtures (issue:
+     * event-fixture leak, 2026-06-01). Real BATbern events are numbered sequentially and will
+     * never approach this, so {@code event_number >= 10000} is an unambiguous test marker that
+     * the {@link CleanupEntityType#EVENTS_BY_NUMBER} sweep force-deletes. Kept in lock-step
+     * with the fixtures' generation range ({@code 10000 + random(90000)}) and the
+     * {@code SWEEP_TARGETS} entry in {@code web-frontend/e2e/helpers/test-fixtures-cleanup.ts}.
+     */
+    public static final int TEST_EVENT_NUMBER_THRESHOLD = 10000;
 
     private final TestFixtureCleanupRepository repository;
 
@@ -134,6 +173,15 @@ public class TestFixtureCleanupService {
                 int topics = repository.deleteTopicsByTopicCodeLike(likePattern);
                 counts.put("topics", topics);
                 // Cascades: topic_usage_history.
+                break;
+            case EVENTS_BY_NUMBER:
+                // Force-delete by reserved event-number range — reaches server-coded
+                // (BATbern{N}) test events the prefix sweep can't, and bypasses the
+                // real-attendee 409 guard that makes registration-fixture events
+                // undeletable via the normal path. Same cascade chain as EVENTS.
+                int eventsByNumber =
+                        repository.deleteEventsByEventNumberGte(TEST_EVENT_NUMBER_THRESHOLD);
+                counts.put("events", eventsByNumber);
                 break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);
