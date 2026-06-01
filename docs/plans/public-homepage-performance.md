@@ -49,7 +49,9 @@ The single biggest win and zero infra risk — the Lambda + CDN cache policy alr
 
 ## Phase 2 — CLS fixes (frontend, low risk)
 
-**Status: ✅ DONE.** Added explicit `width`/`height` (SVG intrinsic ratio ≈ 2.363:1) to the BATbern logo `<img>` in `PublicNavigation` (189×80), `AppHeader` (95×40), `MobileDrawer` (85×36), and to the `TestimonialCard` avatar (48×48 + `loading="lazy"`). Partner-card logos already have space reserved by the fixed-height card (`max-h-32` inside `h-48`), so no fixed dims (variable aspect ratios). The dominant remaining CLS is web-font swap reflow → addressed in Phase 3 via self-host + `size-adjust`. type-check clean; 82 nav/testimonial tests green.
+**Status: ✅ DONE.** Added explicit `width`/`height` (SVG intrinsic ratio ≈ 2.363:1) to the BATbern logo `<img>` in `PublicNavigation` (189×80), `AppHeader` (95×40), `MobileDrawer` (85×36), and to the `TestimonialCard` avatar (48×48 + `loading="lazy"`). Partner-card logos already have space reserved by the fixed-height card (`max-h-32` inside `h-48`), so no fixed dims (variable aspect ratios). type-check clean; 82 nav/testimonial tests green.
+
+**Phase 2b — CLS root cause (added 2026-06-01).** A `LayoutShift` PerformanceObserver against the production preview (mobile viewport) showed the entire CLS 0.529 was a **single 0.475 shift of the `<footer>`** at ~2.3s — NOT the images sized above. Cause: `HomePage` renders a short `py-24` loading placeholder, so the footer sits ~300px down; when the event data resolves and the real `min-h-screen` hero + sections mount, the footer is shoved far down. Fix: give the loading and error states `min-h-screen` so the footer starts below the fold where it lands. **Re-measured: CLS 0.475 → 0.000.** This is the dominant CLS fix; the image-dimension work above is secondary hardening.
 
 CLS 0.529 comes from images without intrinsic dimensions and late content pop-in.
 
