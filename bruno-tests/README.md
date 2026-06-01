@@ -75,6 +75,21 @@ ones above.
 | `topics` | `bruno-test-topic-` | `^bruno-test-topic-$` | `bruno-test-topic-%` | `bruno-test-topic-1779647142000` |
 | `partners` | `brtest` | `^brtest$` | `brtest%` | `brtest142000` |
 | `users_by_email` † | `@e2e.batbern.invalid` | `^@e2e\.batbern\.invalid$\|^@batbern-test\.ch$\|^zaproxy@example\.com$` | `%@e2e.batbern.invalid` | `test.attendee@e2e.batbern.invalid` (username `test.attendee`) |
+| `events_by_number` ‡ | `10000` (threshold sentinel) | `^10000$` | `event_number >= 10000` | `BATbern42137` (event_number `42137`) |
+
+> ‡ **`events_by_number` is a force-delete by RESERVED EVENT-NUMBER RANGE**
+> (event-fixture leak fix, 2026-06-01). Every test fixture creates events with
+> `event_number` in `[10000, 99999]` (random); real BATbern events are numbered
+> sequentially (≤ 60 today and the conference will never reach 10 000 editions),
+> so `event_number >= 10000` is an unambiguous test marker. This is the ONLY
+> teardown that reaches events whose `event_code` is **server-generated**
+> (`BATbern{event_number}`, so the `events` `BRUNO-TEST-%` prefix sweep misses
+> them) AND that **bypasses the real-attendee 409 delete-guard** — a registration
+> fixture stamps a genuine anonymous attendee on its event, making the normal
+> `DELETE /events/{code}` return 409, which the per-test teardown tolerates →
+> silent leak. The `prefix` field carries the locked threshold sentinel `"10000"`
+> (a lower value is rejected, so a request can't widen the delete to real events).
+> Native repository delete; cascades registrations/sessions/speaker_pool.
 
 > † **`users_by_email` is the ONE suffix-match exception** (issue #725). The
 > server matches `LIKE '%' || value` (suffix), not `value || '%'` (prefix),

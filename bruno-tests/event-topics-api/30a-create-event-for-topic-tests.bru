@@ -17,7 +17,7 @@ auth:bearer {
 script:pre-request {
   // Generate unique eventNumber that fits in Java int32
   const now = Date.now();
-  const eventNumber = (now % 1000000) + 900000;
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000); // reserved test range (>=10000), swept by ems/events_by_number (event-fixture leak fix)
 
   bru.setVar("testTimestamp2", now);
   bru.setVar("eventNumber2", eventNumber);

@@ -62,6 +62,25 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Event, UUID>
     int deleteEventsByEventCodeLike(@Param("eventCodePattern") String eventCodePattern);
 
     /**
+     * Force-delete events whose {@code event_number} is at or above the reserved test
+     * threshold (see {@code TestFixtureCleanupService.TEST_EVENT_NUMBER_THRESHOLD}). Reaches
+     * server-coded ({@code BATbern{event_number}}) test events that the {@code event_code}
+     * prefix sweep cannot, and — being a native DELETE — bypasses BOTH the workflow-state
+     * machine AND the real-attendee delete-guard. Same FK cascade chain as
+     * {@link #deleteEventsByEventCodeLike(String)} (event_tasks, speaker_pool + dependents,
+     * registrations, sessions + dependents, event_photos, event_teaser_images).
+     *
+     * @param threshold inclusive lower bound for {@code event_number}
+     * @return number of event rows deleted (cascade dependents not counted)
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM events WHERE event_number >= :threshold",
+            nativeQuery = true
+    )
+    int deleteEventsByEventNumberGte(@Param("threshold") int threshold);
+
+    /**
      * Delete sessions whose {@code session_slug} starts with the prefix.
      * Cascades through session_users, session_materials via FK ON DELETE CASCADE.
      *

@@ -103,9 +103,8 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
       // Per the story spec: "Seed two events E_A and E_B (or reuse one event with
       // two distinct speakers)". We reuse one event for cheaper teardown — the
       // diff is at the speaker-content level, not the event level.
-      const eventNumber = String(
-        8000 + Math.floor(Math.random() * 1000) + (Date.now() % 1000)
-      ).slice(-4);
+      // Reserved test range (>=10000), swept by ems/events_by_number (event-fixture leak fix).
+      const eventNumber = 10000 + Math.floor(Math.random() * 90000);
       const eventTitle = `E2E 11D4 Byte-Identity ${Date.now()}`;
       const eventCreate = await organizerCtx.post(`/api/v1/events`, {
         data: {

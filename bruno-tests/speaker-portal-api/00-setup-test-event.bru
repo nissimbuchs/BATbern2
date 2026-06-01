@@ -17,7 +17,7 @@ auth:bearer {
 body:json {
   {
     "title": "Speaker Portal Test Event",
-    "eventNumber": 999,
+    "eventNumber": 99001,
     "description": "Test event for speaker portal E2E tests",
     "date": "2026-06-15T18:00:00Z",
     "registrationDeadline": "2026-06-10T23:59:59Z",
@@ -41,8 +41,9 @@ tests {
       expect(event.eventCode).to.be.a('string');
       bru.setVar("speakerPortalTestEventCode", event.eventCode);
     } else {
-      // 422 means eventNumber 999 already exists - use BATbern999
-      bru.setVar("speakerPortalTestEventCode", "BATbern999");
+      // 422 means eventNumber 99001 already exists (prior run, not yet swept) - reuse it.
+      // 99001 is in the reserved test range (>=10000) so ems/events_by_number sweeps it.
+      bru.setVar("speakerPortalTestEventCode", "BATbern99001");
     }
     const eventCode = bru.getVar("speakerPortalTestEventCode");
     expect(eventCode).to.be.a('string');

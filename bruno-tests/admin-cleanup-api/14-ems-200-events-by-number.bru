@@ -1,0 +1,54 @@
+meta {
+  name: EMS cleanup — events_by_number happy path (force-delete reserved range)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "events_by_number",
+    "prefix": "10000"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.entityType: eq events_by_number
+  res.body.prefix: eq 10000
+}
+
+tests {
+  test("returns 200 and routes to EMS", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.entityType).to.equal("events_by_number");
+    expect(body.prefix).to.equal("10000");
+    expect(body.deletionCounts).to.be.an("object");
+    expect(body.deletionCounts.events).to.be.a("number");
+  });
+}
+
+docs {
+  Force-deletes every event with event_number >= 10000 (the reserved test-fixture
+  range). Unlike the events prefix sweep, this reaches server-coded BATbern{N} test
+  events AND bypasses the real-attendee 409 delete-guard — the only teardown that can
+  remove a registration-fixture event (event-fixture leak fix, 2026-06-01).
+
+  admin-cleanup-api runs FIRST in the suite, so this doubles as a pretest sweep of any
+  leftover test events from a previous run.
+}
