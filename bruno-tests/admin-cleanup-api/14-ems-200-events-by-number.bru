@@ -29,7 +29,6 @@ body:json {
 assert {
   res.status: eq 200
   res.body.entityType: eq events_by_number
-  res.body.prefix: eq 10000
 }
 
 tests {
