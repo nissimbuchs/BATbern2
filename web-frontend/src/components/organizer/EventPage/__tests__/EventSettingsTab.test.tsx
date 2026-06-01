@@ -47,13 +47,24 @@ const mockEvent: Event = {
   workflowState: 'SPEAKER_CONFIRMATION',
   organizerUsername: 'john.doe',
   currentAttendeeCount: 0,
+  realAttendeeCount: 0,
   createdAt: '2024-12-01T10:00:00Z',
   updatedAt: '2025-01-15T14:30:00Z',
 };
 
+// Real, self-registered attendees → delete must be blocked.
 const mockEventWithAttendees: Event = {
   ...mockEvent,
   currentAttendeeCount: 87,
+  realAttendeeCount: 87,
+};
+
+// Only programmatic registrations (auto-enrolled organizers/partners): total count is
+// non-zero but realAttendeeCount is 0 → delete must be ENABLED. This is the core fix.
+const mockEventProgrammaticOnly: Event = {
+  ...mockEvent,
+  currentAttendeeCount: 15,
+  realAttendeeCount: 0,
 };
 
 describe('EventSettingsTab Component (Story 5.6)', () => {
@@ -145,12 +156,25 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       expect(deleteButton).not.toBeDisabled();
     });
 
-    it('disables delete and shows warning when has attendees', () => {
+    it('disables delete and shows warning when has real attendees', () => {
       renderWithProviders(<EventSettingsTab event={mockEventWithAttendees} eventCode="BAT54" />);
 
       const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
       expect(deleteButton).toBeDisabled();
-      expect(screen.getByText(/Cannot delete event with registrations/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Cannot delete event with attendee registrations/i)
+      ).toBeInTheDocument();
+    });
+
+    it('enables delete when only programmatic registrations exist', () => {
+      // currentAttendeeCount=15 (auto-enrolled organizers/partners) but realAttendeeCount=0.
+      renderWithProviders(<EventSettingsTab event={mockEventProgrammaticOnly} eventCode="BAT54" />);
+
+      const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
+      expect(deleteButton).not.toBeDisabled();
+      expect(
+        screen.queryByText(/Cannot delete event with attendee registrations/i)
+      ).not.toBeInTheDocument();
     });
   });
 

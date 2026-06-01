@@ -97,6 +97,31 @@ public class Registration {
     public static final List<String> CAPACITY_STATUSES =
             List.of("registered", "confirmed");
 
+    /**
+     * Metadata key marking a registration as programmatic (auto-created by the system rather
+     * than self-registered by the attendee). Its value is the trigger source — one of the
+     * speaker triggers ({@code POOL_ACCEPTED}, {@code POOL_ACCEPTED_ON_BEHALF},
+     * {@code SESSION_PRIMARY_SPEAKER}, {@code SESSION_CO_SPEAKER}) or
+     * {@link #TRIGGER_STAKEHOLDER_ENROLLMENT}. A registration carrying this key is NOT counted
+     * as a real attendee and never blocks event deletion.
+     */
+    public static final String AUTO_REGISTERED_FROM_KEY = "autoRegisteredFrom";
+
+    /**
+     * {@code autoRegisteredFrom} value used by {@code RegistrationService.createInternalRegistration}
+     * when an organizer/partner is auto-enrolled at event creation (AutoEnrollmentListener).
+     */
+    public static final String TRIGGER_STAKEHOLDER_ENROLLMENT = "STAKEHOLDER_ENROLLMENT";
+
+    /**
+     * @return true if this registration was auto-created by the system (carries the
+     *     {@link #AUTO_REGISTERED_FROM_KEY} metadata marker), false if it is a real
+     *     self-registered attendee.
+     */
+    public boolean isProgrammatic() {
+        return metadata != null && metadata.containsKey(AUTO_REGISTERED_FROM_KEY);
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(columnDefinition = "UUID")

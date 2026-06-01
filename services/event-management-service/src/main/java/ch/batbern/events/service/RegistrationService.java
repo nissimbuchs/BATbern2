@@ -27,7 +27,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
@@ -534,6 +536,12 @@ public class RegistrationService {
 
         String registrationCode = generateUniqueRegistrationCode(event.getEventCode());
 
+        // Mark this as a programmatic registration so it is NOT counted as a real attendee
+        // (organizers/partners are auto-enrolled on every event — they must never block the
+        // event from being deleted; see EventController.deleteEvent + realAttendeeCount).
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put(Registration.AUTO_REGISTERED_FROM_KEY, Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
+
         Registration registration = Registration.builder()
                 .registrationCode(registrationCode)
                 .eventId(event.getId())
@@ -544,10 +552,12 @@ public class RegistrationService {
                 .attendeeCompanyId(user.getCompanyId())
                 .status("confirmed")
                 .registrationDate(Instant.now())
+                .metadata(metadata)
                 .build();
 
         registrationRepository.save(registration);
-        log.info("Auto-enrolled {} as confirmed participant for event {}", username, event.getEventCode());
+        log.info("Auto-enrolled {} as confirmed (programmatic) participant for event {}",
+                username, event.getEventCode());
         return true;
     }
 

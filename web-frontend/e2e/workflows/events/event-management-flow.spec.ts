@@ -25,6 +25,32 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { BASE_URL, API_URL } from '../../../playwright.config';
+import { cleanupByCode } from '../../helpers/test-fixtures-cleanup';
+
+/**
+ * Every event this spec creates gets a SERVER-generated `BATbern{random}` code — no canonical
+ * prefix — so the global prefix sweep (global-teardown.ts) can NEVER reach it. The only teardown
+ * path is an explicit delete-by-code. Historically this spec had none, leaking ~5 events per run
+ * to staging/prod (root-caused 2026-06-01). Every create records its code here; the file-level
+ * afterAll deletes them all. (plan §A5 "Critical caveat" — UI/server-coded events.)
+ */
+const createdEventCodes: string[] = [];
+
+function trackCreatedEvent(eventCode: string | undefined): void {
+  if (eventCode) {
+    createdEventCodes.push(eventCode);
+  }
+}
+
+test.afterAll(async () => {
+  const token = process.env.AUTH_TOKEN;
+  if (!token) {
+    return;
+  }
+  for (const eventCode of createdEventCodes) {
+    await cleanupByCode(token, eventCode);
+  }
+});
 
 // Type definitions
 interface Event {
@@ -157,7 +183,9 @@ async function createTestEvent(page: Page, title: string = 'E2E Test Event'): Pr
     throw new Error(`Failed to create test event: ${response.status} ${await response.text()}`);
   }
 
-  return response.json();
+  const event = await response.json();
+  trackCreatedEvent(event.eventCode);
+  return event;
 }
 
 // ============================================================================
@@ -368,6 +396,7 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
 
     expect(response.status).toBe(201);
     const data = await response.json();
+    trackCreatedEvent(data.eventCode);
     expect(data.eventCode).toBeDefined();
     expect(data.title).toBe('New Test Event');
   });
