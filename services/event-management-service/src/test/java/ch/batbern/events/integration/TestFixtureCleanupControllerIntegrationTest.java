@@ -3,10 +3,12 @@ package ch.batbern.events.integration;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Topic;
 import ch.batbern.events.dto.TestFixtureCleanupRequest;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,10 +84,14 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
     @Autowired
     private TopicRepository topicRepository;
 
+    @Autowired
+    private RegistrationRepository registrationRepository;
+
     @BeforeEach
     void cleanState() {
         // Tests start from a known-empty slate so deletion counts are deterministic.
         // Cascade deletes remove sessions, event_tasks, speaker_pool, registrations etc.
+        registrationRepository.deleteAll();
         eventRepository.deleteAll();
         topicRepository.deleteAll();
     }
@@ -233,6 +240,25 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
 
         @Test
+        @DisplayName("events_by_number: returns 400 when threshold sentinel is not the bound \"10000\"")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenEventsByNumberThresholdNotSentinel() throws Exception {
+            // Production-safety guard: the threshold is locked to "10000". A lower value like
+            // "100" or "56" — which would delete real events (BATbern56, …) — must be rejected.
+            for (String bad : new String[] {"100", "56", "0", "9999", "1"}) {
+                TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                        .entityType("events_by_number")
+                        .prefix(bad)
+                        .build();
+
+                mockMvc.perform(post(ENDPOINT)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(req)))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+
+        @Test
         @DisplayName("returns 400 when prefix contains wildcard chars")
         @WithMockUser(roles = {"ORGANIZER"})
         void returns400_whenWildcardPrefix() throws Exception {
@@ -331,6 +357,67 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
 
         @Test
+        @DisplayName("events_by_number: force-deletes events with event_number >= 10000, leaves real events (< 10000)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesTestEventsByNumber_preservesRealEvents() throws Exception {
+            // Given: test events in the reserved range + real events well below it.
+            // event_code is irrelevant here — these carry server-generated BATbern{N} codes,
+            // exactly the events the BRUNO-TEST- prefix sweep can't reach.
+            eventRepository.save(buildEvent("BATbern10000", 10000)); // boundary (inclusive)
+            eventRepository.save(buildEvent("BATbern50000", 50000));
+            eventRepository.save(buildEvent("BATbern99999", 99999));
+            eventRepository.save(buildEvent("BATbern56", 56));        // real
+            eventRepository.save(buildEvent("BATbern57", 57));        // real
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("events_by_number")
+                    .prefix("10000")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.events").value(3))
+                    .andExpect(jsonPath("$.entityType").value("events_by_number"))
+                    .andExpect(jsonPath("$.prefix").value("10000"));
+
+            assertThat(eventRepository.findByEventCode("BATbern10000")).isEmpty();
+            assertThat(eventRepository.findByEventCode("BATbern50000")).isEmpty();
+            assertThat(eventRepository.findByEventCode("BATbern99999")).isEmpty();
+            assertThat(eventRepository.findByEventCode("BATbern56")).isPresent();
+            assertThat(eventRepository.findByEventCode("BATbern57")).isPresent();
+        }
+
+        @Test
+        @DisplayName("events_by_number: force-deletes an event that has a REAL attendee registration (bypasses the 409 guard) and cascades it")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void forceDeletesEventWithRealRegistration_byNumber() throws Exception {
+            // This is the exact leak scenario (2026-06-01): a registration-fixture event with a
+            // genuine anonymous attendee. The normal DELETE /events/{code} returns 409
+            // (EventController.countRealAttendees > 0), so the per-test teardown silently skips
+            // it and it leaks forever. The events_by_number sweep uses a native repository delete
+            // that NEVER invokes the guard, so it removes the event AND cascades the registration.
+            Event leaked = buildEvent("BATbern99500", 99500);
+            eventRepository.save(leaked);
+            registrationRepository.save(buildRealRegistration(leaked.getId(), "real.attendee@e2e.batbern.invalid"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("events_by_number")
+                    .prefix("10000")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.events").value(1));
+
+            assertThat(eventRepository.findByEventCode("BATbern99500")).isEmpty();
+            assertThat(registrationRepository.findAll()).isEmpty(); // cascade removed the registration
+        }
+
+        @Test
         @DisplayName("accepts an event in any workflow state and force-deletes via native query")
         @WithMockUser(roles = {"ORGANIZER"})
         void deletesEventInNonInitialWorkflowState() throws Exception {
@@ -358,10 +445,15 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
     // ---------- Test data builders ----------
 
     private Event buildEvent(String eventCode) {
+        return buildEvent(eventCode, EVENT_NUMBER_SEQ.incrementAndGet());
+    }
+
+    /** Build an event with an EXPLICIT event_number — used by the events_by_number range tests. */
+    private Event buildEvent(String eventCode, int eventNumber) {
         Instant now = Instant.now();
         return Event.builder()
                 .eventCode(eventCode)
-                .eventNumber(EVENT_NUMBER_SEQ.incrementAndGet())
+                .eventNumber(eventNumber)
                 .title("Cleanup Test Event " + eventCode)
                 .date(now.plus(60, ChronoUnit.DAYS))
                 .registrationDeadline(now.plus(50, ChronoUnit.DAYS))
@@ -371,6 +463,25 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
                 .eventType(EventType.EVENING)
                 .workflowState(EventWorkflowState.CREATED)
                 .organizerUsername("test.cleanup.organizer")
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
+    /**
+     * A genuine (non-auto) attendee registration — no {@code autoRegisteredFrom} metadata, so
+     * {@code countRealAttendees} would count it and the normal DELETE would 409. The cleanup
+     * path ignores the guard entirely.
+     */
+    private Registration buildRealRegistration(UUID eventId, String email) {
+        Instant now = Instant.now();
+        return Registration.builder()
+                .registrationCode("REG-" + UUID.randomUUID())
+                .eventId(eventId)
+                .attendeeUsername("real.attendee")
+                .attendeeEmail(email)
+                .status("registered")
+                .registrationDate(now)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();

@@ -16,7 +16,7 @@ auth:bearer {
 
 script:pre-request {
   const now = Date.now() + 1;
-  const eventNumber = ((now + 1) % 1000000) + 700000;
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000); // reserved test range (>=10000), swept by ems/events_by_number (event-fixture leak fix)
 
   bru.setVar("workflowTestTimestamp", now);
   bru.setVar("workflowEventNumber", eventNumber);

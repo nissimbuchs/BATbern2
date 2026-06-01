@@ -19,7 +19,7 @@ script:pre-request {
   const now = Date.now();
 
   // Use modulo to get last 6 digits + offset = 900000-1899999 (fits in int32)
-  const eventNumber = (now % 1000000) + 900000;
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000); // reserved test range (>=10000), swept by ems/events_by_number (event-fixture leak fix)
 
   bru.setVar("testTimestamp", now);
   bru.setVar("eventNumber", eventNumber);

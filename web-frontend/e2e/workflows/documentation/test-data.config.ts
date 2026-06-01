@@ -17,7 +17,7 @@ export const testConfig = {
    * Based on actual recording from playwright-recording.ts
    */
   event: {
-    eventNumber: 942, // Will be auto-incremented in test to avoid conflicts
+    eventNumber: 10000, // reserved test range (>=10000); specs add Math.random()*1000 → [10000,10999]. Swept by ems/events_by_number.
     title: 'Demo BATbern Event',
     eventType: 'EVENING', // Abend = Evening event (3-4 slots, 45 min each)
     date: '2042-02-04', // Format: YYYY-MM-DD

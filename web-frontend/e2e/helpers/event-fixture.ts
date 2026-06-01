@@ -95,12 +95,15 @@ export function organizerUsername(token: string): string {
  */
 export async function createRegistrationEvent(token: string): Promise<RegistrationEvent> {
   const title = eventTitle(); // "BATPW-E2E <ts>"
-  // High, out-of-range number so we never collide with / consume a real BATbern{N}
-  // (real events are 1..~80). RANDOM, not time-derived: the per-deploy @smoke and the
-  // nightly @gate run can fire concurrently against the same staging, and a time-based
-  // number would collide on the unique event_number column for same-millisecond creates.
-  // 100k-wide range → negligible birthday collision for the handful of concurrent creates.
-  const eventNumber = 900000 + Math.floor(Math.random() * 100000);
+  // Reserved TEST event-number range [10000, 99999] (event-fixture leak fix, 2026-06-01).
+  // Real events are 1..~80 and the conference will never reach 10 000 editions, so
+  // event_number >= 10000 is an unambiguous test marker that the server-side
+  // `ems/events_by_number` sweep force-deletes (bypassing the real-attendee 409 guard that
+  // makes a registered fixture event undeletable via DELETE /events/{code}). RANDOM, not
+  // time-derived: the per-deploy @smoke and the nightly @gate can fire concurrently against
+  // the same staging, and a time-based number would collide on the unique event_number
+  // column for same-millisecond creates. 90k-wide range → negligible birthday collision.
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000);
   // 60 days out — comfortably future for any date validation; never auto-transitions.
   const date = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
   const registrationDeadline = new Date(Date.now() + 53 * 24 * 60 * 60 * 1000).toISOString();
