@@ -12,7 +12,7 @@
  * ── IMPORTANT: this mirrors the REAL backend allowlist, not the plan's A4 prose ──────
  * The plan's §A4 narrative says EMS handles "events/sessions/topics/tasks/registrations/
  * uploads", but the deployed `TestFixtureCleanupService` enums only accept:
- *   CUMS: companies, users, additional_emails
+ *   CUMS: companies, users, additional_emails, users_by_email
  *   EMS : events, sessions, topics
  *   PCS : partners (prefix), meetings (id-allowlist)
  * Sweeping an unsupported entityType returns 400, so SWEEP_TARGETS lists ONLY the real
@@ -49,6 +49,13 @@ const SWEEP_TARGETS: SweepTarget[] = [
   { service: 'cums', entityType: 'companies', prefix: 'BRUNOTESTCO' },
   { service: 'cums', entityType: 'users', prefix: 'bruno.test' },
   { service: 'cums', entityType: 'additional_emails', prefix: 'bruno-test-' },
+  // CUMS — JIT users from anonymous registrations (issue #725). These carry no
+  // `bruno.test` username (e.g. user.brunotest, promote.ee, test.attendee), so the
+  // username sweep above misses them; the synthetic EMAIL DOMAIN (suffix-matched) is
+  // the only safe discriminator. `prefix` here is the allow-listed domain, NOT a prefix.
+  { service: 'cums', entityType: 'users_by_email', prefix: '@e2e.batbern.invalid' },
+  { service: 'cums', entityType: 'users_by_email', prefix: '@batbern-test.ch' },
+  { service: 'cums', entityType: 'users_by_email', prefix: 'zaproxy@example.com' },
   // EMS — deleting events cascades sessions/registrations/speaker_pool, so events first.
   { service: 'ems', entityType: 'events', prefix: 'BRUNO-TEST-' },
   { service: 'ems', entityType: 'sessions', prefix: 'bruno-test-session-' },

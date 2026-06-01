@@ -227,6 +227,26 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
 
         @Test
+        @DisplayName("issue #725: returns 400 when users_by_email domain is not on the allow-list")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenNonSyntheticEmailDomain() throws Exception {
+            // Production-safety guard: a real / generic domain must never be accepted, or
+            // the suffix sweep could delete real users. @gmail.com and the real prod domain
+            // @batbern.ch are both rejected by the bound regex.
+            for (String badDomain : new String[] {"@gmail.com", "@batbern.ch", "@example.com"}) {
+                TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                        .entityType("users_by_email")
+                        .prefix(badDomain)
+                        .build();
+
+                mockMvc.perform(post(ENDPOINT)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(req)))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+
+        @Test
         @DisplayName("returns 400 when prefix contains wildcard chars")
         @WithMockUser(roles = {"ORGANIZER"})
         void returns400_whenWildcardPrefix() throws Exception {
@@ -412,6 +432,138 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("issue #725: sweeps JIT users by @e2e.batbern.invalid regardless of username shape")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesJitUsersByEmailDomain_preservesRealUsers() throws Exception {
+            // Given: JIT users whose username does NOT carry a `bruno.test` prefix (the
+            // username sweep can't reach them) but whose email ends in the synthetic domain.
+            userRepository.save(buildUser("user.brunotest", "bruno-test-1@e2e.batbern.invalid"));
+            userRepository.save(buildUser("test.attendee", "test.attendee@e2e.batbern.invalid"));
+            userRepository.save(buildUser("user.promoteee", "promote-e2e-7@e2e.batbern.invalid"));
+            // Real anonymous attendees also get `user.<x>` usernames — they must survive,
+            // separated ONLY by their real (deliverable) email domain.
+            userRepository.save(buildUser("user.realattendee", "real.attendee@gmail.com"));
+            userRepository.save(buildUser("bruno.linder", "bruno.linder@sbb.ch"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("users_by_email")
+                    .prefix("@e2e.batbern.invalid")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_profiles").value(3))
+                    .andExpect(jsonPath("$.entityType").value("users_by_email"))
+                    .andExpect(jsonPath("$.prefix").value("@e2e.batbern.invalid"));
+
+            // Then: every synthetic-domain user is gone, every real user survives.
+            assertThat(userRepository.findByUsername("user.brunotest")).isEmpty();
+            assertThat(userRepository.findByUsername("test.attendee")).isEmpty();
+            assertThat(userRepository.findByUsername("user.promoteee")).isEmpty();
+            assertThat(userRepository.findByUsername("user.realattendee")).isPresent();
+            assertThat(userRepository.findByUsername("bruno.linder")).isPresent();
+        }
+
+        @Test
+        @DisplayName("issue #725: sweeps @batbern-test.ch JIT users (promote-e2e / user.eetest)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesJitUsersBySecondSyntheticDomain() throws Exception {
+            userRepository.save(buildUser("promote.ee", "promote-e2e-1@batbern-test.ch"));
+            userRepository.save(buildUser("user.eetest", "user.eetest@batbern-test.ch"));
+            userRepository.save(buildUser("bruno.frey", "bruno.frey@astra.admin.ch"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("users_by_email")
+                    .prefix("@batbern-test.ch")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_profiles").value(2));
+
+            assertThat(userRepository.findByUsername("promote.ee")).isEmpty();
+            assertThat(userRepository.findByUsername("user.eetest")).isEmpty();
+            assertThat(userRepository.findByUsername("bruno.frey")).isPresent();
+        }
+
+        @Test
+        @DisplayName("issue #725: zaproxy@example.com artifact is swept without widening to @example.com")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesZaproxyArtifact_preservesOtherExampleComUsers() throws Exception {
+            userRepository.save(buildUser("john.doe", "zaproxy@example.com"));
+            // A different @example.com address must NOT be matched — the allow-list is the
+            // FULL address zaproxy@example.com, suffix-matched, never the bare domain.
+            userRepository.save(buildUser("jane.roe", "jane.roe@example.com"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("users_by_email")
+                    .prefix("zaproxy@example.com")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_profiles").value(1));
+
+            assertThat(userRepository.findByUsername("john.doe")).isEmpty();
+            assertThat(userRepository.findByUsername("jane.roe")).isPresent();
+        }
+
+        @Test
+        @DisplayName("issue #725: email-domain match is case-insensitive (LOWER LIKE LOWER)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesJitUsersByEmailDomain_caseInsensitive() throws Exception {
+            // The DELETE uses LOWER(email) LIKE LOWER(:pattern); a mixed-case stored email
+            // must still be swept by the lowercase allow-listed domain.
+            userRepository.save(buildUser("user.mixedcase", "Bruno-Test-9@E2E.BATBERN.INVALID"));
+            userRepository.save(buildUser("bruno.linder", "bruno.linder@sbb.ch"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("users_by_email")
+                    .prefix("@e2e.batbern.invalid")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_profiles").value(1));
+
+            assertThat(userRepository.findByUsername("user.mixedcase")).isEmpty();
+            assertThat(userRepository.findByUsername("bruno.linder")).isPresent();
+        }
+
+        @Test
+        @DisplayName("issue #725: deleting a JIT user cascades its user_additional_emails")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesJitUserByEmail_cascadesAdditionalEmails() throws Exception {
+            // role_assignments + user_additional_emails are ON DELETE CASCADE (V5 + V16);
+            // we assert the additional-emails cascade directly (no JPA repo exists for
+            // role_assignments — that FK cascade is exercised by the real PostgreSQL container).
+            User jit = userRepository.save(buildUser("user.brunotest", "bruno-test-9@e2e.batbern.invalid"));
+            additionalEmailRepository.save(buildAdditionalEmail(jit, "bruno-test-9-alt@e2e.batbern.invalid"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("users_by_email")
+                    .prefix("@e2e.batbern.invalid")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_profiles").value(1));
+
+            assertThat(userRepository.findByUsername("user.brunotest")).isEmpty();
+            assertThat(additionalEmailRepository.findAll()).isEmpty();
         }
 
         @Test

@@ -74,6 +74,18 @@ ones above.
 | `sessions` | `bruno-test-session-` | `^bruno-test-session-$` | `bruno-test-session-%` | `bruno-test-session-1779647142000` |
 | `topics` | `bruno-test-topic-` | `^bruno-test-topic-$` | `bruno-test-topic-%` | `bruno-test-topic-1779647142000` |
 | `partners` | `brtest` | `^brtest$` | `brtest%` | `brtest142000` |
+| `users_by_email` † | `@e2e.batbern.invalid` | `^@e2e\.batbern\.invalid$\|^@batbern-test\.ch$\|^zaproxy@example\.com$` | `%@e2e.batbern.invalid` | `test.attendee@e2e.batbern.invalid` (username `test.attendee`) |
+
+> † **`users_by_email` is the ONE suffix-match exception** (issue #725). The
+> server matches `LIKE '%' || value` (suffix), not `value || '%'` (prefix),
+> because the discriminator is the synthetic email **domain** — the JIT users
+> created by anonymous registrations have non-canonical usernames
+> (`user.brunotest`, `promote.ee`, `test.attendee`) that the `users`
+> username-prefix sweep can't reach. Widening `users` to `user.%` would delete
+> REAL anonymous attendees; the synthetic domain is the only safe separator.
+> Allow-listed domains: `@e2e.batbern.invalid`, `@batbern-test.ch`, and the full
+> address `zaproxy@example.com` (OWASP ZAP artifact). `role_assignments` +
+> `user_additional_emails` cascade via FK ON DELETE CASCADE.
 
 > `registrations` and `uploads` (filename) appear in the data-naming table
 > above for test-data discipline but are not yet wired into the cleanup
