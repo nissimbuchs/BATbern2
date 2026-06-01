@@ -71,36 +71,8 @@ export default defineConfig({
         skipWaiting: true, // Activate new service worker immediately
         clientsClaim: true, // Take control of all pages immediately
         runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              networkTimeoutSeconds: 3, // Fallback to cache if network is slow
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              networkTimeoutSeconds: 3, // Fallback to cache if network is slow
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
+          // Google Fonts caching removed — the app loads no web fonts (system
+          // font stack only). See index.html.
           {
             urlPattern: /^https:\/\/.*\.cloudfront\.net\/.*/i,
             handler: 'StaleWhileRevalidate',

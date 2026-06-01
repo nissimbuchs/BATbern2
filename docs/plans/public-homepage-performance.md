@@ -61,18 +61,15 @@ CLS 0.529 comes from images without intrinsic dimensions and late content pop-in
 
 ---
 
-## Phase 3 — Self-host Inter, conditional Noto Sans JP (frontend)
+## Phase 3 — Remove dead render-blocking Google Fonts (frontend)
+
+**Status: ✅ DONE.** **Scope changed after investigation** (confirmed with user): the loaded Google Fonts (Inter + Noto Sans JP) were **never applied** — the body, Tailwind `sans`, and MUI theme all resolve to `'Helvetica Neue'`/`system-ui`, and nothing in `src/` references Inter or Noto. So self-hosting Inter would add bytes for an unused font. Instead **removed** the render-blocking Google Fonts `<link>` + both preconnects from `index.html`, and dropped the now-dead `google-fonts-stylesheets`/`google-fonts-webfonts` Workbox `runtimeCaching` entries from `vite.config.ts`. Zero visual change; eliminates the ~120 KiB / ~3,030 ms render-blocking request, the 119 KiB unused CSS, and the font-swap CLS. Build verified: 0 `googleapis`/`gstatic` references in `dist/`.
+
+CSP `font-src`/`style-src` in `frontend-stack.ts` still list the Google Fonts origins — harmless (nothing requests them); tightened in Phase 6.
 
 Removes the 3,030 ms render-blocking 3rd-party request.
 
-- Add `@fontsource/inter` (or local woff2 in `public/fonts/`) with `@font-face { font-display: swap; size-adjust: … }` to minimize swap-CLS. Import the latin subset in `src/index.css` / app entry.
-- **Remove** the Google Fonts `<link>` + `fonts.gstatic.com`/`fonts.googleapis.com` preconnects from `web-frontend/index.html:11-16`.
-- **Noto Sans JP**: load only when `i18n.language === 'ja'` (dynamic `@fontsource/noto-sans-jp` import or injected `<link>`), wired near `src/i18n/config.ts` / language-switch. Other locales never pay for it.
-- Point Tailwind (`tailwind.config.js`) and the MUI theme `font-family` at `Inter`.
-- Update PWA Workbox `runtimeCaching` in `vite.config.ts:35-139` — drop the now-dead Google Fonts cache entries.
-- Phase 6 follow-up: tighten CSP `font-src`/`style-src` in `frontend-stack.ts:192-194` to drop Google Fonts origins (keep until Phase 3 ships to avoid blocking).
-
-**Verify:** no `fonts.googleapis.com` request in Network; Inter renders; `ja` locale still gets JP glyphs; FCP drops.
+**Verify:** no `fonts.googleapis.com` request in Network; typography unchanged (system fonts); FCP drops; CLS drops (no swap reflow).
 
 ---
 
