@@ -7,15 +7,7 @@
  * (localStorage vs sessionStorage) to control session persistence.
  */
 
-import {
-  signIn as amplifySignIn,
-  signUp as amplifySignUp,
-  signOut as amplifySignOut,
-  getCurrentUser as amplifyGetCurrentUser,
-  confirmSignIn as amplifyConfirmSignIn,
-  fetchAuthSession,
-} from 'aws-amplify/auth';
-import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
+import { ensureAmplifyConfigured } from '@/config/amplify';
 import {
   UserContext,
   LoginCredentials,
@@ -70,19 +62,43 @@ function createStorageAdapter(storage: Storage) {
 
 class AuthService {
   /**
+   * Lazily ensure Amplify is configured, then return its auth module.
+   *
+   * Public-homepage performance (perf/public-homepage-followup #2): authService is reachable
+   * from the eager app root (AuthProvider), so a static `import 'aws-amplify/auth'` here would
+   * drag aws-amplify (~426 KB) onto every page including the anonymous homepage. Instead each
+   * method awaits this helper, which configures Amplify on first use and dynamically imports
+   * the auth module so it lands in a lazy chunk. AuthProvider/apiClient gate their callers on
+   * `hasCognitoSession()`, so anonymous visitors never reach here.
+   */
+  private async amplifyAuth() {
+    await ensureAmplifyConfigured();
+    return import('aws-amplify/auth');
+  }
+
+  /**
    * Configure session persistence based on "Remember me" preference
    * @param rememberMe - localStorage (persistent) or sessionStorage (temporary)
    */
-  private configureSessionPersistence(rememberMe: boolean): void {
+  private async configureSessionPersistence(rememberMe: boolean): Promise<void> {
+    const { cognitoUserPoolsTokenProvider } = await import('aws-amplify/auth/cognito');
     const storage = rememberMe ? localStorage : sessionStorage;
     const storageAdapter = createStorageAdapter(storage);
     cognitoUserPoolsTokenProvider.setKeyValueStorage(storageAdapter);
   }
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
+    // Acquire (and configure) Amplify before configuring storage so the rememberMe choice
+    // overrides ensureAmplifyConfigured()'s detect-based storage. `auth` is declared outside
+    // the try so the UserAlreadyAuthenticatedException retry path in catch can reuse it.
+    const {
+      signIn: amplifySignIn,
+      signOut: amplifySignOut,
+      fetchAuthSession,
+    } = await this.amplifyAuth();
+    await this.configureSessionPersistence(credentials.rememberMe || false);
+
     try {
       console.log('[authService] signIn called with email:', credentials.email);
-      this.configureSessionPersistence(credentials.rememberMe || false);
-
       console.log('[authService] Calling amplifySignIn');
       const result = await amplifySignIn({
         username: credentials.email,
@@ -234,6 +250,7 @@ class AuthService {
   async confirmNewPassword(newPassword: string): Promise<SignInResult> {
     try {
       console.log('[authService] confirmNewPassword called');
+      const { confirmSignIn: amplifyConfirmSignIn, fetchAuthSession } = await this.amplifyAuth();
       const result = await amplifyConfirmSignIn({ challengeResponse: newPassword });
       console.log('[authService] confirmSignIn result:', { nextStep: result.nextStep?.signInStep });
 
@@ -292,6 +309,7 @@ class AuthService {
       // ADR-001: Only send attributes allowed by Cognito writeAttributes configuration
       // Cognito = authentication only; Database = user profile data
       // See cognito-stack.ts:212-214 for writeAttributes configuration
+      const { signUp: amplifySignUp } = await this.amplifyAuth();
       const result = await amplifySignUp({
         username: signUpData.email,
         password: signUpData.password,
@@ -340,6 +358,7 @@ class AuthService {
    */
   async getCurrentUser(): Promise<UserContext | null> {
     try {
+      const { getCurrentUser: amplifyGetCurrentUser, fetchAuthSession } = await this.amplifyAuth();
       await amplifyGetCurrentUser();
       const session = await fetchAuthSession();
       const tokens = session.tokens;
@@ -362,11 +381,13 @@ class AuthService {
   }
 
   async signOut(): Promise<void> {
+    const { signOut: amplifySignOut } = await this.amplifyAuth();
     await amplifySignOut();
   }
 
   async refreshToken(): Promise<TokenRefreshResponse> {
     try {
+      const { fetchAuthSession } = await this.amplifyAuth();
       const session = await fetchAuthSession({ forceRefresh: true });
       const tokens = session.tokens;
 

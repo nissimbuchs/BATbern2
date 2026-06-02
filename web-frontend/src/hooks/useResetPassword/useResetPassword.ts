@@ -7,6 +7,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { confirmResetPassword } from 'aws-amplify/auth';
+import { ensureAmplifyConfigured } from '@/config/amplify';
 
 interface ResetPasswordInput {
   email: string;
@@ -28,6 +29,8 @@ export const useResetPassword = (options?: UseResetPasswordOptions) => {
   return useMutation<void, ResetPasswordError, ResetPasswordInput>({
     mutationFn: async ({ email, code, newPassword }: ResetPasswordInput) => {
       try {
+        // Amplify is configured lazily (perf/public-homepage-followup #2) — ensure before use.
+        await ensureAmplifyConfigured();
         // Amplify v6: confirmResetPassword updates password with code
         await confirmResetPassword({
           username: email,

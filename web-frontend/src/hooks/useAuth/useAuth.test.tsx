@@ -35,6 +35,11 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe('useAuth Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // AuthProvider now skips session restore unless a Cognito session exists in storage
+    // (perf/public-homepage-followup #2). Seed one so these tests exercise the restore path.
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('CognitoIdentityServiceProvider.client.user.idToken', 'stub');
     // Default mock behavior
     mockAuthService.getCurrentUser.mockResolvedValue(null);
     mockAuthService.signOut.mockResolvedValue();

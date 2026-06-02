@@ -15,6 +15,7 @@ import {
 } from '@/types/auth';
 import apiClient from '@/services/api/apiClient';
 import { getUserProfile } from '@/services/api/userApi';
+import { hasCognitoSession } from '@/utils/auth/cognitoSession';
 
 /**
  * Discriminated outcome of a sign-in attempt. Epic 11 bug fix 2026-05-19 — the
@@ -209,6 +210,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('[AuthProvider] Initializing auth state...');
+
+      // Anonymous visitors have no Cognito tokens in storage. Skip session restore entirely
+      // so aws-amplify (~426 KB) is never loaded on the public homepage — authService methods
+      // dynamically import it, so calling getCurrentUser here would pull it onto first paint
+      // (perf/public-homepage-followup #2). A returning authenticated user has tokens in
+      // storage and falls through to the normal restore path below.
+      if (!hasCognitoSession()) {
+        console.log('[AuthProvider] No Cognito session in storage — skipping restore');
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return;
+      }
+
       try {
         const user = await authService.getCurrentUser();
 

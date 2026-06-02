@@ -71,6 +71,12 @@ function mockMultiRoleUser(roles: readonly string[]) {
 describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // AuthProvider now skips session restore unless a Cognito session exists in storage
+    // (perf/public-homepage-followup #2). Seed one so these tests exercise the restore path;
+    // the anonymous-skip behaviour is covered by its own test below.
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('CognitoIdentityServiceProvider.client.user.idToken', 'stub');
     mockAuthService.getCurrentUser.mockResolvedValue(null);
     mockAuthService.isTokenExpired.mockReturnValue(false);
     // Default: /users/me hydration is a no-op (JWT already carries roles in staging).
@@ -79,6 +85,25 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       companyId: undefined,
       preferences: undefined,
     } as never);
+  });
+
+  describe('Session restore gating (perf/public-homepage-followup #2)', () => {
+    test('skips getCurrentUser for anonymous visitors with no Cognito tokens in storage', async () => {
+      // No Cognito keys in storage → anonymous visitor. AuthProvider must NOT call
+      // authService.getCurrentUser (which would dynamically pull in aws-amplify on the public
+      // homepage). It should settle to not-authenticated / not-loading without touching Amplify.
+      localStorage.clear();
+      sessionStorage.clear();
+      mockMultiRoleUser(['organizer']); // even if a user WOULD resolve, it must not be queried
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(mockAuthService.getCurrentUser).not.toHaveBeenCalled();
+      expect(result.current.isAuthenticated).toBe(false);
+      expect(result.current.user).toBeNull();
+    });
   });
 
   describe('hasRole() — checks user.roles[] not user.role', () => {

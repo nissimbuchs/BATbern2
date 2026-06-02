@@ -4,8 +4,9 @@
  */
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { fetchAuthSession } from 'aws-amplify/auth';
 import i18n from '@/i18n/config';
+import { hasCognitoSession } from '@/utils/auth/cognitoSession';
+import { ensureAmplifyConfigured } from '@/config/amplify';
 
 /**
  * Generate a unique correlation ID for request tracing
@@ -21,7 +22,16 @@ function generateCorrelationId(): string {
  * @returns ID token string or null if not authenticated
  */
 async function getIdToken(): Promise<string | null> {
+  // Anonymous visitors (public homepage / archive / event discovery) have no Cognito
+  // tokens in storage. Short-circuit BEFORE importing aws-amplify so the ~426 KB dependency
+  // never loads for them (perf/public-homepage-followup #2). Authenticated requests fall
+  // through to lazily configure + query Amplify.
+  if (!hasCognitoSession()) {
+    return null;
+  }
   try {
+    await ensureAmplifyConfigured();
+    const { fetchAuthSession } = await import('aws-amplify/auth');
     const session = await fetchAuthSession();
     return session.tokens?.idToken?.toString() || null;
   } catch {

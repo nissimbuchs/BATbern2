@@ -11,7 +11,7 @@ import { logWebVitals, sendWebVitalsToAnalytics } from './utils/performance/repo
 import { registerSW } from 'virtual:pwa-register'; // Vite PWA plugin (Task 14b)
 import { loadRuntimeConfig } from './config/runtime-config';
 import { ConfigProvider } from './contexts/ConfigContext';
-import { configureAmplify } from './config/amplify';
+import { setAmplifyRuntimeConfig } from './config/amplify';
 import { updateApiClientConfig } from './services/api/apiClient';
 import { ErrorBoundary } from './components/ErrorBoundary'; // Task 4: Error boundaries
 
@@ -129,13 +129,11 @@ async function bootstrap() {
     // Update API client with runtime config base URL
     updateApiClientConfig(config.apiBaseUrl);
 
-    // Configure Amplify with runtime config (before rendering app)
-    try {
-      configureAmplify(config);
-    } catch (error) {
-      console.error('[Bootstrap] Failed to configure Amplify:', error);
-      // Continue anyway - auth features may not work but app can still load
-    }
+    // Stash the runtime config for Amplify WITHOUT loading aws-amplify (~426 KB). Amplify
+    // is now configured lazily on the first auth-touching code path via
+    // ensureAmplifyConfigured(), keeping it off the eager public-homepage bundle for
+    // anonymous visitors. See config/amplify.ts.
+    setAmplifyRuntimeConfig(config);
 
     // Render app with configuration
     root.render(

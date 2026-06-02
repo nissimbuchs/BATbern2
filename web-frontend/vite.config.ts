@@ -274,6 +274,24 @@ export default defineConfig({
             /[\\/]node_modules[\\/](sockjs-client|react-dropzone|file-selector|ics)[\\/]/.test(id)
           )
             return undefined;
+          // AWS Amplify + its AWS SDK / Cognito / Smithy transitive tree (~426 KB) is the
+          // largest dependency the blanket `vendor` chunk shipped to every public-homepage
+          // visitor — yet anonymous visitors never authenticate. As of
+          // perf/public-homepage-followup #2 the code loads Amplify lazily (dynamic import in
+          // authService/apiClient/config + ensureAmplifyConfigured), but that is only effective
+          // if manualChunks ALSO declines to force it into the eager vendor chunk. Return
+          // undefined so Rollup co-locates it with the dynamic import() chunk that first needs
+          // it — same carve-out pattern as tone/recharts above. No direct @aws-sdk / @smithy /
+          // amazon-cognito imports exist in src (verified 2026-06-02): the whole tree is reached
+          // only through aws-amplify, so carving these package roots is safe. Like the other
+          // carve-outs (and unlike @emotion/@mui) none has a React-core circular dependency, so
+          // the single-vendor TDZ concern does not apply.
+          if (
+            /[\\/]node_modules[\\/](aws-amplify|@aws-amplify|@aws-sdk|@smithy|@aws-crypto|amazon-cognito-identity-js)[\\/]/.test(
+              id
+            )
+          )
+            return undefined;
           // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
           // <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" /> from vite-plugin-static-copy.
           // Bundling its IIFE modules causes Vite/Rollup to reorder them so plugins
