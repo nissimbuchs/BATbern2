@@ -151,18 +151,27 @@ pipeline — publish each phase to beta, run Lighthouse/PSI, click-through, then
     (`EventCard.tsx:82-96`). So bytes are deferred and resized today — no image fix needed. (Minor
     optional tuning: 160/128 px is ~2–3× the ~48 px display size; could match `size` for a few KB,
     marginal.) `UserAvatar.tsx`/`CompanyLogo.tsx` are MUI admin components — NOT on the public path.
-  - **Real archive cost is REQUESTS, not bytes (verified 2026-06-02).** `SpeakerDisplay` lazily
-    fetches **per speaker** as cards scroll in: `useUserPortrait` (when the backend didn't supply
-    the URL — the archive-list path, per the `:42` comment) + `useCompany` (logo fallback). Across
-    ~250 sessions that is **~250 IntersectionObserver-gated requests** — the true heaviness.
-    - **Quick win, independent of this whole effort (backend):** have the **archive-list endpoint
-      populate `profilePictureUrl` + `companyLogoUrl`** in its cross-service join (as the
-      detail/current-event path already does). `SpeakerDisplay` already prefers those fields
-      (`:48`, `:57`), so the per-speaker fetches stop firing — improves the *live* archive today,
-      ships standalone. **Recommend doing this regardless of the static migration.**
-    - **Static model removes it entirely:** the build-time fetch resolves every portrait/logo URL
-      once and bakes final CDN `<img>` URLs into the HTML — zero per-speaker client fetches (needs
-      the data-as-props refactor so `SpeakerDisplay` receives resolved URLs).
+  - **The archive LIST is ALREADY batched + optimal — NO N+1, NO quick win needed (verified in
+    backend 2026-06-02; corrects an earlier wrong claim).** `useInfiniteEvents` requests
+    `expand:['topics','sessions','speakers']`, so the list endpoint runs a SINGLE batched
+    cross-service DB join `findUserPortraitsByUsernames(allUsernames)` across ALL events on the page
+    (zero HTTP calls) and populates BOTH `profilePictureUrl` AND `companyLogoUrl`
+    (`EventController.java:368,488-491`). `getEvents` returns that payload unmapped
+    (`eventApiClient.ts:106-110`), so `SpeakerDisplay`'s lazy guards (`!speaker.profilePictureUrl`
+    `:45`; `speaker.companyLogoUrl ? '' : …` `:53`) are already satisfied → the per-speaker
+    `useUserPortrait`/`useCompany` fetches **do NOT fire on the archive list.** The
+    `SpeakerDisplay.tsx:42` comment ("archive list path") is **STALE** — predates this batch-join.
+  - **The one real (small) inconsistency is on the DETAIL/current-event path, not the list.** The
+    detail DTO `SessionSpeakerResponse` OMITS `companyLogoUrl` (`SessionSpeakerResponse.java:25-38`)
+    and enriches portraits **per-speaker over HTTP** (`SessionUserService.java:204,244`, 15-min
+    cached) instead of the batch join the list already uses. Impact today is trivial (1 event, ~6
+    speakers; logo fetched client-side via `useCompany`). It matters for the STATIC BAKE only for
+    the ≤2 active events' pages → before baking those, align the detail path: add `companyLogoUrl`
+    to `SessionSpeakerResponse` + reuse the existing `findUserPortraitsByUsernames` batch query (NO
+    new endpoint — the query exists). Small; bundle into Phase 2/3, not a separate urgent win.
+  - **Net: static bake of the archive is even cheaper than assumed** — the build just calls the
+    already-batched list endpoint; every portrait/logo URL is in the response. Data-as-props
+    refactor still needed so the prerendered `SpeakerDisplay` reads URLs from props, not hooks.
   - **Render/DOM COST → `content-visibility: auto` + `contain-intrinsic-size` per card.** With ~250
     session rows across 60 expanded cards the DOM is deep; this native CSS lets the browser **skip
     layout/paint of off-screen cards** while keeping them in the DOM (crawlable, no JS). Off-screen
