@@ -138,9 +138,34 @@ pipeline — publish each phase to beta, run Lighthouse/PSI, click-through, then
   non-archived** (active/upcoming); the other ~58 archive detail pages are **truly static** —
   once an event is archived its detail never changes again. 60 events × (de+en) = 120 grid
   entries / ~120 detail pages — small; **bake the full set statically.**
-- `/archive` grid: bake all 60 events. The current **infinite-scroll-on-API becomes a pure
-  client island** (filter + sort + "show more") over the **baked dataset** — **no archive API
-  call at all**. Render the first screenful in HTML; the island reveals the rest.
+- **`/archive` grid loading — bake all 60, defer images + skip off-screen render (NO API, NO
+  paging, NO infinite-scroll JS).** The infinite-scroll exists only because data was fetched
+  lazily; once data is baked, that reason is gone. **Reality from the screenshot (2026-06-02):**
+  grid cards expand every session row, each with a **speaker avatar + company logo** — so a card
+  is ~15 images (BATbern56 ≈ 7 sessions), and the archive is **~560 images + a deep DOM**, not 60
+  thumbnails. Two distinct weights, each solved natively:
+  - **Image BYTES → native lazy-loading.** Put `loading="lazy"` + `decoding="async"` on **every**
+    image (hero, speaker avatar, company logo) and route avatars/logos through the **CDN resize
+    Lambda at display size** (~48–64 px — they currently may serve full-res). The browser then
+    downloads only the ~15–30 images near the viewport, **no matter how many are in the DOM.**
+    Reserve width/height on every image so no CLS. Hero already does this (`EventCard.tsx:82-96`);
+    extend the same to the avatar + logo components. **This is the direct answer to "many images."**
+  - **Render/DOM COST → `content-visibility: auto` + `contain-intrinsic-size` per card.** With ~250
+    session rows across 60 expanded cards the DOM is deep; this native CSS lets the browser **skip
+    layout/paint of off-screen cards** while keeping them in the DOM (crawlable, no JS). Off-screen
+    cards cost ~nothing until scrolled near. Zero-JS, the clean answer to deep-DOM render cost.
+  - **Data bytes:** 60 events + ~250 sessions of card metadata ≈ tens of KB JSON (gzips small) → bake all.
+  - **Result:** render all 60 cards as static HTML; lazy images stream + off-screen cards don't
+    render until near. Continuous scroll, zero round-trips, zero page controls. **Drop
+    `useInfiniteEvents` / `fetchNextPage` / the sentinel** (`ArchivePage.tsx:48-126,329-346`).
+  - **Filter/sort/topics:** one small client island over the baked array; keep the shareable
+    `?q=&topics=&sort=` URLs + SEO; bake the topic list (drop the `topicService` call).
+  - **Per-card registration status:** drop `useMyRegistration` from archived cards
+    (`ArchivePage.tsx:33-43`); keep only on the ≤2 active events, if at all.
+  - **Escalation lever (only if `content-visibility` + lazy images still measure heavy on a low-end
+    device — verify on beta first):** a render-on-scroll island appending card batches from the
+    in-page array (still no API, still no paging), then windowing/virtualization. Not expected at
+    this scale; decide from a beta Lighthouse/CPU-throttle measurement, not up front.
 - `/archive/:code` detail: **static** for the ~58 archived events (no slots island, no live
   data). The ≤2 active events' detail pages are the dynamic ones — they carry the
   `<RemainingSlots/>` island and are re-baked on the ~12/yr content changes (same as the
