@@ -14,6 +14,7 @@ public class CorsHandler {
     private static final Set<String> ALLOWED_ORIGINS = Set.of(
         "https://www.batbern.ch",
         "https://batbern.ch",
+        "https://beta.batbern.ch",  // Beta frontend canary (docs/plans/beta-frontend-canary.md)
         "http://localhost:3000",
         "http://localhost:3001"
     );

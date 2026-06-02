@@ -193,6 +193,7 @@ class CorsConfigurationTest {
         String[] validOrigins = {
             "https://www.batbern.ch",
             "https://batbern.ch",
+            "https://beta.batbern.ch",
             "http://localhost:3000",
             "http://localhost:3001"
         };

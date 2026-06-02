@@ -108,7 +108,8 @@ public class SecurityConfig {
             "http://localhost:*",      // Development: any port (e.g., 3000, 4000, 8600)
             "http://127.0.0.1:*",      // Development: any port on 127.0.0.1
             "https://www.batbern.ch",
-            "https://batbern.ch"
+            "https://batbern.ch",
+            "https://beta.batbern.ch"  // Beta frontend canary (docs/plans/beta-frontend-canary.md)
         ));
 
         configuration.setAllowedMethods(java.util.Arrays.asList(
