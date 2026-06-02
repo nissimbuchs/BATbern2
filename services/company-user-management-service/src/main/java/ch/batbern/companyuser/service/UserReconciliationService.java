@@ -2,6 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -333,15 +334,24 @@ public class UserReconciliationService {
         // Assign default ATTENDEE role (per ADR-001: database is source of truth)
         Set<Role> roles = Set.of(Role.ATTENDEE);
 
-        User user = User.builder()
+        // Story 12.3 (AC7): carry `language` from custom:preferences too, mirroring JIT
+        // (extractNamesFromPreferences) and post-confirmation.ts. Without this the nightly
+        // job creates non-DE signups with the default "de". Absent/malformed -> leave
+        // preferences unset so the @PrePersist default applies (behaviour unchanged).
+        String language = extractLanguageFromPreferences(cognitoUser);
+
+        User.UserBuilder builder = User.builder()
                 .cognitoUserId(cognitoId)
                 .username(username)
                 .email(email != null ? email : "")
                 .firstName(firstName != null ? firstName : "")
                 .lastName(lastName != null ? lastName : "")
                 .roles(roles)
-                .isActive(true)
-                .build();
+                .isActive(true);
+        if (language != null && !language.isEmpty()) {
+            builder.preferences(UserPreferences.builder().language(language).build());
+        }
+        User user = builder.build();
 
         userRepository.save(user);
 
@@ -375,6 +385,30 @@ public class UserReconciliationService {
         } catch (Exception e) {
             log.warn("Failed to parse custom:preferences JSON during reconciliation: {}", e.getMessage());
             return new String[] {null, null};
+        }
+    }
+
+    /**
+     * Read the UI {@code language} from the Cognito {@code custom:preferences} JSON attribute.
+     * Mirrors {@code JITUserProvisioningInterceptor#extractLanguageFromPreferences} and
+     * {@code post-confirmation.ts} so reconciliation and JIT stay in sync (Story 12.3, AC7).
+     *
+     * Returns the language code (e.g. "fr") or {@code null} when absent/empty/malformed;
+     * never throws.
+     */
+    private String extractLanguageFromPreferences(UserType cognitoUser) {
+        String raw = extractAttribute(cognitoUser, "custom:preferences");
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+        try {
+            JsonNode node = PREFERENCES_MAPPER.readTree(raw);
+            String language = node.path("language").asText(null);
+            return (language != null && !language.isEmpty()) ? language : null;
+        } catch (Exception e) {
+            log.warn("Failed to parse custom:preferences JSON for language during reconciliation: {}",
+                    e.getMessage());
+            return null;
         }
     }
 

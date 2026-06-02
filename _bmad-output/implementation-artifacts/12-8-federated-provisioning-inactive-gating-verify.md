@@ -100,6 +100,16 @@ Per `docs/plans/sso-oidc-federation.md` §4 and project memory: there is exactly
 - **Optional early dry-run:** local-dev (`make dev-native-up`) points at the staging Cognito pool; the local DB row inspection uses `docker exec batbern-dev-postgres psql -U postgres -d batbern_development` (db `batbern_development`, container `batbern-dev-postgres`, from `docker-compose-dev.yml`). Note that in local-dev the gate behaviour depends on the locally-running gateway build carrying 12.2's filter; treat local as a smoke, not the authoritative pass.
 - Hosted-UI federation URL uses the domain prefix `batbern-staging-auth` (`cognito-stack.ts:279`) at `auth.eu-central-1.amazoncognito.com`, with `identity_provider=Google` and the registered `/auth/callback` redirect.
 
+### Reusable test idiom from Story 12.3 (for an optional automated dry-run of AC1/AC3)
+
+Story 12.3 shipped `services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITProvisioningIntegrationTest.java` — a Testcontainers test that asserts the **canonical JIT create path** end-to-end **without a real IdP**, using two reusable techniques:
+- **`jwt()` request post-processor** (`org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt()`) to drive a real authenticated `GET /api/v1/users` so the interceptor actually runs — building a `JwtAuthenticationToken` with arbitrary `sub` / `email` / `custom:preferences` claims and empty authorities. **NOT `@WithMockUser`** (which yields a `UsernamePasswordAuthenticationToken` the interceptor skips).
+- **`@RecordApplicationEvents` + autowired `ApplicationEvents`** to assert the `UserCreatedEvent` (`source == "JIT_PROVISIONING"`) fires on create and does **not** fire on the email-link path.
+
+**Why this matters for this verify-only story:** to the JIT interceptor a federated Cognito token is *just another JWT* — there is no provider-specific branch (the whole point of AC3). So `JITProvisioningIntegrationTest` already structurally covers **AC1's provider-agnostic create** (row + default ATTENDEE + names/language from `custom:preferences` + JIT event) and **AC3's "same paths as native"**. The genuine delta this story verifies that the automated test cannot is the **real Google name-claim → `custom:preferences` mapping (Story 12.5)** feeding that path, plus **AC2's gateway-gate block on a real federated token**.
+
+**Recommendation:** for a cheap automated dry-run of AC1/AC3, parameterize/extend that 12.3 idiom (a JWT shaped like a federated token: fresh `sub`, no native row, names in `custom:preferences`, empty authorities) rather than hand-driving the hosted-UI OAuth exchange. Reserve the real-identity hosted-UI run (Tasks 1–3) for the **authoritative** pass that exercises 12.5's actual mapping and 12.2's gate on a genuine federated principal. (This does **not** turn this story into a code story — it's a pointer to an existing test pattern; the authoritative ACs remain real-identity observations per AC5.)
+
 ### Out of scope
 - **Any code** — this story builds nothing (verify-only). Fixes for failures land in Story 12.2 / 12.3.
 - The **"Continue with Google" button + `features.sso` flag** (Story 12.9) — federation here is driven by hitting the hosted-UI URL directly; no frontend entry point is required.
@@ -119,6 +129,7 @@ Per `docs/plans/sso-oidc-federation.md` §4 and project memory: there is exactly
 - [Source: services/company-user-management-service/.../controller/UserController.java:470 (DELETE = GDPR hard-delete, NOT deactivate)] · [Source: services/company-user-management-service/.../service/UserReconciliationService.java:235 (`user.setActive(false)`)]
 - [Source: infrastructure/lib/stacks/cognito-stack.ts:279 (hosted-UI domain prefix `batbern-${envName}-auth`)] · [Source: docker-compose-dev.yml:10-13 (container `batbern-dev-postgres`, db `batbern_development`)]
 - Prereq stories: 12.2 (gateway is_active gate), 12.3 (canonical JIT), 12.5 (Google IdP + attribute mapping), 12.6 (account-linking PreSignUp trigger)
+- [Reusable idiom: services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITProvisioningIntegrationTest.java — Story 12.3 `jwt()` post-processor + `@RecordApplicationEvents` for asserting provider-agnostic JIT provisioning without a real IdP; see "Reusable test idiom from Story 12.3" Dev Note]
 
 ## Dev Agent Record
 

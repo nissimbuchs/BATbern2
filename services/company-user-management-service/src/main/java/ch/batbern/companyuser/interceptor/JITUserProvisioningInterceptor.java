@@ -2,6 +2,7 @@ package ch.batbern.companyuser.interceptor;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.event.UserCreatedEvent;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -137,16 +138,27 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             // Extract roles from authorities
             Set<Role> roles = extractRolesFromAuthorities(authentication.getAuthorities());
 
+            // Story 12.3: capture the chosen UI language from `custom:preferences`, mirroring
+            // post-confirmation.ts (`const language = preferences.language || 'de'`). Federated
+            // users never hit PostConfirmation, so JIT is the only place their language is
+            // captured. When absent/malformed, leave preferences unset so the @PrePersist
+            // default ("de", UserPreferences.java:32) applies — no behaviour change for the
+            // name-only signups that reach JIT today.
+            String language = extractLanguageFromPreferences(jwt);
+
             // Create new user
-            User newUser = User.builder()
+            User.UserBuilder builder = User.builder()
                     .cognitoUserId(cognitoUserId)
                     .username(username)
                     .email(email != null ? email : "")
                     .firstName(firstName != null ? firstName : "")
                     .lastName(lastName != null ? lastName : "")
                     .roles(roles)
-                    .isActive(true)
-                    .build();
+                    .isActive(true);
+            if (language != null && !language.isEmpty()) {
+                builder.preferences(UserPreferences.builder().language(language).build());
+            }
+            User newUser = builder.build();
 
             User savedUser = userRepository.save(newUser);
 
@@ -194,6 +206,33 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
         } catch (Exception e) {
             log.warn("Failed to parse custom:preferences JSON during JIT provisioning: {}", e.getMessage());
             return new String[] {null, null};
+        }
+    }
+
+    /**
+     * Read the UI {@code language} from the Cognito {@code custom:preferences} JSON attribute.
+     *
+     * Mirrors {@code post-confirmation.ts} (`const language = preferences.language || 'de'`):
+     * the signup form / federated attribute mapping packs the chosen language into the same
+     * single JSON attribute as first/last name. JIT is the only provisioning path federated
+     * users hit, so it must carry the language too.
+     *
+     * Returns the language code (e.g. "fr"/"en"/"de") or {@code null} when absent/empty/
+     * malformed; never throws (the create path must stay non-blocking).
+     */
+    private String extractLanguageFromPreferences(Jwt jwt) {
+        String raw = jwt.getClaimAsString("custom:preferences");
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+        try {
+            JsonNode node = PREFERENCES_MAPPER.readTree(raw);
+            String language = node.path("language").asText(null);
+            return (language != null && !language.isEmpty()) ? language : null;
+        } catch (Exception e) {
+            log.warn("Failed to parse custom:preferences JSON for language during JIT provisioning: {}",
+                    e.getMessage());
+            return null;
         }
     }
 

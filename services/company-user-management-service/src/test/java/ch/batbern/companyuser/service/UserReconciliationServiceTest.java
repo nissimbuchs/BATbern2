@@ -430,6 +430,30 @@ class UserReconciliationServiceTest {
         verify(userRepository).save(any(User.class));
     }
 
+    // Story 12.3 (SSO PR 1 — Part B), AC7: reconciliation is kept in sync with JIT
+    // (UserReconciliationService.java comment "...so reconciliation and JIT stay in sync").
+    // It must also carry `language` from custom:preferences, mirroring post-confirmation.ts,
+    // otherwise the nightly job creates rows with the default "de" for non-DE signups.
+    @Test
+    void should_setPrefLanguageFromCustomPreferences_when_creatingMissingUser() {
+        when(userRepository.findByIsActive(true)).thenReturn(List.of());
+        UserType cognitoUser = createCognitoUserWithPreferences(
+                "cognito-id-fr", "marie@example.ch",
+                "{\"firstName\":\"Marie\",\"lastName\":\"Favre\",\"language\":\"fr\"}");
+        ListUsersIterable paginator = mockListUsersPaginator(cognitoUser);
+        when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
+        when(userRepository.findByCognitoUserId("cognito-id-fr")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        reconciliationService.reconcileUsers();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User saved = userCaptor.getValue();
+        assertThat(saved.getPreferences()).isNotNull();
+        assertThat(saved.getPreferences().getLanguage()).isEqualTo("fr");
+    }
+
     /**
      * Test 10: should_deactivateUser_when_orphanDetected
      * AC: deactivateOrphanedUser() logic within reconcileOrphanedDbUsers
