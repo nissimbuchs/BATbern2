@@ -4,7 +4,7 @@ FROM gradle:8.5-jdk21
 WORKDIR /workspace
 
 # Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user (gradle image already has gradle user)
 # Ensure gradle user owns the workspace and cache
