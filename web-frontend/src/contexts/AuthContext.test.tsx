@@ -9,7 +9,19 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { AuthProvider } from './AuthContext';
+import { ConfigContext } from './createConfigContext';
+import type { AppConfig } from '@/config/runtime-config';
 import { useAuth } from '@/hooks/useAuth';
+
+// AuthProvider gates session restore on runtime config being present (it needs the
+// Cognito pool/client IDs to configure Amplify). In production it always renders inside
+// ConfigProvider; tests must supply a config so the restore path runs.
+const TEST_CONFIG: AppConfig = {
+  environment: 'staging',
+  apiBaseUrl: 'https://api.batbern.ch/api/v1',
+  cognito: { userPoolId: 'eu-central-1_TEST', clientId: 'client', region: 'eu-central-1' },
+  features: { notifications: true, analytics: false, pwa: false, turnstile: false },
+};
 
 // Mock authService
 vi.mock('@services/auth/authService', () => ({
@@ -37,7 +49,9 @@ const mockAuthService = vi.mocked(authService);
 const mockGetUserProfile = vi.mocked(getUserProfile);
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <AuthProvider>{children}</AuthProvider>
+  <ConfigContext.Provider value={TEST_CONFIG}>
+    <AuthProvider>{children}</AuthProvider>
+  </ConfigContext.Provider>
 );
 
 function mockMultiRoleUser(roles: readonly string[]) {
@@ -103,6 +117,43 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       expect(mockAuthService.getCurrentUser).not.toHaveBeenCalled();
       expect(result.current.isAuthenticated).toBe(false);
       expect(result.current.user).toBeNull();
+    });
+
+    // Regression: perf/public-homepage-followup #2 decoupled the runtime-config gate from
+    // bootstrap, so config (Cognito pool IDs) loads AFTER first paint. AuthProvider must NOT
+    // restore a stored session before that config arrives — Amplify is unconfigured until
+    // then, so getCurrentUser() resolves to "no user" and the user is wrongly bounced to
+    // /login. With a Cognito session present but config still null, restore must be deferred
+    // (stay loading, don't query) and then run once config resolves.
+    test('defers session restore until runtime config is loaded, then restores', async () => {
+      // Cognito session present (seeded in beforeEach) and a user WOULD resolve.
+      mockMultiRoleUser(['organizer']);
+
+      // A mutable config the wrapper reads, so we can flip null → loaded between renders
+      // (renderHook's rerender keeps the same wrapper; it cannot swap it).
+      let currentConfig: AppConfig | null = null;
+      const deferredConfigWrapper = ({ children }: { children: React.ReactNode }) => (
+        <ConfigContext.Provider value={currentConfig}>
+          <AuthProvider>{children}</AuthProvider>
+        </ConfigContext.Provider>
+      );
+
+      const { result, rerender } = renderHook(() => useAuth(), {
+        wrapper: deferredConfigWrapper,
+      });
+
+      // Restore must be deferred: still loading, Amplify-backed getCurrentUser not yet called,
+      // and crucially NOT settled to not-authenticated (which would redirect to /login).
+      await waitFor(() => expect(mockAuthService.getCurrentUser).not.toHaveBeenCalled());
+      expect(result.current.isLoading).toBe(true);
+      expect(result.current.isAuthenticated).toBe(false);
+
+      // Config resolves → ConfigContext flips to a real config → restore runs.
+      currentConfig = TEST_CONFIG;
+      rerender();
+
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      expect(mockAuthService.getCurrentUser).toHaveBeenCalledTimes(1);
     });
   });
 
