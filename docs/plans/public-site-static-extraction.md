@@ -144,12 +144,25 @@ pipeline — publish each phase to beta, run Lighthouse/PSI, click-through, then
   grid cards expand every session row, each with a **speaker avatar + company logo** — so a card
   is ~15 images (BATbern56 ≈ 7 sessions), and the archive is **~560 images + a deep DOM**, not 60
   thumbnails. Two distinct weights, each solved natively:
-  - **Image BYTES → native lazy-loading.** Put `loading="lazy"` + `decoding="async"` on **every**
-    image (hero, speaker avatar, company logo) and route avatars/logos through the **CDN resize
-    Lambda at display size** (~48–64 px — they currently may serve full-res). The browser then
-    downloads only the ~15–30 images near the viewport, **no matter how many are in the DOM.**
-    Reserve width/height on every image so no CLS. Hero already does this (`EventCard.tsx:82-96`);
-    extend the same to the avatar + logo components. **This is the direct answer to "many images."**
+  - **Image BYTES → already handled (verified 2026-06-02).** The public card renders speakers via
+    `SpeakerDisplay`, where **both** the portrait (`SpeakerDisplay.tsx:101-112`,
+    `buildCdnImageUrl{w:160,h:160}`) and the company logo (`:144-151`, `{h:128}`) **already** use the
+    CDN resize Lambda + `loading="lazy"` + reserved `width`/`height`. The hero is the same
+    (`EventCard.tsx:82-96`). So bytes are deferred and resized today — no image fix needed. (Minor
+    optional tuning: 160/128 px is ~2–3× the ~48 px display size; could match `size` for a few KB,
+    marginal.) `UserAvatar.tsx`/`CompanyLogo.tsx` are MUI admin components — NOT on the public path.
+  - **Real archive cost is REQUESTS, not bytes (verified 2026-06-02).** `SpeakerDisplay` lazily
+    fetches **per speaker** as cards scroll in: `useUserPortrait` (when the backend didn't supply
+    the URL — the archive-list path, per the `:42` comment) + `useCompany` (logo fallback). Across
+    ~250 sessions that is **~250 IntersectionObserver-gated requests** — the true heaviness.
+    - **Quick win, independent of this whole effort (backend):** have the **archive-list endpoint
+      populate `profilePictureUrl` + `companyLogoUrl`** in its cross-service join (as the
+      detail/current-event path already does). `SpeakerDisplay` already prefers those fields
+      (`:48`, `:57`), so the per-speaker fetches stop firing — improves the *live* archive today,
+      ships standalone. **Recommend doing this regardless of the static migration.**
+    - **Static model removes it entirely:** the build-time fetch resolves every portrait/logo URL
+      once and bakes final CDN `<img>` URLs into the HTML — zero per-speaker client fetches (needs
+      the data-as-props refactor so `SpeakerDisplay` receives resolved URLs).
   - **Render/DOM COST → `content-visibility: auto` + `contain-intrinsic-size` per card.** With ~250
     session rows across 60 expanded cards the DOM is deep; this native CSS lets the browser **skip
     layout/paint of off-screen cards** while keeping them in the DOM (crawlable, no JS). Off-screen
