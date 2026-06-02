@@ -193,7 +193,14 @@ jobs:
             echo "ℹ️  Frontend loads configuration at runtime from backend API (GET /api/v1/config)"
             echo "ℹ️  This enables 'build once, deploy everywhere' pattern"
             npm ci
-            npm run build
+            # Install Chromium for the build-time prerender crawl (degrades gracefully to a
+            # CSR-only build if unavailable — see web-frontend/scripts/prerender.mjs).
+            npx playwright install --with-deps chromium || echo "::warning::Chromium install failed — prerender will fall back to CSR"
+            # Non-blocking: a prerender failure leaves a clean CSR dist, so we still ship.
+            npm run build:prerender || {
+              echo "::warning::Prerender failed — deploying CSR-only dist"
+              npm run build
+            }
             echo "✅ Frontend build complete: dist/ ready for CDK deployment"
           else
             echo "::warning::Frontend package.json not found, skipping build"

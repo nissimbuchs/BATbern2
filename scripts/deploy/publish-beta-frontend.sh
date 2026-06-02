@@ -44,8 +44,10 @@ fi
 echo "  bucket=$BUCKET  distribution=$DIST_ID"
 
 if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
-  echo "▶ Building web-frontend…"
-  ( cd "$REPO_ROOT/web-frontend" && npm run build )
+  echo "▶ Building web-frontend (with SSG prerender)…"
+  # build:prerender = vite build + the Playwright SSG crawl (scripts/prerender.mjs).
+  # Degrades gracefully to a CSR-only build if Chromium isn't installed locally.
+  ( cd "$REPO_ROOT/web-frontend" && npm run build:prerender )
 else
   echo "▶ SKIP_BUILD=1 — publishing existing dist/ as-is"
 fi

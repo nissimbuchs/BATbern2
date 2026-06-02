@@ -6,7 +6,7 @@
  */
 
 import { useRef, useEffect, useCallback } from 'react';
-import { useConfig } from '@/contexts/useConfig';
+import { useOptionalConfig } from '@/contexts/useConfig';
 
 declare global {
   interface Window {
@@ -63,9 +63,14 @@ function loadTurnstileScript(): Promise<void> {
 }
 
 export function useTurnstile(): UseTurnstileReturn {
-  const config = useConfig();
-  const enabled = config.features.turnstile;
-  const siteKey = config.turnstile?.siteKey ?? '';
+  // useOptionalConfig (not useConfig) so the hook never throws if it somehow renders
+  // before runtime config has loaded. In practice the only public-path consumer is the
+  // lazily-loaded, below-the-fold newsletter widget, which mounts well after config is
+  // ready — but treating null as "turnstile not ready / disabled" is the correct,
+  // crash-proof default and the hook re-renders when config arrives.
+  const config = useOptionalConfig();
+  const enabled = config?.features.turnstile ?? false;
+  const siteKey = config?.turnstile?.siteKey ?? '';
 
   const widgetRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);

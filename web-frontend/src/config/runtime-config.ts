@@ -118,6 +118,23 @@ function getApiUrl(): string {
 }
 
 /**
+ * Synchronous, best-effort API base URL derived purely from the current hostname.
+ *
+ * Mirrors the backend's `ConfigController.getApiBaseUrl()`, which returns exactly
+ * `<host>/api/v1` in every environment (`http://localhost:{port}/api/v1` in dev,
+ * `https://api.batbern.ch/api/v1` in staging+prod). Because it needs no network call,
+ * the API client can be initialised with this at bootstrap — BEFORE the
+ * `GET /api/v1/config` round-trip — so public data (e.g. the homepage current event)
+ * loads in parallel with the config fetch instead of waiting for it.
+ *
+ * `loadRuntimeConfig()` later supplies the authoritative `apiBaseUrl` (identical in
+ * prod) via `updateApiClientConfig()`.
+ */
+export function getDefaultApiBaseUrl(): string {
+  return `${getApiUrl()}/api/v1`;
+}
+
+/**
  * Check if running in development environment (localhost)
  */
 function isDevelopmentEnvironment(): boolean {

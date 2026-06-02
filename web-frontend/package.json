@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "prerender": "node scripts/prerender.mjs",
+    "build:prerender": "npm run build && npm run prerender",
     "preview": "vite preview",
     "test": "mkdir -p test-results/assets && vitest run",
     "test:unit": "mkdir -p test-results/assets && vitest run",

@@ -124,12 +124,31 @@ function handler(event) {
   var request = event.request;
   var uri = request.uri;
 
-  // Check if the URI is missing a file extension (likely a SPA route)
+  // Prerendered (SSG) public routes — serve the route-specific static HTML so the page
+  // shell paints before any JS runs. Keep this list in sync with
+  // web-frontend/scripts/prerender.mjs. The homepage is stored at /home/index.html (NOT
+  // /index.html) so the build's neutral /index.html stays the SPA fallback for every
+  // non-prerendered route. If a prerendered object is ever missing, S3 returns 404 and
+  // the distribution's 404->/index.html error response falls back to the CSR shell, so
+  // this is safe to deploy even before the prerendered files exist.
+  if (uri === '/' || uri === '/index.html') {
+    request.uri = '/home/index.html';
+    return request;
+  }
+  var prerendered = ['/privacy', '/about', '/support'];
+  for (var i = 0; i < prerendered.length; i++) {
+    if (uri === prerendered[i] || uri === prerendered[i] + '/') {
+      request.uri = prerendered[i] + '/index.html';
+      return request;
+    }
+  }
+
+  // Default SPA routing: extensionless routes serve the neutral /index.html shell.
   if (!uri.includes('.')) {
     request.uri = '/index.html';
   }
 
-  // Check if URI ends with '/'
+  // Directory-style URIs ('/foo/') serve their index.html.
   if (uri.endsWith('/')) {
     request.uri += 'index.html';
   }
@@ -137,7 +156,7 @@ function handler(event) {
   return request;
 }
       `),
-      comment: 'SPA routing handler for React application',
+      comment: 'SPA routing + prerendered public routes for React application',
     });
 
     // CloudFront Function to prevent browser caching of HTML responses.

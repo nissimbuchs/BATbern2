@@ -1,160 +1,52 @@
-/* eslint-disable react-refresh/only-export-components */
-// ^^^ This file is the app entry point/bootstrap - components here don't need fast refresh
+// App entry point / bootstrap.
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { useTranslation } from 'react-i18next';
 import App from './App.tsx';
 import './index.css'; // Tailwind CSS
 import './i18n/config'; // Initialize i18n before rendering
 import { logWebVitals, sendWebVitalsToAnalytics } from './utils/performance/reportWebVitals';
 import { registerSW } from 'virtual:pwa-register'; // Vite PWA plugin (Task 14b)
-import { loadRuntimeConfig } from './config/runtime-config';
-import { ConfigProvider } from './contexts/ConfigContext';
-import { setAmplifyRuntimeConfig } from './config/amplify';
+import { getDefaultApiBaseUrl } from './config/runtime-config';
 import { updateApiClientConfig } from './services/api/apiClient';
+import { ConfigProvider } from './contexts/ConfigContext';
 import { ErrorBoundary } from './components/ErrorBoundary'; // Task 4: Error boundaries
 
 /**
- * Loading Screen Component
- * Shown while fetching runtime configuration from backend
- */
-const LoadingScreen = () => {
-  const { t } = useTranslation('common');
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}
-    >
-      <div style={{ fontSize: '24px', marginBottom: '16px' }}>{t('bootstrap.loading')}</div>
-      <div
-        style={{
-          width: '200px',
-          height: '4px',
-          backgroundColor: '#e0e0e0',
-          borderRadius: '2px',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            width: '40%',
-            height: '100%',
-            backgroundColor: '#D52B1E',
-            animation: 'loading 1.5s ease-in-out infinite',
-          }}
-        />
-      </div>
-      <style>{`
-      @keyframes loading {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(350%); }
-      }
-    `}</style>
-    </div>
-  );
-};
-
-/**
- * Error Screen Component
- * Shown if configuration loading fails
- */
-const ErrorScreen = ({ error }: { error: Error }) => {
-  const { t } = useTranslation('common');
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        padding: '20px',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '500px',
-          padding: '24px',
-          backgroundColor: '#fee',
-          border: '1px solid #fcc',
-          borderRadius: '8px',
-        }}
-      >
-        <h2 style={{ margin: '0 0 12px 0', color: '#c00' }}>{t('bootstrap.configFailed')}</h2>
-        <p style={{ margin: '0 0 16px 0', color: '#666' }}>{error.message}</p>
-        <button
-          onClick={() => window.location.reload()}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#D52B1E',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-          }}
-        >
-          {t('bootstrap.reloadPage')}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-/**
  * Bootstrap Application
- * Loads runtime configuration before rendering the app
+ *
+ * Renders the app shell IMMEDIATELY — no blocking `await loadRuntimeConfig()`, no
+ * full-screen bootstrap spinner. The previous bespoke red progress-bar `LoadingScreen`
+ * has been removed: the public shell needs no runtime config to paint, and the BATbern
+ * logo spinner (`BATbernLoader`) is used only for the genuinely slow data regions
+ * (e.g. the homepage event block). This is the structural prerequisite for prerendering
+ * the public routes (see docs/plans/public-homepage-prerender.md).
+ *
+ * Runtime config (Cognito, feature flags) loads in the background via <ConfigProvider>;
+ * the API base URL is set synchronously below so public data fetches fire in parallel
+ * with — not after — the /api/v1/config round-trip.
  */
-async function bootstrap() {
-  const root = ReactDOM.createRoot(document.getElementById('root')!);
 
-  // Show loading screen
-  root.render(<LoadingScreen />);
+// Give the API client a correct base URL right away. getDefaultApiBaseUrl() is the
+// hostname-derived `<host>/api/v1`, byte-identical to the backend's config value in
+// prod. <ConfigProvider> overrides it with the authoritative value once config resolves.
+updateApiClientConfig(getDefaultApiBaseUrl());
 
-  try {
-    // Load runtime config from backend API
-    const config = await loadRuntimeConfig();
+const container = document.getElementById('root')!;
 
-    console.log('[Bootstrap] Configuration loaded successfully');
-
-    // Update API client with runtime config base URL
-    updateApiClientConfig(config.apiBaseUrl);
-
-    // Stash the runtime config for Amplify WITHOUT loading aws-amplify (~426 KB). Amplify
-    // is now configured lazily on the first auth-touching code path via
-    // ensureAmplifyConfigured(), keeping it off the eager public-homepage bundle for
-    // anonymous visitors. See config/amplify.ts.
-    setAmplifyRuntimeConfig(config);
-
-    // Render app with configuration
-    root.render(
-      <React.StrictMode>
-        <ErrorBoundary>
-          <ConfigProvider config={config}>
-            <App />
-          </ConfigProvider>
-        </ErrorBoundary>
-      </React.StrictMode>
-    );
-  } catch (error) {
-    console.error('[Bootstrap] Failed to load configuration:', error);
-
-    // Show error screen
-    root.render(<ErrorScreen error={error as Error} />);
-  }
-}
-
-// Start the application
-bootstrap();
+// createRoot (not hydrateRoot) is intentional: for prerendered routes the static HTML
+// paints first (the FCP/LCP win) and React mounts fresh and replaces it ("paint-and-
+// replace"), which avoids hydration-mismatch risk across our 10-locale i18n. For normal
+// SPA loads the container is empty and this is a plain mount.
+ReactDOM.createRoot(container).render(
+  <React.StrictMode>
+    <ErrorBoundary>
+      <ConfigProvider>
+        <App />
+      </ConfigProvider>
+    </ErrorBoundary>
+  </React.StrictMode>
+);
 
 // Report Core Web Vitals (Task 13b)
 if (import.meta.env.DEV) {
