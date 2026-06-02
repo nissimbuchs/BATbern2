@@ -292,6 +292,25 @@ export default defineConfig({
             )
           )
             return undefined;
+          // More form/editor libraries the public homepage never reaches eagerly (verified
+          // 2026-06-02) but the blanket `vendor` rule shipped to every visitor:
+          //   - @tinymce/tinymce-react: the React wrapper for the rich-text editor, imported
+          //     ONLY by the organizer EmailTemplateEditModal (admin). (The TinyMCE core itself
+          //     is already not bundled — see the note below.)
+          //   - react-hook-form (+ @hookform/resolvers): every consumer — public registration
+          //     wizard (lazy via HeroSection), the auth forms, and the admin forms — sits behind
+          //     a React.lazy boundary; HomePage's eager graph never imports it. Returning
+          //     undefined co-locates it with the lazy chunks that use it (same pattern as
+          //     recharts/amplify). None has a React-core circular dependency, so the @emotion/@mui
+          //     single-vendor TDZ concern does not apply.
+          // (Redux is intentionally absent here: @reduxjs/toolkit/react-redux are not direct deps
+          //  and are not bundled, so there is nothing to carve.)
+          if (
+            /[\\/]node_modules[\\/]@tinymce[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]react-hook-form[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]@hookform[\\/]/.test(id)
+          )
+            return undefined;
           // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
           // <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" /> from vite-plugin-static-copy.
           // Bundling its IIFE modules causes Vite/Rollup to reorder them so plugins
