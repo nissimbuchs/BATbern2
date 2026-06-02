@@ -16,9 +16,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import Alert from '@mui/material/Alert';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
+import { Checkbox } from '@/components/public/ui/checkbox';
+import { Label } from '@/components/public/ui/label';
 import { PersonalDetailsStep, type PersonalDetailsStepRef } from './PersonalDetailsStep';
 import { ConfirmRegistrationStep } from './ConfirmRegistrationStep';
 import { RegistrationAccordion } from './RegistrationAccordion';
@@ -501,21 +500,23 @@ export const RegistrationWizard = ({
       {/* AC8 (Story 10.11): Waitlist acknowledgment — shown in Step 2 when event is full */}
       {isEventFull && currentStep === 2 && (
         <div className="mt-4">
-          <Alert severity="info" sx={{ mb: 1 }}>
+          <div
+            role="alert"
+            className="mb-2 rounded-md border border-blue-400/30 bg-blue-400/15 px-4 py-2.5 text-sm text-blue-200"
+          >
             {t('wizard.waitlistWarning')}
-          </Alert>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={waitlistAcknowledged}
-                onChange={(e) => setWaitlistAcknowledged(e.target.checked)}
-                data-testid="waitlist-acknowledge-checkbox"
-                sx={{ color: 'info.main' }}
-              />
-            }
-            label={t('wizard.waitlistAcknowledgeLabel')}
-            sx={{ color: 'text.secondary', mt: 0.5 }}
-          />
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <Checkbox
+              id="waitlist-acknowledge"
+              checked={waitlistAcknowledged}
+              onCheckedChange={(checked) => setWaitlistAcknowledged(checked === true)}
+              data-testid="waitlist-acknowledge-checkbox"
+            />
+            <Label htmlFor="waitlist-acknowledge" className="text-sm text-zinc-400">
+              {t('wizard.waitlistAcknowledgeLabel')}
+            </Label>
+          </div>
         </div>
       )}
 
