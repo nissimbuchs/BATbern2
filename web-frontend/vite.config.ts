@@ -252,11 +252,26 @@ export default defineConfig({
           // Unlike @emotion/@mui, none of these have a React-core circular dependency, so the
           // single-vendor TDZ concern documented above does not apply to them.
           if (
-            /[\\/]node_modules[\\/](recharts|framer-motion|react-smooth|victory-vendor|internmap)[\\/]/.test(
+            /[\\/]node_modules[\\/](recharts|framer-motion|motion|motion-dom|react-smooth|victory-vendor|internmap)[\\/]/.test(
               id
             ) ||
             /[\\/]node_modules[\\/]@dnd-kit[\\/]/.test(id) ||
             /[\\/]node_modules[\\/]d3-[^\\/]+[\\/]/.test(id)
+          )
+            return undefined;
+          // More admin/authenticated-only libraries the public homepage never touches
+          // (verified 2026-06-02: 0 imports in the public homepage graph) but that the
+          // blanket `vendor` chunk shipped to every visitor:
+          //   - motion/motion-dom: framer-motion's actual v12 package — the regex above only
+          //     matched the `framer-motion` alias, so ~326 KB stayed eager. Presentation only.
+          //   - @stomp/stompjs + sockjs-client: notification WebSocket — authenticated only.
+          //   - react-dropzone + file-selector: file upload (profile picture / admin import).
+          //   - ics: calendar-invite generation (partner/organizer meetings).
+          // Returning undefined lets Rollup co-locate each with the lazy route chunk that
+          // imports it — same safe carve-out pattern as `tone`/recharts above.
+          if (
+            /[\\/]node_modules[\\/]@stomp[\\/]stompjs[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/](sockjs-client|react-dropzone|file-selector|ics)[\\/]/.test(id)
           )
             return undefined;
           // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
