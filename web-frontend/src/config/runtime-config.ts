@@ -105,7 +105,11 @@ function getApiUrl(): string {
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Support custom API port for multi-instance development
     // Set via VITE_API_PORT when starting frontend (e.g., VITE_API_PORT=8500 npm run dev)
-    const apiPort = import.meta.env.VITE_API_PORT || '8080';
+    // Default is 8000 — the canonical native-dev gateway port (`make dev-native-up`,
+    // which also sets VITE_API_PORT=8000 explicitly). docker-compose maps the gateway
+    // to :8080, so docker-compose browser access must set VITE_API_PORT=8080.
+    // No production impact: prod hostnames resolve below to https://api.batbern.ch.
+    const apiPort = import.meta.env.VITE_API_PORT || '8000';
     return `http://localhost:${apiPort}`;
   }
 
@@ -163,7 +167,7 @@ function validateConfig(config: unknown): asserts config is AppConfig {
 function getDefaultDevelopmentConfig(): AppConfig {
   return {
     environment: 'development',
-    apiBaseUrl: 'http://localhost:8080/api/v1',
+    apiBaseUrl: 'http://localhost:8000/api/v1',
     cognito: {
       userPoolId: 'eu-central-1_XXXXXXXXX',
       clientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX',
