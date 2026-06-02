@@ -596,7 +596,12 @@ jobs:
       - name: Run unit tests (CDK + Lambda handlers)
         if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
         working-directory: ./infrastructure
-        run: npm test -- --ci
+        # Scope to test/unit only — CDK stacks + Lambda handlers (the drift this gate exists to
+        # catch). test/integration (docker-compose, Testcontainers) needs Docker/AWS and is NOT
+        # appropriate for this lightweight build gate; running the full `jest` swept those in and
+        # docker-compose.test.ts failed in CI (`docker compose config` threw → its catch hit the
+        # undefined global `fail()`). See Story 12.1.
+        run: npm test -- --ci test/unit
 
       - name: Type-check + compile
         if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
