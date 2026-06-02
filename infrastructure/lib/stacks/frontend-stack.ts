@@ -159,66 +159,96 @@ function handler(event) {
       enableAcceptEncodingBrotli: true,
     });
 
-    // Response headers policy for security
+    // Shared security headers behavior — reused by both the HTML policy and the
+    // static-assets policy so the CSP / HSTS / frame options never drift between them.
+    const securityHeadersBehavior: cloudfront.ResponseSecurityHeadersBehavior = {
+      contentTypeOptions: { override: true },
+      frameOptions: {
+        frameOption: cloudfront.HeadersFrameOption.SAMEORIGIN,
+        override: true,
+      },
+      referrerPolicy: {
+        referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+        override: true,
+      },
+      strictTransportSecurity: {
+        accessControlMaxAge: cdk.Duration.days(365),
+        includeSubdomains: true,
+        override: true,
+      },
+      xssProtection: {
+        protection: true,
+        modeBlock: true,
+        override: true,
+      },
+      contentSecurityPolicy: {
+        contentSecurityPolicy:
+          "default-src 'self'; " +
+          "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
+          "script-src-elem 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
+          "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
+          "img-src 'self' data: https:; " +
+          "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
+          "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net https://challenges.cloudflare.com; " +
+          "frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com; " +
+          "object-src 'none'; " +
+          "base-uri 'self'; " +
+          "form-action 'self'; " +
+          "frame-ancestors 'self';",
+        override: true,
+      },
+    };
+
+    const baseCustomHeaders: cloudfront.ResponseCustomHeader[] = [
+      // Cross-Origin-Opener-Policy: isolates the browsing context from cross-origin openers
+      // SAME_ORIGIN_ALLOW_POPUPS allows OAuth popups (Cognito)
+      {
+        header: 'Cross-Origin-Opener-Policy',
+        value: 'same-origin-allow-popups',
+        override: true,
+      },
+      // Cross-Origin-Resource-Policy: cross-origin allows CDN assets and Google Maps embeds
+      {
+        header: 'Cross-Origin-Resource-Policy',
+        value: 'cross-origin',
+        override: true,
+      },
+    ];
+
+    // Response headers policy for security (HTML + SEO — no Cache-Control here so
+    // the htmlCachePolicy/htmlNoCacheFunction keep index.html uncached).
     const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'SecurityHeaders', {
       responseHeadersPolicyName: `${envName}-security-headers`,
       comment: 'Security headers for frontend',
-      securityHeadersBehavior: {
-        contentTypeOptions: { override: true },
-        frameOptions: {
-          frameOption: cloudfront.HeadersFrameOption.SAMEORIGIN,
-          override: true,
-        },
-        referrerPolicy: {
-          referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
-          override: true,
-        },
-        strictTransportSecurity: {
-          accessControlMaxAge: cdk.Duration.days(365),
-          includeSubdomains: true,
-          override: true,
-        },
-        xssProtection: {
-          protection: true,
-          modeBlock: true,
-          override: true,
-        },
-        contentSecurityPolicy: {
-          contentSecurityPolicy:
-            "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
-            "script-src-elem 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
-            "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
-            "img-src 'self' data: https:; " +
-            "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
-            "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.batbern.ch https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net https://challenges.cloudflare.com; " +
-            "frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com; " +
-            "object-src 'none'; " +
-            "base-uri 'self'; " +
-            "form-action 'self'; " +
-            "frame-ancestors 'self';",
-          override: true,
-        },
-      },
-      customHeadersBehavior: {
-        customHeaders: [
-          // Cross-Origin-Opener-Policy: isolates the browsing context from cross-origin openers
-          // SAME_ORIGIN_ALLOW_POPUPS allows OAuth popups (Cognito)
-          {
-            header: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups',
-            override: true,
-          },
-          // Cross-Origin-Resource-Policy: cross-origin allows CDN assets and Google Maps embeds
-          {
-            header: 'Cross-Origin-Resource-Policy',
-            value: 'cross-origin',
-            override: true,
-          },
-        ],
-      },
+      securityHeadersBehavior,
+      customHeadersBehavior: { customHeaders: baseCustomHeaders },
     });
+
+    // Same security headers PLUS a 1-year immutable Cache-Control for content-hashed
+    // assets (/assets/*, /*.js, /*.css, /static/*). CloudFront already edge-caches
+    // these via staticAssetsCachePolicy, but without a Cache-Control response header
+    // the *browser* never caches them — PageSpeed reported "Cache TTL: None" and
+    // ~5.6 MiB re-downloaded on repeat visits. Hashed filenames make immutable safe.
+    const staticAssetsResponseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
+      this,
+      'StaticAssetsHeaders',
+      {
+        responseHeadersPolicyName: `${envName}-static-assets-headers`,
+        comment: 'Security headers + immutable Cache-Control for content-hashed assets',
+        securityHeadersBehavior,
+        customHeadersBehavior: {
+          customHeaders: [
+            ...baseCustomHeaders,
+            {
+              header: 'Cache-Control',
+              value: 'public, max-age=31536000, immutable',
+              override: true,
+            },
+          ],
+        },
+      }
+    );
 
     // Get certificate if domain provided
     let certificate: certificatemanager.ICertificate | undefined;
@@ -261,7 +291,7 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for static assets
           cachePolicy: staticAssetsCachePolicy,
-          responseHeadersPolicy,
+          responseHeadersPolicy: staticAssetsResponseHeadersPolicy,
         },
         '/assets/*': {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
@@ -270,7 +300,7 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for assets
           cachePolicy: staticAssetsCachePolicy,
-          responseHeadersPolicy,
+          responseHeadersPolicy: staticAssetsResponseHeadersPolicy,
         },
         '/*.js': {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
@@ -279,7 +309,7 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for JS files
           cachePolicy: staticAssetsCachePolicy,
-          responseHeadersPolicy,
+          responseHeadersPolicy: staticAssetsResponseHeadersPolicy,
         },
         '/*.css': {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
@@ -288,7 +318,7 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for CSS files
           cachePolicy: staticAssetsCachePolicy,
-          responseHeadersPolicy,
+          responseHeadersPolicy: staticAssetsResponseHeadersPolicy,
         },
         '/robots.txt': {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {

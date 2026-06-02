@@ -15,11 +15,6 @@ import HomePage from '@pages/public/HomePage';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
 import { ProtectedRoute, SpeakerRoute, PartnerRoute } from '@components/auth/ProtectedRoute';
-import { LoginForm } from '@components/auth/LoginForm';
-import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
-import { ResetPasswordForm } from '@components/auth/ResetPasswordForm';
-import { RegistrationWizard } from '@components/auth/RegistrationWizard';
-import { EmailVerification } from '@components/auth/EmailVerification';
 import { setNavigationCallback } from '@/services/api/apiClient';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 import { LanguageSync } from '@components/shared/LanguageSync/LanguageSync';
@@ -36,6 +31,24 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Auth forms — lazy-loaded so they stay out of the entry chunk (the public
+// homepage never needs them). Named exports, hence the default-interop wrapper.
+const LoginForm = React.lazy(() =>
+  import('@components/auth/LoginForm').then((m) => ({ default: m.LoginForm }))
+);
+const ForgotPasswordForm = React.lazy(() =>
+  import('@components/auth/ForgotPasswordForm').then((m) => ({ default: m.ForgotPasswordForm }))
+);
+const ResetPasswordForm = React.lazy(() =>
+  import('@components/auth/ResetPasswordForm').then((m) => ({ default: m.ResetPasswordForm }))
+);
+const RegistrationWizard = React.lazy(() =>
+  import('@components/auth/RegistrationWizard').then((m) => ({ default: m.RegistrationWizard }))
+);
+const EmailVerification = React.lazy(() =>
+  import('@components/auth/EmailVerification').then((m) => ({ default: m.EmailVerification }))
+);
 
 // Route-level code splitting with React.lazy() (Task 13b)
 const Dashboard = React.lazy(() => import('@pages/Dashboard'));

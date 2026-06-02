@@ -154,6 +154,8 @@ const AppHeader = React.memo(function AppHeader({
             <img
               src="/BATbern_color_logo.svg"
               alt="BATbern"
+              width={95}
+              height={40}
               style={{ height: 40, width: 'auto' }}
             />
           </Box>
