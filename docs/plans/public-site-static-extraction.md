@@ -234,9 +234,27 @@ pipeline — publish each phase to beta, run Lighthouse/PSI, click-through, then
    Small enough to **bake the full archive statically**; filter/sort/"show more" is a client
    island over the baked dataset (no archive API). No build-time pagination needed; render the
    first screenful in HTML.
-3. **CloudFront layout (STILL OPEN — user deferred):** one bucket with path prefixes vs two
-   origins for static-site-vs-SPA routing. Settle empirically in **Phase 1** from what's simplest
-   against the current distribution.
+3. ~~**CloudFront layout**~~ → **RESOLVED (2026-06-02, ADR-011):** one bucket / one distribution;
+   **extend the existing `routerFunction` CloudFront Function** (it already rewrites `/`, `/about`,
+   `/privacy`, `/support` to baked HTML) with an `/archive/:code` prefix rule — **reject two
+   origins** (a second origin/distribution duplicates cache policies, the shared CSP/HSTS headers,
+   OAC and logging for no benefit). The Astro + SPA `dist/` trees merge into one bucket with disjoint
+   keys (homepage at `/home/index.html`; SPA `/index.html` stays the fallback); the existing
+   `404→/index.html` error response is the graceful-degradation net and lets the Function deploy
+   **ahead of** the baked content. The one real implementation hazard is the `BucketDeployment`
+   `prune` collision between the two trees — designed/proven in Phase 1 (Story 13.2). See
+   `docs/architecture/ADR-011-public-site-static-architecture.md`.
+
+### Island auth-bootstrap (RESOLVED 2026-06-02, ADR-011)
+The auth-reading islands work because the static site is the **same origin** as the SPA, so the
+Amplify Cognito session in origin-scoped `localStorage` is shared for free (no cross-origin/cookie
+work, no JWT/CORS change). **Decision:** the role-aware nav + hero registration cluster hydrate as
+**one interactive-shell React root** (`client:load`) owning a minimal `ConfigProvider →
+QueryClientProvider → AuthProvider` subset + synchronous i18n — no `AuthContext` refactor, one
+session-restore. Public-only widgets (`<RemainingSlots/>`/capacity, countdown, newsletter+Turnstile,
+archive filter) are separate lazy islands with no auth providers. Anonymous visitors/crawlers load
+no Amplify (`hasCognitoSession()` + lazy-Amplify gate). The single-root TBT trade-off is measured on
+beta in the Story 13.4 spike, with a many-islands-+-singleton-store split as the documented fallback.
 
 ## 8. Handoff note for the PM (epic / story creation)
 
