@@ -2,6 +2,8 @@
 
 # Claude Code / AgentVibes TTS audio cache
 .claude/audio/
+# Claude Code runtime scheduler state (transient — never commit)
+.claude/scheduled_tasks.lock
 
 # compiled output
 /BATspa-old/dist
