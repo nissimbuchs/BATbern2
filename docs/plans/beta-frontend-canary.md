@@ -130,7 +130,10 @@ endanger the live site**. `npm run diff:staging` is reviewed before each `deploy
   hash (the separately-committed lazy-Amplify build, unrelated to this refactor). No beta stack
   instantiated yet (Phase 2).
 
-### Phase 1 — ACM certificate for `beta.batbern.ch` (us-east-1, DNS-validated) 🟢 no traffic impact
+### Phase 1 — ACM certificate for `beta.batbern.ch` (us-east-1, DNS-validated) 🟢 no traffic impact — ✅ DONE (commit `13ae9fc0`, 2026-06-02)
+> **✅ Result:** cert `arn:aws:acm:us-east-1:188701360969:certificate/7d4daddf-59e8-47e8-aac3-b7db779d5839`
+> requested + DNS-validated (CNAME UPSERTed into `Z08825557YYLWVHISLPY`), reached `ISSUED`, and
+> pinned as `domain.betaFrontendCertificateArn` in `staging-config.ts`. Unused until Phase 2.
 - **Decision (Q2): pre-create the cert and pin its ARN** — mirrors the existing
   `frontendCertificateArn` convention; no `DnsStack` change.
 - Issue a cert for `beta.batbern.ch` in **us-east-1** (CloudFront requirement) via console/CLI,
