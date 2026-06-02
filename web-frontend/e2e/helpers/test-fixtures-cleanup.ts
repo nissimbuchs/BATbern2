@@ -12,8 +12,8 @@
  * ── IMPORTANT: this mirrors the REAL backend allowlist, not the plan's A4 prose ──────
  * The plan's §A4 narrative says EMS handles "events/sessions/topics/tasks/registrations/
  * uploads", but the deployed `TestFixtureCleanupService` enums only accept:
- *   CUMS: companies, users, additional_emails
- *   EMS : events, sessions, topics
+ *   CUMS: companies, users, additional_emails, users_by_email
+ *   EMS : events, sessions, topics, events_by_number
  *   PCS : partners (prefix), meetings (id-allowlist)
  * Sweeping an unsupported entityType returns 400, so SWEEP_TARGETS lists ONLY the real
  * ones. tasks/registrations/uploads have no prefix-sweep path — their slices must clean
@@ -49,7 +49,19 @@ const SWEEP_TARGETS: SweepTarget[] = [
   { service: 'cums', entityType: 'companies', prefix: 'BRUNOTESTCO' },
   { service: 'cums', entityType: 'users', prefix: 'bruno.test' },
   { service: 'cums', entityType: 'additional_emails', prefix: 'bruno-test-' },
+  // CUMS — JIT users from anonymous registrations (issue #725). These carry no
+  // `bruno.test` username (e.g. user.brunotest, promote.ee, test.attendee), so the
+  // username sweep above misses them; the synthetic EMAIL DOMAIN (suffix-matched) is
+  // the only safe discriminator. `prefix` here is the allow-listed domain, NOT a prefix.
+  { service: 'cums', entityType: 'users_by_email', prefix: '@e2e.batbern.invalid' },
+  { service: 'cums', entityType: 'users_by_email', prefix: '@batbern-test.ch' },
+  { service: 'cums', entityType: 'users_by_email', prefix: 'zaproxy@example.com' },
   // EMS — deleting events cascades sessions/registrations/speaker_pool, so events first.
+  // events_by_number FIRST: force-deletes test events (event_number >= 10000) regardless of
+  // their server-generated BATbern{N} code AND bypasses the real-attendee 409 guard — the only
+  // teardown that reaches a registration-fixture event (event-fixture leak fix). `prefix` here
+  // is the reserved threshold sentinel "10000", NOT a prefix.
+  { service: 'ems', entityType: 'events_by_number', prefix: '10000' },
   { service: 'ems', entityType: 'events', prefix: 'BRUNO-TEST-' },
   { service: 'ems', entityType: 'sessions', prefix: 'bruno-test-session-' },
   { service: 'ems', entityType: 'topics', prefix: 'bruno-test-topic-' },

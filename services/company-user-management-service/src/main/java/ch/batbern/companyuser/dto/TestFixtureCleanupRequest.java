@@ -27,16 +27,19 @@ public class TestFixtureCleanupRequest {
 
     @NotNull(message = "entityType is required")
     @Schema(
-            description = "Which entity table to clean. Each entity has its own bound prefix regex.",
+            description = "Which entity table to clean. Each entity has its own bound regex.",
             example = "companies",
-            allowableValues = {"companies", "users"},
+            allowableValues = {"companies", "users", "additional_emails", "users_by_email"},
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String entityType;
 
     @NotBlank(message = "prefix is required")
     @Schema(
-            description = "Literal prefix to match. Must satisfy the bound regex for the given entityType.",
+            description = "Literal value to match. Must satisfy the bound regex for the given "
+                    + "entityType. For most types it is a PREFIX (matched as value%); for "
+                    + "entityType=users_by_email it is a synthetic email DOMAIN matched as a "
+                    + "SUFFIX (e.g. @e2e.batbern.invalid → %@e2e.batbern.invalid).",
             example = "BRUNOTESTCO",
             requiredMode = Schema.RequiredMode.REQUIRED
     )

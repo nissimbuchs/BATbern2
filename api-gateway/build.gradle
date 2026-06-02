@@ -153,13 +153,8 @@ jacocoTestCoverageVerification {
 // Coverage verification runs only during explicit test tasks, not during build
 // check.dependsOn jacocoTestCoverageVerification
 
-// Configure Checkstyle for code quality
-checkstyle {
-    toolVersion = '10.12.5'
-    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
-    ignoreFailures = false
-    maxWarnings = 0
-}
+// Checkstyle is configured centrally in the root build.gradle
+// (subprojects { plugins.withId('checkstyle') }) so settings can't drift.
 
 tasks.named('bootRun') {
     systemProperty 'spring.profiles.active', 'local'

@@ -49,6 +49,17 @@ Each release includes:
 - 📋 Story 10.2: Email Templates admin (TinyMCE WYSIWYG for content templates; Monaco for layout templates)
 - 📋 Story 10.3: Automated task scheduler integration (trigger reminders by due date/state)
 
+**Improvements (delivered)**:
+- ✅ Event deletion now ignores programmatic registrations. Every new event auto-enrols all
+  organizers and partners as participants, which previously left the **Delete Event** button
+  permanently disabled. Deletion is now blocked only when an event has *real* (self-registered)
+  attendees; events with only auto-enrolled stakeholders can be deleted. The API returns `409`
+  if real attendees exist, and the event detail exposes a `realAttendeeCount` field.
+- ✅ Legacy structural entries in historical events — the "Moderation" slots (28 rows, BATbern11–48)
+  and the "Programmheft" entries (41 rows, BATbern1–41) — are reclassified from content talks to
+  technical sessions (`session_type = moderation`), matching how moderation slots are modelled in
+  new events (BATbern57+). Applied directly to the production database (no migration).
+
 ---
 
 ## v1.2.x - Current Release

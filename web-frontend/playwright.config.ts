@@ -74,6 +74,14 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
 
+  /* Assertion timeout. On CI the @smoke gate runs against a freshly-deployed staging
+   * backend whose ECS tasks are "stable" but not yet JVM-warm, so the first requests
+   * (especially multi-service mutating flows) can take several seconds. Playwright's
+   * 5s default is too tight there and produced a spurious gate failure → rollback
+   * (PR #703, registration flow). 15s on CI absorbs cold-start latency without
+   * masking real regressions; local dev keeps the fast 5s default for tight feedback. */
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
+
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html'], ['junit', { outputFile: 'test-results/junit.xml' }], ['list']],
 

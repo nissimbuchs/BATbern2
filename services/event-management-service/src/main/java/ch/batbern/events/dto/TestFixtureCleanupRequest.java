@@ -27,16 +27,20 @@ public class TestFixtureCleanupRequest {
 
     @NotNull(message = "entityType is required")
     @Schema(
-            description = "Which EMS-owned entity table to clean. Each entity has its own bound prefix regex.",
+            description = "Which EMS-owned entity table to clean. Each entity has its own bound regex.",
             example = "events",
-            allowableValues = {"events", "sessions", "topics"},
+            allowableValues = {"events", "sessions", "topics", "events_by_number"},
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String entityType;
 
     @NotBlank(message = "prefix is required")
     @Schema(
-            description = "Literal prefix to match. Must satisfy the bound regex for the given entityType.",
+            description = "Literal value to match. Must satisfy the bound regex for the given "
+                    + "entityType. For most types it is an event_code/slug PREFIX (matched as "
+                    + "value%); for entityType=events_by_number it is the reserved threshold "
+                    + "sentinel \"10000\" — the server force-deletes events with event_number "
+                    + ">= 10000 (the test-fixture range).",
             example = "BRUNO-TEST-",
             requiredMode = Schema.RequiredMode.REQUIRED
     )

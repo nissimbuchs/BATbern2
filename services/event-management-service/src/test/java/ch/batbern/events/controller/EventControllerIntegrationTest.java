@@ -832,6 +832,82 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("should_allowDelete_when_onlyProgrammaticRegistrations")
+    void should_allowDelete_when_onlyProgrammaticRegistrations() throws Exception {
+        Event event = createTestEvent("BATbern Prog-Only", "2027-05-15T09:00:00Z", "CREATED");
+        // Programmatic enrollment (organizer/partner auto-enrol) — carries the autoRegisteredFrom marker.
+        saveRegistration(event.getId(), "batbern.organizer", "confirmed",
+                Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
+        saveRegistration(event.getId(), "batbern.partner", "confirmed",
+                Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
+
+        // Only programmatic registrations → deletable (cascade removes them).
+        mockMvc.perform(delete("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("should_blockDelete_when_realAttendeeRegistered")
+    void should_blockDelete_when_realAttendeeRegistered() throws Exception {
+        Event event = createTestEvent("BATbern Real-Attendee", "2027-06-15T09:00:00Z", "CREATED");
+        // A programmatic enrollment must NOT, on its own, block deletion…
+        saveRegistration(event.getId(), "batbern.organizer", "confirmed",
+                Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
+        // …but a real self-registered attendee (no marker) must → 409.
+        saveRegistration(event.getId(), "real.attendee", "confirmed", null);
+
+        mockMvc.perform(delete("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict());
+
+        // Event still exists.
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("should_excludeProgrammaticRegistrations_from_realAttendeeCount")
+    void should_excludeProgrammaticRegistrations_from_realAttendeeCount() throws Exception {
+        Event event = createTestEvent("BATbern Count", "2027-07-15T09:00:00Z", "CREATED");
+        saveRegistration(event.getId(), "batbern.organizer", "confirmed",
+                Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
+        saveRegistration(event.getId(), "auto.speaker", "confirmed", "SESSION_PRIMARY_SPEAKER");
+        saveRegistration(event.getId(), "real.attendee", "confirmed", null);
+        saveRegistration(event.getId(), "cancelled.attendee", "cancelled", null);
+
+        // Only the single active, non-programmatic registration counts.
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.realAttendeeCount").value(1));
+    }
+
+    /**
+     * Persist a registration directly. {@code trigger} non-null → programmatic (stamps the
+     * {@code autoRegisteredFrom} metadata marker); null → a real self-registered attendee.
+     */
+    private void saveRegistration(java.util.UUID eventId, String username, String status, String trigger) {
+        Registration.RegistrationBuilder builder = Registration.builder()
+                .registrationCode(eventId + "-reg-" + username)
+                .eventId(eventId)
+                .attendeeUsername(username)
+                .status(status)
+                .registrationDate(Instant.now());
+        if (trigger != null) {
+            java.util.Map<String, Object> metadata = new java.util.HashMap<>();
+            metadata.put(Registration.AUTO_REGISTERED_FROM_KEY, trigger);
+            builder.metadata(metadata);
+        }
+        // saveAndFlush: countRealAttendees runs with flushMode=COMMIT (so it never force-flushes a
+        // half-built Event mid-createEvent), so these fixtures must be flushed to the DB explicitly
+        // for the same-transaction guard/count assertions to observe them.
+        registrationRepository.saveAndFlush(builder.build());
+    }
+
     // ============================================================================
     // AC7: Publish Event
     // ============================================================================

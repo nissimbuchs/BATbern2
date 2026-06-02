@@ -3334,6 +3334,15 @@ export interface components {
        */
       spotsRemaining?: number | null;
       /**
+       * @description Count of *real* (self-registered) attendees in an active status — i.e. registrations
+       *     WITHOUT an `autoRegisteredFrom` metadata marker. Excludes programmatic enrollments
+       *     (organizers/partners auto-enrolled at event creation, and auto-registered speakers).
+       *     An event is deletable only when this is 0 (deleteEvent returns 409 otherwise); the
+       *     organizer UI uses it to enable/disable the Delete button.
+       * @example 0
+       */
+      realAttendeeCount?: number;
+      /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe

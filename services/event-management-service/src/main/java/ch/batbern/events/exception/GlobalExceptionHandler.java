@@ -933,6 +933,29 @@ public class GlobalExceptionHandler {
      * Returns HTTP 500 Internal Server Error
      */
     /**
+     * Handle EventHasRealRegistrationsException (event has real attendees and cannot be deleted)
+     * Returns HTTP 409 Conflict
+     */
+    @ExceptionHandler(EventHasRealRegistrationsException.class)
+    public ResponseEntity<ErrorResponse> handleEventHasRealRegistrationsException(
+            EventHasRealRegistrationsException ex,
+            HttpServletRequest request) {
+        log.warn("Event delete blocked — real registrations exist: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle StructuralSessionsAlreadyExistException (structural sessions already generated)
      * Returns HTTP 409 Conflict
      */
