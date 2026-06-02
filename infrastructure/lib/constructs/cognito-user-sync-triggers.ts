@@ -151,6 +151,24 @@ export class CognitoUserSyncTriggers extends Construct {
     this.preAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.postAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
 
+    // Story 12.1 AC6: the post-confirmation trigger writes the custom:role='UNUSED'
+    // sentinel via AdminUpdateUserAttributes after the user_profiles INSERT. The write
+    // is deliberately non-blocking (it must never fail Cognito confirmation), so a
+    // missing IAM grant would surface only as a swallowed AccessDeniedException — the
+    // self-registered chokepoint would silently never stamp the sentinel. Grant the
+    // permission explicitly. A wildcard userpool resource is used on purpose: scoping to
+    // props.userPool.userPoolArn would create a CloudFormation circular dependency
+    // (the pool already depends on this Lambda via addTrigger below).
+    const region = cdk.Stack.of(this).region;
+    const account = cdk.Stack.of(this).account;
+    this.postConfirmationTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cognito-idp:AdminUpdateUserAttributes'],
+        resources: [`arn:aws:cognito-idp:${region}:${account}:userpool/*`],
+      })
+    );
+
     // Note: Database security group ingress rule is configured in VpcConstruct
     // to avoid cyclic dependency (Network -> CompanyManagement -> Network)
 

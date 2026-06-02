@@ -51,68 +51,121 @@ interface UseAuthReturn extends AuthenticationState {
 export const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
 
 /**
- * Hydrate roles from the backend when the JWT carries none.
+ * Hydrate the authenticated user from `GET /users/me` — company, preferences, and
+ * (when the JWT carries none) roles.
  *
- * Background: roles are normally read from the JWT's `custom:role` claim,
- * which is populated by the PreTokenGeneration Lambda from `role_assignments`
- * in the staging DB. In local development, however, a speaker provisioned
- * through CUMS gets a Cognito user in staging but a `user_profiles` row only
- * in the LOCAL database — so the Lambda finds nothing and the JWT comes back
- * empty. Without this hydration the speaker lands on a blank dashboard
- * because `user.roles` is `[]` and Dashboard.tsx defaults to `attendee`.
+ * Story 12.1 (ADR-001 "minimal target footprint"): `companyId` and `preferences` are
+ * business data owned by `user_profiles`, not identity/authorization, so they no longer
+ * ride in the token (`custom:companyId` is gone; `custom:preferences` is no longer read
+ * by `extractUserContextFromToken`). They are sourced here from the DB on every
+ * login/init. The regression guard in AC1 is satisfied structurally: this runs and is
+ * `await`-ed BEFORE `setState({ isAuthenticated: true })`, so `preferences.language` is
+ * on the user the moment any auth-gated effect (e.g. `LanguageSync`, App.tsx) fires.
  *
- * When the JWT roles are empty, fetch `GET /users/me?include=roles` and merge
- * the returned `availableRoles` into the user context. In staging this branch
- * is dormant — the JWT always carries roles. Silently no-ops on any failure
- * to preserve the previous behaviour (Dashboard's defensive fallback handles
- * the still-empty case).
+ * Roles: the JWT `custom:role` claim is authoritative when present — the
+ * PreTokenGeneration Lambda projects it fresh from `role_assignments` in the staging
+ * DB. In local development a CUMS-provisioned speaker has a Cognito user in staging but
+ * a `user_profiles` row only in the LOCAL DB, so the Lambda finds nothing and the JWT
+ * comes back empty; this falls back to the DB roles so the user isn't stranded on a
+ * blank dashboard (Pattern 3b, Epic 11.E.7 — see `JwtRolesConverter` for the backend
+ * twin). When the JWT already carries roles, DB roles are NOT used to override them.
  *
- * Epic 11.E.7 — see `JwtRolesConverter` in shared-kernel for the backend twin.
+ * Silently no-ops on any failure, preserving the token-derived user as-is.
  */
-async function hydrateRolesIfMissing(user: UserContext): Promise<UserContext> {
-  if (user.roles && user.roles.length > 0) {
-    return user;
-  }
+/**
+ * Coerce a backend locale to the frontend `UserPreferences.language` union. The backend
+ * `UserPreferences` enum carries more locales (rm/es/fi/nl/ja/…) than the frontend
+ * 4-locale union, so a blind cast would put an out-of-union value into a typed field.
+ * Values outside the union fall back to the prior value, then 'en'.
+ */
+const FE_LANGUAGES: readonly UserContext['preferences']['language'][] = ['en', 'de', 'fr', 'it'];
+function normalizeLanguage(
+  lang: string | undefined,
+  fallback: UserContext['preferences']['language'] = 'en'
+): UserContext['preferences']['language'] {
+  return (FE_LANGUAGES as readonly string[]).includes(lang ?? '')
+    ? (lang as UserContext['preferences']['language'])
+    : fallback;
+}
+
+async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
   try {
-    const profile = await getUserProfile(['roles']);
-    // 2026-05-21 (Q#H): the backend `/users/me` OpenAPI response (UserResponse, see
-    // user-api.types.ts) returns `roles: ('ORGANIZER' | 'SPEAKER' | …)[]` — UPPERCASE
-    // enum values, plural, no "available" prefix. The old code read
-    // `profile.availableRoles` (lowercase, with "available" prefix) — a field that
-    // simply doesn't exist on the response. The cast to `UserProfileResponse` in
-    // userApi.ts was a lie; TypeScript never noticed because the response is
-    // untyped at runtime. The whole Pattern 3b fallback was a silent no-op as a
-    // result: every locally-created speaker hit this with `availableRoles=undefined`
-    // → `fetchedRoles=[]` → returned the user unchanged → empty dashboard.
-    //
-    // Fix: read the actual `roles` field, lowercase the enum values to match the
-    // frontend `UserRole` union, and let the existing logic run. `currentRole` is
-    // not on the response either; the first role serves as the primary.
-    const raw = profile as unknown as { roles?: string[]; currentRole?: string };
-    const fetchedRoles: UserRole[] = (raw.roles ?? [])
-      .map((r) => r.toLowerCase())
-      .filter(
-        (r): r is UserRole =>
-          r === 'organizer' || r === 'speaker' || r === 'partner' || r === 'attendee'
-      );
-    if (fetchedRoles.length === 0) {
-      return user;
+    const profile = await getUserProfile(['roles', 'company', 'preferences']);
+    // The backend `/users/me` response (UserResponse, see user-api.types.ts) returns
+    // `roles: ('ORGANIZER' | …)[]` (UPPERCASE), `companyId` (the meaningful company name
+    // per ADR-003), and `preferences` (canonical UserPreferences). The declared
+    // `UserProfileResponse` return type in userApi.ts does not match the runtime shape,
+    // so we cast through `unknown` and read the real fields.
+    const raw = profile as unknown as {
+      roles?: string[];
+      currentRole?: string;
+      companyId?: string;
+      preferences?: {
+        language?: string;
+        theme?: string;
+        emailNotifications?: boolean;
+        pushNotifications?: boolean;
+      };
+    };
+
+    let hydrated = user;
+
+    // Story 12.1: company sourced from the DB (was custom:companyId).
+    if (raw.companyId) {
+      hydrated = { ...hydrated, companyId: raw.companyId };
     }
-    const primary: UserRole =
-      raw.currentRole && fetchedRoles.includes(raw.currentRole.toLowerCase() as UserRole)
-        ? (raw.currentRole.toLowerCase() as UserRole)
-        : fetchedRoles[0];
-    console.log(
-      '[AuthProvider] Hydrated roles from /users/me (JWT custom:role was empty) —',
-      'roles=',
-      fetchedRoles,
-      'primary=',
-      primary
-    );
-    return { ...user, role: primary, roles: fetchedRoles };
+
+    // Story 12.1: preferences sourced from the DB (was custom:preferences). Map the
+    // canonical backend shape onto the frontend UserPreferences contract; `language` is
+    // the regression-critical field for locale selection.
+    if (raw.preferences) {
+      const p = raw.preferences;
+      hydrated = {
+        ...hydrated,
+        preferences: {
+          language: normalizeLanguage(p.language, hydrated.preferences?.language ?? 'en'),
+          theme: p.theme === 'dark' ? 'dark' : 'light',
+          notifications: {
+            email: p.emailNotifications ?? true,
+            sms: false,
+            push: p.pushNotifications ?? true,
+          },
+          privacy: {
+            showProfile: true,
+            allowMessages: true,
+          },
+        },
+      };
+    }
+
+    // Roles: only fall back to DB roles when the JWT carried none (local-dev Pattern 3b).
+    if (!user.roles || user.roles.length === 0) {
+      const fetchedRoles: UserRole[] = (raw.roles ?? [])
+        .map((r) => r.toLowerCase())
+        .filter(
+          (r): r is UserRole =>
+            r === 'organizer' || r === 'speaker' || r === 'partner' || r === 'attendee'
+        );
+      if (fetchedRoles.length > 0) {
+        const primary: UserRole =
+          raw.currentRole && fetchedRoles.includes(raw.currentRole.toLowerCase() as UserRole)
+            ? (raw.currentRole.toLowerCase() as UserRole)
+            : fetchedRoles[0];
+        console.log(
+          '[AuthProvider] Hydrated roles from /users/me (JWT custom:role was empty) —',
+          'roles=',
+          fetchedRoles,
+          'primary=',
+          primary
+        );
+        hydrated = { ...hydrated, role: primary, roles: fetchedRoles };
+      }
+    }
+
+    return hydrated;
   } catch (error) {
     console.warn(
-      '[AuthProvider] Could not hydrate roles via GET /users/me — leaving user as-is',
+      '[AuthProvider] Could not hydrate user via GET /users/me — leaving user as-is',
       error
     );
     return user;
@@ -166,7 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           // Epic 11.E.7: hydrate roles from /users/me when JWT carries none
           // (local-dev path; in staging the JWT always has custom:role and this no-ops).
-          const hydratedUser = await hydrateRolesIfMissing(user);
+          const hydratedUser = await hydrateUserFromDb(user);
 
           // Resolve companyName for partner users if not in JWT via GET /partners/me
           let resolvedCompanyName = hydratedUser.companyName;
@@ -240,7 +293,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Epic 11.E.7: hydrate roles from /users/me when JWT carries none
         // (local-dev path; in staging the JWT always has custom:role and this no-ops).
-        let signedInUser = await hydrateRolesIfMissing(result.user);
+        let signedInUser = await hydrateUserFromDb(result.user);
 
         // Resolve companyName for partner users if not in JWT via GET /partners/me
         const isPartner =
@@ -301,7 +354,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         // Epic 11.E.7: hydrate roles from /users/me when JWT carries none
         // (local-dev path; in staging the JWT always has custom:role and this no-ops).
-        let signedInUser = await hydrateRolesIfMissing(result.user);
+        let signedInUser = await hydrateUserFromDb(result.user);
         const isPartner =
           signedInUser.role === 'partner' || signedInUser.roles?.includes('partner');
         if (isPartner && !signedInUser.companyName) {

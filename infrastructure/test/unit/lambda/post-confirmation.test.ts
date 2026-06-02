@@ -16,6 +16,8 @@ import { PostConfirmationTriggerEvent, Context } from 'aws-lambda';
 
 // Mock CloudWatch send function at module level
 const mockCloudWatchSend = jest.fn();
+// Story 12.1: mock the Cognito client used to write the custom:role='UNUSED' sentinel
+const mockCognitoSend = jest.fn();
 
 // Mock AWS SDK and database before importing handler
 jest.mock('@aws-sdk/client-cloudwatch', () => ({
@@ -24,10 +26,17 @@ jest.mock('@aws-sdk/client-cloudwatch', () => ({
   })),
   PutMetricDataCommand: jest.fn().mockImplementation((input) => input),
 }));
+jest.mock('@aws-sdk/client-cognito-identity-provider', () => ({
+  CognitoIdentityProviderClient: jest.fn().mockImplementation(() => ({
+    send: mockCognitoSend,
+  })),
+  AdminUpdateUserAttributesCommand: jest.fn().mockImplementation((input) => input),
+}));
 jest.mock('../../../lib/lambda/triggers/common/database');
 
 import { handler } from '../../../lib/lambda/triggers/post-confirmation';
 import { getDbClient, executeTransaction } from '../../../lib/lambda/triggers/common/database';
+import { AdminUpdateUserAttributesCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 // Test data builders
 function createPostConfirmationEvent(overrides: Partial<PostConfirmationTriggerEvent> = {}): PostConfirmationTriggerEvent {
@@ -92,6 +101,8 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
 
     // @ts-ignore - jest mock type inference issue
     mockCloudWatchSend.mockResolvedValue({});
+    // @ts-ignore - jest mock type inference issue
+    mockCognitoSend.mockResolvedValue({});
 
     // Create mock database client
     mockDbClient = {
@@ -124,6 +135,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user by email
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
@@ -170,6 +182,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -192,6 +205,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -214,6 +228,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -242,6 +257,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT user
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
@@ -273,6 +289,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -295,6 +312,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -327,6 +345,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -358,6 +377,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-bootstrap' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
@@ -389,6 +409,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-456' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -668,6 +689,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -688,6 +710,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Check existing role
@@ -708,6 +731,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
@@ -734,6 +758,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT existing user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
@@ -786,6 +811,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT existing user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
@@ -804,6 +830,62 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
           Namespace: 'BATbern/UserSync',
         })
       );
+    });
+  });
+
+  // ============================================================================
+  // TEST GROUP 7b: custom:role 'UNUSED' sentinel (Story 12.1 AC6)
+  // ============================================================================
+
+  describe('custom:role UNUSED sentinel - Story 12.1', () => {
+    function happyPathDbMocks() {
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user by email
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (no collision)
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
+    }
+
+    it('should_writeCustomRoleUnused_when_userSyncedSuccessfully', async () => {
+      // Arrange
+      const event = createPostConfirmationEvent();
+      const context = createLambdaContext();
+      happyPathDbMocks();
+
+      // Act
+      await handler(event, context, {} as any);
+
+      // Assert - AdminUpdateUserAttributes sets custom:role='UNUSED' as
+      // documentation-in-the-data for console inspectors (does not touch the
+      // DB-projected authorization claim).
+      expect(AdminUpdateUserAttributesCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          UserPoolId: event.userPoolId,
+          Username: event.userName,
+          UserAttributes: expect.arrayContaining([
+            expect.objectContaining({ Name: 'custom:role', Value: 'UNUSED' }),
+          ]),
+        })
+      );
+      expect(mockCognitoSend).toHaveBeenCalled();
+    });
+
+    it('should_notThrowAndStillReturnEvent_when_sentinelWriteFails', async () => {
+      // Arrange - the sentinel write is best-effort; a Cognito failure must NOT
+      // block confirmation (mirrors the existing non-blocking error handling).
+      const event = createPostConfirmationEvent();
+      const context = createLambdaContext();
+      happyPathDbMocks();
+      // @ts-ignore - jest mock type inference issue
+      mockCognitoSend.mockRejectedValueOnce(new Error('Cognito unavailable'));
+
+      // Act
+      const result = await handler(event, context, {} as any);
+
+      // Assert - handler still completes and returns the event unchanged
+      expect(result).toEqual(event);
     });
   });
 
@@ -945,6 +1027,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       mockDbClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no user found
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT (Story 12.1: pre-existing username-collision check)
         .mockResolvedValueOnce({ rows: [{ id: 'new-user-999' }], rowCount: 1 }) // INSERT new user
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role

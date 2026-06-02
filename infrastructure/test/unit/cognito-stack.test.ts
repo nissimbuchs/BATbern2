@@ -1,5 +1,5 @@
 import { App } from 'aws-cdk-lib';
-import { Template, Match } from 'aws-cdk-lib/assertions';
+import { Template, Match, Capture } from 'aws-cdk-lib/assertions';
 import { CognitoStack } from '../../lib/stacks/cognito-stack';
 import { devConfig } from '../../lib/config/dev-config';
 
@@ -67,6 +67,7 @@ describe('CognitoStack Tests', () => {
 
   // Test 1.3: should_enableRoleBasedSignup_when_userRegisters
   test('should_enableRoleBasedSignup_when_userRegisters', () => {
+    const readAttrs = new Capture();
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
       ClientName: 'batbern-development-web-client',
       ExplicitAuthFlows: Match.arrayWith([
@@ -77,14 +78,25 @@ describe('CognitoStack Tests', () => {
       RefreshTokenValidity: 5256000, // Actual value from stack
       AccessTokenValidity: 1440, // 24 hours in minutes
       IdTokenValidity: 1440, // 24 hours in minutes
-      ReadAttributes: Match.arrayWith([
-        'email',
-        'email_verified',
-      ]),
+      ReadAttributes: readAttrs,
       WriteAttributes: Match.arrayWith([
         'email',
       ]),
     });
+
+    // Story 12.1 AC5: 'custom:role' is dropped from the client readAttributes so the
+    // STORED (fossil) custom:role attribute stops flowing into issued tokens. The
+    // DB-projected custom:role authorization claim (injected fresh by the
+    // PreTokenGeneration Lambda) is UNCHANGED — this only stops the client reading the
+    // stored attribute into the token.
+    const attrs = readAttrs.asArray();
+    expect(attrs).toContain('email');
+    expect(attrs).toContain('email_verified');
+    // Assert the EXACT custom-attribute set (not just presence) so a re-added or
+    // misspelled custom:role — or any unexpected custom attribute — fails this test,
+    // matching the stricter exact-set standard used in company-management-stack.test.ts.
+    const customAttrs = attrs.filter((a: string) => a.startsWith('custom:')).sort();
+    expect(customAttrs).toEqual(['custom:companyId', 'custom:preferences']);
   });
 
   // Test 1.4: should_validateCompanyIdAttribute_when_userSignsUp

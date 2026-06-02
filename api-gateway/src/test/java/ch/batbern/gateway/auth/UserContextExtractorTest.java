@@ -52,7 +52,10 @@ class UserContextExtractorTest {
         assertThat(userContext.getEmail()).isEqualTo("user@example.com");
         assertThat(userContext.isEmailVerified()).isTrue();
         assertThat(userContext.getRole()).isEqualTo("organizer");
-        assertThat(userContext.getCompanyId()).isEqualTo("company-456");
+        // Story 12.1 AC2: the gateway no longer extracts custom:companyId into UserContext.
+        // The claim is present on the token but must be IGNORED (company is business data,
+        // resolved server-side via the user-api, not propagated from the token).
+        assertThat(userContext.getCompanyId()).isNull();
         assertThat(userContext.getPreferences()).containsEntry("language", "en");
         assertThat(userContext.getPreferences()).containsEntry("theme", "light");
     }

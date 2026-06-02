@@ -139,13 +139,16 @@ class CognitoIntegrationServiceImplTest {
         assertThat(captured.messageAction()).isEqualTo(MessageActionType.SUPPRESS);
 
         List<AttributeType> attrs = captured.userAttributes();
+        // Story 12.1 AC6: custom:role='UNUSED' sentinel written on admin-provisioned users
+        // (documentation-in-the-data; role still lives in PostgreSQL per ADR-001/004).
         assertThat(attrs).extracting(AttributeType::name)
-                .containsExactlyInAnyOrder("email", "email_verified", "preferred_username");
+                .containsExactlyInAnyOrder("email", "email_verified", "preferred_username", "custom:role");
         assertThat(attrs).extracting(AttributeType::name, AttributeType::value)
                 .contains(
                         org.assertj.core.groups.Tuple.tuple("email", "speaker@example.com"),
                         org.assertj.core.groups.Tuple.tuple("email_verified", "true"),
-                        org.assertj.core.groups.Tuple.tuple("preferred_username", "speaker.bob"));
+                        org.assertj.core.groups.Tuple.tuple("preferred_username", "speaker.bob"),
+                        org.assertj.core.groups.Tuple.tuple("custom:role", "UNUSED"));
     }
 
     @Test

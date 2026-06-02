@@ -259,9 +259,14 @@ export class CognitoStack extends cdk.Stack {
       supportedIdentityProviders: [
         cognito.UserPoolClientIdentityProvider.COGNITO,
       ],
+      // Story 12.1 AC5: 'role' dropped from client readAttributes so the STORED (fossil)
+      // custom:role attribute stops flowing into issued tokens. The schema attribute
+      // (customAttributes.role above) stays — Cognito custom attributes are permanent —
+      // and the DB-projected custom:role authorization claim from the PreTokenGeneration
+      // Lambda is unaffected (it injects claimsToAddOrOverride, independent of this list).
       readAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true, emailVerified: true })
-        .withCustomAttributes('companyId', 'preferences', 'role'),
+        .withCustomAttributes('companyId', 'preferences'),
       writeAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true })
         .withCustomAttributes('companyId', 'preferences'),

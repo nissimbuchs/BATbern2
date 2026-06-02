@@ -185,53 +185,9 @@ class SecurityContextHelperTest {
         assertThat(hasRole).isFalse();
     }
 
-    /**
-     * Test 10.8: should_extractCompanyId_when_presentInToken
-     */
-    @Test
-    void should_extractCompanyId_when_presentInToken() {
-        // Given
-        Jwt jwt = mock(Jwt.class);
-        when(jwt.getClaim("custom:companyId")).thenReturn("company-456");
-
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(jwt);
-        when(authentication.isAuthenticated()).thenReturn(true);
-
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // When
-        String companyId = securityContextHelper.getCompanyId();
-
-        // Then
-        assertThat(companyId).isEqualTo("company-456");
-    }
-
-    /**
-     * Test 10.9: should_returnNull_when_companyIdNotInToken
-     */
-    @Test
-    void should_returnNull_when_companyIdNotInToken() {
-        // Given
-        Jwt jwt = mock(Jwt.class);
-        when(jwt.getClaim("custom:companyId")).thenReturn(null);
-
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(jwt);
-        when(authentication.isAuthenticated()).thenReturn(true);
-
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // When
-        String companyId = securityContextHelper.getCompanyId();
-
-        // Then
-        assertThat(companyId).isNull();
-    }
+    // Story 12.1 AC3: tests 10.8 / 10.9 removed — SecurityContextHelper.getCompanyId()
+    // is deleted (zero production callers; company is business data, not derived from the
+    // custom:companyId claim which is no longer extracted anywhere).
 
     /**
      * Test 10.10: should_extractUsername_when_customUsernameClaimPresent
@@ -507,34 +463,7 @@ class SecurityContextHelperTest {
         assertThat(roles).contains("ORGANIZER", "SPEAKER");
     }
 
-    /**
-     * Test 10.20: should_returnNull_when_mockUserPrincipal_getCompanyId
-     * Company ID is not available for mock users
-     */
-    @Test
-    void should_returnNull_when_mockUserPrincipal_getCompanyId() {
-        // Given
-        org.springframework.security.core.userdetails.User mockUser =
-                new org.springframework.security.core.userdetails.User(
-                        "testuser",
-                        "password",
-                        java.util.Collections.emptyList()
-                );
-
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(mockUser);
-        when(authentication.isAuthenticated()).thenReturn(true);
-
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // When
-        String companyId = securityContextHelper.getCompanyId();
-
-        // Then
-        assertThat(companyId).isNull();
-    }
+    // Story 12.1 AC3: test 10.20 removed (getCompanyId() deleted).
 
     /**
      * Test 10.21: should_throwException_when_unsupportedPrincipalType
@@ -629,28 +558,7 @@ class SecurityContextHelperTest {
                 .hasMessageContaining("Unsupported authentication principal type");
     }
 
-    /**
-     * Test 10.25: should_throwException_when_unsupportedPrincipalType_getCompanyId
-     * Verify error handling for unknown principal types
-     */
-    @Test
-    void should_throwException_when_unsupportedPrincipalType_getCompanyId() {
-        // Given
-        String unsupportedPrincipal = "unsupported-principal";
-
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(unsupportedPrincipal);
-        when(authentication.isAuthenticated()).thenReturn(true);
-
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // When/Then
-        assertThatThrownBy(() -> securityContextHelper.getCompanyId())
-                .isInstanceOf(SecurityException.class)
-                .hasMessageContaining("Unsupported authentication principal type");
-    }
+    // Story 12.1 AC3: test 10.25 removed (getCompanyId() deleted).
 
     /**
      * Test 10.26: should_parseSingleRole_when_noCommaInRoleClaim

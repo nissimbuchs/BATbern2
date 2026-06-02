@@ -82,10 +82,12 @@ describe('CompanyManagementStack — Cognito admin IAM policy (Story 11.E.1)', (
     delete process.env.IMAGE_TAG;
   });
 
-  // Positive regression guard: least-privilege set-equality on the four-action policy +
-  // resource scope. If anyone later adds a fifth action (e.g. cognito-idp:* or
-  // AdminAddUserToGroup) to this statement, or drops the scope to '*', this test fails
-  // loudly and forces an explicit NFR5 review.
+  // Positive regression guard: least-privilege set-equality on the Cognito-admin policy +
+  // resource scope. The grant is the six actions CUMS legitimately needs (create/set-password/
+  // initiate-auth/get-user for provisioning; list-users for reconciliation; resend-confirmation
+  // for the confirmation-resend job). If anyone later adds a seventh action (e.g. cognito-idp:*
+  // or AdminAddUserToGroup) to this statement, or drops the scope to '*', this exact-array match
+  // fails loudly and forces an explicit NFR5 review.
   test('should_grantCognitoAdminPerms_when_companyManagementStackDeployed', () => {
     template.hasResourceProperties('AWS::IAM::Policy', {
       PolicyDocument: {
@@ -97,6 +99,8 @@ describe('CompanyManagementStack — Cognito admin IAM policy (Story 11.E.1)', (
               'cognito-idp:AdminSetUserPassword',
               'cognito-idp:AdminInitiateAuth',
               'cognito-idp:AdminGetUser',
+              'cognito-idp:ListUsers',
+              'cognito-idp:ResendConfirmationCode',
             ],
             // Resource MUST be scoped to the User Pool ARN — never '*'. Spec AC2 invariant.
             // CDK synthesises an Fn::Join with the imported pool's ID at the tail:

@@ -16,9 +16,18 @@
 import { PostConfirmationTriggerEvent, PostConfirmationTriggerHandler } from 'aws-lambda';
 import { getDbClient, executeTransaction } from './common/database';
 import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+import {
+  CognitoIdentityProviderClient,
+  AdminUpdateUserAttributesCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 
 // CloudWatch client for metrics
 const cloudWatchClient = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-central-1' });
+
+// Cognito client for the Story 12.1 custom:role='UNUSED' sentinel write
+const cognitoClient = new CognitoIdentityProviderClient({
+  region: process.env.AWS_REGION || 'eu-central-1',
+});
 
 /**
  * Valid user roles in the system
@@ -385,6 +394,35 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
 }
 
 /**
+ * Story 12.1 AC6: write the custom:role='UNUSED' sentinel on the just-confirmed user.
+ *
+ * This is documentation-in-the-data for console inspectors — it marks the stored
+ * custom:role attribute as deliberately unused (the authorization claim is projected
+ * fresh from the DB by the PreTokenGeneration Lambda; the stored attribute no longer
+ * flows into tokens after the client readAttributes drop). It is best-effort and
+ * MUST NOT throw: a failure is swallowed and logged, exactly like the surrounding
+ * non-blocking handler so it can never block Cognito confirmation.
+ */
+async function writeRoleUnusedSentinel(userPoolId: string, userName: string): Promise<void> {
+  try {
+    await cognitoClient.send(
+      new AdminUpdateUserAttributesCommand({
+        UserPoolId: userPoolId,
+        Username: userName,
+        UserAttributes: [{ Name: 'custom:role', Value: 'UNUSED' }],
+      })
+    );
+    console.log('Wrote custom:role=UNUSED sentinel', { userName });
+  } catch (error) {
+    // Non-blocking: never let the sentinel write fail confirmation.
+    console.warn('Failed to write custom:role=UNUSED sentinel (non-blocking)', {
+      userName,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
+/**
  * Main Lambda handler for PostConfirmation trigger
  *
  * IMPORTANT: This function MUST NOT throw errors, as that would block Cognito user confirmation.
@@ -422,6 +460,9 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
 
     // Create user and assign role in database
     await createUser(cognitoId, email, email_verified === 'true', preferences, role);
+
+    // Story 12.1 AC6: best-effort custom:role='UNUSED' sentinel (non-blocking).
+    await writeRoleUnusedSentinel(event.userPoolId, event.userName);
 
     // Record success metrics
     const duration = Date.now() - startTime;

@@ -34,9 +34,9 @@ public class RequestTransformer {
         additionalHeaders.put("X-User-Email", userContext.getEmail());
         additionalHeaders.put("X-User-Role", userContext.getRole());
 
-        if (userContext.getCompanyId() != null) {
-            additionalHeaders.put("X-Company-Id", userContext.getCompanyId());
-        }
+        // Story 12.1 AC2: the X-Company-Id header is no longer propagated — it was dead
+        // (verified: no service in services/ or shared-kernel/ reads it). Company is
+        // resolved server-side via the user-api where needed.
 
         return new EnhancedHttpServletRequestWrapper(request, additionalHeaders);
     }

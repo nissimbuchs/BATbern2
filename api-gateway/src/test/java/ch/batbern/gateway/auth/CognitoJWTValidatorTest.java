@@ -58,7 +58,8 @@ class CognitoJWTValidatorTest {
         assertThat(userContext.getUserId()).isEqualTo("test-user-id");
         assertThat(userContext.getEmail()).isEqualTo("test@example.com");
         assertThat(userContext.getRole()).isEqualTo("organizer");
-        assertThat(userContext.getCompanyId()).isEqualTo("company-123");
+        // Story 12.1 AC2: gateway no longer extracts custom:companyId (claim ignored).
+        assertThat(userContext.getCompanyId()).isNull();
     }
 
     // Test 3.2: should_extractUserContext_when_validTokenProvided
@@ -77,7 +78,8 @@ class CognitoJWTValidatorTest {
         assertThat(userContext.getEmail()).isEqualTo("test@example.com");
         assertThat(userContext.isEmailVerified()).isTrue();
         assertThat(userContext.getRole()).isEqualTo("organizer");
-        assertThat(userContext.getCompanyId()).isEqualTo("company-123");
+        // Story 12.1 AC2: gateway no longer extracts custom:companyId (claim ignored).
+        assertThat(userContext.getCompanyId()).isNull();
         assertThat(userContext.getPreferences()).containsEntry("language", "en");
         assertThat(userContext.getPreferences()).containsEntry("theme", "light");
     }
@@ -173,7 +175,8 @@ class CognitoJWTValidatorTest {
 
         // Then
         assertThat(userContext.getRole()).isEqualTo("partner");
-        assertThat(userContext.getCompanyId()).isEqualTo("partner-company-456");
+        // Story 12.1 AC2: gateway no longer extracts custom:companyId (claim ignored).
+        assertThat(userContext.getCompanyId()).isNull();
         assertThat(userContext.getPreferences()).containsEntry("language", "de");
         assertThat(userContext.getPreferences()).containsEntry("theme", "dark");
         assertThat(userContext.getPreferences()).containsEntry("notifications", "enabled");
