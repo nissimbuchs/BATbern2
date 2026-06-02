@@ -47,4 +47,25 @@ public class WebClientConfig {
             .readTimeout(Duration.ofSeconds(5))
             .build();
     }
+
+    /**
+     * Dedicated RestTemplate for the request-time {@code is_active} gate's CUMS
+     * user-status lookup (Story 12.2 — {@code GatewayUserStatusClient}).
+     *
+     * Uses tight timeouts (2s connect / 3s read) — same rationale as
+     * {@link #turnstileRestTemplate}: this lookup runs on every authenticated request
+     * (cache-miss path), so a slow/unresponsive CUMS must trigger a FAST fail-open
+     * instead of pinning a gateway servlet thread for the 120s the shared
+     * {@link #restTemplate} allows for Story 5.9 batch imports. Failing open slowly
+     * would let a CUMS hiccup exhaust the front-door thread pool — the opposite of
+     * the gate's fail-open intent.
+     */
+    @Bean
+    @Qualifier("cumsStatusRestTemplate")
+    public RestTemplate cumsStatusRestTemplate(RestTemplateBuilder builder) {
+        return builder
+            .connectTimeout(Duration.ofSeconds(2))
+            .readTimeout(Duration.ofSeconds(3))
+            .build();
+    }
 }
