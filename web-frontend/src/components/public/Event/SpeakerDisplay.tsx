@@ -9,6 +9,7 @@ import { Building2 } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import { useCompany } from '@/hooks/useCompany/useCompany';
 import { useUserPortrait } from '@/hooks/useUserPortrait';
+import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 interface SpeakerDisplayProps {
   speaker: SessionSpeaker;
@@ -98,7 +99,10 @@ export const SpeakerDisplay = ({
         >
           {effectivePortraitUrl ? (
             <img
-              src={effectivePortraitUrl}
+              src={
+                buildCdnImageUrl(effectivePortraitUrl, { w: 160, h: 160, fit: 'cover' }) ??
+                undefined
+              }
               alt={`${speaker.firstName} ${speaker.lastName}`}
               className="h-full w-full object-cover"
               width={80}
@@ -138,7 +142,7 @@ export const SpeakerDisplay = ({
         >
           {logoUrl ? (
             <img
-              src={logoUrl}
+              src={buildCdnImageUrl(logoUrl, { h: 128, fit: 'contain' }) ?? undefined}
               alt={`${companyLabel} logo`}
               className={`${sizes.logoImage} object-contain`}
               width={128}

@@ -56,8 +56,10 @@ import { cleanupByCode } from '../helpers/test-fixtures-cleanup';
 
 test.describe('Event Lifecycle workflow walk (Story 5.1a)', { tag: '@gate' }, () => {
   // One throwaway event for the file (serial) — created once, torn down once. The read-only
-  // @gate asserts the initial CREATED render first; the @smoke then force-advances the SAME
-  // event through every forward state. Serial so the @smoke's mutation can't race the @gate.
+  // test asserts the initial CREATED render first; the walk test then force-advances the SAME
+  // event through every forward state. Serial so the walk's mutation can't race the render.
+  // Both are @gate (nightly), not @smoke — see the walk test's tag note for why it's not a
+  // blocking smoke gate.
   test.describe.configure({ mode: 'serial' });
 
   let token: string;
@@ -97,7 +99,13 @@ test.describe('Event Lifecycle workflow walk (Story 5.1a)', { tag: '@gate' }, ()
 
   test(
     'should_advanceThroughEveryWorkflowState_when_forceTransitioned',
-    { tag: ['@smoke', '@gate'] },
+    // @gate only (NOT @smoke): the server-side walk is solid (transitionWorkflow +
+    // getWorkflowState both verify each state), but the UI `workflow-status-badge` reads
+    // through the CDN-cached events API and can serve a 1–2 state-stale value for >15s after
+    // a rapid force-transition, making this flaky as a BLOCKING smoke gate (it tripped real
+    // staging rollbacks 2026-06-01 while the state machine was correct). Kept in @gate so the
+    // full walk still runs nightly; removed from @smoke so a UI-cache lag can't block deploys.
+    { tag: ['@gate'] },
     async ({ page }) => {
       // Walk the full forward lifecycle: force-advance via the override API, then reload the
       // overview and assert the badge reflects the new state, with an authoritative status

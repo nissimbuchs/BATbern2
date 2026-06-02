@@ -213,6 +213,31 @@ export class StorageStack extends cdk.Stack {
       enableAcceptEncodingBrotli: true,
     });
 
+    // Add an immutable Cache-Control so browsers cache media (logos, profile
+    // pictures, event theme images) on repeat visits. Media keys are
+    // content-addressed (UUID filenames) so they are effectively immutable.
+    // override:false — the image-resize Lambda already emits this exact header
+    // on resized (WebP) responses, so let its value stand; the policy only fills
+    // it in for pass-through originals/SVGs that reached the browser with no
+    // Cache-Control ("Cache TTL: None" in the PageSpeed report).
+    const contentCacheHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
+      this,
+      'ContentCacheHeaders',
+      {
+        responseHeadersPolicyName: `batbern-content-cache-${props.config.envName}`,
+        comment: 'Immutable Cache-Control for content-addressed media',
+        customHeadersBehavior: {
+          customHeaders: [
+            {
+              header: 'Cache-Control',
+              value: 'public, max-age=31536000, immutable',
+              override: false,
+            },
+          ],
+        },
+      }
+    );
+
     // CloudFront distribution for content delivery
     this.distribution = new cloudfront.Distribution(this, 'ContentDistribution', {
       defaultBehavior: {
@@ -222,6 +247,7 @@ export class StorageStack extends cdk.Stack {
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
         compress: true,
         cachePolicy: imageResizeCachePolicy,
+        responseHeadersPolicy: contentCacheHeadersPolicy,
         edgeLambdas: [
           {
             functionVersion: imageResizeFn.currentVersion,

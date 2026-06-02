@@ -215,6 +215,53 @@ describe('StorageStack', () => {
     });
   });
 
+  describe('Browser caching of media', () => {
+    // Content-addressed media (UUID filenames) must reach the browser with an
+    // immutable Cache-Control so repeat visits don't re-download it — PageSpeed
+    // flagged "Cache TTL: None" on cdn.batbern.ch assets.
+    // See docs/plans/public-homepage-performance.md (Phase 6).
+
+    test('should_setImmutableCacheControl_on_contentDistribution', () => {
+      const app = new App();
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+        ResponseHeadersPolicyConfig: Match.objectLike({
+          CustomHeadersConfig: {
+            Items: Match.arrayWith([
+              {
+                Header: 'Cache-Control',
+                Value: 'public, max-age=31536000, immutable',
+                Override: false,
+              },
+            ]),
+          },
+        }),
+      });
+    });
+
+    test('should_attachResponseHeadersPolicy_to_defaultBehavior', () => {
+      const app = new App();
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::Distribution', {
+        DistributionConfig: Match.objectLike({
+          DefaultCacheBehavior: Match.objectLike({
+            ResponseHeadersPolicyId: Match.anyValue(),
+          }),
+        }),
+      });
+    });
+  });
+
   describe('AC5: Resource Tagging', () => {
     test('should_applyConsistentTags_when_resourcesCreated', () => {
       // Arrange

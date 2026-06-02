@@ -71,36 +71,8 @@ export default defineConfig({
         skipWaiting: true, // Activate new service worker immediately
         clientsClaim: true, // Take control of all pages immediately
         runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              networkTimeoutSeconds: 3, // Fallback to cache if network is slow
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              networkTimeoutSeconds: 3, // Fallback to cache if network is slow
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
+          // Google Fonts caching removed — the app loads no web fonts (system
+          // font stack only). See index.html.
           {
             urlPattern: /^https:\/\/.*\.cloudfront\.net\/.*/i,
             handler: 'StaleWhileRevalidate',
@@ -252,6 +224,21 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
+          // Tone.js + its audio deps run AudioContext capability tests at module
+          // init (standardized-audio-context's constant-source-node probe). Force
+          // -ing them into the eager `vendor` chunk made those probes run on every
+          // page (incl. the public homepage) → a "AudioContext was not allowed to
+          // start" autoplay-policy warning before any user gesture. Return
+          // undefined so Rollup leaves them in the chunk created by the dynamic
+          // import('tone') in useBlobSounds — loaded only on the organizer blob
+          // page, after a click. (Shared tslib/@babel-runtime stay in vendor.)
+          if (
+            // match both POSIX (/) and Windows (\) path separators
+            /[\\/]node_modules[\\/]tone[\\/]/.test(id) ||
+            id.includes('standardized-audio-context') ||
+            id.includes('automation-events')
+          )
+            return undefined;
           // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
           // <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" /> from vite-plugin-static-copy.
           // Bundling its IIFE modules causes Vite/Rollup to reorder them so plugins

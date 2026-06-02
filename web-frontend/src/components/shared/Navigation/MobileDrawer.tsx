@@ -79,6 +79,8 @@ export function MobileDrawer({
             <img
               src="/BATbern_color_logo.svg"
               alt="BATbern"
+              width={85}
+              height={36}
               style={{ height: 36, width: 'auto' }}
             />
           </Box>
