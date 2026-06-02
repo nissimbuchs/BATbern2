@@ -91,46 +91,24 @@ public class SecurityConfig {
         }
     }
 
-    /**
-     * CORS configuration bean
-     * Allows frontend (different origin: localhost:3000, www.batbern.ch, etc.)
-     * to access API (localhost:8080, api.batbern.ch).
+    /*
+     * ── CORS is intentionally NOT configured in this gateway ──────────────────────────────
+     *
+     * Per ADR-008 (Simplified API Gateway), CORS is an EDGE concern owned solely by the AWS
+     * API Gateway (HTTP API) in front of this service — see
+     * infrastructure/lib/stacks/api-gateway-stack.ts `corsPreflight` (allowOrigins,
+     * allowMethods, allowHeaders, allowCredentials, exposeHeaders, maxAge). That edge handles
+     * the OPTIONS preflight AND adds the CORS response headers (Access-Control-Allow-Origin,
+     * -Allow-Credentials, -Expose-Headers, …) to every proxied response, including 4xx/5xx
+     * error responses, for allowed origins.
+     *
+     * This service therefore has NO `corsConfigurationSource` bean and the filter chains below
+     * do NOT enable Spring's CorsFilter. A previous implementation duplicated the origin
+     * allowlist here (and in a CorsHandler used by the rate-limit / Turnstile / account-active
+     * filters); that was the leftover the ADR-008 consolidation removed. Do NOT re-introduce
+     * CORS here — to allow a new origin (e.g. a canary subdomain), update the API Gateway
+     * `allowOrigins` only. Single source of truth.
      */
-    @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        org.springframework.web.cors.CorsConfiguration configuration =
-            new org.springframework.web.cors.CorsConfiguration();
-
-        // Allow specific origins
-        // For development: Allow any localhost port (multi-instance support)
-        // For production: Only allow specific domains
-        configuration.setAllowedOriginPatterns(java.util.Arrays.asList(
-            "http://localhost:*",      // Development: any port (e.g., 3000, 4000, 8600)
-            "http://127.0.0.1:*",      // Development: any port on 127.0.0.1
-            "https://www.batbern.ch",
-            "https://batbern.ch"
-        ));
-
-        configuration.setAllowedMethods(java.util.Arrays.asList(
-            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
-        ));
-        // Use wildcard to allow all headers (case-insensitive per RFC 7230)
-        // Prevents issues with case variations (x-correlation-id vs X-Correlation-ID)
-        configuration.addAllowedHeader("*");
-        configuration.setExposedHeaders(java.util.Arrays.asList(
-            "X-Request-Id",
-            "X-Correlation-ID",
-            "X-Rate-Limit-Remaining",
-            "X-Rate-Limit-Reset"
-        ));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source =
-            new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
 
     /**
      * Security configuration for test profile
@@ -143,8 +121,9 @@ public class SecurityConfig {
         return http
                 // CSRF not needed for stateless JWT API with header-based auth
                 .csrf(AbstractHttpConfigurer::disable)
-                // Enable CORS for cross-origin requests (frontend on different port/subdomain)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CORS is owned by the AWS API Gateway edge (ADR-008) — disable Spring's CORS
+                // filter here so this service does not add a second (duplicate) CORS layer.
+                .cors(AbstractHttpConfigurer::disable)
                 // Stateless session - no cookies, no CSRF risk
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -169,8 +148,9 @@ public class SecurityConfig {
         return http
                 // CSRF not needed for stateless JWT API with header-based auth
                 .csrf(AbstractHttpConfigurer::disable)
-                // Enable CORS for cross-origin requests (frontend on different port/subdomain)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CORS is owned by the AWS API Gateway edge (ADR-008) — disable Spring's CORS
+                // filter here so this service does not add a second (duplicate) CORS layer.
+                .cors(AbstractHttpConfigurer::disable)
                 // Stateless session - no cookies, no CSRF risk
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
