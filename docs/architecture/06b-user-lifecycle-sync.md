@@ -754,10 +754,21 @@ accounts outside the window are skipped.
 ships a deactivated user could sign in via Google unchecked; (b) it only blocks at *login*, so a
 24h-valid token keeps working after deactivation.
 
-**Target (ADR-010):** replace PreAuthentication with a request-time **`is_active` gate at the API
-Gateway** (Caffeine-cached, `403 ACCOUNT_DEACTIVATED`, fail-open on CUMS error) — provider-agnostic,
-closes both gaps (deactivation effective within ~60s), then **retire the PreAuthentication trigger**.
-See `ADR-010-federated-identity-via-cognito.md` (D5) and `docs/plans/sso-oidc-federation.md` (PR 1).
+**Target (ADR-010) — DONE for Part A (Story 12.2, 2026-06-02):** the request-time **`is_active`
+gate at the API Gateway** is now the **canonical** enforcement. `AccountActiveFilter`
+(`api-gateway/.../security/AccountActiveFilter.java`) runs after Spring Security authentication,
+resolves the caller's `active` flag from CUMS (`GET /api/v1/users/{username}` via
+`GatewayUserStatusClient`), Caffeine-caches it (`expireAfterWrite ≈ 60s`, key = `custom:username`
+→ `sub` fallback), and returns `403 ACCOUNT_DEACTIVATED` (never 401 — avoids the SPA refresh loop)
+for a deactivated account. It is **fail-open** (CUMS error or 404 → allow + WARN +
+`gateway.active_gate.cums_error` metric) and **provider-agnostic**, so it covers federated (Google)
+logins and the post-issuance window — closing both gaps (deactivation effective within ~60s instead
+of ≤24h). Kill-switch `security.active-gate.enabled` (ships `false`/dark; flip to `true` after a
+prod test-deactivation). The **`PreAuthentication` trigger is now redundant** and is slated for
+retirement in the cleanup track, **after** the gateway gate is confirmed live in prod (it is left
+in place for now as defence-in-depth). Active eviction (EventBridge `UserDeactivated` → evict cache
+key) is a documented FUTURE option, not built. See `ADR-010-federated-identity-via-cognito.md` (D5)
+and `docs/plans/sso-oidc-federation.md` (PR 1 — Part A).
 
 ## Database Schema
 
