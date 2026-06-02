@@ -77,6 +77,7 @@ export interface DomainConfig {
   frontendCertificateArn?: string; // us-east-1 for CloudFront
   cdnCertificateArn?: string; // us-east-1 for CloudFront CDN
   apiCertificateArn?: string; // eu-central-1 for API Gateway
+  betaFrontendCertificateArn?: string; // us-east-1 for the beta.batbern.ch canary (see docs/plans/beta-frontend-canary.md)
 }
 
 export interface VpcConfig {
