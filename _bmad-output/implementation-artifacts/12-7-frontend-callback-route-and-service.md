@@ -1,16 +1,18 @@
-# Story 12.8: Frontend Callback Route + Service Method (SSO Phase 4)
+# Story 12.7: Frontend Callback Route + Service Method + `ACCOUNT_DEACTIVATED` Handling (SSO Phase 4)
 
 Status: ready-for-dev
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
+> **Renumbered 2026-06-02:** this story (frontend callback plumbing) was **Story 12.8** and is now **12.7**, swapped with the verify-only story (now 12.8), so the numeric sequence matches execution order — the callback route lands **before** the Phase-3 verification, letting that verification acquire a real federated token via this `/auth/callback` route instead of hand-driving the OAuth code exchange. This story also now **homes gap G1** from the readiness review: the frontend handling of the gateway's `403 ACCOUNT_DEACTIVATED` (Story 12.2 / its OQ-3), folded in as **AC10** because it lives on the same auth/session path this story already touches.
+
 ## Story
 
 As a **platform engineer wiring the frontend half of Google SSO federation**,
-I want **a `signInWithFederated('Google')` service method that triggers Amplify's hosted-UI redirect, plus an `/auth/callback` route that completes the returned OAuth session (fetch tokens → extract user context → hydrate from `/users/me` → route to `/dashboard`) and a `/logout` route**,
-so that **a federated round-trip works end-to-end through the same JWT/hydration path as password login — verifiable by hand-navigating the hosted-UI OAuth URL — leaving only the visible "Continue with Google" button (Story 12.9) to surface it.**
+I want **a `signInWithFederated('Google')` service method that triggers Amplify's hosted-UI redirect, an `/auth/callback` route that completes the returned OAuth session (fetch tokens → extract user context → hydrate from `/users/me` → route to `/dashboard`), a `/logout` route, and a global handler that turns the gateway's `403 ACCOUNT_DEACTIVATED` into a forced logout + clear message**,
+so that **a federated round-trip works end-to-end through the same JWT/hydration path as password login — verifiable by hand-navigating the hosted-UI OAuth URL — and a deactivated user (native or federated) is cleanly logged out with an explanation rather than seeing a raw 403; leaving only the visible "Continue with Google" button (Story 12.9) to surface it.**
 
-This is **Phase 4** of Epic 12 (SSO / OIDC Federation). It is **invisible to users** — **no button is added** (that is Story 12.9). The Amplify `loginWith.oauth` config and the Cognito callback URLs already exist; this story adds only the `signInWithRedirect` call and the React Router routes that consume the redirect. Source: `docs/plans/sso-oidc-federation.md` §5 "Phase 4 — Frontend plumbing: callback route + service method"; ADR: `docs/architecture/ADR-010-federated-identity-via-cognito.md` (D1 unchanged-JWT contract, D8 button deferred to flag/Phase 5).
+This is **Phase 4** of Epic 12 (SSO / OIDC Federation). It is **invisible to active users** — **no button is added** (that is Story 12.9). The Amplify `loginWith.oauth` config and the Cognito callback URLs already exist; this story adds only the `signInWithRedirect` call, the React Router routes that consume the redirect, and the `ACCOUNT_DEACTIVATED` response handler. Source: `docs/plans/sso-oidc-federation.md` §5 "Phase 4 — Frontend plumbing: callback route + service method" (+ §5 PR1-A: "Frontend maps the code to a forced logout + 'account deactivated' message"); ADR: `docs/architecture/ADR-010-federated-identity-via-cognito.md` (D1 unchanged-JWT contract, D5 `is_active` gate, D8 button deferred to flag/Phase 5).
 
 ## Acceptance Criteria
 
@@ -31,6 +33,11 @@ This is **Phase 4** of Epic 12 (SSO / OIDC Federation). It is **invisible to use
 8. **(i18n — only if the callback page renders text.)** If the `AuthCallbackPage` shows any user-visible copy (e.g. a "Signing you in…" spinner caption, or an error message if the session fails to settle), those strings go through `useTranslation()` (project i18n rule; pattern: `LoginForm.tsx:71` `useTranslation(['auth', …])`) with new keys added to the **`auth` namespace in ALL 10 locales** (`de, en, es, fi, fr, gsw-BE, it, ja, nl, rm` — verified present under `web-frontend/public/locales/*/auth.json`); EN + DE first-class per CLAUDE.md. **Prefer reusing the existing `BATbernLoader` spinner with no caption** (as `App.tsx`'s `PageLoader` `:141-152` and `ProtectedRoute`'s loading state do) to keep the page text-free and skip the i18n fan-out — in which case this AC is satisfied with "no new strings". If any text is shown, the 10-locale keys are mandatory before review.
 
 9. **(Provider-agnostic contract — backend untouched; existing tests stay green.)** No backend, gateway, Cognito-stack, or token-issuance change. The federated session yields the **same JWT shape** password login produces (ADR-010 D1), so `extractUserContextFromToken` and `hydrateUserFromDb` need no SSO-specific branching. All existing `authService.test.ts` + `AuthContext.test.tsx` cases (password sign-in, FORCE_CHANGE_PASSWORD, role hydration, partner companyName) remain green; `npm run type-check` + `npm run lint` clean.
+
+10. **(`ACCOUNT_DEACTIVATED` handling — G1, folded from Story 12.2/OQ-3.)** When **any** API call returns **HTTP `403` with error code `ACCOUNT_DEACTIVATED`** (emitted by the Story 12.2 gateway `is_active` filter), the frontend **forces a logout** and shows a clear "your account has been deactivated" message — for **both** password and federated sessions (the gate is provider-agnostic). Specifics:
+    - Detect the code at the **central HTTP layer** (the shared axios/fetch client/interceptor the service layer already routes through — locate the existing response-error interceptor that handles 401; place this **beside** it, NOT inside individual services). **Critical (project-context auth-retry rule):** `ACCOUNT_DEACTIVATED` is a **403** and must be handled **distinctly from 401** — do **NOT** route it through the token-refresh path (a refresh loop would result). On match: call `authService.signOut()` (→ Amplify `signOut`, clears the session) and redirect to the login surface with a deactivated-state indicator (e.g. `navigate('/login?reason=account_deactivated')` or a one-shot flag the login page reads), so the user lands on a page that renders the message rather than a blank/raw error.
+    - The login/landing surface renders a dismissible "account deactivated" notice when that indicator is present. Copy goes through `useTranslation()` with new keys in the **`auth` namespace across ALL 10 locales** (`de, en, es, fi, fr, gsw-BE, it, ja, nl, rm`), EN+DE first-class (this AC **does** add user-visible strings → the 10-locale fan-out is mandatory, unlike AC8).
+    - **Tests:** a unit test on the interceptor/handler — a mocked `403 { errorCode: 'ACCOUNT_DEACTIVATED' }` response triggers `signOut` + the redirect, and a generic `403` (e.g. authorization failure) does **NOT** (no false logout); a `401` still follows the existing refresh path unchanged (regression guard). Assert against EN or the namespace-stripped key.
 
 ## Tasks / Subtasks
 
@@ -64,6 +71,12 @@ This is **Phase 4** of Epic 12 (SSO / OIDC Federation). It is **invisible to use
   - [ ] Targeted vitest: `authService.test.ts`, `AuthContext.test.tsx`, `AuthCallbackPage.test.tsx`, `LogoutPage` test — dump to a temp file, grep, all green (don't re-run repeatedly).
   - [ ] `npm run type-check` + `npm run lint` clean. Confirm the full frontend vitest suite still passes (no regression in password-login / FORCE_CHANGE_PASSWORD / partner-companyName paths).
   - [ ] Manual (or documented) verification note: hand-navigate the hosted-UI authorize URL with `identity_provider=Google` lands back on `/auth/callback` → `/dashboard` (only fully exercisable once 12.5 + 12.6 are deployed — see Prereq). Record as a deploy-time smoke step.
+
+- [ ] **Task 8 — `ACCOUNT_DEACTIVATED` forced-logout handler (AC: 10) — G1, folded from Story 12.2/OQ-3**
+  - [ ] Locate the shared HTTP response-error interceptor that already handles `401`/token-refresh (the client the service layer routes through, e.g. under `web-frontend/src/services/` or `src/config/`). RED: add a unit test asserting a mocked `403 { errorCode: 'ACCOUNT_DEACTIVATED' }` triggers `authService.signOut()` + redirect; a generic `403` does NOT; a `401` still hits the existing refresh path (regression guard).
+  - [ ] GREEN: add an `ACCOUNT_DEACTIVATED` branch **beside** (not inside) the 401 handler — on match call `authService.signOut()` then route to the login surface with a deactivated indicator (e.g. `?reason=account_deactivated`). **Do NOT** funnel it through token-refresh (403 ≠ 401 — avoids the refresh loop per project-context).
+  - [ ] Render a dismissible "account deactivated" notice on the login surface when the indicator is present; add `auth`-namespace keys in ALL 10 locales (EN+DE first-class).
+  - [ ] Targeted vitest + type-check + lint green.
 
 ## Dev Notes
 
@@ -141,4 +154,5 @@ _(empty)_
 
 | Date | Change |
 |---|---|
-| 2026-06-01 | Story 12.8 drafted (SSO Phase 4 — frontend callback route + service method, invisible/no button). Status → ready-for-dev. |
+| 2026-06-01 | Story drafted (SSO Phase 4 — frontend callback route + service method, invisible/no button) as Story 12.8. Status → ready-for-dev. |
+| 2026-06-02 | **Renumbered 12.8 → 12.7** (swapped with the verify-only story, now 12.8) so callback plumbing precedes Phase-3 verification. **Folded in G1** (frontend `ACCOUNT_DEACTIVATED` forced-logout handler from Story 12.2/OQ-3) as AC10 + Task 8 (+10-locale i18n). Cross-references updated across Epic 12. |

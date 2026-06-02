@@ -1,8 +1,10 @@
-# Story 12.7: Federated Provisioning + Inactive-Gating (VERIFY-ONLY — built in PR 1)
+# Story 12.8: Federated Provisioning + Inactive-Gating (VERIFY-ONLY — built in PR 1)
 
 Status: ready-for-dev
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+
+> **Renumbered 2026-06-02:** this verify-only story was **Story 12.7** and is now **12.8**, swapped with the frontend-callback story (now 12.7). The swap means the `/auth/callback` route + `signInWithFederated` (now Story 12.7) land **before** this verification, so a real federated token can be obtained through the actual app login flow rather than by hand-driving the hosted-UI OAuth code exchange (resolves readiness finding DEV-3).
 
 ## Story
 
@@ -17,6 +19,7 @@ This is **Phase 3** of Epic 12 (SSO / OIDC Federation). It is **VERIFY-ONLY — 
 - **Story 12.2 (gateway `is_active` gate)** — PR 1 Part A. The `OncePerRequestFilter` in `api-gateway` (`security.active-gate.*`) resolves caller status via `UserServiceClient` → `UserResponse.active`, Caffeine-cached (~60s TTL), returns `403 ACCOUNT_DEACTIVATED` for inactive accounts, fail-open on CUMS error, kill-switch `security.active-gate.enabled`. *This is the component AC2 verifies, and it must be deployed with `enabled=true`.*
 - **Story 12.6 (account-linking `PreSignUp_ExternalProvider` trigger)** — Phase 2. A real federated identity is only safely testable once the linking trigger exists (per the Phase 1 §5 warning: a brand-new Google user signing in before the linking trigger hits the §3 gotchas). The trigger also sets `autoConfirmUser`/`autoVerifyEmail` so the federated user is immediately usable. *Without 12.6, there is no real federated identity to verify against.*
 - Implied: Story 12.5 (Google IdP + attribute mapping) must be live so a Google sign-in is possible at all and `custom:preferences` carries the mapped Google name claims.
+- **Story 12.7 (frontend `/auth/callback` + `signInWithFederated`)** — *recommended-available* (sequenced before this story by the 2026-06-02 renumber). Not a hard prerequisite, but with it deployed the federated token is obtained by driving the **real app login flow** (button-less: navigate the hosted-UI authorize URL → land on `/auth/callback` → session settles), avoiding a hand-built OAuth code exchange. If 12.7 is not yet deployed, fall back to the manual hosted-UI exchange.
 
 ## Acceptance Criteria
 
@@ -100,7 +103,7 @@ Per `docs/plans/sso-oidc-federation.md` §4 and project memory: there is exactly
 ### Out of scope
 - **Any code** — this story builds nothing (verify-only). Fixes for failures land in Story 12.2 / 12.3.
 - The **"Continue with Google" button + `features.sso` flag** (Story 12.9) — federation here is driven by hitting the hosted-UI URL directly; no frontend entry point is required.
-- The **frontend `/auth/callback` route + `signInWithFederated` service method** (Story 12.8) — not required for token acquisition in this verification (the OAuth code exchange is performed against the hosted UI directly).
+- **Building** the frontend `/auth/callback` route + `signInWithFederated` service method — that is **Story 12.7** (now sequenced before this story). This verification **uses** that route to acquire the federated token when available, but builds none of it; if 12.7 isn't deployed yet, the OAuth code exchange is performed against the hosted UI directly (see Prerequisites).
 - **Apple / generic OIDC** (Story 12.10 / Phase 6) — deferred.
 - The **trigger-retirement cleanup track** (retire PostAuthentication / PreAuthentication / PostConfirmation) — enabled by PR 1 but separate, optional PRs.
 
@@ -139,4 +142,5 @@ _(verify-only — expected empty; record the verification artifact location if a
 
 | Date | Change |
 |---|---|
-| 2026-06-01 | Story 12.7 drafted (Phase 3, VERIFY-ONLY — no code). Verifies canonical JIT provisioning (12.3) + gateway is_active gate (12.2) against a real throwaway federated Google identity; prereqs 12.2/12.3/12.5/12.6. Status → ready-for-dev. |
+| 2026-06-01 | Story drafted (Phase 3, VERIFY-ONLY — no code) as Story 12.7. Verifies canonical JIT provisioning (12.3) + gateway is_active gate (12.2) against a real throwaway federated Google identity; prereqs 12.2/12.3/12.5/12.6. Status → ready-for-dev. |
+| 2026-06-02 | **Renumbered 12.7 → 12.8** (swapped with the frontend-callback story, now 12.7) so callback plumbing precedes this verification. Added Story 12.7 (callback route) as a recommended-available token-acquisition path (resolves readiness finding DEV-3); updated out-of-scope bullet accordingly. |

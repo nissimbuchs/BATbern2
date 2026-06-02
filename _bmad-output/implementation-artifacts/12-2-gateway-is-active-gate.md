@@ -132,7 +132,7 @@ The sprint-status one-liner asks to verify "PreAuthentication is the ONLY `is_ac
 ### Open Questions
 - **OQ-1 — initial default of `security.active-gate.enabled`.** Plan says "deploy `false`, verify with a test deactivation, then flip `true`." Recommend committing the default as **`false`** so the merge ships dark, and flipping to `true` via a follow-up config change after the prod verification (AC7). Confirm with Nissim whether the flip happens in this PR (config change) or a separate one.
 - **OQ-2 — extend the doc-drift mapping?** Should `06b-user-lifecycle-sync.md` be added to the `api-gateway/` block in `.github/doc-drift-mappings.yml:54-57` so future api-gateway auth changes are auto-flagged against 06b? Low-cost; recommend yes. (Task 6 optional sub-step.)
-- **OQ-3 — frontend `ACCOUNT_DEACTIVATED` handler is OUT OF SCOPE here.** Part A is gateway-only (`docs/plans/sso-oidc-federation.md:125`). The frontend mapping of the `403 ACCOUNT_DEACTIVATED` code → forced logout + "account deactivated" message is a **follow-up** (belongs with the SSO frontend phase / a dedicated FE story). Until then a deactivated user sees a generic 403; the backend behaviour (block within ~60s) is fully delivered by this story. Confirm whether to spin a small FE follow-up story now or fold it into Phase 4/5.
+- **OQ-3 — frontend `ACCOUNT_DEACTIVATED` handler — ✅ RESOLVED 2026-06-02: homed in Story 12.7 (AC10).** Part A is gateway-only (`docs/plans/sso-oidc-federation.md:125`). The frontend mapping of the `403 ACCOUNT_DEACTIVATED` code → forced logout + "account deactivated" message (+ 10-locale i18n) was the readiness-review gap **G1**; it is now folded into **Story 12.7** (frontend callback + service, the SSO frontend-plumbing story on the same auth/session path) as AC10 + Task 8. Until 12.7 ships a deactivated user sees a generic 403; the backend behaviour (block within ~60s) is fully delivered by this story.
 - **OQ-4 — username vs sub on the CUMS lookup.** `getUserByUsername` keys on the ADR-003 username; tokens always carry `custom:username` once PreTokenGen runs, but a `sub`-only fallback (AC2) would 404 → fail-open (AC6). Acceptable (degrades open, no security regression vs today). Confirm no token path issues a JWT without `custom:username` for an *active deactivatable* user (the PreTokenGen Lambda always projects it for DB-backed users).
 
 ## Dev Agent Record
@@ -161,7 +161,7 @@ Claude Opus 4.8 (1M context) — bmad-dev-story, 2026-06-02.
 - **AC9 (tests):** 7 filter unit tests (a–g) + 7 client unit tests + 2 integration tests, all green. Naming `should_…_when_…`.
 - **AC10 (docs same commit):** `06b-user-lifecycle-sync.md` "Target (ADR-010)" flipped to present-tense done for Part A (gateway gate canonical; PreAuthentication redundant, retirement deferred to cleanup track). Added `06b` to the `api-gateway/` doc-drift mapping (OQ-2 = yes).
 - **OQ-1 resolved:** committed default `enabled=false` (ships dark); the flip to `true` is a follow-up config change after a prod test-deactivation (NOT in this PR).
-- **Out of scope (confirmed):** Part B canonical JIT = Story 12.3; frontend `ACCOUNT_DEACTIVATED` handler (OQ-3) = later FE phase; PreAuthentication retirement = cleanup track.
+- **Out of scope (confirmed):** Part B canonical JIT = Story 12.3; frontend `ACCOUNT_DEACTIVATED` handler (OQ-3) = **Story 12.7 AC10** (G1 homed there 2026-06-02); PreAuthentication retirement = cleanup track.
 
 ### File List
 
