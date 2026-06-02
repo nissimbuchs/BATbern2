@@ -20,7 +20,7 @@ beforeAll(() => {
   }
 });
 
-function synth(config: EnvironmentConfig): Template {
+function synth(config: EnvironmentConfig, extraProps: { variant?: string } = {}): Template {
   const app = new App();
   // logsBucket is a required cross-stack dependency (CloudFront access logs).
   const deps = new Stack(app, 'DepsStack', {
@@ -32,6 +32,7 @@ function synth(config: EnvironmentConfig): Template {
     config,
     logsBucket,
     env: { account: '123456789012', region: 'eu-central-1' },
+    ...extraProps,
   });
   return Template.fromStack(stack);
 }
@@ -105,6 +106,72 @@ describe('FrontendStack — stable snapshot bucket (frontend rollback)', () => {
 
     template.hasResourceProperties('AWS::S3::Bucket', {
       BucketName: 'batbern-frontend-stable-development',
+    });
+  });
+});
+
+describe('FrontendStack — variant canary (beta.batbern.ch)', () => {
+  // A second FrontendStack instance with `variant: 'beta'` must coexist with the primary
+  // prod site without colliding on physical names, and must NOT carry the rollback machinery.
+  // See docs/plans/beta-frontend-canary.md Phase 0.
+
+  test('should_suffixBucketWithVariant_keepingEnvForIamGrant', () => {
+    const template = synth(stagingConfig, { variant: 'beta' });
+    // -${envName} suffix is retained so the bucket still matches the cicd S3 grant
+    // `batbern-*-${envName}`.
+    template.hasResourceProperties('AWS::S3::Bucket', {
+      BucketName: 'batbern-frontend-beta-staging',
+    });
+  });
+
+  test('should_omitStableBucket_when_variant', () => {
+    const template = synth(stagingConfig, { variant: 'beta' });
+    // The canary is itself the pre-prod check — no rollback gate, no stable snapshot.
+    template.resourceCountIs('AWS::S3::Bucket', 1);
+    expect(() =>
+      template.hasResourceProperties('AWS::S3::Bucket', {
+        BucketName: 'batbern-frontend-stable-beta-staging',
+      })
+    ).toThrow();
+    // ...and no stable-bucket export.
+    expect(() =>
+      template.hasOutput('StableBucketName', {})
+    ).toThrow();
+  });
+
+  test('should_prefixCloudFrontResourceNames_when_variant', () => {
+    const template = synth(stagingConfig, { variant: 'beta' });
+    template.hasResourceProperties('AWS::CloudFront::Function', {
+      Name: 'beta-spa-router',
+    });
+    template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+      ResponseHeadersPolicyConfig: Match.objectLike({ Name: 'beta-static-assets-headers' }),
+    });
+  });
+
+  test('should_makeBucketDestroyable_when_variant_evenThoughProd', () => {
+    const template = synth(stagingConfig, { variant: 'beta' }); // isProduction: true
+    // The canary bucket must be torn down cleanly despite isProduction — unlike the primary
+    // site which retains.
+    template.hasResource('AWS::S3::Bucket', {
+      Properties: Match.objectLike({ BucketName: 'batbern-frontend-beta-staging' }),
+      DeletionPolicy: 'Delete',
+      UpdateReplacePolicy: 'Delete',
+    });
+  });
+
+  test('should_useCheaperPriceClass_when_variant', () => {
+    const template = synth(stagingConfig, { variant: 'beta' });
+    // PRICE_CLASS_100 (Europe & US) for the canary; the primary prod site uses PRICE_CLASS_ALL.
+    template.hasResourceProperties('AWS::CloudFront::Distribution', {
+      DistributionConfig: Match.objectLike({ PriceClass: 'PriceClass_100' }),
+    });
+  });
+
+  test('should_exportVariantPrefixedOutputs_when_variant', () => {
+    const template = synth(stagingConfig, { variant: 'beta' });
+    template.hasOutput('WebsiteBucketName', {
+      Export: { Name: 'beta-FrontendBucket' },
     });
   });
 });
