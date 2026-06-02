@@ -68,6 +68,11 @@ export class ApiGatewayStack extends cdk.Stack {
       ? [
           `https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`,
           `https://${props.config.domain?.zoneName ?? 'batbern.ch'}`,
+          // Beta frontend canary — same prod API, different origin
+          // (docs/plans/beta-frontend-canary.md). This APIGW corsPreflight allowlist is the
+          // BROWSER-authoritative CORS layer (the Spring gateway's own allowlist is a separate,
+          // additional gate); both must include beta or the browser blocks beta's API calls.
+          `https://beta.${props.config.domain?.zoneName ?? 'batbern.ch'}`,
         ]
       : envName === 'staging'
       ? ['https://www.batbern.ch']
