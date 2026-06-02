@@ -108,3 +108,51 @@ describe('FrontendStack — stable snapshot bucket (frontend rollback)', () => {
     });
   });
 });
+
+describe('FrontendStack — browser caching of static assets', () => {
+  // PageSpeed reported "Cache TTL: None" — CloudFront edge-cached the hashed
+  // assets but emitted no Cache-Control header, so browsers re-downloaded
+  // ~5.6 MiB on repeat visits. A dedicated ResponseHeadersPolicy adds an
+  // immutable 1-year Cache-Control to the content-hashed behaviors only.
+  // See docs/plans/public-homepage-performance.md (Phase 6).
+
+  test('should_createSeparateSecurityAndStaticAssetsPolicies', () => {
+    const template = synth(stagingConfig);
+    template.resourceCountIs('AWS::CloudFront::ResponseHeadersPolicy', 2);
+  });
+
+  test('should_setImmutableCacheControl_on_staticAssetsPolicy', () => {
+    const template = synth(stagingConfig);
+
+    template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+      ResponseHeadersPolicyConfig: Match.objectLike({
+        Name: 'staging-static-assets-headers',
+        CustomHeadersConfig: {
+          Items: Match.arrayWith([
+            {
+              Header: 'Cache-Control',
+              Value: 'public, max-age=31536000, immutable',
+              Override: true,
+            },
+          ]),
+        },
+      }),
+    });
+  });
+
+  test('should_notSetCacheControl_on_htmlSecurityPolicy', () => {
+    const template = synth(stagingConfig);
+
+    // The HTML/SEO policy must NOT carry Cache-Control — index.html stays
+    // uncached so SPA deploys are picked up immediately. Its custom headers are
+    // exactly COOP + CORP.
+    template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+      ResponseHeadersPolicyConfig: Match.objectLike({
+        Name: 'staging-security-headers',
+        CustomHeadersConfig: {
+          Items: Match.not(Match.arrayWith([Match.objectLike({ Header: 'Cache-Control' })])),
+        },
+      }),
+    });
+  });
+});
