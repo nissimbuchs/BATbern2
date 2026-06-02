@@ -45,6 +45,11 @@ dependencies {
     // Jackson for JSON processing (version managed by Spring Boot)
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+    // Caffeine — application-level cache (project standard, no Redis). Used by the
+    // AccountActiveFilter is_active gate (Story 12.2) to keep CUMS off the hot path.
+    // Version pinned to match company-user-management-service.
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
+
     // OpenAPI Support
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
 

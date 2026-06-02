@@ -56,6 +56,9 @@ mappings:
     docs:
       - "docs/architecture/06-backend-architecture.md"
       - "docs/api/"
+      # Story 12.2: the gateway now hosts the canonical is_active gate (AccountActiveFilter),
+      # whose lifecycle/enforcement semantics live in 06b — flag gateway auth changes against it.
+      - "docs/architecture/06b-user-lifecycle-sync.md"
 
   # ── Infrastructure (CDK) ────────────────────────────────────────────────────
   - source_pattern: "infrastructure/"

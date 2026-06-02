@@ -28,6 +28,16 @@ services:
   company-user-management:
     url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8085}
 
+# Request-time is_active gate (Story 12.2 — SSO PR 1 Part A; AccountActiveFilter)
+# Ships DARK: enabled=false so the filter is a pure pass-through on first deploy. Flip to true
+# (env SECURITY_ACTIVE_GATE_ENABLED=true) after a deliberate test deactivation verifies it in
+# prod — instant kill-switch revert, no redeploy. ttl-seconds bounds the deactivation lag and
+# keeps CUMS off the hot path (at most one lookup per user per window).
+security:
+  active-gate:
+    enabled: ${SECURITY_ACTIVE_GATE_ENABLED:false}
+    ttl-seconds: ${SECURITY_ACTIVE_GATE_TTL_SECONDS:60}
+
 # AWS Cognito Configuration
 aws:
   cognito:
