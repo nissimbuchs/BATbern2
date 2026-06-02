@@ -40,15 +40,13 @@ class AccountActiveFilterTest {
     private GatewayUserStatusClient statusClient;
 
     private MeterRegistry meterRegistry;
-    private CorsHandler corsHandler;
     private AccountActiveFilter filter;
 
     @BeforeEach
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
-        corsHandler = new CorsHandler();
         // enabled=true so the gate is exercised; ttl long enough that nothing expires mid-test.
-        filter = new AccountActiveFilter(statusClient, corsHandler, meterRegistry, true, 60);
+        filter = new AccountActiveFilter(statusClient, meterRegistry, true, 60);
         SecurityContextHolder.clearContext();
     }
 
@@ -174,7 +172,7 @@ class AccountActiveFilterTest {
     @Test
     void should_passThroughWithoutCumsCall_when_killSwitchDisabled() throws Exception {
         AccountActiveFilter disabledFilter =
-                new AccountActiveFilter(statusClient, corsHandler, meterRegistry, false, 60);
+                new AccountActiveFilter(statusClient, meterRegistry, false, 60);
         authenticateAs("jane.doe"); // even an authenticated (would-be-blocked) user passes
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/events");

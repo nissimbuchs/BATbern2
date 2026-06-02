@@ -17,6 +17,17 @@
     <link rel="dns-prefetch" href="https://cdn.batbern.ch" />
 
     <!--
+      Warm the connection to the API origin too. The homepage can't render its
+      content — or even discover the hero (LCP) image URL — until the current-event
+      API call to api.batbern.ch returns, so this origin is on the critical path
+      (PageSpeed lists it as a preconnect candidate, ~360 ms LCP saving). It DOES
+      carry crossorigin: API requests are CORS (Authorization / credentials), and a
+      preconnect without crossorigin would open a separate, unused socket.
+    -->
+    <link rel="preconnect" href="https://api.batbern.ch" crossorigin />
+    <link rel="dns-prefetch" href="https://api.batbern.ch" />
+
+    <!--
       No web-font loading: the UI renders in the system font stack
       ('Helvetica Neue'/system-ui — see src/index.css, tailwind.config.js, MUI
       theme in main.tsx). The previous Google Fonts <link> (Inter + Noto Sans JP)

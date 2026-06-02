@@ -4,8 +4,9 @@
  * Provides shared auth state across all components using React Context
  */
 
-import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { authService } from '@services/auth/authService';
+import { useOptionalConfig } from './useConfig';
 import {
   AuthenticationState,
   LoginCredentials,
@@ -15,6 +16,7 @@ import {
 } from '@/types/auth';
 import apiClient from '@/services/api/apiClient';
 import { getUserProfile } from '@/services/api/userApi';
+import { hasCognitoSession } from '@/utils/auth/cognitoSession';
 
 /**
  * Discriminated outcome of a sign-in attempt. Epic 11 bug fix 2026-05-19 — the
@@ -204,11 +206,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
 
   /**
-   * Initialize authentication state on mount
+   * Runtime config (Cognito user-pool + client IDs) is loaded asynchronously by
+   * ConfigProvider AFTER first paint — the config gate was decoupled from bootstrap in
+   * perf/public-homepage-followup #2 (see ConfigContext / main.tsx). Amplify cannot be
+   * configured until that config is stashed (`ensureAmplifyConfigured()` no-ops while it
+   * is null), and a stored Cognito session cannot be restored without a configured
+   * Amplify. Session restore below is therefore gated on `config`: without the gate the
+   * restore raced the `GET /api/v1/config` round-trip, ran against an unconfigured
+   * Amplify, silently resolved to "no user", and bounced authenticated users (incl. the
+   * Playwright @gate suite) to /login. Anonymous visitors short-circuit BEFORE the gate
+   * so aws-amplify is still never pulled onto the public homepage.
+   */
+  const config = useOptionalConfig();
+
+  // Session restore must run at most once, but the effect re-runs when `config`
+  // transitions null → loaded; this ref guards against a second restore.
+  const restoreStartedRef = useRef(false);
+
+  /**
+   * Initialize authentication state on mount (once runtime config is available)
    */
   useEffect(() => {
+    if (restoreStartedRef.current) return;
+
+    // Anonymous visitors have no Cognito tokens in storage. Resolve immediately —
+    // independent of runtime config — so aws-amplify (~426 KB) is never loaded on the
+    // public homepage (authService methods dynamically import it). A returning
+    // authenticated user has tokens in storage and falls through to the restore path.
+    if (!hasCognitoSession()) {
+      restoreStartedRef.current = true;
+      console.log('[AuthProvider] No Cognito session in storage — skipping restore');
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return;
+    }
+
+    // A session exists, but Amplify needs the Cognito config from runtime config to
+    // restore it. Wait for ConfigProvider to load it (this effect re-runs when `config`
+    // becomes non-null). Stay in the loading state meanwhile — do NOT settle to
+    // not-authenticated, which would bounce the user to /login mid-bootstrap.
+    if (!config) return;
+
+    restoreStartedRef.current = true;
+
     const initializeAuth = async () => {
       console.log('[AuthProvider] Initializing auth state...');
+
       try {
         const user = await authService.getCurrentUser();
 
@@ -261,7 +303,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
-  }, []);
+  }, [config]);
 
   /**
    * Sign in user

@@ -7,11 +7,12 @@ import { renderHook, act, render } from '@testing-library/react';
 import React from 'react';
 import type { AppConfig } from '@/config/runtime-config';
 
-// Mock useConfig
+// Mock the config hooks. useTurnstile reads config via useOptionalConfig (so it never
+// throws if it renders before runtime config has loaded — see the hook for rationale).
 vi.mock('@/contexts/useConfig');
-import { useConfig } from '@/contexts/useConfig';
+import { useOptionalConfig } from '@/contexts/useConfig';
 
-const mockUseConfig = vi.mocked(useConfig);
+const mockUseConfig = vi.mocked(useOptionalConfig);
 
 function makeConfig(turnstileEnabled: boolean, siteKey?: string): AppConfig {
   return {

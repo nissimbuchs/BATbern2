@@ -4,16 +4,17 @@
  *
  * Shows a status banner below the hero section when an authenticated user has a
  * registration for the current event. Includes a loading skeleton to prevent CLS.
+ *
+ * Tailwind/shadcn + lucide (no MUI): this component renders eagerly on the public
+ * HomePage, so it must not pull @mui/material into the public bundle. The colours
+ * mirror the dark-theme status chips used elsewhere (see EventCard STATUS_CHIP_STYLES).
  */
 
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import Alert from '@mui/material/Alert';
-import Skeleton from '@mui/material/Skeleton';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HourglassTopIcon from '@mui/icons-material/HourglassTop';
-import QueueIcon from '@mui/icons-material/Queue';
-import CancelIcon from '@mui/icons-material/Cancel';
+import { CheckCircle2, Hourglass, Layers, XCircle } from 'lucide-react';
+import { Skeleton } from '@/components/public/ui/skeleton';
 
 export type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
 
@@ -43,13 +44,11 @@ export function RegistrationStatusBanner({
 }: RegistrationStatusBannerProps) {
   const { t } = useTranslation('registration');
 
-  // AC4: Loading skeleton — same height as the banner, prevents CLS
+  // AC4: Loading skeleton — same height as the banner (56px), prevents CLS
   if (isLoading) {
     return (
       <Skeleton
-        variant="rectangular"
-        height={56}
-        sx={{ borderRadius: 1, my: 2 }}
+        className="my-4 h-14 w-full rounded"
         data-testid="registration-status-banner-skeleton"
       />
     );
@@ -62,29 +61,21 @@ export function RegistrationStatusBanner({
 
   const manageLink = `/register/${eventCode}`;
 
-  // AC2: CANCELLED = grey banner. MUI Alert defaults severity to 'success' when omitted,
-  // so render a custom div for CANCELLED to avoid severity-class pollution.
+  // AC2: CANCELLED = grey banner.
   if (status === 'CANCELLED') {
     return (
       <div
         data-testid="registration-status-banner"
         data-status="CANCELLED"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          backgroundColor: 'rgba(113,113,122,0.15)',
-          color: 'rgb(161,161,170)',
-          borderRadius: 4,
-          padding: '10px 16px',
-          margin: '16px 0',
-        }}
+        role="status"
+        className="my-4 flex items-center gap-2 rounded-md border border-zinc-600/30 bg-zinc-500/15 px-4 py-2.5 text-zinc-400"
       >
-        <CancelIcon fontSize="small" style={{ color: 'rgb(113,113,122)', flexShrink: 0 }} />
-        <span style={{ flex: 1 }}>{t('registrationStatusBanner.cancelled')}</span>
+        <XCircle className="h-5 w-5 flex-shrink-0 text-zinc-500" />
+        <span className="flex-1">{t('registrationStatusBanner.cancelled')}</span>
         <Link
           to={manageLink}
-          style={{ color: 'inherit', textDecoration: 'underline', whiteSpace: 'nowrap' }}
+          data-testid="registration-manage-link"
+          className="whitespace-nowrap text-inherit underline"
         >
           {t('registrationStatusBanner.registerAgain')}
         </Link>
@@ -94,28 +85,23 @@ export function RegistrationStatusBanner({
 
   const config: Record<
     Exclude<RegistrationStatus, 'CANCELLED'>,
-    {
-      severity: 'success' | 'warning' | 'info';
-      icon: React.ReactElement;
-      textKey: string;
-      linkKey: string;
-    }
+    { className: string; icon: ReactNode; textKey: string; linkKey: string }
   > = {
     CONFIRMED: {
-      severity: 'success',
-      icon: <CheckCircleIcon fontSize="small" />,
+      className: 'border-green-400/30 bg-green-400/15 text-green-300',
+      icon: <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-400" />,
       textKey: 'registrationStatusBanner.confirmed',
       linkKey: 'registrationStatusBanner.manageLink',
     },
     REGISTERED: {
-      severity: 'warning',
-      icon: <HourglassTopIcon fontSize="small" />,
+      className: 'border-amber-400/30 bg-amber-400/15 text-amber-300',
+      icon: <Hourglass className="h-5 w-5 flex-shrink-0 text-amber-400" />,
       textKey: 'registrationStatusBanner.registered',
       linkKey: 'registrationStatusBanner.manageLink',
     },
     WAITLIST: {
-      severity: 'info',
-      icon: <QueueIcon fontSize="small" />,
+      className: 'border-blue-400/30 bg-blue-400/15 text-blue-300',
+      icon: <Layers className="h-5 w-5 flex-shrink-0 text-blue-400" />,
       textKey:
         waitlistPosition != null
           ? 'registrationStatusBanner.waitlistWithPosition'
@@ -123,14 +109,14 @@ export function RegistrationStatusBanner({
       linkKey: 'registrationStatusBanner.manageLink',
     },
     ATTENDED: {
-      severity: 'success',
-      icon: <CheckCircleIcon fontSize="small" />,
+      className: 'border-green-400/30 bg-green-400/15 text-green-300',
+      icon: <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-400" />,
       textKey: 'registrationStatusBanner.attended',
       linkKey: 'registrationStatusBanner.manageLink',
     },
   };
 
-  const { severity, icon, textKey, linkKey } = config[status];
+  const { className, icon, textKey, linkKey } = config[status];
 
   // AC13: interpolate position for WAITLIST when available
   const bannerText =
@@ -139,21 +125,21 @@ export function RegistrationStatusBanner({
       : t(textKey);
 
   return (
-    <Alert
-      severity={severity}
-      icon={icon}
+    <div
       data-testid="registration-status-banner"
-      sx={{ my: 2 }}
-      action={
-        <Link
-          to={manageLink}
-          style={{ color: 'inherit', textDecoration: 'underline', whiteSpace: 'nowrap' }}
-        >
-          {t(linkKey)}
-        </Link>
-      }
+      data-status={status}
+      role="status"
+      className={`my-4 flex items-center gap-2 rounded-md border px-4 py-2.5 ${className}`}
     >
-      {bannerText}
-    </Alert>
+      {icon}
+      <span className="flex-1">{bannerText}</span>
+      <Link
+        to={manageLink}
+        data-testid="registration-manage-link"
+        className="whitespace-nowrap text-inherit underline"
+      >
+        {t(linkKey)}
+      </Link>
+    </div>
   );
 }

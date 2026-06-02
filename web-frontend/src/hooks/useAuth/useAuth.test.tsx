@@ -7,6 +7,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAuth } from './useAuth';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ConfigContext } from '@/contexts/createConfigContext';
+import type { AppConfig } from '@/config/runtime-config';
 import { LoginCredentials } from '@/types/auth';
 import React from 'react';
 
@@ -27,14 +29,31 @@ import { authService } from '@services/auth/authService';
 
 const mockAuthService = vi.mocked(authService);
 
+// AuthProvider gates session restore on runtime config being present (Cognito pool/client
+// IDs). In production it always renders inside ConfigProvider; supply a config here so the
+// restore path runs (perf/public-homepage-followup #2 config-gate decouple).
+const TEST_CONFIG: AppConfig = {
+  environment: 'staging',
+  apiBaseUrl: 'https://api.batbern.ch/api/v1',
+  cognito: { userPoolId: 'eu-central-1_TEST', clientId: 'client', region: 'eu-central-1' },
+  features: { notifications: true, analytics: false, pwa: false, turnstile: false },
+};
+
 // Wrapper component for tests
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <AuthProvider>{children}</AuthProvider>
+  <ConfigContext.Provider value={TEST_CONFIG}>
+    <AuthProvider>{children}</AuthProvider>
+  </ConfigContext.Provider>
 );
 
 describe('useAuth Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // AuthProvider now skips session restore unless a Cognito session exists in storage
+    // (perf/public-homepage-followup #2). Seed one so these tests exercise the restore path.
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('CognitoIdentityServiceProvider.client.user.idToken', 'stub');
     // Default mock behavior
     mockAuthService.getCurrentUser.mockResolvedValue(null);
     mockAuthService.signOut.mockResolvedValue();

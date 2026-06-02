@@ -33,8 +33,7 @@ describe('LanguageSwitcher Component', () => {
         </I18nextProvider>
       );
 
-      expect(screen.getByLabelText('Language selector')).toBeInTheDocument();
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByTestId('language-selector')).toBeInTheDocument();
     });
 
     it('should_showGermanSelected_when_defaultLanguage', async () => {
@@ -46,7 +45,7 @@ describe('LanguageSwitcher Component', () => {
         </I18nextProvider>
       );
 
-      const select = screen.getByRole('combobox');
+      const select = screen.getByTestId('language-selector');
       expect(select).toHaveTextContent('DE');
     });
 
@@ -57,13 +56,10 @@ describe('LanguageSwitcher Component', () => {
         </I18nextProvider>
       );
 
-      const select = screen.getByRole('combobox');
+      const select = screen.getByTestId('language-selector');
 
-      // Open the select dropdown and click on English
-      fireEvent.mouseDown(select);
-
-      const englishOption = await screen.findByText('EN — English');
-      fireEvent.click(englishOption);
+      // Select English from the native <select>
+      fireEvent.change(select, { target: { value: 'en' } });
 
       await waitFor(() => {
         expect(i18n.language).toBe('en');
@@ -77,12 +73,10 @@ describe('LanguageSwitcher Component', () => {
         </I18nextProvider>
       );
 
-      const select = screen.getByRole('combobox');
+      const select = screen.getByTestId('language-selector');
 
       // Change to English
-      fireEvent.mouseDown(select);
-      const englishOption = await screen.findByText('EN — English');
-      fireEvent.click(englishOption);
+      fireEvent.change(select, { target: { value: 'en' } });
 
       await waitFor(() => {
         expect(localStorage.getItem('batbern-language')).toBe('en');
@@ -110,10 +104,8 @@ describe('LanguageSwitcher Component', () => {
       expect(screen.getByText('Willkommen zurück')).toBeInTheDocument();
 
       // Change to English
-      const select = screen.getByRole('combobox');
-      fireEvent.mouseDown(select);
-      const englishOption = await screen.findByText('EN — English');
-      fireEvent.click(englishOption);
+      const select = screen.getByTestId('language-selector');
+      fireEvent.change(select, { target: { value: 'en' } });
 
       // Should now show English text
       await waitFor(() => {
@@ -128,12 +120,10 @@ describe('LanguageSwitcher Component', () => {
         </I18nextProvider>
       );
 
-      const select = screen.getByRole('combobox');
+      const select = screen.getByTestId('language-selector');
 
       // Change to English
-      fireEvent.mouseDown(select);
-      const englishOption = await screen.findByText('EN — English');
-      fireEvent.click(englishOption);
+      fireEvent.change(select, { target: { value: 'en' } });
 
       await waitFor(() => {
         expect(document.documentElement.lang).toBe('en');

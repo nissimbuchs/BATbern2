@@ -1,7 +1,10 @@
 import * as React from 'react';
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { cn } from '@/lib/utils';
-import { CheckIcon } from '@radix-ui/react-icons';
+// lucide-react (the app's standard icon set, already bundled) instead of
+// @radix-ui/react-icons — that barrel shipped ~481 KB to the public bundle for
+// just two icons because the manual `vendor` chunk defeats its tree-shaking.
+import { Check as CheckIcon } from 'lucide-react';
 
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,

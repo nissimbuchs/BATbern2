@@ -2,10 +2,25 @@
  * AWS Amplify Configuration
  * Story 1.2: AWS Cognito Integration Setup
  * Updated to use runtime config instead of build-time env vars
+ *
+ * Public-homepage performance (perf/public-homepage-followup #2): Amplify is no longer
+ * eagerly imported + configured at bootstrap. `aws-amplify` (~426 KB) is the largest
+ * remaining chunk on the public homepage, yet anonymous visitors never authenticate.
+ *
+ * The new contract:
+ *  - `main.tsx` calls `setAmplifyRuntimeConfig(config)` at bootstrap — a synchronous stash
+ *    that does NOT import aws-amplify.
+ *  - Every auth-touching entry point (authService, apiClient.getIdToken, the password /
+ *    email-verification / live-control flows) calls `await ensureAmplifyConfigured()` before
+ *    invoking any Amplify API. The first such call dynamically imports + configures Amplify;
+ *    subsequent calls are no-ops. Anonymous visitors never trigger it (the eager callers
+ *    gate on `hasCognitoSession()` first), so aws-amplify stays off their first paint.
+ *
+ * Note: the `import type` below is erased at build time, so this module has NO runtime
+ * dependency on aws-amplify — it is safe to import from eager code.
  */
 
-import { Amplify, type ResourcesConfig } from 'aws-amplify';
-import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
+import type { ResourcesConfig } from 'aws-amplify';
 import type { AppConfig } from './runtime-config';
 
 // Storage adapter for Amplify token persistence
@@ -96,25 +111,58 @@ function detectTokenStorage(): Storage {
   }
 }
 
-// Configure Amplify with runtime config
-export const configureAmplify = (runtimeConfig: AppConfig) => {
-  const config = getAmplifyConfig(runtimeConfig);
+// Runtime config stashed by main.tsx at bootstrap — consumed lazily by
+// ensureAmplifyConfigured() on the first auth-touching code path.
+let runtimeConfig: AppConfig | null = null;
+// Memoised configure promise — guarantees Amplify.configure runs at most once even under
+// concurrent first-time callers (e.g. several API requests firing together post-login).
+let configurePromise: Promise<void> | null = null;
 
-  try {
-    Amplify.configure(config);
+/**
+ * Stash the runtime config WITHOUT importing or configuring Amplify.
+ * Called once from main.tsx at bootstrap. Cheap + synchronous — keeps aws-amplify off the
+ * eager bundle for anonymous visitors.
+ */
+export const setAmplifyRuntimeConfig = (config: AppConfig): void => {
+  runtimeConfig = config;
+};
 
-    // Detect and configure correct storage based on existing tokens
-    // This fixes the issue where page refresh loses auth when "remember me" wasn't checked
-    const storage = detectTokenStorage();
-    const storageAdapter = createStorageAdapter(storage);
-    cognitoUserPoolsTokenProvider.setKeyValueStorage(storageAdapter);
+/**
+ * Idempotently load + configure AWS Amplify the first time an auth-touching code path needs
+ * it. Dynamically imports aws-amplify (and its Cognito token provider) so the ~426 KB
+ * dependency lands in a lazy chunk rather than the eager homepage bundle.
+ *
+ * No-ops when no runtime config has been stashed yet (e.g. unit tests that mock
+ * `aws-amplify/auth` directly and never call setAmplifyRuntimeConfig). In that case the
+ * caller's own dynamically-imported (and mocked) Amplify functions still run.
+ */
+export const ensureAmplifyConfigured = async (): Promise<void> => {
+  if (configurePromise) return configurePromise;
+  if (!runtimeConfig) return; // nothing to configure (tests / pre-bootstrap)
 
-    console.log(
-      '✅ AWS Amplify configured successfully for environment:',
-      runtimeConfig.environment
-    );
-  } catch (error) {
-    console.error('❌ Failed to configure AWS Amplify:', error);
-    throw new Error('Amplify configuration failed', { cause: error });
-  }
+  const config = runtimeConfig;
+  configurePromise = (async () => {
+    const [{ Amplify }, { cognitoUserPoolsTokenProvider }] = await Promise.all([
+      import('aws-amplify'),
+      import('aws-amplify/auth/cognito'),
+    ]);
+
+    try {
+      Amplify.configure(getAmplifyConfig(config));
+
+      // Detect and configure correct storage based on existing tokens
+      // This fixes the issue where page refresh loses auth when "remember me" wasn't checked
+      const storage = detectTokenStorage();
+      cognitoUserPoolsTokenProvider.setKeyValueStorage(createStorageAdapter(storage));
+
+      console.log('✅ AWS Amplify configured (lazy) for environment:', config.environment);
+    } catch (error) {
+      // Reset so a later call can retry rather than be wedged on a rejected promise.
+      configurePromise = null;
+      console.error('❌ Failed to configure AWS Amplify:', error);
+      throw new Error('Amplify configuration failed', { cause: error });
+    }
+  })();
+
+  return configurePromise;
 };

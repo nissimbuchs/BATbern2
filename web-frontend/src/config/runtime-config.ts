@@ -105,12 +105,33 @@ function getApiUrl(): string {
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Support custom API port for multi-instance development
     // Set via VITE_API_PORT when starting frontend (e.g., VITE_API_PORT=8500 npm run dev)
-    const apiPort = import.meta.env.VITE_API_PORT || '8080';
+    // Default is 8000 — the canonical native-dev gateway port (`make dev-native-up`,
+    // which also sets VITE_API_PORT=8000 explicitly). docker-compose maps the gateway
+    // to :8080, so docker-compose browser access must set VITE_API_PORT=8080.
+    // No production impact: prod hostnames resolve below to https://api.batbern.ch.
+    const apiPort = import.meta.env.VITE_API_PORT || '8000';
     return `http://localhost:${apiPort}`;
   }
 
   // Production (batbern.ch or www.batbern.ch)
   return 'https://api.batbern.ch';
+}
+
+/**
+ * Synchronous, best-effort API base URL derived purely from the current hostname.
+ *
+ * Mirrors the backend's `ConfigController.getApiBaseUrl()`, which returns exactly
+ * `<host>/api/v1` in every environment (`http://localhost:{port}/api/v1` in dev,
+ * `https://api.batbern.ch/api/v1` in staging+prod). Because it needs no network call,
+ * the API client can be initialised with this at bootstrap — BEFORE the
+ * `GET /api/v1/config` round-trip — so public data (e.g. the homepage current event)
+ * loads in parallel with the config fetch instead of waiting for it.
+ *
+ * `loadRuntimeConfig()` later supplies the authoritative `apiBaseUrl` (identical in
+ * prod) via `updateApiClientConfig()`.
+ */
+export function getDefaultApiBaseUrl(): string {
+  return `${getApiUrl()}/api/v1`;
 }
 
 /**
@@ -163,7 +184,7 @@ function validateConfig(config: unknown): asserts config is AppConfig {
 function getDefaultDevelopmentConfig(): AppConfig {
   return {
     environment: 'development',
-    apiBaseUrl: 'http://localhost:8080/api/v1',
+    apiBaseUrl: 'http://localhost:8000/api/v1',
     cognito: {
       userPoolId: 'eu-central-1_XXXXXXXXX',
       clientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX',

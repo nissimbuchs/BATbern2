@@ -16,7 +16,7 @@
  * See homePagePhase.ts for the authoritative section visibility matrix.
  */
 
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
@@ -34,7 +34,15 @@ import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
-import { NewsletterSubscribeWidget } from '@/components/public/NewsletterSubscribeWidget';
+// Below-the-fold + backend/Turnstile-dependent → lazy-loaded so it stays off the eager
+// homepage bundle (its Turnstile/config code too) and only mounts after the page's event
+// data has resolved, by which point runtime config is loaded. Keeps the config gate from
+// ever being on the homepage's critical render path.
+const NewsletterSubscribeWidget = lazy(() =>
+  import('@/components/public/NewsletterSubscribeWidget').then((m) => ({
+    default: m.NewsletterSubscribeWidget,
+  }))
+);
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { useEventPhotos } from '@/hooks/useEventPhotos';
@@ -111,7 +119,10 @@ const HomePage = () => {
   if (isLoading) {
     return (
       <PublicLayout>
-        <div className="container mx-auto px-4 py-24 flex min-h-screen items-center justify-center">
+        <div
+          className="container mx-auto px-4 py-24 flex min-h-screen items-center justify-center"
+          data-testid="homepage-loading"
+        >
           <BATbernLoader size={96} />
         </div>
       </PublicLayout>
@@ -342,9 +353,11 @@ const HomePage = () => {
           <TestimonialSection skipPhotoRow={vis.testimonialsSkipPhotoRow} />
         </div>
 
-        {/* Newsletter Subscribe Widget — always shown */}
+        {/* Newsletter Subscribe Widget — always shown (lazy, below the fold) */}
         <div className="border-t pt-4 pb-8">
-          <NewsletterSubscribeWidget />
+          <Suspense fallback={null}>
+            <NewsletterSubscribeWidget />
+          </Suspense>
         </div>
       </div>
     </PublicLayout>

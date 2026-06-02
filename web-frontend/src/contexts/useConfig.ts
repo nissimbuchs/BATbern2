@@ -33,3 +33,18 @@ export function useConfig(): AppConfig {
 
   return config;
 }
+
+/**
+ * Hook to access runtime configuration WITHOUT throwing when it is not yet loaded.
+ *
+ * Since the config gate was decoupled (the app shell now renders before
+ * `GET /api/v1/config` resolves), components that may render during that brief window
+ * — notably `useTurnstile`, which sits on the eager public homepage path via the
+ * newsletter widget — must tolerate a null config and re-render when it arrives.
+ * Treat `null` as "config not ready yet" (e.g. feature flags default to off).
+ *
+ * @returns Runtime configuration, or `null` if it has not loaded yet.
+ */
+export function useOptionalConfig(): AppConfig | null {
+  return useContext(ConfigContext);
+}

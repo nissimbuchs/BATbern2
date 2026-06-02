@@ -70,7 +70,7 @@ describe('runtime-config', () => {
     const config = await loadRuntimeConfig();
 
     expect(config.environment).toBe('development');
-    expect(config.apiBaseUrl).toBe('http://localhost:8080/api/v1');
+    expect(config.apiBaseUrl).toBe('http://localhost:8000/api/v1');
     expect(config.features.turnstile).toBe(false);
   });
 

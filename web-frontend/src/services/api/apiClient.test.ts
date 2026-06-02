@@ -42,11 +42,26 @@ describe('API Client', () => {
     mockAxios = new MockAdapter(apiClient);
     // Clear mock calls
     vi.clearAllMocks();
+    // Default to an anonymous visitor: no Cognito tokens in storage. getIdToken() now
+    // short-circuits before touching Amplify unless a session exists (perf/public-homepage-
+    // followup #2). Tests that exercise the authenticated path seed a Cognito key explicitly.
+    localStorage.clear();
+    sessionStorage.clear();
   });
 
   afterEach(() => {
     mockAxios.restore();
+    localStorage.clear();
+    sessionStorage.clear();
   });
+
+  // Amplify v6 persists tokens under CognitoIdentityServiceProvider.* keys; getIdToken()
+  // gates on their presence before importing aws-amplify.
+  const seedCognitoSession = () =>
+    localStorage.setItem(
+      'CognitoIdentityServiceProvider.client123.user@example.com.idToken',
+      'stub'
+    );
 
   describe('Request Interceptor', () => {
     it('should_addAcceptLanguageHeader_when_requestMade', async () => {
@@ -74,6 +89,9 @@ describe('API Client', () => {
     });
 
     it('should_addAuthorizationHeader_when_amplifySessionHasToken', async () => {
+      // Authenticated path: a Cognito session exists in storage, so getIdToken() proceeds to
+      // query Amplify.
+      seedCognitoSession();
       // Mock AWS Amplify fetchAuthSession to return an ID token (not access token)
       // Implementation uses idToken to include custom Cognito attributes (custom:role)
       vi.mocked(fetchAuthSession).mockResolvedValue({
@@ -112,7 +130,8 @@ describe('API Client', () => {
     });
 
     it('should_notAddAuthorizationHeader_when_noToken', async () => {
-      // Mock AWS Amplify - no tokens available
+      // Authenticated path but Amplify reports no tokens (e.g. expired/cleared session).
+      seedCognitoSession();
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
       } as AuthSession);
@@ -123,6 +142,22 @@ describe('API Client', () => {
       });
 
       await apiClient.get('/test');
+    });
+
+    it('should_notLoadAmplify_when_anonymousVisitorHasNoCognitoSession', async () => {
+      // perf/public-homepage-followup #2: anonymous homepage visitors have no Cognito tokens
+      // in storage, so getIdToken() MUST short-circuit BEFORE querying Amplify — that is what
+      // keeps aws-amplify (~426 KB) off the eager bundle for them. Storage is empty by default
+      // (cleared in beforeEach), so fetchAuthSession must never be called and no Authorization
+      // header is added.
+      mockAxios.onGet('/public-events').reply((config) => {
+        expect(config.headers?.['Authorization']).toBeUndefined();
+        return [200, { events: [] }];
+      });
+
+      await apiClient.get('/public-events');
+
+      expect(fetchAuthSession).not.toHaveBeenCalled();
     });
   });
 

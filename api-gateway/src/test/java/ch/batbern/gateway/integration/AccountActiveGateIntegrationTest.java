@@ -2,7 +2,6 @@ package ch.batbern.gateway.integration;
 
 import ch.batbern.gateway.client.GatewayUserStatusClient;
 import ch.batbern.gateway.security.AccountActiveFilter;
-import ch.batbern.gateway.security.CorsHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +58,7 @@ class AccountActiveGateIntegrationTest {
     @BeforeEach
     void setUp() {
         AccountActiveFilter filter = new AccountActiveFilter(
-                statusClient, new CorsHandler(), new SimpleMeterRegistry(), true, 60);
+                statusClient, new SimpleMeterRegistry(), true, 60);
         mockMvc = MockMvcBuilders.standaloneSetup(new ProbeController()).addFilters(filter).build();
         authenticate();
     }

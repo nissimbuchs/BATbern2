@@ -29,6 +29,10 @@ import java.io.IOException;
  * - Uses existing RateLimiter and RateLimitStorage infrastructure
  *
  * Implements AC6: Rate Limiting from Story 1.11
+ *
+ * CORS: not handled here. CORS is owned solely by the AWS API Gateway edge (ADR-008); it adds
+ * the CORS response headers — including on this filter's 429 — for allowed origins. See
+ * infrastructure/lib/stacks/api-gateway-stack.ts `corsPreflight` and SecurityConfig.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE) // After Spring Security authentication
@@ -38,7 +42,6 @@ public class RateLimitingFilter implements Filter {
 
     private final RateLimiter rateLimiter;
     private final RateLimitStorage rateLimitStorage;
-    private final CorsHandler corsHandler;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -86,9 +89,7 @@ public class RateLimitingFilter implements Filter {
                     LogSanitizer.sanitize(userId), LogSanitizer.sanitize(role),
                     LogSanitizer.sanitize(endpoint), currentCount, rateLimit);
 
-                // Add CORS headers to 429 response
-                addCorsHeaders(httpRequest, httpResponse);
-
+                // CORS headers on this 429 are added by the AWS API Gateway edge (ADR-008).
                 httpResponse.setStatus(429); // HTTP 429 Too Many Requests
                 httpResponse.setContentType("application/json");
                 httpResponse.getWriter().write(String.format(
@@ -110,39 +111,14 @@ public class RateLimitingFilter implements Filter {
         } catch (RateLimitExceededException e) {
             log.warn("Rate limit exception: {}", e.getMessage());
 
-            // Add CORS headers to exception response
-            addCorsHeaders(httpRequest, httpResponse);
-
+            // CORS headers are added by the AWS API Gateway edge (ADR-008) for allowed origins,
+            // including on this 429 — the gateway no longer manages CORS. See SecurityConfig.
             httpResponse.setStatus(429); // HTTP 429 Too Many Requests
             httpResponse.setContentType("application/json");
             httpResponse.getWriter().write(
                 "{\"error\":\"Rate limit exceeded\",\"message\":\"" + e.getMessage() + "\"}"
             );
         }
-    }
-
-    /**
-     * Adds CORS headers to allow cross-origin requests
-     */
-    private void addCorsHeaders(HttpServletRequest request, HttpServletResponse response) {
-        String origin = request.getHeader("Origin");
-        if (origin != null && isOriginAllowed(origin)) {
-            response.setHeader("Access-Control-Allow-Origin", origin);
-            response.setHeader("Access-Control-Allow-Credentials", "true");
-            response.setHeader("Access-Control-Allow-Methods",
-                "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
-            response.setHeader("Access-Control-Allow-Headers",
-                "Authorization, Content-Type, X-Requested-With, X-Request-Id, "
-                + "X-Correlation-ID, Accept, Accept-Language");
-            response.setHeader("Access-Control-Expose-Headers",
-                "X-Request-Id, X-Correlation-ID, X-RateLimit-Limit, "
-                + "X-RateLimit-Remaining, X-RateLimit-Reset");
-            response.setHeader("Vary", "Origin");
-        }
-    }
-
-    private boolean isOriginAllowed(String origin) {
-        return corsHandler.isOriginAllowed(origin);
     }
 
     /**
