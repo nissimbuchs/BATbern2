@@ -252,6 +252,18 @@ function handler(event) {
         value: 'cross-origin',
         override: true,
       },
+      // Variant canary (e.g. beta.batbern.ch): keep it out of search indexes so it never
+      // competes with the primary www site. Spread is empty for the primary site, so its
+      // synthesized template is unchanged.
+      ...(variant
+        ? [
+            {
+              header: 'X-Robots-Tag',
+              value: 'noindex, nofollow',
+              override: true,
+            },
+          ]
+        : []),
     ];
 
     // Response headers policy for security (HTML + SEO — no Cache-Control here so

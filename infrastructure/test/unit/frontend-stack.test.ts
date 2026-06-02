@@ -174,6 +174,34 @@ describe('FrontendStack — variant canary (beta.batbern.ch)', () => {
       Export: { Name: 'beta-FrontendBucket' },
     });
   });
+
+  test('should_addNoindexRobotsHeader_when_variant', () => {
+    const template = synth(stagingConfig, { variant: 'beta' });
+    // The canary must stay out of search indexes so it never competes with www.
+    template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+      ResponseHeadersPolicyConfig: Match.objectLike({
+        Name: 'beta-security-headers',
+        CustomHeadersConfig: {
+          Items: Match.arrayWith([
+            { Header: 'X-Robots-Tag', Value: 'noindex, nofollow', Override: true },
+          ]),
+        },
+      }),
+    });
+  });
+
+  test('should_notAddNoindexRobotsHeader_when_primarySite', () => {
+    const template = synth(stagingConfig); // no variant
+    // The primary www site must NOT be deindexed.
+    template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+      ResponseHeadersPolicyConfig: Match.objectLike({
+        Name: 'staging-security-headers',
+        CustomHeadersConfig: {
+          Items: Match.not(Match.arrayWith([Match.objectLike({ Header: 'X-Robots-Tag' })])),
+        },
+      }),
+    });
+  });
 });
 
 describe('FrontendStack — browser caching of static assets', () => {
