@@ -239,6 +239,26 @@ export default defineConfig({
             id.includes('automation-events')
           )
             return undefined;
+          // Admin-only heavy libraries — charts (recharts + its exclusive d3/victory/
+          // react-smooth tree), animation (framer-motion), and drag-and-drop (@dnd-kit) —
+          // are imported ONLY by lazy-loaded organizer/partner/presentation routes (zero
+          // imports in the public homepage graph, verified 2026-06-02). Forcing them into
+          // the eager `vendor` chunk shipped them to every public homepage visitor (most of
+          // the ~313 KB "unused JavaScript" Lighthouse flagged). Return undefined so Rollup
+          // co-locates them with the dynamic import() chunk of their route — identical to the
+          // `tone` carve-out above. The d3-*/victory-vendor/react-smooth packages are pulled
+          // ONLY transitively by recharts (no direct src imports), so splitting them with it
+          // is safe; without them the recharts split would be pointless (d3 would stay eager).
+          // Unlike @emotion/@mui, none of these have a React-core circular dependency, so the
+          // single-vendor TDZ concern documented above does not apply to them.
+          if (
+            /[\\/]node_modules[\\/](recharts|framer-motion|react-smooth|victory-vendor|internmap)[\\/]/.test(
+              id
+            ) ||
+            /[\\/]node_modules[\\/]@dnd-kit[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]d3-[^\\/]+[\\/]/.test(id)
+          )
+            return undefined;
           // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
           // <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" /> from vite-plugin-static-copy.
           // Bundling its IIFE modules causes Vite/Rollup to reorder them so plugins

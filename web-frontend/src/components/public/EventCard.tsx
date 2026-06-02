@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/public/ui/card';
 import { Badge } from '@/components/public/ui/badge';
 import { SpeakerDisplay } from './Event/SpeakerDisplay';
+import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
 import type { EventDetailUI, SessionUI } from '@/types/event.types';
 
 type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
@@ -74,10 +75,23 @@ export function EventCard({
             <div
               className={`overflow-hidden ${viewMode === 'list' ? 'flex-shrink-0 w-48' : 'w-full h-48'}`}
             >
+              {/* Resize + WebP via the CDN Lambda — cards display at ~192px tall and are
+                  below the fold, so serve a small responsive image (lazy) instead of the
+                  full-resolution origin. A raw AI-theme PNG here was 2.7 MB on the homepage
+                  (Lighthouse 2026-06-02); buildCdnImageUrl drops it to a few tens of KB. */}
               <img
-                src={event.themeImageUrl}
+                src={
+                  buildCdnImageUrl(event.themeImageUrl, { w: 768, fit: 'cover' }) ??
+                  event.themeImageUrl
+                }
+                srcSet={
+                  buildCdnImageSrcSet(event.themeImageUrl, [384, 768], { fit: 'cover' }) ??
+                  undefined
+                }
+                sizes="(min-width: 1024px) 384px, (min-width: 768px) 50vw, 100vw"
                 alt={`${event.title} theme image`}
                 className="w-full h-full object-cover"
+                loading="lazy"
                 data-testid="event-card-image"
               />
             </div>
