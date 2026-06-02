@@ -148,7 +148,12 @@ endanger the live site**. `npm run diff:staging` is reviewed before each `deploy
   `frontendCertificateArn`). The cert sits **unused** until Phase 2 — zero impact on the live site.
 - **Acceptance:** cert `ISSUED`; ARN committed in config. **Rollback:** delete the unused cert.
 
-### Phase 2 — Beta `FrontendStack` instance (new bucket + new CloudFront + `beta.batbern.ch`) 🟡 new stack, prod untouched
+### Phase 2 — Beta `FrontendStack` instance (new bucket + new CloudFront + `beta.batbern.ch`) 🟡 new stack, prod untouched — ✅ DONE (commit `5a0bc024`, 2026-06-02)
+> **✅ Result:** `BATbern-staging-FrontendBeta` deployed to the prod account (DistributionId
+> `E3KG0H0UXSYH2F` / `d182gua1vp827j.cloudfront.net`, bucket `batbern-frontend-beta-staging`).
+> `https://beta.batbern.ch` returns HTTP 200, serves the SPA, TLS via the pinned cert, and
+> `x-robots-tag: noindex, nofollow`. Primary `*-Frontend` template re-confirmed byte-identical.
+> 18 unit tests pass. API calls 403 on CORS until Phase 3.
 - In `bin/batbern-infrastructure.ts`, behind a `--context betaFrontend=true` (or a
   `config.betaFrontend` flag so it never synthesizes by accident), create:
   ```
