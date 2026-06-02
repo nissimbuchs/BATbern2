@@ -303,12 +303,17 @@ export default defineConfig({
           //     undefined co-locates it with the lazy chunks that use it (same pattern as
           //     recharts/amplify). None has a React-core circular dependency, so the @emotion/@mui
           //     single-vendor TDZ concern does not apply.
+          //   - zod: the form-validation schema lib, used ONLY via @hookform/resolvers/zod in the
+          //     same 6 lazy form components (+ src/schemas/partnerSchema.ts, imported only by the
+          //     lazy PartnerCreateEditModal). No eager homepage importer. (yup is NOT here — it is
+          //     not a dependency and not bundled; we standardised on zod.)
           // (Redux is intentionally absent here: @reduxjs/toolkit/react-redux are not direct deps
           //  and are not bundled, so there is nothing to carve.)
           if (
             /[\\/]node_modules[\\/]@tinymce[\\/]/.test(id) ||
             /[\\/]node_modules[\\/]react-hook-form[\\/]/.test(id) ||
-            /[\\/]node_modules[\\/]@hookform[\\/]/.test(id)
+            /[\\/]node_modules[\\/]@hookform[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]zod[\\/]/.test(id)
           )
             return undefined;
           // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
