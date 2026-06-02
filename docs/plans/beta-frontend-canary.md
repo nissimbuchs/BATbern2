@@ -111,7 +111,7 @@ bucket name or distribution comment can force replacement of the production site
 Ordering follows the house rule: every phase is shippable to prod on its own and **cannot
 endanger the live site**. `npm run diff:staging` is reviewed before each `deploy`.
 
-### Phase 0 — Parameterize `FrontendStack` with `variant` (pure no-op for prod) 🟢 safety gate
+### Phase 0 — Parameterize `FrontendStack` with `variant` (pure no-op for prod) 🟢 safety gate — ✅ DONE (commit `b98d388e`, 2026-06-02)
 - Add optional `variant?: string` to `FrontendStackProps`; thread it through all name
   derivations and gate `stableBucket` on `!variant` (see §3).
 - Add/extend unit tests in `infrastructure/test/unit/frontend-stack.test.ts`:
@@ -121,6 +121,14 @@ endanger the live site**. `npm run diff:staging` is reviewed before each `deploy
   stack. This proves the refactor is invisible to prod. Merge + (optionally) deploy — it changes
   nothing live.
 - **Rollback:** trivial (revert; no live resource touched).
+- **✅ Result (2026-06-02):** implemented via optional `variant` prop on `FrontendStackProps`
+  (`prefix`/`bucketSuffix`/`isPrimary` discriminators; `stableBucket` + its output gated on
+  primary; buckets destroyable + `PRICE_CLASS_100` for variants). 14 unit tests pass. Verified two
+  ways: (1) `cdk synth BATbern-staging-Frontend` of **HEAD vs the change** → **byte-for-byte
+  identical** template; (2) real `cdk diff BATbern-staging-Frontend` → *"There were no
+  differences"* on all structural sections, the only delta being the `DeployWebsite` bundle asset
+  hash (the separately-committed lazy-Amplify build, unrelated to this refactor). No beta stack
+  instantiated yet (Phase 2).
 
 ### Phase 1 — ACM certificate for `beta.batbern.ch` (us-east-1, DNS-validated) 🟢 no traffic impact
 - **Decision (Q2): pre-create the cert and pin its ARN** — mirrors the existing
