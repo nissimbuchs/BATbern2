@@ -236,7 +236,7 @@ describe('StorageStack', () => {
               {
                 Header: 'Cache-Control',
                 Value: 'public, max-age=31536000, immutable',
-                Override: true,
+                Override: false,
               },
             ]),
           },

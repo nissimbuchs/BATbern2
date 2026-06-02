@@ -213,13 +213,13 @@ export class StorageStack extends cdk.Stack {
       enableAcceptEncodingBrotli: true,
     });
 
-    // Force an immutable Cache-Control on every viewer response so browsers cache
-    // media (logos, profile pictures, event theme images) on repeat visits.
-    // Media keys are content-addressed (UUID filenames) so they are effectively
-    // immutable. The image-resize Lambda already sets this header on resized
-    // (WebP) responses; this policy additionally covers pass-through originals
-    // and SVGs, which otherwise reached the browser with no Cache-Control
-    // ("Cache TTL: None" in the PageSpeed report).
+    // Add an immutable Cache-Control so browsers cache media (logos, profile
+    // pictures, event theme images) on repeat visits. Media keys are
+    // content-addressed (UUID filenames) so they are effectively immutable.
+    // override:false — the image-resize Lambda already emits this exact header
+    // on resized (WebP) responses, so let its value stand; the policy only fills
+    // it in for pass-through originals/SVGs that reached the browser with no
+    // Cache-Control ("Cache TTL: None" in the PageSpeed report).
     const contentCacheHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
       this,
       'ContentCacheHeaders',
@@ -231,7 +231,7 @@ export class StorageStack extends cdk.Stack {
             {
               header: 'Cache-Control',
               value: 'public, max-age=31536000, immutable',
-              override: true,
+              override: false,
             },
           ],
         },

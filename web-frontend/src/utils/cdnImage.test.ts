@@ -62,6 +62,15 @@ describe('buildCdnImageUrl', () => {
     expect(u.searchParams.get('v')).toBe('2');
     expect(u.searchParams.get('w')).toBe('100');
   });
+
+  it('overrides a pre-existing w param (caller wins, no duplicates)', () => {
+    // e.g. an API-supplied URL already carrying ?w=256&h=192 re-requested at w=512
+    const out = buildCdnImageUrl(`${CDN}?w=256&h=192`, { w: 512, fit: 'cover' });
+    const u = new URL(out as string);
+    expect(u.searchParams.getAll('w')).toEqual(['512']);
+    expect(u.searchParams.get('h')).toBe('192'); // untouched when not re-specified
+    expect(u.searchParams.get('fit')).toBe('cover');
+  });
 });
 
 describe('buildCdnImageSrcSet', () => {

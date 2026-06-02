@@ -233,7 +233,8 @@ export default defineConfig({
           // import('tone') in useBlobSounds — loaded only on the organizer blob
           // page, after a click. (Shared tslib/@babel-runtime stay in vendor.)
           if (
-            id.includes('/node_modules/tone/') ||
+            // match both POSIX (/) and Windows (\) path separators
+            /[\\/]node_modules[\\/]tone[\\/]/.test(id) ||
             id.includes('standardized-audio-context') ||
             id.includes('automation-events')
           )
