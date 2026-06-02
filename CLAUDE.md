@@ -586,6 +586,36 @@ cd infrastructure
 npm run deploy:staging   # Deploys to production (staging account serves production traffic)
 ```
 
+### Beta Frontend Canary — de-risk big frontend-only changes before prod
+
+`beta.batbern.ch` is a **second frontend** (`BATbern-staging-FrontendBeta`: its own S3 bucket
+`batbern-frontend-beta-staging` + CloudFront distribution) that serves the same build-once SPA
+artifact against the **same production API, Cognito, and database** as www. It exists so a
+**frontend-only** change can be previewed on real infrastructure (real CloudFront, real data,
+real `cdn.batbern.ch` image-resize Lambda) before it reaches every visitor — bundle/loading
+refactors, perf work (e.g. lazy-loading, chunk splitting, prerender), layout/CSS, client
+routing. The canonical use: push a feature branch's build to beta, run Lighthouse/PSI or a
+click-through, then promote to prod with confidence.
+
+```bash
+# Publish the current web-frontend build to beta (build → S3 sync → CloudFront invalidation)
+scripts/deploy/publish-beta-frontend.sh            # builds web-frontend first
+SKIP_BUILD=1 scripts/deploy/publish-beta-frontend.sh   # publish existing web-frontend/dist as-is
+
+# Infra/stack changes to beta (rare — the stack is gated behind a context flag):
+cd infrastructure && AWS_PROFILE=batbern-staging npx cdk deploy BATbern-staging-FrontendBeta \
+  --context environment=staging --context betaFrontend=true --require-approval never
+```
+
+**⚠️ Beta is a UI CANARY, not a sandbox.** It shares the **production** backend/Cognito/DB, so
+every action on beta acts on **live production data** with real accounts. Use it ONLY for
+frontend-only changes — never to test backend changes, migrations, or destructive flows
+(those gain nothing from beta and would hit prod data). It is public + `noindex`; do not
+advertise the URL. The publish script forces the `batbern-staging` profile (a dev shell
+exporting `AWS_PROFILE=batbern-dev` would otherwise point at the wrong account). The beta
+distribution and CORS allow-listing of `https://beta.batbern.ch` (gateway `SecurityConfig` +
+`CorsHandler`) are already in place. Full design: `docs/plans/beta-frontend-canary.md`.
+
 ## AWS Monitoring & Logs
 
 ### AWS Profiles
