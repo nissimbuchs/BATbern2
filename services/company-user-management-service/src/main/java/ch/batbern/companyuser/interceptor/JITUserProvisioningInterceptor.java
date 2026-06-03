@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -54,6 +55,16 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
 
     /** For parsing the `custom:preferences` JSON blob set by the signup form. */
     private static final ObjectMapper PREFERENCES_MAPPER = new ObjectMapper();
+
+    /**
+     * Supported UI language codes that fit the {@code pref_language VARCHAR(2)} column
+     * (UserPreferences.java:30). The 10th supported locale, {@code gsw-BE}, is intentionally
+     * absent: its 2-char primary subtag {@code gsw} does not exist, so Swiss-German falls
+     * back to the {@code @PrePersist} default {@code "de"}. Keep in sync with
+     * V15__remove_language_check_constraint.sql and web-frontend i18n config.
+     */
+    private static final Set<String> SUPPORTED_LANGUAGE_CODES =
+            Set.of("de", "en", "fr", "it", "rm", "es", "fi", "nl", "ja");
 
     /**
      * Pre-handle method called before controller execution
@@ -227,13 +238,35 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
         }
         try {
             JsonNode node = PREFERENCES_MAPPER.readTree(raw);
-            String language = node.path("language").asText(null);
-            return (language != null && !language.isEmpty()) ? language : null;
+            return normalizeLanguage(node.path("language").asText(null));
         } catch (Exception e) {
             log.warn("Failed to parse custom:preferences JSON for language during JIT provisioning: {}",
                     e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Normalize a raw language value to a supported 2-char code, or null.
+     * <p>
+     * Story 12.3 review: {@code pref_language} is {@code VARCHAR(2)}; a raw BCP-47 tag such as
+     * {@code gsw-BE} / {@code fr-CH} (the frontend sends {@code i18n.language} verbatim, and
+     * federated SSO delivers region-tagged codes) would overflow the column and abort the
+     * INSERT — silently dropping JIT provisioning for that identity. We take the primary
+     * subtag ({@code fr-CH -> fr}), lowercase it, and accept it only if it is a supported
+     * 2-char code; anything else returns null so the {@code @PrePersist} default {@code "de"}
+     * applies. Also defuses non-string JSON values ({@code asText} coercions like {@code "123"})
+     * and stray casing/whitespace.
+     *
+     * @param raw the language value parsed from {@code custom:preferences} (may be null)
+     * @return a supported 2-char code, or null to fall back to the default
+     */
+    private String normalizeLanguage(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String primary = raw.trim().toLowerCase(Locale.ROOT).split("[-_]", 2)[0];
+        return SUPPORTED_LANGUAGE_CODES.contains(primary) ? primary : null;
     }
 
     /**

@@ -454,6 +454,29 @@ class UserReconciliationServiceTest {
         assertThat(saved.getPreferences().getLanguage()).isEqualTo("fr");
     }
 
+    // Story 12.3 review: pref_language is VARCHAR(2). An over-length BCP-47 tag (gsw-BE)
+    // would overflow the column and — because createMissingUser's @Transactional is a no-op
+    // (private self-invocation) — abort the WHOLE nightly batch at the outer commit.
+    // normalizeLanguage falls it back to the @PrePersist default "de" instead.
+    @Test
+    void should_fallBackToDefault_when_languageIsUnsupportedRegionTag() {
+        when(userRepository.findByIsActive(true)).thenReturn(List.of());
+        UserType cognitoUser = createCognitoUserWithPreferences(
+                "cognito-id-gsw", "hans@example.ch",
+                "{\"firstName\":\"Hans\",\"lastName\":\"Muster\",\"language\":\"gsw-BE\"}");
+        ListUsersIterable paginator = mockListUsersPaginator(cognitoUser);
+        when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
+        when(userRepository.findByCognitoUserId("cognito-id-gsw")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        reconciliationService.reconcileUsers();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        // No supported 2-char code -> preferences unset -> default "de" at persist.
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
     /**
      * Test 10: should_deactivateUser_when_orphanDetected
      * AC: deactivateOrphanedUser() logic within reconcileOrphanedDbUsers
