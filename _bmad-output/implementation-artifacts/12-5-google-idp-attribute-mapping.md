@@ -1,6 +1,6 @@
 # Story 12.5: Define the Google IdP + Add to Client (SSO Phase 1)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -153,6 +153,10 @@ hand-off to Story 12-3/12-6.
 ### Open Questions
 - **OQ-1 (AC2/AC4) — `custom:preferences` JSON-fold is not expressible in Cognito attribute mapping; resolved by mapping to standard `given_name`/`family_name` and having canonical JIT (Story 12-3/PR 1B) read names for federated users from those standard attributes.** This story maps names to standard attributes only and does NOT modify any trigger/interceptor. **Confirm with the architect** that Story 12-3's JIT will read federated names from standard `given_name`/`family_name` (it currently reads native names from the `custom:preferences` JSON via `post-confirmation.ts`). If the architect instead wants names folded into `custom:preferences` for federated users, that requires a **trigger** (e.g. the PreSignUp_ExternalProvider lambda in Story 12-6 writing the JSON) — NOT attribute mapping — and that work belongs in Story 12-6, not here. Flag at PR time.
 - **OQ-2 (AC3) — adding standard `given_name`/`family_name` to the existing single real pool.** Must be confirmed **additive** (no pool replacement) via `cdk diff`/synth before the Layer-3 deploy. If CFN signals a replacement, escalate (a pool replacement is unacceptable on the production pool) and fall back to coordinating with Story 12-6 to capture names in the linking trigger instead of via standard-attribute mapping.
+
+## Review Findings (code review 2026-06-03, bmad-code-review, Claude Opus 4.8 1M; 3 adversarial layers)
+
+**✅ Clean — no findings.** Acceptance Auditor verified all 9 ACs satisfied against source: Google IdP defined with `clientId` (`unsafeUnwrap`) + `clientSecretValue` (kept as `SecretValue` → `{{resolve:secretsmanager:…}}` dynamic reference, never inlined); scopes `['openid','email','profile']`; `attributeMapping` email/givenName/familyName; `standardAttributes` extended with `givenName`/`familyName` (`required:false, mutable:true`) with no `custom:preferences` schema change; `supportedIdentityProviders: [COGNITO, GOOGLE]` (COGNITO retained) + `userPoolClient.node.addDependency(googleIdp)`. Blind/Edge layers raised no defects in the 12.5 surface. (All actionable findings from this pass are in Story 12.6.)
 
 ## Dev Agent Record
 

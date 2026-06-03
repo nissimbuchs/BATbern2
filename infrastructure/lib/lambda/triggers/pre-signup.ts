@@ -111,12 +111,16 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
   try {
     client = await getDbClient();
 
-    // Source of truth = the DB row. Match by email the same way post-confirmation does
-    // (case-sensitive, WHERE email = $1) so the two email-keyed linkers stay consistent.
+    // Source of truth = the DB row. Match case-INSENSITIVELY (LOWER(email) = LOWER($1)):
+    // registration normalises email to lowercase (UserService.normalizeEmail), Google sends
+    // a lowercased email, and the rest of the codebase treats email case-insensitively
+    // (user_additional_emails LOWER(email) indexes, TestFixtureCleanupRepository LOWER(email)).
+    // An IdP email whose casing differs from a non-normalised legacy/admin row must still link
+    // — a case-sensitive '=' would silently route it to the brand-new path and orphan the sub.
     const result = await client.query(
       `SELECT cognito_user_id, username
        FROM user_profiles
-       WHERE email = $1`,
+       WHERE LOWER(email) = LOWER($1)`,
       [email]
     );
 
@@ -155,8 +159,26 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
       publishMetric('FederatedUserLinked', 1).catch((err) =>
         console.error('Metric publish failed', err)
       );
+    } else if (existing) {
+      // A user_profiles row exists for this email but has NO cognito_user_id — i.e. an
+      // anonymous event registrant (ADR-005, V11__Make_cognito_id_nullable_for_anonymous_users).
+      // We deliberately do NOT link here: AdminLinkProviderForUser needs an existing Cognito
+      // DESTINATION user, and a brand-new federated identity has none yet; the new user's `sub`
+      // is also unknown inside PreSignUp (it is assigned post-confirmation), so the trigger
+      // cannot stamp cognito_user_id onto the row either. Canonical JIT
+      // (JITUserProvisioningInterceptor.findByEmail → setCognitoUserId, Story 12.3) ADOPTS this
+      // row on the federated user's first authenticated API call, when the sub IS in the JWT —
+      // so the anonymous registration's history is preserved without a duplicate. Distinct
+      // metric so this (rarer) adopt-pending case is observable separately from a true new user.
+      console.log('Federated email matches an anonymous (no-sub) row; JIT will adopt on first call', {
+        email,
+        username: existing.username,
+      });
+      publishMetric('FederatedAnonymousPendingJit', 1).catch((err) =>
+        console.error('Metric publish failed', err)
+      );
     } else {
-      // No native match → brand-new federated user. Do NOT link; canonical JIT
+      // No row at all → brand-new federated user. Do NOT link; canonical JIT
       // (Story 12.3) creates the user_profiles row lazily on the first API call.
       console.log('New federated user (no native account to link); JIT will provision', {
         email,

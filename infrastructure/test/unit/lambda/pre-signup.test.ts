@@ -163,6 +163,42 @@ describe('pre-signup Lambda handler', () => {
     expect(result.response.autoConfirmUser).toBe(true);
     expect(result.response.autoVerifyEmail).toBe(true);
     expect(mockDbRelease).toHaveBeenCalled();
+
+    // D1 patch: the lookup matches email case-INSENSITIVELY so a case-variant IdP email
+    // still links to a non-normalised native row instead of orphaning a new sub.
+    const querySql = mockDbQuery.mock.calls[0][0] as string;
+    expect(querySql).toMatch(/lower\(\s*email\s*\)\s*=\s*lower\(\s*\$1\s*\)/i);
+  });
+
+  // D2 patch: anonymous registrant (row exists, cognito_user_id NULL) — do NOT link
+  // (no Cognito destination; sub unknown pre-confirmation), defer adoption to JIT.
+  it('should_notLinkAndDeferToJit_when_emailMatchesAnonymousRowWithNoCognitoId', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    mockDbQuery.mockResolvedValueOnce({
+      rows: [{ cognito_user_id: null, username: 'anon.registrant' }],
+      rowCount: 1,
+    });
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'anon@example.com' },
+      'Google_42'
+    );
+    const result = await handler(event, {} as any, jest.fn() as any);
+
+    const linkCalls = mockCognitoSend.mock.calls.filter(
+      (c: any[]) => c[0]?.__type === 'AdminLinkProviderForUser'
+    );
+    expect(linkCalls).toHaveLength(0);
+    expect(result.response.autoConfirmUser).toBe(true);
+    expect(result.response.autoVerifyEmail).toBe(true);
+    expect(mockDbRelease).toHaveBeenCalled();
+
+    // Distinct metric so the adopt-pending case is observable separately from a true new user.
+    const metricNames = mockCloudWatchSend.mock.calls.map(
+      (c: any[]) => c[0]?.MetricData?.[0]?.MetricName
+    );
+    expect(metricNames).toContain('FederatedAnonymousPendingJit');
   });
 
   // AC5.4 — federated-new-user path
@@ -196,6 +232,10 @@ describe('pre-signup Lambda handler', () => {
     );
     expect(linkCalls).toHaveLength(0);
     expect(result).toBeDefined();
+    // Contract: missing-email must NOT auto-confirm (it falls through unchanged). Pinning this
+    // catches a regression that moved the autoConfirmUser assignment above the email guard.
+    expect(result.response.autoConfirmUser).toBe(false);
+    expect(result.response.autoVerifyEmail).toBe(false);
   });
 
   // Resilience: federated path must never throw, even on DB/SDK failure (a throw 503s login)
@@ -206,6 +246,15 @@ describe('pre-signup Lambda handler', () => {
       { email: 'john@example.com' },
       'Google_117xyz'
     );
-    await expect(handler(event, {} as any, jest.fn() as any)).resolves.toBeDefined();
+    const result = await handler(event, {} as any, jest.fn() as any);
+
+    // Fail-open: the user is auto-confirmed (set before the try) so the sign-in still completes...
+    expect(result.response.autoConfirmUser).toBe(true);
+    expect(result.response.autoVerifyEmail).toBe(true);
+    // ...and the failure is surfaced as a PreSignUpFailure metric (the D3 CloudWatch alarm fires on it).
+    const metricNames = mockCloudWatchSend.mock.calls.map(
+      (c: any[]) => c[0]?.MetricData?.[0]?.MetricName
+    );
+    expect(metricNames).toContain('PreSignUpFailure');
   });
 });

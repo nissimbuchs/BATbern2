@@ -803,22 +803,33 @@ the **API-Gateway `is_active` gate (Story 12.2)**, not here.
      unset (email-keyed linking is impossible without an email; Apple private-relay is out of
      scope — ADR-010 D2 / plan §5 Phase 6).
   2. Set `autoConfirmUser = true` + `autoVerifyEmail = true` (the IdP already proved the email).
-  3. Look up `user_profiles WHERE email = $1` (same email match as Pattern 1's PostConfirmation).
-     If a row with a non-null `cognito_user_id` exists → call **`AdminLinkProviderForUser`**:
-     `DestinationUser = { ProviderName: 'Cognito', ProviderAttributeValue: <native cognito_user_id> }`,
-     `SourceUser = { ProviderName: 'Google', ProviderAttributeName: 'Cognito_Subject',
-     ProviderAttributeValue: <Google sub from event.userName> }`. The destination `sub` is
-     preserved → no `AliasExistsException`, no orphaned roles. If **no** native row → no link;
-     the brand-new Google user is provisioned later by JIT (Pattern 1b).
+  3. Look up `user_profiles WHERE LOWER(email) = LOWER($1)` (case-insensitive — registration
+     normalizes email to lowercase and the IdP returns a lowercased email, but a non-normalized
+     legacy/admin row must still link rather than orphan a new `sub`; consistent with the
+     `LOWER(email)` matching used elsewhere in the codebase). Three outcomes:
+     - **Row with a non-null `cognito_user_id`** → call **`AdminLinkProviderForUser`**:
+       `DestinationUser = { ProviderName: 'Cognito', ProviderAttributeValue: <native cognito_user_id> }`,
+       `SourceUser = { ProviderName: 'Google', ProviderAttributeName: 'Cognito_Subject',
+       ProviderAttributeValue: <Google sub from event.userName> }`. The destination `sub` is
+       preserved → no `AliasExistsException`, no orphaned roles.
+     - **Row with a NULL `cognito_user_id`** (anonymous event registrant — ADR-005) → **no link**
+       (there is no Cognito destination user, and the new federated `sub` is unknown pre-confirmation
+       so the trigger cannot stamp it either). Logged + metered `FederatedAnonymousPendingJit`;
+       canonical JIT (Pattern 1b: `findByEmail` → `setCognitoUserId`) **adopts** the row on the
+       federated user's first authenticated API call, preserving the anonymous registration's history.
+     - **No row** → no link; the brand-new Google user is provisioned later by JIT (Pattern 1b).
   4. **Never throws** on the federated path — a thrown error 503s the sign-in; lookup/link
-     failures are logged + metered (`PreSignUpFailure`) and the event is returned.
+     failures are logged + metered (`PreSignUpFailure`) and the event is returned. Because the
+     auto-confirm flags are set (step 2) *before* the link attempt, a failed link is fail-open
+     (the user is confirmed as an unlinked identity) — surfaced by a CloudWatch alarm on
+     `PreSignUpFailure` (`UserSyncAlarms`) so the rare orphan is actionable rather than silent.
 
 **IAM**: the trigger's role is granted `cognito-idp:AdminLinkProviderForUser` +
 `cognito-idp:ListUsers` on a wildcard userpool resource (scoping to the pool ARN would create a
 CFN circular dependency — the pool already depends on the Lambda via `addTrigger`; same
 documented pattern as the `AdminUpdateUserAttributes` grant on PostConfirmation). Metrics:
-`FederatedUserLinked` / `FederatedNewUser` / `FederatedNoEmail` / `PreSignUpFailure`
-(`BATbern/UserSync`). The preSignUp UUID-validation note in the Custom-Attribute Inventory
+`FederatedUserLinked` / `FederatedNewUser` / `FederatedAnonymousPendingJit` / `FederatedNoEmail`
+/ `PreSignUpFailure` (`BATbern/UserSync`; `PreSignUpFailure` has a CloudWatch alarm). The preSignUp UUID-validation note in the Custom-Attribute Inventory
 above (`custom:companyId` now dormant for self-registration) still holds — the check is
 preserved verbatim because admin-created users may still pass `custom:companyId`. See
 `ADR-010-federated-identity-via-cognito.md` (D3, D7) and `docs/plans/sso-oidc-federation.md`

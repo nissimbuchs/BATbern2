@@ -319,6 +319,32 @@ describe('MonitoringStack', () => {
     });
   });
 
+  // Story 12.6 (SSO Phase 2): PreSignUp account-linking failure alarm
+  describe('User Sync — PreSignUp Linking Failure Alarm', () => {
+    test('should_createPreSignUpFailureAlarm_when_nonDevelopmentEnvironment', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      // The federated PreSignUp path is fail-open (never throws → never 503s the sign-in), so a
+      // failed AdminLinkProviderForUser leaves an orphaned identity visible only via this metric.
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*PreSignUp-Linking-Failures'),
+        MetricName: 'PreSignUpFailure',
+        Namespace: 'BATbern/UserSync',
+        Statistic: 'Sum',
+        Threshold: 0,
+        EvaluationPeriods: 1,
+        ComparisonOperator: 'GreaterThanThreshold',
+        TreatMissingData: 'notBreaching',
+        Period: 300,
+      });
+    });
+  });
+
   // Story 10.29 AC9: SES Bounce/Complaint Rate Alarms
   describe('SES Bounce Monitoring Alarms', () => {
     test('should_createBounceRateWarningAlarm_when_monitoringStackDeployed', () => {
