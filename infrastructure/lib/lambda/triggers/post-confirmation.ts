@@ -45,6 +45,11 @@ interface UserAttributes {
   'cognito:groups'?: string;
   'custom:preferences'?: string; // JSON string with user profile data
   'custom:role'?: string; // Role override for admin-created users (e.g. bootstrap organizer)
+  // Standard name claims. Native sign-ups carry names in custom:preferences; FEDERATED
+  // (Google) sign-ins carry them here, mapped by the IdP (Story 12.5) — see createUser
+  // fallback (Story 12.8 F1a).
+  given_name?: string;
+  family_name?: string;
 }
 
 /**
@@ -89,6 +94,8 @@ function extractUserAttributes(event: PostConfirmationTriggerEvent): UserAttribu
     'cognito:groups': attributes['cognito:groups'], // Legacy field, no longer used
     'custom:preferences': attributes['custom:preferences'],
     'custom:role': attributes['custom:role'],
+    given_name: attributes.given_name,
+    family_name: attributes.family_name,
   };
 }
 
@@ -444,6 +451,18 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
 
     // Parse user preferences from custom:preferences JSON (Story 1.2.3, ADR-001)
     const preferences = parseUserPreferences(attributes['custom:preferences']);
+
+    // Story 12.8 F1a: FEDERATED (Google) sign-ins carry names in the standard
+    // given_name/family_name claims (mapped by the IdP, Story 12.5), NOT in
+    // custom:preferences. Fall back to them so a federated user provisions with real names
+    // instead of the 'User'/'User' placeholder. Native sign-ups are unaffected — their
+    // custom:preferences names are already set, so the fallback is a no-op for them.
+    if (!preferences.firstName && attributes.given_name) {
+      preferences.firstName = attributes.given_name;
+    }
+    if (!preferences.lastName && attributes.family_name) {
+      preferences.lastName = attributes.family_name;
+    }
 
     // Get initial role — respects custom:role for admin-created users (ADR-001)
     const role = getDefaultRole(attributes);

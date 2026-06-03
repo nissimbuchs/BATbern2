@@ -280,10 +280,18 @@ export class CognitoStack extends cdk.Stack {
       // and the DB-projected custom:role authorization claim from the PreTokenGeneration
       // Lambda is unaffected (it injects claimsToAddOrOverride, independent of this list).
       readAttributes: new cognito.ClientAttributes()
-        .withStandardAttributes({ email: true, emailVerified: true })
+        .withStandardAttributes({ email: true, emailVerified: true, givenName: true, familyName: true })
         .withCustomAttributes('companyId', 'preferences'),
+      // Story 12.8 F1b fix: givenName/familyName MUST be writable here. AWS Cognito only
+      // populates IdP-mapped attributes that the federating app client has WRITE access to
+      // ("the WriteAttributes array must include all attributes that you have mapped to IdP
+      // attributes" — Cognito docs). The Google IdP maps given_name/family_name (Story 12.5)
+      // and Google sends them (consent grants "Name"), but with only `email` writable here
+      // Cognito silently dropped the mapped names → federated users provisioned as "User
+      // User" (verified 2026-06-03: names absent at PreSignUp + PostConfirmation despite a
+      // full-consent first-time federation). `email` worked only because it was writable.
       writeAttributes: new cognito.ClientAttributes()
-        .withStandardAttributes({ email: true })
+        .withStandardAttributes({ email: true, givenName: true, familyName: true })
         .withCustomAttributes('companyId', 'preferences'),
     });
 

@@ -18,14 +18,17 @@ import {
   Container,
   IconButton,
   InputAdornment,
+  Divider,
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Visibility, VisibilityOff, Google } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { useFeature } from '@/contexts/useFeature';
+import { authService } from '@/services/auth/authService';
 import { LoginCredentials } from '@/types/auth';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 
@@ -71,6 +74,8 @@ const getErrorTranslationKey = (errorCode?: string): string => {
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword, onSignUp }) => {
   const { t } = useTranslation(['auth', 'validation']);
   const { signIn, confirmNewPassword, isLoading, error, clearError } = useAuth();
+  // Story 12.9: "Continue with Google" button gated on the runtime features.sso flag.
+  const ssoEnabled = useFeature('sso');
   const [submitError, setSubmitError] = useState<string | null>(null);
   // Story 12.7 / G1: the API client redirects here with ?reason=account_deactivated
   // after the gateway returns 403 ACCOUNT_DEACTIVATED (it also forced a logout).
@@ -291,122 +296,139 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
                 </Button>
               </Box>
             ) : (
-              <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ width: '100%' }}>
-                <Controller
-                  name="email"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
+              <>
+                {ssoEnabled && (
+                  <>
+                    <Button
+                      variant="outlined"
                       fullWidth
-                      label={t('auth:login.emailLabel')}
-                      placeholder={t('auth:login.emailPlaceholder')}
-                      type="email"
-                      autoComplete="email username"
-                      autoFocus
-                      margin="normal"
-                      error={!!errors.email}
-                      helperText={errors.email?.message}
+                      startIcon={<Google />}
                       disabled={isLoading}
-                    />
-                  )}
-                />
+                      onClick={() => authService.signInWithFederated('Google')}
+                      sx={{ mb: 1 }}
+                    >
+                      {t('auth:login.continueWithGoogle')}
+                    </Button>
+                    <Divider sx={{ my: 2 }}>{t('auth:login.orDivider')}</Divider>
+                  </>
+                )}
+                <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ width: '100%' }}>
+                  <Controller
+                    name="email"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label={t('auth:login.emailLabel')}
+                        placeholder={t('auth:login.emailPlaceholder')}
+                        type="email"
+                        autoComplete="email username"
+                        autoFocus
+                        margin="normal"
+                        error={!!errors.email}
+                        helperText={errors.email?.message}
+                        disabled={isLoading}
+                      />
+                    )}
+                  />
 
-                <Controller
-                  name="password"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label={t('auth:login.passwordLabel')}
-                      placeholder={t('auth:login.passwordPlaceholder')}
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      margin="normal"
-                      error={!!errors.password}
-                      helperText={errors.password?.message}
-                      disabled={isLoading}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              aria-label={
-                                showPassword
-                                  ? t('auth:login.hidePassword')
-                                  : t('auth:login.showPassword')
-                              }
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  )}
-                />
+                  <Controller
+                    name="password"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label={t('auth:login.passwordLabel')}
+                        placeholder={t('auth:login.passwordPlaceholder')}
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        margin="normal"
+                        error={!!errors.password}
+                        helperText={errors.password?.message}
+                        disabled={isLoading}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                aria-label={
+                                  showPassword
+                                    ? t('auth:login.hidePassword')
+                                    : t('auth:login.showPassword')
+                                }
+                                onClick={() => setShowPassword(!showPassword)}
+                                edge="end"
+                              >
+                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
 
-                <Controller
-                  name="rememberMe"
-                  control={control}
-                  render={({ field: { value, onChange, ...field } }) => (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          {...field}
-                          checked={value}
-                          onChange={(e) => onChange(e.target.checked)}
-                          disabled={isLoading}
-                        />
-                      }
-                      label={t('auth:login.rememberMe')}
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                />
+                  <Controller
+                    name="rememberMe"
+                    control={control}
+                    render={({ field: { value, onChange, ...field } }) => (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            {...field}
+                            checked={value}
+                            onChange={(e) => onChange(e.target.checked)}
+                            disabled={isLoading}
+                          />
+                        }
+                        label={t('auth:login.rememberMe')}
+                        sx={{ mt: 1 }}
+                      />
+                    )}
+                  />
 
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{ mt: 3, mb: 2 }}
-                  disabled={isLoading || !isValid}
-                  startIcon={isLoading ? <CircularProgress size={20} /> : null}
-                >
-                  {t('auth:login.signInButton')}
-                </Button>
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                  <Link
-                    component="button"
-                    variant="body2"
-                    type="button"
-                    onClick={handleForgotPassword}
-                    disabled={isLoading}
-                    sx={{ textDecoration: 'none' }}
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 3, mb: 2 }}
+                    disabled={isLoading || !isValid}
+                    startIcon={isLoading ? <CircularProgress size={20} /> : null}
                   >
-                    {t('auth:login.forgotPassword')}
-                  </Link>
+                    {t('auth:login.signInButton')}
+                  </Button>
 
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" component="span" color="text.secondary">
-                      {t('auth:login.noAccount')}{' '}
-                    </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                     <Link
                       component="button"
                       variant="body2"
                       type="button"
-                      onClick={handleSignUp}
+                      onClick={handleForgotPassword}
                       disabled={isLoading}
                       sx={{ textDecoration: 'none' }}
                     >
-                      {t('auth:login.createAccount')}
+                      {t('auth:login.forgotPassword')}
                     </Link>
+
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="body2" component="span" color="text.secondary">
+                        {t('auth:login.noAccount')}{' '}
+                      </Typography>
+                      <Link
+                        component="button"
+                        variant="body2"
+                        type="button"
+                        onClick={handleSignUp}
+                        disabled={isLoading}
+                        sx={{ textDecoration: 'none' }}
+                      >
+                        {t('auth:login.createAccount')}
+                      </Link>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
+              </>
             )}
           </Box>
         </Paper>

@@ -61,6 +61,18 @@ const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
       break;
   }
 
+  // Cognito hosted-UI domain prefix. This is FIXED per user pool and must match the
+  // CDK `cognito-stack` domainPrefix `batbern-${envName}-auth` (envName = 'staging' for the
+  // single consolidated account that serves production). It CANNOT be derived from
+  // `environment`: the backend serves environment='production' while the pool's domain
+  // segment is 'staging' (and the old code also dropped the required `-auth` suffix), so
+  // `batbern-${environment}.auth…` resolved to the non-existent
+  // `batbern-production.auth…` → the /auth/callback OAuth code-exchange hit a dead domain
+  // and no session was established (Story 12.8 finding F3, 2026-06-03).
+  // TODO(12.7/12.9): serve this domain via runtime config (GET /api/v1/config) instead of a
+  // constant, so a future second pool isn't silently mis-targeted.
+  const cognitoDomainPrefix = 'batbern-staging-auth';
+
   const config: ResourcesConfig = {
     Auth: {
       Cognito: {
@@ -68,7 +80,7 @@ const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
         userPoolClientId: cognito.clientId,
         loginWith: {
           oauth: {
-            domain: `batbern-${environment}.auth.${cognito.region}.amazoncognito.com`,
+            domain: `${cognitoDomainPrefix}.auth.${cognito.region}.amazoncognito.com`,
             scopes: ['email', 'openid', 'profile'],
             redirectSignIn: [redirectSignIn],
             redirectSignOut: [redirectSignOut],
