@@ -1,6 +1,6 @@
 # Story 12.5: Define the Google IdP + Add to Client (SSO Phase 1)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -40,35 +40,35 @@ This is **Phase 1** of Epic 12 (SSO / OIDC Federation), per `docs/plans/sso-oidc
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Read the Google OAuth secret in `cognito-stack.ts` (AC: 1)**
-  - [ ] Import is already present (`secretsmanager` at `cognito-stack.ts:6`). In the constructor, after the `UserPool` (`:218`), add `const googleOAuthSecret = secretsmanager.Secret.fromSecretNameV2(this, 'GoogleOAuthSecret', 'batbern/staging/sso/google-oauth');` (model: `event-management-stack.ts:71`). **Do not** hardcode the ARN or any secret value.
-  - [ ] Note: `fromSecretNameV2` resolves the secret at deploy time; `secretValueFromJson` produces a CFN dynamic reference (`{{resolve:secretsmanager:...}}`) so the plaintext never lands in the synthesized template — confirm the synth output contains a `resolve:secretsmanager` token, not the secret.
+- [x] **Task 1 — Read the Google OAuth secret in `cognito-stack.ts` (AC: 1)**
+  - [x] Import already present (`secretsmanager` at `cognito-stack.ts:6`). Added `const googleOAuthSecret = secretsmanager.Secret.fromSecretNameV2(this, 'GoogleOAuthSecret', 'batbern/staging/sso/google-oauth');` after the `UserPool` (model: `event-management-stack.ts:71`). No ARN/value hardcoded.
+  - [x] Confirmed in the staging synth: both `client_id` AND `client_secret` render as `{{resolve:secretsmanager:arn:aws:secretsmanager:eu-central-1:188701360969:secret:batbern/staging/sso/google-oauth:SecretString:…}}` dynamic references — **zero plaintext** in the template (`/tmp/cognito-synth.log:592-593`).
 
-- [ ] **Task 2 — Define `UserPoolIdentityProviderGoogle` with attribute mapping (AC: 1, 2)**
-  - [ ] RED: add a `cognito-stack.test.ts` assertion expecting `AWS::Cognito::UserPoolIdentityProvider` with `ProviderName: 'Google'`, `ProviderType: 'Google'`, `AttributeMapping` containing `email` (mapped from Google `email`).
-  - [ ] GREEN: construct `const googleIdp = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdp', { userPool: this.userPool, clientId: googleOAuthSecret.secretValueFromJson('clientId').unsafeUnwrap(), clientSecretValue: googleOAuthSecret.secretValueFromJson('clientSecret'), scopes: ['openid', 'email', 'profile'], attributeMapping: { email: cognito.ProviderAttribute.GOOGLE_EMAIL, givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME, familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME } });`
-  - [ ] Verify `clientId` uses `.unsafeUnwrap()` only because the construct's `clientId` prop is a plain `string` (the `clientSecretValue` prop accepts a `SecretValue` directly, so it does NOT need unwrapping — keep the secret as a `SecretValue` to retain the CFN dynamic-reference indirection). Document this asymmetry in a code comment.
+- [x] **Task 2 — Define `UserPoolIdentityProviderGoogle` with attribute mapping (AC: 1, 2)**
+  - [x] RED: added `should_defineGoogleIdentityProvider_when_stackDeployed` asserting `ProviderName/ProviderType: 'Google'` + `AttributeMapping` with `email`/`given_name`/`family_name`; plus `should_sourceGoogleClientSecretFromSecretsManager_when_idpDefined` for the dynamic-reference shape.
+  - [x] GREEN: constructed `googleIdp` with `clientId` (unwrapped), `clientSecretValue` (kept as `SecretValue`), `scopes: ['openid','email','profile']`, and the 3-claim `attributeMapping`.
+  - [x] Documented the `clientId` unwrap / `clientSecretValue` no-unwrap asymmetry in a code comment.
 
-- [ ] **Task 3 — Add standard name attributes to the pool as the mapping target (AC: 3)**
-  - [ ] RED: extend the `should_configureCustomAttributes` test (or add a new test) to assert the pool `Schema` includes `given_name` + `family_name` standard attributes (`Required: false`, `Mutable: true`).
-  - [ ] GREEN: in `cognito-stack.ts:169-174` `standardAttributes`, add `givenName: { required: false, mutable: true }` and `familyName: { required: false, mutable: true }` alongside the existing `email`.
-  - [ ] Run `npm run synth:staging` (or `cdk diff` if creds available) and **classify the CFN diff** on `AWS::Cognito::UserPool` — confirm adding optional standard attributes is an **additive update** (not a pool replacement). Record the classification in the Dev Agent Record. If the diff shows a replacement, STOP and re-evaluate per AC3 fallback.
-  - [ ] Do **NOT** touch `customAttributes` (`:175-197`) — no `custom:preferences` schema change (AC4).
+- [x] **Task 3 — Add standard name attributes to the pool as the mapping target (AC: 3)**
+  - [x] RED: added `should_configureStandardNameAttributes_when_userPoolCreated` asserting `Schema` includes `given_name` + `family_name` (`Required: false`, `Mutable: true`).
+  - [x] GREEN: extended `standardAttributes` with `givenName`/`familyName` (`required:false, mutable:true`) alongside `email`.
+  - [x] **CFN-diff classification = ADDITIVE (no pool replacement).** Staging synth succeeded (exit 0). Decisive cross-check via `describe-user-pool` on the LIVE pool (`eu-central-1_FtgfxgQRF`): `given_name`/`family_name` **already exist** with exactly `Required:false, Mutable:true` (Cognito always provisions standard OIDC attrs; CDK `standardAttributes` only renders their Required/Mutable), so the `Schema` change is a no-op for those. `list-identity-providers` returned `[]`, so the Google IdP is a pure new-resource add and the client provider-list gains `Google` in-place. No replacement risk → OQ-2 resolved.
+  - [x] `customAttributes` untouched — no `custom:preferences` schema change (AC4).
 
-- [ ] **Task 4 — Add `GOOGLE` to client `supportedIdentityProviders` + ordering dependency (AC: 5)**
-  - [ ] RED: update the `should_configureOAuthFlows` test at `cognito-stack.test.ts:123` so `SupportedIdentityProviders` is `['COGNITO', 'Google']` (or `Match.arrayWith(['COGNITO', 'Google'])`).
-  - [ ] GREEN: `cognito-stack.ts:259-261` → `supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO, cognito.UserPoolClientIdentityProvider.GOOGLE]`. **Keep `COGNITO`.**
-  - [ ] After the client is constructed (`:273`), add `this.userPoolClient.node.addDependency(googleIdp);` so CFN creates the Google provider before the client lists it (avoids `the provider does not exist` deploy error).
+- [x] **Task 4 — Add `GOOGLE` to client `supportedIdentityProviders` + ordering dependency (AC: 5)**
+  - [x] RED: updated `should_configureOAuthFlows_when_appClientCreated` so `SupportedIdentityProviders` is `['COGNITO', 'Google']`.
+  - [x] GREEN: `supportedIdentityProviders: [COGNITO, GOOGLE]` — `COGNITO` kept.
+  - [x] Added `this.userPoolClient.node.addDependency(googleIdp);` — synth confirms client `DependsOn: [GoogleIdp206FECA7]` (`/tmp/cognito-synth.log:645`).
 
-- [ ] **Task 5 — Infra tests + type-check green (AC: 7)**
-  - [ ] `npm test -- cognito-stack.test.ts` — tee to a temp file, grep for `PASS`/`FAIL` (CLAUDE.md). All green.
-  - [ ] `tsc --noEmit` clean. No Lambda handler test this phase (no Lambda change).
+- [x] **Task 5 — Infra tests + type-check green (AC: 7)**
+  - [x] `npm test -- cognito-stack.test.ts` → **10 passed, 0 failed** (`/tmp/cognito-green2.log`).
+  - [x] `npx tsc --noEmit` clean (exit 0). No Lambda handler test this phase (no Lambda change).
 
-- [ ] **Task 6 — Verification + deploy/rollback note (AC: 6, 8, 9)**
-  - [ ] Confirm the synthesized template's IdP `ClientSecret` is a `{{resolve:secretsmanager:...}}` dynamic reference, **not** a plaintext secret (grep the synth output; redact if pasting anywhere).
-  - [ ] Record in the PR: deploy tier = **Layer-3** (`npm run deploy:staging:layer3-application`); rollback = remove `GOOGLE` from `supportedIdentityProviders` (one-line). Note real federated login is gated on Story 12-6 (no linking trigger yet).
-  - [ ] Hosted-UI authorize-URL smoke (AC6) — **only with a throwaway Google email** if tested before 12-6; otherwise defer to the 12-6 verification. Record the outcome.
-  - [ ] Commit message carries `[no-doc]` (infra-only wiring; no mapped doc; ADR-010 already covers the decision; 06b "Pattern F" is Story 12-6's).
+- [x] **Task 6 — Verification + deploy/rollback note (AC: 6, 8, 9)**
+  - [x] Confirmed IdP `client_secret` (and `client_id`) are `{{resolve:secretsmanager:...}}` dynamic references, not plaintext (synth grep).
+  - [x] Deploy tier = **Layer-3** (`npm run deploy:staging:layer3-application`); rollback = remove `GOOGLE` from `supportedIdentityProviders` (one-line). Real federated login gated on Story 12-6 (no linking trigger yet).
+  - [x] Hosted-UI authorize-URL smoke (AC6) **deferred to Story 12-6 verification** per the story's own gate — a brand-new Google sign-in pre-12-6 would orphan/collide (§3 gotchas, no linking trigger). Not run with throwaway email to avoid touching the production pool.
+  - [x] Commit will carry `[no-doc]` (infra-only wiring; no mapped doc; ADR-010 already covers the decision; 06b "Pattern F" is Story 12-6's).
 
 ## Dev Notes
 
@@ -157,15 +157,30 @@ hand-off to Story 12-3/12-6.
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.8 (1M context) — bmad-dev-story (Amelia), 2026-06-03.
 
 ### Debug Log References
+- `/tmp/cognito-red.log` — RED: 4 new assertions failing pre-implementation.
+- `/tmp/cognito-green2.log` — GREEN: 10 passed / 0 failed.
+- `/tmp/cognito-tsc.log` — `tsc --noEmit` clean (exit 0).
+- `/tmp/cognito-synth.log` — staging synth (exit 0): IdP resource, dynamic-reference secret, Schema name attrs, client `DependsOn`.
+- Live-pool cross-check (read-only): `describe-user-pool eu-central-1_FtgfxgQRF` → `given_name`/`family_name` already `Required:false,Mutable:true`; `list-identity-providers` → `[]`.
 
 ### Completion Notes List
+- **All 9 ACs satisfied.** Google IdP wired in `cognito-stack.ts`, secret read from Secrets Manager (never inlined — synth proves `{{resolve:secretsmanager:...}}` for both id and secret), names mapped to standard `given_name`/`family_name`, `GOOGLE` added to client `supportedIdentityProviders` (`COGNITO` retained), client→IdP ordering dependency added.
+- **OQ-2 RESOLVED (additive, not replacement).** The live production pool already exposes `given_name`/`family_name` with the exact `Required:false,Mutable:true` I declare, and has zero existing IdPs — so the change is a pure addition (new IdP resource + in-place client provider-list extension; Schema name-attr diff is a no-op). No pool replacement.
+- **OQ-1 (hand-off to architect / Story 12-3) — still open by design.** This story only guarantees federated names land on standard `given_name`/`family_name`. Consumption of those names for federated users is the canonical-JIT path (Story 12-3). Confirm at PR time that 12-3's JIT reads federated names from standard attrs (it currently reads native names from the `custom:preferences` JSON). If names must instead be folded into `custom:preferences` for federated users, that needs the PreSignUp_ExternalProvider Lambda in **Story 12-6**, not attribute mapping.
+- **Hosted-UI smoke deferred to 12-6** per the story's own Phase-2 gate (no linking trigger yet → a brand-new Google sign-in would orphan/collide). Not exercised against the production pool.
+- **No Lambda change** this phase → no handler test required (the linking `NodejsFunction` is Story 12-6). `Template.fromStack` assertions are the mandated coverage.
+- Deploy tier **Layer-3**; rollback = drop `GOOGLE` from `supportedIdentityProviders` (one-line). PR stacked on the 12-3 branch (bundled with Story 12-6 per Nissim).
 
 ### File List
+- `infrastructure/lib/stacks/cognito-stack.ts` (modified) — Google OAuth secret lookup; `UserPoolIdentityProviderGoogle` with attribute mapping; `givenName`/`familyName` standard attributes; `GOOGLE` in `supportedIdentityProviders`; client→IdP `addDependency`.
+- `infrastructure/test/unit/cognito-stack.test.ts` (modified) — updated OAuth-flows assertion to `['COGNITO','Google']`; added IdP-resource, secret-dynamic-reference, and standard-name-attribute tests.
 
 ### Change Log
 
 | Date | Change |
 |---|---|
 | 2026-06-01 | Story 12.5 drafted (SSO Phase 1 — Google IdP + attribute mapping + supportedIdentityProviders). Status ready-for-dev. |
+| 2026-06-03 | Implemented (TDD). Google IdP + secret-sourced creds + standard name-attr mapping + `GOOGLE` client provider + ordering dep. 10/10 infra tests green, tsc clean, staging synth clean. OQ-2 resolved ADDITIVE via live-pool inspection. Status → review. |

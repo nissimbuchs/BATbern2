@@ -122,7 +122,51 @@ describe('CognitoStack Tests', () => {
       AllowedOAuthScopes: ['email', 'openid', 'profile'],
       CallbackURLs: ['http://localhost:3000/auth/callback'],
       LogoutURLs: ['http://localhost:3000/logout'],
-      SupportedIdentityProviders: ['COGNITO'],
+      // Story 12.5 AC5: GOOGLE added alongside COGNITO so the hosted-UI can broker a
+      // Google OIDC sign-in. COGNITO MUST remain so email/password auth keeps working.
+      SupportedIdentityProviders: ['COGNITO', 'Google'],
+    });
+  });
+
+  // Story 12.5 AC1/AC2/AC7: Google IdP defined with secret-sourced credentials and
+  // 1:1 attribute mapping (email required for account-linking + email alias; names
+  // fold to standard given_name/family_name — the only mapping Cognito supports).
+  test('should_defineGoogleIdentityProvider_when_stackDeployed', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolIdentityProvider', {
+      ProviderName: 'Google',
+      ProviderType: 'Google',
+      AttributeMapping: Match.objectLike({
+        email: 'email',
+        given_name: 'given_name',
+        family_name: 'family_name',
+      }),
+    });
+  });
+
+  // Story 12.5 AC1 (CLAUDE.md security): the Google client secret MUST synth to a
+  // Secrets Manager dynamic reference, never an inlined plaintext value.
+  test('should_sourceGoogleClientSecretFromSecretsManager_when_idpDefined', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolIdentityProvider', {
+      ProviderName: 'Google',
+      ProviderDetails: Match.objectLike({
+        // fromSecretNameV2 + secretValueFromJson synth to a {{resolve:secretsmanager:...}}
+        // dynamic reference rendered as an Fn::Join (the ARN is partition-interpolated), so
+        // the plaintext secret never enters the template. Assert that structure.
+        client_secret: {
+          'Fn::Join': ['', Match.arrayWith([Match.stringLikeRegexp('resolve:secretsmanager')])],
+        },
+      }),
+    });
+  });
+
+  // Story 12.5 AC3: the pool exposes standard given_name/family_name as the mapping
+  // target for Google's name claims (optional + mutable → additive pool update).
+  test('should_configureStandardNameAttributes_when_userPoolCreated', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPool', {
+      Schema: Match.arrayWith([
+        Match.objectLike({ Name: 'given_name', Required: false, Mutable: true }),
+        Match.objectLike({ Name: 'family_name', Required: false, Mutable: true }),
+      ]),
     });
   });
 

@@ -171,6 +171,20 @@ export class CognitoStack extends cdk.Stack {
           required: true,
           mutable: true,
         },
+        // Story 12.5 AC3: destination for Google's given_name/family_name claims.
+        // Cognito attribute mapping is strictly 1:1 (one provider claim → one pool
+        // attribute) and CANNOT write into a JSON sub-field of custom:preferences, so
+        // federated names must land on standard attributes. Optional + mutable keeps
+        // this an ADDITIVE pool update (no replacement) and leaves native sign-up
+        // (which carries names in the custom:preferences JSON) untouched.
+        givenName: {
+          required: false,
+          mutable: true,
+        },
+        familyName: {
+          required: false,
+          mutable: true,
+        },
       },
       customAttributes: {
         // Story 1.16.2: Public meaningful username (e.g., "john.doe")
@@ -217,6 +231,42 @@ export class CognitoStack extends cdk.Stack {
       removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
+    // Story 12.5 (SSO Phase 1): Google OIDC identity provider, brokered by Cognito.
+    // The client id/secret live ONLY in Secrets Manager (created by Story 12.4 runbook,
+    // name `batbern/staging/sso/google-oauth`, JSON {clientId, clientSecret}). The single
+    // real pool is in the staging account (= production), so the secret name is the literal
+    // staging path — matching where 12.4 stored it. fromSecretNameV2 resolves to a CFN
+    // reference (NOT the value) at synth time, so the plaintext never enters the template
+    // or git (CLAUDE.md security).
+    const googleOAuthSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'GoogleOAuthSecret',
+      'batbern/staging/sso/google-oauth'
+    );
+
+    const googleIdp = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdp', {
+      userPool: this.userPool,
+      // clientId prop is a plain `string`, so it must be unwrapped. The Google client id
+      // is NOT sensitive (it ends in `.apps.googleusercontent.com` and is public).
+      clientId: googleOAuthSecret.secretValueFromJson('clientId').unsafeUnwrap(),
+      // clientSecretValue accepts a SecretValue directly — keep it as a SecretValue (do
+      // NOT unwrap) so it synths to a {{resolve:secretsmanager:...}} dynamic reference and
+      // the secret stays out of the CloudFormation template.
+      clientSecretValue: googleOAuthSecret.secretValueFromJson('clientSecret'),
+      scopes: ['openid', 'email', 'profile'],
+      attributeMapping: {
+        // email is REQUIRED: it keys the Phase-2 account-linking (AdminLinkProviderForUser)
+        // and resolves the email sign-in alias.
+        email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+        // Names fold to standard attributes (see standardAttributes above). The canonical
+        // JIT path (Story 12.3) reads these for federated users — the federated counterpart
+        // of how post-confirmation.ts reads firstName/lastName from custom:preferences for
+        // native sign-ups. There is NO Cognito mapping into a custom:preferences JSON field.
+        givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+        familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+      },
+    });
+
     // Determine callback URLs based on environment
     const callbackUrls = isProdTraffic
       ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/auth/callback`]
@@ -256,8 +306,11 @@ export class CognitoStack extends cdk.Stack {
         callbackUrls,
         logoutUrls,
       },
+      // Story 12.5 AC5: GOOGLE added so the hosted-UI can broker Google OIDC sign-in.
+      // COGNITO MUST stay so email/password auth keeps working. Rollback = drop GOOGLE.
       supportedIdentityProviders: [
         cognito.UserPoolClientIdentityProvider.COGNITO,
+        cognito.UserPoolClientIdentityProvider.GOOGLE,
       ],
       // Story 12.1 AC5: 'role' dropped from client readAttributes so the STORED (fossil)
       // custom:role attribute stops flowing into issued tokens. The schema attribute
@@ -271,6 +324,11 @@ export class CognitoStack extends cdk.Stack {
         .withStandardAttributes({ email: true })
         .withCustomAttributes('companyId', 'preferences'),
     });
+
+    // Story 12.5 AC5: ensure CloudFormation creates the Google IdP BEFORE the client that
+    // lists it in supportedIdentityProviders (the standard CDK IdP-before-client gotcha;
+    // otherwise deploy fails with "the provider does not exist").
+    this.userPoolClient.node.addDependency(googleIdp);
 
     // Create User Pool Domain
     this.userPoolDomain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
