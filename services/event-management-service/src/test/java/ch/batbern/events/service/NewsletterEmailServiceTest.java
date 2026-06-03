@@ -38,6 +38,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
@@ -752,7 +753,7 @@ class NewsletterEmailServiceTest {
     // ── iCal attachment building ─────────────────────────────────────────────
 
     @Test
-    @DisplayName("buildIcsAttachments: template with {{eventDate}} includes current event ICS")
+    @DisplayName("buildIcsAttachments: template with {{eventDate}} attaches the current event as a METHOD:REQUEST invite")
     void buildIcsAttachments_withEventDate_includesCurrentEvent() {
         testEvent.setId(UUID.randomUUID());
         testEvent.setDate(Instant.parse("2026-03-06T15:00:00Z"));
@@ -768,17 +769,22 @@ class NewsletterEmailServiceTest {
                 java.time.ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
                 java.time.ZonedDateTime.of(2026, 3, 6, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
         when(eventTimeResolver.resolve(testEvent)).thenReturn(range);
-        when(icsCalendarService.generateMultiEventIcsFile(any(), any(), any()))
+        when(icsCalendarService.generateRequestIcsFile(any(), anyInt(), any(), any()))
                 .thenReturn("VCALENDAR".getBytes());
 
         List<EmailService.EmailAttachment> attachments =
                 newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
 
         assertThat(attachments).hasSize(1);
-        assertThat(attachments.get(0).filename()).isEqualTo("batbern-events.ics");
+        // Filename is event-specific; mime declares the REQUEST method so clients treat it as an invite
+        assertThat(attachments.get(0).filename()).isEqualTo("batbern-batbern58.ics");
         assertThat(attachments.get(0).mimeType()).contains("text/calendar");
+        assertThat(attachments.get(0).mimeType()).contains("method=REQUEST");
         assertThat(attachments.get(0).inline()).isTrue();
-        verify(icsCalendarService).generateMultiEventIcsFile(any(), eq("noreply@batbern.ch"), eq("BATbern"));
+        verify(icsCalendarService).generateRequestIcsFile(
+                any(), anyInt(), eq("noreply@batbern.ch"), eq("BATbern"));
+        // The single-event invite path must NOT fall back to the informational multi-event bundle
+        verify(icsCalendarService, never()).generateMultiEventIcsFile(any(), any(), any());
     }
 
     @Test
@@ -793,43 +799,27 @@ class NewsletterEmailServiceTest {
                 newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
 
         assertThat(attachments).isEmpty();
-        verify(icsCalendarService, never()).generateMultiEventIcsFile(any(), any(), any());
+        verify(icsCalendarService, never()).generateRequestIcsFile(any(), anyInt(), any(), any());
     }
 
     @Test
-    @DisplayName("buildIcsAttachments: template with upcomingEventsSection includes upcoming events")
-    void buildIcsAttachments_withUpcomingEvents_includesUpcoming() {
+    @DisplayName("buildIcsAttachments: upcoming-events-only template attaches NO .ics (one newsletter, one calendar entry)")
+    void buildIcsAttachments_upcomingOnly_attachesNothing() {
         testEvent.setId(UUID.randomUUID());
         testEvent.setDate(Instant.parse("2026-03-06T15:00:00Z"));
 
-        Event futureEvent = new Event();
-        futureEvent.setId(UUID.randomUUID());
-        futureEvent.setTitle("Future BAT");
-        futureEvent.setDate(Instant.parse("2026-06-15T14:00:00Z"));
-        futureEvent.setVenueName("PostFinance Arena");
-
+        // Template references only the upcoming-events section, not the current event.
         String templateHtml = "<p>{{upcomingEventsSection}}</p>";
         Map<String, String> baseVars = Map.of(
                 "upcomingEventsSection", "<table>upcoming events HTML</table>");
 
-        var range1 = new EventTimeResolver.TimeRange(
-                java.time.ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
-                java.time.ZonedDateTime.of(2026, 3, 6, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
-        var range2 = new EventTimeResolver.TimeRange(
-                java.time.ZonedDateTime.of(2026, 6, 15, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
-                java.time.ZonedDateTime.of(2026, 6, 15, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
-        when(eventTimeResolver.resolve(any())).thenReturn(range1).thenReturn(range2);
-        when(eventRepository.findByDateAfter(any())).thenReturn(List.of(futureEvent));
-        when(icsCalendarService.generateMultiEventIcsFile(any(), any(), any()))
-                .thenReturn("VCALENDAR".getBytes());
-
         List<EmailService.EmailAttachment> attachments =
                 newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
 
-        assertThat(attachments).hasSize(1);
-        // Should NOT include current event (no {{eventDate}} in template)
-        // but SHOULD include the future event from upcoming section
-        verify(icsCalendarService).generateMultiEventIcsFile(any(), any(), any());
+        // Upcoming events are shown in the HTML body but never attached as a calendar file.
+        assertThat(attachments).isEmpty();
+        verify(icsCalendarService, never()).generateRequestIcsFile(any(), anyInt(), any(), any());
+        verify(icsCalendarService, never()).generateMultiEventIcsFile(any(), any(), any());
     }
 
 }

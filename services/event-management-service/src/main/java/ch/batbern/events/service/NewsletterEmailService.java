@@ -83,6 +83,8 @@ public class NewsletterEmailService {
     private static final String DEFAULT_TEMPLATE_KEY = "newsletter-event";
     private static final String LAYOUT_KEY = "batbern-default";
     private static final int SEND_PAGE_SIZE = 50;
+    /** Base for the calendar SEQUENCE: 2020-01-01T00:00:00Z in epoch seconds. */
+    private static final long SEQUENCE_EPOCH_BASE_SECONDS = 1_577_836_800L;
     /**
      * Delay between individual email sends, in milliseconds.
      * <p>
@@ -680,45 +682,47 @@ public class NewsletterEmailService {
      */
     List<EmailService.EmailAttachment> buildIcsAttachments(
             String templateHtml, Map<String, String> baseVars, Event event) {
+        // We attach a calendar entry ONLY for the event the newsletter is about (the
+        // "current" event). Upcoming events appear in the HTML body but are intentionally
+        // NOT attached as .ics — one newsletter, one calendar entry.
         boolean includeCurrentEvent = templateHtml.contains("{{eventDate}}")
                 || templateHtml.contains("{{eventDetailLink}}");
-        String upcomingHtml = baseVars.get("upcomingEventsSection");
-        boolean includeUpcoming = templateHtml.contains("{{upcomingEventsSection}}")
-                && upcomingHtml != null && !upcomingHtml.isBlank();
 
-        if (!includeCurrentEvent && !includeUpcoming) {
+        if (!includeCurrentEvent || event.getDate() == null) {
             return List.of();
         }
 
-        List<IcsCalendarService.IcsEventData> icsEvents = new java.util.ArrayList<>();
+        // Single-VEVENT METHOD:REQUEST with a stable UID (the event code) and a SEQUENCE
+        // derived from the event's last-modified time, so re-opening or re-sending the
+        // attachment UPDATES the same calendar entry instead of creating a duplicate.
+        byte[] icsBytes = icsCalendarService.generateRequestIcsFile(
+                toIcsEventData(event), calendarSequence(event), "noreply@batbern.ch", "BATbern");
 
-        if (includeCurrentEvent && event.getDate() != null) {
-            icsEvents.add(toIcsEventData(event));
-        }
-
-        if (includeUpcoming) {
-            Instant now = Instant.now();
-            eventRepository.findByDateAfter(now).stream()
-                    .filter(e -> !e.getId().equals(event.getId()))
-                    .filter(e -> e.getWorkflowState() != EventWorkflowState.ARCHIVED)
-                    .map(this::toIcsEventData)
-                    .forEach(icsEvents::add);
-        }
-
-        if (icsEvents.isEmpty()) {
-            return List.of();
-        }
-
-        byte[] icsBytes = icsCalendarService.generateMultiEventIcsFile(
-                icsEvents, "noreply@batbern.ch", "BATbern");
+        String filename = "batbern-" + event.getEventCode().toLowerCase() + ".ics";
         return List.of(new EmailService.EmailAttachment(
-                "batbern-events.ics", icsBytes,
-                "text/calendar; charset=utf-8; method=PUBLISH", true));
+                filename, icsBytes,
+                "text/calendar; charset=utf-8; method=REQUEST", true));
+    }
+
+    /**
+     * Derive a non-negative, monotonically-increasing {@code SEQUENCE} for the event's
+     * calendar invite from its last-modified time (seconds since 2020-01-01). Each genuine
+     * edit to the event advances {@code updatedAt}, so a later re-send carries a higher
+     * SEQUENCE and calendar clients accept it as an update of the same UID. Null → 0.
+     */
+    private int calendarSequence(Event event) {
+        Instant updated = event.getUpdatedAt();
+        if (updated == null) {
+            return 0;
+        }
+        long seq = updated.getEpochSecond() - SEQUENCE_EPOCH_BASE_SECONDS;
+        return (int) Math.max(0L, seq);
     }
 
     private IcsCalendarService.IcsEventData toIcsEventData(Event event) {
         EventTimeResolver.TimeRange range = eventTimeResolver.resolve(event);
         return new IcsCalendarService.IcsEventData(
+                event.getEventCode(),   // stable UID local-part → enables update-in-place
                 event.getTitle() != null ? event.getTitle() : event.getEventCode(),
                 "Berner Architekten Treffen - " + (event.getTitle() != null ? event.getTitle() : ""),
                 event.getVenueName() != null ? event.getVenueName() : "",

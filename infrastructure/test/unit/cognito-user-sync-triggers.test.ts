@@ -81,3 +81,46 @@ describe('CognitoUserSyncTriggers — IAM (Story 12.1 AC6)', () => {
     });
   });
 });
+
+describe('CognitoUserSyncTriggers — PreSignUp account-linking trigger (Story 12.6 AC6)', () => {
+  let template: Template;
+
+  beforeAll(() => {
+    template = buildTemplate();
+  });
+
+  test('should_createBundledPreSignUpFunction_notInlineZipFile', () => {
+    // A bundled NodejsFunction has S3-asset code, NOT inline ZipFile. The former inline
+    // lambda.Code.fromInline trigger is gone (it moved here with DB access).
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      FunctionName: 'batbern-staging-pre-signup-trigger',
+      Runtime: 'nodejs20.x',
+      Handler: 'index.handler',
+      Code: Match.objectLike({ S3Bucket: Match.anyValue() }),
+    });
+  });
+
+  test('should_wirePreSignUpAsPoolLambdaConfig', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPool', {
+      LambdaConfig: Match.objectLike({
+        PreSignUp: Match.anyValue(),
+      }),
+    });
+  });
+
+  test('should_grantAdminLinkProviderForUserAndListUsers_forFederatedLinking', () => {
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Effect: 'Allow',
+            Action: Match.arrayWith([
+              'cognito-idp:AdminLinkProviderForUser',
+              'cognito-idp:ListUsers',
+            ]),
+          }),
+        ]),
+      }),
+    });
+  });
+});

@@ -91,6 +91,85 @@ class IcsCalendarServiceTest {
         assertThat(ics).contains("LOCATION:Bern\\, Switzerland");
     }
 
+    @Test
+    @DisplayName("generateMultiEventIcsFile: uses the stable UID supplied on IcsEventData")
+    void multiEvent_usesStableUid() {
+        ZonedDateTime start = ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, ZoneId.of("Europe/Zurich"));
+
+        byte[] icsBytes = service.generateMultiEventIcsFile(
+                List.of(new IcsCalendarService.IcsEventData(
+                        "BATbern59", "BATbern #59", "Cloud Native", "Welle 7",
+                        start, start.plusHours(3))),
+                "noreply@batbern.ch", "BATbern");
+        String ics = new String(icsBytes, StandardCharsets.UTF_8);
+
+        assertThat(ics).contains("UID:BATbern59@batbern.ch");
+    }
+
+    @Test
+    @DisplayName("generateRequestIcsFile: produces a single METHOD:REQUEST VEVENT with stable UID + SEQUENCE")
+    void requestIcs_producesUpdatableInvite() {
+        ZonedDateTime start = ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, ZoneId.of("Europe/Zurich"));
+
+        byte[] icsBytes = service.generateRequestIcsFile(
+                new IcsCalendarService.IcsEventData(
+                        "BATbern58", "BATbern #58", "AI in Software", "Welle 7\\, Bern",
+                        start, start.plusHours(4)),
+                42, "noreply@batbern.ch", "BATbern");
+        String ics = new String(icsBytes, StandardCharsets.UTF_8);
+
+        assertThat(ics).startsWith("BEGIN:VCALENDAR");
+        assertThat(ics).endsWith("END:VCALENDAR\r\n");
+        // The invite form — NOT the informational PUBLISH form
+        assertThat(ics).contains("METHOD:REQUEST");
+        assertThat(ics).doesNotContain("METHOD:PUBLISH");
+        // Exactly one VEVENT (Outlook only processes the first in a multi-event REQUEST)
+        assertThat(countOccurrences(ics, "BEGIN:VEVENT")).isEqualTo(1);
+        // Stable UID + ORGANIZER + SEQUENCE are what make Outlook update-in-place
+        assertThat(ics).contains("UID:BATbern58@batbern.ch");
+        assertThat(ics).contains("ORGANIZER;CN=BATbern:mailto:noreply@batbern.ch");
+        assertThat(ics).contains("SEQUENCE:42");
+        assertThat(ics).contains("STATUS:CONFIRMED");
+        // No recipient is tracked — the file is an attachment, not an addressed iMIP invite
+        assertThat(ics).doesNotContain("ATTENDEE");
+    }
+
+    @Test
+    @DisplayName("generateRequestIcsFile: same UID across sends is what prevents duplicates")
+    void requestIcs_sameUidAcrossSends() {
+        ZonedDateTime start = ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, ZoneId.of("Europe/Zurich"));
+        IcsCalendarService.IcsEventData event = new IcsCalendarService.IcsEventData(
+                "BATbern58", "BATbern #58", "AI in Software", "Welle 7",
+                start, start.plusHours(4));
+
+        String first = new String(
+                service.generateRequestIcsFile(event, 0, "noreply@batbern.ch", "BATbern"),
+                StandardCharsets.UTF_8);
+        String second = new String(
+                service.generateRequestIcsFile(event, 1, "noreply@batbern.ch", "BATbern"),
+                StandardCharsets.UTF_8);
+
+        assertThat(first).contains("UID:BATbern58@batbern.ch");
+        assertThat(second).contains("UID:BATbern58@batbern.ch");
+        // Same UID, higher SEQUENCE on the re-send → calendar clients treat it as an update
+        assertThat(first).contains("SEQUENCE:0");
+        assertThat(second).contains("SEQUENCE:1");
+    }
+
+    @Test
+    @DisplayName("generateRequestIcsFile: clamps negative sequence to zero")
+    void requestIcs_clampsNegativeSequence() {
+        ZonedDateTime start = ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, ZoneId.of("Europe/Zurich"));
+
+        byte[] icsBytes = service.generateRequestIcsFile(
+                new IcsCalendarService.IcsEventData(
+                        "BATbern58", "BATbern #58", "", "", start, start.plusHours(4)),
+                -5, "noreply@batbern.ch", "BATbern");
+        String ics = new String(icsBytes, StandardCharsets.UTF_8);
+
+        assertThat(ics).contains("SEQUENCE:0");
+    }
+
     private int countOccurrences(String text, String sub) {
         int count = 0;
         int idx = 0;

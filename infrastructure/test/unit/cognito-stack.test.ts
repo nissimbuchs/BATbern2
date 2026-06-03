@@ -99,19 +99,23 @@ describe('CognitoStack Tests', () => {
     expect(customAttrs).toEqual(['custom:companyId', 'custom:preferences']);
   });
 
-  // Test 1.4: should_validateCompanyIdAttribute_when_userSignsUp
-  test('should_validateCompanyIdAttribute_when_userSignsUp', () => {
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: Match.stringLikeRegexp('presignup-trigger'),
-      Handler: 'index.handler',
-      Runtime: 'nodejs18.x',
+  // Test 1.4 (Story 12.6): the inline PreSignUp Lambda was removed from this stack — the
+  // PreSignUp trigger now lives in the CognitoUserSyncTriggers construct as a VPC+DB-secret
+  // NodejsFunction, which is ONLY created when vpc/securityGroup/databaseSecret/endpoint are
+  // supplied. This no-VPC dev-config stack therefore wires NO PreSignUp trigger. The trigger
+  // wiring + IAM are covered by cognito-user-sync-triggers.test.ts; the handler behaviour
+  // (native UUID validation + federated linking) by pre-signup.test.ts.
+  test('should_notWireInlinePreSignUpTrigger_when_noVpcConfigured', () => {
+    // No legacy inline (nodejs18.x, index.handler) presignup Lambda exists anymore.
+    const fns = template.findResources('AWS::Lambda::Function', {
+      Properties: { FunctionName: Match.stringLikeRegexp('pre-?signup-trigger') },
     });
+    expect(Object.keys(fns)).toHaveLength(0);
 
-    template.hasResourceProperties('AWS::Cognito::UserPool', {
-      LambdaConfig: Match.objectLike({
-        PreSignUp: Match.anyValue(),
-      }),
-    });
+    // And the pool has no PreSignUp LambdaConfig in this configuration.
+    const pools = template.findResources('AWS::Cognito::UserPool');
+    const pool = Object.values(pools)[0] as any;
+    expect(pool.Properties.LambdaConfig?.PreSignUp).toBeUndefined();
   });
 
   // Test for App Client configuration with OAuth flows
@@ -122,8 +126,53 @@ describe('CognitoStack Tests', () => {
       AllowedOAuthScopes: ['email', 'openid', 'profile'],
       CallbackURLs: ['http://localhost:3000/auth/callback'],
       LogoutURLs: ['http://localhost:3000/logout'],
-      SupportedIdentityProviders: ['COGNITO'],
+      // Story 12.5 AC5: GOOGLE added alongside COGNITO so the hosted-UI can broker a
+      // Google OIDC sign-in. COGNITO MUST remain so email/password auth keeps working.
+      SupportedIdentityProviders: ['COGNITO', 'Google'],
     });
+  });
+
+  // Story 12.5 AC1/AC2/AC7: Google IdP defined with secret-sourced credentials and
+  // 1:1 attribute mapping (email required for account-linking + email alias; names
+  // fold to standard given_name/family_name — the only mapping Cognito supports).
+  test('should_defineGoogleIdentityProvider_when_stackDeployed', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolIdentityProvider', {
+      ProviderName: 'Google',
+      ProviderType: 'Google',
+      AttributeMapping: Match.objectLike({
+        email: 'email',
+        given_name: 'given_name',
+        family_name: 'family_name',
+      }),
+    });
+  });
+
+  // Story 12.5 AC1 (CLAUDE.md security): the Google client secret MUST synth to a
+  // Secrets Manager dynamic reference, never an inlined plaintext value.
+  test('should_sourceGoogleClientSecretFromSecretsManager_when_idpDefined', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolIdentityProvider', {
+      ProviderName: 'Google',
+      ProviderDetails: Match.objectLike({
+        // fromSecretNameV2 + secretValueFromJson synth to a {{resolve:secretsmanager:...}}
+        // dynamic reference rendered as an Fn::Join (the ARN is partition-interpolated), so
+        // the plaintext secret never enters the template. Assert that structure.
+        client_secret: {
+          'Fn::Join': ['', Match.arrayWith([Match.stringLikeRegexp('resolve:secretsmanager')])],
+        },
+      }),
+    });
+  });
+
+  // Story 12.5: given_name/family_name are NOT declared in the pool's standardAttributes —
+  // they are built-in OIDC standard attributes that every pool already has, and declaring
+  // them breaks UpdateUserPool on the existing pool ("Invalid AttributeDataType", PR #735).
+  // The Google IdP attributeMapping (asserted above) maps onto those built-ins directly.
+  // Guard the regression: the synthesized pool Schema must NOT add given_name/family_name.
+  test('should_notDeclareStandardNameAttributesInSchema_when_userPoolCreated', () => {
+    const pool = Object.values(template.findResources('AWS::Cognito::UserPool'))[0] as any;
+    const schemaNames = (pool.Properties.Schema || []).map((a: any) => a.Name);
+    expect(schemaNames).not.toContain('given_name');
+    expect(schemaNames).not.toContain('family_name');
   });
 
   // Test: ALLOW_ADMIN_USER_PASSWORD_AUTH required for server-side Cognito authentication (Story 11.E.1 / AR29)
