@@ -1,6 +1,6 @@
 # Story 12.6a: Split the registration full-name field into first + last name (SSO Phase 2 follow-up)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -104,6 +104,10 @@ split into a fragile `split(/\s+/)` guess. To do the split *correctly* for our 1
 - [Source: web-frontend/src/components/auth/RegistrationWizard/RegistrationWizard.tsx:24] — useForm defaultValues
 - [Source: public/locales/en/auth.json → register.step1 / register.errors] — keys to add/remove (×10 locales)
 - [Source: services/.../interceptor/JITUserProvisioningInterceptor.java:114-125] — why custom:preferences stays (scope guard); CLAUDE.md "Frontend UI i18n — all 10 locales"
+
+## Review Findings (code review 2026-06-03)
+
+- [x] [Review][Defer] Whitespace/punctuation-only names pass all client validation then trim to empty [`RegistrationStep1.tsx:97-159`, `useRegistration.ts:31-32`] — deferred, pre-existing. react-hook-form `required` does not trim, so `"  "` (length 2, matches `\s` in the verbatim `/^[\p{L}\s.'-]+$/u` pattern) passes `required`+`minLength:2`+`pattern`, then `useRegistration` `.trim()`s it to `''` and packs an empty `firstName`/`lastName` into `custom:preferences`. The old single `fullName` field carried the identical rules (this story preserved the pattern verbatim per AC1), so the gap is not introduced here. Cheap optional hardening: add a `validate: v => v.trim().length >= 2` per field. Backend JIT has a blank-name fallback (≈ "Speaker"), so impact is bounded.
 
 ## Dev Agent Record
 

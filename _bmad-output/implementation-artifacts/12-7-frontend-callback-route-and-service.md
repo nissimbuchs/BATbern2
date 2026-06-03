@@ -1,6 +1,6 @@
 # Story 12.7: Frontend Callback Route + Service Method + `ACCOUNT_DEACTIVATED` Handling (SSO Phase 4)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -131,6 +131,11 @@ Story 12.1 (`status: review`) renamed `hydrateRolesIfMissing` → **`hydrateUser
 ### Prerequisite & ordering
 - **Prereq: Story 12.6** (account-linking `PreSignUp_ExternalProvider` trigger) — and transitively 12.5 (Google IdP) — must be deployed for a federated round-trip to actually return a usable session (otherwise the hosted-UI authorize URL has no Google provider / no linking). This story's **code** has no hard build dependency on the backend (it only adds a method + routes), so it can be **implemented and merged independently**; but its **manual verification** (Task 7 hosted-UI smoke) is only meaningful once 12.5 + 12.6 are live. Story 12.9 (the visible button) depends on this story.
 - Story 12.1 (`hydrateUserFromDb` rename) should land first; if not, see AC3 reconciliation note.
+
+## Review Findings (code review 2026-06-03)
+
+- [x] [Review][Defer] `/auth/callback` may race Amplify v6 OAuth code-exchange — deferred (deploy smoke). `AuthCallbackPage` calls `completeFederatedSignIn()` → `authService.getCurrentUser()`/`fetchAuthSession()` immediately on mount, but Amplify v6 processes the returned `?code=` asynchronously and signals completion via the Hub `signInWithRedirect` event. No `Hub.listen('auth', …)` exists anywhere in `src/`. If `getCurrentUser()` resolves before the code exchange settles, it returns `null` → the handler bounces a legitimately-authenticating Google user to `/login`. **Deferral reason: Amplify likely auto-awaits the exchange; verify at deploy smoke** (only exercisable via the live hosted-UI flow once 12.5+12.6 are deployed). If the smoke shows a race, the fix is a Hub `signInWithRedirect`/`signedIn` listener or a bounded retry around `getCurrentUser()`. [`AuthCallbackPage.tsx:23-39`, `AuthContext.tsx:463-477`]
+- [x] [Review][Patch] AuthCallbackPage StrictMode: navigation never fires under dev double-invoke — FIXED 2026-06-03 (dropped the redundant `cancelled` early-return; `startedRef` already guards the double-run; AuthCallbackPage tests + tsc green) — the `startedRef` guard + the `cancelled` cleanup flag defeat each other. Mount#1 starts the async and registers cleanup; StrictMode's fake unmount runs cleanup → `cancelled = true`; remount early-returns (`startedRef.current` already `true`) and starts no new run; the only in-flight async then hits `if (cancelled) return;` and skips `navigate`. Net: in dev (`<React.StrictMode>` is active, `main.tsx:42`) a successful federated sign-in completes but stays stuck on the loader — breaking the story's local verification path. Production is unaffected (no double-invoke). Fix: drop the `cancelled` early-return (the `startedRef` guard already prevents a double run), or restructure so the remount resumes navigation. [`AuthCallbackPage.tsx:23-39`]
 
 ## Dev Agent Record
 

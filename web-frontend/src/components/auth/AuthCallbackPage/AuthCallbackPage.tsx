@@ -21,21 +21,22 @@ export const AuthCallbackPage: React.FC = () => {
   const startedRef = useRef(false);
 
   useEffect(() => {
+    // `startedRef` already guards against the React 18 StrictMode dev double-effect,
+    // so the federated completion runs exactly once. We deliberately do NOT add a
+    // `cancelled` cleanup flag here: under StrictMode the fake unmount would set it on
+    // the only in-flight run, and the remount early-returns (startedRef is set) without
+    // restarting — so a `cancelled` check would skip navigation entirely in dev, leaving
+    // the user stuck on the loader. This is a transient redirect page, so navigating
+    // after a (real) unmount is a harmless no-op.
     if (startedRef.current) return;
     startedRef.current = true;
 
-    let cancelled = false;
     (async () => {
       const outcome = await completeFederatedSignIn();
-      if (cancelled) return;
       // hydrateUserFromDb is awaited inside completeFederatedSignIn, so isAuthenticated
       // and preferences.language are already in state before we navigate.
       navigate(outcome.kind === 'success' ? '/dashboard' : '/login', { replace: true });
     })();
-
-    return () => {
-      cancelled = true;
-    };
   }, [completeFederatedSignIn, navigate]);
 
   return (
