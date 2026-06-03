@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { LoginForm } from './LoginForm';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
+import { MemoryRouter } from 'react-router-dom';
 import i18n from '@/i18n/config';
 import { ConfigProvider } from '@/contexts/ConfigContext';
 import type { AppConfig } from '@/config/runtime-config';
@@ -47,14 +48,21 @@ const mockConfig: AppConfig = {
   },
 };
 
-// Helper function to render with theme, i18n, and config
-const renderWithTheme = (component: React.ReactElement) => {
+// Helper function to render with theme, i18n, config, and router.
+// MemoryRouter is required because LoginForm reads ?reason=account_deactivated via
+// useSearchParams (Story 12.7 / G1); `initialEntries` lets tests drive that query.
+const renderWithTheme = (
+  component: React.ReactElement,
+  { route = '/login' }: { route?: string } = {}
+) => {
   return render(
-    <ConfigProvider config={mockConfig}>
-      <I18nextProvider i18n={i18n}>
-        <ThemeProvider theme={theme}>{component}</ThemeProvider>
-      </I18nextProvider>
-    </ConfigProvider>
+    <MemoryRouter initialEntries={[route]}>
+      <ConfigProvider config={mockConfig}>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider theme={theme}>{component}</ThemeProvider>
+        </I18nextProvider>
+      </ConfigProvider>
+    </MemoryRouter>
   );
 };
 
@@ -263,6 +271,45 @@ describe('LoginForm Component', () => {
 
     await waitFor(() => {
       expect(mockClearError).toHaveBeenCalled();
+    });
+  });
+
+  // Story 12.7 / G1: deactivated-account notice
+  it('should_showDeactivatedNotice_when_reasonQueryParamPresent', async () => {
+    await act(async () => {
+      renderWithTheme(<LoginForm />, { route: '/login?reason=account_deactivated' });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/has been deactivated/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should_notShowDeactivatedNotice_when_noReasonQueryParam', async () => {
+    await act(async () => {
+      renderWithTheme(<LoginForm />, { route: '/login' });
+    });
+
+    expect(screen.queryByText(/has been deactivated/i)).not.toBeInTheDocument();
+  });
+
+  it('should_dismissDeactivatedNotice_when_closeClicked', async () => {
+    const user = userEvent.setup();
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />, { route: '/login?reason=account_deactivated' });
+    });
+
+    const notice = await screen.findByText(/has been deactivated/i);
+    expect(notice).toBeInTheDocument();
+
+    // MUI Alert onClose renders a close button with aria-label "Close".
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /close/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/has been deactivated/i)).not.toBeInTheDocument();
     });
   });
 });

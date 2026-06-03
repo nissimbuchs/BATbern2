@@ -1,6 +1,6 @@
 # Story 12.6a: Split the registration full-name field into first + last name (SSO Phase 2 follow-up)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -34,28 +34,28 @@ This is a small **frontend-only data-quality** follow-up surfaced during SSO Epi
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — i18n keys in all 10 locales (AC: 5)** *(do first so the form can reference them)*
-  - [ ] In each of `public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/auth.json`: add `register.step1.givenNameLabel/givenNamePlaceholder/familyNameLabel/familyNamePlaceholder` and `register.errors.{givenName,familyName}{Required,TooShort,TooLong,Invalid}`. Remove `register.step1.fullNameLabel/fullNamePlaceholder` + `register.errors.fullName*`. EN + DE first-class wording; **placeholders locale-appropriate** (ja → Japanese name, de/gsw-BE → German-Swiss name, etc. — not transliterated "Anna").
+- [x] **Task 1 — i18n keys in all 10 locales (AC: 5)** *(do first so the form can reference them)*
+  - [x] In each of `public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/auth.json`: add `register.step1.givenNameLabel/givenNamePlaceholder/familyNameLabel/familyNamePlaceholder` and `register.errors.{givenName,familyName}{Required,TooShort,TooLong,Invalid}`. Remove `register.step1.fullNameLabel/fullNamePlaceholder` + `register.errors.fullName*`. EN + DE first-class wording; **placeholders locale-appropriate** (ja → Japanese name, de/gsw-BE → German-Swiss name, etc. — not transliterated "Anna").
 
-- [ ] **Task 2 — Split the form fields + locale-aware order (AC: 1, 5b)**
-  - [ ] `RegistrationStep1.tsx`: replace the single `fullName` `<TextField>` (`:89-116`) with two `<TextField>`s registered as `firstName` (label `givenNameLabel`) and `lastName` (label `familyNameLabel`), each with required + minLength 2 + maxLength 100 + the verbatim `/^[\p{L}\s.'-]+$/u` pattern (preserve the `:101-105` comment). Update `trigger([...])` (`:55`) to `['firstName', 'lastName', 'email', 'password', 'confirmPassword']`.
-  - [ ] Render the two fields in locale-aware order: a small `FAMILY_NAME_FIRST_LOCALES = new Set(['ja'])` (compare against `i18n.language`) flips the **visual** order to family-then-given for `ja`; given-then-family otherwise. Data mapping unchanged. Keep both as their own `<TextField>` so only the JSX sequence differs.
+- [x] **Task 2 — Split the form fields + locale-aware order (AC: 1, 5b)**
+  - [x] `RegistrationStep1.tsx`: replace the single `fullName` `<TextField>` (`:89-116`) with two `<TextField>`s registered as `firstName` (label `givenNameLabel`) and `lastName` (label `familyNameLabel`), each with required + minLength 2 + maxLength 100 + the verbatim `/^[\p{L}\s.'-]+$/u` pattern (preserve the `:101-105` comment). Update `trigger([...])` (`:55`) to `['firstName', 'lastName', 'email', 'password', 'confirmPassword']`.
+  - [x] Render the two fields in locale-aware order: a small `FAMILY_NAME_FIRST_LOCALES = new Set(['ja'])` (compare against `i18n.language`) flips the **visual** order to family-then-given for `ja`; given-then-family otherwise. Data mapping unchanged. Keep both as their own `<TextField>` so only the JSX sequence differs.
 
-- [ ] **Task 3 — Wizard defaults + form-data type (AC: 2)**
-  - [ ] `RegistrationWizard/RegistrationWizard.tsx:24`: `fullName: ''` → `firstName: '', lastName: ''`.
-  - [ ] `useRegistration.ts:11-18`: `RegistrationFormData` drop `fullName`, add `firstName: string; lastName: string;`.
+- [x] **Task 3 — Wizard defaults + form-data type (AC: 2)**
+  - [x] `RegistrationWizard/RegistrationWizard.tsx:24`: `fullName: ''` → `firstName: '', lastName: ''`.
+  - [x] `useRegistration.ts:11-18`: `RegistrationFormData` drop `fullName`, add `firstName: string; lastName: string;`.
 
-- [ ] **Task 4 — Drop the split, pass through (AC: 3)**
-  - [ ] `useRegistration.ts:30-33`: delete the `split(/\s+/)` block; call `authService.signUp({ ..., firstName: data.firstName.trim(), lastName: data.lastName.trim(), ... })`. Leave every other field in the signUp call unchanged.
+- [x] **Task 4 — Drop the split, pass through (AC: 3)**
+  - [x] `useRegistration.ts:30-33`: delete the `split(/\s+/)` block; call `authService.signUp({ ..., firstName: data.firstName.trim(), lastName: data.lastName.trim(), ... })`. Leave every other field in the signUp call unchanged.
 
-- [ ] **Task 5 — Confirmation step (AC: 4)**
-  - [ ] `RegistrationStep2.tsx:45,103`: replace `watch('fullName')` with `watch('firstName')` + `watch('lastName')`; render the combined name in the existing markup.
+- [x] **Task 5 — Confirmation step (AC: 4)**
+  - [x] `RegistrationStep2.tsx:45,103`: replace `watch('fullName')` with `watch('firstName')` + `watch('lastName')`; render the combined name in the existing markup.
 
-- [ ] **Task 6 — Tests (AC: 6)** *(TDD: write/adjust the failing assertions first)*
-  - [ ] Update `RegistrationStep1.test.tsx`, `RegistrationStep2.test.tsx`, `useRegistration.test.ts`, `RegistrationWizard.test.tsx` (anything seeding `fullName`).
-  - [ ] Add the multi-word no-mis-split assertion (AC6): given "Anna Maria" + family "Schmidt" → `authService.signUp` receives `firstName: 'Anna Maria'`, `lastName: 'Schmidt'` (old heuristic produced `'Anna'`/`'Maria Schmidt'`).
-  - [ ] Add a locale-order test: with `i18n.language='ja'` the family-name field renders before the given-name field; with a given-first locale (e.g. `en`) the order is given-then-family (AC5b).
-  - [ ] `npm run type-check`, `npm run lint`, and the registration Vitest suites green (tee to a temp file + grep per CLAUDE.md).
+- [x] **Task 6 — Tests (AC: 6)** *(TDD: write/adjust the failing assertions first)*
+  - [x] Update `RegistrationStep1.test.tsx`, `RegistrationStep2.test.tsx`, `useRegistration.test.ts`, `RegistrationWizard.test.tsx` (anything seeding `fullName`).
+  - [x] Add the multi-word no-mis-split assertion (AC6): given "Anna Maria" + family "Schmidt" → `authService.signUp` receives `firstName: 'Anna Maria'`, `lastName: 'Schmidt'` (old heuristic produced `'Anna'`/`'Maria Schmidt'`).
+  - [x] Add a locale-order test: with `i18n.language='ja'` the family-name field renders before the given-name field; with a given-first locale (e.g. `en`) the order is given-then-family (AC5b).
+  - [x] `npm run type-check`, `npm run lint`, and the registration Vitest suites green (tee to a temp file + grep per CLAUDE.md).
 
 ## Dev Notes
 
@@ -109,22 +109,48 @@ split into a fragile `split(/\s+/)` guess. To do the split *correctly* for our 1
 
 ### Agent Model Used
 
-_(empty — to be filled by dev-story)_
+claude-opus-4-8 (1M context) — bmad-dev-story, 2026-06-03
 
 ### Debug Log References
 
-_(empty)_
+- `/tmp/12-6a-vitest.txt` — registration suites: 56/56 passed (Step1 24, Step2 16, Wizard 8, useRegistration 8)
+- `/tmp/12-6a-tsc.txt` — `tsc --noEmit` clean
+- `/tmp/12-6a-lint.txt` — `eslint src` clean (0 warnings)
 
 ### Completion Notes List
 
-_(empty)_
+- **Task 1 (AC5):** Added `givenName*`/`familyName*` step1 + error keys to all 10 locales; removed every `fullName*` key (verified `grep` → zero dangling refs in `src/` and `public/`). Placeholders are locale-appropriate (en Anna/Schmidt, de Max/Mustermann, ja 太郎/山田, fr Jean/Dupont, etc.) — not transliterated. JSON written via script to keep formatting + key order stable (diff = 18 lines/file, name keys only).
+- **Task 2 (AC1, AC5b):** `RegistrationStep1.tsx` — two `<TextField>`s registered as `firstName`/`lastName` with labels `givenNameLabel`/`familyNameLabel`; required + minLength 2 + maxLength 100 + the verbatim `/^[\p{L}\s.'-]+$/u` pattern (comment preserved on **both** fields). `trigger([...])` updated to `['firstName','lastName','email','password','confirmPassword']`. Module-level `FAMILY_NAME_FIRST_LOCALES = new Set(['ja'])`; fields built as JSX consts and rendered family-then-given for `ja`, given-then-family otherwise — only the visual sequence flips, the firstName=given/lastName=family data mapping is unchanged.
+- **Task 3 (AC2):** `RegistrationFormData` drops `fullName`, adds `firstName`/`lastName`; wizard `defaultValues` updated.
+- **Task 4 (AC3):** Deleted the `split(/\s+/)` heuristic; passes `data.firstName.trim()`/`data.lastName.trim()` straight into `authService.signUp` (contract untouched — names still packed into `custom:preferences` per the scope guard).
+- **Task 5 (AC4):** `RegistrationStep2.tsx` now `watch('firstName')`+`watch('lastName')` and renders the combined `${firstName} ${lastName}` in the existing single-line summary markup (lower-churn option).
+- **Task 6 (AC6):** Updated all 4 Vitest suites. Wizard test used the human label `/full name/i` (not the field name `fullName`) — caught on first run and fixed. Added the AC6 no-mis-split assertion (`firstName: 'Anna Maria'`, `lastName: 'Schmidt'`) and two AC5b order tests (en given-first, ja family-first via `compareDocumentPosition` on placeholders). Repurposed the old single-word test into a per-field trim test.
+- **AC7:** Frontend-only — no backend/Cognito/infra/OpenAPI touched. `[no-doc]` applies.
 
 ### File List
 
-_(empty)_
+- `web-frontend/src/components/auth/RegistrationStep1/RegistrationStep1.tsx` (modified)
+- `web-frontend/src/components/auth/RegistrationStep1/RegistrationStep1.test.tsx` (modified)
+- `web-frontend/src/components/auth/RegistrationStep2/RegistrationStep2.tsx` (modified)
+- `web-frontend/src/components/auth/RegistrationStep2/RegistrationStep2.test.tsx` (modified)
+- `web-frontend/src/components/auth/RegistrationWizard/RegistrationWizard.tsx` (modified)
+- `web-frontend/src/components/auth/RegistrationWizard/RegistrationWizard.test.tsx` (modified)
+- `web-frontend/src/hooks/useRegistration/useRegistration.ts` (modified)
+- `web-frontend/src/hooks/useRegistration/useRegistration.test.ts` (modified)
+- `web-frontend/public/locales/de/auth.json` (modified)
+- `web-frontend/public/locales/en/auth.json` (modified)
+- `web-frontend/public/locales/fr/auth.json` (modified)
+- `web-frontend/public/locales/it/auth.json` (modified)
+- `web-frontend/public/locales/rm/auth.json` (modified)
+- `web-frontend/public/locales/es/auth.json` (modified)
+- `web-frontend/public/locales/fi/auth.json` (modified)
+- `web-frontend/public/locales/nl/auth.json` (modified)
+- `web-frontend/public/locales/ja/auth.json` (modified)
+- `web-frontend/public/locales/gsw-BE/auth.json` (modified)
 
 ### Change Log
 
 | Date | Change |
 |---|---|
 | 2026-06-03 | Story 12.6a drafted (registration name split; frontend-only, no Cognito storage change). i18n-aware per "think on i18n": given/family labels (not First/Last), locale-aware field order (family-first for `ja`), locale-appropriate placeholders, all 10 locales; mononym NOT-NULL tradeoff documented. Status: ready-for-dev. |
+| 2026-06-03 | Implemented all 6 tasks (8 ACs). Two-field given/family capture replaces single `fullName`; `split(/\s+/)` heuristic removed; locale-aware order (`ja` family-first); 10-locale i18n keys swapped (zero dangling `fullName*`). 56/56 registration tests + type-check + lint green. Status: review. |

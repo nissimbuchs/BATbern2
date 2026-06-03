@@ -7,6 +7,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import i18n from '@/i18n/config';
 import { hasCognitoSession } from '@/utils/auth/cognitoSession';
 import { ensureAmplifyConfigured } from '@/config/amplify';
+import { authService } from '@/services/auth/authService';
 
 /**
  * Generate a unique correlation ID for request tracing
@@ -145,8 +146,30 @@ apiClient.interceptors.response.use(
           }
           break;
         case 403:
-          // Forbidden - insufficient permissions
-          console.error(`[${correlationId}] Forbidden: Insufficient permissions`);
+          // Story 12.7 / G1 (from Story 12.2 is_active gate): the gateway emits
+          //   403 { "error": "ACCOUNT_DEACTIVATED", "message": "..." }
+          // when a user's account is deactivated — for BOTH password and federated
+          // sessions (the gate is provider-agnostic). Force a clean logout + route to
+          // the login surface with a deactivated indicator so the user sees a clear
+          // message rather than a raw 403.
+          // CRITICAL: this is a 403, NOT a 401 — it must NOT go through the
+          // token-refresh path (a refresh loop would result).
+          if (error.response.data?.error === 'ACCOUNT_DEACTIVATED') {
+            console.error(`[${correlationId}] Account deactivated - forcing logout`);
+            // Best-effort sign-out; clears the Amplify session (native or federated).
+            void authService.signOut().catch(() => {
+              /* ignore — we redirect regardless */
+            });
+            const target = '/login?reason=account_deactivated';
+            if (navigateCallback) {
+              navigateCallback(target);
+            } else {
+              window.location.href = target;
+            }
+          } else {
+            // Forbidden - insufficient permissions
+            console.error(`[${correlationId}] Forbidden: Insufficient permissions`);
+          }
           break;
         case 500:
           // Server error

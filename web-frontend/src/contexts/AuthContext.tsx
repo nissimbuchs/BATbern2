@@ -41,6 +41,15 @@ interface UseAuthReturn extends AuthenticationState {
    * `error` state).
    */
   confirmNewPassword: (newPassword: string) => Promise<boolean>;
+  /**
+   * Story 12.7 (SSO Phase 4): complete a federated (Google) sign-in after the
+   * Amplify hosted-UI redirect has settled. Reads the current session, then runs
+   * the SAME success branch as password `signIn` (`hydrateUserFromDb` →
+   * partner-companyName resolve → `setState({ isAuthenticated: true })`), so a
+   * federated session lands an identical `UserContext`. Awaited by the
+   * `/auth/callback` handler BEFORE it navigates to `/dashboard`.
+   */
+  completeFederatedSignIn: () => Promise<SignInOutcome>;
   signOut: () => Promise<void>;
   signUp: (data: SignUpData) => Promise<boolean>;
   clearError: () => void;
@@ -441,6 +450,72 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
+   * Complete federated (Google) sign-in (Story 12.7, SSO Phase 4).
+   *
+   * The Amplify hosted-UI redirect has returned and Amplify has processed the
+   * `?code=` on `/auth/callback`; the session is now resolvable. This mirrors the
+   * `signIn` success branch (and `initializeAuth`): get the user from the settled
+   * session, fetch the access token, `hydrateUserFromDb` (so `preferences.language`
+   * is present before any auth-gated effect — the Story 12.1 regression guard holds
+   * for federated logins too), resolve partner companyName, then flip auth state.
+   * No SSO-specific token branching (ADR-010 D1: same JWT shape as password login).
+   */
+  const completeFederatedSignIn = useCallback(async (): Promise<SignInOutcome> => {
+    console.log('[AuthProvider] completeFederatedSignIn called');
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+    try {
+      const user = await authService.getCurrentUser();
+      if (!user) {
+        console.warn('[AuthProvider] completeFederatedSignIn: no session resolved');
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: { code: 'FEDERATED_SIGN_IN_FAILED', message: 'No federated session found' },
+        }));
+        return { kind: 'failed' };
+      }
+
+      const tokenResult = await authService.refreshToken();
+
+      let signedInUser = await hydrateUserFromDb(user);
+
+      const isPartner = signedInUser.role === 'partner' || signedInUser.roles?.includes('partner');
+      if (isPartner && !signedInUser.companyName) {
+        const resolved = await resolvePartnerCompanyName();
+        if (resolved) {
+          signedInUser = { ...signedInUser, companyName: resolved };
+        }
+      }
+
+      setState({
+        isAuthenticated: true,
+        isLoading: false,
+        user: signedInUser,
+        error: null,
+        accessToken: tokenResult.accessToken || null,
+      });
+      console.log(
+        '[AuthProvider] Federated sign-in complete - authenticated as:',
+        signedInUser.email
+      );
+      return { kind: 'success' };
+    } catch (error: unknown) {
+      console.error('[AuthProvider] Exception during completeFederatedSignIn:', error);
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: {
+          code: 'FEDERATED_SIGN_IN_ERROR',
+          message:
+            error instanceof Error ? error.message : 'An error occurred during federated sign in',
+        },
+      }));
+      return { kind: 'failed' };
+    }
+  }, []);
+
+  /**
    * Sign out user
    */
   const signOut = useCallback(async (): Promise<void> => {
@@ -681,6 +756,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       ...state,
       signIn,
       confirmNewPassword,
+      completeFederatedSignIn,
       signOut,
       signUp,
       refreshToken,
@@ -694,6 +770,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       state,
       signIn,
       confirmNewPassword,
+      completeFederatedSignIn,
       signOut,
       signUp,
       refreshToken,

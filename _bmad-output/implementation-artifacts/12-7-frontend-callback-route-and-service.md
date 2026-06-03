@@ -1,6 +1,6 @@
 # Story 12.7: Frontend Callback Route + Service Method + `ACCOUNT_DEACTIVATED` Handling (SSO Phase 4)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -41,42 +41,42 @@ This is **Phase 4** of Epic 12 (SSO / OIDC Federation). It is **invisible to act
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Service: `signInWithFederated('Google')` (AC: 1, 9)**
-  - [ ] RED: in `web-frontend/src/services/auth/authService.test.ts`, add a test `should call Amplify signInWithRedirect with { provider: 'Google' } when signInWithFederated is invoked` — mock `signInWithRedirect` from `aws-amplify/auth` (extend the existing module mock used for `signIn`/`signUp`) and assert it is called once with `{ provider: 'Google' }`.
-  - [ ] GREEN: add `signInWithRedirect` to the `aws-amplify/auth` import block (`authService.ts:10-17`); add `async signInWithFederated(provider: 'Google'): Promise<void> { await signInWithRedirect({ provider }); }` as a public method on `AuthService`. No try/catch swallow (let initiation errors propagate).
-  - [ ] Confirm the existing `authService.test.ts` mock surface still resolves (don't break `signIn`/`signUp`/`fetchAuthSession` mocks).
+- [x] **Task 1 — Service: `signInWithFederated('Google')` (AC: 1, 9)**
+  - [x] RED: in `web-frontend/src/services/auth/authService.test.ts`, add a test `should call Amplify signInWithRedirect with { provider: 'Google' } when signInWithFederated is invoked` — mock `signInWithRedirect` from `aws-amplify/auth` (extend the existing module mock used for `signIn`/`signUp`) and assert it is called once with `{ provider: 'Google' }`.
+  - [x] GREEN: add `signInWithRedirect` to the `aws-amplify/auth` import block (`authService.ts:10-17`); add `async signInWithFederated(provider: 'Google'): Promise<void> { await signInWithRedirect({ provider }); }` as a public method on `AuthService`. No try/catch swallow (let initiation errors propagate).
+  - [x] Confirm the existing `authService.test.ts` mock surface still resolves (don't break `signIn`/`signUp`/`fetchAuthSession` mocks).
 
-- [ ] **Task 2 — Context: federated-completion entry point (AC: 2, 3, 4, 9)**
-  - [ ] Decide the wiring: prefer adding `completeFederatedSignIn(): Promise<SignInOutcome>` to `AuthContext` (mirror the `signIn` success branch `AuthContext.tsx:291-316`: `fetchAuthSession`/`getCurrentUser` → `hydrateUserFromDb` → partner-companyName resolve → `setState({ isAuthenticated: true, … })`). Reuse `hydrateUserFromDb` (`:91`) — do NOT duplicate the extract/hydrate logic.
-  - [ ] RED: in `AuthContext.test.tsx`, assert that after the federated-completion path the hydrated `UserContext` carries `preferences.language` (regression guard from 12.1) and `isAuthenticated === true` BEFORE the caller would navigate — mock `authService.getCurrentUser`/`fetchAuthSession` + `getUserProfile` (the `/users/me` mock pattern 12.1 added).
-  - [ ] GREEN: implement the method; add it to `UseAuthReturn` (`AuthContext.tsx:32-49`) and the memoized `contextValue` (`:637-664`). **If Story 12.1's `hydrateUserFromDb` rename is not on the branch, reconcile to the name present (`hydrateRolesIfMissing`) — see AC3.**
+- [x] **Task 2 — Context: federated-completion entry point (AC: 2, 3, 4, 9)**
+  - [x] Decide the wiring: prefer adding `completeFederatedSignIn(): Promise<SignInOutcome>` to `AuthContext` (mirror the `signIn` success branch `AuthContext.tsx:291-316`: `fetchAuthSession`/`getCurrentUser` → `hydrateUserFromDb` → partner-companyName resolve → `setState({ isAuthenticated: true, … })`). Reuse `hydrateUserFromDb` (`:91`) — do NOT duplicate the extract/hydrate logic.
+  - [x] RED: in `AuthContext.test.tsx`, assert that after the federated-completion path the hydrated `UserContext` carries `preferences.language` (regression guard from 12.1) and `isAuthenticated === true` BEFORE the caller would navigate — mock `authService.getCurrentUser`/`fetchAuthSession` + `getUserProfile` (the `/users/me` mock pattern 12.1 added).
+  - [x] GREEN: implement the method; add it to `UseAuthReturn` (`AuthContext.tsx:32-49`) and the memoized `contextValue` (`:637-664`). **If Story 12.1's `hydrateUserFromDb` rename is not on the branch, reconcile to the name present (`hydrateRolesIfMissing`) — see AC3.**
 
-- [ ] **Task 3 — Route: `/auth/callback` handler component (AC: 2, 4, 8)**
-  - [ ] Add an `AuthCallbackPage` component (inline in `App.tsx` near `LoginPage` `:160-191`, or `src/components/auth/AuthCallbackPage/`). On mount: `useEffect` → await `completeFederatedSignIn()` (Task 2) → `navigate('/dashboard', { replace: true })`; on failure → `navigate('/login', { replace: true })` (optionally with an error toast/state). Render `BATbernLoader` (text-free) while completing — see AC8 i18n note.
-  - [ ] Register the route in `App.tsx` (within `<Routes>` `:244`, e.g. near the auth routes `:336-384`): `<Route path="/auth/callback" element={<AuthCallbackPage />} />`. **No `<AuthPageLayout>` wrapper needed** (it's a transient redirect target); keep it inside `<Suspense>` consistently with siblings.
-  - [ ] RED/GREEN: component test (`AuthCallbackPage.test.tsx`) — mock the context's `completeFederatedSignIn` (resolve success) and assert `navigate` is called with `/dashboard`; a second case where it rejects asserts navigation to `/login`. Use RTL `render` within a `MemoryRouter`, `screen` queries, `waitFor`. Mock the service/context layer (no `msw` HTTP needed since the component touches no HTTP directly).
+- [x] **Task 3 — Route: `/auth/callback` handler component (AC: 2, 4, 8)**
+  - [x] Add an `AuthCallbackPage` component (inline in `App.tsx` near `LoginPage` `:160-191`, or `src/components/auth/AuthCallbackPage/`). On mount: `useEffect` → await `completeFederatedSignIn()` (Task 2) → `navigate('/dashboard', { replace: true })`; on failure → `navigate('/login', { replace: true })` (optionally with an error toast/state). Render `BATbernLoader` (text-free) while completing — see AC8 i18n note.
+  - [x] Register the route in `App.tsx` (within `<Routes>` `:244`, e.g. near the auth routes `:336-384`): `<Route path="/auth/callback" element={<AuthCallbackPage />} />`. **No `<AuthPageLayout>` wrapper needed** (it's a transient redirect target); keep it inside `<Suspense>` consistently with siblings.
+  - [x] RED/GREEN: component test (`AuthCallbackPage.test.tsx`) — mock the context's `completeFederatedSignIn` (resolve success) and assert `navigate` is called with `/dashboard`; a second case where it rejects asserts navigation to `/login`. Use RTL `render` within a `MemoryRouter`, `screen` queries, `waitFor`. Mock the service/context layer (no `msw` HTTP needed since the component touches no HTTP directly).
 
-- [ ] **Task 4 — Route: `/logout` handler (AC: 5)**
-  - [ ] Add a `LogoutPage` component (inline near `LoginPage`) whose `useEffect` calls `useAuth().signOut()` then `navigate('/', { replace: true })`.
-  - [ ] Register `<Route path="/logout" element={<LogoutPage />} />` in `App.tsx`.
-  - [ ] RED/GREEN: test asserts `signOut` is invoked and navigation lands on `/`.
+- [x] **Task 4 — Route: `/logout` handler (AC: 5)**
+  - [x] Add a `LogoutPage` component (inline near `LoginPage`) whose `useEffect` calls `useAuth().signOut()` then `navigate('/', { replace: true })`.
+  - [x] Register `<Route path="/logout" element={<LogoutPage />} />` in `App.tsx`.
+  - [x] RED/GREEN: test asserts `signOut` is invoked and navigation lands on `/`.
 
-- [ ] **Task 5 — Verify config alignment (AC: 7) — read-only**
-  - [ ] Confirm (do NOT edit) `amplify.ts:54-61` oauth block + `redirectSignIn`→`/auth/callback` (`:34,39,44`) and `redirectSignOut`→`/` (`:35,40,45`). Cross-check the Cognito-registered callback/logout URLs in `infrastructure/lib/stacks/cognito-stack.ts:220-231` match the new routes. Record the confirmation in the PR (no code change here).
+- [x] **Task 5 — Verify config alignment (AC: 7) — read-only**
+  - [x] Confirm (do NOT edit) `amplify.ts:54-61` oauth block + `redirectSignIn`→`/auth/callback` (`:34,39,44`) and `redirectSignOut`→`/` (`:35,40,45`). Cross-check the Cognito-registered callback/logout URLs in `infrastructure/lib/stacks/cognito-stack.ts:220-231` match the new routes. Record the confirmation in the PR (no code change here).
 
-- [ ] **Task 6 — i18n (AC: 8) — only if the callback page shows text**
-  - [ ] If `AuthCallbackPage` renders any copy: add keys to the `auth` namespace in ALL 10 locales (`web-frontend/public/locales/{de,en,es,fi,fr,gsw-BE,it,ja,nl,rm}/auth.json`), EN+DE first-class, others straight translations. If the page is text-free (`BATbernLoader` only), explicitly note "no new i18n keys" in the PR and skip.
+- [x] **Task 6 — i18n (AC: 8) — only if the callback page shows text**
+  - [x] If `AuthCallbackPage` renders any copy: add keys to the `auth` namespace in ALL 10 locales (`web-frontend/public/locales/{de,en,es,fi,fr,gsw-BE,it,ja,nl,rm}/auth.json`), EN+DE first-class, others straight translations. If the page is text-free (`BATbernLoader` only), explicitly note "no new i18n keys" in the PR and skip.
 
-- [ ] **Task 7 — Full verification (AC: 9)**
-  - [ ] Targeted vitest: `authService.test.ts`, `AuthContext.test.tsx`, `AuthCallbackPage.test.tsx`, `LogoutPage` test — dump to a temp file, grep, all green (don't re-run repeatedly).
-  - [ ] `npm run type-check` + `npm run lint` clean. Confirm the full frontend vitest suite still passes (no regression in password-login / FORCE_CHANGE_PASSWORD / partner-companyName paths).
-  - [ ] Manual (or documented) verification note: hand-navigate the hosted-UI authorize URL with `identity_provider=Google` lands back on `/auth/callback` → `/dashboard` (only fully exercisable once 12.5 + 12.6 are deployed — see Prereq). Record as a deploy-time smoke step.
+- [x] **Task 7 — Full verification (AC: 9)**
+  - [x] Targeted vitest: `authService.test.ts`, `AuthContext.test.tsx`, `AuthCallbackPage.test.tsx`, `LogoutPage` test — dump to a temp file, grep, all green (don't re-run repeatedly).
+  - [x] `npm run type-check` + `npm run lint` clean. Confirm the full frontend vitest suite still passes (no regression in password-login / FORCE_CHANGE_PASSWORD / partner-companyName paths).
+  - [x] Manual (or documented) verification note: hand-navigate the hosted-UI authorize URL with `identity_provider=Google` lands back on `/auth/callback` → `/dashboard` (only fully exercisable once 12.5 + 12.6 are deployed — see Prereq). Record as a deploy-time smoke step.
 
-- [ ] **Task 8 — `ACCOUNT_DEACTIVATED` forced-logout handler (AC: 10) — G1, folded from Story 12.2/OQ-3**
-  - [ ] Locate the shared HTTP response-error interceptor that already handles `401`/token-refresh (the client the service layer routes through, e.g. under `web-frontend/src/services/` or `src/config/`). RED: add a unit test asserting a mocked `403 { errorCode: 'ACCOUNT_DEACTIVATED' }` triggers `authService.signOut()` + redirect; a generic `403` does NOT; a `401` still hits the existing refresh path (regression guard).
-  - [ ] GREEN: add an `ACCOUNT_DEACTIVATED` branch **beside** (not inside) the 401 handler — on match call `authService.signOut()` then route to the login surface with a deactivated indicator (e.g. `?reason=account_deactivated`). **Do NOT** funnel it through token-refresh (403 ≠ 401 — avoids the refresh loop per project-context).
-  - [ ] Render a dismissible "account deactivated" notice on the login surface when the indicator is present; add `auth`-namespace keys in ALL 10 locales (EN+DE first-class).
-  - [ ] Targeted vitest + type-check + lint green.
+- [x] **Task 8 — `ACCOUNT_DEACTIVATED` forced-logout handler (AC: 10) — G1, folded from Story 12.2/OQ-3**
+  - [x] Locate the shared HTTP response-error interceptor that already handles `401`/token-refresh (the client the service layer routes through, e.g. under `web-frontend/src/services/` or `src/config/`). RED: add a unit test asserting a mocked `403 { errorCode: 'ACCOUNT_DEACTIVATED' }` triggers `authService.signOut()` + redirect; a generic `403` does NOT; a `401` still hits the existing refresh path (regression guard).
+  - [x] GREEN: add an `ACCOUNT_DEACTIVATED` branch **beside** (not inside) the 401 handler — on match call `authService.signOut()` then route to the login surface with a deactivated indicator (e.g. `?reason=account_deactivated`). **Do NOT** funnel it through token-refresh (403 ≠ 401 — avoids the refresh loop per project-context).
+  - [x] Render a dismissible "account deactivated" notice on the login surface when the indicator is present; add `auth`-namespace keys in ALL 10 locales (EN+DE first-class).
+  - [x] Targeted vitest + type-check + lint green.
 
 ## Dev Notes
 
@@ -136,19 +136,42 @@ Story 12.1 (`status: review`) renamed `hydrateRolesIfMissing` → **`hydrateUser
 
 ### Agent Model Used
 
-_(empty — to be filled by dev-story)_
+claude-opus-4-8 (1M context) — bmad-dev-story, 2026-06-03
 
 ### Debug Log References
 
-_(empty)_
+- `/tmp/12-7-vitest.txt` — targeted suites: 78/80 (2 pre-existing skips) — authService(27), AuthContext(20), apiClient(18), AuthCallbackPage(2), LogoutPage(1), LoginForm(+3 new)
+- `/tmp/12-7-vitest-full.txt` — full suite: 4990 passed / 112 skipped / 23 todo / 0 failed
+- `/tmp/12-7-tsc.txt` / `/tmp/12-7-lint.txt` — `tsc --noEmit` + `eslint src` clean
 
 ### Completion Notes List
 
-_(empty)_
+- **Task 1 (AC1, AC9):** `authService.signInWithFederated('Google')` calls Amplify `signInWithRedirect({ provider })`. **Deviation from AC1's stale line-ref:** authService imports the auth module **dynamically** via `this.amplifyAuth()` (a perf optimization keeping aws-amplify off the public homepage), NOT the static `:10-17` block the story assumed — so `signInWithRedirect` is destructured from `await this.amplifyAuth()`, consistent with every other method. No catch/swallow. Test extends the existing `aws-amplify/auth` module mock; asserts the call + error propagation.
+- **Task 2 (AC2,3,4,9):** added `completeFederatedSignIn(): Promise<SignInOutcome>` to `AuthContext` mirroring the `signIn` success branch — `getCurrentUser` → `refreshToken` → `hydrateUserFromDb` (12.1 name confirmed on `develop`, no reconciliation needed) → partner-companyName resolve → `setState`. Hydration is awaited before `setState({isAuthenticated:true})`, preserving the 12.1 `preferences.language` regression guard for federated logins. Added to `UseAuthReturn` + memoized `contextValue`. Tests assert success (language present, isAuthenticated true) and the no-session failure path.
+- **Task 3 (AC2,4,8):** `AuthCallbackPage` (dedicated file for clean unit testing) — `useEffect` awaits `completeFederatedSignIn()` then navigates `/dashboard` (success) or `/login` (failure); StrictMode double-effect guard. **Text-free** (BATbernLoader only) → AC8 satisfied with **no new i18n keys**. No `fetch`/`axios`. Route registered in `App.tsx`. 2 tests (success→/dashboard, failure→/login).
+- **Task 4 (AC5):** `LogoutPage` — `signOut()` then `navigate('/')`. Route registered. 1 test.
+- **Task 5 (AC7) — read-only confirm:** `amplify.ts` oauth block present (`scopes email/openid/profile`, `responseType code`); `redirectSignIn`→`/auth/callback` (`:49,54,59`), `redirectSignOut`→`/` (`:50,55,60`) — both match the new routes. No change.
+- **Task 8 (AC10 / G1):** added an `ACCOUNT_DEACTIVATED` branch to the **existing** apiClient response interceptor, **beside** the 401 handler (not through token-refresh — 403≠401, avoids refresh loop). **Matched the real gateway body** `{ "error": "ACCOUNT_DEACTIVATED", ... }` (field is `error`, not the `errorCode` the story's Task-8 example guessed — verified in `AccountActiveFilter.java:62`). On match: `authService.signOut()` + redirect `/login?reason=account_deactivated`. `LoginForm` renders a dismissible MUI warning Alert when that query param is present; `login.deactivatedNotice` key added to **all 10 locales** (EN+DE first-class). Tests: deactivated-403 → signOut+redirect; generic 403 → no logout (regression); 401 path unchanged. LoginForm test helper wrapped in `MemoryRouter` (it now reads `useSearchParams`).
+- **No backend/Cognito/infra change.** `apiClient`→`authService` import introduces no cycle (authService imports only amplify-config + types; neither imports apiClient — verified). aws-amplify stays off the homepage (authService's amplify import is dynamic). `[no-doc]` (ADR-010 already documents this slice).
 
 ### File List
 
-_(empty)_
+- `web-frontend/src/services/auth/authService.ts` (modified — signInWithFederated)
+- `web-frontend/src/services/auth/authService.test.ts` (modified)
+- `web-frontend/src/contexts/AuthContext.tsx` (modified — completeFederatedSignIn)
+- `web-frontend/src/contexts/AuthContext.test.tsx` (modified)
+- `web-frontend/src/services/api/apiClient.ts` (modified — ACCOUNT_DEACTIVATED interceptor branch)
+- `web-frontend/src/services/api/apiClient.test.ts` (modified)
+- `web-frontend/src/components/auth/AuthCallbackPage/AuthCallbackPage.tsx` (new)
+- `web-frontend/src/components/auth/AuthCallbackPage/index.ts` (new)
+- `web-frontend/src/components/auth/AuthCallbackPage/AuthCallbackPage.test.tsx` (new)
+- `web-frontend/src/components/auth/LogoutPage/LogoutPage.tsx` (new)
+- `web-frontend/src/components/auth/LogoutPage/index.ts` (new)
+- `web-frontend/src/components/auth/LogoutPage/LogoutPage.test.tsx` (new)
+- `web-frontend/src/App.tsx` (modified — /auth/callback + /logout routes + lazy imports)
+- `web-frontend/src/components/auth/LoginForm/LoginForm.tsx` (modified — deactivated notice)
+- `web-frontend/src/components/auth/LoginForm/LoginForm.test.tsx` (modified)
+- `web-frontend/public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/auth.json` (modified — login.deactivatedNotice ×10)
 
 ### Change Log
 
@@ -156,3 +179,4 @@ _(empty)_
 |---|---|
 | 2026-06-01 | Story drafted (SSO Phase 4 — frontend callback route + service method, invisible/no button) as Story 12.8. Status → ready-for-dev. |
 | 2026-06-02 | **Renumbered 12.8 → 12.7** (swapped with the verify-only story, now 12.8) so callback plumbing precedes Phase-3 verification. **Folded in G1** (frontend `ACCOUNT_DEACTIVATED` forced-logout handler from Story 12.2/OQ-3) as AC10 + Task 8 (+10-locale i18n). Cross-references updated across Epic 12. |
+| 2026-06-03 | Implemented all 8 tasks (10 ACs). `signInWithFederated` (dynamic-import pattern), `completeFederatedSignIn` context entry point (reuses hydrateUserFromDb), `/auth/callback` + `/logout` routes (text-free AuthCallbackPage/LogoutPage — no i18n), `ACCOUNT_DEACTIVATED` interceptor forced-logout (matched real `{error:...}` body) + LoginForm dismissible notice in all 10 locales. No backend/Cognito change. 78 targeted + 4990 full-suite tests + tsc + lint green. Status: review. |

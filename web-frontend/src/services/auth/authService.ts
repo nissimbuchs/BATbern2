@@ -385,6 +385,21 @@ class AuthService {
     await amplifySignOut();
   }
 
+  /**
+   * Story 12.7 (SSO Phase 4): initiate Google federation via Amplify v6's hosted-UI
+   * redirect. `signInWithRedirect` navigates the browser to the Cognito hosted UI
+   * (using the dormant `loginWith.oauth` config in amplify.ts); on return, the
+   * `/auth/callback` route completes the session through the SAME hydration path as
+   * password login (ADR-010 D1 — federated sessions yield the same JWT shape). The
+   * promise normally does not resolve in-page (the browser navigates away); a
+   * redirect-initiation failure propagates so the caller can surface it (no swallow).
+   * `provider` is typed `'Google'` — the only supported provider per ADR-010 D2.
+   */
+  async signInWithFederated(provider: 'Google'): Promise<void> {
+    const { signInWithRedirect } = await this.amplifyAuth();
+    await signInWithRedirect({ provider });
+  }
+
   async refreshToken(): Promise<TokenRefreshResponse> {
     try {
       const { fetchAuthSession } = await this.amplifyAuth();

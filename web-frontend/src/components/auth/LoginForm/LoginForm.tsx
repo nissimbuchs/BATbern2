@@ -24,6 +24,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { LoginCredentials } from '@/types/auth';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
@@ -71,6 +72,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
   const { t } = useTranslation(['auth', 'validation']);
   const { signIn, confirmNewPassword, isLoading, error, clearError } = useAuth();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Story 12.7 / G1: the API client redirects here with ?reason=account_deactivated
+  // after the gateway returns 403 ACCOUNT_DEACTIVATED (it also forced a logout).
+  // Surface a dismissible notice so the user understands why they were signed out.
+  const [searchParams] = useSearchParams();
+  const [deactivatedDismissed, setDeactivatedDismissed] = useState(false);
+  const showDeactivatedNotice =
+    searchParams.get('reason') === 'account_deactivated' && !deactivatedDismissed;
   const [showPassword, setShowPassword] = useState(false);
   // Epic 11 bug fix 2026-05-19 — when Cognito returns
   // CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED on first sign-in (with the temp
@@ -214,6 +222,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
                   )
                 : t('auth:login.subtitle')}
             </Typography>
+
+            {showDeactivatedNotice && (
+              <Alert
+                severity="warning"
+                onClose={() => setDeactivatedDismissed(true)}
+                sx={{ width: '100%', mb: 2 }}
+              >
+                {t('auth:login.deactivatedNotice')}
+              </Alert>
+            )}
 
             {(displayError || newPasswordError) && (
               <Alert severity="error" sx={{ width: '100%', mb: 2 }}>

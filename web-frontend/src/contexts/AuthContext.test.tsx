@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import React from 'react';
 import { AuthProvider } from './AuthContext';
 import { ConfigContext } from './createConfigContext';
@@ -363,6 +363,80 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       expect(result.current.hasPermission('content', 'update')).toBe(true);
       expect(result.current.hasPermission('events', 'read')).toBe(true);
       expect(result.current.hasPermission('events', 'create')).toBe(false);
+    });
+  });
+
+  // Story 12.7 (SSO Phase 4): federated-completion entry point. Mirrors the password
+  // signIn success branch — hydrates from /users/me (so preferences.language is present,
+  // the Story 12.1 regression guard) and flips isAuthenticated BEFORE the caller navigates.
+  describe('Story 12.7 — completeFederatedSignIn', () => {
+    const fedUser = {
+      userId: 'fed-user',
+      username: 'fed.user',
+      email: 'fed@batbern.ch',
+      emailVerified: true,
+      role: 'attendee',
+      roles: ['attendee'],
+      companyId: undefined,
+      preferences: {
+        language: 'en' as const,
+        theme: 'light' as const,
+        notifications: { email: true, sms: false, push: true },
+        privacy: { showProfile: true, allowMessages: true },
+      },
+      issuedAt: Math.floor(Date.now() / 1000),
+      expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      tokenId: 'fed-token',
+    };
+
+    test('hydrates user and flips isAuthenticated, returning success', async () => {
+      // No stored Cognito session → bootstrap restore is skipped; getCurrentUser is
+      // therefore only invoked by completeFederatedSignIn (clean isolation).
+      localStorage.clear();
+      sessionStorage.clear();
+      mockAuthService.getCurrentUser.mockResolvedValue(fedUser as never);
+      mockAuthService.refreshToken.mockResolvedValue({
+        success: true,
+        accessToken: 'fed-access-token',
+      } as never);
+      // /users/me carries the regression-critical language ('de' here).
+      mockGetUserProfile.mockResolvedValue({
+        roles: ['attendee'],
+        companyId: undefined,
+        preferences: { language: 'de' },
+      } as never);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.isAuthenticated).toBe(false);
+
+      let outcome: unknown;
+      await act(async () => {
+        outcome = await result.current.completeFederatedSignIn();
+      });
+
+      expect(outcome).toEqual({ kind: 'success' });
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(true);
+        expect(result.current.user?.preferences.language).toBe('de');
+      });
+    });
+
+    test('returns failed and stays unauthenticated when no session resolves', async () => {
+      localStorage.clear();
+      sessionStorage.clear();
+      mockAuthService.getCurrentUser.mockResolvedValue(null);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      let outcome: unknown;
+      await act(async () => {
+        outcome = await result.current.completeFederatedSignIn();
+      });
+
+      expect(outcome).toEqual({ kind: 'failed' });
+      expect(result.current.isAuthenticated).toBe(false);
     });
   });
 });

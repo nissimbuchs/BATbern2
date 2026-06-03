@@ -1,9 +1,10 @@
 /**
  * RegistrationStep1 Component
  * Story 1.2.3: Implement Account Creation Flow - Task 5 (GREEN Phase)
+ * Story 12.6a: split single Full Name field into Given/Family name (no more fragile split heuristic)
  *
  * Step 1 of registration wizard: Personal Information
- * - Full Name, Email, Password, Confirm Password fields
+ * - Given name, Family name, Email, Password, Confirm Password fields
  * - Real-time password strength indicator
  * - Password requirement checklist
  * - Form validation with localized error messages
@@ -31,12 +32,17 @@ import * as passwordStrength from '../../../utils/passwordStrength/passwordStren
 const { checkPasswordRequirements, calculatePasswordStrength } = passwordStrength;
 type PasswordStrength = passwordStrength.PasswordStrength;
 
+// Story 12.6a: locales whose convention is family-name-first. The data mapping
+// (firstName=given, lastName=family) never changes — only the visual field order
+// flips for these locales. Currently only Japanese; extend the set as needed.
+const FAMILY_NAME_FIRST_LOCALES = new Set(['ja']);
+
 interface RegistrationStep1Props {
   onContinue: () => void;
 }
 
 export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue }) => {
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -52,7 +58,13 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
   const strength = calculatePasswordStrength(password);
 
   const handleContinue = async () => {
-    const isValid = await trigger(['fullName', 'email', 'password', 'confirmPassword']);
+    const isValid = await trigger([
+      'firstName',
+      'lastName',
+      'email',
+      'password',
+      'confirmPassword',
+    ]);
     if (isValid) {
       onContinue();
     }
@@ -80,40 +92,91 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
     }
   };
 
+  // Story 12.6a: two name fields. register names stay firstName/lastName (matches
+  // authService.signUp + the DB columns) while labels say Given/Family (order-neutral).
+  const givenNameField = (
+    <TextField
+      key="firstName"
+      {...register('firstName', {
+        required: t('register.errors.givenNameRequired'),
+        minLength: {
+          value: 2,
+          message: t('register.errors.givenNameTooShort'),
+        },
+        maxLength: {
+          value: 100,
+          message: t('register.errors.givenNameTooLong'),
+        },
+        pattern: {
+          // Accept any Unicode letter (handles é, è, à, ç, ñ, ş, ø, ł, …) plus
+          // whitespace, dot, apostrophe, and hyphen. The backend slug service
+          // normalises diacritics for the generated username; rejecting them
+          // here used to silently strip required form fields (2026-05-18
+          // incident: "René Strauss" / "Renée Gressly").
+          value: /^[\p{L}\s.'-]+$/u,
+          message: t('register.errors.givenNameInvalid'),
+        },
+      })}
+      label={t('register.step1.givenNameLabel')}
+      placeholder={t('register.step1.givenNamePlaceholder')}
+      fullWidth
+      margin="normal"
+      error={!!errors.firstName}
+      helperText={errors.firstName?.message as string}
+    />
+  );
+
+  const familyNameField = (
+    <TextField
+      key="lastName"
+      {...register('lastName', {
+        required: t('register.errors.familyNameRequired'),
+        minLength: {
+          value: 2,
+          message: t('register.errors.familyNameTooShort'),
+        },
+        maxLength: {
+          value: 100,
+          message: t('register.errors.familyNameTooLong'),
+        },
+        pattern: {
+          // Accept any Unicode letter (handles é, è, à, ç, ñ, ş, ø, ł, …) plus
+          // whitespace, dot, apostrophe, and hyphen. The backend slug service
+          // normalises diacritics for the generated username; rejecting them
+          // here used to silently strip required form fields (2026-05-18
+          // incident: "René Strauss" / "Renée Gressly").
+          value: /^[\p{L}\s.'-]+$/u,
+          message: t('register.errors.familyNameInvalid'),
+        },
+      })}
+      label={t('register.step1.familyNameLabel')}
+      placeholder={t('register.step1.familyNamePlaceholder')}
+      fullWidth
+      margin="normal"
+      error={!!errors.lastName}
+      helperText={errors.lastName?.message as string}
+    />
+  );
+
+  const familyNameFirst = FAMILY_NAME_FIRST_LOCALES.has(i18n.language);
+
   return (
     <Box>
       <Typography variant="h5" gutterBottom>
         {t('register.step1.title')}
       </Typography>
 
-      <TextField
-        {...register('fullName', {
-          required: t('register.errors.fullNameRequired'),
-          minLength: {
-            value: 2,
-            message: t('register.errors.fullNameTooShort'),
-          },
-          maxLength: {
-            value: 100,
-            message: t('register.errors.fullNameTooLong'),
-          },
-          pattern: {
-            // Accept any Unicode letter (handles é, è, à, ç, ñ, ş, ø, ł, …) plus
-            // whitespace, dot, apostrophe, and hyphen. The backend slug service
-            // normalises diacritics for the generated username; rejecting them
-            // here used to silently strip required form fields (2026-05-18
-            // incident: "René Strauss" / "Renée Gressly").
-            value: /^[\p{L}\s.'-]+$/u,
-            message: t('register.errors.fullNameInvalid'),
-          },
-        })}
-        label={t('register.step1.fullNameLabel')}
-        placeholder={t('register.step1.fullNamePlaceholder')}
-        fullWidth
-        margin="normal"
-        error={!!errors.fullName}
-        helperText={errors.fullName?.message as string}
-      />
+      {familyNameFirst ? (
+        <>
+          {familyNameField}
+          {givenNameField}
+        </>
+      ) : (
+        <>
+          {givenNameField}
+          {familyNameField}
+        </>
+      )}
 
       <TextField
         {...register('email', {

@@ -9,7 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { authService } from '@/services/auth/authService';
 
 export interface RegistrationFormData {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -27,10 +28,11 @@ export const useRegistration = () => {
 
   return useMutation({
     mutationFn: async (data: RegistrationFormData): Promise<RegistrationResult> => {
-      // Split full name into first and last name
-      const nameParts = data.fullName.trim().split(/\s+/);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+      // Story 12.6a: names are captured in two clean fields — no more fragile
+      // fullName.split(/\s+/) heuristic that mis-split multi-word given names
+      // ("Anna Maria") and compound surnames ("von der Berg").
+      const firstName = data.firstName.trim();
+      const lastName = data.lastName.trim();
 
       // Call existing authService.signUp method (using existing SignUpData interface)
       const result = await authService.signUp({
