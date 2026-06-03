@@ -163,15 +163,16 @@ describe('CognitoStack Tests', () => {
     });
   });
 
-  // Story 12.5 AC3: the pool exposes standard given_name/family_name as the mapping
-  // target for Google's name claims (optional + mutable → additive pool update).
-  test('should_configureStandardNameAttributes_when_userPoolCreated', () => {
-    template.hasResourceProperties('AWS::Cognito::UserPool', {
-      Schema: Match.arrayWith([
-        Match.objectLike({ Name: 'given_name', Required: false, Mutable: true }),
-        Match.objectLike({ Name: 'family_name', Required: false, Mutable: true }),
-      ]),
-    });
+  // Story 12.5: given_name/family_name are NOT declared in the pool's standardAttributes —
+  // they are built-in OIDC standard attributes that every pool already has, and declaring
+  // them breaks UpdateUserPool on the existing pool ("Invalid AttributeDataType", PR #735).
+  // The Google IdP attributeMapping (asserted above) maps onto those built-ins directly.
+  // Guard the regression: the synthesized pool Schema must NOT add given_name/family_name.
+  test('should_notDeclareStandardNameAttributesInSchema_when_userPoolCreated', () => {
+    const pool = Object.values(template.findResources('AWS::Cognito::UserPool'))[0] as any;
+    const schemaNames = (pool.Properties.Schema || []).map((a: any) => a.Name);
+    expect(schemaNames).not.toContain('given_name');
+    expect(schemaNames).not.toContain('family_name');
   });
 
   // Test: ALLOW_ADMIN_USER_PASSWORD_AUTH required for server-side Cognito authentication (Story 11.E.1 / AR29)

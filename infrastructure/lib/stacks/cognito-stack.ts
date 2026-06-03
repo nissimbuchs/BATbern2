@@ -138,20 +138,14 @@ export class CognitoStack extends cdk.Stack {
           required: true,
           mutable: true,
         },
-        // Story 12.5 AC3: destination for Google's given_name/family_name claims.
-        // Cognito attribute mapping is strictly 1:1 (one provider claim → one pool
-        // attribute) and CANNOT write into a JSON sub-field of custom:preferences, so
-        // federated names must land on standard attributes. Optional + mutable keeps
-        // this an ADDITIVE pool update (no replacement) and leaves native sign-up
-        // (which carries names in the custom:preferences JSON) untouched.
-        givenName: {
-          required: false,
-          mutable: true,
-        },
-        familyName: {
-          required: false,
-          mutable: true,
-        },
+        // Story 12.5: do NOT declare givenName/familyName here. They are built-in OIDC
+        // standard attributes that every Cognito pool already has (verified on the live
+        // pool: given_name/family_name present, Required:false/Mutable:true by default),
+        // so the Google IdP attributeMapping below maps onto them directly. Declaring
+        // them is unnecessary AND breaks deploy: UpdateUserPool rejects standard-attribute
+        // schema additions on an existing pool with "Invalid AttributeDataType input"
+        // (observed on PR #735 — UPDATE_FAILED + rollback). The mapping target exists
+        // without the declaration.
       },
       customAttributes: {
         // Story 1.16.2: Public meaningful username (e.g., "john.doe")
