@@ -21,7 +21,8 @@ export const RegistrationWizard: React.FC = () => {
 
   const methods = useForm({
     defaultValues: {
-      fullName: '',
+      firstName: '',
+      lastName: '',
       email: '',
       password: '',
       confirmPassword: '',

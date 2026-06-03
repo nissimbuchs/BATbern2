@@ -20,7 +20,8 @@ const theme = createTheme();
 const FormWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const methods = useForm({
     defaultValues: {
-      fullName: '',
+      firstName: '',
+      lastName: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -57,7 +58,9 @@ describe('RegistrationStep1 Component', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      // Story 12.6a: two name fields replace the single Full Name field.
+      expect(screen.getByLabelText(/given name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/family name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^email/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
@@ -65,8 +68,8 @@ describe('RegistrationStep1 Component', () => {
     });
   });
 
-  // Test 1.2: should_validateFullName_when_invalidInput
-  it('should_showError_when_fullNameTooShort', async () => {
+  // Test 1.2: should_validateGivenName_when_invalidInput
+  it('should_showError_when_givenNameTooShort', async () => {
     const user = userEvent.setup();
 
     await act(async () => {
@@ -77,7 +80,7 @@ describe('RegistrationStep1 Component', () => {
       );
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const nameInput = screen.getByLabelText(/given name/i);
 
     await act(async () => {
       await user.type(nameInput, 'A');
@@ -85,12 +88,12 @@ describe('RegistrationStep1 Component', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/name must be at least 2 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/given name must be at least 2 characters/i)).toBeInTheDocument();
     });
   });
 
-  // Test 1.2b: should_validateFullName_when_invalidCharacters
-  it('should_showError_when_fullNameHasInvalidCharacters', async () => {
+  // Test 1.2b: should_validateName_when_invalidCharacters
+  it('should_showError_when_familyNameHasInvalidCharacters', async () => {
     const user = userEvent.setup();
 
     await act(async () => {
@@ -101,15 +104,15 @@ describe('RegistrationStep1 Component', () => {
       );
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const nameInput = screen.getByLabelText(/family name/i);
 
     await act(async () => {
-      await user.type(nameInput, 'John123');
+      await user.type(nameInput, 'Doe123');
       await user.tab();
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/name contains invalid characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/family name contains invalid characters/i)).toBeInTheDocument();
     });
   });
 
@@ -136,7 +139,7 @@ describe('RegistrationStep1 Component', () => {
       );
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const nameInput = screen.getByLabelText(/given name/i);
 
     await act(async () => {
       await user.type(nameInput, name);
@@ -305,14 +308,16 @@ describe('RegistrationStep1 Component', () => {
       );
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const givenInput = screen.getByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
     const continueButton = screen.getByRole('button', { name: /continue/i });
 
     await act(async () => {
-      await user.type(nameInput, 'John Doe');
+      await user.type(givenInput, 'John');
+      await user.type(familyInput, 'Doe');
       await user.type(emailInput, 'john.doe@example.com');
       await user.type(passwordInput, 'Password123!');
       await user.type(confirmInput, 'Password123!');
@@ -358,14 +363,16 @@ describe('RegistrationStep1 Component', () => {
       );
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const givenInput = screen.getByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
     const continueButton = screen.getByRole('button', { name: /continue/i });
 
     await act(async () => {
-      await user.type(nameInput, 'John Doe');
+      await user.type(givenInput, 'John');
+      await user.type(familyInput, 'Doe');
       await user.type(emailInput, 'john.doe@example.com');
       await user.type(passwordInput, 'Password123');
       await user.type(confirmInput, 'Password123');
@@ -406,5 +413,48 @@ describe('RegistrationStep1 Component', () => {
     await waitFor(() => {
       expect(passwordInput.type).toBe('text');
     });
+  });
+
+  // Story 12.6a AC5b: locale-aware field order.
+  it('should_renderGivenNameBeforeFamilyName_when_localeIsGivenFirst', async () => {
+    await i18n.changeLanguage('en');
+
+    await act(async () => {
+      render(
+        <FormWrapper>
+          <RegistrationStep1 onContinue={mockOnContinue} />
+        </FormWrapper>
+      );
+    });
+
+    // EN placeholders: given="Anna", family="Schmidt".
+    const given = screen.getByPlaceholderText('Anna');
+    const family = screen.getByPlaceholderText('Schmidt');
+
+    // given precedes family in DOM order
+    expect(given.compareDocumentPosition(family) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('should_renderFamilyNameBeforeGivenName_when_localeIsFamilyFirst', async () => {
+    // Japanese is a family-name-first culture (FAMILY_NAME_FIRST_LOCALES).
+    await i18n.changeLanguage('ja');
+
+    await act(async () => {
+      render(
+        <FormWrapper>
+          <RegistrationStep1 onContinue={mockOnContinue} />
+        </FormWrapper>
+      );
+    });
+
+    // JA placeholders: given="太郎", family="山田".
+    const given = screen.getByPlaceholderText('太郎');
+    const family = screen.getByPlaceholderText('山田');
+
+    // family precedes given in DOM order — only the visual sequence flips, the
+    // firstName=given / lastName=family data mapping is unchanged.
+    expect(family.compareDocumentPosition(given) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await i18n.changeLanguage('en');
   });
 });

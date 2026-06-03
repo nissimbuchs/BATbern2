@@ -42,7 +42,10 @@ export const RegistrationStep2: React.FC<RegistrationStep2Props> = ({
     trigger,
   } = useFormContext();
 
-  const fullName = watch('fullName');
+  // Story 12.6a: name now comes from two fields; assemble for the single-line summary.
+  const firstName = watch('firstName');
+  const lastName = watch('lastName');
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
   const email = watch('email');
   const agreedToTerms = watch('agreedToTerms');
 

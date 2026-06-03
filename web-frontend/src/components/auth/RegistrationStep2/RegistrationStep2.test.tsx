@@ -24,7 +24,8 @@ const FormWrapper: React.FC<{
 }> = ({ children }) => {
   const methods = useForm({
     defaultValues: {
-      fullName: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       email: 'john.doe@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',

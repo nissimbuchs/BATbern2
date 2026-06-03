@@ -77,7 +77,7 @@ describe('RegistrationWizard Component', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText(/step 1 of 2/i)[0]).toBeInTheDocument();
-      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/given name/i)).toBeInTheDocument();
     });
   });
 
@@ -107,13 +107,15 @@ describe('RegistrationWizard Component', () => {
     );
 
     // Fill out Step 1 fields
-    const nameInput = screen.getByLabelText(/full name/i);
+    const givenInput = screen.getByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
     const continueButton = screen.getByRole('button', { name: /continue/i });
 
-    await user.type(nameInput, 'John Doe');
+    await user.type(givenInput, 'John');
+    await user.type(familyInput, 'Doe');
     await user.type(emailInput, 'john.doe@example.com');
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmInput, 'Password123!');
@@ -135,13 +137,15 @@ describe('RegistrationWizard Component', () => {
     );
 
     // Wait for form to be rendered with i18n translations loaded
-    const nameInput = await screen.findByLabelText(/full name/i);
+    const givenInput = await screen.findByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
     const continueButton = screen.getByRole('button', { name: /continue/i });
 
-    await user.type(nameInput, 'John Doe');
+    await user.type(givenInput, 'John');
+    await user.type(familyInput, 'Doe');
     await user.type(emailInput, 'john.doe@example.com');
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmInput, 'Password123!');
@@ -165,16 +169,18 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for form to be rendered
     await waitFor(() => {
-      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/given name/i)).toBeInTheDocument();
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const givenInput = screen.getByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
     const continueButton = screen.getByRole('button', { name: /continue/i });
 
-    await user.type(nameInput, 'John Doe');
+    await user.type(givenInput, 'John');
+    await user.type(familyInput, 'Doe');
     await user.type(emailInput, 'john.doe@example.com');
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmInput, 'Password123!');
@@ -191,8 +197,8 @@ describe('RegistrationWizard Component', () => {
 
     // Verify form values preserved
     await waitFor(() => {
-      const nameInputAgain = screen.getByLabelText(/full name/i) as HTMLInputElement;
-      expect(nameInputAgain.value).toBe('John Doe');
+      const givenInputAgain = screen.getByLabelText(/given name/i) as HTMLInputElement;
+      expect(givenInputAgain.value).toBe('John');
     });
   });
 
@@ -208,16 +214,18 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for form to be rendered
     await waitFor(() => {
-      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/given name/i)).toBeInTheDocument();
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const givenInput = screen.getByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
     const continueButton = screen.getByRole('button', { name: /continue/i });
 
-    await user.type(nameInput, 'John Doe');
+    await user.type(givenInput, 'John');
+    await user.type(familyInput, 'Doe');
     await user.type(emailInput, 'john.doe@example.com');
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmInput, 'Password123!');
@@ -261,16 +269,18 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for form to be rendered
     await waitFor(() => {
-      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/given name/i)).toBeInTheDocument();
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const givenInput = screen.getByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
     const continueButton = screen.getByRole('button', { name: /continue/i });
 
-    await user.type(nameInput, 'John Doe');
+    await user.type(givenInput, 'John');
+    await user.type(familyInput, 'Doe');
     await user.type(emailInput, 'john.doe@example.com');
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmInput, 'Password123!');
