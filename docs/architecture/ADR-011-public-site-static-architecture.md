@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3]
 inputDocuments:
-  - docs/epics.md
+  - docs/prd/epic-13-public-site-static-extraction.md
   - docs/plans/public-site-static-extraction.md
   - infrastructure/lib/stacks/frontend-stack.ts
   - docs/architecture/ADR-008-simplified-api-gateway-routing.md
@@ -20,7 +20,7 @@ inputDocuments:
 **Decision Makers**: Nissim Buchs (owner), Architecture (John/PM facilitating the focused pass)
 **Related ADRs**: ADR-008 (Simplified API Gateway — CORS/edge single-layer), ADR-010 (Federated Identity via Cognito — JWT/session contract), ADR-003 (Meaningful Identifiers — `eventCode` lookups)
 **Related Plan**: `docs/plans/public-site-static-extraction.md` (the source plan; this ADR ratifies its two open design questions)
-**Related Epic**: `docs/epics.md` → Epic 13 (Stories 13.1, 13.2, 13.4)
+**Related Epic**: `docs/prd/epic-13-public-site-static-extraction.md` → Epic 13 (Stories 13.1, 13.2, 13.4)
 **Affects**: `infrastructure/lib/stacks/frontend-stack.ts` (CloudFront Function), the new `public-site/` Astro package, `scripts/deploy/publish-beta-frontend.sh`
 
 ## Context
