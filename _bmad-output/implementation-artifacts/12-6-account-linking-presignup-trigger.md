@@ -93,7 +93,7 @@ The fix is to call **`AdminLinkProviderForUser`** inside the **`PreSignUp_Extern
   - [ ] `cd infrastructure && npm test -- pre-signup.test.ts` and `npm test -- cognito-stack.test.ts` (and the new construct test) — dump to a temp file, grep, all green (per CLAUDE.md tee-to-temp-file rule).
   - [ ] `npx tsc --noEmit` clean in `infrastructure/`.
   - [ ] `npm test` full infra suite green (no regressions in `post-confirmation`, `pre-authentication`, `post-authentication` handler tests).
-  - [ ] Confirm in the PR description: Layer-3 deploy; native path preserved verbatim; rollback = revert to inline (git history). **Do NOT run a real federated sign-in from here** (staging IS production — no real outbound auth flows in dev per the project no-real-comms rule); real link/new-user smoke is the Phase 3 (Story 12.7) verify-only step + the Phase 5 manual prod smoke.
+  - [ ] Confirm in the PR description: Layer-3 deploy; native path preserved verbatim; rollback = revert to inline (git history). **Do NOT run a real federated sign-in from here** (staging IS production — no real outbound auth flows in dev per the project no-real-comms rule); real link/new-user smoke is the Phase 3 (Story 12.8) verify-only step + the Phase 5 manual prod smoke.
 
 ## Dev Notes
 
@@ -154,7 +154,7 @@ The destination user's `sub` is preserved; the Google identity becomes an additi
 - **Handler unit test is MANDATORY** — a Lambda that fails module-load `Runtime.ImportModuleError`s and 503s all auth. Test 1 (`expect(typeof handler).toBe('function')`) catches that. Mock `pg`-backed `getDbClient` + the Cognito/CloudWatch SDK clients (don't hit a real DB/AWS).
 - **Native deps + bundling:** the trigger imports `pg` (transitively, via `common/database`). The construct's `commonLambdaProps.bundling.forceDockerBundling: false` + `externalModules: ['@aws-sdk/*']` is the established pattern — `pg` is a pure-JS dependency (no native binary like `pg-native`/`sharp`), so local esbuild bundling is safe (the other DB-touching triggers — post-confirmation, pre-auth, pre-token — already bundle this way). The CLAUDE.md `tryBundle`-must-return-false rule targets **native** deps (`sharp`, `pg-native`); plain `pg` does not trigger it. If `pg-native` is ever introduced, that rule applies — out of scope here.
 - Infra tests: jest `npm test`; `npx tsc --noEmit` must be clean. Run via tee-to-temp-file then grep (CLAUDE.md), don't re-run suites repeatedly.
-- **No real outbound auth flows from dev** (staging IS production): real link/new-user verification is Phase 3 (Story 12.7, verify-only) + Phase 5 manual prod smoke — not this story.
+- **No real outbound auth flows from dev** (staging IS production): real link/new-user verification is Phase 3 (Story 12.8, verify-only) + Phase 5 manual prod smoke — not this story.
 
 ### Project Structure Notes
 - Trigger sources live in `infrastructure/lib/lambda/triggers/*.ts`; their handler tests in `infrastructure/test/unit/lambda/*.test.ts`; the shared DB client in `infrastructure/lib/lambda/triggers/common/database.ts`.
@@ -177,7 +177,7 @@ The destination user's `sub` is preserved; the Google identity becomes an additi
 ### Prerequisites & sequencing
 - **Hard prereq: Story 12.5** (Phase 1 — Google IdP defined + added to client `supportedIdentityProviders`). No `PreSignUp_ExternalProvider` event can fire without it.
 - **Related (not blocking this story's code):** Story 12.2 (PR 1A — API-Gateway `is_active` gate, which is what blocks deactivated federated users) and Story 12.3 (PR 1B — canonical JIT, which is what creates the brand-new federated user's DB row). This trigger deliberately does neither — it only validates (native) or links (federated).
-- **Verified by:** Story 12.7 (Phase 3, verify-only) — confirms a real Google identity links an existing user (roles preserved) and a brand-new Google user provisions as ATTENDEE.
+- **Verified by:** Story 12.8 (Phase 3, verify-only) — confirms a real Google identity links an existing user (roles preserved) and a brand-new Google user provisions as ATTENDEE.
 
 ## Dev Agent Record
 

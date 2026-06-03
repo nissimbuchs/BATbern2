@@ -1,6 +1,6 @@
 # Story 12.2: API-Gateway `is_active` Gate (SSO PR 1 — Part A)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -132,7 +132,7 @@ The sprint-status one-liner asks to verify "PreAuthentication is the ONLY `is_ac
 ### Open Questions
 - **OQ-1 — initial default of `security.active-gate.enabled`.** Plan says "deploy `false`, verify with a test deactivation, then flip `true`." Recommend committing the default as **`false`** so the merge ships dark, and flipping to `true` via a follow-up config change after the prod verification (AC7). Confirm with Nissim whether the flip happens in this PR (config change) or a separate one.
 - **OQ-2 — extend the doc-drift mapping?** Should `06b-user-lifecycle-sync.md` be added to the `api-gateway/` block in `.github/doc-drift-mappings.yml:54-57` so future api-gateway auth changes are auto-flagged against 06b? Low-cost; recommend yes. (Task 6 optional sub-step.)
-- **OQ-3 — frontend `ACCOUNT_DEACTIVATED` handler is OUT OF SCOPE here.** Part A is gateway-only (`docs/plans/sso-oidc-federation.md:125`). The frontend mapping of the `403 ACCOUNT_DEACTIVATED` code → forced logout + "account deactivated" message is a **follow-up** (belongs with the SSO frontend phase / a dedicated FE story). Until then a deactivated user sees a generic 403; the backend behaviour (block within ~60s) is fully delivered by this story. Confirm whether to spin a small FE follow-up story now or fold it into Phase 4/5.
+- **OQ-3 — frontend `ACCOUNT_DEACTIVATED` handler — ✅ RESOLVED 2026-06-02: homed in Story 12.7 (AC10).** Part A is gateway-only (`docs/plans/sso-oidc-federation.md:125`). The frontend mapping of the `403 ACCOUNT_DEACTIVATED` code → forced logout + "account deactivated" message (+ 10-locale i18n) was the readiness-review gap **G1**; it is now folded into **Story 12.7** (frontend callback + service, the SSO frontend-plumbing story on the same auth/session path) as AC10 + Task 8. Until 12.7 ships a deactivated user sees a generic 403; the backend behaviour (block within ~60s) is fully delivered by this story.
 - **OQ-4 — username vs sub on the CUMS lookup.** `getUserByUsername` keys on the ADR-003 username; tokens always carry `custom:username` once PreTokenGen runs, but a `sub`-only fallback (AC2) would 404 → fail-open (AC6). Acceptable (degrades open, no security regression vs today). Confirm no token path issues a JWT without `custom:username` for an *active deactivatable* user (the PreTokenGen Lambda always projects it for DB-backed users).
 
 ## Dev Agent Record
@@ -161,7 +161,7 @@ Claude Opus 4.8 (1M context) — bmad-dev-story, 2026-06-02.
 - **AC9 (tests):** 7 filter unit tests (a–g) + 7 client unit tests + 2 integration tests, all green. Naming `should_…_when_…`.
 - **AC10 (docs same commit):** `06b-user-lifecycle-sync.md` "Target (ADR-010)" flipped to present-tense done for Part A (gateway gate canonical; PreAuthentication redundant, retirement deferred to cleanup track). Added `06b` to the `api-gateway/` doc-drift mapping (OQ-2 = yes).
 - **OQ-1 resolved:** committed default `enabled=false` (ships dark); the flip to `true` is a follow-up config change after a prod test-deactivation (NOT in this PR).
-- **Out of scope (confirmed):** Part B canonical JIT = Story 12.3; frontend `ACCOUNT_DEACTIVATED` handler (OQ-3) = later FE phase; PreAuthentication retirement = cleanup track.
+- **Out of scope (confirmed):** Part B canonical JIT = Story 12.3; frontend `ACCOUNT_DEACTIVATED` handler (OQ-3) = **Story 12.7 AC10** (G1 homed there 2026-06-02); PreAuthentication retirement = cleanup track.
 
 ### File List
 
@@ -190,3 +190,23 @@ Claude Opus 4.8 (1M context) — bmad-dev-story, 2026-06-02.
 | Date | Change |
 |---|---|
 | 2026-06-02 | Story 12.2 implemented (API-gateway is_active gate, SSO PR 1 Part A). NEW `AccountActiveFilter` (OncePerRequestFilter, after auth) + `GatewayUserStatusClient` (CUMS `active` lookup, JWT-forwarded) + Caffeine ~60s cache; deactivated → `403 ACCOUNT_DEACTIVATED` (never 401); fail-open on CUMS error/404; kill-switch `security.active-gate.enabled` (ships `false`/dark). 16 tests (7 filter + 7 client + 2 integration), `:api-gateway:test` BUILD SUCCESSFUL, checkstyle clean. Docs: 06b "Target" → done for Part A + doc-drift mapping. Status → review. |
+
+## Review Findings
+
+_Code review 2026-06-02 (bmad-code-review, Claude Opus 4.8 1M) — 3 adversarial layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor). All 10 ACs verified IMPLEMENTED against source. 1 decision-needed, 3 patches, 8 dismissed. Claims independently verified against source (CUMS `GET /users/{username}` has no `@PreAuthorize` → caller can read own status → happy path works; `RateLimitingFilter` uses identical `@Component @Order(LOWEST_PRECEDENCE)` + `SecurityContextHolder` pattern → ordering correct by precedent)._
+
+- [x] [Review][Decision] Integration test deviates from AC9/Task 5 (`@SpringBootTest`/`WebTestClient`) — `AccountActiveGateIntegrationTest` is a standalone MockMvc + `@ExtendWith(MockitoExtension)` test that builds the filter by hand and pre-populates `SecurityContextHolder`. Nothing in the suite proves the `@Component` filter is wired into the live Spring Security chain at the correct order (the dev notes record the full-context `@AutoConfigureMockMvc` attempt was abandoned because filter-ordering/auth ambiguity left the gate inert → both paths 200). **RESOLVED 2026-06-02 (Nissim): ACCEPT the standalone test** — the filter copies the proven `RateLimitingFilter` wiring verbatim (`@Component` + `@Order(LOWEST_PRECEDENCE)` + `SecurityContextHolder`), so ordering is correct by precedent; prod-correctness risk is LOW. No further test required. [api-gateway/.../integration/AccountActiveGateIntegrationTest.java]
+
+- [x] [Review][Patch] Status client uses the shared 120s-read-timeout `RestTemplate` → "fail-open on CUMS error" only fails open after 120s, pinning a gateway servlet thread per cache-miss when CUMS is slow; under load this can exhaust the front-door thread pool — the opposite of the fail-open intent. **FIXED 2026-06-02:** added a dedicated `cumsStatusRestTemplate` bean (2s connect / 3s read, mirroring `turnstileRestTemplate`'s rationale) in `WebClientConfig` and `@Qualifier`-injected it into `GatewayUserStatusClient`. [api-gateway/.../config/WebClientConfig.java; api-gateway/.../client/GatewayUserStatusClient.java]
+- [x] [Review][Patch] Cache stampede — `getIfPresent` + unsynchronized `getActiveStatus` + `put` (not an atomic load) means N concurrent first-requests for the same uncached user all call CUMS in parallel (an SPA dashboard fires many parallel XHRs after login / after TTL expiry). **FIXED 2026-06-02:** collapsed to `activeCache.get(key, loader)` — Caffeine applies the loader at most once per key (de-dupes concurrent loads); a loader returning `null` (unknown) is not cached and a loader that throws is not cached, so the no-cache-on-unknown/error fail-open semantics are preserved (verified by the unchanged `times(1)`/`times(2)` cache tests). [api-gateway/.../security/AccountActiveFilter.java]
+- [x] [Review][Patch] No test asserts the CORS headers on the 403 response. AC5 requires CORS-on-403 and the code attaches them (`addCorsHeaders`), but test (b) asserted only status/content-type/body. **FIXED 2026-06-02:** added an `Origin: http://localhost:3000` request header + assertions on `Access-Control-Allow-Origin` and `Vary: Origin` to `should_return403AccountDeactivated_when_userInactive`. [api-gateway/.../security/AccountActiveFilterTest.java]
+
+**Dismissed (8) — recorded for traceability:**
+- `sub`-fallback never gates / emits misleading `cums_error` on the regex-reject 400 — by-design and spec-acknowledged (AC2, AC6, OQ-4): DB-backed deactivatable users always carry `custom:username` (PreTokenGen projects it); degrades open with no regression vs today. No federated login exists until later Epic-12 phases.
+- Non-404 4xx (CUMS 401/403) silently fails open behind only a counter — `GET /users/{username}` has no `@PreAuthorize`, so authz-rejection of the self-read is not a realistic path; `cums_error` metric is the mitigation.
+- OPTIONS preflight not explicitly skipped (unlike `RateLimitingFilter`) — handled implicitly: preflight carries no `Authorization` → `getAuthenticatedJwt()` returns null → pass-through.
+- 403 write not guarded against an already-committed response — not reachable at `LOWEST_PRECEDENCE` in normal flow (decision made before `chain.doFilter`).
+- No negative caching under sustained CUMS outage — intentional (caching unknown/error would mask a real deactivation); request load is bounded once the timeout patch lands.
+- Per-instance cache → cross-instance deactivation lag up to TTL per task — explicitly documented as accepted/FUTURE (AC8 + 06b).
+- CORS allow-list duplicated from `RateLimitingFilter` / no `charset` on 403 content-type — AC5 mandates mirroring `RateLimitingFilter`; body is pure ASCII.
+- `true`-cache TTL boundary (deactivation invisible for ≤ TTL after last cache write) — the fundamental, documented TTL trade-off.

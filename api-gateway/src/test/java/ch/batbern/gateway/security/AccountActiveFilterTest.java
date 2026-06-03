@@ -99,6 +99,11 @@ class AccountActiveFilterTest {
         assertThat(response.getStatus()).isEqualTo(403); // NOT 401 (refresh-loop trap)
         assertThat(response.getContentType()).isEqualTo("application/json");
         assertThat(response.getContentAsString()).contains("ACCOUNT_DEACTIVATED");
+        // CORS is NOT attached by this filter (ADR-008): the AWS API Gateway edge adds CORS
+        // headers on all responses including this 403 (prod/staging), and Spring's CorsFilter
+        // does so under the local profile — both run ahead of this LOWEST_PRECEDENCE filter.
+        // The in-filter assertion was removed when develop's #733 consolidation deleted
+        // CorsHandler; see AccountActiveFilter javadoc and SecurityConfig.
     }
 
     // ---------------------------------------------------------------- AC9 (c)

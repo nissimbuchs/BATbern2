@@ -7,7 +7,7 @@ Status: backlog
 > Sign-in + generic corporate OIDC) and the **Cleanup track** (retiring the three now-redundant
 > Cognito triggers). Per the plan, Phase 6 is *"documented, not scheduled,"* and the cleanup
 > track's hard precondition is that the **gateway `is_active` gate (Story 12-2) and canonical JIT
-> (Story 12-3) are verified in production** (Story 12-7). When that precondition is met, this
+> (Story 12-3) are verified in production** (Story 12-8). When that precondition is met, this
 > umbrella should be **split into the independent PRs listed below** — each becomes its own small
 > story — rather than implemented as one monolith. It is parked here as a single backlog artifact
 > so nothing is lost.
@@ -52,12 +52,12 @@ The materially-harder federation cases the plan separates from Google:
 ### Cleanup C1 — Retire `PostAuthentication` *(lowest risk; first)*
 Its email-link behaviour is fully covered by canonical JIT (Story 12-3). Remove the trigger wiring
 from `infrastructure/lib/constructs/cognito-user-sync-triggers.ts`; handler source stays in git
-history for rollback. Update `06b` inventory. **Precondition:** 12-3 verified in prod (12-7).
+history for rollback. Update `06b` inventory. **Precondition:** 12-3 verified in prod (12-8).
 
 ### Cleanup C2 — Retire `PreAuthentication` *(after the gate is confirmed live)*
 Replaced by the gateway `is_active` gate (Story 12-2), which *also* covers federated logins (where
 `PreAuthentication` never fires) **and** the post-issuance token window. Remove the trigger wiring
-only after the gate is confirmed live in prod (Story 12-7 AC2). Update `06b` (flip
+only after the gate is confirmed live in prod (Story 12-8 AC2). Update `06b` (flip
 `PreAuthentication` to "redundant / retired"). **Precondition:** 12-2 verified in prod.
 
 ### Cleanup C3 — Remove `PostConfirmation` *(§8 Q5: full removal; JIT is the sole create path)*
@@ -74,7 +74,7 @@ Only then delete the trigger. Update `06b` inventory.
 > These are umbrella-level ACs. When this story is split, each Part/Cleanup PR carries its own
 > grounded ACs (RED-GREEN-REFACTOR, file:line, handler tests per CLAUDE.md).
 
-1. **(Gating.)** No cleanup PR (C1/C2/C3) is opened until Story 12-7 confirms the gateway
+1. **(Gating.)** No cleanup PR (C1/C2/C3) is opened until Story 12-8 confirms the gateway
    `is_active` gate (12-2) and canonical JIT (12-3) are verified **in production**. This is a hard
    gate, not a soft preference (staging IS prod — a premature trigger removal could silently drop
    account-create or inactive-block guarantees).
@@ -98,7 +98,7 @@ Only then delete the trigger. Update `06b` inventory.
 - [ ] **When scheduling:** split this umbrella into ≥4 stories (Part 6-Apple, C1, C2, C3) and
       flip each to `ready-for-dev` individually with its own grounded ACs/Tasks. Do NOT implement
       as one PR.
-- [ ] **C1 — Retire `PostAuthentication`** (after 12-7 prod verification): remove trigger wiring in
+- [ ] **C1 — Retire `PostAuthentication`** (after 12-8 prod verification): remove trigger wiring in
       `cognito-user-sync-triggers.ts`; `06b` inventory update; CDK test + (if a handler remains) its
       module-load test adjusted.
 - [ ] **C2 — Retire `PreAuthentication`** (after gateway gate confirmed live in prod): remove
@@ -152,7 +152,7 @@ Only then delete the trigger. Update `06b` inventory.
 - [Source: docs/plans/sso-oidc-federation.md#8. Resolved decisions — Q5 (PostConfirmation full removal) + Q1 (Google only, Apple+OIDC deferred)]
 - [Source: docs/plans/sso-oidc-federation.md#3. The two Cognito gotchas] (why federated logins bypass PostConfirmation + PreAuthentication)
 - ADR-010 (Federated Identity via Cognito) — broker model, Google-first, Apple deferral.
-- Depends on: Story 12-2 (gateway gate) + 12-3 (canonical JIT) **verified in prod via 12-7**;
+- Depends on: Story 12-2 (gateway gate) + 12-3 (canonical JIT) **verified in prod via 12-8**;
   Story 12-5 (IdP pattern) + 12-6 (PreSignUp_ExternalProvider linking branch) as templates.
 
 ### Open Questions (for when this is scheduled)
@@ -180,4 +180,4 @@ _None._
 
 | Date | Change |
 |---|---|
-| 2026-06-01 | Story 12.10 created as a deferred backlog umbrella for SSO Phase 6 (Apple + generic OIDC) and the trigger-retirement cleanup track (C1 PostAuthentication, C2 PreAuthentication, C3 PostConfirmation). Kept `backlog` — split into independent PRs only after Stories 12-2 + 12-3 are verified in prod via 12-7. |
+| 2026-06-01 | Story 12.10 created as a deferred backlog umbrella for SSO Phase 6 (Apple + generic OIDC) and the trigger-retirement cleanup track (C1 PostAuthentication, C2 PreAuthentication, C3 PostConfirmation). Kept `backlog` — split into independent PRs only after Stories 12-2 + 12-3 are verified in prod via 12-8. |

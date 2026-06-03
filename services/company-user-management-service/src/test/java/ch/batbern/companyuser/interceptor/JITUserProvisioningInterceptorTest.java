@@ -393,6 +393,195 @@ class JITUserProvisioningInterceptorTest {
         assertThat(result).isTrue();
     }
 
+    // ============================================================================
+    // Story 12.3 (SSO PR 1 — Part B): JIT must also carry `language` from the
+    // `custom:preferences` JSON onto the created row, mirroring post-confirmation.ts
+    // (`const language = preferences.language || 'de'`). Without this, a Swiss-French /
+    // EN signup that reaches JIT (PostConfirmation failure, or EVERY federated user once
+    // SSO ships) silently loses its chosen language to the @PrePersist "de" default.
+    // ============================================================================
+
+    @Test
+    void should_setPrefLanguageFromCustomPreferences_when_jitProvisioningUser() throws Exception {
+        String cognitoUserId = "fr-signup-cognito-id";
+        String email = "marie.favre@example.ch";
+        String preferences = "{\"firstName\":\"Marie\",\"lastName\":\"Favre\",\"language\":\"fr\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        User created = userCaptor.getValue();
+        assertThat(created.getPreferences()).isNotNull();
+        assertThat(created.getPreferences().getLanguage()).isEqualTo("fr");
+        // Name-extraction contract preserved.
+        assertThat(created.getFirstName()).isEqualTo("Marie");
+        assertThat(created.getLastName()).isEqualTo("Favre");
+    }
+
+    @Test
+    void should_defaultPrefLanguageToDe_when_preferencesHasNoLanguage() throws Exception {
+        String cognitoUserId = "no-lang-cognito-id";
+        String email = "no.lang@example.com";
+        // Names present, but no `language` key — today's typical name-only signup.
+        String preferences = "{\"firstName\":\"No\",\"lastName\":\"Lang\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        // No language parsed -> interceptor leaves preferences unset so the @PrePersist
+        // default ("de", UserPreferences.java:32) applies at persist time. At capture
+        // time (pre-persist) it is therefore null — behaviour unchanged for name-only JWTs.
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
+    @Test
+    void should_failGracefully_when_languageReadFromMalformedPreferences() throws Exception {
+        String cognitoUserId = "malformed-lang-cognito-id";
+        String email = "malformed.lang@example.com";
+        // Standard name claims present (so the row still creates); preferences blob malformed.
+        Jwt jwt = createJwt(cognitoUserId, email, "Mal", "Formed", "not json {{ language");
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        boolean result = interceptor.preHandle(request, response, new Object());
+
+        // Non-blocking contract: malformed JSON must never throw out of preHandle.
+        assertThat(result).isTrue();
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        // Unreadable language -> preferences left unset (default applies at persist).
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
+    // Story 12.3 review: pref_language is VARCHAR(2). A raw BCP-47 tag (gsw-BE, fr-CH —
+    // the frontend sends i18n.language verbatim and federated SSO delivers region-tagged
+    // codes) would overflow the column and abort the JIT INSERT, silently dropping
+    // provisioning for that identity. normalizeLanguage takes the primary subtag, lowercases
+    // it, and accepts only supported 2-char codes; anything else falls back to default "de".
+
+    @Test
+    void should_fallBackToDefault_when_languageIsUnsupportedRegionTag() throws Exception {
+        String cognitoUserId = "gsw-cognito-id";
+        String email = "swiss.german@example.ch";
+        // gsw-BE is a supported UI locale but its primary subtag "gsw" has no 2-char form
+        // and would overflow VARCHAR(2) -> must fall back to the @PrePersist default "de".
+        String preferences = "{\"firstName\":\"Hans\",\"lastName\":\"Muster\",\"language\":\"gsw-BE\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        // No supported 2-char code -> preferences unset -> default "de" at persist.
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
+    @Test
+    void should_stripRegionSubtag_when_languageIsSupportedRegionTag() throws Exception {
+        String cognitoUserId = "fr-ch-cognito-id";
+        String email = "romand@example.ch";
+        // fr-CH -> primary subtag "fr" (supported) -> stored as "fr", fits VARCHAR(2).
+        String preferences = "{\"firstName\":\"Jean\",\"lastName\":\"Dupont\",\"language\":\"fr-CH\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getPreferences()).isNotNull();
+        assertThat(userCaptor.getValue().getPreferences().getLanguage()).isEqualTo("fr");
+    }
+
+    @Test
+    void should_fallBackToDefault_when_languageIsNonStringValue() throws Exception {
+        String cognitoUserId = "num-lang-cognito-id";
+        String email = "num.lang@example.com";
+        // Non-string JSON value -> asText coerces to "123" -> not a supported code -> default.
+        String preferences = "{\"firstName\":\"Num\",\"lastName\":\"Lang\",\"language\":123}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
+    @Test
+    void should_normalizeCasing_when_languageIsUppercase() throws Exception {
+        String cognitoUserId = "upper-lang-cognito-id";
+        String email = "upper.lang@example.com";
+        String preferences = "{\"firstName\":\"Up\",\"lastName\":\"Per\",\"language\":\"FR\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getPreferences()).isNotNull();
+        assertThat(userCaptor.getValue().getPreferences().getLanguage()).isEqualTo("fr");
+    }
+
     @Test
     void should_assignRoleFromJWT_when_jitProvisioningUser() throws Exception {
         // Given: User does not exist with ORGANIZER role in JWT

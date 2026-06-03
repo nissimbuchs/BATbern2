@@ -616,7 +616,7 @@ in your JWT are DB projections, regardless of what is stored on the user.
 |---|---|---|:--:|:--:|---|
 | `custom:username` | cross-service identifier (ADR-003) | DB → **projected claim** | no | yes (injected claim) | ✅ Keep — earns its place in the token |
 | `custom:role` | authorization | DB → **projected claim** | no | yes (injected claim) | ✅ Claim kept; **stored attribute dropped from the client `readAttributes`** (Story 12.1, `cognito-stack.ts`) so it no longer flows into tokens; stored value sentineled to `"UNUSED"` |
-| `custom:preferences` | firstName/lastName/language/theme/notifications | DB (`user_profiles.*`) — **done** (Story 12.1) | yes (signup **seed only**) | no longer from the token — read from `/users/me` (FE `AuthContext.hydrateUserFromDb`) | ✅ Demoted to signup seed; runtime reads moved to `/users/me` |
+| `custom:preferences` | firstName/lastName/language/theme/notifications | DB (`user_profiles.*`) — **done** (Story 12.1) | yes (signup **seed**) | FE runtime: from `/users/me` (`AuthContext.hydrateUserFromDb`), not the token. Backend: JIT + reconciliation read it from the JWT on the **create path only** to seed firstName/lastName/**language** (Story 12.3) | ✅ Demoted to signup/provisioning seed; FE runtime reads moved to `/users/me`; backend reads it once, on first-request create, to mirror `post-confirmation.ts` |
 | `custom:companyId` | user→company relation | DB FK → company-api (ADR-003/004) | **no** — signup write removed (Story 12.1) | **no** — gateway/FE/CUMS extraction all removed (Story 12.1) | ✅ **Removed from token entirely** (no longer written or read anywhere) |
 
 ### Resolved decision — `custom:companyId` does not belong in the token
@@ -684,19 +684,22 @@ attribute in the token. Everything else is resolved from the DB via the user-api
 
 **Alternative**: Roles updated in database only. Next login fetches updated roles via PreTokenGeneration.
 
-### ✅ JIT (Just-In-Time) Provisioning Interceptor — Safety Net
+### ✅ JIT (Just-In-Time) Provisioning Interceptor — Canonical, provider-agnostic reconcile path
 
-**Pattern 1b**: `JITUserProvisioningInterceptor` runs on every authenticated API request. If a valid JWT is present but no DB user record is found (`findByCognitoUserId()` returns empty), the interceptor provisions a new DB user from the JWT claims.
+**Pattern 1b** _(Story 12.3, SSO PR 1 — Part B)_: `JITUserProvisioningInterceptor` runs on every authenticated `/api/**` request and is the **single, provider-agnostic create path** for any first-request identity — **native OR federated**. If a valid JWT is present but no DB user record is found (`findByCognitoUserId()` returns empty), the interceptor reconciles the DB from the JWT, reading exactly what `post-confirmation.ts` reads so federated and native users converge on identical rows.
 
-**Role assignment**: Roles are extracted from the JWT `GrantedAuthority` list. If the JWT carries no roles, the user defaults to `ATTENDEE`. Multi-role JWTs produce multi-role DB entries.
+**What it captures on create** (mirrors `post-confirmation.ts`):
+- **firstName / lastName** — from standard `given_name`/`family_name`, falling back to the `custom:preferences` JSON (the signup form packs names there per ADR-001). Username is derived as `firstname.lastname`.
+- **language** — from the `language` field of `custom:preferences`, normalized to a supported 2-char code (primary subtag, lowercased — `fr-CH → fr`; unsupported/over-length tags like `gsw-BE` fall back to the embeddable default `"de"`, since `pref_language` is `VARCHAR(2)`). When absent/malformed, the row also falls back to `"de"` (`UserPreferences`). _This closed the `custom:preferences` language divergence vs. PostConfirmation **on the create path** (Story 12.3); before it, a Swiss-French / EN signup reaching JIT silently lost its chosen language. Residual: the email-**link** branch (existing-anonymous-by-email) does not re-capture language, where `post-confirmation.ts` `COALESCE`s it — accepted as low-value (linked rows already carry a language); see Story 12.3 Dev Agent Record._
+- **roles** — from the JWT `GrantedAuthority` list; no roles → defaults to `ATTENDEE`. Multi-role JWTs produce multi-role DB entries.
 
-**Link on first login**: Pre-invited users (created via Admin API with `cognito_user_id = NULL`) are linked to their Cognito ID on first login when the interceptor detects an existing record with the same email but no Cognito ID.
+**Link on first request**: Pre-invited / historical-participant users (created with `cognito_user_id = NULL`) are **linked** to their Cognito `sub` on first request when the interceptor detects an existing record with the same email but no Cognito ID — no duplicate row, existing username/roles preserved, **no** `UserCreatedEvent`.
 
-**Error handling**: JIT provisioning errors are non-blocking — the request continues even if DB user creation fails.
+**Error handling**: JIT provisioning is **fail-open / non-blocking** — the request continues even if DB user creation fails (consistent with every other provisioning path).
 
-**Event publishing**: Successful JIT provisioning publishes a domain event with `source = "JIT_PROVISIONING"`.
+**Event publishing**: A successful *create* publishes a domain event with `source = "JIT_PROVISIONING"` (the *link* path publishes none).
 
-**Relationship to PostConfirmation**: PostConfirmation Lambda is the **primary** user creation path (self-registration). The JIT interceptor is the **safety net** — it handles edge cases such as PostConfirmation failures or invitation-based users logging in for the first time.
+**Relationship to PostConfirmation**: PostConfirmation Lambda is the **native fast-path** (it runs synchronously at self-registration confirmation). It is **not** superior to JIT — it is simply earlier for native sign-ups. Federated (Google, ADR-010) sign-ins **never** fire PostConfirmation (Cognito fires only Pre-Sign-up / Pre-Token-Generation / Post-Authentication for external IdPs), so a brand-new federated user's row is created by this interceptor on their first authenticated request. Because JIT now captures exactly what PostConfirmation captures, **Story 12.8 (Phase 3 federated provisioning) is verify-only** — it confirms a real Google identity provisions correctly through this path and builds nothing new.
 
 ### ✅ Reconciliation Job — `UserReconciliationService`
 

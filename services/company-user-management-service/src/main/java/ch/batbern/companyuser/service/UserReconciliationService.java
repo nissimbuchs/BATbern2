@@ -2,6 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -333,15 +335,24 @@ public class UserReconciliationService {
         // Assign default ATTENDEE role (per ADR-001: database is source of truth)
         Set<Role> roles = Set.of(Role.ATTENDEE);
 
-        User user = User.builder()
+        // Story 12.3 (AC7): carry `language` from custom:preferences too, mirroring JIT
+        // (extractNamesFromPreferences) and post-confirmation.ts. Without this the nightly
+        // job creates non-DE signups with the default "de". Absent/malformed -> leave
+        // preferences unset so the @PrePersist default applies (behaviour unchanged).
+        String language = extractLanguageFromPreferences(cognitoUser);
+
+        User.UserBuilder builder = User.builder()
                 .cognitoUserId(cognitoId)
                 .username(username)
                 .email(email != null ? email : "")
                 .firstName(firstName != null ? firstName : "")
                 .lastName(lastName != null ? lastName : "")
                 .roles(roles)
-                .isActive(true)
-                .build();
+                .isActive(true);
+        if (language != null && !language.isEmpty()) {
+            builder.preferences(UserPreferences.builder().language(language).build());
+        }
+        User user = builder.build();
 
         userRepository.save(user);
 
@@ -351,6 +362,15 @@ public class UserReconciliationService {
 
     /** For parsing the `custom:preferences` JSON blob set by the signup form. */
     private static final ObjectMapper PREFERENCES_MAPPER = new ObjectMapper();
+
+    /**
+     * Supported UI language codes that fit the {@code pref_language VARCHAR(2)} column.
+     * Kept in sync with {@code JITUserProvisioningInterceptor.SUPPORTED_LANGUAGE_CODES}
+     * (the two language-capture paths mirror each other — Story 12.3 AC7); {@code gsw-BE}
+     * is intentionally absent so Swiss-German falls back to the {@code @PrePersist} default.
+     */
+    private static final Set<String> SUPPORTED_LANGUAGE_CODES =
+            Set.of("de", "en", "fr", "it", "rm", "es", "fi", "nl", "ja");
 
     /**
      * Read first/last name from the Cognito `custom:preferences` JSON attribute.
@@ -376,6 +396,48 @@ public class UserReconciliationService {
             log.warn("Failed to parse custom:preferences JSON during reconciliation: {}", e.getMessage());
             return new String[] {null, null};
         }
+    }
+
+    /**
+     * Read the UI {@code language} from the Cognito {@code custom:preferences} JSON attribute.
+     * Mirrors {@code JITUserProvisioningInterceptor#extractLanguageFromPreferences} and
+     * {@code post-confirmation.ts} so reconciliation and JIT stay in sync (Story 12.3, AC7).
+     *
+     * Returns the language code (e.g. "fr") or {@code null} when absent/empty/malformed;
+     * never throws.
+     */
+    private String extractLanguageFromPreferences(UserType cognitoUser) {
+        String raw = extractAttribute(cognitoUser, "custom:preferences");
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+        try {
+            JsonNode node = PREFERENCES_MAPPER.readTree(raw);
+            return normalizeLanguage(node.path("language").asText(null));
+        } catch (Exception e) {
+            log.warn("Failed to parse custom:preferences JSON for language during reconciliation: {}",
+                    e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Normalize a raw language value to a supported 2-char code, or null. Mirrors
+     * {@code JITUserProvisioningInterceptor.normalizeLanguage} — see Story 12.3 review:
+     * an over-length BCP-47 tag (e.g. {@code gsw-BE}) would overflow {@code pref_language
+     * VARCHAR(2)} and, because {@code createMissingUser}'s {@code @Transactional} is a no-op
+     * (private self-invocation), abort the WHOLE nightly batch at the outer commit. We take
+     * the primary subtag, lowercase it, and accept it only if supported; else null → default.
+     *
+     * @param raw the language value parsed from {@code custom:preferences} (may be null)
+     * @return a supported 2-char code, or null to fall back to the default
+     */
+    private String normalizeLanguage(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String primary = raw.trim().toLowerCase(Locale.ROOT).split("[-_]", 2)[0];
+        return SUPPORTED_LANGUAGE_CODES.contains(primary) ? primary : null;
     }
 
     /**

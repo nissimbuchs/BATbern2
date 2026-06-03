@@ -21,7 +21,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Optional;
 
 /**
  * AccountActiveFilter — request-time {@code is_active} gate at the API gateway (Story 12.2,
@@ -106,25 +105,30 @@ public class AccountActiveFilter extends OncePerRequestFilter {
             username = jwt.getSubject();
         }
 
-        Boolean active = activeCache.getIfPresent(username);
+        Boolean active;
+        try {
+            // Atomic load: Caffeine applies the loader at most once per key, so N concurrent
+            // first-requests for the same user collapse to ONE CUMS call (no stampede). A loader
+            // returning null (unknown — 404 / no body) is NOT cached and surfaces as null here, so
+            // the unknown path still fails open AND retries next request.
+            final String bearer = jwt.getTokenValue();
+            final String cacheKey = username;
+            active = activeCache.get(cacheKey,
+                    key -> statusClient.getActiveStatus(key, bearer).orElse(null));
+        } catch (Exception e) {
+            // Transient CUMS failure (loader threw) → fail-open (allow), WARN, emit metric.
+            // Caffeine does not cache a load that throws, so the next request retries.
+            meterRegistry.counter("gateway.active_gate.cums_error").increment();
+            log.warn("CUMS is_active lookup failed for {} — failing open (allowing request): {}",
+                    LogSanitizer.sanitize(username), e.getMessage());
+            chain.doFilter(request, response);
+            return;
+        }
+
         if (active == null) {
-            try {
-                Optional<Boolean> status = statusClient.getActiveStatus(username, jwt.getTokenValue());
-                if (status.isEmpty()) {
-                    // Unknown (404 / no body) → fail-open, do NOT cache (retry next request).
-                    chain.doFilter(request, response);
-                    return;
-                }
-                active = status.get();
-                activeCache.put(username, active);
-            } catch (Exception e) {
-                // Transient CUMS failure → fail-open (allow), WARN, emit metric.
-                meterRegistry.counter("gateway.active_gate.cums_error").increment();
-                log.warn("CUMS is_active lookup failed for {} — failing open (allowing request): {}",
-                        LogSanitizer.sanitize(username), e.getMessage());
-                chain.doFilter(request, response);
-                return;
-            }
+            // Unknown (404 / no body) → fail-open, not cached (retry next request).
+            chain.doFilter(request, response);
+            return;
         }
 
         if (Boolean.FALSE.equals(active)) {

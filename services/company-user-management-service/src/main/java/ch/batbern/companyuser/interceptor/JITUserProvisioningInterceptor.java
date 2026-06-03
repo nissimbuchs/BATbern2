@@ -2,6 +2,7 @@ package ch.batbern.companyuser.interceptor;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.event.UserCreatedEvent;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -53,6 +55,16 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
 
     /** For parsing the `custom:preferences` JSON blob set by the signup form. */
     private static final ObjectMapper PREFERENCES_MAPPER = new ObjectMapper();
+
+    /**
+     * Supported UI language codes that fit the {@code pref_language VARCHAR(2)} column
+     * (UserPreferences.java:30). The 10th supported locale, {@code gsw-BE}, is intentionally
+     * absent: its 2-char primary subtag {@code gsw} does not exist, so Swiss-German falls
+     * back to the {@code @PrePersist} default {@code "de"}. Keep in sync with
+     * V15__remove_language_check_constraint.sql and web-frontend i18n config.
+     */
+    private static final Set<String> SUPPORTED_LANGUAGE_CODES =
+            Set.of("de", "en", "fr", "it", "rm", "es", "fi", "nl", "ja");
 
     /**
      * Pre-handle method called before controller execution
@@ -137,16 +149,27 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             // Extract roles from authorities
             Set<Role> roles = extractRolesFromAuthorities(authentication.getAuthorities());
 
+            // Story 12.3: capture the chosen UI language from `custom:preferences`, mirroring
+            // post-confirmation.ts (`const language = preferences.language || 'de'`). Federated
+            // users never hit PostConfirmation, so JIT is the only place their language is
+            // captured. When absent/malformed, leave preferences unset so the @PrePersist
+            // default ("de", UserPreferences.java:32) applies — no behaviour change for the
+            // name-only signups that reach JIT today.
+            String language = extractLanguageFromPreferences(jwt);
+
             // Create new user
-            User newUser = User.builder()
+            User.UserBuilder builder = User.builder()
                     .cognitoUserId(cognitoUserId)
                     .username(username)
                     .email(email != null ? email : "")
                     .firstName(firstName != null ? firstName : "")
                     .lastName(lastName != null ? lastName : "")
                     .roles(roles)
-                    .isActive(true)
-                    .build();
+                    .isActive(true);
+            if (language != null && !language.isEmpty()) {
+                builder.preferences(UserPreferences.builder().language(language).build());
+            }
+            User newUser = builder.build();
 
             User savedUser = userRepository.save(newUser);
 
@@ -195,6 +218,55 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             log.warn("Failed to parse custom:preferences JSON during JIT provisioning: {}", e.getMessage());
             return new String[] {null, null};
         }
+    }
+
+    /**
+     * Read the UI {@code language} from the Cognito {@code custom:preferences} JSON attribute.
+     *
+     * Mirrors {@code post-confirmation.ts} (`const language = preferences.language || 'de'`):
+     * the signup form / federated attribute mapping packs the chosen language into the same
+     * single JSON attribute as first/last name. JIT is the only provisioning path federated
+     * users hit, so it must carry the language too.
+     *
+     * Returns the language code (e.g. "fr"/"en"/"de") or {@code null} when absent/empty/
+     * malformed; never throws (the create path must stay non-blocking).
+     */
+    private String extractLanguageFromPreferences(Jwt jwt) {
+        String raw = jwt.getClaimAsString("custom:preferences");
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+        try {
+            JsonNode node = PREFERENCES_MAPPER.readTree(raw);
+            return normalizeLanguage(node.path("language").asText(null));
+        } catch (Exception e) {
+            log.warn("Failed to parse custom:preferences JSON for language during JIT provisioning: {}",
+                    e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Normalize a raw language value to a supported 2-char code, or null.
+     * <p>
+     * Story 12.3 review: {@code pref_language} is {@code VARCHAR(2)}; a raw BCP-47 tag such as
+     * {@code gsw-BE} / {@code fr-CH} (the frontend sends {@code i18n.language} verbatim, and
+     * federated SSO delivers region-tagged codes) would overflow the column and abort the
+     * INSERT — silently dropping JIT provisioning for that identity. We take the primary
+     * subtag ({@code fr-CH -> fr}), lowercase it, and accept it only if it is a supported
+     * 2-char code; anything else returns null so the {@code @PrePersist} default {@code "de"}
+     * applies. Also defuses non-string JSON values ({@code asText} coercions like {@code "123"})
+     * and stray casing/whitespace.
+     *
+     * @param raw the language value parsed from {@code custom:preferences} (may be null)
+     * @return a supported 2-char code, or null to fall back to the default
+     */
+    private String normalizeLanguage(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String primary = raw.trim().toLowerCase(Locale.ROOT).split("[-_]", 2)[0];
+        return SUPPORTED_LANGUAGE_CODES.contains(primary) ? primary : null;
     }
 
     /**

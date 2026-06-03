@@ -1,8 +1,10 @@
-# Story 12.7: Federated Provisioning + Inactive-Gating (VERIFY-ONLY — built in PR 1)
+# Story 12.8: Federated Provisioning + Inactive-Gating (VERIFY-ONLY — built in PR 1)
 
 Status: ready-for-dev
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+
+> **Renumbered 2026-06-02:** this verify-only story was **Story 12.7** and is now **12.8**, swapped with the frontend-callback story (now 12.7). The swap means the `/auth/callback` route + `signInWithFederated` (now Story 12.7) land **before** this verification, so a real federated token can be obtained through the actual app login flow rather than by hand-driving the hosted-UI OAuth code exchange (resolves readiness finding DEV-3).
 
 ## Story
 
@@ -17,6 +19,7 @@ This is **Phase 3** of Epic 12 (SSO / OIDC Federation). It is **VERIFY-ONLY — 
 - **Story 12.2 (gateway `is_active` gate)** — PR 1 Part A. The `OncePerRequestFilter` in `api-gateway` (`security.active-gate.*`) resolves caller status via `UserServiceClient` → `UserResponse.active`, Caffeine-cached (~60s TTL), returns `403 ACCOUNT_DEACTIVATED` for inactive accounts, fail-open on CUMS error, kill-switch `security.active-gate.enabled`. *This is the component AC2 verifies, and it must be deployed with `enabled=true`.*
 - **Story 12.6 (account-linking `PreSignUp_ExternalProvider` trigger)** — Phase 2. A real federated identity is only safely testable once the linking trigger exists (per the Phase 1 §5 warning: a brand-new Google user signing in before the linking trigger hits the §3 gotchas). The trigger also sets `autoConfirmUser`/`autoVerifyEmail` so the federated user is immediately usable. *Without 12.6, there is no real federated identity to verify against.*
 - Implied: Story 12.5 (Google IdP + attribute mapping) must be live so a Google sign-in is possible at all and `custom:preferences` carries the mapped Google name claims.
+- **Story 12.7 (frontend `/auth/callback` + `signInWithFederated`)** — *recommended-available* (sequenced before this story by the 2026-06-02 renumber). Not a hard prerequisite, but with it deployed the federated token is obtained by driving the **real app login flow** (button-less: navigate the hosted-UI authorize URL → land on `/auth/callback` → session settles), avoiding a hand-built OAuth code exchange. If 12.7 is not yet deployed, fall back to the manual hosted-UI exchange.
 
 ## Acceptance Criteria
 
@@ -97,10 +100,20 @@ Per `docs/plans/sso-oidc-federation.md` §4 and project memory: there is exactly
 - **Optional early dry-run:** local-dev (`make dev-native-up`) points at the staging Cognito pool; the local DB row inspection uses `docker exec batbern-dev-postgres psql -U postgres -d batbern_development` (db `batbern_development`, container `batbern-dev-postgres`, from `docker-compose-dev.yml`). Note that in local-dev the gate behaviour depends on the locally-running gateway build carrying 12.2's filter; treat local as a smoke, not the authoritative pass.
 - Hosted-UI federation URL uses the domain prefix `batbern-staging-auth` (`cognito-stack.ts:279`) at `auth.eu-central-1.amazoncognito.com`, with `identity_provider=Google` and the registered `/auth/callback` redirect.
 
+### Reusable test idiom from Story 12.3 (for an optional automated dry-run of AC1/AC3)
+
+Story 12.3 shipped `services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITProvisioningIntegrationTest.java` — a Testcontainers test that asserts the **canonical JIT create path** end-to-end **without a real IdP**, using two reusable techniques:
+- **`jwt()` request post-processor** (`org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt()`) to drive a real authenticated `GET /api/v1/users` so the interceptor actually runs — building a `JwtAuthenticationToken` with arbitrary `sub` / `email` / `custom:preferences` claims and empty authorities. **NOT `@WithMockUser`** (which yields a `UsernamePasswordAuthenticationToken` the interceptor skips).
+- **`@RecordApplicationEvents` + autowired `ApplicationEvents`** to assert the `UserCreatedEvent` (`source == "JIT_PROVISIONING"`) fires on create and does **not** fire on the email-link path.
+
+**Why this matters for this verify-only story:** to the JIT interceptor a federated Cognito token is *just another JWT* — there is no provider-specific branch (the whole point of AC3). So `JITProvisioningIntegrationTest` already structurally covers **AC1's provider-agnostic create** (row + default ATTENDEE + names/language from `custom:preferences` + JIT event) and **AC3's "same paths as native"**. The genuine delta this story verifies that the automated test cannot is the **real Google name-claim → `custom:preferences` mapping (Story 12.5)** feeding that path, plus **AC2's gateway-gate block on a real federated token**.
+
+**Recommendation:** for a cheap automated dry-run of AC1/AC3, parameterize/extend that 12.3 idiom (a JWT shaped like a federated token: fresh `sub`, no native row, names in `custom:preferences`, empty authorities) rather than hand-driving the hosted-UI OAuth exchange. Reserve the real-identity hosted-UI run (Tasks 1–3) for the **authoritative** pass that exercises 12.5's actual mapping and 12.2's gate on a genuine federated principal. (This does **not** turn this story into a code story — it's a pointer to an existing test pattern; the authoritative ACs remain real-identity observations per AC5.)
+
 ### Out of scope
 - **Any code** — this story builds nothing (verify-only). Fixes for failures land in Story 12.2 / 12.3.
 - The **"Continue with Google" button + `features.sso` flag** (Story 12.9) — federation here is driven by hitting the hosted-UI URL directly; no frontend entry point is required.
-- The **frontend `/auth/callback` route + `signInWithFederated` service method** (Story 12.8) — not required for token acquisition in this verification (the OAuth code exchange is performed against the hosted UI directly).
+- **Building** the frontend `/auth/callback` route + `signInWithFederated` service method — that is **Story 12.7** (now sequenced before this story). This verification **uses** that route to acquire the federated token when available, but builds none of it; if 12.7 isn't deployed yet, the OAuth code exchange is performed against the hosted UI directly (see Prerequisites).
 - **Apple / generic OIDC** (Story 12.10 / Phase 6) — deferred.
 - The **trigger-retirement cleanup track** (retire PostAuthentication / PreAuthentication / PostConfirmation) — enabled by PR 1 but separate, optional PRs.
 
@@ -116,6 +129,7 @@ Per `docs/plans/sso-oidc-federation.md` §4 and project memory: there is exactly
 - [Source: services/company-user-management-service/.../controller/UserController.java:470 (DELETE = GDPR hard-delete, NOT deactivate)] · [Source: services/company-user-management-service/.../service/UserReconciliationService.java:235 (`user.setActive(false)`)]
 - [Source: infrastructure/lib/stacks/cognito-stack.ts:279 (hosted-UI domain prefix `batbern-${envName}-auth`)] · [Source: docker-compose-dev.yml:10-13 (container `batbern-dev-postgres`, db `batbern_development`)]
 - Prereq stories: 12.2 (gateway is_active gate), 12.3 (canonical JIT), 12.5 (Google IdP + attribute mapping), 12.6 (account-linking PreSignUp trigger)
+- [Reusable idiom: services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITProvisioningIntegrationTest.java — Story 12.3 `jwt()` post-processor + `@RecordApplicationEvents` for asserting provider-agnostic JIT provisioning without a real IdP; see "Reusable test idiom from Story 12.3" Dev Note]
 
 ## Dev Agent Record
 
@@ -139,4 +153,5 @@ _(verify-only — expected empty; record the verification artifact location if a
 
 | Date | Change |
 |---|---|
-| 2026-06-01 | Story 12.7 drafted (Phase 3, VERIFY-ONLY — no code). Verifies canonical JIT provisioning (12.3) + gateway is_active gate (12.2) against a real throwaway federated Google identity; prereqs 12.2/12.3/12.5/12.6. Status → ready-for-dev. |
+| 2026-06-01 | Story drafted (Phase 3, VERIFY-ONLY — no code) as Story 12.7. Verifies canonical JIT provisioning (12.3) + gateway is_active gate (12.2) against a real throwaway federated Google identity; prereqs 12.2/12.3/12.5/12.6. Status → ready-for-dev. |
+| 2026-06-02 | **Renumbered 12.7 → 12.8** (swapped with the frontend-callback story, now 12.7) so callback plumbing precedes this verification. Added Story 12.7 (callback route) as a recommended-available token-acquisition path (resolves readiness finding DEV-3); updated out-of-scope bullet accordingly. |
