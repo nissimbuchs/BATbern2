@@ -473,6 +473,32 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   if (dnsStack) {
     frontendStack.addDependency(dnsStack); // Depends on DNS stack for certificate
   }
+
+  // 12b. Beta Frontend canary (beta.batbern.ch) — a SECOND FrontendStack on the SAME prod
+  // backend, for previewing frontend-only changes before they reach the primary www site.
+  // Gated behind `--context betaFrontend=true` so it NEVER synthesizes/deploys by accident
+  // (e.g. a plain `deploy:staging --all` leaves it untouched). It is a separate CloudFormation
+  // stack — the primary `${stackPrefix}-Frontend` stack is never in its changeset. The cert is
+  // the pre-created, pinned beta cert (Phase 1). See docs/plans/beta-frontend-canary.md.
+  if (app.node.tryGetContext('betaFrontend') === 'true' && config.domain) {
+    const betaFrontendStack = new FrontendStack(app, `${stackPrefix}-FrontendBeta`, {
+      config,
+      logsBucket: storageStack.logsBucket,
+      variant: 'beta',
+      domainName: `beta.${config.domain.zoneName}`, // beta.batbern.ch
+      // no apexDomainName — beta is a single host
+      hostedZoneId: config.domain.hostedZoneId,
+      certificateArn: config.domain.betaFrontendCertificateArn,
+      env,
+      description: `BATbern Frontend Canary (beta) - ${config.envName}`,
+      tags: config.tags,
+      crossRegionReferences: true, // Required to reference us-east-1 certificate from eu-central-1 stack
+    });
+    betaFrontendStack.addDependency(storageStack);
+    if (dnsStack) {
+      betaFrontendStack.addDependency(dnsStack);
+    }
+  }
 }
 
 // 13. Auto-Shutdown Stack (Development only - Priority 5: Cost Optimization)

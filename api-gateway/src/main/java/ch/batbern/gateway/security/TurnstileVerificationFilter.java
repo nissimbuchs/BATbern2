@@ -36,6 +36,10 @@ import java.util.Map;
  * AC5: turnstile.enabled=false -&gt; no-op
  *
  * Story 10.31
+ *
+ * CORS: not handled here. CORS is owned solely by the AWS API Gateway edge (ADR-008); it adds
+ * the CORS response headers — including on this filter's 403 — for allowed origins. See
+ * infrastructure/lib/stacks/api-gateway-stack.ts `corsPreflight` and SecurityConfig.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE - 1) // Runs just before RateLimitingFilter (@Order(LOWEST_PRECEDENCE))
@@ -44,16 +48,13 @@ public class TurnstileVerificationFilter implements Filter {
 
     private final TurnstileProperties turnstileProperties;
     private final RestTemplate restTemplate;
-    private final CorsHandler corsHandler;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     public TurnstileVerificationFilter(
             TurnstileProperties turnstileProperties,
-            @Qualifier("turnstileRestTemplate") RestTemplate restTemplate,
-            CorsHandler corsHandler) {
+            @Qualifier("turnstileRestTemplate") RestTemplate restTemplate) {
         this.turnstileProperties = turnstileProperties;
         this.restTemplate = restTemplate;
-        this.corsHandler = corsHandler;
     }
 
     @Override
@@ -98,7 +99,7 @@ public class TurnstileVerificationFilter implements Filter {
             if (!valid) {
                 log.debug("Turnstile token invalid for {} {}", httpRequest.getMethod(),
                     httpRequest.getRequestURI());
-                addCorsHeaders(httpRequest, httpResponse);
+                // CORS headers on this 403 are added by the AWS API Gateway edge (ADR-008).
                 httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 httpResponse.setContentType("application/json");
                 httpResponse.getWriter().write(
@@ -170,30 +171,6 @@ public class TurnstileVerificationFilter implements Filter {
             return xff.split(",")[0].trim();
         }
         return request.getRemoteAddr();
-    }
-
-    /**
-     * Adds CORS headers — copied from RateLimitingFilter to ensure 403 responses
-     * are not blocked by the browser's CORS policy.
-     */
-    private void addCorsHeaders(HttpServletRequest request, HttpServletResponse response) {
-        String origin = request.getHeader("Origin");
-        if (origin != null && isOriginAllowed(origin)) {
-            response.setHeader("Access-Control-Allow-Origin", origin);
-            response.setHeader("Access-Control-Allow-Credentials", "true");
-            response.setHeader("Access-Control-Allow-Methods",
-                "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
-            response.setHeader("Access-Control-Allow-Headers",
-                "Authorization, Content-Type, X-Requested-With, X-Request-Id, "
-                + "X-Correlation-ID, Accept, Accept-Language, X-Turnstile-Token");
-            response.setHeader("Access-Control-Expose-Headers",
-                "X-Request-Id, X-Correlation-ID");
-            response.setHeader("Vary", "Origin");
-        }
-    }
-
-    private boolean isOriginAllowed(String origin) {
-        return corsHandler.isOriginAllowed(origin);
     }
 
     @Override

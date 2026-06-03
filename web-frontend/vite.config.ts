@@ -239,6 +239,83 @@ export default defineConfig({
             id.includes('automation-events')
           )
             return undefined;
+          // Admin-only heavy libraries — charts (recharts + its exclusive d3/victory/
+          // react-smooth tree), animation (framer-motion), and drag-and-drop (@dnd-kit) —
+          // are imported ONLY by lazy-loaded organizer/partner/presentation routes (zero
+          // imports in the public homepage graph, verified 2026-06-02). Forcing them into
+          // the eager `vendor` chunk shipped them to every public homepage visitor (most of
+          // the ~313 KB "unused JavaScript" Lighthouse flagged). Return undefined so Rollup
+          // co-locates them with the dynamic import() chunk of their route — identical to the
+          // `tone` carve-out above. The d3-*/victory-vendor/react-smooth packages are pulled
+          // ONLY transitively by recharts (no direct src imports), so splitting them with it
+          // is safe; without them the recharts split would be pointless (d3 would stay eager).
+          // Unlike @emotion/@mui, none of these have a React-core circular dependency, so the
+          // single-vendor TDZ concern documented above does not apply to them.
+          if (
+            /[\\/]node_modules[\\/](recharts|framer-motion|motion|motion-dom|react-smooth|victory-vendor|internmap)[\\/]/.test(
+              id
+            ) ||
+            /[\\/]node_modules[\\/]@dnd-kit[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]d3-[^\\/]+[\\/]/.test(id)
+          )
+            return undefined;
+          // More admin/authenticated-only libraries the public homepage never touches
+          // (verified 2026-06-02: 0 imports in the public homepage graph) but that the
+          // blanket `vendor` chunk shipped to every visitor:
+          //   - motion/motion-dom: framer-motion's actual v12 package — the regex above only
+          //     matched the `framer-motion` alias, so ~326 KB stayed eager. Presentation only.
+          //   - @stomp/stompjs + sockjs-client: notification WebSocket — authenticated only.
+          //   - react-dropzone + file-selector: file upload (profile picture / admin import).
+          //   - ics: calendar-invite generation (partner/organizer meetings).
+          // Returning undefined lets Rollup co-locate each with the lazy route chunk that
+          // imports it — same safe carve-out pattern as `tone`/recharts above.
+          if (
+            /[\\/]node_modules[\\/]@stomp[\\/]stompjs[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/](sockjs-client|react-dropzone|file-selector|ics)[\\/]/.test(id)
+          )
+            return undefined;
+          // AWS Amplify + its AWS SDK / Cognito / Smithy transitive tree (~426 KB) is the
+          // largest dependency the blanket `vendor` chunk shipped to every public-homepage
+          // visitor — yet anonymous visitors never authenticate. As of
+          // perf/public-homepage-followup #2 the code loads Amplify lazily (dynamic import in
+          // authService/apiClient/config + ensureAmplifyConfigured), but that is only effective
+          // if manualChunks ALSO declines to force it into the eager vendor chunk. Return
+          // undefined so Rollup co-locates it with the dynamic import() chunk that first needs
+          // it — same carve-out pattern as tone/recharts above. No direct @aws-sdk / @smithy /
+          // amazon-cognito imports exist in src (verified 2026-06-02): the whole tree is reached
+          // only through aws-amplify, so carving these package roots is safe. Like the other
+          // carve-outs (and unlike @emotion/@mui) none has a React-core circular dependency, so
+          // the single-vendor TDZ concern does not apply.
+          if (
+            /[\\/]node_modules[\\/](aws-amplify|@aws-amplify|@aws-sdk|@smithy|@aws-crypto|amazon-cognito-identity-js)[\\/]/.test(
+              id
+            )
+          )
+            return undefined;
+          // More form/editor libraries the public homepage never reaches eagerly (verified
+          // 2026-06-02) but the blanket `vendor` rule shipped to every visitor:
+          //   - @tinymce/tinymce-react: the React wrapper for the rich-text editor, imported
+          //     ONLY by the organizer EmailTemplateEditModal (admin). (The TinyMCE core itself
+          //     is already not bundled — see the note below.)
+          //   - react-hook-form (+ @hookform/resolvers): every consumer — public registration
+          //     wizard (lazy via HeroSection), the auth forms, and the admin forms — sits behind
+          //     a React.lazy boundary; HomePage's eager graph never imports it. Returning
+          //     undefined co-locates it with the lazy chunks that use it (same pattern as
+          //     recharts/amplify). None has a React-core circular dependency, so the @emotion/@mui
+          //     single-vendor TDZ concern does not apply.
+          //   - zod: the form-validation schema lib, used ONLY via @hookform/resolvers/zod in the
+          //     same 6 lazy form components (+ src/schemas/partnerSchema.ts, imported only by the
+          //     lazy PartnerCreateEditModal). No eager homepage importer. (yup is NOT here — it is
+          //     not a dependency and not bundled; we standardised on zod.)
+          // (Redux is intentionally absent here: @reduxjs/toolkit/react-redux are not direct deps
+          //  and are not bundled, so there is nothing to carve.)
+          if (
+            /[\\/]node_modules[\\/]@tinymce[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]react-hook-form[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]@hookform[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]zod[\\/]/.test(id)
+          )
+            return undefined;
           // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
           // <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" /> from vite-plugin-static-copy.
           // Bundling its IIFE modules causes Vite/Rollup to reorder them so plugins

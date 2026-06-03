@@ -5,7 +5,8 @@
 
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Box, Typography, Alert } from '@mui/material';
+// Tailwind, not MUI: ProtectedRoute is imported eagerly by App.tsx (it guards ~20 routes),
+// so keeping it MUI-free is what stops @mui/material from leaking into the public entry chunk.
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useAuth } from '@hooks/useAuth';
 import type { ProtectedRouteProps } from './types';
@@ -23,24 +24,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          gap: 2,
-        }}
-      >
-        <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
-          Loading
-        </Typography>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <h1 className="mb-1 text-3xl font-light">Loading</h1>
         <BATbernLoader size={80} />
-        <Typography variant="body2" color="text.primary">
-          Checking authentication...
-        </Typography>
-      </Box>
+        <p className="text-sm">Checking authentication...</p>
+      </div>
     );
   }
 
@@ -61,14 +49,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Check email verification if required
     if (requiresVerification && !user.emailVerified) {
       return (
-        <Box sx={{ p: 3 }}>
-          <Alert severity="warning">
-            <Typography variant="h6">Email Verification Required</Typography>
-            <Typography variant="body2">
-              Please verify your email address to access this content.
-            </Typography>
-          </Alert>
-        </Box>
+        <div className="p-6">
+          <div
+            role="alert"
+            className="rounded-md border border-amber-400/30 bg-amber-400/15 p-4 text-amber-200"
+          >
+            <h6 className="text-lg font-medium">Email Verification Required</h6>
+            <p className="text-sm">Please verify your email address to access this content.</p>
+          </div>
+        </div>
       );
     }
 

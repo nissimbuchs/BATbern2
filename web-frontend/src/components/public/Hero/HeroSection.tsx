@@ -4,11 +4,18 @@
  * Full-screen hero with Unicorn.studio interactive background
  */
 
-import { useEffect, useState, ReactNode } from 'react';
+import { useEffect, useState, lazy, Suspense, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/public/ui/button';
 import { useTranslation } from 'react-i18next';
-import { RegistrationWizard } from '@/components/public/Registration/RegistrationWizard';
+// Lazy: the registration wizard is a heavy MUI form rendered only after the user expands
+// the inline "Register" panel. Lazy-loading it keeps @mui/material out of the eager public
+// homepage bundle — it arrives only when someone actually starts registering.
+const RegistrationWizard = lazy(() =>
+  import('@/components/public/Registration/RegistrationWizard').then((m) => ({
+    default: m.RegistrationWizard,
+  }))
+);
 import { AttendeeUnregisterPanel } from '@/components/public/Registration/AttendeeUnregisterPanel';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { CheckCircle2, Mail } from 'lucide-react';
@@ -351,12 +358,14 @@ export const HeroSection = ({
           }}
         >
           <div className="container mx-auto px-4 py-16">
-            <RegistrationWizard
-              eventCode={eventCode}
-              inline={true}
-              onCancel={() => setIsRegistrationExpanded(false)}
-              spotsRemaining={spotsRemaining}
-            />
+            <Suspense fallback={<BATbernLoader size={64} />}>
+              <RegistrationWizard
+                eventCode={eventCode}
+                inline={true}
+                onCancel={() => setIsRegistrationExpanded(false)}
+                spotsRemaining={spotsRemaining}
+              />
+            </Suspense>
           </div>
         </section>
       )}

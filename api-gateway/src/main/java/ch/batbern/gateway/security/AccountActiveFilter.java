@@ -48,6 +48,10 @@ import java.time.Duration;
  *   <li><b>Kill-switch:</b> {@code security.active-gate.enabled=false} makes it a pure
  *       pass-through (ships dark; instant revert without redeploy).</li>
  * </ul>
+ *
+ * <p>CORS: not handled here. CORS is owned solely by the AWS API Gateway edge (ADR-008); it
+ * adds the CORS response headers — including on this filter's 403 — for allowed origins. See
+ * infrastructure/lib/stacks/api-gateway-stack.ts {@code corsPreflight} and SecurityConfig.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE) // After Spring Security authentication (see RateLimitingFilter)
@@ -58,19 +62,16 @@ public class AccountActiveFilter extends OncePerRequestFilter {
             "{\"error\":\"ACCOUNT_DEACTIVATED\",\"message\":\"Your account has been deactivated.\"}";
 
     private final GatewayUserStatusClient statusClient;
-    private final CorsHandler corsHandler;
     private final MeterRegistry meterRegistry;
     private final boolean enabled;
     private final Cache<String, Boolean> activeCache;
 
     public AccountActiveFilter(
             GatewayUserStatusClient statusClient,
-            CorsHandler corsHandler,
             MeterRegistry meterRegistry,
             @Value("${security.active-gate.enabled:false}") boolean enabled,
             @Value("${security.active-gate.ttl-seconds:60}") long ttlSeconds) {
         this.statusClient = statusClient;
-        this.corsHandler = corsHandler;
         this.meterRegistry = meterRegistry;
         this.enabled = enabled;
         this.activeCache = Caffeine.newBuilder()
@@ -135,7 +136,7 @@ public class AccountActiveFilter extends OncePerRequestFilter {
             log.warn("Blocking deactivated account: {} ({} {})",
                     LogSanitizer.sanitize(username),
                     request.getMethod(), LogSanitizer.sanitize(request.getRequestURI()));
-            writeDeactivatedResponse(request, response);
+            writeDeactivatedResponse(response);
             return; // terminal — do NOT proceed down the chain
         }
 
@@ -157,33 +158,15 @@ public class AccountActiveFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Writes the terminal {@code 403 ACCOUNT_DEACTIVATED} JSON response. Attaches CORS headers
-     * the same way {@link RateLimitingFilter} does on its 429 so the browser can read the error
-     * code cross-origin. MUST be 403 (not 401) to avoid the SPA's JWT-refresh loop.
+     * Writes the terminal {@code 403 ACCOUNT_DEACTIVATED} JSON response. CORS headers are added by
+     * the AWS API Gateway edge (ADR-008) for allowed origins, including on this 403 — the gateway
+     * no longer manages CORS (see SecurityConfig). MUST be 403 (not 401) to avoid the SPA's
+     * JWT-refresh loop.
      */
-    private void writeDeactivatedResponse(HttpServletRequest request, HttpServletResponse response)
+    private void writeDeactivatedResponse(HttpServletResponse response)
             throws IOException {
-        addCorsHeaders(request, response);
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
         response.getWriter().write(DEACTIVATED_BODY);
-    }
-
-    /**
-     * Mirrors {@code RateLimitingFilter.addCorsHeaders} so an error response is readable
-     * cross-origin by the SPA.
-     */
-    private void addCorsHeaders(HttpServletRequest request, HttpServletResponse response) {
-        String origin = request.getHeader("Origin");
-        if (origin != null && corsHandler.isOriginAllowed(origin)) {
-            response.setHeader("Access-Control-Allow-Origin", origin);
-            response.setHeader("Access-Control-Allow-Credentials", "true");
-            response.setHeader("Access-Control-Allow-Methods",
-                    "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
-            response.setHeader("Access-Control-Allow-Headers",
-                    "Authorization, Content-Type, X-Requested-With, X-Request-Id, "
-                    + "X-Correlation-ID, Accept, Accept-Language");
-            response.setHeader("Vary", "Origin");
-        }
     }
 }

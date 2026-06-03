@@ -238,5 +238,22 @@ curl https://api.staging.batbern.ch/api/v1/topics \
 - Backend already had JWT validation, so this just removes redundancy
 - No security compromise: backend still validates everything
 
+## Update — 2026-06-02: CORS truly single-layer now
+
+This ADR placed CORS at the edge (AWS API Gateway), but the Spring Boot gateway had
+**residual** CORS that predated the consolidation and was never removed: a
+`SecurityConfig.corsConfigurationSource` bean (wired into both filter chains) plus a
+`CorsHandler` whose origin allowlist the rate-limit / Turnstile / account-active filters used
+to attach CORS headers to their own 4xx responses. So the allowlist effectively lived in **two
+places**, and adding a new origin (the `beta.batbern.ch` canary) required editing both — the
+symptom that surfaced this.
+
+Resolved: the Spring-layer CORS was deleted; CORS is now configured **only** in
+`infrastructure/lib/stacks/api-gateway-stack.ts` (`corsPreflight`). Before removing the Spring
+layer we verified the edge covers everything it did — Allow-Origin (actual **and** error
+responses), Allow-Credentials, preflight Allow-Methods/-Headers, Max-Age — and closed the one
+gap by adding `exposeHeaders` (the SPA reads `X-Correlation-ID` off responses in ~8 places;
+APIGW was not exposing it). **To allow a new origin now: update `allowOrigins` only.**
+
 ## Date
-2025-12-18
+2025-12-18 (updated 2026-06-02)

@@ -2,7 +2,9 @@ import * as React from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
-import { Cross2Icon } from '@radix-ui/react-icons';
+// lucide-react instead of @radix-ui/react-icons (see checkbox.tsx — that barrel
+// shipped ~481 KB to the public bundle for two icons; X is lucide's Cross2 equiv).
+import { X as Cross2Icon } from 'lucide-react';
 
 const Sheet = SheetPrimitive.Root;
 

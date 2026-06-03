@@ -66,6 +66,7 @@ help: ## Show this help message
 	@echo "  make dev-native-status        - Show service status"
 	@echo "  make dev-native-logs          - Tail all service logs"
 	@echo "  make dev-native-restart       - Restart all services"
+	@echo "  make dev-native-prerender     - Build+serve SSG prerender locally (prod routing emulated, :4173)"
 	@echo ""
 	@echo "🔀 Parallel Instances (Multiple Dev Environments):"
 	@echo "  make dev-native-up-instance BASE_PORT=9000      - Start instance 2"
@@ -310,6 +311,13 @@ docker-build: ## Build Docker images for all services
 dev-native-up: ## Start all services natively (without Docker) - 60-70% less resources
 	@echo "🚀 Starting services natively (no Docker)..."
 	@./scripts/dev/start-all-native.sh
+
+dev-native-prerender: ## Build the frontend with SSG prerender + serve it with prod CloudFront routing emulated (http://localhost:4173)
+	@echo "🧩 Prerendering public routes + starting local preview (prod routing emulated)..."
+	@cd web-frontend && (npx playwright install chromium >/dev/null 2>&1 || echo "  ⚠️  Chromium unavailable — prerender will fall back to CSR")
+	@cd web-frontend && npm run build:prerender
+	@echo "▶ Preview on http://localhost:4173 — / (home shell), /privacy, /about, /support; Ctrl-C to stop"
+	@cd web-frontend && npm run preview:prerender
 
 dev-native-down: ## Stop all native services
 	@echo "🛑 Stopping native services..."

@@ -36,7 +36,6 @@ class TurnstileVerificationFilterTest {
 
     private TurnstileProperties properties;
     private TurnstileVerificationFilter filter;
-    private CorsHandler corsHandler;
 
     @BeforeEach
     void setUp() {
@@ -48,8 +47,7 @@ class TurnstileVerificationFilterTest {
             "POST:/api/v1/newsletter/subscribe",
             "POST:/api/v1/events/*/registrations"
         ));
-        corsHandler = new CorsHandler();
-        filter = new TurnstileVerificationFilter(properties, restTemplate, corsHandler);
+        filter = new TurnstileVerificationFilter(properties, restTemplate);
     }
 
     // ------------------------------------------------------------------ AC5
@@ -143,63 +141,10 @@ class TurnstileVerificationFilterTest {
         assertThat(chain.getRequest()).isNull();
     }
 
-    // ------------------------------------------------------------------ apex-domain CORS regression (#669 fallout)
-    @Test
-    @SuppressWarnings("unchecked")
-    void invalidToken_addsCorsHeaders_forApexOrigin() throws Exception {
-        properties.setEnabled(true);
-
-        when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
-            .thenReturn(Map.of("success", false));
-
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
-        request.addHeader("X-Turnstile-Token", "invalid-token");
-        request.addHeader("Origin", "https://batbern.ch");
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        filter.doFilter(request, response, new MockFilterChain());
-
-        assertThat(response.getStatus()).isEqualTo(403);
-        assertThat(response.getHeader("Access-Control-Allow-Origin")).isEqualTo("https://batbern.ch");
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void invalidToken_addsCorsHeaders_forWwwOrigin() throws Exception {
-        properties.setEnabled(true);
-
-        when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
-            .thenReturn(Map.of("success", false));
-
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
-        request.addHeader("X-Turnstile-Token", "invalid-token");
-        request.addHeader("Origin", "https://www.batbern.ch");
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        filter.doFilter(request, response, new MockFilterChain());
-
-        assertThat(response.getStatus()).isEqualTo(403);
-        assertThat(response.getHeader("Access-Control-Allow-Origin")).isEqualTo("https://www.batbern.ch");
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void invalidToken_omitsCorsHeaders_forDisallowedOrigin() throws Exception {
-        properties.setEnabled(true);
-
-        when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
-            .thenReturn(Map.of("success", false));
-
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
-        request.addHeader("X-Turnstile-Token", "invalid-token");
-        request.addHeader("Origin", "https://evil.com");
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        filter.doFilter(request, response, new MockFilterChain());
-
-        assertThat(response.getStatus()).isEqualTo(403);
-        assertThat(response.getHeader("Access-Control-Allow-Origin")).isNull();
-    }
+    // CORS on this filter's 403 is no longer the gateway's concern — it was removed when CORS
+    // was consolidated to the AWS API Gateway edge (ADR-008). The edge adds Access-Control-*
+    // headers to all proxied responses (incl. 403) for allowed origins; the previous
+    // apex/www/disallowed-origin CORS tests here were deleted with that behaviour.
 
     // ------------------------------------------------------------------ AC4 (fail-open)
     @Test

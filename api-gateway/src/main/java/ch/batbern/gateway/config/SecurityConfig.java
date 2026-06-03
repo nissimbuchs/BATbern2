@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -91,39 +92,54 @@ public class SecurityConfig {
         }
     }
 
-    /**
-     * CORS configuration bean
-     * Allows frontend (different origin: localhost:3000, www.batbern.ch, etc.)
-     * to access API (localhost:8080, api.batbern.ch).
+    /*
+     * ── CORS ownership ────────────────────────────────────────────────────────────────────
+     *
+     * PRODUCTION: CORS is an EDGE concern owned solely by the AWS API Gateway (HTTP API) in
+     * front of this service (ADR-008) — see infrastructure/lib/stacks/api-gateway-stack.ts
+     * `corsPreflight` (allowOrigins, allowMethods, allowHeaders, allowCredentials, exposeHeaders,
+     * maxAge). That edge answers the OPTIONS preflight AND adds the CORS response headers to
+     * every proxied response (incl. 4xx/5xx) for allowed origins. This gateway therefore does
+     * NOT configure CORS for prod (the `staging` profile has no `corsConfigurationSource` bean).
+     * To allow a new PROD origin (e.g. a canary subdomain), update the API Gateway `allowOrigins`
+     * only — do NOT add prod origins here. A previous implementation duplicated the prod allowlist
+     * here (+ a CorsHandler used by the rate-limit / Turnstile / account-active filters); that
+     * leftover was removed when CORS was consolidated to the edge.
+     *
+     * LOCAL DEV: there is NO API Gateway locally — the browser (Vite dev server on
+     * http://localhost:8100) calls this gateway directly on http://localhost:8000, so the gateway
+     * itself must answer CORS. The local-only `corsConfigurationSource` bean below does that —
+     * permissively (all origins; it is local-only). It is gated to the `local` + `dev` profiles:
+     * native dev (`scripts/dev/start-all-native.sh`) runs `local`, and `dev` is the bootRun
+     * default (`application.yml SPRING_PROFILES_ACTIVE:dev`). ECS runs the `staging` profile, so
+     * this bean never exists in prod and never competes with the API Gateway edge.
      */
     @Bean
+    @Profile({ "local", "dev" })
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration =
             new org.springframework.web.cors.CorsConfiguration();
-
-        // Allow specific origins
-        // For development: Allow any localhost port (multi-instance support)
-        // For production: Only allow specific domains
-        configuration.setAllowedOriginPatterns(java.util.Arrays.asList(
-            "http://localhost:*",      // Development: any port (e.g., 3000, 4000, 8600)
-            "http://127.0.0.1:*",      // Development: any port on 127.0.0.1
-            "https://www.batbern.ch",
-            "https://batbern.ch",
-            "https://beta.batbern.ch"  // Beta frontend canary (docs/plans/beta-frontend-canary.md)
+        // This is a deliberate MIRROR of the API Gateway `corsPreflight` in
+        // infrastructure/lib/stacks/api-gateway-stack.ts — KEEP THE TWO IN SYNC. Only the ORIGINS
+        // differ: prod's edge allowlists the batbern.ch domains, whereas locally there is no edge
+        // so we reflect ALL origins (any localhost port / 127.0.0.1 / LAN IP for mobile testing /
+        // custom hosts entry — dev-only bean, never in prod, so zero production impact). Methods,
+        // allowHeaders, exposeHeaders, credentials and maxAge are kept IDENTICAL on purpose: if
+        // the edge is missing a method or an exposed header, local dev fails the same way — so we
+        // catch CORS gaps here instead of only discovering them in prod.
+        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
+        // Mirrors APIGW allowMethods (GET, POST, PUT, DELETE, PATCH, OPTIONS).
+        configuration.setAllowedMethods(java.util.List.of(
+            "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
         ));
-
-        configuration.setAllowedMethods(java.util.Arrays.asList(
-            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
-        ));
-        // Use wildcard to allow all headers (case-insensitive per RFC 7230)
-        // Prevents issues with case variations (x-correlation-id vs X-Correlation-ID)
+        // Mirrors APIGW allowHeaders: ['*'] (case-insensitive per RFC 7230).
         configuration.addAllowedHeader("*");
-        configuration.setExposedHeaders(java.util.Arrays.asList(
-            "X-Request-Id",
-            "X-Correlation-ID",
-            "X-Rate-Limit-Remaining",
-            "X-Rate-Limit-Reset"
+        // Mirrors APIGW exposeHeaders — the SPA reads X-Correlation-ID off responses (~8 places).
+        configuration.setExposedHeaders(java.util.List.of(
+            "X-Correlation-ID", "X-Request-Id",
+            "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"
         ));
+        // Mirrors APIGW allowCredentials + maxAge (1 hour).
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
@@ -144,8 +160,11 @@ public class SecurityConfig {
         return http
                 // CSRF not needed for stateless JWT API with header-based auth
                 .csrf(AbstractHttpConfigurer::disable)
-                // Enable CORS for cross-origin requests (frontend on different port/subdomain)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // Uses the `corsConfigurationSource` bean IF present — i.e. ONLY under the local
+                // dev profiles (`local`/`dev`). In prod (`staging` profile) no such bean exists,
+                // so this is a no-op and CORS is owned solely by the API Gateway edge (ADR-008).
+                // See the CORS-ownership note above.
+                .cors(Customizer.withDefaults())
                 // Stateless session - no cookies, no CSRF risk
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -170,8 +189,11 @@ public class SecurityConfig {
         return http
                 // CSRF not needed for stateless JWT API with header-based auth
                 .csrf(AbstractHttpConfigurer::disable)
-                // Enable CORS for cross-origin requests (frontend on different port/subdomain)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // Uses the `corsConfigurationSource` bean IF present — i.e. ONLY under the local
+                // dev profiles (`local`/`dev`). In prod (`staging` profile) no such bean exists,
+                // so this is a no-op and CORS is owned solely by the API Gateway edge (ADR-008).
+                // See the CORS-ownership note above.
+                .cors(Customizer.withDefaults())
                 // Stateless session - no cookies, no CSRF risk
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth

@@ -9,6 +9,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { resetPassword } from 'aws-amplify/auth';
+import { ensureAmplifyConfigured } from '@/config/amplify';
 
 interface UseForgotPasswordOptions {
   onSuccess?: () => void;
@@ -25,6 +26,8 @@ export const useForgotPassword = (options?: UseForgotPasswordOptions) => {
   return useMutation<void, ForgotPasswordError, string>({
     mutationFn: async (email: string) => {
       try {
+        // Amplify is configured lazily (perf/public-homepage-followup #2) — ensure before use.
+        await ensureAmplifyConfigured();
         // Amplify v6: resetPassword sends code to user's email automatically
         const result = await resetPassword({ username: email });
 

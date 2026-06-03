@@ -68,6 +68,11 @@ export class ApiGatewayStack extends cdk.Stack {
       ? [
           `https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`,
           `https://${props.config.domain?.zoneName ?? 'batbern.ch'}`,
+          // Beta frontend canary — same prod API, different origin
+          // (docs/plans/beta-frontend-canary.md). This APIGW corsPreflight allowlist is the
+          // BROWSER-authoritative CORS layer (the Spring gateway's own allowlist is a separate,
+          // additional gate); both must include beta or the browser blocks beta's API calls.
+          `https://beta.${props.config.domain?.zoneName ?? 'batbern.ch'}`,
         ]
       : envName === 'staging'
       ? ['https://www.batbern.ch']
@@ -91,6 +96,18 @@ export class ApiGatewayStack extends cdk.Stack {
         // Use wildcard to allow all headers (case-insensitive per RFC 7230)
         // Prevents CORS rejections due to case variations (x-correlation-id vs X-Correlation-ID)
         allowHeaders: ['*'],
+        // Response headers the browser is allowed to READ cross-origin. CORS is consolidated at
+        // this edge (ADR-008) — the Spring gateway no longer sets Access-Control-Expose-Headers,
+        // so any custom header the SPA reads off a response MUST be listed here or the browser
+        // hides it. X-Correlation-ID is read by the frontend error handlers in ~8 places;
+        // X-Request-Id + X-RateLimit-* mirror the previous Spring CorsConfigurationSource exposure.
+        exposeHeaders: [
+          'X-Correlation-ID',
+          'X-Request-Id',
+          'X-RateLimit-Limit',
+          'X-RateLimit-Remaining',
+          'X-RateLimit-Reset',
+        ],
         allowCredentials: true,
         maxAge: cdk.Duration.hours(1),
       },

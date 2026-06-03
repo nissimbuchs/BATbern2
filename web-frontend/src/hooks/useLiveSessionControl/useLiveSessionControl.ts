@@ -17,6 +17,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import { ensureAmplifyConfigured } from '@/config/amplify';
 import apiClient from '@/services/api/apiClient';
 import { useConfig } from '@/contexts/useConfig';
 import type { components } from '@/types/generated/events-api.types';
@@ -214,6 +215,8 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
     const setupConnection = async () => {
       let token: string | null = null;
       try {
+        // Amplify is configured lazily (perf/public-homepage-followup #2) — ensure before use.
+        await ensureAmplifyConfigured();
         const session = await fetchAuthSession();
         token = session.tokens?.idToken?.toString() ?? null;
       } catch {
