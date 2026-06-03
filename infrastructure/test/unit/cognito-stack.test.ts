@@ -108,7 +108,7 @@ describe('CognitoStack Tests', () => {
   test('should_notWireInlinePreSignUpTrigger_when_noVpcConfigured', () => {
     // No legacy inline (nodejs18.x, index.handler) presignup Lambda exists anymore.
     const fns = template.findResources('AWS::Lambda::Function', {
-      Properties: { FunctionName: Match.stringLikeRegexp('presignup-trigger') },
+      Properties: { FunctionName: Match.stringLikeRegexp('pre-?signup-trigger') },
     });
     expect(Object.keys(fns)).toHaveLength(0);
 

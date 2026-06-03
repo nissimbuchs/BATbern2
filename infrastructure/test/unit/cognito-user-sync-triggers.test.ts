@@ -93,7 +93,7 @@ describe('CognitoUserSyncTriggers — PreSignUp account-linking trigger (Story 1
     // A bundled NodejsFunction has S3-asset code, NOT inline ZipFile. The former inline
     // lambda.Code.fromInline trigger is gone (it moved here with DB access).
     template.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: 'batbern-staging-presignup-trigger',
+      FunctionName: 'batbern-staging-pre-signup-trigger',
       Runtime: 'nodejs20.x',
       Handler: 'index.handler',
       Code: Match.objectLike({ S3Bucket: Match.anyValue() }),

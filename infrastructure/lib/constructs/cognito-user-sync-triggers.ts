@@ -139,15 +139,23 @@ export class CognitoUserSyncTriggers extends Construct {
     // (PreSignUp_ExternalProvider): AdminLinkProviderForUser email-keyed merge into the
     // existing native user (sub preserved). Replaces the former inline preSignUp Lambda
     // in cognito-stack.ts — moved here to gain the VPC + DB-secret wiring for the lookup.
+    // NOTE: physical names are `pre-signup-trigger`, NOT the legacy `presignup-trigger`.
+    // Story 12.6 MOVES this trigger out of CognitoStack's inline `lambda.Code.fromInline`
+    // (logical id PreSignupTrigger / log group PreSignupLogGroup, both named `presignup-trigger`)
+    // into this construct under a NEW logical id. CloudFormation creates new resources before
+    // deleting the removed ones, so reusing the SAME physical name would collide on deploy
+    // ("Resource ... already exists" — ChangeSet early-validation failure, observed on PR #735).
+    // The rename (also matching the source file pre-signup.ts) lets the new resources create
+    // cleanly while the old inline ones are deleted. Do NOT revert to `presignup-trigger`.
     const preSignUpLogGroup = new logs.LogGroup(this, 'PreSignUpLogGroup', {
-      logGroupName: `/aws/lambda/BATbern-${props.envName}/presignup-trigger`,
+      logGroupName: `/aws/lambda/BATbern-${props.envName}/pre-signup-trigger`,
       retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     this.preSignUpTrigger = new NodejsFunction(this, 'PreSignUpTrigger', {
       ...commonLambdaProps,
-      functionName: `batbern-${props.envName}-presignup-trigger`,
+      functionName: `batbern-${props.envName}-pre-signup-trigger`,
       entry: path.join(__dirname, '../lambda/triggers/pre-signup.ts'),
       handler: 'handler',
       timeout: cdk.Duration.seconds(15), // VPC cold start + DB email lookup (matches pre-auth/pre-token)

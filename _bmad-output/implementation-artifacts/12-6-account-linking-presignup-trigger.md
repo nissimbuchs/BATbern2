@@ -1,6 +1,6 @@
 # Story 12.6: Account-Linking PreSignUp Trigger (SSO Phase 2)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -179,6 +179,34 @@ The destination user's `sub` is preserved; the Google identity becomes an additi
 - **Related (not blocking this story's code):** Story 12.2 (PR 1A — API-Gateway `is_active` gate, which is what blocks deactivated federated users) and Story 12.3 (PR 1B — canonical JIT, which is what creates the brand-new federated user's DB row). This trigger deliberately does neither — it only validates (native) or links (federated).
 - **Verified by:** Story 12.8 (Phase 3, verify-only) — confirms a real Google identity links an existing user (roles preserved) and a brand-new Google user provisions as ATTENDEE.
 
+## Review Findings (code review 2026-06-03, bmad-code-review, Claude Opus 4.8 1M; 3 adversarial layers: Blind Hunter, Edge Case Hunter, Acceptance Auditor)
+
+**Outcome:** No critical/high violations once verified against source. All 8 ACs implemented as written; native-path verbatim preservation, `AdminLinkProviderForUser` shape, missing-email guard, never-throw, IAM least-privilege, mandatory handler test, and Pattern F doc all confirmed. 3 decision-needed (intent calls for the "correctness core" phase), 1 patch (test hardening), 5 deferred, 3 dismissed. Story 12.5 reviewed in the same pass — **clean, all 9 ACs satisfied**, no findings.
+
+### Decision-needed (all resolved → patched 2026-06-03)
+
+- [x] [Review][Decision→Patch] Case-sensitive federated email lookup — **RESOLVED: option (a), patched.** `pre-signup.ts` now matches `WHERE LOWER(email) = LOWER($1)` (comment updated to explain the case-insensitive rationale + codebase consistency). Test asserts the SQL uses `LOWER(email) = LOWER($1)`. [blind+edge+auditor]
+- [x] [Review][Decision→Patch] Anonymous-registration row (`cognito_user_id IS NULL`) handling — **RESOLVED: option (1) handle now, patched.** Verified the actual adoption already lives in canonical JIT (`JITUserProvisioningInterceptor.java:131-138`: `findByEmail` → `setCognitoUserId`), and a brand-new federated user's `sub` does not exist inside PreSignUp (pre-confirmation), so the trigger cannot stamp it. `pre-signup.ts` now has an explicit `else if (existing)` branch for the anonymous (no-sub) row: distinct log + new `FederatedAnonymousPendingJit` metric + a comment documenting that JIT adopts the row on first authenticated API call (history preserved, no duplicate). New handler test covers it. *Residual (deferred):* JIT's `findByEmail` is case-sensitive (merged Story 12.3 / CUMS code, out of scope); since registration lowercases email, exact-match works for normalised data — logged as a follow-up. [edge]
+- [x] [Review][Decision→Patch] Fail-open ordering / silent orphan on link failure — **RESOLVED: option (1), patched.** Kept fail-open (never 503) and added a `PreSignUpFailure` CloudWatch alarm in `user-sync-alarms.ts` (namespace `BATbern/UserSync`, Sum/5min, threshold 0 → any failure pages the SNS topic) so an orphaned link is visible/actionable. Test added in `monitoring-stack.test.ts`; DB-failure handler test now asserts the `PreSignUpFailure` metric is emitted + the user stays auto-confirmed. [blind]
+
+### Patch (applied 2026-06-03)
+
+- [x] [Review][Patch] Handler-test assertion gaps on the two no-link federated branches [`infrastructure/test/unit/lambda/pre-signup.test.ts`] — **DONE.** Missing-email test now asserts `autoConfirmUser`/`autoVerifyEmail` stay `false`; DB-failure test now asserts `autoConfirmUser === true`, `autoVerifyEmail === true`, and that the `PreSignUpFailure` metric was emitted.
+
+### Deferred
+
+- [x] [Review][Defer] JIT `findByEmail` is case-sensitive (companion to the D1 fix) [`JITUserProvisioningInterceptor.java:131`] — deferred, cross-story (Story 12.3, already-merged CUMS code). The D1 patch made `pre-signup.ts` match email case-insensitively, but the canonical-JIT *adoption* of an existing/anonymous row still uses a case-sensitive Spring-Data `findByEmail`. Registration normalizes email to lowercase so exact-match works for normal data; to fully guarantee adoption on a case-variant legacy/admin email, JIT should match `LOWER(email)` too. Fold into a 12.3 follow-up. [edge, surfaced during D2 resolution]
+- [x] [Review][Defer] `cognito-idp:ListUsers` granted but never called [`cognito-user-sync-triggers.ts` IAM grant; `pre-signup.ts` imports only `AdminLinkProviderForUserCommand`] — deferred, spec-mandated. AC4 explicitly requires the `ListUsers` grant and AC3 names it as the "MAY-use" destination-resolution fallback, but the handler resolves the destination solely from the DB row, so the grant is currently dead privilege (mild tension with AC4's "least-privilege" framing). Revisit if/when the `ListUsers` fallback is implemented, or drop the grant. [edge+auditor]
+- [x] [Review][Defer] Linking lookup ignores `user_additional_emails` (secondary verified emails) [`pre-signup.ts:116-120`] — deferred, out-of-scope. A Google email matching one of a user's *additional* emails (not the primary `user_profiles.email`) won't match → no link → surfaces as "I signed in with Google and lost my account" for multi-email users. Not in 12.6 scope; track for a federated-linking hardening follow-up. [edge]
+- [x] [Review][Defer] `event.userName`-without-underscore fallback hardcodes provider `'Google'` + whole-userName subject [`pre-signup.ts:127-129`] — deferred, defensive-only. Real `PreSignUp_ExternalProvider` events are always `Google_<sub>`, so the happy path is correct; the no-underscore fallback (`indexOf` → -1) would send a malformed `SourceUser`, but Cognito won't produce such a userName. The hardcoded `'Google'` also defeats the comment's "robust to any provider prefix" intent once Apple/another IdP lands (Phase 6). Revisit when a second IdP is added. [blind+edge]
+- [x] [Review][Defer] `AdminLinkProviderForUser` not idempotent under concurrent/repeated federated first-logins [`pre-signup.ts:131-147`] — deferred, low blast radius. Two simultaneous first Google sign-ins for the same email can both find the native row and both call link; the second throws already-linked, caught by the federated try/catch (no 503) but emits a misleading `PreSignUpFailure`. No idempotency guard / already-linked detection. Acceptable for now; revisit if the metric shows noise. [edge]
+- [x] [Review][Defer] Destination correctness relies on the (correct-for-this-pool but undocumented-in-AWS) coupling "native Cognito username == sub" [`pre-signup.ts:134-138`] — deferred, holds in practice. `DestinationUser.ProviderAttributeValue: existing.cognito_user_id` (the stored sub) is the username only because this email-alias pool's users are created with Cognito-generated UUID usernames that equal their sub (confirmed via `post-confirmation.ts`). Admin-created or historically-imported rows could in principle diverge; there is no fallback (the granted `ListUsers` would be the natural one — see above). Code matches the spec's literal instruction. [auditor]
+
+### Dismissed (noise / false-positive / handled — 3)
+- CDK template asserts `Handler: 'index.handler'` for the bundled fn (`cognito-user-sync-triggers.test.ts`) — **not a bug**: `index.handler` is the correct synthesized default for a `NodejsFunction` whose esbuild entry emits `index.js` with an exported `handler`; the assertion passes and the load-bearing check is the S3-asset `Code` match. (flagged by blind+auditor, low confidence)
+- Whitespace-only / blank-but-non-empty `email` passes the `if (!email)` guard — Google never sends whitespace emails; trivial. (edge)
+- No-VPC pool configuration has no PreSignUp trigger at all (company-UUID validation absent) — spec-acknowledged design (AC1: construct created only when VPC+secret+endpoint present; the one real pool always has them); asserted intentionally by `should_notWireInlinePreSignUpTrigger_when_noVpcConfigured`. (edge)
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -214,3 +242,4 @@ Claude Opus 4.8 (1M context) — bmad-dev-story (Amelia), 2026-06-03.
 |---|---|
 | 2026-06-01 | Story 12.6 drafted (Account-linking PreSignUp trigger, SSO Phase 2). Status: ready-for-dev. |
 | 2026-06-03 | Implemented (TDD). Inline preSignUp → VPC+DB-secret NodejsFunction; native validation verbatim (no DB), federated `AdminLinkProviderForUser` sub-preserving link by email; IAM least-privilege; mandatory handler test (9) + construct template test (3); Pattern F doc added. Full infra suite 386 passed/0 failed, tsc clean. Status → review. |
+| 2026-06-03 | **Deploy-gate fix (PR #735 staging deploy failed).** Keeping the SAME physical names while moving the trigger from CognitoStack's inline Lambda into the construct collided on CFN ChangeSet validation ("Resource `batbern-staging-presignup-trigger` / log group already exists") — CFN creates the new logical resource before deleting the removed inline one. Renamed the moved resources to `pre-signup-trigger` (also matches the `pre-signup.ts` source) so they create cleanly while the old inline ones delete; updated the 2 name assertions. Tests green, tsc clean. (PR-to-develop deploys to staging=prod as a pre-merge gate, so this surfaced on the PR.) |
