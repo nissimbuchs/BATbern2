@@ -17,6 +17,7 @@ vi.mock('aws-amplify/auth', () => ({
   fetchAuthSession: vi.fn(),
   resetPassword: vi.fn(),
   confirmResetPassword: vi.fn(),
+  signInWithRedirect: vi.fn(),
 }));
 
 // Mock Cognito token provider for storage configuration
@@ -588,6 +589,25 @@ describe('AuthService', () => {
     it('should_signOutUser_when_called', async () => {
       await authService.signOut();
       expect(mockAuth.signOut).toHaveBeenCalled();
+    });
+  });
+
+  describe('signInWithFederated', () => {
+    it('should_callSignInWithRedirect_when_signInWithFederatedInvokedWithGoogle', async () => {
+      // Story 12.7 AC1
+      vi.mocked(mockAuth.signInWithRedirect).mockResolvedValue(undefined);
+
+      await authService.signInWithFederated('Google');
+
+      expect(mockAuth.signInWithRedirect).toHaveBeenCalledTimes(1);
+      expect(mockAuth.signInWithRedirect).toHaveBeenCalledWith({ provider: 'Google' });
+    });
+
+    it('should_propagateError_when_redirectInitiationFails', async () => {
+      // No catch-and-swallow — initiation errors reach the caller (AC1).
+      vi.mocked(mockAuth.signInWithRedirect).mockRejectedValue(new Error('redirect failed'));
+
+      await expect(authService.signInWithFederated('Google')).rejects.toThrow('redirect failed');
     });
   });
 

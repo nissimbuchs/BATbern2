@@ -28,8 +28,15 @@ vi.mock('aws-amplify/auth', () => ({
   fetchAuthSession: vi.fn(),
 }));
 
+// Story 12.7 / G1: the response interceptor calls authService.signOut() on
+// ACCOUNT_DEACTIVATED — mock it so the forced-logout path is observable.
+vi.mock('@/services/auth/authService', () => ({
+  authService: { signOut: vi.fn().mockResolvedValue(undefined) },
+}));
+
 import { fetchAuthSession } from 'aws-amplify/auth';
 import type { AuthSession } from 'aws-amplify/auth';
+import { authService } from '@/services/auth/authService';
 
 interface I18nMock {
   language: string;
@@ -204,6 +211,42 @@ describe('API Client', () => {
       }
 
       consoleErrorSpy.mockRestore();
+    });
+
+    it('should_forceLogoutAndRedirect_when_403AccountDeactivated', async () => {
+      // Story 12.7 / G1
+      const { setNavigationCallback } = await import('./apiClient');
+      const mockNavigate = vi.fn();
+      setNavigationCallback(mockNavigate);
+
+      mockAxios.onGet('/protected').reply(403, {
+        error: 'ACCOUNT_DEACTIVATED',
+        message: 'Your account has been deactivated.',
+      });
+
+      await apiClient.get('/protected').catch(() => {
+        /* expected */
+      });
+
+      expect(authService.signOut).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith('/login?reason=account_deactivated');
+    });
+
+    it('should_notLogout_when_genericForbidden403', async () => {
+      // Regression guard: a non-deactivated 403 (e.g. authorization failure) must NOT
+      // force a logout (no false sign-out).
+      const { setNavigationCallback } = await import('./apiClient');
+      const mockNavigate = vi.fn();
+      setNavigationCallback(mockNavigate);
+
+      mockAxios.onGet('/admin').reply(403, { message: 'Forbidden' });
+
+      await apiClient.get('/admin').catch(() => {
+        /* expected */
+      });
+
+      expect(authService.signOut).not.toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalledWith('/login?reason=account_deactivated');
     });
 
     it('should_handleServerError_when_500Received', async () => {

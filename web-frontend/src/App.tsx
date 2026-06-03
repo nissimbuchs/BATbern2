@@ -63,6 +63,13 @@ const RegistrationWizard = React.lazy(() =>
 const EmailVerification = React.lazy(() =>
   import('@components/auth/EmailVerification').then((m) => ({ default: m.EmailVerification }))
 );
+// Story 12.7 (SSO Phase 4): federated-login callback + logout routes.
+const AuthCallbackPage = React.lazy(() =>
+  import('@components/auth/AuthCallbackPage').then((m) => ({ default: m.AuthCallbackPage }))
+);
+const LogoutPage = React.lazy(() =>
+  import('@components/auth/LogoutPage').then((m) => ({ default: m.LogoutPage }))
+);
 
 // Route-level code splitting with React.lazy() (Task 13b)
 const Dashboard = React.lazy(() => import('@pages/Dashboard'));
@@ -399,6 +406,12 @@ function App() {
                         </AuthPageLayout>
                       }
                     />
+
+                    {/* Story 12.7 (SSO Phase 4): federated-login callback + logout.
+                        No AuthPageLayout wrapper — both are transient redirect targets
+                        that render only a text-free loader. */}
+                    <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                    <Route path="/logout" element={<LogoutPage />} />
 
                     {/* Protected routes with lazy-loaded components */}
                     <Route
