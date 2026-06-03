@@ -99,19 +99,23 @@ describe('CognitoStack Tests', () => {
     expect(customAttrs).toEqual(['custom:companyId', 'custom:preferences']);
   });
 
-  // Test 1.4: should_validateCompanyIdAttribute_when_userSignsUp
-  test('should_validateCompanyIdAttribute_when_userSignsUp', () => {
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: Match.stringLikeRegexp('presignup-trigger'),
-      Handler: 'index.handler',
-      Runtime: 'nodejs18.x',
+  // Test 1.4 (Story 12.6): the inline PreSignUp Lambda was removed from this stack — the
+  // PreSignUp trigger now lives in the CognitoUserSyncTriggers construct as a VPC+DB-secret
+  // NodejsFunction, which is ONLY created when vpc/securityGroup/databaseSecret/endpoint are
+  // supplied. This no-VPC dev-config stack therefore wires NO PreSignUp trigger. The trigger
+  // wiring + IAM are covered by cognito-user-sync-triggers.test.ts; the handler behaviour
+  // (native UUID validation + federated linking) by pre-signup.test.ts.
+  test('should_notWireInlinePreSignUpTrigger_when_noVpcConfigured', () => {
+    // No legacy inline (nodejs18.x, index.handler) presignup Lambda exists anymore.
+    const fns = template.findResources('AWS::Lambda::Function', {
+      Properties: { FunctionName: Match.stringLikeRegexp('presignup-trigger') },
     });
+    expect(Object.keys(fns)).toHaveLength(0);
 
-    template.hasResourceProperties('AWS::Cognito::UserPool', {
-      LambdaConfig: Match.objectLike({
-        PreSignUp: Match.anyValue(),
-      }),
-    });
+    // And the pool has no PreSignUp LambdaConfig in this configuration.
+    const pools = template.findResources('AWS::Cognito::UserPool');
+    const pool = Object.values(pools)[0] as any;
+    expect(pool.Properties.LambdaConfig?.PreSignUp).toBeUndefined();
   });
 
   // Test for App Client configuration with OAuth flows

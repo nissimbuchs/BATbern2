@@ -37,6 +37,7 @@ export class CognitoUserSyncTriggers extends Construct {
   public readonly preTokenGenerationTrigger: lambda.Function;
   public readonly preAuthenticationTrigger: lambda.Function;
   public readonly postAuthenticationTrigger: lambda.Function;
+  public readonly preSignUpTrigger: lambda.Function; // Story 12.6: native validation + federated account-linking
 
   constructor(scope: Construct, id: string, props: CognitoUserSyncTriggersProps) {
     super(scope, id);
@@ -133,11 +134,32 @@ export class CognitoUserSyncTriggers extends Construct {
       logGroup: postAuthenticationLogGroup,
     });
 
+    // PreSignUp Lambda Trigger (Story 12.6: SSO Phase 2)
+    // Native sign-up: verbatim company-UUID validation (no DB). Federated sign-in
+    // (PreSignUp_ExternalProvider): AdminLinkProviderForUser email-keyed merge into the
+    // existing native user (sub preserved). Replaces the former inline preSignUp Lambda
+    // in cognito-stack.ts — moved here to gain the VPC + DB-secret wiring for the lookup.
+    const preSignUpLogGroup = new logs.LogGroup(this, 'PreSignUpLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${props.envName}/presignup-trigger`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.preSignUpTrigger = new NodejsFunction(this, 'PreSignUpTrigger', {
+      ...commonLambdaProps,
+      functionName: `batbern-${props.envName}-presignup-trigger`,
+      entry: path.join(__dirname, '../lambda/triggers/pre-signup.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(15), // VPC cold start + DB email lookup (matches pre-auth/pre-token)
+      logGroup: preSignUpLogGroup,
+    });
+
     // Grant secret read permissions
     props.databaseSecret.grantRead(this.postConfirmationTrigger);
     props.databaseSecret.grantRead(this.preTokenGenerationTrigger);
     props.databaseSecret.grantRead(this.preAuthenticationTrigger);
     props.databaseSecret.grantRead(this.postAuthenticationTrigger);
+    props.databaseSecret.grantRead(this.preSignUpTrigger);
 
     // Grant CloudWatch permissions
     const cloudWatchPolicy = new iam.PolicyStatement({
@@ -150,6 +172,7 @@ export class CognitoUserSyncTriggers extends Construct {
     this.preTokenGenerationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.preAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.postAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
+    this.preSignUpTrigger.addToRolePolicy(cloudWatchPolicy);
 
     // Story 12.1 AC6: the post-confirmation trigger writes the custom:role='UNUSED'
     // sentinel via AdminUpdateUserAttributes after the user_profiles INSERT. The write
@@ -165,6 +188,21 @@ export class CognitoUserSyncTriggers extends Construct {
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['cognito-idp:AdminUpdateUserAttributes'],
+        resources: [`arn:aws:cognito-idp:${region}:${account}:userpool/*`],
+      })
+    );
+
+    // Story 12.6: the PreSignUp trigger links a federated (Google) identity into the
+    // existing native user via AdminLinkProviderForUser on PreSignUp_ExternalProvider.
+    // ListUsers is granted for destination-user resolution by email (the DB row is the
+    // primary source of truth; ListUsers is the documented fallback per AC). As with the
+    // post-confirmation grant above, a wildcard userpool resource is used on purpose:
+    // scoping to props.userPool.userPoolArn would create a CloudFormation circular
+    // dependency (the pool already depends on this Lambda via addTrigger below).
+    this.preSignUpTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cognito-idp:AdminLinkProviderForUser', 'cognito-idp:ListUsers'],
         resources: [`arn:aws:cognito-idp:${region}:${account}:userpool/*`],
       })
     );
@@ -188,6 +226,10 @@ export class CognitoUserSyncTriggers extends Construct {
     props.userPool.addTrigger(
       cognito.UserPoolOperation.POST_AUTHENTICATION,
       this.postAuthenticationTrigger
+    );
+    props.userPool.addTrigger(
+      cognito.UserPoolOperation.PRE_SIGN_UP,
+      this.preSignUpTrigger
     );
   }
 }

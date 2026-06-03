@@ -39,44 +39,11 @@ export class CognitoStack extends cdk.Stack {
     const isProd = props.config.isProduction ?? (props.config.envName === 'production');
     const envName = props.config.envName;
 
-    // Create stable log group for Pre-Signup Lambda Trigger
-    const preSignupLogGroup = new logs.LogGroup(this, 'PreSignupLogGroup', {
-      logGroupName: `/aws/lambda/BATbern-${envName}/presignup-trigger`,
-      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    // Create Pre-Signup Lambda Trigger for validation
-    const preSignupLambda = new lambda.Function(this, 'PreSignupTrigger', {
-      functionName: `batbern-${envName}-presignup-trigger`,
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'index.handler',
-      logGroup: preSignupLogGroup,
-      code: lambda.Code.fromInline(`
-        exports.handler = async (event) => {
-          console.log('Pre-signup trigger:', JSON.stringify(event));
-
-          // Validate company ID if provided
-          const companyId = event.request.userAttributes['custom:companyId'];
-          if (companyId && !companyId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            throw new Error('Invalid company ID format. Must be a valid UUID.');
-          }
-
-          // Role validation removed - Story 1.2.6: ADR-001 database-centric architecture
-          // Roles are managed in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
-          // Self-registered users receive ATTENDEE role (assigned by PostConfirmation trigger)
-
-          // Auto-verification disabled to test email verification flow
-          // Users must verify their email via CustomEmailSender Lambda
-
-          return event;
-        };
-      `),
-      environment: {
-        ENVIRONMENT: envName,
-      },
-      timeout: cdk.Duration.seconds(5),
-    });
+    // Story 12.6 (SSO Phase 2): the PreSignUp trigger is no longer an inline Lambda here.
+    // It moved into the CognitoUserSyncTriggers construct (below) as a VPC + DB-secret
+    // NodejsFunction (lib/lambda/triggers/pre-signup.ts) so it can do an email lookup for
+    // federated account-linking (AdminLinkProviderForUser) while preserving the native
+    // company-UUID validation verbatim. See infrastructure/lib/constructs/cognito-user-sync-triggers.ts.
 
     // Create KMS key for Cognito code encryption (CustomEmailSender trigger)
     // Story 1.2.2: Implement Forgot Password Flow - Task 1a
@@ -224,7 +191,8 @@ export class CognitoStack extends cdk.Stack {
         otp: true,
       },
       lambdaTriggers: {
-        preSignUp: preSignupLambda,
+        // preSignUp is wired in CognitoUserSyncTriggers (Story 12.6) via addTrigger,
+        // alongside the other VPC/DB-backed triggers.
         customEmailSender: customEmailSenderLambda,
       },
       customSenderKmsKey: cognitoEmailKmsKey,
