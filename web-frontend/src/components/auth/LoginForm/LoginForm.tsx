@@ -3,7 +3,7 @@
  * Story 1.2.1: AWS Cognito Authentication UI with i18n
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   TextField,
@@ -120,12 +120,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
     mode: 'onChange',
   });
 
-  // Clear errors when user starts typing
+  // Clear errors when the user starts typing — but ONLY on an actual change of the
+  // watched values. `error`/`submitError` must stay in the deps (exhaustive-deps), yet
+  // without the prev-value guard the effect re-fires the moment the error APPEARS and
+  // wipes it before the Alert ever renders (2026-06-04 regression: wrong-password
+  // INVALID_CREDENTIALS was never shown — the form just silently re-rendered).
   const watchedEmail = watch('email');
   const watchedPassword = watch('password');
+  const prevCredentialsRef = useRef({ email: watchedEmail, password: watchedPassword });
 
   useEffect(() => {
-    if (error || submitError) {
+    const prev = prevCredentialsRef.current;
+    const typed = prev.email !== watchedEmail || prev.password !== watchedPassword;
+    prevCredentialsRef.current = { email: watchedEmail, password: watchedPassword };
+    if (typed && (error || submitError)) {
       clearError();
       setSubmitError(null);
     }
