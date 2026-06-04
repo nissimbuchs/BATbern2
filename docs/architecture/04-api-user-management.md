@@ -741,6 +741,12 @@ description: |
   - firstName, lastName: User's name (ADR-004: single source of truth)
   - bio: Biography (ADR-004: single source of truth for Speaker, Attendee, etc.)
   - profilePictureFileId: Logo uploadId from ADR-002 upload flow
+  - termsAccepted: ToS/Privacy consent (Story 12.11) — WRITE-ONCE: `true` with no
+    consent on record stamps terms_accepted_at with the SERVER clock; repeat `true`
+    is a no-op; `false`/absent never changes or revokes recorded consent. GET
+    /users/me returns `termsAcceptedAt` unconditionally (null = no consent → the
+    frontend onboarding gate redirects to /profile?onboarding=1). See
+    06b-user-lifecycle-sync.md "Pattern C".
 
 security:
   - BearerAuth: []
@@ -766,6 +772,10 @@ requestBody:
             type: string
             description: Logo uploadId from Generic File Upload Service (ADR-002)
             example: abc123-def456
+          termsAccepted:
+            type: boolean
+            description: Write-once ToS/Privacy consent (Story 12.11) — server clock; never revocable via API
+            example: true
       example:
         firstName: Anna
         lastName: Müller
@@ -1419,11 +1429,13 @@ Per **[ADR-001](./ADR-001-invitation-based-user-registration.md)**, Cognito inte
 
 ### Database Design
 
-**User Profiles Table Schema**:
+**User Profiles Table Schema** (simplified — the canonical, full schema lives in
+`06b-user-lifecycle-sync.md` §Database Schema; preferences/settings columns omitted here):
 ```sql
 CREATE TABLE user_profiles (
     id UUID PRIMARY KEY,
-    cognito_user_id VARCHAR(255) NOT NULL UNIQUE,
+    username VARCHAR(100) NOT NULL UNIQUE,       -- meaningful ID (ADR-003)
+    cognito_user_id VARCHAR(255) UNIQUE,         -- NULL until first login for pre-invited users (JIT links it)
     email VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -1432,6 +1444,8 @@ CREATE TABLE user_profiles (
     profile_picture_url VARCHAR(2048),
     profile_picture_s3_key VARCHAR(500),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    terms_accepted_at TIMESTAMP WITH TIME ZONE,         -- Story 12.11 (V17): write-once ToS consent; NULL = onboarding gate
+    picture_import_attempted_at TIMESTAMP WITH TIME ZONE, -- Story 12.12 (V18/V19): one-time federated avatar import claim
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     last_login_at TIMESTAMP,

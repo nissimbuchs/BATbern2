@@ -1,6 +1,12 @@
 # SSO / OIDC Federation Plan — "Sign in with Google" (Apple deferred)
 
-**Author:** Winston (System Architect) · **Date:** 2026-05-31 · **Status:** Draft for review
+**Author:** Winston (System Architect) · **Date:** 2026-05-31 · **Status:** ✅ DELIVERED
+(2026-06-04) — Phases 0–5 shipped (Stories 12.1–12.9 + 12.11 consent gate + 12.12 avatar
+import; PRs #731–#740); `features.sso` live via `FEATURES_SSO_ENABLED=true` (runtime
+kill-switch, no rebuild). Phase 6 (Apple/generic OIDC) + the trigger-retirement Cleanup
+track remain deferred — parked as backlog Story 12.10. Kept as the delivery record and
+rationale archive; for current-state architecture see ADR-010 and
+`06b-user-lifecycle-sync.md` (Patterns 1b/1c/F/C).
 
 ## 1. Goal & scope
 

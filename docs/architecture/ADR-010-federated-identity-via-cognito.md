@@ -1,7 +1,10 @@
 # ADR-010: Federated Identity via Cognito (Google SSO over OIDC)
 
-**Status**: Accepted (implementation pending — tracked in the Related Plan)
-**Date**: 2026-05-31
+**Status**: Accepted & Implemented — Google SSO live in production since 2026-06-04
+(Stories 12.1–12.9, 12.11, 12.12; runtime kill-switch `FEATURES_SSO_ENABLED`). Deferred
+tail: Apple/generic OIDC + Cognito trigger-retirement cleanup (D7 end-state) tracked as
+backlog Story 12.10 — PostConfirmation/PreAuthentication are still deployed until then.
+**Date**: 2026-05-31 (decided) · 2026-06-04 (delivered)
 **Decision Makers**: Nissim Buchs (owner), Architecture
 **Related ADRs**: ADR-001 (Invitation-Based Registration / Cognito-for-auth-only), ADR-003 (Meaningful Identifiers in Public APIs), ADR-004 (Factor User Fields from Domain Entities), ADR-007 (Unified User Profile), ADR-009 (Unified Speaker Workflow — Cognito `FORCE_CHANGE_PASSWORD`)
 **Related Plan**: `docs/plans/sso-oidc-federation.md` (phased, prod-safe delivery)

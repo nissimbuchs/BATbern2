@@ -6,11 +6,27 @@ This document consolidates security implementation, performance standards, acces
 
 ### Frontend Security
 - **CSP Headers**: Strict content security policy with CloudFront CDN support
-  - `connect-src`: Allows connections to self, AWS Cognito, CloudFront CDN (`*.cloudfront.net`), and branded CDN domain (`cdn.batbern.ch`)
+  - `connect-src`: Allows connections to self, AWS Cognito (`*.amazoncognito.com`), the
+    Cognito custom hosted-UI domain **`auth.batbern.ch`** (Story 12.9 — Amplify POSTs the
+    OAuth code exchange to `https://auth.batbern.ch/oauth2/token`), CloudFront CDN
+    (`*.cloudfront.net`), branded CDN domain (`cdn.batbern.ch`), and `api.batbern.ch`
   - `frame-src`: Allows Google Maps embeds (`https://www.google.com/maps/`) and Cloudflare Turnstile captcha (`https://challenges.cloudflare.com`)
   - `script-src`: Allows Cloudflare Turnstile script (`https://challenges.cloudflare.com`)
-  - Configured in `SecurityHeadersFilter.java` (API Gateway) and `SecurityHeadersHandler.java`
+  - **Where configured — two places, easy to miss**: the **SPA document's** CSP is set by
+    the frontend CloudFront `ResponseHeadersPolicy` (`infrastructure/lib/stacks/frontend-stack.ts`)
+    — NOT by the gateway Java filters, which only cover API responses
+    (`SecurityHeadersFilter.java` / `SecurityHeadersHandler.java`). Lesson from the
+    2026-06 SSO token-exchange incident: the `auth.batbern.ch` switch broke federated
+    login in production because only the gateway CSP was considered — any new outbound
+    origin must be added to the **frontend-stack** `connect-src`.
 - **COEP/CORP**: Cross-Origin-Embedder-Policy (COEP) header **removed** to allow third-party embeds (Google Maps). Cross-Origin-Resource-Policy (CORP) relaxed from `same-origin` to `cross-origin` for CDN asset delivery.
+- **CDN SVG hardening** _(Story 12.12 review, finding #3)_: users can upload SVGs (profile
+  pictures, logos) that `cdn.batbern.ch` serves as `image/svg+xml`; an SVG can carry
+  `<script>`, which executes when its object URL is opened **top-level** — stored XSS on the
+  cdn origin. The content distribution's `ResponseHeadersPolicy`
+  (`batbern-content-cache-*`, `infrastructure/lib/stacks/storage-stack.ts`) therefore sends
+  CSP `sandbox` (blocks script execution when the resource IS the document; `<img>`
+  embedding of PNG/JPEG/WebP/SVG is unaffected) plus `X-Content-Type-Options: nosniff`.
 - **XSS Prevention**: Input sanitization and output encoding
 - **Secure Storage**: Encrypted localStorage for sensitive data
 
@@ -23,6 +39,16 @@ This document consolidates security implementation, performance standards, acces
 - **Token Storage**: Secure JWT storage with automatic refresh
 - **Session Management**: Cognito-based session management
 - **Password Policy**: Strong password requirements
+- **Federated login (Google SSO, ADR-010 — live since 2026-06-04)**: "Continue with Google"
+  via Cognito OIDC federation on the custom hosted-UI domain `auth.batbern.ch`
+  (`cognito-stack.ts` `CustomUserPoolDomain`). Existing email/password accounts are linked
+  transparently (`AdminLinkProviderForUser` in the `PreSignUp_ExternalProvider` trigger);
+  brand-new Google users are JIT-provisioned as ATTENDEE and pass the ToS consent gate
+  before reaching protected routes (see `06b-user-lifecycle-sync.md` Patterns 1b/F/C).
+  The login button is gated on the runtime `features.sso` flag served by
+  `GET /api/v1/config` — kill-switch: set `FEATURES_SSO_ENABLED=false` on the API gateway
+  and restart (no frontend rebuild). Deactivated accounts are blocked request-time by the
+  gateway `AccountActiveFilter` (federation never fires PreAuthentication).
 - **Unconfirmed sign-up recovery**: a daily `CognitoConfirmationResendJob` re-sends a fresh Cognito
   confirmation code to accounts unconfirmed past a grace window (Cognito's sign-up code is fixed at
   24h and not configurable). The CUMS task role is granted `cognito-idp:ListUsers` +

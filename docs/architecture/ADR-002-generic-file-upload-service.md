@@ -599,6 +599,31 @@ The entity-specific pattern for existing-entity uploads is **compliant with the 
 
 This clarification is retroactively valid for `SpeakerProfilePhotoService` and is the governing rule for all future file upload stories involving existing entities.
 
+## Scope Clarification 2: Server-Side URL Import (2026-06-04, Story 12.12)
+
+The "always presigned URLs, never proxy file content through the backend" rule governs
+**user uploads** — files that originate on the client. It does **not** apply to
+**server-initiated URL imports**, where the backend fetches an image from a remote URL the
+client never holds as bytes. Proxying is unavoidable there (there is nothing on the client
+to presign), so these flows route image bytes through the backend **by design** and are
+not drift:
+
+| Call site | Flow | Size cap |
+|-----------|------|----------|
+| `LogoController.fetchImageFromUrl` (`POST /fetch-from-url`) | Import a company logo from a remote URL | 10 MB |
+| `UserController` profile-picture-from-URL path | Import a profile picture from a remote URL | 5 MB |
+| `FederatedAvatarImportService` (Pattern 1c, Story 12.12) | One-time Google avatar import on federated sign-in | 5 MB |
+
+All three share the `ImageUrlFetcher` pipeline (company-user-management-service,
+consolidated by the 12.12 code review): single HTTPS `GET` with `Redirect.NEVER` (so an
+SSRF-validated host cannot 3xx the fetch onto an unvalidated one), content-type
+allow-list, and a per-caller size cap. After the fetch, storage goes through the normal
+entity-specific service (e.g. `ProfilePictureService`) and is served from
+`cdn.batbern.ch` — remote URLs are never hotlinked.
+
+**Rule of thumb:** client holds the bytes → presigned URL, never proxy. Server must
+obtain the bytes from a third party → `ImageUrlFetcher`, never a hand-rolled fetch.
+
 ## Consequences
 
 ### Positive

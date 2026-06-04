@@ -1605,8 +1605,13 @@ The BATbern platform uses AWS S3 for scalable, durable content storage across mu
 
 #### CDK Stack for Content Storage
 
+> **⚠️ Illustrative listing — partially historical.** The canonical implementation is
+> `infrastructure/lib/stacks/storage-stack.ts` (class `StorageStack`), which has evolved past
+> this listing (image-resize Lambda@Edge, content-addressed cache policy, SVG-safe security
+> headers per Story 12.12). When the two disagree, the code is authoritative.
+
 ```typescript
-// infrastructure/lib/content-storage-stack.ts
+// Illustrative — see infrastructure/lib/stacks/storage-stack.ts for the canonical version
 import * as cdk from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -1846,32 +1851,32 @@ export class ContentStorageStack extends cdk.Stack {
   }
 
   private createSecurityHeadersPolicy(): cloudfront.ResponseHeadersPolicy {
-    return new cloudfront.ResponseHeadersPolicy(this, 'SecurityHeaders', {
+    // Matches the deployed `batbern-content-cache-*` ResponseHeadersPolicy in
+    // infrastructure/lib/stacks/storage-stack.ts.
+    //
+    // Story 12.12 review (finding #3): users can upload SVGs (profile pictures,
+    // logos) which CloudFront serves as image/svg+xml. An SVG can carry <script>,
+    // which executes when the object URL is opened top-level — stored XSS on the
+    // cdn origin. CSP `sandbox` blocks script execution in top-level SVG documents
+    // (a resource's CSP only applies when it IS the document; <img> rendering of
+    // PNG/JPEG/WebP/SVG is unaffected); nosniff stops MIME-sniffing surprises.
+    // See 08-operations-security.md §Frontend Security → "CDN SVG hardening".
+    return new cloudfront.ResponseHeadersPolicy(this, 'ContentCacheHeaders', {
+      comment: 'Immutable Cache-Control + SVG-safe security headers for content-addressed media',
       securityHeadersBehavior: {
-        contentTypeOptions: { override: true },
-        frameOptions: {
-          frameOption: cloudfront.HeadersFrameOption.DENY,
+        contentSecurityPolicy: {
+          contentSecurityPolicy: 'sandbox',
           override: true,
         },
-        referrerPolicy: {
-          referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
-          override: true,
-        },
-        strictTransportSecurity: {
-          accessControlMaxAge: cdk.Duration.days(365),
-          includeSubdomains: true,
-          override: true,
-        },
-        xssProtection: {
-          protection: true,
-          modeBlock: true,
-          override: true,
-        },
+        contentTypeOptions: { override: true },  // X-Content-Type-Options: nosniff
       },
       customHeadersBehavior: {
         customHeaders: [{
+          // Media keys are content-addressed (UUID filenames) → effectively immutable.
+          // override:false — the image-resize Lambda already emits this header on
+          // resized responses; the policy only fills it in for pass-through objects.
           header: 'Cache-Control',
-          value: 'public, max-age=604800, immutable',
+          value: 'public, max-age=31536000, immutable',
           override: false,
         }],
       },

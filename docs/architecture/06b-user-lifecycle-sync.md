@@ -928,6 +928,11 @@ CREATE TABLE user_profiles (
     -- onboarding gate blocks the user on /profile?onboarding=1. Write-once via
     -- PUT /api/v1/users/me (server clock). See "Pattern C" above.
     terms_accepted_at TIMESTAMP WITH TIME ZONE,
+    -- Story 12.12 (V18, comment refined V19): one-time federated avatar import claim
+    -- (atomic CAS via UserRepository.claimPictureImportAttempt). NULL = never attempted.
+    -- Terminal outcomes keep the claim forever; transient fetch failures reset it to
+    -- NULL so a later federated request retries. See "Pattern 1c" above.
+    picture_import_attempted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP WITH TIME ZONE
