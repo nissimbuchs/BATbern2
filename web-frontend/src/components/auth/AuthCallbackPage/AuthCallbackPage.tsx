@@ -10,12 +10,18 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { authService } from '@/services/auth/authService';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+
+// Story 12.8 F6: one-shot guard for the post-link auto-retry (see effect below).
+// sessionStorage so it survives the round-trip to the hosted UI but never leaks across tabs.
+const LINK_RETRY_KEY = 'batbern.link-retry';
 
 export const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { completeFederatedSignIn } = useAuth();
   // Guard against double-invocation (React 18 StrictMode dev double-effect).
   const startedRef = useRef(false);
@@ -31,13 +37,36 @@ export const AuthCallbackPage: React.FC = () => {
     if (startedRef.current) return;
     startedRef.current = true;
 
+    // Story 12.8 F6 (verified live 2026-06-04): when the account-linking PreSignUp trigger
+    // merges a FIRST-TIME Google sign-in into an existing native user
+    // (AdminLinkProviderForUser, Story 12.6), Cognito ABORTS that in-flight sign-in by
+    // design — the hosted UI bounces back here with
+    // `?error_description=Already found an entry for username …`. The identity IS linked
+    // at that point; a second sign-in goes straight through. Auto-retry once (one-shot
+    // sessionStorage guard against loops) so the user's first click still ends signed-in
+    // instead of stranding them logged-out on the login page.
+    const errorDescription = searchParams.get('error_description') ?? '';
+    if (/already found an entry for username/i.test(errorDescription)) {
+      if (!sessionStorage.getItem(LINK_RETRY_KEY)) {
+        sessionStorage.setItem(LINK_RETRY_KEY, '1');
+        void authService.signInWithFederated('Google');
+        return; // the browser navigates to the hosted UI — nothing further to do here
+      }
+      // Retry already attempted and the abort recurred (unexpected) — clear the guard and
+      // fall through to the normal failure path below; no retry loop.
+      sessionStorage.removeItem(LINK_RETRY_KEY);
+    } else {
+      // Any non-abort outcome clears the one-shot guard.
+      sessionStorage.removeItem(LINK_RETRY_KEY);
+    }
+
     (async () => {
       const outcome = await completeFederatedSignIn();
       // hydrateUserFromDb is awaited inside completeFederatedSignIn, so isAuthenticated
       // and preferences.language are already in state before we navigate.
       navigate(outcome.kind === 'success' ? '/dashboard' : '/login', { replace: true });
     })();
-  }, [completeFederatedSignIn, navigate]);
+  }, [completeFederatedSignIn, navigate, searchParams]);
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center">
