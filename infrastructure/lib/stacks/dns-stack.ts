@@ -23,6 +23,7 @@ export class DnsStack extends cdk.Stack {
   public readonly hostedZone: route53.IHostedZone;
   public readonly certificate: certificatemanager.ICertificate;
   public readonly cdnCertificate: certificatemanager.ICertificate;
+  public readonly authCertificate: certificatemanager.ICertificate;
 
   constructor(scope: Construct, id: string, props: DnsStackProps) {
     super(scope, id, props);
@@ -61,6 +62,23 @@ export class DnsStack extends cdk.Stack {
     } else {
       this.cdnCertificate = new certificatemanager.Certificate(this, 'CdnCertificate', {
         domainName: props.config.domain!.cdnDomain,
+        validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
+      });
+    }
+
+    // Cognito hosted-UI custom domain `auth.<zone>` (Story 12.9 DF-1). Cognito custom
+    // domains front an internal CloudFront distribution, so this cert too MUST live in
+    // us-east-1 — hence it is issued here and consumed by the (eu-central-1) CognitoStack
+    // via crossRegionReferences. Replaces the default
+    // `batbern-staging-auth.auth.eu-central-1.amazoncognito.com` in user-visible OAuth
+    // surfaces (Google's consent screen shows the redirect domain → now batbern.ch).
+    if (props.config.domain!.authCertificateArn) {
+      this.authCertificate = certificatemanager.Certificate.fromCertificateArn(
+        this, 'AuthCertificate', props.config.domain!.authCertificateArn,
+      );
+    } else {
+      this.authCertificate = new certificatemanager.Certificate(this, 'AuthCertificate', {
+        domainName: `auth.${props.config.domain!.zoneName}`,
         validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
       });
     }

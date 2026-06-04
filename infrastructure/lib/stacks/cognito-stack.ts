@@ -5,6 +5,9 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as kms from 'aws-cdk-lib/aws-kms';
+import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as path from 'path';
@@ -18,6 +21,13 @@ export interface CognitoStackProps extends cdk.StackProps {
   lambdaTriggersSecurityGroup?: ec2.ISecurityGroup; // For Lambda triggers
   databaseSecret?: secretsmanager.ISecret; // For Lambda triggers to access database
   databaseEndpoint?: string; // For Lambda triggers to access database
+  // Story 12.9 DF-1: us-east-1 cert (from DnsStack — a pre-created literal ARN per the
+  // repo's cert practice, so no cross-region export machinery) + the hosted zone for the
+  // `auth.<zone>` hosted-UI custom domain. Mirrors the StorageStack cdnCertificate/
+  // hostedZone prop pattern. Optional — when absent (local dev / no DNS), only the default
+  // prefix domain exists.
+  authCertificate?: certificatemanager.ICertificate;
+  hostedZone?: route53.IHostedZone; // Route53 hosted zone for the auth.<zone> alias record
 }
 
 /**
@@ -32,6 +42,8 @@ export class CognitoStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
   public readonly userPoolDomain: cognito.UserPoolDomain;
+  /** Story 12.9 DF-1: `auth.<zone>` hosted-UI custom domain (only when DNS is configured). */
+  public readonly customUserPoolDomain?: cognito.UserPoolDomain;
 
   constructor(scope: Construct, id: string, props: CognitoStackProps) {
     super(scope, id, props);
@@ -307,6 +319,43 @@ export class CognitoStack extends cdk.Stack {
         domainPrefix: `batbern-${envName}-auth`,
       },
     });
+
+    // Story 12.9 DF-1 (2026-06-04): CUSTOM hosted-UI domain `auth.<zone>` (auth.batbern.ch).
+    // Google's consent screen displays the OAuth redirect domain — previously the ugly
+    // default `batbern-staging-auth.auth.eu-central-1.amazoncognito.com`; with this domain
+    // it shows batbern.ch. A pool may carry BOTH a prefix domain AND a custom domain, so the
+    // prefix domain above is deliberately KEPT (zero-downtime: the already-deployed frontend
+    // and the existing Google redirect URI keep working until the FE + Google client switch).
+    // Requirements satisfied: us-east-1 cert (DnsStack, crossRegionReferences) + an A record
+    // on the parent zone apex (batbern.ch has one). NOTE (manual, one-time): the Google
+    // OAuth client `batbern-cognito-web` needs `https://auth.<zone>/oauth2/idpresponse`
+    // ADDED to its authorized redirect URIs (keep the old amazoncognito one during
+    // transition). JWT validation is unaffected (issuer stays cognito-idp.<region>/<poolId>).
+    if (props.authCertificate && props.hostedZone && props.config.domain) {
+      const authDomainName = `auth.${props.config.domain.zoneName}`;
+      this.customUserPoolDomain = new cognito.UserPoolDomain(this, 'CustomUserPoolDomain', {
+        userPool: this.userPool,
+        customDomain: {
+          domainName: authDomainName,
+          certificate: props.authCertificate,
+        },
+      });
+      // Cognito custom domains front an internal CloudFront distribution — alias to it
+      // (mirrors StorageStack's CdnAliasRecord: zone from props, full-domain recordName).
+      new route53.ARecord(this, 'AuthDomainAliasRecord', {
+        zone: props.hostedZone,
+        recordName: authDomainName,
+        target: route53.RecordTarget.fromAlias(
+          new route53targets.UserPoolDomainTarget(this.customUserPoolDomain)
+        ),
+      });
+
+      new cdk.CfnOutput(this, 'CustomUserPoolDomainUrl', {
+        value: `https://${authDomainName}`,
+        description: 'Cognito hosted-UI CUSTOM domain (Story 12.9 DF-1)',
+        exportName: `${envName}-CustomUserPoolDomainUrl`,
+      });
+    }
 
     // REMOVED: Cognito Groups (Story 1.2.6: ADR-001 Database-centric architecture)
     // Roles are now managed exclusively in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
