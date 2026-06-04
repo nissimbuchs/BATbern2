@@ -327,6 +327,46 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
     });
   });
 
+  describe('Story 12.11 — refreshUser() consent-gate refresh', () => {
+    test('should pick up termsAcceptedAt from /users/me on refreshUser()', async () => {
+      mockMultiRoleUser(['attendee']);
+      // Initial hydration: consent confirmed absent → null (gate armed).
+      mockGetUserProfile.mockResolvedValue({ roles: [], companyId: undefined } as never);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      expect(result.current.user?.termsAcceptedAt).toBeNull();
+
+      // Consent recorded server-side; the refresh GET now returns it.
+      mockGetUserProfile.mockResolvedValue({
+        roles: [],
+        termsAcceptedAt: '2026-06-04T18:00:00Z',
+      } as never);
+      await act(async () => result.current.refreshUser());
+
+      expect(result.current.user?.termsAcceptedAt).toBe('2026-06-04T18:00:00Z');
+    });
+
+    test('regression guard (review patch 2026-06-04): overrides survive a silently-failed hydration — the gate must lift after a successful consent PUT even when the refresh GET fails', async () => {
+      mockMultiRoleUser(['attendee']);
+      mockGetUserProfile.mockResolvedValue({ roles: [], companyId: undefined } as never);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      expect(result.current.user?.termsAcceptedAt).toBeNull();
+
+      // The refresh GET fails transiently — hydrateUserFromDb fails open and returns
+      // the stale user (termsAcceptedAt: null). The server-authoritative override from
+      // the consent PUT response must still land, or ProtectedRoute re-fires the gate.
+      mockGetUserProfile.mockRejectedValue(new Error('503 transient') as never);
+      await act(async () =>
+        result.current.refreshUser({ termsAcceptedAt: '2026-06-04T18:00:00Z' })
+      );
+
+      expect(result.current.user?.termsAcceptedAt).toBe('2026-06-04T18:00:00Z');
+    });
+  });
+
   describe('hasPermission() — merges permissions from ALL roles', () => {
     test('should grant organizer permissions for organizer+speaker user', async () => {
       mockMultiRoleUser(['organizer', 'speaker']);

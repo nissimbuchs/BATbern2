@@ -113,8 +113,13 @@ const ProfilePage = () => {
     onSuccess: async (updatedUser) => {
       queryClient.setQueryData(['user-profile-me'], { ...profileData, user: updatedUser });
       // AC6: refresh the auth user so ProtectedRoute sees termsAcceptedAt and lifts
-      // the gate, then leave the onboarding flow.
-      await refreshUser?.();
+      // the gate, then leave the onboarding flow. The PUT response is server-
+      // authoritative, so pass its termsAcceptedAt as an override — hydrateUserFromDb
+      // fails open on a transient GET error and would otherwise re-apply the stale
+      // null, bouncing the user straight back into the onboarding gate.
+      await refreshUser?.(
+        updatedUser.termsAcceptedAt ? { termsAcceptedAt: updatedUser.termsAcceptedAt } : undefined
+      );
       if (isOnboarding) {
         navigate('/dashboard');
       }

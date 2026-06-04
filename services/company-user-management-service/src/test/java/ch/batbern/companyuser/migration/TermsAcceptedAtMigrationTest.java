@@ -115,8 +115,8 @@ class TermsAcceptedAtMigrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * Byte-identical replay of the V17 backfill UPDATE (plus a {@code terms_accepted_at IS NULL}
-     * guard, which the real migration satisfies trivially because the column is brand-new).
+     * Byte-identical replay of the V17 backfill UPDATE, including its
+     * {@code terms_accepted_at IS NULL} write-once guard (part of the migration SQL itself).
      */
     private void replayV17Backfill() {
         jdbcTemplate.update(

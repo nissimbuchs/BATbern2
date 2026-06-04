@@ -56,8 +56,15 @@ interface UseAuthReturn extends AuthenticationState {
    * Story 12.11: re-hydrate the current user from GET /users/me (company, preferences,
    * roles fallback, termsAcceptedAt). Called by the /profile consent save so the
    * onboarding gate in ProtectedRoute lifts without a full re-login.
+   *
+   * `overrides` are server-authoritative values applied ON TOP of the hydration
+   * result. `hydrateUserFromDb` fails open (returns the user unchanged) on a
+   * transient GET failure, so a caller holding a fresher value from a mutation
+   * response (e.g. `termsAcceptedAt` from the consent PUT) passes it here —
+   * otherwise the stale `termsAcceptedAt: null` would re-arm the gate the user
+   * just satisfied.
    */
-  refreshUser: () => Promise<void>;
+  refreshUser: (overrides?: Partial<UserContext>) => Promise<void>;
   clearError: () => void;
   hasRole: (role: UserRole) => boolean;
   hasPermission: (resource: string, action: string) => boolean;
@@ -623,14 +630,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Used after the consent save on /profile — termsAcceptedAt lands on the user
    * object and the ProtectedRoute onboarding gate lifts. No-ops when signed out.
    */
-  const refreshUser = useCallback(async () => {
-    const currentUser = state.user;
-    if (!currentUser) {
-      return;
-    }
-    const hydratedUser = await hydrateUserFromDb(currentUser);
-    setState((prev) => (prev.user ? { ...prev, user: hydratedUser } : prev));
-  }, [state.user]);
+  const refreshUser = useCallback(
+    async (overrides?: Partial<UserContext>) => {
+      const currentUser = state.user;
+      if (!currentUser) {
+        return;
+      }
+      const hydratedUser = await hydrateUserFromDb(currentUser);
+      // Overrides win over the hydration result: on a silently-failed hydration
+      // (hydrateUserFromDb catches and returns the stale user) the caller's
+      // server-authoritative values must still land — e.g. termsAcceptedAt from
+      // the consent PUT response, or the onboarding gate would re-fire after a
+      // successful save.
+      const nextUser = overrides ? { ...hydratedUser, ...overrides } : hydratedUser;
+      setState((prev) => (prev.user ? { ...prev, user: nextUser } : prev));
+    },
+    [state.user]
+  );
 
   /**
    * Clear authentication error

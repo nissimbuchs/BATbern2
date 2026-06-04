@@ -1,6 +1,6 @@
 # Story 12.11: Federated Onboarding Completion — Consent, Company & Newsletter for Google Sign-ups
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -84,6 +84,20 @@ This closes the GDPR-relevant gap opened by Epic 12: federated JIT provisioning 
 - [x] **Task 7 — i18n 10 locales (AC: 8)** — 17 `profile.*` keys added to `common.json` in all 10 locales (EN+DE first-class); tests assert EN strings only.
 - [x] **Task 8 — Playwright smoke + full verify (AC: 9)** — CUMS full suite BUILD SUCCESSFUL (re-run clean after a concurrent-build Flyway-checksum artifact from the parallel 12-12 session's Gradle run — not a code defect); frontend vitest 5019 passed/0 failed (360 files); type-check + lint clean; infrastructure jest 374/374; Playwright smoke `e2e/organizer/profile-page.spec.ts` authored (@gate) — executes against the deployed env post-deploy (new testids/V17 don't exist on the currently-deployed build). All outputs tee'd to /tmp logs.
 - [x] **Task 9 — docs (AC: 10)** — 06b Pattern C + schema row; SSO plan §9 12.11 entry; ADR-010 D5 consent addendum. Same commit as code.
+
+### Review Findings
+
+_Code review 2026-06-04 (bmad-code-review, 3 adversarial layers: Blind Hunter, Edge Case Hunter, Acceptance Auditor). Auditor verdict: all 10 ACs IMPLEMENTED, all 6 Scope Revisions honored._
+
+- [x] [Review][Patch] **(Medium)** Consent gate can re-fire after a SUCCESSFUL save when the post-save refresh transiently fails — `consentMutation.onSuccess` relies solely on `refreshUser()` → `hydrateUserFromDb`, whose catch returns the OLD user (`termsAcceptedAt: null`); `navigate('/dashboard')` then bounces straight back to `/profile?onboarding=1` and nothing re-triggers a refresh until full reload. Fix: lift the gate from the server-authoritative PUT response (`updatedUser.termsAcceptedAt`) in addition to the refresh. [web-frontend/src/pages/profile/ProfilePage.tsx:111-121, web-frontend/src/contexts/AuthContext.tsx:189-195]
+- [x] [Review][Patch] **(Medium)** Lambda consent INSERT tests are non-discriminating — `expect(insertCall[1]).toContain(true)` is satisfied by the `pref_email_notifications` param (defaults `true`) regardless of the consent flag; an inverted `isFederatedSignIn()` would not fail the native test. Fix: pin the positional index (`$8` → `insertCall[1][7]`), same for the federated `toContain(false)` and the link-UPDATE branch tests. [infrastructure/test/unit/lambda/post-confirmation.test.ts:1005,1023]
+- [x] [Review][Patch] **(Low)** Stale javadoc on `replayV17Backfill()` — claims the `terms_accepted_at IS NULL` guard is test-added ("which the real migration satisfies trivially"); the guard IS in V17 itself and the replay is byte-identical as-is. One-line comment fix. [services/company-user-management-service/src/test/java/ch/batbern/companyuser/migration/TermsAcceptedAtMigrationTest.java:118-120]
+- [x] [Review][Defer] **(Medium)** Company association can never be cleared via /profile — `companyId: companyId || undefined` drops the empty string and the backend PUT only writes `companyId` when non-null, so a set company is permanent through this form. [web-frontend/src/pages/profile/ProfilePage.tsx:194, UserService.java] — deferred, pre-existing backend PUT semantics (no clear-field contract); clearing was not in story scope ("optionally set my company")
+- [x] [Review][Defer] **(Low)** Latent `/profile↔/dashboard` redirect loop for an authenticated user with an empty roles array — consent gate sends to `/profile`, role check bounces to `/dashboard`, gate fires again. Unreachable today (JIT interceptor + post-confirmation Lambda both always assign ATTENDEE). [web-frontend/src/components/auth/ProtectedRoute/ProtectedRoute.tsx:49-62] — deferred, pre-existing role-bounce pattern; roleless state not producible by current provisioning
+
+_All 3 patches applied + verified 2026-06-04: P1 `refreshUser(overrides?)` + server-authoritative `termsAcceptedAt` from the PUT response (FE vitest 55/55 affected incl. 2 new AuthContext tests, tsc clean); P2 positional consent-flag assertions `insertCall[1][7]` / `updateCall[1][5]` (Lambda 40/40); P3 javadoc (TermsAcceptedAtMigrationTest 3/3; the lone checkstyle error during verification is 12-12's in-flight `FederatedAvatarImportServiceTest`, parallel session, not this story)._
+
+_Dismissed (9): GET-path drops `termsAcceptedAt` (false positive — `getUserProfile` spreads `...userData`); company name-vs-ID conflation (false positive — `company.name` IS the ADR-003 meaningful ID, ≤12 alphanumeric; dropdown picks are valid, free-text mirrors the server-side pattern validation); `identities` `'[]'` string-length misclassification (shape not producible by Cognito; detection is per-spec "attribute present"); newsletter-toggle silent failure (byte-for-byte matches the UserSettingsTab precedent); consented user at `/profile?onboarding=1` (cosmetic, notice correctly hidden); cutoff-window re-consent (documented spec tradeoff); `refreshUser` closure capture (no bug, network is the freshness source); Pattern-N pre-cutoff backfill + FE/CUMS deploy-ordering (both explicitly documented tradeoffs in story + commit + 06b)._
 
 ## Dev Notes
 

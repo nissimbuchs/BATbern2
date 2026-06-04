@@ -1001,8 +1001,10 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       );
       expect(insertCall).toBeDefined();
       expect(String(insertCall[0])).toContain('terms_accepted_at');
-      // native → consent flag param true
-      expect(insertCall[1]).toContain(true);
+      // native → consent flag param ($8, index 7) true. Pinned positionally: a bare
+      // toContain(true) is also satisfied by pref_email_notifications ($7, defaults
+      // true) and would not catch an inverted isFederatedSignIn().
+      expect(insertCall[1][7]).toBe(true);
     });
 
     it('should_leaveTermsAcceptedAtNull_when_federatedUserInserted', async () => {
@@ -1019,8 +1021,9 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       );
       expect(insertCall).toBeDefined();
       expect(String(insertCall[0])).toContain('terms_accepted_at');
-      // federated → consent flag param false
-      expect(insertCall[1]).toContain(false);
+      // federated → consent flag param ($8, index 7) false — pinned positionally,
+      // see the native test above.
+      expect(insertCall[1][7]).toBe(false);
     });
 
     it('should_setTermsAcceptedAt_when_nativeLinksHistoricalParticipant', async () => {
@@ -1047,7 +1050,8 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       expect(updateCall).toBeDefined();
       // write-once: only fill when not already set
       expect(String(updateCall[0])).toContain('terms_accepted_at = COALESCE(terms_accepted_at');
-      expect(updateCall[1]).toContain(true);
+      // native → consent flag param ($6, index 5) true — pinned positionally.
+      expect(updateCall[1][5]).toBe(true);
     });
 
     it('should_leaveTermsAcceptedAtNull_when_federatedLinksHistoricalParticipant', async () => {
@@ -1062,7 +1066,8 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         String(c[0]).includes('UPDATE user_profiles')
       );
       expect(updateCall).toBeDefined();
-      expect(updateCall[1]).toContain(false);
+      // federated → consent flag param ($6, index 5) false — pinned positionally.
+      expect(updateCall[1][5]).toBe(false);
     });
   });
 

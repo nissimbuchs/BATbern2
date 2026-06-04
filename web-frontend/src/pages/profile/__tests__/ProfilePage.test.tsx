@@ -177,7 +177,10 @@ describe('ProfilePage — Story 12.11 role-neutral profile with tabs', () => {
       expect(mockedUpdateProfile).toHaveBeenCalledWith({ termsAccepted: true });
     });
     await waitFor(() => {
-      expect(refreshUser).toHaveBeenCalled();
+      // Review patch (2026-06-04): the PUT response's termsAcceptedAt is passed as a
+      // server-authoritative override so the gate lifts even when the refresh GET
+      // transiently fails (hydrateUserFromDb fails open with the stale null).
+      expect(refreshUser).toHaveBeenCalledWith({ termsAcceptedAt: '2026-06-04T18:00:00Z' });
     });
   });
 
