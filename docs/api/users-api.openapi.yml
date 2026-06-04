@@ -1219,7 +1219,11 @@ paths:
                   maximum: 5242880  # 5 MB
                 mimeType:
                   type: string
-                  enum: [image/png, image/jpeg, image/jpg]
+                  # Mirrors the backend ProfilePictureService allow-list (png/jpg/jpeg/svg).
+                  # 12.12 review finding #4: svg was accepted by backend+frontend but missing
+                  # here; the non-standard image/jpg (never produced by browsers' file.type)
+                  # is dropped.
+                  enum: [image/png, image/jpeg, image/svg+xml]
       responses:
         '200':
           description: Presigned upload URL generated successfully
@@ -2011,6 +2015,17 @@ components:
           type: string
           format: date-time
           example: 2025-01-20T14:30:00Z
+        termsAcceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Story 12.11: moment the user accepted the Terms of Service + Privacy Policy.
+            null = consent not on record — the frontend onboarding gate blocks the user on
+            /profile?onboarding=1 until accepted. Returned unconditionally (no ?include=
+            needed) because the gate check must always be present. Set server-side only
+            (write-once via UpdateUserRequest.termsAccepted).
+          example: 2026-06-04T16:00:00Z
         company:
           $ref: '#/components/schemas/Company'
         preferences:
@@ -2160,6 +2175,16 @@ components:
           pattern: '^[a-zA-Z0-9]{1,12}$'
           maxLength: 12
           example: PostFinance
+        termsAccepted:
+          type: boolean
+          description: |
+            Story 12.11: accept the Terms of Service + Privacy Policy. WRITE-ONCE
+            semantics — when true and no consent is on record, the server stamps
+            terms_accepted_at with ITS OWN clock (the client never supplies the
+            timestamp). When consent is already recorded, true is a no-op (the
+            original timestamp is preserved). false or absent never changes or
+            revokes recorded consent.
+          example: true
 
     UserSearchResponse:
       type: object

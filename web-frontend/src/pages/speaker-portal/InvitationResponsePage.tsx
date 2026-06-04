@@ -612,9 +612,7 @@ const InvitationResponsePage = () => {
                   removed the dedicated /speaker-portal/events/{eventCode}/profile endpoint;
                   speaker bio/photo edits now flow through /api/v1/users/me. */}
               <Button asChild>
-                <Link to="/speaker-portal/profile">
-                  {t('speakerPortal.invitationResponse.completeProfile')}
-                </Link>
+                <Link to="/profile">{t('speakerPortal.invitationResponse.completeProfile')}</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link to="/speaker-portal/dashboard">

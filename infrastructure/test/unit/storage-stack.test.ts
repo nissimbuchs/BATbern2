@@ -260,6 +260,34 @@ describe('StorageStack', () => {
         }),
       });
     });
+
+    // Story 12.12 review (finding #3): users can upload SVGs (profile pictures,
+    // logos) served from cdn.batbern.ch as image/svg+xml; without these headers a
+    // script-bearing SVG executes when its object URL is opened top-level (stored
+    // XSS on the cdn origin). CSP `sandbox` neutralizes top-level SVG documents
+    // without affecting <img> embedding; nosniff prevents MIME-sniffing surprises.
+    test('should_setSvgSafeSecurityHeaders_on_contentDistribution', () => {
+      const app = new App();
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+        ResponseHeadersPolicyConfig: Match.objectLike({
+          SecurityHeadersConfig: Match.objectLike({
+            ContentSecurityPolicy: {
+              ContentSecurityPolicy: 'sandbox',
+              Override: true,
+            },
+            ContentTypeOptions: {
+              Override: true,
+            },
+          }),
+        }),
+      });
+    });
   });
 
   describe('AC5: Resource Tagging', () => {

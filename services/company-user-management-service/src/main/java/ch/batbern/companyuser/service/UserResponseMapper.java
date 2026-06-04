@@ -56,6 +56,10 @@ public class UserResponseMapper {
                         ? user.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
                 .lastLoginAt(user.getLastLoginAt() != null
                         ? user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null)
+                // Story 12.11: consent gate flag — null (omitted under non_null inclusion)
+                // means consent not on record; the frontend gate treats absence as null.
+                .termsAcceptedAt(user.getTermsAcceptedAt() != null
+                        ? user.getTermsAcceptedAt().atOffset(java.time.ZoneOffset.UTC) : null)
                 // Story 10.32: flatten additional emails. Always present; may be
                 // empty. Consumed by the SES forwarder Lambda (sender-auth +
                 // address-resolver) and by the user-settings UI.

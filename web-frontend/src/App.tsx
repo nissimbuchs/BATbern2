@@ -146,7 +146,8 @@ const InvitationResponsePage = React.lazy(
 );
 
 // Story 6.2b: Speaker Portal - Profile Update
-const ProfileUpdatePage = React.lazy(() => import('@pages/speaker-portal/ProfileUpdatePage'));
+// Story 12.11: role-neutral profile page (generalized from the speaker-portal ProfileUpdatePage)
+const ProfilePage = React.lazy(() => import('@pages/profile/ProfilePage'));
 
 // Story 6.3: Speaker Portal - Content Submission
 const ContentSubmissionPage = React.lazy(
@@ -320,21 +321,17 @@ function App() {
                         </SpeakerRoute>
                       }
                     />
-                    {/* Code review 2026-05-18 (D1): profile is now user-level (CUMS), not
-                        per-event. The /:eventCode path-parameter form is preserved as a
-                        backward-compat redirect for bookmarks; ProfileUpdatePage itself no
-                        longer reads eventCode. */}
+                    {/* Story 12.11 (AC5): the profile page is role-neutral at /profile.
+                        Old speaker-portal paths redirect there (bookmarks + old emails).
+                        Code review 2026-05-18 (D1): profile is user-level (CUMS), not
+                        per-event, so the /:eventCode form also collapses to /profile. */}
                     <Route
                       path="/speaker-portal/profile"
-                      element={
-                        <SpeakerRoute>
-                          <ProfileUpdatePage />
-                        </SpeakerRoute>
-                      }
+                      element={<Navigate to="/profile" replace />}
                     />
                     <Route
                       path="/speaker-portal/profile/:eventCode"
-                      element={<Navigate to="/speaker-portal/profile" replace />}
+                      element={<Navigate to="/profile" replace />}
                     />
                     {/* Code review 2026-05-18 (P15): backward-compat redirect for old email
                         deep-links (`/speaker-portal/respond?token=...`) that no longer match
@@ -421,6 +418,17 @@ function App() {
                           <AuthLayout>
                             <Dashboard />
                           </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Story 12.11 (AC5): role-neutral profile page — any authenticated
+                        role. Also the onboarding-gate target (/profile?onboarding=1). */}
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <ProfilePage />
                         </ProtectedRoute>
                       }
                     />

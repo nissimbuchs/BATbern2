@@ -1338,7 +1338,7 @@ class ComponentErrorBoundary extends React.Component<
 /speaker/dashboard            # Speaker main dashboard
 /speaker/invitations          # Speaking invitations
 /speaker/sessions             # My sessions
-/speaker/profile              # Speaker profile management
+/speaker-portal/profile       # → redirects to /profile (Story 12.11 — profile is role-neutral)
 
 # Partner routes
 /partner/dashboard            # Partner main dashboard (voting, meetings, profile)
@@ -1352,8 +1352,25 @@ class ComponentErrorBoundary extends React.Component<
 
 # Shared routes (role-adaptive)
 /companies                    # Company management
-/profile                      # User profile (adapts to role)
+/profile                      # User profile (role-neutral, Story 12.11: tabs Profile | Consent & Newsletter;
+                              # also the onboarding-gate target /profile?onboarding=1)
 ```
+
+### Route Guards (`ProtectedRoute`)
+
+All authenticated routes render through `ProtectedRoute`
+(`src/components/auth/ProtectedRoute/ProtectedRoute.tsx`), which enforces two checks:
+
+1. **Role-based access** — roles come from the hydrated auth user (`AuthContext`,
+   including the Pattern 3b DB fallback for empty JWT roles — see
+   `06b-user-lifecycle-sync.md`); unauthorized roles are redirected away before the
+   component tree renders.
+2. **ToS/Privacy consent gate** _(Story 12.11, "Pattern C" in 06b)_ — if the hydrated
+   user's `termsAcceptedAt` is `null` (consent confirmed absent), every protected path
+   except `/profile` and `/logout` redirects to `/profile?onboarding=1`, where the
+   Consent tab is preselected; a successful accept calls `refreshUser()` and the gate
+   lifts. `undefined` (hydration failed) **fails open** — a transient `/users/me`
+   failure never locks users out.
 
 ## Internationalization (i18n) Architecture
 

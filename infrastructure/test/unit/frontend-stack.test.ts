@@ -269,3 +269,32 @@ describe('FrontendStack — browser caching of static assets', () => {
     });
   });
 });
+
+describe('FrontendStack — CSP allows the Cognito custom auth domain (SSO token exchange)', () => {
+  // Regression test for the 2026-06-04 federated-login outage: #738 switched the
+  // hosted-UI domain to auth.batbern.ch, but connect-src only allow-listed
+  // https://*.amazoncognito.com — the browser CSP-blocked Amplify's
+  // POST https://auth.batbern.ch/oauth2/token on /auth/callback, so the code
+  // exchange never fired and every Google login silently bounced to /login.
+  // Both response-header policies share securityHeadersBehavior; assert on both
+  // so the CSP can never drift between HTML and static-asset responses.
+
+  test('should_allowAuthBatbernCh_inConnectSrc_on_allResponseHeadersPolicies', () => {
+    const template = synth(stagingConfig);
+
+    const policies = template.findResources('AWS::CloudFront::ResponseHeadersPolicy');
+    const policyEntries = Object.entries(policies);
+    expect(policyEntries.length).toBe(2);
+
+    for (const [logicalId, resource] of policyEntries) {
+      const csp: string =
+        resource.Properties.ResponseHeadersPolicyConfig.SecurityHeadersConfig
+          .ContentSecurityPolicy.ContentSecurityPolicy;
+      // auth.batbern.ch must appear inside the connect-src directive itself,
+      // not merely anywhere in the CSP string.
+      expect(`${logicalId}: ${csp}`).toMatch(
+        /connect-src [^;]*https:\/\/auth\.batbern\.ch/
+      );
+    }
+  });
+});

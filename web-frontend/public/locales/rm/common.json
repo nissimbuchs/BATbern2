@@ -515,12 +515,12 @@
       "saveFailed": "La memorisaziun dal profil ha fallì"
     },
     "photo": {
-      "invalidFileType": "Tip da file nunvalid. Formats acceptads: JPEG, PNG, WebP",
+      "invalidFileType": "Tip da file nunvalid. Formats acceptads: JPEG, PNG, SVG",
       "fileTooLarge": "La dimensiun dal file sto esser pli pitschna che 5 MB",
       "changePhoto": "Midar la foto",
       "dragDropHere": "Drizzar ina foto qua",
       "orClickBrowse": "u cliccar per tschertgar",
-      "supportedFormats": "JPEG, PNG, WebP (max 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5 MB)",
       "uploading": "Chargament...",
       "cancel": "Interrumper",
       "uploadAria": "Chargiar la foto da profil"
@@ -775,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Voss profil",
+    "pageSubtitle": "Administrai vossas datas persunalas, il consentiment ed il newsletter",
+    "tabs": {
+      "profile": "Profil",
+      "consent": "Consentiment & Newsletter"
+    },
+    "companyLabel": "Interpresa",
+    "companyInvalid": "L'ID da l'interpresa sto cuntegnair 1 fin 12 bustabs u cifras",
+    "onboardingNotice": "Cumplettai p.pl. voss profil per cuntinuar: acceptai sutvart las cundiziuns d’utilisaziun e la decleraziun da protecziun da datas.",
+    "consentTitle": "Cundiziuns d’utilisaziun & protecziun da datas",
+    "consentLabelPrefix": "Jau accept las",
+    "consentLabelAnd": "e la",
+    "termsOfService": "cundiziuns d’utilisaziun",
+    "privacyPolicy": "decleraziun da protecziun da datas",
+    "consentAcceptedOn": "Acceptà ils {{date}}",
+    "consentSave": "Acceptar e memorisar",
+    "consentSaveError": "Memorisar voss consentiment n’è betg reussì. Empruvai anc ina giada.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Retschavai invitaziuns e novitads davart ils proxims eveniments BATbern.",
+    "newsletterLabel": "Abunar il newsletter da BATbern"
   }
 }

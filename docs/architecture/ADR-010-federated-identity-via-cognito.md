@@ -1,7 +1,10 @@
 # ADR-010: Federated Identity via Cognito (Google SSO over OIDC)
 
-**Status**: Accepted (implementation pending — tracked in the Related Plan)
-**Date**: 2026-05-31
+**Status**: Accepted & Implemented — Google SSO live in production since 2026-06-04
+(Stories 12.1–12.9, 12.11, 12.12; runtime kill-switch `FEATURES_SSO_ENABLED`). Deferred
+tail: Apple/generic OIDC + Cognito trigger-retirement cleanup (D7 end-state) tracked as
+backlog Story 12.10 — PostConfirmation/PreAuthentication are still deployed until then.
+**Date**: 2026-05-31 (decided) · 2026-06-04 (delivered)
 **Decision Makers**: Nissim Buchs (owner), Architecture
 **Related ADRs**: ADR-001 (Invitation-Based Registration / Cognito-for-auth-only), ADR-003 (Meaningful Identifiers in Public APIs), ADR-004 (Factor User Fields from Domain Entities), ADR-007 (Unified User Profile), ADR-009 (Unified Speaker Workflow — Cognito `FORCE_CHANGE_PASSWORD`)
 **Related Plan**: `docs/plans/sso-oidc-federation.md` (phased, prod-safe delivery)
@@ -70,6 +73,14 @@ Because federation skips PostConfirmation and PreAuthentication (see Context #2)
   fail-open on CUMS error; kill-switch flag). This **fixes two pre-existing gaps**: the federated
   bypass (PreAuthentication never fires for federation) and the ≤24h post-issuance window (today
   deactivation only bites at next login, while tokens live 24h). PreAuthentication is then retired.
+
+> **Consent addendum (Story 12.11, 2026-06-04):** the JIT/federated provisioning footprint
+> records **no ToS/Privacy consent** — `user_profiles.terms_accepted_at` (V17) stays NULL for
+> federated identities, and a frontend `ProtectedRoute` gate blocks consent-less users on
+> `/profile?onboarding=1` until they explicitly accept (write-once via `PUT /users/me`,
+> server clock). Native sign-ups get consent stamped by PostConfirmation while it still
+> exists; once PostConfirmation is retired (D7), the gate is the universal consent collector
+> for ALL new identities. See `06b-user-lifecycle-sync.md` Pattern C.
 
 ### D6 — The token carries identity + authorization only
 `companyId` is **removed from the JWT** — it is pure business data (a user→company FK, ADR-003/004),

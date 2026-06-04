@@ -4,6 +4,7 @@ import ch.batbern.companyuser.dto.LogoUploadConfirmRequest;
 import ch.batbern.companyuser.dto.LogoUploadRequest;
 import ch.batbern.companyuser.dto.PresignedUploadUrl;
 import ch.batbern.companyuser.service.GenericLogoService;
+import ch.batbern.companyuser.service.ImageUrlFetcher;
 import ch.batbern.companyuser.service.LogoCleanupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,12 +29,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -308,57 +303,30 @@ public class LogoController {
         log.info("Fetching image from URL: {}", url);
 
         try {
-            // Use Java 11+ HttpClient for better performance and timeout handling
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .followRedirects(HttpClient.Redirect.NORMAL)
-                    .build();
+            // Shared fetch + image validation pipeline (12.12 review, finding #7);
+            // 10MB cap for logo proxying.
+            ImageUrlFetcher.FetchedImage image = ImageUrlFetcher.fetch(url, 10 * 1024 * 1024);
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(30))
-                    .GET()
-                    .build();
-
-            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-
-            if (response.statusCode() != 200) {
-                log.error("Failed to fetch image: HTTP {}", response.statusCode());
-                return ResponseEntity.status(response.statusCode()).build();
-            }
-
-            // Get content type from response headers
-            String contentType = response.headers()
-                    .firstValue("Content-Type")
-                    .orElse("application/octet-stream");
-
-            // Validate it's an image
-            if (!contentType.startsWith("image/")) {
-                log.error("URL does not point to an image: {}", contentType);
-                return ResponseEntity.badRequest().build();
-            }
-
-            // Check size limit (10MB)
-            byte[] body = response.body();
-            if (body.length > 10 * 1024 * 1024) {
-                log.error("Image too large: {} bytes", body.length);
-                return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
-            }
-
-            log.info("Successfully fetched image: {} bytes, type: {}", body.length, contentType);
+            log.info("Successfully fetched image: {} bytes, type: {}",
+                    image.body().length, image.contentType());
 
             // Return raw bytes with proper Content-Type
             // Critical: Use MediaType.valueOf() instead of parseMediaType() to avoid charset addition
-            MediaType mediaType = MediaType.valueOf(contentType);
+            MediaType mediaType = MediaType.valueOf(image.contentType());
 
             return ResponseEntity.ok()
-                    .contentLength(body.length)
+                    .contentLength(image.body().length)
                     .contentType(mediaType)
-                    .body(body);
+                    .body(image.body());
 
-        } catch (IOException | InterruptedException e) {
-            log.error("Error fetching image from URL: {}", url, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (ImageUrlFetcher.ImageFetchException e) {
+            log.error("Error fetching image from URL: {}: {}", url, e.getMessage());
+            return switch (e.getReason()) {
+                case HTTP_STATUS -> ResponseEntity.status(e.getStatusCode()).build();
+                case NOT_AN_IMAGE -> ResponseEntity.badRequest().build();
+                case TOO_LARGE -> ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+                case IO -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            };
         }
     }
 
@@ -406,67 +374,30 @@ public class LogoController {
         }
         
         log.info("Uploading image from URL: {}", url);
-        
+
         try {
-            // Fetch image from URL
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .followRedirects(HttpClient.Redirect.NORMAL)
-                    .build();
-            
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(30))
-                    .GET()
-                    .build();
-            
-            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-            
-            if (response.statusCode() != 200) {
-                log.error("Failed to fetch image: HTTP {}", response.statusCode());
-                return ResponseEntity.status(response.statusCode()).build();
-            }
-            
-            // Validate content type
-            String contentType = response.headers()
-                    .firstValue("Content-Type")
-                    .orElse("application/octet-stream");
-            
-            if (!contentType.startsWith("image/")) {
-                log.error("URL does not point to an image: {}", contentType);
-                return ResponseEntity.badRequest().build();
-            }
-            
-            byte[] imageData = response.body();
-            
-            // Check size limit
-            if (imageData.length > 10 * 1024 * 1024) {
-                log.error("Image too large: {} bytes", imageData.length);
-                return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
-            }
-            
-            // Determine file extension from content type
-            String extension = contentType.substring(contentType.indexOf('/') + 1);
-            if (extension.contains(";")) {
-                extension = extension.substring(0, extension.indexOf(';'));
-            }
-            if (extension.equals("svg+xml")) {
-                extension = "svg";
-            }
-            
-            String filename = suggestedFilename + "." + extension;
-            
+            // Shared fetch + image validation pipeline (12.12 review, finding #7);
+            // 10MB cap for logos.
+            ImageUrlFetcher.FetchedImage image = ImageUrlFetcher.fetch(url, 10 * 1024 * 1024);
+
+            String filename = suggestedFilename + "." + image.extension();
+
             // Upload directly to S3 via logoService
             // We'll use the logoService's internal upload method
-            String uploadId = logoService.uploadLogoDirectly(imageData, filename, contentType);
-            
-            log.info("Successfully uploaded image: {} bytes, uploadId: {}", imageData.length, uploadId);
-            
+            String uploadId = logoService.uploadLogoDirectly(image.body(), filename, image.contentType());
+
+            log.info("Successfully uploaded image: {} bytes, uploadId: {}", image.body().length, uploadId);
+
             return ResponseEntity.ok(Map.of("uploadId", uploadId));
-            
-        } catch (IOException | InterruptedException e) {
-            log.error("Error uploading image from URL: {}", url, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+
+        } catch (ImageUrlFetcher.ImageFetchException e) {
+            log.error("Error uploading image from URL: {}: {}", url, e.getMessage());
+            return switch (e.getReason()) {
+                case HTTP_STATUS -> ResponseEntity.status(e.getStatusCode()).build();
+                case NOT_AN_IMAGE -> ResponseEntity.badRequest().build();
+                case TOO_LARGE -> ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+                case IO -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            };
         }
     }
 }

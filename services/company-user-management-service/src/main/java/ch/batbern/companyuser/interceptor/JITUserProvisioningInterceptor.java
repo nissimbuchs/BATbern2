@@ -50,6 +50,17 @@ import java.util.Set;
 @Slf4j
 public class JITUserProvisioningInterceptor implements HandlerInterceptor {
 
+    /**
+     * Request attribute carrying the {@link User} this interceptor resolved (found,
+     * linked, or JIT-created) for the authenticated principal. Story 12.12 review
+     * (finding #6): {@code FederatedAvatarImportInterceptor} runs immediately after this
+     * one on the same paths and previously re-ran the identical
+     * {@code findByCognitoUserId} SELECT on every request — sharing the resolved user
+     * here removes that permanent duplicate query.
+     */
+    public static final String RESOLVED_USER_ATTRIBUTE =
+            JITUserProvisioningInterceptor.class.getName() + ".resolvedUser";
+
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -98,7 +109,9 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             }
 
             // Check if user already exists by Cognito ID
-            if (userRepository.findByCognitoUserId(cognitoUserId).isPresent()) {
+            Optional<User> existingByCognitoId = userRepository.findByCognitoUserId(cognitoUserId);
+            if (existingByCognitoId.isPresent()) {
+                request.setAttribute(RESOLVED_USER_ATTRIBUTE, existingByCognitoId.get());
                 return true;
             }
 
@@ -133,6 +146,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                     User existing = existingByEmail.get();
                     existing.setCognitoUserId(cognitoUserId);
                     userRepository.save(existing);
+                    request.setAttribute(RESOLVED_USER_ATTRIBUTE, existing);
                     log.info("Linked Cognito user to existing DB record via email",
                             mapOf("cognitoUserId", cognitoUserId, "username", existing.getUsername(), "email", email));
                     return true;
@@ -172,6 +186,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             User newUser = builder.build();
 
             User savedUser = userRepository.save(newUser);
+            request.setAttribute(RESOLVED_USER_ATTRIBUTE, savedUser);
 
             log.info("JIT provisioning completed successfully",
                     mapOf(

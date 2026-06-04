@@ -247,7 +247,11 @@ function handler(event) {
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
           "img-src 'self' data: https:; " +
           "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
-          "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net https://challenges.cloudflare.com; " +
+          // auth.batbern.ch: Cognito custom hosted-UI domain (#738). Amplify POSTs the
+          // OAuth code exchange to https://auth.batbern.ch/oauth2/token from
+          // /auth/callback — without this entry the browser CSP-blocks the fetch and
+          // every federated login silently fails (2026-06-04 outage).
+          "connect-src 'self' blob: https://auth.batbern.ch https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net https://challenges.cloudflare.com; " +
           "frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com; " +
           "object-src 'none'; " +
           "base-uri 'self'; " +

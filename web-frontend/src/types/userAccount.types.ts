@@ -21,6 +21,12 @@ export interface User {
   roles: UserRole[];
   memberSince: string;
   /**
+   * Story 12.11: moment the user accepted the ToS + Privacy Policy. `null`/absent =
+   * consent not on record (the backend omits null fields — non_null inclusion), which
+   * makes the onboarding gate fire. Set server-side only (write-once).
+   */
+  termsAcceptedAt?: string | null;
+  /**
    * Story 10.32: additional email addresses the user has declared on their
    * profile. Always present (may be empty) after the user-profile endpoint
    * upgrade lands.

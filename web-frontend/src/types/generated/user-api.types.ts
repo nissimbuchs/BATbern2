@@ -960,6 +960,16 @@ export interface components {
        * @example 2025-01-20T14:30:00Z
        */
       lastLoginAt?: string;
+      /**
+       * Format: date-time
+       * @description Story 12.11: moment the user accepted the Terms of Service + Privacy Policy.
+       *     null = consent not on record — the frontend onboarding gate blocks the user on
+       *     /profile?onboarding=1 until accepted. Returned unconditionally (no ?include=
+       *     needed) because the gate check must always be present. Set server-side only
+       *     (write-once via UpdateUserRequest.termsAccepted).
+       * @example 2026-06-04T16:00:00Z
+       */
+      termsAcceptedAt?: string | null;
       company?: components['schemas']['Company'];
       preferences?: components['schemas']['UserPreferences'];
       settings?: components['schemas']['UserSettings'];
@@ -1063,6 +1073,16 @@ export interface components {
        * @example PostFinance
        */
       companyId?: string;
+      /**
+       * @description Story 12.11: accept the Terms of Service + Privacy Policy. WRITE-ONCE
+       *     semantics — when true and no consent is on record, the server stamps
+       *     terms_accepted_at with ITS OWN clock (the client never supplies the
+       *     timestamp). When consent is already recorded, true is a no-op (the
+       *     original timestamp is preserved). false or absent never changes or
+       *     revokes recorded consent.
+       * @example true
+       */
+      termsAccepted?: boolean;
     };
     /**
      * @description User search result with meaningful IDs.
@@ -2257,7 +2277,7 @@ export interface operations {
           filename: string;
           fileSizeBytes: number;
           /** @enum {string} */
-          mimeType: 'image/png' | 'image/jpeg' | 'image/jpg';
+          mimeType: 'image/png' | 'image/jpeg' | 'image/svg+xml';
         };
       };
     };

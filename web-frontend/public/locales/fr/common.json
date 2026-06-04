@@ -515,12 +515,12 @@
       "saveFailed": "Échec de l'enregistrement du profil"
     },
     "photo": {
-      "invalidFileType": "Type de fichier invalide. Formats acceptés : JPEG, PNG, WebP",
+      "invalidFileType": "Type de fichier invalide. Formats acceptés : JPEG, PNG, SVG",
       "fileTooLarge": "La taille du fichier doit être inférieure à 5 Mo",
       "changePhoto": "Changer la photo",
       "dragDropHere": "Déposer une photo ici",
       "orClickBrowse": "ou cliquer pour parcourir",
-      "supportedFormats": "JPEG, PNG, WebP (max 5 Mo)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5 Mo)",
       "uploading": "Téléchargement...",
       "cancel": "Annuler",
       "uploadAria": "Télécharger la photo de profil"
@@ -775,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Votre profil",
+    "pageSubtitle": "Gérez vos informations personnelles, votre consentement et la newsletter",
+    "tabs": {
+      "profile": "Profil",
+      "consent": "Consentement & Newsletter"
+    },
+    "companyLabel": "Entreprise",
+    "companyInvalid": "L'identifiant d'entreprise doit comporter 1 à 12 lettres ou chiffres",
+    "onboardingNotice": "Veuillez compléter votre profil pour continuer : acceptez ci-dessous les conditions d’utilisation et la politique de confidentialité.",
+    "consentTitle": "Conditions d’utilisation & politique de confidentialité",
+    "consentLabelPrefix": "J'accepte les",
+    "consentLabelAnd": "et la",
+    "termsOfService": "conditions d'utilisation",
+    "privacyPolicy": "politique de confidentialité",
+    "consentAcceptedOn": "Accepté le {{date}}",
+    "consentSave": "Accepter et enregistrer",
+    "consentSaveError": "L'enregistrement de votre consentement a échoué. Veuillez réessayer.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Recevez des invitations et des nouvelles des prochains événements BATbern.",
+    "newsletterLabel": "S’abonner à la newsletter BATbern"
   }
 }

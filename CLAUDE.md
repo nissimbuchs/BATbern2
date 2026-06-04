@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-05-25
+**Last Updated:** 2026-06-04
 
-**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6, 8, and 11 COMPLETE**
+**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6, 8, 11, and 12 COMPLETE**
 
-**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal), 8 (Partner Coordination), and 11 (Unified Speaker Workflow Refactor) fully implemented. Epic 7 deferred.
+**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal), 8 (Partner Coordination), 11 (Unified Speaker Workflow Refactor), and 12 (Federated Identity / Google SSO) fully implemented. Epic 7 deferred.
 
 **Epic Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
@@ -20,10 +20,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 📦 **Epic 7**: Attendee Experience Enhancements - DEFERRED to Phase 3
 - ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination)
 - ✅ **Epic 11**: Unified Speaker Workflow Refactor - 100% COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Supersedes prior Epic 9 plan.
+- ✅ **Epic 12**: Federated Identity / Google SSO (ADR-010) - COMPLETE (Google OIDC login live 2026-06-04; Apple/generic OIDC + Cognito trigger retirement deferred via backlog Story 12.10)
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
 - ✅ Authentication & authorization (AWS Cognito, role-based access)
+- ✅ "Continue with Google" OIDC login (Cognito federation @ auth.batbern.ch, transparent account linking, JIT provisioning, ToS consent gate, avatar import; runtime kill-switch `FEATURES_SSO_ENABLED`)
 - ✅ Complete event workflow (9-state machine + speaker coordination + task system)
 - ✅ Auto-publishing & CDN integration (speakers @ 30 days, agenda @ 14 days)
 - ✅ Event lifecycle automation (EVENT_LIVE, EVENT_COMPLETED transitions)
@@ -35,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 3 — Epics 1-6, 8, and 11 complete; Epic 7 deferred
+**Current Phase:** Phase 3 — Epics 1-6, 8, 11, and 12 complete; Epic 7 deferred
 
 ## Project Overview
 
@@ -50,7 +52,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 ## Current Development Phase
 
-**Phase:** ✅ **MVP COMPLETE** + **Epics 6, 8, and 11 COMPLETE**
+**Phase:** ✅ **MVP COMPLETE** + **Epics 6, 8, 11, and 12 COMPLETE**
 
 **Epic Completion Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
@@ -62,6 +64,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - 📦 **Epic 7**: Attendee Experience Enhancements - **DEFERRED to Phase 3**
 - ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination)
 - ✅ **Epic 11**: Unified Speaker Workflow Refactor - **100% COMPLETE** (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25; supersedes prior Epic 9 plan)
+- ✅ **Epic 12**: Federated Identity / Google SSO - **COMPLETE** (Google OIDC login live 2026-06-04 per ADR-010; deferred tail — Apple/generic OIDC + trigger retirement — parked as backlog Story 12.10)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -71,10 +74,10 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ Epic 8 Partner Coordination complete (2026-02-22)
 
 **When Adding New Features:**
-- ✅ Platform through Epic 8 is feature-complete (except Epic 7)
-- Epic 11: Phases B–F (state-machine consolidation, entity simplification, organizer kanban UX, Cognito provisioning, magic-link teardown)
+- ✅ Platform through Epic 12 is feature-complete (except Epic 7)
 - Epic 7: Personal dashboard, bookmarks, PWA — deferred to Phase 3
-- Prioritize Epic 11 completion (per ADR-009), production readiness, and Epic 3 data import
+- Epic 12 deferred tail (backlog Story 12.10): Apple/generic OIDC + Cognito trigger-retirement cleanup — precondition: gateway `is_active` gate + canonical JIT verified in production
+- Prioritize production readiness and Epic 3 data import
 
 ## Build System
 

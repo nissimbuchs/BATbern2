@@ -20,10 +20,14 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import org.springframework.core.task.SyncTaskExecutor;
+
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -64,6 +68,28 @@ public class TestAwsConfig {
     public S3Client s3Client() {
         // Return mock S3Client - individual tests will configure specific behavior
         return Mockito.mock(S3Client.class);
+    }
+
+    /**
+     * Story 12.12: synchronous executor so the federated avatar import runs inline on the
+     * test/request thread — deterministic assertions, and the import shares the
+     * {@code @Transactional} test transaction (a real pool thread could not see uncommitted
+     * test data). Pre-empts {@code AvatarImportConfig}'s pool via
+     * {@code @ConditionalOnMissingBean(name = "avatarImportExecutor")}.
+     */
+    @Bean(name = "avatarImportExecutor")
+    public Executor avatarImportExecutor() {
+        return new SyncTaskExecutor();
+    }
+
+    /**
+     * Story 12.12: mock HTTP client for the Google avatar fetch — individual tests stub
+     * success/failure responses. Pre-empts {@code AvatarImportConfig}'s real client via
+     * {@code @ConditionalOnMissingBean(name = "avatarFetchHttpClient")}.
+     */
+    @Bean(name = "avatarFetchHttpClient")
+    public HttpClient avatarFetchHttpClient() {
+        return Mockito.mock(HttpClient.class);
     }
 
     @Bean

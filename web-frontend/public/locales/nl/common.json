@@ -515,12 +515,12 @@
       "saveFailed": "Profiel opslaan mislukt"
     },
     "photo": {
-      "invalidFileType": "Ongeldig bestandstype. Geaccepteerde formaten: JPEG, PNG, WebP",
+      "invalidFileType": "Ongeldig bestandstype. Geaccepteerde formaten: JPEG, PNG, SVG",
       "fileTooLarge": "Bestandsgrootte moet kleiner zijn dan 5 MB",
       "changePhoto": "Foto wijzigen",
       "dragDropHere": "Sleep een foto hier naartoe",
       "orClickBrowse": "of klik om te bladeren",
-      "supportedFormats": "JPEG, PNG, WebP (max. 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max. 5 MB)",
       "uploading": "Uploaden...",
       "cancel": "Annuleren",
       "uploadAria": "Profielfoto uploaden"
@@ -775,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Je profiel",
+    "pageSubtitle": "Beheer je persoonlijke gegevens, toestemming en nieuwsbrief",
+    "tabs": {
+      "profile": "Profiel",
+      "consent": "Toestemming & Nieuwsbrief"
+    },
+    "companyLabel": "Bedrijf",
+    "companyInvalid": "Het bedrijfs-ID moet uit 1-12 letters of cijfers bestaan",
+    "onboardingNotice": "Vervolledig je profiel om door te gaan: accepteer hieronder de gebruiksvoorwaarden en het privacybeleid.",
+    "consentTitle": "Gebruiksvoorwaarden & privacybeleid",
+    "consentLabelPrefix": "Ik ga akkoord met de",
+    "consentLabelAnd": "en het",
+    "termsOfService": "gebruiksvoorwaarden",
+    "privacyPolicy": "privacybeleid",
+    "consentAcceptedOn": "Geaccepteerd op {{date}}",
+    "consentSave": "Accepteren en opslaan",
+    "consentSaveError": "Het opslaan van je toestemming is mislukt. Probeer het opnieuw.",
+    "newsletterTitle": "Nieuwsbrief",
+    "newsletterDescription": "Ontvang uitnodigingen en updates over komende BATbern-evenementen.",
+    "newsletterLabel": "Abonneer je op de BATbern-nieuwsbrief"
   }
 }

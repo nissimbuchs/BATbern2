@@ -552,12 +552,12 @@
       "saveFailed": "Failed to save profile"
     },
     "photo": {
-      "invalidFileType": "Invalid file type. Accepted formats: JPEG, PNG, WebP",
+      "invalidFileType": "Invalid file type. Accepted formats: JPEG, PNG, SVG",
       "fileTooLarge": "File size must be less than 5MB",
       "changePhoto": "Change photo",
       "dragDropHere": "Drag and drop a photo here",
       "orClickBrowse": "or click to browse",
-      "supportedFormats": "JPEG, PNG, WebP (max 5MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5MB)",
       "uploading": "Uploading...",
       "cancel": "Cancel",
       "uploadAria": "Upload profile photo"
@@ -778,5 +778,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Your Profile",
+    "pageSubtitle": "Manage your personal information, consent and newsletter",
+    "tabs": {
+      "profile": "Profile",
+      "consent": "Consent & Newsletter"
+    },
+    "companyLabel": "Company",
+    "companyInvalid": "Company ID must be 1-12 letters or digits",
+    "onboardingNotice": "Please complete your profile to continue: accept the Terms of Service and Privacy Policy below.",
+    "consentTitle": "Terms of Service & Privacy Policy",
+    "consentLabelPrefix": "I agree to the",
+    "consentLabelAnd": "and the",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "consentAcceptedOn": "Accepted on {{date}}",
+    "consentSave": "Accept and save",
+    "consentSaveError": "Saving your consent failed. Please try again.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Receive invitations and updates about upcoming BATbern events.",
+    "newsletterLabel": "Subscribe to the BATbern newsletter"
   }
 }

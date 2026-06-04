@@ -184,6 +184,39 @@ describe('CognitoStack Tests', () => {
     });
   });
 
+  // Story 12.12 AC1: the Google `picture` claim must flow into the pool so CUMS can
+  // import the avatar server-side. THREE coordinated pieces, all asserted here because
+  // missing any one silently drops the claim (the 12.8-F1b lesson: an IdP-mapped
+  // attribute is discarded unless the federating app client can WRITE it):
+  //   1. IdP AttributeMapping picture -> picture
+  //   2. client ReadAttributes contains 'picture' (so it lands in issued ID tokens)
+  //   3. client WriteAttributes contains 'picture' (so Cognito accepts the IdP value)
+  test('should_mapAndPermitGooglePictureAttribute_when_stackDeployed', () => {
+    // 1. IdP mapping
+    template.hasResourceProperties('AWS::Cognito::UserPoolIdentityProvider', {
+      ProviderName: 'Google',
+      AttributeMapping: Match.objectLike({
+        picture: 'picture',
+      }),
+    });
+
+    // 2 + 3. Client read/write permission
+    template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+      ClientName: 'batbern-development-web-client',
+      ReadAttributes: Match.arrayWith(['picture']),
+      WriteAttributes: Match.arrayWith(['picture']),
+    });
+  });
+
+  // Story 12.12: like given_name/family_name (PR #735 lesson), `picture` is a built-in
+  // OIDC standard attribute — it must NOT be declared in the pool Schema or UpdateUserPool
+  // fails with "Invalid AttributeDataType input" on the existing pool.
+  test('should_notDeclarePictureInSchema_when_userPoolCreated', () => {
+    const pool = Object.values(template.findResources('AWS::Cognito::UserPool'))[0] as any;
+    const schemaNames = (pool.Properties.Schema || []).map((a: any) => a.Name);
+    expect(schemaNames).not.toContain('picture');
+  });
+
   // Test for User Pool Domain
   test('should_createUserPoolDomain_when_stackDeployed', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolDomain', {

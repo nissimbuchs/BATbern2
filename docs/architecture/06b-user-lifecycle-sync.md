@@ -701,6 +701,15 @@ attribute in the token. Everything else is resolved from the DB via the user-api
 
 **Relationship to PostConfirmation**: PostConfirmation Lambda is the **native fast-path** (it runs synchronously at self-registration confirmation). It is **not** superior to JIT — it is simply earlier for native sign-ups. Federated (Google, ADR-010) sign-ins **never** fire PostConfirmation (Cognito fires only Pre-Sign-up / Pre-Token-Generation / Post-Authentication for external IdPs), so a brand-new federated user's row is created by this interceptor on their first authenticated request. Because JIT now captures exactly what PostConfirmation captures, **Story 12.8 (Phase 3 federated provisioning) is verify-only** — it confirms a real Google identity provisions correctly through this path and builds nothing new.
 
+**Pattern 1c** _(Story 12.12)_: **one-time federated avatar import.** `FederatedAvatarImportInterceptor` — a sibling of the JIT interceptor, registered immediately **after** it on the same `/api/**` patterns (so on the very first federated request the JIT-created row already exists) — watches every authenticated request for an ID-token `picture` claim (mapped by the Cognito Google IdP `attributeMapping`; requires `picture` in the app client's read **and** write attributes per the 12.8-F1b rule, or Cognito silently drops it).
+
+- **Trigger**: `picture` claim present AND `profile_picture_url IS NULL` AND `picture_import_attempted_at IS NULL`. Native sign-ins carry no claim → immediate exit, zero DB cost. The interceptor reuses the `User` the JIT interceptor resolved for the request (request attribute) instead of re-running the same `findByCognitoUserId` SELECT.
+- **One TERMINAL attempt ever** _(refined by the 12.12 code review)_: `user_profiles.picture_import_attempted_at` (CUMS V18, comment updated in V19) is claimed via an **atomic conditional UPDATE** (`UserRepository.claimPictureImportAttempt`) **before** the fetch is dispatched — the database serialises concurrent first requests, exactly one wins. A **terminal** outcome (success, upstream 3xx/4xx, non-image response, oversize, invalid/non-Google claim) keeps the claim forever: no clobbering user uploads, no re-import-after-delete loops, no repeated fetches of broken Google URLs. A **transient** failure (upstream 5xx/429, network timeout, executor rejection) **releases the claim** so a later federated request retries — a one-off Google blip doesn't permanently cost the user their avatar.
+- **Fetch-once-and-own**: the photo is fetched server-side (dedicated `avatarImportExecutor`, never on the request thread) via the shared `ImageUrlFetcher` pipeline, validated and stored through the existing `ProfilePictureService` (content-type + 5 MB validation, `profile-pictures/{year}/{username}/` key convention) and served from `cdn.batbern.ch` — `googleusercontent.com` URLs are never hotlinked (they rotate/expire).
+- **SSRF guard**: only `https` URLs on `googleusercontent.com` (or a subdomain) are ever fetched, and the fetch client refuses redirects (`Redirect.NEVER`) so the validated host can't 3xx the fetch onto a different one; the sized variant suffix (`=s96-c`, also with trailing query/fragment, or the legacy `/s96-c/` path-segment form) is upgraded to the 512px variant before fetching.
+- **Error handling**: same fail-open contract as JIT — any failure is logged and swallowed; a broken avatar fetch never fails the user's API request.
+- **Lost-update safety**: `User` is `@DynamicUpdate` — the async import's save writes only the picture columns, so it cannot clobber concurrent profile/onboarding writes (and vice versa).
+
 ### ✅ Reconciliation Job — `UserReconciliationService`
 
 `UserReconciliationService` provides `reconcileUsers()` and `checkSyncStatus()` to detect and resolve divergence between the DB and Cognito.
@@ -835,6 +844,50 @@ preserved verbatim because admin-created users may still pass `custom:companyId`
 `ADR-010-federated-identity-via-cognito.md` (D3, D7) and `docs/plans/sso-oidc-federation.md`
 (§5 Phase 2, §3).
 
+## Pattern C: ToS/Privacy Consent & Federated Onboarding Gate (Story 12.11)
+
+**Purpose**: record legally-required Terms-of-Service + Privacy-Policy consent per user and
+block consent-less users (fresh federated sign-ups, retro-gated federated rows) until they
+explicitly accept.
+
+**Data model**: `user_profiles.terms_accepted_at TIMESTAMP WITH TIME ZONE NULL` (CUMS
+migration V17). `NULL` = no consent on record. The nullable timestamp doubles as audit
+record + gate flag. There is deliberately **no newsletter column** — newsletter consent
+lives exclusively in the EMS `newsletter_subscribers` table (Story 10.7) via
+`GET/PATCH /api/v1/newsletter/my-subscription`.
+
+**Who stamps consent, where**:
+- **Native self-registration** (PostConfirmation, Pattern 1): the RegistrationStep2 ToS
+  checkbox was required to reach confirmation, so the Lambda stamps
+  `terms_accepted_at = CURRENT_TIMESTAMP` in **both** its INSERT and its
+  link-historical-participant UPDATE branch (write-once `COALESCE` on the UPDATE).
+- **Federated sign-in**: detected via the `identities` user attribute (primary) or the
+  `Google_` username prefix (fallback, case-insensitive) — `isFederatedSignIn()` in
+  `post-confirmation.ts`. Leaves `terms_accepted_at` NULL: Google sign-in is NOT consent.
+  JIT provisioning (Pattern 1b) likewise leaves it NULL.
+- **Explicit acceptance**: `PUT /api/v1/users/me { "termsAccepted": true }` — WRITE-ONCE,
+  server clock (`UserService.updateCurrentUser`); `false`/absent never changes recorded
+  consent; consent can never be revoked through the API.
+- **Backfill (V17)**: rows with a Cognito account created before the SSO go-live cutoff
+  `2026-06-04 16:00:00+00` got `terms_accepted_at = created_at`. The cutoff is the
+  discriminator because `cognito_user_id` stores the **sub UUID for ALL users** (federated
+  included — `Google_<sub>` is the Cognito *username*, never persisted), so no
+  username-shape predicate exists. Verified against the live DB 2026-06-04.
+
+**Frontend gate** (`ProtectedRoute`): the hydrated user (Story 12.1 `hydrateUserFromDb`,
+`GET /users/me`) carries `termsAcceptedAt`. `null` (confirmed absent — the service
+serializes `non_null`, so a successful response without the field means no consent) →
+redirect every protected path except `/profile` and `/logout` to `/profile?onboarding=1`,
+where the role-neutral profile page preselects its Consent tab; a successful accept
+refreshes the auth user (`refreshUser()`) and the gate lifts. `undefined` (hydration
+failed) → **fail-open**, never lock users out on a transient `/users/me` failure.
+`AuthCallbackPage` needs no special-casing — the gate is the single redirect point.
+
+**Deploy-window caveat**: a NEW frontend talking to an OLD CUMS (no `termsAcceptedAt` in
+`/users/me`) reads `null` and gates everyone; consent saves are absorbed by the old DTO and
+lost. The window is minutes (same pipeline) and self-heals on backend rollout — users
+re-accept once. Do not deploy the frontend bundle alone ahead of CUMS.
+
 ## Database Schema
 
 ### user_profiles Table
@@ -871,6 +924,15 @@ CREATE TABLE user_profiles (
     -- Status
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     deactivation_reason VARCHAR(255),  -- e.g. "Cognito user deleted" (set by reconciliation job)
+    -- Story 12.11 (V17): ToS/Privacy consent — NULL = not on record → frontend
+    -- onboarding gate blocks the user on /profile?onboarding=1. Write-once via
+    -- PUT /api/v1/users/me (server clock). See "Pattern C" above.
+    terms_accepted_at TIMESTAMP WITH TIME ZONE,
+    -- Story 12.12 (V18, comment refined V19): one-time federated avatar import claim
+    -- (atomic CAS via UserRepository.claimPictureImportAttempt). NULL = never attempted.
+    -- Terminal outcomes keep the claim forever; transient fetch failures reset it to
+    -- NULL so a later federated request retries. See "Pattern 1c" above.
+    picture_import_attempted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP WITH TIME ZONE

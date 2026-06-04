@@ -8,10 +8,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -110,6 +113,41 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Optional user
      */
     Optional<User> findByCognitoUserId(String cognitoUserId);
+
+    /**
+     * Story 12.12 review (finding #5) — atomically claim the one-time federated avatar
+     * import attempt. The previous load-check-save sequence let two concurrent first
+     * federated requests both pass the NULL guards and double-dispatch the Google fetch;
+     * this conditional UPDATE is a compare-and-set the database serialises: exactly one
+     * caller sees affected-rows == 1.
+     *
+     * <p>{@code clearAutomatically} so entities already in the persistence context don't
+     * shadow the bulk update on a subsequent read in the same session/transaction.
+     *
+     * @return 1 if this caller won the claim, 0 if it was already claimed (or a picture
+     *         already exists)
+     */
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE User u SET u.pictureImportAttemptedAt = :attemptedAt "
+            + "WHERE u.id = :id AND u.pictureImportAttemptedAt IS NULL AND u.profilePictureUrl IS NULL")
+    int claimPictureImportAttempt(@Param("id") UUID id, @Param("attemptedAt") Instant attemptedAt);
+
+    /**
+     * Story 12.12 review (finding #1) — release a claimed avatar-import attempt after a
+     * TRANSIENT failure (upstream 5xx/429, network timeout, executor rejection) so a later
+     * federated request retries. Terminal outcomes (success, 3xx/4xx, non-image, oversize,
+     * SSRF-rejected claim) never release: one terminal attempt per user, ever.
+     * The {@code profilePictureUrl IS NULL} condition keeps the never-clobber invariant —
+     * a picture that appeared meanwhile stays untouched and the claim stays burned.
+     *
+     * @return 1 if the claim was released, 0 otherwise
+     */
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE User u SET u.pictureImportAttemptedAt = NULL "
+            + "WHERE u.id = :id AND u.profilePictureUrl IS NULL")
+    int releasePictureImportAttempt(@Param("id") UUID id);
 
     /**
      * Find users by company ID (Story 1.16.2: company name, not UUID)

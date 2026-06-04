@@ -52,6 +52,19 @@ interface UseAuthReturn extends AuthenticationState {
   completeFederatedSignIn: () => Promise<SignInOutcome>;
   signOut: () => Promise<void>;
   signUp: (data: SignUpData) => Promise<boolean>;
+  /**
+   * Story 12.11: re-hydrate the current user from GET /users/me (company, preferences,
+   * roles fallback, termsAcceptedAt). Called by the /profile consent save so the
+   * onboarding gate in ProtectedRoute lifts without a full re-login.
+   *
+   * `overrides` are server-authoritative values applied ON TOP of the hydration
+   * result. `hydrateUserFromDb` fails open (returns the user unchanged) on a
+   * transient GET failure, so a caller holding a fresher value from a mutation
+   * response (e.g. `termsAcceptedAt` from the consent PUT) passes it here —
+   * otherwise the stale `termsAcceptedAt: null` would re-arm the gate the user
+   * just satisfied.
+   */
+  refreshUser: (overrides?: Partial<UserContext>) => Promise<void>;
   clearError: () => void;
   hasRole: (role: UserRole) => boolean;
   hasPermission: (resource: string, action: string) => boolean;
@@ -111,6 +124,7 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
       roles?: string[];
       currentRole?: string;
       companyId?: string;
+      termsAcceptedAt?: string | null;
       preferences?: {
         language?: string;
         theme?: string;
@@ -125,6 +139,11 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
     if (raw.companyId) {
       hydrated = { ...hydrated, companyId: raw.companyId };
     }
+
+    // Story 12.11: consent gate flag. The backend serializes with non_null inclusion,
+    // so a missing field on a SUCCESSFUL response means "no consent on record" → null
+    // (gate fires). Only a hydration FAILURE leaves it undefined (gate fails open).
+    hydrated = { ...hydrated, termsAcceptedAt: raw.termsAcceptedAt ?? null };
 
     // Story 12.1: preferences sourced from the DB (was custom:preferences). Map the
     // canonical backend shape onto the frontend UserPreferences contract; `language` is
@@ -607,6 +626,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
+   * Story 12.11: re-hydrate the current user from the DB (GET /users/me).
+   * Used after the consent save on /profile — termsAcceptedAt lands on the user
+   * object and the ProtectedRoute onboarding gate lifts. No-ops when signed out.
+   */
+  const refreshUser = useCallback(
+    async (overrides?: Partial<UserContext>) => {
+      const currentUser = state.user;
+      if (!currentUser) {
+        return;
+      }
+      const hydratedUser = await hydrateUserFromDb(currentUser);
+      // Overrides win over the hydration result: on a silently-failed hydration
+      // (hydrateUserFromDb catches and returns the stale user) the caller's
+      // server-authoritative values must still land — e.g. termsAcceptedAt from
+      // the consent PUT response, or the onboarding gate would re-fire after a
+      // successful save.
+      const nextUser = overrides ? { ...hydratedUser, ...overrides } : hydratedUser;
+      setState((prev) => (prev.user ? { ...prev, user: nextUser } : prev));
+    },
+    [state.user]
+  );
+
+  /**
    * Clear authentication error
    */
   const clearError = useCallback(() => {
@@ -719,6 +761,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const pathAccess: Record<UserRole, string[]> = {
         organizer: [
           '/dashboard',
+          '/profile', // Story 12.11: role-neutral profile page
           '/events',
           '/speakers',
           '/partners',
@@ -744,7 +787,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           '/partner',
           '/account',
         ],
-        attendee: ['/dashboard', '/events', '/content', '/search', '/attendee', '/account'],
+        // Story 12.11: '/profile' for every role — the role-neutral profile page is
+        // also the onboarding-gate target, so every authenticated role must reach it.
+        attendee: [
+          '/dashboard',
+          '/profile',
+          '/events',
+          '/content',
+          '/search',
+          '/attendee',
+          '/account',
+        ],
       };
 
       const allowedPaths = effectiveRoles.flatMap((r) => pathAccess[r] ?? []);
@@ -770,6 +823,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       signOut,
       signUp,
       refreshToken,
+      refreshUser,
       clearError,
       hasRole,
       hasPermission,
@@ -784,6 +838,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       signOut,
       signUp,
       refreshToken,
+      refreshUser,
       clearError,
       hasRole,
       hasPermission,

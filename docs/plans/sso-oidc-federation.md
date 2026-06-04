@@ -1,6 +1,12 @@
 # SSO / OIDC Federation Plan — "Sign in with Google" (Apple deferred)
 
-**Author:** Winston (System Architect) · **Date:** 2026-05-31 · **Status:** Draft for review
+**Author:** Winston (System Architect) · **Date:** 2026-05-31 · **Status:** ✅ DELIVERED
+(2026-06-04) — Phases 0–5 shipped (Stories 12.1–12.9 + 12.11 consent gate + 12.12 avatar
+import; PRs #731–#740); `features.sso` live via `FEATURES_SSO_ENABLED=true` (runtime
+kill-switch, no rebuild). Phase 6 (Apple/generic OIDC) + the trigger-retirement Cleanup
+track remain deferred — parked as backlog Story 12.10. Kept as the delivery record and
+rationale archive; for current-state architecture see ADR-010 and
+`06b-user-lifecycle-sync.md` (Patterns 1b/1c/F/C).
 
 ## 1. Goal & scope
 
@@ -320,3 +326,31 @@ each independently, after PR 1 is verified in prod:
 6. **`custom:role` sentinel** — ✅ **Do the `"UNUSED"` backfill** (one-time
    `AdminUpdateUserAttributes` over existing users + write `"UNUSED"` on new users) in addition to
    dropping `'role'` from the client `readAttributes`.
+
+## 9. Post-GA follow-up stories
+
+- **Story 12.12 — Google avatar import** ✅ *(2026-06-04)*: the Google `picture` claim is now
+  mapped (IdP `attributeMapping` + client read/write attributes — the 12.8-F1b lesson applied
+  pre-emptively) and CUMS imports the photo **once** per user, server-side, into our own S3
+  via the existing `ProfilePictureService` (`profile-pictures/{year}/{username}/`, served from
+  `cdn.batbern.ch`). One-TERMINAL-attempt semantics via `user_profiles.picture_import_attempted_at`
+  (V18, comment refreshed in V19): claimed by atomic CAS (no concurrent double-dispatch);
+  transient fetch failures (5xx/429, network, executor rejection) release the claim for a
+  later retry (12.12 code-review hardening). SSRF-guarded to `googleusercontent.com` with
+  `Redirect.NEVER`; async + non-blocking (same contract as JIT); `@DynamicUpdate` on `User`
+  keeps the async save from clobbering concurrent profile/onboarding writes.
+  See `06b-user-lifecycle-sync.md` Pattern 1c.
+- **Story 12.11 — federated onboarding completion** ✅ *(2026-06-04)*: closes the GDPR gap —
+  federated JIT provisioning recorded no ToS/Privacy consent (and even native registrations
+  never persisted `agreedToTerms`). Delivered: `user_profiles.terms_accepted_at` (CUMS V17,
+  write-once via `PUT /users/me`, server clock) with a backfill keyed on the SSO go-live
+  cutoff `2026-06-04 16:00 UTC` (NOT a `google_%` LIKE — `cognito_user_id` stores the sub
+  UUID for everyone; verified live); PostConfirmation stamps consent for native sign-ups
+  (INSERT + link-UPDATE branches) and skips federated ones (`identities`-attribute
+  detection); role-neutral `/profile` page (generalized speaker ProfileUpdatePage) with a
+  Consent & Newsletter tab; a blocking `ProtectedRoute` gate redirecting consent-less users
+  to `/profile?onboarding=1` (fail-open on hydration failure). Newsletter consent was
+  deliberately NOT added to `user_profiles` — it stays in EMS `newsletter_subscribers`
+  (Story 10.7) via `PATCH /newsletter/my-subscription`; additionally the native
+  registration checkbox (previously silently dropped) now subscribes via the public
+  `POST /newsletter/subscribe`. See `06b-user-lifecycle-sync.md` Pattern C.

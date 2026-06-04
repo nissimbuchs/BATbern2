@@ -515,12 +515,12 @@
       "saveFailed": "Error al guardar el perfil"
     },
     "photo": {
-      "invalidFileType": "Tipo de archivo no válido. Formatos aceptados: JPEG, PNG, WebP",
+      "invalidFileType": "Tipo de archivo no válido. Formatos aceptados: JPEG, PNG, SVG",
       "fileTooLarge": "El tamaño del archivo debe ser inferior a 5 MB",
       "changePhoto": "Cambiar foto",
       "dragDropHere": "Arrastra y suelta una foto aquí",
       "orClickBrowse": "o haz clic para explorar",
-      "supportedFormats": "JPEG, PNG, WebP (máx. 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (máx. 5 MB)",
       "uploading": "Subiendo...",
       "cancel": "Cancelar",
       "uploadAria": "Subir foto de perfil"
@@ -775,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Tu perfil",
+    "pageSubtitle": "Gestiona tus datos personales, tu consentimiento y el boletín",
+    "tabs": {
+      "profile": "Perfil",
+      "consent": "Consentimiento & Boletín"
+    },
+    "companyLabel": "Empresa",
+    "companyInvalid": "El ID de empresa debe tener entre 1 y 12 letras o dígitos",
+    "onboardingNotice": "Completa tu perfil para continuar: acepta a continuación los términos de servicio y la política de privacidad.",
+    "consentTitle": "Términos de servicio & política de privacidad",
+    "consentLabelPrefix": "Acepto los",
+    "consentLabelAnd": "y la",
+    "termsOfService": "términos de servicio",
+    "privacyPolicy": "política de privacidad",
+    "consentAcceptedOn": "Aceptado el {{date}}",
+    "consentSave": "Aceptar y guardar",
+    "consentSaveError": "No se pudo guardar tu consentimiento. Inténtalo de nuevo.",
+    "newsletterTitle": "Boletín",
+    "newsletterDescription": "Recibe invitaciones y novedades sobre los próximos eventos de BATbern.",
+    "newsletterLabel": "Suscribirse al boletín de BATbern"
   }
 }

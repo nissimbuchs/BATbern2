@@ -8,6 +8,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRegistration } from './useRegistration';
 import { authService } from '@/services/auth/authService';
+import { subscribe as subscribeToNewsletter } from '@/services/newsletterService';
 import React from 'react';
 
 // Mock authService
@@ -15,6 +16,11 @@ vi.mock('@/services/auth/authService', () => ({
   authService: {
     signUp: vi.fn(),
   },
+}));
+
+// Story 12.11: newsletter opt-in subscribes via the public newsletter endpoint
+vi.mock('@/services/newsletterService', () => ({
+  subscribe: vi.fn(),
 }));
 
 // Mock i18next
@@ -288,6 +294,88 @@ describe('useRegistration', () => {
         requiresConfirmation: true,
       });
     });
+  });
+
+  // Test 7b (Story 12.11): newsletter opt-in subscribes via the EXISTING public
+  // newsletter endpoint (EMS newsletter_subscribers is the single source of truth).
+  it('should_subscribeToNewsletter_when_optInChecked', async () => {
+    vi.mocked(authService.signUp).mockResolvedValue({
+      success: true,
+      requiresConfirmation: true,
+    });
+    vi.mocked(subscribeToNewsletter).mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useRegistration(), { wrapper: createWrapper() });
+
+    result.current.mutate({
+      firstName: 'News',
+      lastName: 'Letter',
+      email: 'news.letter@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
+      agreedToTerms: true,
+      newsletterOptIn: true,
+    });
+
+    await waitFor(() => {
+      expect(subscribeToNewsletter).toHaveBeenCalledWith({
+        email: 'news.letter@example.com',
+        firstName: 'News',
+        language: 'en',
+      });
+    });
+  });
+
+  // Test 7c (Story 12.11): no opt-in → no subscribe call.
+  it('should_notSubscribeToNewsletter_when_optInUnchecked', async () => {
+    vi.mocked(authService.signUp).mockResolvedValue({
+      success: true,
+      requiresConfirmation: true,
+    });
+
+    const { result } = renderHook(() => useRegistration(), { wrapper: createWrapper() });
+
+    result.current.mutate({
+      firstName: 'No',
+      lastName: 'News',
+      email: 'no.news@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
+      agreedToTerms: true,
+      newsletterOptIn: false,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(subscribeToNewsletter).not.toHaveBeenCalled();
+  });
+
+  // Test 7d (Story 12.11): subscribe failure (e.g. 409 already subscribed, network)
+  // is best-effort and must NEVER fail the registration.
+  it('should_stillSucceed_when_newsletterSubscribeFails', async () => {
+    vi.mocked(authService.signUp).mockResolvedValue({
+      success: true,
+      requiresConfirmation: true,
+    });
+    vi.mocked(subscribeToNewsletter).mockRejectedValue(new Error('409 Conflict'));
+
+    const { result } = renderHook(() => useRegistration(), { wrapper: createWrapper() });
+
+    result.current.mutate({
+      firstName: 'Conflict',
+      lastName: 'User',
+      email: 'conflict.user@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
+      agreedToTerms: true,
+      newsletterOptIn: true,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(subscribeToNewsletter).toHaveBeenCalled();
   });
 
   // Test 8 (Story 12.6a): surrounding whitespace on each field is trimmed.

@@ -269,6 +269,27 @@ describe('LoginForm Component', () => {
     expect(screen.getByText(/forgot password/i)).toBeInTheDocument();
   });
 
+  it('should_notClearError_when_errorAppearsWithoutUserTyping', async () => {
+    // Regression (2026-06-04): the clear-on-typing effect listed `error` in its
+    // dependency array and cleared unconditionally — the moment AuthContext set
+    // INVALID_CREDENTIALS after a wrong password, the effect wiped it before the
+    // Alert could ever render against the real (stateful) provider. The static
+    // mock here kept the Alert visible, so test 9.25 never caught it. Guard:
+    // with an error present and NO typing, clearError must NOT be invoked.
+    Object.assign(mockUseAuth, {
+      error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
+    });
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
+    });
+    expect(mockClearError).not.toHaveBeenCalled();
+  });
+
   it('should_clearErrorOnInputChange_when_userStartsTyping', async () => {
     // Test 9.28: should_clearErrorOnInputChange_when_userStartsTyping
     const user = userEvent.setup();

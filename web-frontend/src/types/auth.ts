@@ -29,6 +29,14 @@ export interface UserContext {
   roles: UserRole[]; // All roles (Story 1.2.6: ADR-001 supports multiple roles)
   companyId?: string;
   companyName?: string; // Story 8.0: Resolved from JWT custom:companyName or partner API
+  /**
+   * Story 12.11: ToS/Privacy consent timestamp from GET /users/me.
+   * `null` = hydration succeeded and NO consent is on record → ProtectedRoute gates
+   * the user on /profile?onboarding=1. `undefined` = unknown (not yet hydrated or
+   * hydration failed) → gate stays open (fail-open; never lock users out on a
+   * transient /users/me failure).
+   */
+  termsAcceptedAt?: string | null;
   preferences: UserPreferences;
   issuedAt: number;
   expiresAt: number;
