@@ -310,6 +310,23 @@ describe('LoginForm Component', () => {
     expect(screen.queryByText(/has been deactivated/i)).not.toBeInTheDocument();
   });
 
+  it('should_showDeactivatedNotice_when_storedLogoutReasonPresent', async () => {
+    // Story 12.8 F5: a failed federated hydration lands on plain `/login` (no query param —
+    // AuthCallbackPage's replace navigation wipes it). The sessionStorage hand-off set by
+    // the apiClient 403 interceptor must still surface (and consume) the notice.
+    sessionStorage.setItem('batbern.logout-reason', 'account_deactivated');
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />, { route: '/login' });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/has been deactivated/i)).toBeInTheDocument();
+    });
+    // Consumed — a later unrelated visit must not re-show it.
+    expect(sessionStorage.getItem('batbern.logout-reason')).toBeNull();
+  });
+
   it('should_dismissDeactivatedNotice_when_closeClicked', async () => {
     const user = userEvent.setup();
 

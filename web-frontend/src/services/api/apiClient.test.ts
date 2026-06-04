@@ -230,6 +230,11 @@ describe('API Client', () => {
 
       expect(authService.signOut).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith('/login?reason=account_deactivated');
+      // Story 12.8 F5: the reason must ALSO be persisted in sessionStorage so it survives
+      // Amplify's hosted-UI logout redirect (which clobbers the in-app navigation above
+      // for federated sessions).
+      expect(sessionStorage.getItem('batbern.logout-reason')).toBe('account_deactivated');
+      sessionStorage.removeItem('batbern.logout-reason');
     });
 
     it('should_notLogout_when_genericForbidden403', async () => {

@@ -45,19 +45,25 @@ function createStorageAdapter(storage: Storage) {
 const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
   const { environment, cognito } = runtimeConfig;
 
-  // Determine OAuth redirect URLs based on environment
+  // Determine OAuth redirect URLs based on environment.
+  // redirectSignOut MUST exactly match a registered Cognito client logout URL
+  // (cognito-stack.ts logoutUrls = ['…/logout']) — Cognito's /logout endpoint rejects an
+  // unregistered logout_uri with the cryptic "Required String parameter 'redirect_uri' is
+  // not present" error page (Story 12.8 finding F4, 2026-06-04: the old value '…/' was not
+  // registered, so every federated sign-out dead-ended on that Cognito error). The /logout
+  // app route (Story 12.7 LogoutPage) finishes local cleanup and routes onward.
   let redirectSignIn = 'http://localhost:3000/auth/callback';
-  let redirectSignOut = 'http://localhost:3000/';
+  let redirectSignOut = 'http://localhost:3000/logout';
 
   switch (environment) {
     case 'production':
       redirectSignIn = 'https://www.batbern.ch/auth/callback';
-      redirectSignOut = 'https://www.batbern.ch/';
+      redirectSignOut = 'https://www.batbern.ch/logout';
       break;
     case 'staging':
       // Staging account now serves production traffic
       redirectSignIn = 'https://www.batbern.ch/auth/callback';
-      redirectSignOut = 'https://www.batbern.ch/';
+      redirectSignOut = 'https://www.batbern.ch/logout';
       break;
   }
 

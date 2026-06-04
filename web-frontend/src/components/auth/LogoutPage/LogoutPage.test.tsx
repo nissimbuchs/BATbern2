@@ -25,6 +25,7 @@ vi.mock('@components/shared/BATbernLoader', () => ({
 describe('LogoutPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
   it('should_signOutAndNavigateHome_when_mounted', async () => {
@@ -40,5 +41,25 @@ describe('LogoutPage', () => {
       expect(mockSignOut).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
     });
+  });
+
+  it('should_forwardToLoginWithReason_when_logoutWasForcedByDeactivation', async () => {
+    // Story 12.8 F5: the apiClient stores the reason before Amplify's hosted-UI logout
+    // redirect lands here; LogoutPage must forward it to the login surface (and consume it).
+    mockSignOut.mockResolvedValue(undefined);
+    sessionStorage.setItem('batbern.logout-reason', 'account_deactivated');
+
+    render(
+      <MemoryRouter>
+        <LogoutPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/login?reason=account_deactivated', {
+        replace: true,
+      });
+    });
+    expect(sessionStorage.getItem('batbern.logout-reason')).toBeNull();
   });
 });
