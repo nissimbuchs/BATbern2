@@ -775,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Il tuo profilo",
+    "pageSubtitle": "Gestisci i tuoi dati personali, il consenso e la newsletter",
+    "tabs": {
+      "profile": "Profilo",
+      "consent": "Consenso & Newsletter"
+    },
+    "companyLabel": "Azienda",
+    "companyInvalid": "L'ID azienda deve contenere da 1 a 12 lettere o cifre",
+    "onboardingNotice": "Completa il tuo profilo per continuare: accetta qui sotto i termini di servizio e l’informativa sulla privacy.",
+    "consentTitle": "Termini di servizio & informativa sulla privacy",
+    "consentLabelPrefix": "Accetto i",
+    "consentLabelAnd": "e l’",
+    "termsOfService": "termini di servizio",
+    "privacyPolicy": "informativa sulla privacy",
+    "consentAcceptedOn": "Accettato il {{date}}",
+    "consentSave": "Accetta e salva",
+    "consentSaveError": "Il salvataggio del consenso non è riuscito. Riprova.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Ricevi inviti e aggiornamenti sui prossimi eventi BATbern.",
+    "newsletterLabel": "Iscriviti alla newsletter BATbern"
   }
 }

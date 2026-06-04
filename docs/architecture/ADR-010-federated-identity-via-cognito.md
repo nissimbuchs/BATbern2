@@ -71,6 +71,14 @@ Because federation skips PostConfirmation and PreAuthentication (see Context #2)
   bypass (PreAuthentication never fires for federation) and the ≤24h post-issuance window (today
   deactivation only bites at next login, while tokens live 24h). PreAuthentication is then retired.
 
+> **Consent addendum (Story 12.11, 2026-06-04):** the JIT/federated provisioning footprint
+> records **no ToS/Privacy consent** — `user_profiles.terms_accepted_at` (V17) stays NULL for
+> federated identities, and a frontend `ProtectedRoute` gate blocks consent-less users on
+> `/profile?onboarding=1` until they explicitly accept (write-once via `PUT /users/me`,
+> server clock). Native sign-ups get consent stamped by PostConfirmation while it still
+> exists; once PostConfirmation is retired (D7), the gate is the universal consent collector
+> for ALL new identities. See `06b-user-lifecycle-sync.md` Pattern C.
+
 ### D6 — The token carries identity + authorization only
 `companyId` is **removed from the JWT** — it is pure business data (a user→company FK, ADR-003/004),
 and the only company-scoped authorization (`PartnerSecurityService`) already resolves it via the

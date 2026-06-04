@@ -225,7 +225,7 @@ function UpcomingEventCard({ event }: { event: DashboardUpcomingEvent }) {
             </Link>
           )}
           <Link
-            to={`/speaker-portal/profile/${event.eventCode}`}
+            to="/profile"
             className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             aria-label={`${t('speakerPortal.dashboard.updateProfile')} for ${event.eventTitle}`}
           >

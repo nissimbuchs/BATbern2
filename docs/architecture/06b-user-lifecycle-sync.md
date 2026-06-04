@@ -843,6 +843,50 @@ preserved verbatim because admin-created users may still pass `custom:companyId`
 `ADR-010-federated-identity-via-cognito.md` (D3, D7) and `docs/plans/sso-oidc-federation.md`
 (§5 Phase 2, §3).
 
+## Pattern C: ToS/Privacy Consent & Federated Onboarding Gate (Story 12.11)
+
+**Purpose**: record legally-required Terms-of-Service + Privacy-Policy consent per user and
+block consent-less users (fresh federated sign-ups, retro-gated federated rows) until they
+explicitly accept.
+
+**Data model**: `user_profiles.terms_accepted_at TIMESTAMP WITH TIME ZONE NULL` (CUMS
+migration V17). `NULL` = no consent on record. The nullable timestamp doubles as audit
+record + gate flag. There is deliberately **no newsletter column** — newsletter consent
+lives exclusively in the EMS `newsletter_subscribers` table (Story 10.7) via
+`GET/PATCH /api/v1/newsletter/my-subscription`.
+
+**Who stamps consent, where**:
+- **Native self-registration** (PostConfirmation, Pattern 1): the RegistrationStep2 ToS
+  checkbox was required to reach confirmation, so the Lambda stamps
+  `terms_accepted_at = CURRENT_TIMESTAMP` in **both** its INSERT and its
+  link-historical-participant UPDATE branch (write-once `COALESCE` on the UPDATE).
+- **Federated sign-in**: detected via the `identities` user attribute (primary) or the
+  `Google_` username prefix (fallback, case-insensitive) — `isFederatedSignIn()` in
+  `post-confirmation.ts`. Leaves `terms_accepted_at` NULL: Google sign-in is NOT consent.
+  JIT provisioning (Pattern 1b) likewise leaves it NULL.
+- **Explicit acceptance**: `PUT /api/v1/users/me { "termsAccepted": true }` — WRITE-ONCE,
+  server clock (`UserService.updateCurrentUser`); `false`/absent never changes recorded
+  consent; consent can never be revoked through the API.
+- **Backfill (V17)**: rows with a Cognito account created before the SSO go-live cutoff
+  `2026-06-04 16:00:00+00` got `terms_accepted_at = created_at`. The cutoff is the
+  discriminator because `cognito_user_id` stores the **sub UUID for ALL users** (federated
+  included — `Google_<sub>` is the Cognito *username*, never persisted), so no
+  username-shape predicate exists. Verified against the live DB 2026-06-04.
+
+**Frontend gate** (`ProtectedRoute`): the hydrated user (Story 12.1 `hydrateUserFromDb`,
+`GET /users/me`) carries `termsAcceptedAt`. `null` (confirmed absent — the service
+serializes `non_null`, so a successful response without the field means no consent) →
+redirect every protected path except `/profile` and `/logout` to `/profile?onboarding=1`,
+where the role-neutral profile page preselects its Consent tab; a successful accept
+refreshes the auth user (`refreshUser()`) and the gate lifts. `undefined` (hydration
+failed) → **fail-open**, never lock users out on a transient `/users/me` failure.
+`AuthCallbackPage` needs no special-casing — the gate is the single redirect point.
+
+**Deploy-window caveat**: a NEW frontend talking to an OLD CUMS (no `termsAcceptedAt` in
+`/users/me`) reads `null` and gates everyone; consent saves are absorbed by the old DTO and
+lost. The window is minutes (same pipeline) and self-heals on backend rollout — users
+re-accept once. Do not deploy the frontend bundle alone ahead of CUMS.
+
 ## Database Schema
 
 ### user_profiles Table
@@ -879,6 +923,10 @@ CREATE TABLE user_profiles (
     -- Status
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     deactivation_reason VARCHAR(255),  -- e.g. "Cognito user deleted" (set by reconciliation job)
+    -- Story 12.11 (V17): ToS/Privacy consent — NULL = not on record → frontend
+    -- onboarding gate blocks the user on /profile?onboarding=1. Write-once via
+    -- PUT /api/v1/users/me (server clock). See "Pattern C" above.
+    terms_accepted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP WITH TIME ZONE

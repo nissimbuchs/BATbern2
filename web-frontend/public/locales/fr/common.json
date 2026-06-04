@@ -775,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Votre profil",
+    "pageSubtitle": "Gérez vos informations personnelles, votre consentement et la newsletter",
+    "tabs": {
+      "profile": "Profil",
+      "consent": "Consentement & Newsletter"
+    },
+    "companyLabel": "Entreprise",
+    "companyInvalid": "L'identifiant d'entreprise doit comporter 1 à 12 lettres ou chiffres",
+    "onboardingNotice": "Veuillez compléter votre profil pour continuer : acceptez ci-dessous les conditions d’utilisation et la politique de confidentialité.",
+    "consentTitle": "Conditions d’utilisation & politique de confidentialité",
+    "consentLabelPrefix": "J'accepte les",
+    "consentLabelAnd": "et la",
+    "termsOfService": "conditions d'utilisation",
+    "privacyPolicy": "politique de confidentialité",
+    "consentAcceptedOn": "Accepté le {{date}}",
+    "consentSave": "Accepter et enregistrer",
+    "consentSaveError": "L'enregistrement de votre consentement a échoué. Veuillez réessayer.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Recevez des invitations et des nouvelles des prochains événements BATbern.",
+    "newsletterLabel": "S’abonner à la newsletter BATbern"
   }
 }

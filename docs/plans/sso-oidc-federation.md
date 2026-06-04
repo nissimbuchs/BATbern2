@@ -330,5 +330,17 @@ each independently, after PR 1 is verified in prod:
   `cdn.batbern.ch`). One-attempt-ever semantics via `user_profiles.picture_import_attempted_at`
   (V18); SSRF-guarded to `googleusercontent.com`; async + non-blocking (same contract as JIT).
   See `06b-user-lifecycle-sync.md` Pattern 1c.
-- **Story 12.11 — federated onboarding completion** (consent/company/newsletter): tracked
-  separately; see its story file.
+- **Story 12.11 — federated onboarding completion** ✅ *(2026-06-04)*: closes the GDPR gap —
+  federated JIT provisioning recorded no ToS/Privacy consent (and even native registrations
+  never persisted `agreedToTerms`). Delivered: `user_profiles.terms_accepted_at` (CUMS V17,
+  write-once via `PUT /users/me`, server clock) with a backfill keyed on the SSO go-live
+  cutoff `2026-06-04 16:00 UTC` (NOT a `google_%` LIKE — `cognito_user_id` stores the sub
+  UUID for everyone; verified live); PostConfirmation stamps consent for native sign-ups
+  (INSERT + link-UPDATE branches) and skips federated ones (`identities`-attribute
+  detection); role-neutral `/profile` page (generalized speaker ProfileUpdatePage) with a
+  Consent & Newsletter tab; a blocking `ProtectedRoute` gate redirecting consent-less users
+  to `/profile?onboarding=1` (fail-open on hydration failure). Newsletter consent was
+  deliberately NOT added to `user_profiles` — it stays in EMS `newsletter_subscribers`
+  (Story 10.7) via `PATCH /newsletter/my-subscription`; additionally the native
+  registration checkbox (previously silently dropped) now subscribes via the public
+  `POST /newsletter/subscribe`. See `06b-user-lifecycle-sync.md` Pattern C.

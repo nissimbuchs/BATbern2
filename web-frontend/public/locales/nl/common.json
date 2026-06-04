@@ -775,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Je profiel",
+    "pageSubtitle": "Beheer je persoonlijke gegevens, toestemming en nieuwsbrief",
+    "tabs": {
+      "profile": "Profiel",
+      "consent": "Toestemming & Nieuwsbrief"
+    },
+    "companyLabel": "Bedrijf",
+    "companyInvalid": "Het bedrijfs-ID moet uit 1-12 letters of cijfers bestaan",
+    "onboardingNotice": "Vervolledig je profiel om door te gaan: accepteer hieronder de gebruiksvoorwaarden en het privacybeleid.",
+    "consentTitle": "Gebruiksvoorwaarden & privacybeleid",
+    "consentLabelPrefix": "Ik ga akkoord met de",
+    "consentLabelAnd": "en het",
+    "termsOfService": "gebruiksvoorwaarden",
+    "privacyPolicy": "privacybeleid",
+    "consentAcceptedOn": "Geaccepteerd op {{date}}",
+    "consentSave": "Accepteren en opslaan",
+    "consentSaveError": "Het opslaan van je toestemming is mislukt. Probeer het opnieuw.",
+    "newsletterTitle": "Nieuwsbrief",
+    "newsletterDescription": "Ontvang uitnodigingen en updates over komende BATbern-evenementen.",
+    "newsletterLabel": "Abonneer je op de BATbern-nieuwsbrief"
   }
 }

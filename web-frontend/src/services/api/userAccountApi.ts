@@ -96,20 +96,28 @@ const mapProfileVisibility = (visibility?: string): 'PUBLIC' | 'MEMBERS_ONLY' | 
 };
 
 /**
- * Update user profile (firstName, lastName, email, bio, companyId)
+ * Update user profile (firstName, lastName, email, bio, companyId, termsAccepted)
  * Only sends fields that the backend accepts per UpdateUserRequest schema
  * Note: Backend implements PUT, not PATCH
  */
-export const updateUserProfile = async (updates: Partial<User>): Promise<User> => {
-  // Backend only accepts: firstName, lastName, email, bio, companyId
+export const updateUserProfile = async (
+  updates: Partial<User> & {
+    /** Story 12.11: write-once ToS/Privacy consent — server stamps the timestamp. */
+    termsAccepted?: boolean;
+  }
+): Promise<User> => {
+  // Backend only accepts: firstName, lastName, email, bio, companyId, termsAccepted
   // Filter out any other fields to avoid 500 errors
-  const allowedFields: Partial<User> = {};
+  const allowedFields: Partial<User> & { termsAccepted?: boolean } = {};
 
   if (updates.firstName !== undefined) allowedFields.firstName = updates.firstName;
   if (updates.lastName !== undefined) allowedFields.lastName = updates.lastName;
   if (updates.email !== undefined) allowedFields.email = updates.email;
   if (updates.bio !== undefined) allowedFields.bio = updates.bio;
   if (updates.companyId !== undefined) allowedFields.companyId = updates.companyId;
+  // Story 12.11: consent flag — without this allowlist entry the field would be
+  // silently dropped and consent could never be recorded.
+  if (updates.termsAccepted !== undefined) allowedFields.termsAccepted = updates.termsAccepted;
 
   const response = await apiClient.put(`${USER_API_PATH}/me`, allowedFields);
 

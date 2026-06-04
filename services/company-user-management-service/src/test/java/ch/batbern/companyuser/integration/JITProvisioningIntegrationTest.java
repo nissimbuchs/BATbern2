@@ -87,6 +87,10 @@ class JITProvisioningIntegrationTest extends AbstractIntegrationTest {
         // Default ATTENDEE (no authorities on the JWT).
         assertThat(created.getRoles()).containsExactly(Role.ATTENDEE);
 
+        // Story 12.11 (AC2): JIT provisioning records NO ToS consent — federated users
+        // never saw the checkbox, so the onboarding gate must fire for them.
+        assertThat(created.getTermsAcceptedAt()).isNull();
+
         // Exactly one row for this email (no duplicate).
         long rowsForEmail = userRepository.findAll().stream()
                 .filter(u -> email.equalsIgnoreCase(u.getEmail()))

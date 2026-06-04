@@ -779,5 +779,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Ihr Profil",
+    "pageSubtitle": "Verwalten Sie Ihre persönlichen Angaben, Einwilligung und Newsletter",
+    "tabs": {
+      "profile": "Profil",
+      "consent": "Einwilligung & Newsletter"
+    },
+    "companyLabel": "Firma",
+    "companyInvalid": "Die Firmen-ID muss aus 1-12 Buchstaben oder Ziffern bestehen",
+    "onboardingNotice": "Bitte vervollständigen Sie Ihr Profil, um fortzufahren: Akzeptieren Sie unten die Nutzungsbedingungen und die Datenschutzerklärung.",
+    "consentTitle": "Nutzungsbedingungen & Datenschutzerklärung",
+    "consentLabelPrefix": "Ich akzeptiere die",
+    "consentLabelAnd": "und die",
+    "termsOfService": "Nutzungsbedingungen",
+    "privacyPolicy": "Datenschutzerklärung",
+    "consentAcceptedOn": "Akzeptiert am {{date}}",
+    "consentSave": "Akzeptieren und speichern",
+    "consentSaveError": "Ihre Einwilligung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Erhalten Sie Einladungen und Neuigkeiten zu kommenden BATbern-Anlässen.",
+    "newsletterLabel": "BATbern-Newsletter abonnieren"
   }
 }

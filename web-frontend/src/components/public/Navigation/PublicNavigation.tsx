@@ -140,7 +140,7 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
                           My Profile (speakers), language switcher, logout. */}
                       {isSpeaker && (
                         <Link
-                          to="/speaker-portal/profile"
+                          to="/profile"
                           className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
                         >
                           <UserCircle className="h-4 w-4" />
@@ -272,11 +272,7 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
               </Button>
               {isSpeaker && (
                 <Button asChild variant="secondary" className="w-full">
-                  <Link
-                    to="/speaker-portal/profile"
-                    onClick={closeMobileMenu}
-                    className="flex items-center gap-2"
-                  >
+                  <Link to="/profile" onClick={closeMobileMenu} className="flex items-center gap-2">
                     <UserCircle className="h-4 w-4" />
                     {t('navigation.myProfile', 'My Profile')}
                   </Link>

@@ -7,6 +7,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { authService } from '@/services/auth/authService';
+import { subscribe as subscribeToNewsletter } from '@/services/newsletterService';
 
 export interface RegistrationFormData {
   firstName: string;
@@ -50,6 +51,23 @@ export const useRegistration = () => {
 
       if (!result.success) {
         throw new Error(result.error?.code || 'SIGNUP_FAILED');
+      }
+
+      // Story 12.11 (Scope Revision #4): the newsletter checkbox used to be packed into
+      // custom:preferences and silently dropped (nothing consumed it). Newsletter consent
+      // lives in EMS `newsletter_subscribers` (Story 10.7), so subscribe via the existing
+      // public endpoint — same approach as NewsletterSubscribeWidget. Best-effort: a
+      // subscribe failure (or 409 already-subscribed) must never fail the registration.
+      if (data.newsletterOptIn) {
+        try {
+          await subscribeToNewsletter({
+            email: data.email,
+            firstName,
+            language: i18n.language?.startsWith('de') ? 'de' : 'en',
+          });
+        } catch (error) {
+          console.warn('[useRegistration] Newsletter subscribe failed (non-blocking)', error);
+        }
       }
 
       // PostConfirmation Lambda (Story 1.2.5) creates database record automatically

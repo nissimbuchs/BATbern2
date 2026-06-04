@@ -775,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Profiilisi",
+    "pageSubtitle": "Hallinnoi henkilötietojasi, suostumustasi ja uutiskirjettä",
+    "tabs": {
+      "profile": "Profiili",
+      "consent": "Suostumus & Uutiskirje"
+    },
+    "companyLabel": "Yritys",
+    "companyInvalid": "Yritystunnuksen on oltava 1–12 kirjainta tai numeroa",
+    "onboardingNotice": "Täydennä profiilisi jatkaaksesi: hyväksy alla käyttöehdot ja tietosuojakäytäntö.",
+    "consentTitle": "Käyttöehdot & tietosuojakäytäntö",
+    "consentLabelPrefix": "Hyväksyn",
+    "consentLabelAnd": "ja",
+    "termsOfService": "käyttöehdot",
+    "privacyPolicy": "tietosuojakäytännön",
+    "consentAcceptedOn": "Hyväksytty {{date}}",
+    "consentSave": "Hyväksy ja tallenna",
+    "consentSaveError": "Suostumuksen tallentaminen epäonnistui. Yritä uudelleen.",
+    "newsletterTitle": "Uutiskirje",
+    "newsletterDescription": "Saat kutsuja ja uutisia tulevista BATbern-tapahtumista.",
+    "newsletterLabel": "Tilaa BATbern-uutiskirje"
   }
 }

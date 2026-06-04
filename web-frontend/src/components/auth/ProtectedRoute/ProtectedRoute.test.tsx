@@ -633,6 +633,118 @@ describe('ProtectedRoute - Session Expired Redirect to Login', () => {
   });
 });
 
+describe('ProtectedRoute - Onboarding Consent Gate (Story 12.11 AC6/AC7)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const ProfilePageStub = () => <div>Profile Page</div>;
+
+  function gateUser(termsAcceptedAt: string | null | undefined) {
+    return {
+      userId: 'user-fed',
+      email: 'federated@test.com',
+      role: 'attendee' as UserRole,
+      roles: ['attendee' as UserRole],
+      firstName: 'Fed',
+      lastName: 'User',
+      emailVerified: true,
+      termsAcceptedAt,
+    };
+  }
+
+  function renderGate(initialRoute: string, termsAcceptedAt: string | null | undefined) {
+    const mockUseAuth = vi.spyOn(useAuthModule, 'useAuth');
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: gateUser(termsAcceptedAt),
+      canAccess: vi.fn(() => true),
+      login: vi.fn(),
+      logout: vi.fn(),
+      refreshSession: vi.fn(),
+    });
+
+    return render(
+      <MemoryRouter initialEntries={[initialRoute]}>
+        <Routes>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events"
+            element={
+              <ProtectedRoute>
+                <div>Events Page</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePageStub />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+  }
+
+  test('should_redirectToOnboardingProfile_when_freshFederatedUserHasNoConsent', async () => {
+    // AC7: AuthCallbackPage keeps navigating to /dashboard; the gate alone redirects
+    // a consent-less (fresh federated) user to /profile?onboarding=1.
+    renderGate('/dashboard', null);
+
+    await waitFor(() => {
+      expect(screen.getByText('Profile Page')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Dashboard Page')).not.toBeInTheDocument();
+  });
+
+  test('should_redirectFromAnyProtectedPath_when_consentMissing', async () => {
+    renderGate('/events', null);
+
+    await waitFor(() => {
+      expect(screen.getByText('Profile Page')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Events Page')).not.toBeInTheDocument();
+  });
+
+  test('should_allowAccess_when_consentRecorded', async () => {
+    renderGate('/dashboard', '2026-01-15T10:00:00Z');
+
+    await waitFor(() => {
+      expect(screen.getByText('Dashboard Page')).toBeInTheDocument();
+    });
+  });
+
+  test('should_failOpen_when_consentStateUnknown', async () => {
+    // undefined = hydration failed / not yet hydrated → never lock the user out
+    // on a transient /users/me failure.
+    renderGate('/dashboard', undefined);
+
+    await waitFor(() => {
+      expect(screen.getByText('Dashboard Page')).toBeInTheDocument();
+    });
+  });
+
+  test('should_renderProfile_when_consentMissingOnProfileItself', async () => {
+    // /profile must stay reachable or the gate would loop forever.
+    renderGate('/profile', null);
+
+    await waitFor(() => {
+      expect(screen.getByText('Profile Page')).toBeInTheDocument();
+    });
+  });
+});
+
 describe('ProtectedRoute - Email Verification Requirements', () => {
   beforeEach(() => {
     vi.clearAllMocks();

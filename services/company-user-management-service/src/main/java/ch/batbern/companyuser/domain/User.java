@@ -181,6 +181,17 @@ public class User {
     private UserSettings settings;
 
     /**
+     * Story 12.11: moment the user accepted the Terms of Service + Privacy Policy.
+     * <p>
+     * {@code null} = consent not on record → the frontend onboarding gate blocks the
+     * user on {@code /profile?onboarding=1} until they accept. Write-once via
+     * {@code PUT /api/v1/users/me} (server clock — never client-supplied); NEVER
+     * cleared through the API. Backfilled for pre-SSO rows by migration V17.
+     */
+    @Column(name = "terms_accepted_at")
+    private Instant termsAcceptedAt;
+
+    /**
      * Whether user account is active
      */
     @Column(name = "is_active", nullable = false)

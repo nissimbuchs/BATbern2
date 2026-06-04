@@ -39,6 +39,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check if user exists and has required role
   if (requiresAuth && user) {
+    // Story 12.11 (AC6): blocking onboarding gate. termsAcceptedAt === null means the
+    // hydrated /users/me response confirmed NO ToS/Privacy consent on record (fresh
+    // federated sign-ups, retro-gated federated rows) → force the user onto
+    // /profile?onboarding=1 until they consent. `undefined` (hydration failed /
+    // not yet hydrated) deliberately passes — fail-open, never lock users out on a
+    // transient /users/me failure. /profile itself (and /logout) stay reachable so
+    // the gate cannot loop.
+    if (
+      user.termsAcceptedAt === null &&
+      !location.pathname.startsWith('/profile') &&
+      !location.pathname.startsWith('/logout')
+    ) {
+      return <Navigate to="/profile?onboarding=1" replace />;
+    }
+
     // Story 11.E.3 (cherry-pick 73d94688): multi-role support — check if ANY of user's roles is allowed
     const userRoles = user.roles ?? (user.role ? [user.role] : []);
     if (!userRoles.some((r) => allowedRoles.includes(r))) {

@@ -139,6 +139,12 @@ public class UserService {
         if (request.getCompanyId() != null) {
             user.setCompanyId(request.getCompanyId());
         }
+        // Story 12.11 (AC4): WRITE-ONCE ToS/Privacy consent. Stamp the server clock on the
+        // FIRST acceptance only; a repeated `true` is a no-op (original timestamp preserved),
+        // and `false`/absent NEVER changes or revokes recorded consent.
+        if (Boolean.TRUE.equals(request.getTermsAccepted()) && user.getTermsAcceptedAt() == null) {
+            user.setTermsAcceptedAt(java.time.Instant.now());
+        }
 
         User updatedUser = userRepository.save(user);
 

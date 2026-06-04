@@ -620,5 +620,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Dys Profil",
+    "pageSubtitle": "Verwaut dyni persönleche Aagabe, d Yywilligung u dr Newsletter",
+    "tabs": {
+      "profile": "Profil",
+      "consent": "Yywilligung & Newsletter"
+    },
+    "companyLabel": "Firma",
+    "companyInvalid": "D Firme-ID muess us 1-12 Buechstabe oder Zahle bestah",
+    "onboardingNotice": "Bitte vervollständig dys Profil zum Wytermache: Akzeptier unge d Nutzigsbedingige u d Datcheschutzerklärig.",
+    "consentTitle": "Nutzigsbedingige & Datcheschutzerklärig",
+    "consentLabelPrefix": "I akzeptiere d",
+    "consentLabelAnd": "u d",
+    "termsOfService": "Nutzigsbedingige",
+    "privacyPolicy": "Datcheschutzerklärig",
+    "consentAcceptedOn": "Akzeptiert am {{date}}",
+    "consentSave": "Akzeptiere u spychere",
+    "consentSaveError": "Dyni Yywilligung het nid chönne gspycheret wärde. Probiers no einisch.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Über chünftigi BATbern-Aaläss informiert blybe.",
+    "newsletterLabel": "Dr BATbern-Newsletter abonniere"
   }
 }
