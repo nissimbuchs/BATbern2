@@ -27,6 +27,13 @@ vi.mock('aws-amplify/auth/cognito', () => ({
   },
 }));
 
+// Mock Amplify Hub (Story 12.8 F7 — waitForFederatedSession listens for auth events).
+// listen MUST return an unsubscribe function (the implementation calls it on settle).
+const mockHubListen = vi.hoisted(() => vi.fn(() => () => {}));
+vi.mock('aws-amplify/utils', () => ({
+  Hub: { listen: mockHubListen },
+}));
+
 // Import the mocked modules
 import * as amplifyAuth from 'aws-amplify/auth';
 import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
@@ -608,6 +615,59 @@ describe('AuthService', () => {
       vi.mocked(mockAuth.signInWithRedirect).mockRejectedValue(new Error('redirect failed'));
 
       await expect(authService.signInWithFederated('Google')).rejects.toThrow('redirect failed');
+    });
+  });
+
+  // Story 12.8 F7: the /auth/callback race — wait (bounded) for Amplify's async ?code= →
+  // token exchange to settle instead of checking the session once and bailing.
+  describe('waitForFederatedSession', () => {
+    it('should_resolveTrue_when_tokensAlreadyPresent', async () => {
+      // Exchange already completed before we were called — the immediate token check wins.
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({
+        tokens: { idToken: { toString: () => 'id-token' } },
+      } as never);
+
+      await expect(authService.waitForFederatedSession(2000)).resolves.toBe(true);
+    });
+
+    it('should_resolveTrue_when_hubReportsSignInWithRedirect', async () => {
+      // No tokens yet — the Hub event signals the exchange settled.
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({ tokens: undefined } as never);
+      let hubCallback: ((capsule: { payload: { event: string } }) => void) | undefined;
+      mockHubListen.mockImplementation(((_channel: string, cb: typeof hubCallback) => {
+        hubCallback = cb;
+        return () => {};
+      }) as never);
+
+      const pending = authService.waitForFederatedSession(2000);
+      // Let the listener attach, then fire the success event.
+      await new Promise((r) => setTimeout(r, 10));
+      hubCallback?.({ payload: { event: 'signInWithRedirect' } });
+
+      await expect(pending).resolves.toBe(true);
+    });
+
+    it('should_resolveFalse_when_hubReportsRedirectFailure', async () => {
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({ tokens: undefined } as never);
+      let hubCallback: ((capsule: { payload: { event: string } }) => void) | undefined;
+      mockHubListen.mockImplementation(((_channel: string, cb: typeof hubCallback) => {
+        hubCallback = cb;
+        return () => {};
+      }) as never);
+
+      const pending = authService.waitForFederatedSession(2000);
+      await new Promise((r) => setTimeout(r, 10));
+      hubCallback?.({ payload: { event: 'signInWithRedirect_failure' } });
+
+      await expect(pending).resolves.toBe(false);
+    });
+
+    it('should_resolveFalse_when_timeoutElapsesWithoutSession', async () => {
+      // Never settles: no tokens, no Hub event → bounded false (never throws/hangs).
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({ tokens: undefined } as never);
+      mockHubListen.mockImplementation((() => () => {}) as never);
+
+      await expect(authService.waitForFederatedSession(80)).resolves.toBe(false);
     });
   });
 

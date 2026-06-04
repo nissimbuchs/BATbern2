@@ -465,6 +465,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
+      // Story 12.8 F7: Amplify v6 runs the ?code= → token exchange asynchronously — a
+      // single immediate session check races it, and the resulting /login navigation
+      // CANCELS the in-flight exchange (prod symptom after the auth.batbern.ch switch:
+      // every federated login silently bounced to /login while provisioning succeeded).
+      // Wait (bounded; Hub event or token-poll) for the exchange to settle first.
+      const exchangeSettled = await authService.waitForFederatedSession();
+      if (!exchangeSettled) {
+        console.warn('[AuthProvider] completeFederatedSignIn: token exchange did not settle');
+      }
+
       const user = await authService.getCurrentUser();
       if (!user) {
         console.warn('[AuthProvider] completeFederatedSignIn: no session resolved');

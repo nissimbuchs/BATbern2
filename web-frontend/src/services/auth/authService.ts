@@ -400,6 +400,66 @@ class AuthService {
     await signInWithRedirect({ provider });
   }
 
+  /**
+   * Story 12.8 finding F7 (2026-06-04): on `/auth/callback`, Amplify v6 performs the OAuth
+   * `?code=` → token exchange ASYNCHRONOUSLY after configure. Checking the session once
+   * races that exchange — and the premature "no session" verdict makes the callback page
+   * navigate to /login, which CANCELS the in-flight exchange. (Observed in prod right after
+   * the auth.batbern.ch custom-domain switch made the exchange a little slower: every
+   * federated login silently bounced back to /login while Cognito/DB provisioning had
+   * actually succeeded.)
+   *
+   * Waits — bounded — for the exchange to settle: resolves true on the Hub
+   * `signInWithRedirect`/`signedIn` event or as soon as tokens are present (a 500ms poll
+   * covers an event fired before the listener attached); resolves false on
+   * `signInWithRedirect_failure` or timeout. Never throws.
+   */
+  async waitForFederatedSession(timeoutMs = 15000): Promise<boolean> {
+    const { fetchAuthSession } = await this.amplifyAuth();
+    // Dynamic import keeps aws-amplify utils off the public-homepage bundle (same rationale
+    // as amplifyAuth()).
+    const { Hub } = await import('aws-amplify/utils');
+
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+
+      // `finish` closes over the const bindings below; it can only RUN after they are
+      // initialised (events/timers fire asynchronously), so the forward references are safe.
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        unsubscribe();
+        clearTimeout(timer);
+        clearInterval(poller);
+        resolve(ok);
+      };
+
+      const unsubscribe = Hub.listen('auth', ({ payload }) => {
+        if (payload.event === 'signInWithRedirect' || payload.event === 'signedIn') {
+          finish(true);
+        } else if (payload.event === 'signInWithRedirect_failure') {
+          console.warn('[authService] signInWithRedirect_failure during callback processing');
+          finish(false);
+        }
+      });
+
+      const timer = setTimeout(() => finish(false), timeoutMs);
+
+      const checkTokens = async () => {
+        try {
+          const session = await fetchAuthSession();
+          if (session.tokens?.idToken) {
+            finish(true);
+          }
+        } catch {
+          // Exchange still in flight (or transient) — keep waiting until event/timeout.
+        }
+      };
+      const poller = setInterval(() => void checkTokens(), 500);
+      void checkTokens();
+    });
+  }
+
   async refreshToken(): Promise<TokenRefreshResponse> {
     try {
       const { fetchAuthSession } = await this.amplifyAuth();
