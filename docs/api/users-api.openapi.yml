@@ -1219,7 +1219,11 @@ paths:
                   maximum: 5242880  # 5 MB
                 mimeType:
                   type: string
-                  enum: [image/png, image/jpeg, image/jpg]
+                  # Mirrors the backend ProfilePictureService allow-list (png/jpg/jpeg/svg).
+                  # 12.12 review finding #4: svg was accepted by backend+frontend but missing
+                  # here; the non-standard image/jpg (never produced by browsers' file.type)
+                  # is dropped.
+                  enum: [image/png, image/jpeg, image/svg+xml]
       responses:
         '200':
           description: Presigned upload URL generated successfully

@@ -19,6 +19,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.DynamicUpdate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,6 +46,15 @@ import java.util.UUID;
     @Index(name = "idx_users_cognito_user_id", columnList = "cognito_user_id", unique = true),
     @Index(name = "idx_users_active", columnList = "is_active")
 })
+// Story 12.12 review (finding #2): UPDATE statements carry only the columns the writer
+// actually changed. User has multiple unsynchronised load-modify-save writers (profile
+// edit / onboarding PATCH on request threads, the federated avatar import on its async
+// executor); with Hibernate's default full-column UPDATE, whichever committed last wrote
+// ALL columns from its possibly-stale snapshot — silently erasing the other writer's
+// fields (e.g. the import clobbering a just-saved terms_accepted_at, or a profile edit
+// nulling a just-imported profile_picture_url). Dirty-column updates make concurrent
+// writers of DISJOINT fields safe; same-field races remain last-writer-wins.
+@DynamicUpdate
 @Getter
 @Setter
 @NoArgsConstructor
@@ -123,10 +133,14 @@ public class User {
     private String profilePictureS3Key;
 
     /**
-     * Story 12.12: when the one-time federated (Google) avatar import was
-     * attempted — success OR failure. {@code null} = never attempted.
-     * Never reset: one attempt per user, ever (prevents clobbering uploads,
-     * re-import-after-delete loops, and repeated fetches of broken URLs).
+     * Story 12.12: when the one-time federated (Google) avatar import was claimed.
+     * {@code null} = never attempted. Claimed atomically via
+     * {@code UserRepository.claimPictureImportAttempt} (compare-and-set, review finding
+     * #5). A TERMINAL outcome (success, 3xx/4xx, non-image, oversize, invalid claim)
+     * keeps the claim forever — prevents clobbering uploads, re-import-after-delete
+     * loops, and repeated fetches of broken URLs. A TRANSIENT fetch failure (upstream
+     * 5xx/429, network/IO error, executor rejection) releases the claim so a later
+     * federated request retries (review finding #1).
      */
     @Column(name = "picture_import_attempted_at")
     private Instant pictureImportAttemptedAt;

@@ -214,7 +214,7 @@ class FederatedAvatarImportIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("fetch failure (HTTP 403) → attempt recorded, request still 200, no picture set")
+    @DisplayName("terminal fetch failure (HTTP 403) → attempt recorded, request still 200, no picture set")
     void should_recordAttemptAndStaySilent_when_fetchFails() throws Exception {
         seedUser("avatar-sub-4", "broken.url", "broken.url@example.ch");
         stubFetchFailure(403);
@@ -227,6 +227,37 @@ class FederatedAvatarImportIntegrationTest extends AbstractIntegrationTest {
         assertThat(after.getProfilePictureUrl()).isNull();
         assertThat(after.getProfilePictureS3Key()).isNull();
         verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+
+        // Terminal means terminal: a later request with the same claim does not refetch.
+        performAuthenticatedRequest("avatar-sub-4", "broken.url@example.ch", PICTURE_CLAIM);
+        verify(avatarFetchHttpClient, Mockito.times(1)).send(any(), any());
+    }
+
+    // 12.12 review finding #1: a one-off Google blip must not permanently cost the user
+    // their avatar — transient failures (5xx/429, network errors) release the claim so a
+    // later federated request retries.
+    @Test
+    @DisplayName("transient fetch failure (HTTP 503) → claim released, retried + imported on a later request")
+    void should_retryOnLaterRequest_when_fetchFailsTransiently() throws Exception {
+        seedUser("avatar-sub-7", "transient.blip", "transient.blip@example.ch");
+        stubFetchFailure(503);
+
+        performAuthenticatedRequest("avatar-sub-7", "transient.blip@example.ch", PICTURE_CLAIM);
+
+        // The claim was released — no permanent attempt on record, no picture.
+        User afterFirst = userRepository.findByCognitoUserId("avatar-sub-7").orElseThrow();
+        assertThat(afterFirst.getPictureImportAttemptedAt()).isNull();
+        assertThat(afterFirst.getProfilePictureUrl()).isNull();
+        verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+
+        // Google recovers → the next federated request retries and imports.
+        stubFetchSuccess(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}, "image/jpeg");
+        performAuthenticatedRequest("avatar-sub-7", "transient.blip@example.ch", PICTURE_CLAIM);
+
+        User afterSecond = userRepository.findByCognitoUserId("avatar-sub-7").orElseThrow();
+        assertThat(afterSecond.getPictureImportAttemptedAt()).isNotNull();
+        assertThat(afterSecond.getProfilePictureUrl()).startsWith("https://cdn.batbern.ch/profile-pictures/");
+        verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test

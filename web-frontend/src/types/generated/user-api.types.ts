@@ -2277,7 +2277,7 @@ export interface operations {
           filename: string;
           fileSizeBytes: number;
           /** @enum {string} */
-          mimeType: 'image/png' | 'image/jpeg' | 'image/jpg';
+          mimeType: 'image/png' | 'image/jpeg' | 'image/svg+xml';
         };
       };
     };

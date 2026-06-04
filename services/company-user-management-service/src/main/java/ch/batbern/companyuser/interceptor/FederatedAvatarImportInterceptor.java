@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.interceptor;
 
+import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.service.FederatedAvatarImportService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -52,7 +53,16 @@ public class FederatedAvatarImportInterceptor implements HandlerInterceptor {
                 return true;
             }
 
-            federatedAvatarImportService.importIfNeeded(cognitoUserId, pictureClaim);
+            // 12.12 review (finding #6): JIT (registered immediately before this
+            // interceptor) stashes the user it resolved for this principal — reuse it
+            // instead of re-running the identical findByCognitoUserId SELECT on every
+            // request. Fall back to the lookup only when JIT didn't resolve one.
+            Object resolved = request.getAttribute(JITUserProvisioningInterceptor.RESOLVED_USER_ATTRIBUTE);
+            if (resolved instanceof User user) {
+                federatedAvatarImportService.importIfNeeded(user, pictureClaim);
+            } else {
+                federatedAvatarImportService.importIfNeeded(cognitoUserId, pictureClaim);
+            }
 
         } catch (Exception e) {
             // Non-blocking requirement (same contract as JITUserProvisioningInterceptor).

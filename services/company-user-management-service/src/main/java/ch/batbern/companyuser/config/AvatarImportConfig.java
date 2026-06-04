@@ -36,13 +36,18 @@ public class AvatarImportConfig {
     /**
      * HTTP client for fetching the Google avatar (timeouts mirror the admin
      * upload-from-url endpoint in {@code UserController}).
+     *
+     * <p>{@code Redirect.NEVER} (12.12 review, finding #8): the SSRF guard validates the
+     * host of the INITIAL URL only, so following a cross-host 3xx would silently defeat
+     * it. Google avatar URLs don't redirect in practice; if one ever does, the import
+     * fails terminally rather than fetching an unvalidated host.
      */
     @Bean(name = "avatarFetchHttpClient")
     @ConditionalOnMissingBean(name = "avatarFetchHttpClient")
     public HttpClient avatarFetchHttpClient() {
         return HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
-                .followRedirects(HttpClient.Redirect.NORMAL)
+                .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
     }
 }

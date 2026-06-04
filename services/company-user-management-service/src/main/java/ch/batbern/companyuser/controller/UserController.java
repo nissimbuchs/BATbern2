@@ -28,6 +28,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.PatchMapping;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.companyuser.service.ImageUrlFetcher;
 import ch.batbern.companyuser.service.ProfilePictureService;
 import ch.batbern.companyuser.service.UserSearchService;
 import ch.batbern.companyuser.service.UserService;
@@ -806,66 +807,28 @@ public class UserController {
         log.info("Admin uploading profile picture from URL for user: {}, url: {}", username, url);
 
         try {
-            // Fetch image from URL
-            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
-                    .connectTimeout(java.time.Duration.ofSeconds(10))
-                    .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
-                    .build();
+            // Shared fetch + image validation pipeline (12.12 review, finding #7);
+            // 5MB cap for profile pictures.
+            ImageUrlFetcher.FetchedImage image = ImageUrlFetcher.fetch(url, 5 * 1024 * 1024);
 
-            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(url))
-                    .timeout(java.time.Duration.ofSeconds(30))
-                    .GET()
-                    .build();
-
-            java.net.http.HttpResponse<byte[]> response = client.send(request,
-                    java.net.http.HttpResponse.BodyHandlers.ofByteArray());
-
-            if (response.statusCode() != 200) {
-                log.error("Failed to fetch image: HTTP {}", response.statusCode());
-                return ResponseEntity.status(response.statusCode()).build();
-            }
-
-            // Validate content type
-            String contentType = response.headers()
-                    .firstValue("Content-Type")
-                    .orElse("application/octet-stream");
-
-            if (!contentType.startsWith("image/")) {
-                log.error("URL does not point to an image: {}", contentType);
-                return ResponseEntity.badRequest().build();
-            }
-
-            byte[] imageData = response.body();
-
-            // Check size limit (5MB for profile pictures)
-            if (imageData.length > 5 * 1024 * 1024) {
-                log.error("Image too large: {} bytes", imageData.length);
-                return ResponseEntity.status(org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE).build();
-            }
-
-            // Determine file extension from content type
-            String extension = contentType.substring(contentType.indexOf('/') + 1);
-            if (extension.contains(";")) {
-                extension = extension.substring(0, extension.indexOf(';'));
-            }
-            if (extension.equals("svg+xml")) {
-                extension = "svg";
-            }
-
-            String filename = suggestedFilename + "." + extension;
+            String filename = suggestedFilename + "." + image.extension();
 
             // Upload directly to S3 and associate with user
             String profilePictureUrl = profilePictureService.uploadProfilePictureDirectly(
-                    username, imageData, filename, contentType);
+                    username, image.body(), filename, image.contentType());
 
             log.info("Successfully uploaded profile picture for user: {}, URL: {}", username, profilePictureUrl);
 
             return ResponseEntity.ok(Map.of("profilePictureUrl", profilePictureUrl));
 
-        } catch (java.io.IOException | InterruptedException e) {
-            log.error("Error uploading profile picture from URL for user: {}", username, e);
-            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (ImageUrlFetcher.ImageFetchException e) {
+            log.error("Error fetching profile picture from URL for user: {}: {}", username, e.getMessage());
+            return switch (e.getReason()) {
+                case HTTP_STATUS -> ResponseEntity.status(e.getStatusCode()).build();
+                case NOT_AN_IMAGE -> ResponseEntity.badRequest().build();
+                case TOO_LARGE -> ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+                case IO -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            };
         }
     }
 

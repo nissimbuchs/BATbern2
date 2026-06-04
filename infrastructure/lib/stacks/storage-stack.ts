@@ -220,12 +220,21 @@ export class StorageStack extends cdk.Stack {
     // on resized (WebP) responses, so let its value stand; the policy only fills
     // it in for pass-through originals/SVGs that reached the browser with no
     // Cache-Control ("Cache TTL: None" in the PageSpeed report).
+    //
+    // Story 12.12 review (finding #3): users can upload SVGs (profile pictures,
+    // logos) which CloudFront serves with Content-Type image/svg+xml. An SVG can
+    // carry <script>, which executes when the object URL is opened top-level —
+    // stored XSS on the cdn origin. Neutralize without breaking <img> embedding:
+    //  - CSP `sandbox` blocks script execution in top-level SVG documents (a
+    //    resource's CSP only applies when it IS the document; <img> rendering of
+    //    PNG/JPEG/WebP/SVG is unaffected).
+    //  - X-Content-Type-Options: nosniff stops MIME-sniffing surprises.
     const contentCacheHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
       this,
       'ContentCacheHeaders',
       {
         responseHeadersPolicyName: `batbern-content-cache-${props.config.envName}`,
-        comment: 'Immutable Cache-Control for content-addressed media',
+        comment: 'Immutable Cache-Control + SVG-safe security headers for content-addressed media',
         customHeadersBehavior: {
           customHeaders: [
             {
@@ -234,6 +243,15 @@ export class StorageStack extends cdk.Stack {
               override: false,
             },
           ],
+        },
+        securityHeadersBehavior: {
+          contentSecurityPolicy: {
+            contentSecurityPolicy: 'sandbox',
+            override: true,
+          },
+          contentTypeOptions: {
+            override: true,
+          },
         },
       }
     );

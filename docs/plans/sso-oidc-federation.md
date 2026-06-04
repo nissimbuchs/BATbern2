@@ -327,8 +327,12 @@ each independently, after PR 1 is verified in prod:
   mapped (IdP `attributeMapping` + client read/write attributes — the 12.8-F1b lesson applied
   pre-emptively) and CUMS imports the photo **once** per user, server-side, into our own S3
   via the existing `ProfilePictureService` (`profile-pictures/{year}/{username}/`, served from
-  `cdn.batbern.ch`). One-attempt-ever semantics via `user_profiles.picture_import_attempted_at`
-  (V18); SSRF-guarded to `googleusercontent.com`; async + non-blocking (same contract as JIT).
+  `cdn.batbern.ch`). One-TERMINAL-attempt semantics via `user_profiles.picture_import_attempted_at`
+  (V18, comment refreshed in V19): claimed by atomic CAS (no concurrent double-dispatch);
+  transient fetch failures (5xx/429, network, executor rejection) release the claim for a
+  later retry (12.12 code-review hardening). SSRF-guarded to `googleusercontent.com` with
+  `Redirect.NEVER`; async + non-blocking (same contract as JIT); `@DynamicUpdate` on `User`
+  keeps the async save from clobbering concurrent profile/onboarding writes.
   See `06b-user-lifecycle-sync.md` Pattern 1c.
 - **Story 12.11 — federated onboarding completion** ✅ *(2026-06-04)*: closes the GDPR gap —
   federated JIT provisioning recorded no ToS/Privacy consent (and even native registrations
