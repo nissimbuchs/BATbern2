@@ -29,6 +29,14 @@ vi.mock('@hooks/useAuth', () => ({
   useAuth: () => mockUseAuth,
 }));
 
+// Mock authService (Story 12.9: the Google SSO button calls authService.signInWithFederated,
+// NOT Amplify directly — the component must use the service layer). vi.hoisted is required
+// because the mock factory references the fn eagerly (it's hoisted above normal consts).
+const mockSignInWithFederated = vi.hoisted(() => vi.fn());
+vi.mock('@/services/auth/authService', () => ({
+  authService: { signInWithFederated: mockSignInWithFederated },
+}));
+
 // Create theme for MUI components
 const theme = createTheme();
 
@@ -45,25 +53,34 @@ const mockConfig: AppConfig = {
     notifications: true,
     analytics: false,
     pwa: false,
+    turnstile: false,
+    sso: false,
   },
 };
 
 // Helper function to render with theme, i18n, config, and router.
 // MemoryRouter is required because LoginForm reads ?reason=account_deactivated via
 // useSearchParams (Story 12.7 / G1); `initialEntries` lets tests drive that query.
+// `config` override (Story 12.9) lets a test toggle features.sso to exercise the gated button.
 const renderWithTheme = (
   component: React.ReactElement,
-  { route = '/login' }: { route?: string } = {}
+  { route = '/login', config = mockConfig }: { route?: string; config?: AppConfig } = {}
 ) => {
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <ConfigProvider config={mockConfig}>
+      <ConfigProvider config={config}>
         <I18nextProvider i18n={i18n}>
           <ThemeProvider theme={theme}>{component}</ThemeProvider>
         </I18nextProvider>
       </ConfigProvider>
     </MemoryRouter>
   );
+};
+
+// Config with the SSO feature flag ON (Story 12.9).
+const ssoOnConfig: AppConfig = {
+  ...mockConfig,
+  features: { ...mockConfig.features, sso: true },
 };
 
 describe('LoginForm Component', () => {
@@ -310,6 +327,49 @@ describe('LoginForm Component', () => {
 
     await waitFor(() => {
       expect(screen.queryByText(/has been deactivated/i)).not.toBeInTheDocument();
+    });
+  });
+
+  // Story 12.9: "Continue with Google" button, gated on features.sso.
+  describe('Continue with Google button (features.sso)', () => {
+    it('should_renderGoogleButton_when_ssoFeatureEnabled', async () => {
+      await act(async () => {
+        renderWithTheme(<LoginForm />, { config: ssoOnConfig });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should_notRenderGoogleButton_when_ssoFeatureDisabled', async () => {
+      await act(async () => {
+        renderWithTheme(<LoginForm />); // default mockConfig has sso: false
+      });
+
+      // The email/password form is present...
+      await waitFor(() => {
+        expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+      });
+      // ...but the Google button is not.
+      expect(
+        screen.queryByRole('button', { name: /continue with google/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it('should_callSignInWithFederatedGoogle_when_googleButtonClicked', async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        renderWithTheme(<LoginForm />, { config: ssoOnConfig });
+      });
+
+      const googleButton = await screen.findByRole('button', {
+        name: /continue with google/i,
+      });
+      await user.click(googleButton);
+
+      expect(mockSignInWithFederated).toHaveBeenCalledTimes(1);
+      expect(mockSignInWithFederated).toHaveBeenCalledWith('Google');
     });
   });
 });

@@ -159,6 +159,47 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       expect(result).toEqual(event);
     });
 
+    it('should_useFederatedGivenAndFamilyName_when_customPreferencesAbsent', async () => {
+      // Story 12.8 F1a: a FEDERATED (Google) user carries names in the standard
+      // given_name/family_name claims (mapped by the IdP), NOT in custom:preferences.
+      // The row must provision with the real names — not the 'User'/'User' placeholder.
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'fed-sub-123',
+            email: 'buchsnissim@example.com',
+            email_verified: 'false',
+            'cognito:user_status': 'EXTERNAL_PROVIDER',
+            given_name: 'Nissim',
+            family_name: 'Buchs',
+            'custom:preferences': undefined, // federated users have none
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user by email
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // resolveUniqueUsername SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-fed' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
+
+      await handler(event, context, {} as any);
+
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO user_profiles'),
+        expect.arrayContaining([
+          'fed-sub-123', // cognito_user_id
+          'buchsnissim@example.com', // email
+          'nissim.buchs', // username generated from given/family name (NOT 'user.user')
+          'Nissim', // first_name from given_name (NOT 'User')
+          'Buchs', // last_name from family_name (NOT 'User')
+        ])
+      );
+    });
+
     it('should_extractUserAttributes_when_processingEvent', async () => {
       // Arrange
       const event = createPostConfirmationEvent({

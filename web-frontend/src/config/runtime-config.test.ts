@@ -13,7 +13,7 @@ const validConfig: AppConfig = {
   environment: 'staging',
   apiBaseUrl: 'https://api.batbern.ch/api/v1',
   cognito: { userPoolId: 'eu-central-1_abc', clientId: 'client-id', region: 'eu-central-1' },
-  features: { notifications: true, analytics: true, pwa: true, turnstile: false },
+  features: { notifications: true, analytics: true, pwa: true, turnstile: false, sso: false },
 };
 
 describe('runtime-config', () => {
@@ -42,6 +42,7 @@ describe('runtime-config', () => {
 
     expect(config.environment).toBe('staging');
     expect(config.features.turnstile).toBe(false);
+    expect(config.features.sso).toBe(false); // Story 12.9: sso flag flows through the config contract
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
     // Second call returns cached — no second fetch

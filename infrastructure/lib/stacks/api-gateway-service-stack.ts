@@ -132,6 +132,10 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         ...(!props.turnstileSecret && isProd
           ? { TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? '' }
           : {}),
+        // "Continue with Google" SSO button (Story 12.9). Enabled here so the button goes
+        // live on deploy. Instant kill-switch: set FEATURES_SSO_ENABLED=false + restart (the
+        // frontend re-reads features.sso from GET /api/v1/config — no rebuild/redeploy).
+        FEATURES_SSO_ENABLED: 'true',
       },
       secrets,
       healthCheck: {

@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: code review of 12-7-frontend-callback-route-and-service (2026-06-03)
+
+- **`/auth/callback` may race the Amplify v6 OAuth code-exchange** [`web-frontend/src/components/auth/AuthCallbackPage/AuthCallbackPage.tsx:23-39`, `web-frontend/src/contexts/AuthContext.tsx:463-477`] — the callback calls `completeFederatedSignIn()` → `getCurrentUser()`/`fetchAuthSession()` immediately on mount; Amplify v6 exchanges the returned `?code=` asynchronously and signals via the Hub `signInWithRedirect` event, and there is no `Hub.listen` anywhere in `src/`. If `getCurrentUser()` resolves before the exchange settles it returns `null` → a legitimate Google user is bounced to `/login`. **Deferral reason: Amplify likely auto-awaits the exchange; verify at deploy smoke** — only exercisable via the live hosted-UI flow once 12.5+12.6 are deployed (the story already schedules this as a deploy-time smoke step). If a race is observed, fix with a Hub `signInWithRedirect`/`signedIn` listener or a bounded retry around `getCurrentUser()`. [Edge]
+
+## Deferred from: code review of 12-6a-registration-form-name-split (2026-06-03)
+
+- **Whitespace/punctuation-only names pass client validation, then trim to empty** [`web-frontend/src/components/auth/RegistrationStep1/RegistrationStep1.tsx:97-159`, `web-frontend/src/hooks/useRegistration/useRegistration.ts:31-32`] — react-hook-form `required` does not trim, so `"  "` (length 2, `\s` allowed by the verbatim `/^[\p{L}\s.'-]+$/u` pattern) and `"--"`/`"''"` pass `required`+`minLength:2`+`pattern`; `useRegistration` then `.trim()`s to `''` and packs an empty `firstName`/`lastName` into `custom:preferences`. **Pre-existing** — the old single `fullName` field used identical rules, preserved verbatim per AC1, so not introduced by this story. Cheap hardening: add `validate: v => v.trim().length >= 2` per field. Backend JIT blank-name fallback (≈ "Speaker") bounds the impact. [Edge + Blind]
+
 ## Deferred from: code review of 12-6-account-linking-presignup-trigger (2026-06-03)
 
 - **JIT `findByEmail` is case-sensitive (companion to the 12.6 case-insensitive-lookup fix)** [`services/company-user-management-service/.../interceptor/JITUserProvisioningInterceptor.java:131`] — the 12.6 review patched `pre-signup.ts` to match `LOWER(email) = LOWER($1)`, but the canonical-JIT adoption of an existing/anonymous `user_profiles` row still uses a case-sensitive Spring-Data `findByEmail`. Registration normalizes email to lowercase so exact-match works for normal data; to fully guarantee adoption on a case-variant legacy/admin email, JIT should match `LOWER(email)`. Cross-story (Story 12.3, already-merged); fold into a 12.3 follow-up. [Edge, surfaced during D2 resolution]

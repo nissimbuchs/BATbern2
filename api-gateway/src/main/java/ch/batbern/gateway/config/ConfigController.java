@@ -45,6 +45,14 @@ public class ConfigController {
     @Value("${server.port:8080}")
     private int serverPort;
 
+    /**
+     * "Continue with Google" SSO button kill-switch (Story 12.9). Ships dark (default false);
+     * flip {@code features.sso.enabled} (env FEATURES_SSO_ENABLED) at the gateway to toggle —
+     * the frontend re-reads it at runtime, so no rebuild/redeploy (ADR-010 §D8).
+     */
+    @Value("${features.sso.enabled:false}")
+    private boolean ssoEnabled;
+
     @Autowired
     private TurnstileProperties turnstileProperties;
 
@@ -76,6 +84,7 @@ public class ConfigController {
                         .analytics(!"development".equals(environment))
                         .pwa(!"development".equals(environment))
                         .turnstile(turnstileEnabled)
+                        .sso(ssoEnabled)
                         .build())
                 .turnstile(turnstileEnabled
                         ? TurnstileConfigDTO.builder()

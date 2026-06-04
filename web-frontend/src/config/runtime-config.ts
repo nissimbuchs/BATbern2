@@ -25,6 +25,8 @@ export interface AppConfig {
     analytics: boolean;
     pwa: boolean;
     turnstile: boolean;
+    /** "Continue with Google" SSO button (Story 12.9). Served by GET /api/v1/config. */
+    sso: boolean;
   };
   turnstile?: {
     siteKey: string;
@@ -195,6 +197,7 @@ function getDefaultDevelopmentConfig(): AppConfig {
       analytics: false,
       pwa: false,
       turnstile: false,
+      sso: false,
     },
   };
 }

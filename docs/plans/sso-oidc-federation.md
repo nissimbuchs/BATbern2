@@ -236,6 +236,19 @@ it **verifies** them against a real federated identity:
 - **Deploy:** frontend deploy. **Risk:** low (new route, no entry point). **Rollback:** revert.
 
 ### Phase 5 — Surface the button behind a feature flag *(the only user-visible flip)*
+> **DELIVERED 2026-06-03 (Story 12.9).** `features.sso` is now plumbed end-to-end:
+> `FeatureFlagsDTO.sso` → `ConfigController` (`@Value("${features.sso.enabled:false}")`,
+> env `FEATURES_SSO_ENABLED`) → `GET /api/v1/config` → `AppConfig.features.sso` →
+> `useFeature('sso')`. `LoginForm.tsx` renders the gated "Continue with Google" button +
+> divider above the password form (password panel only), wired to
+> `authService.signInWithFederated('Google')`. i18n keys (`login.continueWithGoogle`,
+> `login.orDivider`) added to all 10 locales. Flag enabled in prod via
+> `FEATURES_SSO_ENABLED=true` on the api-gateway service. Kill-switch = set it false + restart
+> (no redeploy). Also delivered alongside: F1b (Cognito web-client `writeAttributes` must
+> include `given_name`/`family_name` or the IdP-mapped Google names are silently dropped) and
+> F1a (`post-confirmation.ts` reads `given_name`/`family_name` for federated users) — found via
+> the Story 12.8 verification, and F3 (frontend Amplify OAuth domain corrected to
+> `batbern-staging-auth`).
 - Add a `features.sso` flag to `web-frontend/src/config/runtime-config.ts` (served by
   `GET /api/v1/config`) so the button can be **dark-launched and toggled off instantly**.
 - `LoginForm.tsx`: add a "Continue with Google" button (above the email/password form, with a

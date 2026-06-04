@@ -90,6 +90,19 @@ retired**, their guarantees absorbed by JIT + the API-Gateway gate + reconciliat
 Rendered on every login entry point (behind a `features.sso` flag for dark-launch/kill-switch);
 account-linking benefits all roles, not just the attendee funnel.
 
+> **Implemented (Story 12.9, 2026-06-03):** `features.sso` now exists in the runtime-config
+> contract — `FeatureFlagsDTO.sso` (gateway) → `GET /api/v1/config` → `AppConfig.features.sso`
+> → `useFeature('sso')` — gating the "Continue with Google" button in `LoginForm.tsx`. The
+> gateway property `features.sso.enabled` (env `FEATURES_SSO_ENABLED`) is the instant
+> kill-switch (flip false + restart; the FE re-reads at runtime, no redeploy).
+> **Federated-naming correctness (found via Story 12.8 verification):** the Cognito web-client
+> `writeAttributes` MUST include `given_name`/`family_name` — Cognito only persists IdP-mapped
+> attributes the federating client can write, else the mapped Google names are silently dropped
+> and the user provisions as "User User". `post-confirmation.ts` reads `given_name`/`family_name`
+> (federated names are NOT in `custom:preferences`). Note: contrary to the original premise that
+> PostConfirmation does not fire for federated, it DOES fire (the PreSignUp `autoConfirmUser`
+> triggers it) and is the create path for federated users in this configuration.
+
 ### D9 — A new Google Cloud project, non-sensitive scopes
 No Google Cloud project exists (the watch app used Apple Developer). A new project is created with
 scopes `openid email profile` (**non-sensitive → no Google security assessment**), the existing
