@@ -123,6 +123,15 @@ public class User {
     private String profilePictureS3Key;
 
     /**
+     * Story 12.12: when the one-time federated (Google) avatar import was
+     * attempted — success OR failure. {@code null} = never attempted.
+     * Never reset: one attempt per user, ever (prevents clobbering uploads,
+     * re-import-after-delete loops, and repeated fetches of broken URLs).
+     */
+    @Column(name = "picture_import_attempted_at")
+    private Instant pictureImportAttemptedAt;
+
+    /**
      * User roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE)
      * Stored in separate role_assignments table
      *

@@ -238,6 +238,13 @@ export class CognitoStack extends cdk.Stack {
         // native sign-ups. There is NO Cognito mapping into a custom:preferences JSON field.
         givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
         familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+        // Story 12.12: Google's OIDC `picture` claim (a googleusercontent.com photo URL)
+        // maps onto the built-in standard `picture` attribute (no Schema declaration —
+        // same PR #735 rule as the names above). CUMS reads it from the ID token and
+        // imports the photo into our own S3 ONCE; the URL itself is never hotlinked
+        // (googleusercontent URLs rotate/expire). Requires read+write on the client
+        // below or Cognito silently drops it (12.8-F1b lesson).
+        profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE,
       },
     });
 
@@ -291,8 +298,10 @@ export class CognitoStack extends cdk.Stack {
       // (customAttributes.role above) stays — Cognito custom attributes are permanent —
       // and the DB-projected custom:role authorization claim from the PreTokenGeneration
       // Lambda is unaffected (it injects claimsToAddOrOverride, independent of this list).
+      // Story 12.12: profilePicture readable so the IdP-mapped `picture` claim lands in
+      // issued ID tokens, where CUMS' avatar-import hook reads it.
       readAttributes: new cognito.ClientAttributes()
-        .withStandardAttributes({ email: true, emailVerified: true, givenName: true, familyName: true })
+        .withStandardAttributes({ email: true, emailVerified: true, givenName: true, familyName: true, profilePicture: true })
         .withCustomAttributes('companyId', 'preferences'),
       // Story 12.8 F1b fix: givenName/familyName MUST be writable here. AWS Cognito only
       // populates IdP-mapped attributes that the federating app client has WRITE access to
@@ -302,8 +311,10 @@ export class CognitoStack extends cdk.Stack {
       // Cognito silently dropped the mapped names → federated users provisioned as "User
       // User" (verified 2026-06-03: names absent at PreSignUp + PostConfirmation despite a
       // full-consent first-time federation). `email` worked only because it was writable.
+      // Story 12.12: profilePicture writable for the same F1b reason — Cognito only
+      // populates IdP-mapped attributes the federating app client has WRITE access to.
       writeAttributes: new cognito.ClientAttributes()
-        .withStandardAttributes({ email: true, givenName: true, familyName: true })
+        .withStandardAttributes({ email: true, givenName: true, familyName: true, profilePicture: true })
         .withCustomAttributes('companyId', 'preferences'),
     });
 

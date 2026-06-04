@@ -71,6 +71,10 @@ class CompanyControllerTest {
     @MockitoBean
     private ch.batbern.companyuser.repository.UserRepository userRepository;
 
+    // Required by WebMvcConfig -> FederatedAvatarImportInterceptor (Story 12.12)
+    @MockitoBean
+    private ch.batbern.companyuser.service.FederatedAvatarImportService federatedAvatarImportService;
+
     // Story 1.16.2: use company name instead of UUID
     private String testCompanyName;
     private CreateCompanyRequest createRequest;

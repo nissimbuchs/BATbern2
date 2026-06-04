@@ -320,3 +320,15 @@ each independently, after PR 1 is verified in prod:
 6. **`custom:role` sentinel** — ✅ **Do the `"UNUSED"` backfill** (one-time
    `AdminUpdateUserAttributes` over existing users + write `"UNUSED"` on new users) in addition to
    dropping `'role'` from the client `readAttributes`.
+
+## 9. Post-GA follow-up stories
+
+- **Story 12.12 — Google avatar import** ✅ *(2026-06-04)*: the Google `picture` claim is now
+  mapped (IdP `attributeMapping` + client read/write attributes — the 12.8-F1b lesson applied
+  pre-emptively) and CUMS imports the photo **once** per user, server-side, into our own S3
+  via the existing `ProfilePictureService` (`profile-pictures/{year}/{username}/`, served from
+  `cdn.batbern.ch`). One-attempt-ever semantics via `user_profiles.picture_import_attempted_at`
+  (V18); SSRF-guarded to `googleusercontent.com`; async + non-blocking (same contract as JIT).
+  See `06b-user-lifecycle-sync.md` Pattern 1c.
+- **Story 12.11 — federated onboarding completion** (consent/company/newsletter): tracked
+  separately; see its story file.

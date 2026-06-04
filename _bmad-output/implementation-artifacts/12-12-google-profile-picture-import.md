@@ -1,6 +1,6 @@
 # Story 12.12: Import the Google Profile Picture into S3 on Federated Sign-up
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -40,17 +40,17 @@ Google's OIDC `picture` claim provides a photo URL on every federated sign-in, b
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — CDK: map + permit the `picture` attribute (AC: 1)** — *infrastructure, TDD*
-  - [ ] RED: extend cognito-stack unit tests — Google IdP AttributeMapping contains `picture`; client ReadAttributes + WriteAttributes contain `picture`.
-  - [ ] GREEN: `profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE` in attributeMapping; add to read/writeAttributes. Reference the F1b comment style (cognito-stack.ts:297-307) explaining WHY writeAttributes is required.
-- [ ] **Task 2 — Migration `V{next}` + entity field (AC: 4)** — *CUMS*
-- [ ] **Task 3 — Import service + interceptor hook (AC: 2, 3, 5)** — *CUMS, TDD*
-  - [ ] RED: the five ITs from AC7.
-  - [ ] GREEN: `FederatedAvatarImportService` (thin orchestrator: guard conditions → mark attempt → async fetch via `ProfilePictureService.uploadProfilePictureDirectly` internals → set URL/key). Interceptor reads `picture` claim from the JWT (`Jwt#getClaimAsString("picture")`). Non-blocking + async per AC3.
-  - [ ] Guard against SSRF drift: only fetch URLs whose host ends in `googleusercontent.com` (the claim is attacker-influencable in principle; tighten to the known host).
-- [ ] **Task 4 — cdn-URL assertion + display verification (AC: 6)**
-- [ ] **Task 5 — deploy order note + manual smoke** — infra (cognito-stack) deploys first; then CUMS. Manual smoke: fresh Google sign-in (or existing federated user with no picture and no prior attempt) → picture appears on `/profile` within one request cycle; verify object exists under `profile-pictures/` in `batbern-content-staging`.
-- [ ] **Task 6 — docs (AC: 8)**
+- [x] **Task 1 — CDK: map + permit the `picture` attribute (AC: 1)** — *infrastructure, TDD*
+  - [x] RED: extend cognito-stack unit tests — Google IdP AttributeMapping contains `picture`; client ReadAttributes + WriteAttributes contain `picture`.
+  - [x] GREEN: `profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE` in attributeMapping; add to read/writeAttributes. Reference the F1b comment style (cognito-stack.ts:297-307) explaining WHY writeAttributes is required.
+- [x] **Task 2 — Migration `V{next}` + entity field (AC: 4)** — *CUMS* — took **V18** (12-11 claims V17 in parallel)
+- [x] **Task 3 — Import service + interceptor hook (AC: 2, 3, 5)** — *CUMS, TDD*
+  - [x] RED: the five ITs from AC7 (plus a 6th: SSRF-guard IT, and a 7th: fresh-federated same-request import proving interceptor ordering). RED run: 10/18 failed against skeleton.
+  - [x] GREEN: `FederatedAvatarImportService` (thin orchestrator: guard conditions → mark attempt → async fetch → `ProfilePictureService.uploadProfilePictureDirectly`). Sibling `FederatedAvatarImportInterceptor` (JIT stays single-purpose) registered AFTER JIT in WebMvcConfig. Plain injected `Executor` (`avatarImportExecutor`, `@ConditionalOnMissingBean` override pattern) instead of `@Async` self-proxy — directly unit-testable non-blocking behavior. All 18 green.
+  - [x] Guard against SSRF drift: https-only + host == `googleusercontent.com` or subdomain (endsWith dot-check); `=s96-c` → `=s512-c` variant upgrade. 8 unit tests.
+- [x] **Task 4 — cdn-URL assertion + display verification (AC: 6)** — cdn-URL assertion folded into IT #1 (`startsWith("https://cdn.batbern.ch/profile-pictures/")` + `doesNotContain("googleusercontent")`). Display path verified unchanged: `useUserPortrait.ts:72-83` re-projects `profilePictureUrl`; `ProfilePhotoUpload.tsx:246` renders it as `<img src>`; image-resize Lambda@Edge applies automatically (cdn domain).
+- [x] **Task 5 — deploy order note + manual smoke** — infra (cognito-stack) deploys first; then CUMS. **Note:** a single `develop` push satisfies the ordering automatically — the pipeline detects infra changes and uses layer-based deployment, where Layer 3 (Cognito) deploys before Layer 4 (services). `UpdateUserPoolClient` read/write-attribute changes are in-place (no replacement); `picture` is a built-in standard attribute so there is NO pool Schema change (the PR #735 "Invalid AttributeDataType" trap is avoided by design + regression-tested). **Manual smoke (post-deploy, user-side):** fresh Google sign-in (or existing federated user with no picture and no prior attempt) → picture appears on `/profile` within one request cycle; verify object exists under `profile-pictures/` in `batbern-content-staging`.
+- [x] **Task 6 — docs (AC: 8)** — `docs/plans/sso-oidc-federation.md` §9 (post-GA follow-ups, 12.12 delivered) + `docs/architecture/06b-user-lifecycle-sync.md` Pattern 1c (federated avatar import in the lifecycle). OpenAPI: no surface change — the import is implicit; no response field added; no type regen needed. 06-backend-architecture / 08-operations-security checked: no profile-picture/interceptor content to drift.
 
 ## Dev Notes
 
@@ -81,8 +81,59 @@ Google's OIDC `picture` claim provides a photo URL on every federated sign-in, b
 
 ### Agent Model Used
 
+Claude Opus 4.8 (1M context) via bmad-dev-story, 2026-06-04
+
+### Implementation Plan / Key Decisions
+
+1. **Story's main open verification RESOLVED first**: the **ID token** reaches CUMS — `web-frontend/src/services/api/apiClient.ts:38` puts `session.tokens.idToken` in the `Authorization` header, and the JIT interceptor already reads ID-token-only claims (`email`/`given_name`/`family_name`/`custom:preferences`) in production. `Jwt#getClaimAsString("picture")` therefore works directly; no PreTokenGen passthrough / userInfo call needed.
+2. **Sibling interceptor** (`FederatedAvatarImportInterceptor`), not a JIT extension — keeps JIT single-purpose per the story's guidance. Registered AFTER JIT in `WebMvcConfig` (interceptor order = registration order) so the first-ever federated request both provisions the row AND imports the avatar (covered by a dedicated IT).
+3. **Plain injected `Executor` instead of `@Async`**: no self-proxy magic, directly unit-testable non-blocking behavior (a capturing executor proves zero network I/O on the request thread). `avatarImportExecutor` (1-2 threads, queue 50) + `avatarFetchHttpClient` beans use `@ConditionalOnMissingBean(name=...)` so `TestAwsConfig` overrides them with `SyncTaskExecutor` + Mockito mock — same override pattern as the existing AWS client mocks. Sync executor in ITs is REQUIRED (a real pool thread could not see uncommitted `@Transactional` test data).
+4. **Mark-attempt-BEFORE-dispatch**: `picture_import_attempted_at` is saved synchronously before URL validation + fetch dispatch — failure paths (bad host, 403, oversize, timeout) are naturally recorded with no extra writes, and async-thread snapshots can never resurrect a NULL timestamp (no surrounding TX in the interceptor path → save commits immediately). Worker re-checks `profilePictureUrl IS NULL` right before the S3 write (never clobber a picture uploaded between mark and async execution).
+5. **Migration is V18, not V17**: Story 12.11 (developed in parallel, same branch) claims V17. Flyway gaps are harmless if 12.11 were abandoned; both ship on the same branch so out-of-order application cannot occur.
+6. **DELETE /users/me/picture untouched**: marking on import-attempt alone satisfies "never re-import after delete" for imported pictures (attempt already recorded). A user-uploaded-then-deleted picture may trigger ONE import afterwards — consistent with one-attempt-ever semantics, smaller blast radius.
+
 ### Debug Log References
+
+- `/tmp/12-12-cdk-red.log` / `/tmp/12-12-cdk-green.log` — CDK TDD cycle (RED: mapping missing; GREEN: 12/12)
+- `/tmp/12-12-red.log` — CUMS RED run: 10/18 failed against skeleton (negatives pass by design)
+- `/tmp/12-12-green.log` — CUMS GREEN run: 18/18
+- `/tmp/12-12-cums-full.log` — full-suite run #1: 39 failures in `LogoControllerTest`/`CompanyControllerTest` (`@WebMvcTest` slices missing the new `WebMvcConfig` dependency) → fixed with `@MockitoBean FederatedAvatarImportService` (same pattern as the existing JIT `UserRepository` mock)
+- `/tmp/12-12-cums-full2.log` — full CUMS suite + checkstyle after fix
+- `/tmp/12-12-infra-full.log` — full infrastructure jest suite
 
 ### Completion Notes List
 
+- AC1 ✅ Cognito: `profilePicture: GOOGLE_PICTURE` mapped + `picture` in client read/write attributes (F1b lesson applied); 2 new CDK tests incl. a Schema-regression guard (PR #735 trap).
+- AC2 ✅ One-time server-side import keyed off the ID-token `picture` claim; reuses `ProfilePictureService.uploadProfilePictureDirectly` (validation + key convention + CloudFront URL) — no new S3 code.
+- AC3 ✅ Never clobber (guard + pre-write re-check), never loop (`picture_import_attempted_at` one-attempt-ever), non-blocking (interceptor catch-all + dedicated executor; fetch never on request thread).
+- AC4 ✅ V18 forward-only migration (TIMESTAMPTZ, matching user_profiles conventions).
+- AC5 ✅ Native JWTs (no claim) exit before any DB access; IT asserts no attempt recorded.
+- AC6 ✅ IT asserts stored URL `startsWith https://cdn.batbern.ch/profile-pictures/` + `doesNotContain googleusercontent`; display path verified unchanged (`useUserPortrait.ts`, `ProfilePhotoUpload.tsx:246`).
+- AC7 ✅ 2 CDK tests, 7 ITs (5 story scenarios + SSRF-guard + fresh-federated same-request), 11 unit tests (8 URL-guard + 3 async hand-off).
+- AC8 ✅ Plan §9 + 06b Pattern 1c; OpenAPI unchanged (implicit import, no new fields).
+- SSRF guard: https-only, host == `googleusercontent.com` or subdomain; `=s96-c` → `=s512-c` upgrade before fetch.
+- **Post-deploy manual smoke pending (user-side)**: fresh Google sign-in → picture on `/profile`; S3 object under `profile-pictures/` in `batbern-content-staging`. Note: existing federated users (e.g. Nissim's earlier sign-ins) qualify if they have no picture and no prior attempt — their next API request after both deploys triggers the import.
+
 ### File List
+
+- `infrastructure/lib/stacks/cognito-stack.ts` — modified (IdP attributeMapping + client read/writeAttributes)
+- `infrastructure/test/unit/cognito-stack.test.ts` — modified (2 new tests)
+- `services/company-user-management-service/src/main/resources/db/migration/V18__add_picture_import_attempted_at.sql` — new
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/domain/User.java` — modified (pictureImportAttemptedAt field)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/FederatedAvatarImportService.java` — new
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/interceptor/FederatedAvatarImportInterceptor.java` — new
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/config/AvatarImportConfig.java` — new
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/config/WebMvcConfig.java` — modified (register avatar interceptor after JIT)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/config/TestAwsConfig.java` — modified (sync executor + mock HttpClient beans)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/FederatedAvatarImportIntegrationTest.java` — new (7 ITs)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/service/FederatedAvatarImportServiceTest.java` — new (11 unit tests)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java` — modified (@MockitoBean for new WebMvcConfig dep)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/CompanyControllerTest.java` — modified (@MockitoBean for new WebMvcConfig dep)
+- `docs/plans/sso-oidc-federation.md` — modified (§9 post-GA follow-ups)
+- `docs/architecture/06b-user-lifecycle-sync.md` — modified (Pattern 1c)
+- `_bmad-output/implementation-artifacts/12-12-google-profile-picture-import.md` — story file (tasks/record)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — status updates
+
+## Change Log
+
+- 2026-06-04: Story 12.12 implemented end-to-end (CDK picture mapping, V18 migration, one-time async avatar import service + interceptor, 20 new backend tests + 2 CDK tests, docs). Token-type open question resolved: ID token reaches CUMS. Migration numbered V18 (12.11 holds V17 in parallel).

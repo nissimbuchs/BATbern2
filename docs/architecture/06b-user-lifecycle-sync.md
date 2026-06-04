@@ -701,6 +701,14 @@ attribute in the token. Everything else is resolved from the DB via the user-api
 
 **Relationship to PostConfirmation**: PostConfirmation Lambda is the **native fast-path** (it runs synchronously at self-registration confirmation). It is **not** superior to JIT — it is simply earlier for native sign-ups. Federated (Google, ADR-010) sign-ins **never** fire PostConfirmation (Cognito fires only Pre-Sign-up / Pre-Token-Generation / Post-Authentication for external IdPs), so a brand-new federated user's row is created by this interceptor on their first authenticated request. Because JIT now captures exactly what PostConfirmation captures, **Story 12.8 (Phase 3 federated provisioning) is verify-only** — it confirms a real Google identity provisions correctly through this path and builds nothing new.
 
+**Pattern 1c** _(Story 12.12)_: **one-time federated avatar import.** `FederatedAvatarImportInterceptor` — a sibling of the JIT interceptor, registered immediately **after** it on the same `/api/**` patterns (so on the very first federated request the JIT-created row already exists) — watches every authenticated request for an ID-token `picture` claim (mapped by the Cognito Google IdP `attributeMapping`; requires `picture` in the app client's read **and** write attributes per the 12.8-F1b rule, or Cognito silently drops it).
+
+- **Trigger**: `picture` claim present AND `profile_picture_url IS NULL` AND `picture_import_attempted_at IS NULL`. Native sign-ins carry no claim → immediate exit, zero DB cost.
+- **One attempt ever**: `user_profiles.picture_import_attempted_at` (CUMS V18) is set synchronously **before** the fetch is dispatched — success or failure, the import never re-runs. This prevents clobbering user uploads, re-import-after-delete loops, and repeated fetches of broken Google URLs. The timestamp is never reset.
+- **Fetch-once-and-own**: the photo is fetched server-side (dedicated `avatarImportExecutor`, never on the request thread), validated and stored through the existing `ProfilePictureService` (content-type + 5 MB validation, `profile-pictures/{year}/{username}/` key convention) and served from `cdn.batbern.ch` — `googleusercontent.com` URLs are never hotlinked (they rotate/expire).
+- **SSRF guard**: only `https` URLs on `googleusercontent.com` (or a subdomain) are ever fetched; the sized variant suffix (`=s96-c`) is upgraded to `=s512-c` before fetching.
+- **Error handling**: same fail-open contract as JIT — any failure is logged and swallowed; a broken avatar fetch never fails the user's API request.
+
 ### ✅ Reconciliation Job — `UserReconciliationService`
 
 `UserReconciliationService` provides `reconcileUsers()` and `checkSyncStatus()` to detect and resolve divergence between the DB and Cognito.
