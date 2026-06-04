@@ -31,6 +31,8 @@ vi.mock('@services/auth/authService', () => ({
     signIn: vi.fn(),
     signOut: vi.fn(),
     isTokenExpired: vi.fn(() => false),
+    // Story 12.8 F7: completeFederatedSignIn awaits the bounded exchange-settle wait.
+    waitForFederatedSession: vi.fn().mockResolvedValue(true),
   },
 }));
 
