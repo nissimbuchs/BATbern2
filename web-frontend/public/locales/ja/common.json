@@ -515,12 +515,12 @@
       "saveFailed": "プロフィールの保存に失敗しました"
     },
     "photo": {
-      "invalidFileType": "無効なファイル形式です。対応形式：JPEG、PNG、WebP",
+      "invalidFileType": "無効なファイル形式です。対応形式：JPEG、PNG、SVG",
       "fileTooLarge": "ファイルサイズは5MB未満にしてください",
       "changePhoto": "写真を変更",
       "dragDropHere": "写真をここにドラッグ＆ドロップ",
       "orClickBrowse": "またはクリックして参照",
-      "supportedFormats": "JPEG、PNG、WebP（最大5MB）",
+      "supportedFormats": "JPEG、PNG、SVG（最大5MB）",
       "uploading": "アップロード中...",
       "cancel": "キャンセル",
       "uploadAria": "プロフィール写真をアップロード"

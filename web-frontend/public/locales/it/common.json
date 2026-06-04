@@ -515,12 +515,12 @@
       "saveFailed": "Salvataggio profilo non riuscito"
     },
     "photo": {
-      "invalidFileType": "Tipo file non valido. Formati accettati: JPEG, PNG, WebP",
+      "invalidFileType": "Tipo file non valido. Formati accettati: JPEG, PNG, SVG",
       "fileTooLarge": "Il file deve essere inferiore a 5 MB",
       "changePhoto": "Cambia foto",
       "dragDropHere": "Trascina qui una foto",
       "orClickBrowse": "o clicca per sfogliare",
-      "supportedFormats": "JPEG, PNG, WebP (max 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5 MB)",
       "uploading": "Caricamento...",
       "cancel": "Annulla",
       "uploadAria": "Carica foto profilo"

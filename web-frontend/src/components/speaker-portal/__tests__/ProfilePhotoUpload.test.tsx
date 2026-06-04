@@ -5,7 +5,9 @@
  * Tests for:
  * - Drag-and-drop support (AC7.1)
  * - Click to browse (AC7.2)
- * - File type validation - JPEG, PNG, WebP (AC7.3)
+ * - File type validation - JPEG, PNG, SVG (AC7.3; aligned to backend ProfilePictureService
+ *   png/jpg/jpeg/svg allow-list in the Story 12.12 follow-up — webp was frontend-only and
+ *   400'd at the presigned-url phase)
  * - File size validation - max 5MB (AC7.4)
  * - Image preview after selection (AC7.5)
  * - Upload progress indicator (AC7.7)
@@ -83,7 +85,7 @@ describe('ProfilePhotoUpload Component', () => {
     it('should_displayAcceptedFormatsHint_when_dropzoneVisible', () => {
       render(<ProfilePhotoUpload {...defaultProps} />);
 
-      expect(screen.getByText(/jpeg, png, webp/i)).toBeInTheDocument();
+      expect(screen.getByText(/jpeg, png, svg/i)).toBeInTheDocument();
       expect(screen.getByText(/max 5mb/i)).toBeInTheDocument();
     });
   });
@@ -125,13 +127,39 @@ describe('ProfilePhotoUpload Component', () => {
       });
     });
 
-    it('should_acceptWebPFiles_when_webpProvided', async () => {
-      const user = userEvent.setup();
-      mockSuccess('https://cdn.batbern.ch/new-photo.webp');
-
+    // Story 12.12 follow-up: webp passed the old frontend check but the backend
+    // ProfilePictureService only accepts png/jpg/jpeg/svg → the upload 400'd at the
+    // presigned-url phase. The frontend list now mirrors the backend: webp rejected
+    // client-side with a proper message, svg accepted.
+    it('should_rejectWebPFiles_when_webpProvided', async () => {
       render(<ProfilePhotoUpload {...defaultProps} />);
 
       const file = new File(['image content'], 'photo.webp', { type: 'image/webp' });
+      const dropzone = screen.getByTestId('photo-dropzone');
+
+      // Use drag-and-drop which bypasses the accept attribute (same as the GIF test) —
+      // file pickers already filter on accept, drops do not.
+      fireEvent.drop(dropzone, {
+        dataTransfer: {
+          files: [file],
+        },
+      });
+
+      await waitFor(() => {
+        expect(defaultProps.onError).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'INVALID_FILE_TYPE' })
+        );
+      });
+      expect(mockUploadProfilePhoto).not.toHaveBeenCalled();
+    });
+
+    it('should_acceptSvgFiles_when_svgProvided', async () => {
+      const user = userEvent.setup();
+      mockSuccess('https://cdn.batbern.ch/new-photo.svg');
+
+      render(<ProfilePhotoUpload {...defaultProps} />);
+
+      const file = new File(['<svg></svg>'], 'photo.svg', { type: 'image/svg+xml' });
       const dropzone = screen.getByTestId('photo-dropzone');
       const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
 

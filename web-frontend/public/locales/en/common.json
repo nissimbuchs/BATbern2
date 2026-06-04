@@ -552,12 +552,12 @@
       "saveFailed": "Failed to save profile"
     },
     "photo": {
-      "invalidFileType": "Invalid file type. Accepted formats: JPEG, PNG, WebP",
+      "invalidFileType": "Invalid file type. Accepted formats: JPEG, PNG, SVG",
       "fileTooLarge": "File size must be less than 5MB",
       "changePhoto": "Change photo",
       "dragDropHere": "Drag and drop a photo here",
       "orClickBrowse": "or click to browse",
-      "supportedFormats": "JPEG, PNG, WebP (max 5MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5MB)",
       "uploading": "Uploading...",
       "cancel": "Cancel",
       "uploadAria": "Upload profile photo"

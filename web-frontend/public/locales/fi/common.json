@@ -515,12 +515,12 @@
       "saveFailed": "Profiilin tallentaminen epäonnistui"
     },
     "photo": {
-      "invalidFileType": "Virheellinen tiedostotyyppi. Hyväksytyt muodot: JPEG, PNG, WebP",
+      "invalidFileType": "Virheellinen tiedostotyyppi. Hyväksytyt muodot: JPEG, PNG, SVG",
       "fileTooLarge": "Tiedostokoko on oltava alle 5 Mt",
       "changePhoto": "Vaihda kuva",
       "dragDropHere": "Vedä ja pudota kuva tähän",
       "orClickBrowse": "tai napsauta selataksesi",
-      "supportedFormats": "JPEG, PNG, WebP (enintään 5 Mt)",
+      "supportedFormats": "JPEG, PNG, SVG (enintään 5 Mt)",
       "uploading": "Ladataan...",
       "cancel": "Peruuta",
       "uploadAria": "Lataa profiilikuva"

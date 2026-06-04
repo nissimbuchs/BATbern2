@@ -5,7 +5,8 @@
  * Features:
  * - Drag-and-drop support (AC7.1)
  * - Click to browse (AC7.2)
- * - File type validation - JPEG, PNG, WebP (AC7.3)
+ * - File type validation - JPEG, PNG, SVG (AC7.3; Story 12.12 follow-up aligned the
+ *   list to the backend ProfilePictureService allow-list — webp was frontend-only)
  * - File size validation - max 5MB (AC7.4)
  * - Image preview after selection (AC7.5)
  * - Upload uses presigned URL (AC7.6)
@@ -24,7 +25,10 @@ import { uploadProfilePicture } from '@/services/api/userAccountApi';
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (AC7.4)
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']; // (AC7.3)
+// (AC7.3) — Story 12.12 follow-up: mirror the backend ProfilePictureService allow-list
+// EXACTLY (png/jpg/jpeg/svg → image/jpeg, image/png, image/svg+xml). webp was
+// frontend-only and 400'd at the presigned-url phase (InvalidFileTypeException).
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/svg+xml'];
 
 interface ProfilePhotoUploadProps {
   /** Current profile photo URL (null if none) */

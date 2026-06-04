@@ -515,12 +515,12 @@
       "saveFailed": "Profiel opslaan mislukt"
     },
     "photo": {
-      "invalidFileType": "Ongeldig bestandstype. Geaccepteerde formaten: JPEG, PNG, WebP",
+      "invalidFileType": "Ongeldig bestandstype. Geaccepteerde formaten: JPEG, PNG, SVG",
       "fileTooLarge": "Bestandsgrootte moet kleiner zijn dan 5 MB",
       "changePhoto": "Foto wijzigen",
       "dragDropHere": "Sleep een foto hier naartoe",
       "orClickBrowse": "of klik om te bladeren",
-      "supportedFormats": "JPEG, PNG, WebP (max. 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max. 5 MB)",
       "uploading": "Uploaden...",
       "cancel": "Annuleren",
       "uploadAria": "Profielfoto uploaden"

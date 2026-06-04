@@ -517,12 +517,12 @@
       "saveFailed": "Profil konnte nicht gespeichert werden"
     },
     "photo": {
-      "invalidFileType": "Ungültiger Dateityp. Akzeptierte Formate: JPEG, PNG, WebP",
+      "invalidFileType": "Ungültiger Dateityp. Akzeptierte Formate: JPEG, PNG, SVG",
       "fileTooLarge": "Dateigrösse muss kleiner als 5 MB sein",
       "changePhoto": "Foto ändern",
       "dragDropHere": "Foto hier ablegen",
       "orClickBrowse": "oder klicken zum Durchsuchen",
-      "supportedFormats": "JPEG, PNG, WebP (max. 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max. 5 MB)",
       "uploading": "Wird hochgeladen...",
       "cancel": "Abbrechen",
       "uploadAria": "Profilfoto hochladen"

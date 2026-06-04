@@ -515,12 +515,12 @@
       "saveFailed": "La memorisaziun dal profil ha fallì"
     },
     "photo": {
-      "invalidFileType": "Tip da file nunvalid. Formats acceptads: JPEG, PNG, WebP",
+      "invalidFileType": "Tip da file nunvalid. Formats acceptads: JPEG, PNG, SVG",
       "fileTooLarge": "La dimensiun dal file sto esser pli pitschna che 5 MB",
       "changePhoto": "Midar la foto",
       "dragDropHere": "Drizzar ina foto qua",
       "orClickBrowse": "u cliccar per tschertgar",
-      "supportedFormats": "JPEG, PNG, WebP (max 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5 MB)",
       "uploading": "Chargament...",
       "cancel": "Interrumper",
       "uploadAria": "Chargiar la foto da profil"
