@@ -8,6 +8,7 @@ import i18n from '@/i18n/config';
 import { hasCognitoSession } from '@/utils/auth/cognitoSession';
 import { ensureAmplifyConfigured } from '@/config/amplify';
 import { authService } from '@/services/auth/authService';
+import { setLogoutReason } from '@/services/auth/logoutReason';
 
 /**
  * Generate a unique correlation ID for request tracing
@@ -156,6 +157,11 @@ apiClient.interceptors.response.use(
           // token-refresh path (a refresh loop would result).
           if (error.response.data?.error === 'ACCOUNT_DEACTIVATED') {
             console.error(`[${correlationId}] Account deactivated - forcing logout`);
+            // Story 12.8 F5: for a FEDERATED session, Amplify signOut() performs a
+            // full-page redirect to the Cognito hosted-UI /logout — which clobbers the
+            // in-app navigation below (and its ?reason= param). Persist the reason in
+            // sessionStorage so it survives the round-trip; LogoutPage/LoginForm consume it.
+            setLogoutReason('account_deactivated');
             // Best-effort sign-out; clears the Amplify session (native or federated).
             void authService.signOut().catch(() => {
               /* ignore — we redirect regardless */

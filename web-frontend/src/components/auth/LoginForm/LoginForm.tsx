@@ -29,6 +29,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { useFeature } from '@/contexts/useFeature';
 import { authService } from '@/services/auth/authService';
+import { consumeLogoutReason } from '@/services/auth/logoutReason';
 import { LoginCredentials } from '@/types/auth';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 
@@ -82,8 +83,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
   // Surface a dismissible notice so the user understands why they were signed out.
   const [searchParams] = useSearchParams();
   const [deactivatedDismissed, setDeactivatedDismissed] = useState(false);
+  // Story 12.8 F5: the reason may also arrive via the sessionStorage hand-off instead of
+  // the query param — e.g. the AuthCallbackPage navigates to plain `/login` after a failed
+  // federated hydration (its `replace` wipes the interceptor's ?reason=), or Amplify's
+  // hosted-UI logout redirect swallowed the in-app navigation entirely.
+  const [storedLogoutReason] = useState(() => consumeLogoutReason());
   const showDeactivatedNotice =
-    searchParams.get('reason') === 'account_deactivated' && !deactivatedDismissed;
+    (searchParams.get('reason') === 'account_deactivated' ||
+      storedLogoutReason === 'account_deactivated') &&
+    !deactivatedDismissed;
   const [showPassword, setShowPassword] = useState(false);
   // Epic 11 bug fix 2026-05-19 — when Cognito returns
   // CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED on first sign-in (with the temp

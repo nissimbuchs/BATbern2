@@ -45,33 +45,39 @@ function createStorageAdapter(storage: Storage) {
 const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
   const { environment, cognito } = runtimeConfig;
 
-  // Determine OAuth redirect URLs based on environment
+  // Determine OAuth redirect URLs based on environment.
+  // redirectSignOut MUST exactly match a registered Cognito client logout URL
+  // (cognito-stack.ts logoutUrls = ['…/logout']) — Cognito's /logout endpoint rejects an
+  // unregistered logout_uri with the cryptic "Required String parameter 'redirect_uri' is
+  // not present" error page (Story 12.8 finding F4, 2026-06-04: the old value '…/' was not
+  // registered, so every federated sign-out dead-ended on that Cognito error). The /logout
+  // app route (Story 12.7 LogoutPage) finishes local cleanup and routes onward.
   let redirectSignIn = 'http://localhost:3000/auth/callback';
-  let redirectSignOut = 'http://localhost:3000/';
+  let redirectSignOut = 'http://localhost:3000/logout';
 
   switch (environment) {
     case 'production':
       redirectSignIn = 'https://www.batbern.ch/auth/callback';
-      redirectSignOut = 'https://www.batbern.ch/';
+      redirectSignOut = 'https://www.batbern.ch/logout';
       break;
     case 'staging':
       // Staging account now serves production traffic
       redirectSignIn = 'https://www.batbern.ch/auth/callback';
-      redirectSignOut = 'https://www.batbern.ch/';
+      redirectSignOut = 'https://www.batbern.ch/logout';
       break;
   }
 
-  // Cognito hosted-UI domain prefix. This is FIXED per user pool and must match the
-  // CDK `cognito-stack` domainPrefix `batbern-${envName}-auth` (envName = 'staging' for the
-  // single consolidated account that serves production). It CANNOT be derived from
-  // `environment`: the backend serves environment='production' while the pool's domain
-  // segment is 'staging' (and the old code also dropped the required `-auth` suffix), so
-  // `batbern-${environment}.auth…` resolved to the non-existent
-  // `batbern-production.auth…` → the /auth/callback OAuth code-exchange hit a dead domain
-  // and no session was established (Story 12.8 finding F3, 2026-06-03).
+  // Cognito hosted-UI domain (Story 12.9 DF-1, 2026-06-04): the CUSTOM domain
+  // `auth.batbern.ch` (CDK cognito-stack `CustomUserPoolDomain`). User-visible benefit:
+  // Google's consent screen shows the redirect domain — batbern.ch instead of the default
+  // `batbern-staging-auth.auth.eu-central-1.amazoncognito.com`. The default prefix domain
+  // still exists on the pool (kept for zero-downtime transition), but new sign-ins go
+  // through the custom domain. History: deriving this from `environment` was finding F3
+  // (backend serves environment='production' while the pool's prefix segment is 'staging'
+  // → dead domain, broken code-exchange) — so this stays an explicit constant.
   // TODO(12.7/12.9): serve this domain via runtime config (GET /api/v1/config) instead of a
   // constant, so a future second pool isn't silently mis-targeted.
-  const cognitoDomainPrefix = 'batbern-staging-auth';
+  const cognitoHostedUiDomain = 'auth.batbern.ch';
 
   const config: ResourcesConfig = {
     Auth: {
@@ -80,7 +86,7 @@ const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
         userPoolClientId: cognito.clientId,
         loginWith: {
           oauth: {
-            domain: `${cognitoDomainPrefix}.auth.${cognito.region}.amazoncognito.com`,
+            domain: cognitoHostedUiDomain,
             scopes: ['email', 'openid', 'profile'],
             redirectSignIn: [redirectSignIn],
             redirectSignOut: [redirectSignOut],

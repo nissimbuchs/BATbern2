@@ -199,12 +199,20 @@ const cognitoStack = new CognitoStack(app, `${stackPrefix}-Cognito`, {
   lambdaTriggersSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
   databaseSecret: databaseStack.databaseSecret,
   databaseEndpoint: databaseStack.databaseEndpoint,
+  // Story 12.9 DF-1: us-east-1 cert + hosted zone for the auth.<zone> hosted-UI custom
+  // domain (mirrors the StorageStack cdnCertificate/hostedZone wiring)
+  authCertificate: dnsStack?.authCertificate,
+  hostedZone: dnsStack?.hostedZone,
   env,
   description: `BATbern User Authentication - ${config.envName}`,
   tags: config.tags,
+  crossRegionReferences: true, // Required to reference the us-east-1 auth certificate
 });
 cognitoStack.addDependency(networkStack); // For VPC and security group
 cognitoStack.addDependency(databaseStack); // For database secret and endpoint
+if (dnsStack) {
+  cognitoStack.addDependency(dnsStack); // For the us-east-1 auth.<zone> certificate (DF-1)
+}
 
 // 9. SES Stack (Email templates for authentication workflows)
 const sesStack = new SesStack(app, `${stackPrefix}-SES`, {

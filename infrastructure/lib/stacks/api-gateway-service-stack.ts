@@ -136,6 +136,12 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         // live on deploy. Instant kill-switch: set FEATURES_SSO_ENABLED=false + restart (the
         // frontend re-reads features.sso from GET /api/v1/config — no rebuild/redeploy).
         FEATURES_SSO_ENABLED: 'true',
+        // Request-time is_active gate (Story 12.2 AccountActiveFilter) — durably ON.
+        // Verified in prod 2026-06-04 (Story 12.8 AC2): a deactivated federated account was
+        // blocked with 403 ACCOUNT_DEACTIVATED at the gateway and re-activation restored
+        // access after the ~60s TTL — exactly the "verify a test deactivation, then flip
+        // true" gate 12.2's rollout prescribed. Kill-switch: set 'false' + restart.
+        SECURITY_ACTIVE_GATE_ENABLED: 'true',
       },
       secrets,
       healthCheck: {

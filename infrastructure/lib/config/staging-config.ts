@@ -55,6 +55,7 @@ export const stagingConfig: EnvironmentConfig = {
     cdnCertificateArn: 'arn:aws:acm:us-east-1:188701360969:certificate/4aece095-d46f-4266-ac3a-c25736d59c08', // Pre-created for cdn.batbern.ch
     apiCertificateArn: 'arn:aws:acm:eu-central-1:188701360969:certificate/d0f9a634-86a9-4bf4-b8b8-d2e9503e3cec', // Pre-created for api.batbern.ch
     betaFrontendCertificateArn: 'arn:aws:acm:us-east-1:188701360969:certificate/7d4daddf-59e8-47e8-aac3-b7db779d5839', // Pre-created for beta.batbern.ch (beta canary, Phase 1)
+    authCertificateArn: 'arn:aws:acm:us-east-1:188701360969:certificate/a3efe1f4-fab4-4e42-b7e8-9d4c70af6891', // Pre-created for auth.batbern.ch (Cognito hosted-UI custom domain, Story 12.9 DF-1)
   },
   tags: {
     Environment: 'production',

@@ -78,6 +78,7 @@ export interface DomainConfig {
   cdnCertificateArn?: string; // us-east-1 for CloudFront CDN
   apiCertificateArn?: string; // eu-central-1 for API Gateway
   betaFrontendCertificateArn?: string; // us-east-1 for the beta.batbern.ch canary (see docs/plans/beta-frontend-canary.md)
+  authCertificateArn?: string; // us-east-1 for the auth.<zone> Cognito hosted-UI custom domain (Story 12.9 DF-1)
 }
 
 export interface VpcConfig {
