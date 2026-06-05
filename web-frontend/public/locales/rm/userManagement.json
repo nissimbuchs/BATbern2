@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "Mussar",
-    "editRoles": "Modifitgar rollas"
+    "editRoles": "Modifitgar rollas",
+    "openMenu": "Avrir il menu d'acziuns"
   },
   "roles": {
     "organizer": "Organisatur",

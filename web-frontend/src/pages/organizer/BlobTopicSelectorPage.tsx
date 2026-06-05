@@ -17,6 +17,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { ArrowBack } from '@mui/icons-material';
@@ -30,6 +32,8 @@ const BlobTopicSelectorPage: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('organizer');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [showBackDialog, setShowBackDialog] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY));
@@ -145,6 +149,7 @@ const BlobTopicSelectorPage: React.FC = () => {
         open={showBackDialog}
         onClose={handleBackCancel}
         maxWidth="xs"
+        fullScreen={isMobile}
         data-testid="blob-unsaved-dialog"
       >
         <DialogTitle>

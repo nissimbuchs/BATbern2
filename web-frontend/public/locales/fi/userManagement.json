@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "Näytä",
-    "editRoles": "Muokkaa rooleja"
+    "editRoles": "Muokkaa rooleja",
+    "openMenu": "Avaa toimintovalikko"
   },
   "roles": {
     "organizer": "Järjestäjä",

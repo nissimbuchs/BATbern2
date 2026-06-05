@@ -65,9 +65,11 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { CustomTaskModal } from '@/components/organizer/Tasks/CustomTaskModal';
 import { TaskCard } from '@/components/organizer/Tasks/TaskCard';
 import { useAuth } from '@/hooks/useAuth';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 const TaskBoardPage: React.FC = () => {
   const { t, i18n } = useTranslation('organizer');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
   const locale = i18n.language === 'de' ? de : enUS;
   const { user } = useAuth();
@@ -299,7 +301,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'grey.50',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -336,7 +339,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'warning.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -373,7 +377,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'info.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -410,7 +415,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'success.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -455,7 +461,13 @@ const TaskBoardPage: React.FC = () => {
       </Container>
 
       {/* Task Completion Modal */}
-      <Dialog open={!!completingTaskId} onClose={handleCancelComplete} maxWidth="sm" fullWidth>
+      <Dialog
+        open={!!completingTaskId}
+        onClose={handleCancelComplete}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
+      >
         <DialogTitle>{t('tasks.completeTask', 'Complete Task')}</DialogTitle>
         <DialogContent>
           <TextField
@@ -490,7 +502,13 @@ const TaskBoardPage: React.FC = () => {
       </Dialog>
 
       {/* Delete Task Confirmation Dialog */}
-      <Dialog open={!!deletingTask} onClose={() => setDeletingTask(null)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={!!deletingTask}
+        onClose={() => setDeletingTask(null)}
+        maxWidth="xs"
+        fullWidth
+        fullScreen={isMobile}
+      >
         <DialogTitle>{t('tasks.deleteTask', 'Delete Task')}</DialogTitle>
         <DialogContent>
           <Typography>

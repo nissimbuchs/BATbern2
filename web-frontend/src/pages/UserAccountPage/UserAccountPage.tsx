@@ -110,7 +110,7 @@ const UserAccountPage: React.FC = () => {
       {/* Breadcrumbs */}
       <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ borderBottom: { xs: 0, md: 1 }, borderColor: 'divider' }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}

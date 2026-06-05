@@ -47,6 +47,7 @@ import {
   type TopicDTO,
 } from '@/services/api/partnerTopicsApi';
 import { TopicSuggestionForm } from '@/components/partner/TopicSuggestionForm';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,7 @@ const STATUS_COLOR: Record<string, 'default' | 'success' | 'error'> = {
 
 export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
   const { t } = useTranslation('partners');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -272,6 +274,7 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
       <Dialog
         open={deletingTopicId !== null}
         onClose={() => setDeletingTopicId(null)}
+        fullScreen={isMobile}
         aria-labelledby="delete-topic-dialog-title"
       >
         <DialogTitle id="delete-topic-dialog-title">{t('common:actions.delete')}</DialogTitle>

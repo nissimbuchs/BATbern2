@@ -69,7 +69,12 @@ const NotificationsPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           {t('notifications.title')}
         </Typography>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          flexWrap="wrap"
+        >
           <FormControlLabel
             control={
               <Switch

@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { emailTemplateService } from '@/services/emailTemplateService';
 import type { EmailTemplateResponse } from '@/hooks/useEmailTemplates';
 
@@ -50,6 +51,7 @@ interface Props {
 
 export const EmailTemplatePreviewModal: React.FC<Props> = ({ template, onClose }) => {
   const { t } = useTranslation();
+  const { isMobile } = useBreakpoints();
   const [mergedHtml, setMergedHtml] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
@@ -91,7 +93,7 @@ export const EmailTemplatePreviewModal: React.FC<Props> = ({ template, onClose }
   const variables = template.variables ? Object.keys(template.variables) : [];
 
   return (
-    <Dialog open onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="lg" fullWidth fullScreen={isMobile}>
       <DialogTitle
         sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
       >

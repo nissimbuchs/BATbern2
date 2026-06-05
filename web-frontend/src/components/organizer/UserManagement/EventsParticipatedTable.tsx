@@ -14,10 +14,14 @@ import {
   Paper,
   Alert,
   Box,
+  Card,
+  CardContent,
+  Stack,
   Typography,
 } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import axios from 'axios';
 import apiClient from '@/services/api/apiClient';
 import type { components } from '@/types/generated/events-api.types';
@@ -37,6 +41,7 @@ interface EventsParticipatedTableProps {
 
 export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = ({ userId }) => {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
   const [events, setEvents] = useState<EventParticipation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +108,39 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
     return <Alert severity="info">{t('userDetail.eventsTable.noEvents')}</Alert>;
   }
 
+  const statusColor = (status: string) =>
+    status === 'ATTENDED' ? 'success.main' : 'text.secondary';
+
+  if (isMobile) {
+    return (
+      <Box data-testid="events-participated-cards">
+        {events.map((event, index) => (
+          <Card
+            key={`${event.eventCode}-${index}`}
+            variant="outlined"
+            sx={{ mb: 2 }}
+            data-testid="event-participation-card"
+          >
+            <CardContent>
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  {event.eventCode}
+                </Typography>
+                <Typography variant="body2">{event.title}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {event.date}
+                </Typography>
+                <Typography variant="body2" color={statusColor(event.status)}>
+                  {t(`userDetail.eventsTable.statusValues.${event.status}`, event.status)}
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
+    );
+  }
+
   return (
     <TableContainer component={Paper}>
       <Table aria-label={t('userDetail.eventsTable.ariaLabel')}>
@@ -116,7 +154,7 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
         </TableHead>
         <TableBody>
           {events.map((event, index) => (
-            <TableRow key={index}>
+            <TableRow key={`${event.eventCode}-${index}`}>
               <TableCell>
                 <Typography variant="body2" fontWeight="medium">
                   {event.eventCode}
@@ -125,10 +163,7 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
               <TableCell>{event.title}</TableCell>
               <TableCell>{event.date}</TableCell>
               <TableCell>
-                <Typography
-                  variant="body2"
-                  color={event.status === 'ATTENDED' ? 'success.main' : 'text.secondary'}
-                >
+                <Typography variant="body2" color={statusColor(event.status)}>
                   {t(`userDetail.eventsTable.statusValues.${event.status}`, event.status)}
                 </Typography>
               </TableCell>

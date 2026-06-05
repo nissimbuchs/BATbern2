@@ -76,6 +76,23 @@ describe('DataTable', () => {
     expect(gammaIndex).toBeLessThan(betaIndex);
   });
 
+  it('should_renderScrollableContainer_when_rendered', () => {
+    const { container } = render(<DataTable columns={columns} rows={rows} rowKey="id" />);
+
+    // The Table sits in a MUI TableContainer that allows horizontal scroll on
+    // narrow viewports (mobile responsiveness).
+    const tableContainer = container.querySelector('.MuiTableContainer-root') as HTMLElement;
+    expect(tableContainer).toBeTruthy();
+
+    const cssClass = Array.from(tableContainer.classList).find((c) => c.startsWith('css-'));
+    let css = '';
+    document.querySelectorAll('style').forEach((s) => {
+      const text = s.textContent ?? '';
+      if (cssClass && text.includes(`.${cssClass}`)) css += text + '\n';
+    });
+    expect(css).toMatch(/overflow-x:\s*auto/);
+  });
+
   it('renders empty table when no rows provided', () => {
     render(<DataTable columns={columns} rows={[]} rowKey="id" />);
     expect(screen.getByText('ID')).toBeInTheDocument();

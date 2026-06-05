@@ -63,6 +63,29 @@ const renderWithProviders = (ui: React.ReactElement) => {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
+/** Concatenate every emotion <style> rule that targets the element's css-* class. */
+const cssForElement = (el: HTMLElement): string => {
+  const cssClass = Array.from(el.classList).find((c) => c.startsWith('css-'));
+  if (!cssClass) return '';
+  let combined = '';
+  document.querySelectorAll('style').forEach((styleEl) => {
+    const css = styleEl.textContent ?? '';
+    if (css.includes(`.${cssClass}`)) combined += css + '\n';
+  });
+  return combined;
+};
+
+/**
+ * True when the element collapses to display:none at the xs base breakpoint.
+ * MUI compiles `display: { xs: 'none', sm: 'table-cell' }` into per-breakpoint
+ * `@media (min-width:…)` rules; the xs value lands behind `@media (min-width:0px)`,
+ * which jsdom never applies — so we inspect the injected stylesheet directly.
+ */
+const isHiddenAtXs = (el: HTMLElement): boolean => {
+  const css = cssForElement(el);
+  return /@media\s*\(min-width:\s*0px\)\s*\{[^}]*display:\s*none[^}]*\}/.test(css);
+};
+
 describe('UserTable Component', () => {
   describe('Rendering', () => {
     it('should_renderTableHeaders_when_usersProvided', () => {
@@ -113,6 +136,25 @@ describe('UserTable Component', () => {
       expect(screen.getByText('common:role.organizer')).toBeInTheDocument();
       expect(screen.getByText('common:role.speaker')).toBeInTheDocument();
       expect(screen.getByText('common:role.partner')).toBeInTheDocument();
+    });
+
+    it('should_hideCompanyAndStatusColumns_when_xsViewport', () => {
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
+
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
+
+      const companyHeader = screen.getByText('common:labels.company').closest('th') as HTMLElement;
+      const statusHeader = screen.getByText('common:labels.status').closest('th') as HTMLElement;
+      const nameHeader = screen.getByText('common:labels.name').closest('th') as HTMLElement;
+
+      // Company + Status collapse to display:none at the xs base breakpoint…
+      expect(isHiddenAtXs(companyHeader)).toBe(true);
+      expect(isHiddenAtXs(statusHeader)).toBe(true);
+      // …while the Name column stays visible.
+      expect(isHiddenAtXs(nameHeader)).toBe(false);
     });
 
     it('should_displayActiveStatus_when_userIsActive', () => {

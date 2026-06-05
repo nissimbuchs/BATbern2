@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -22,6 +22,33 @@ const mockPartner: PartnerResponse = {
   industry: 'Technology',
 };
 
+/**
+ * Build a deterministic window.matchMedia mock that simulates a viewport of the
+ * given width. It parses the `max-width: <n>px` value out of each MUI down()
+ * breakpoint query and reports `matches: true` only when the simulated viewport
+ * is at or below that breakpoint — so a 375px phone matches down('md') (899.95px)
+ * while a 1024px desktop does not. Avoids the tautological `/max-width/.test(query)`.
+ */
+const installMatchMediaForWidth = (viewportWidth: number) => {
+  window.matchMedia = vi.fn((query: string) => {
+    const maxMatch = /max-width:\s*([\d.]+)px/.exec(query);
+    const minMatch = /min-width:\s*([\d.]+)px/.exec(query);
+    let matches = false;
+    if (maxMatch) matches = viewportWidth <= parseFloat(maxMatch[1]);
+    else if (minMatch) matches = viewportWidth >= parseFloat(minMatch[1]);
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    };
+  }) as unknown as typeof window.matchMedia;
+};
+
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -40,6 +67,11 @@ const createWrapper = () => {
 describe('PartnerCreateEditModal', () => {
   let mockCreatePartner: ReturnType<typeof vi.fn>;
   let mockUpdatePartner: ReturnType<typeof vi.fn>;
+  const originalMatchMedia = window.matchMedia;
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -404,8 +436,10 @@ describe('PartnerCreateEditModal', () => {
     });
 
     it('should_fullscreen_when_mobileViewport', () => {
-      // Set viewport to mobile width
-      global.innerWidth = 500;
+      // Simulate a 375px phone: it falls below down('md') (max-width 899.95px),
+      // so MUI's useMediaQuery resolves true and the dialog goes fullScreen.
+      // MUI's useMediaQuery reads window.matchMedia (NOT window.innerWidth).
+      installMatchMediaForWidth(375);
 
       vi.mocked(usePartnerModalStore).mockReturnValue({
         isOpen: true,
@@ -418,10 +452,31 @@ describe('PartnerCreateEditModal', () => {
 
       render(<PartnerCreateEditModal />, { wrapper: createWrapper() });
 
-      // Verify component sets fullScreen prop based on window width
-      // MUI Dialog handles fullscreen rendering
-      // Full mobile behavior testing will be done in E2E tests
-      expect(global.innerWidth).toBe(500);
+      // MUI applies the `MuiDialog-paperFullScreen` class when fullScreen is true.
+      const paper = document.querySelector('.MuiDialog-paper');
+      expect(paper).toBeTruthy();
+      expect(paper?.className).toContain('MuiDialog-paperFullScreen');
+    });
+
+    it('should_notFullscreen_when_desktopViewport', () => {
+      // Simulate a 1024px desktop: it is wider than down('md') (max-width 899.95px),
+      // so down('md') does NOT match and the dialog stays windowed.
+      installMatchMediaForWidth(1024);
+
+      vi.mocked(usePartnerModalStore).mockReturnValue({
+        isOpen: true,
+        mode: 'create',
+        partnerToEdit: null,
+        openCreateModal: vi.fn(),
+        openEditModal: vi.fn(),
+        closeModal: vi.fn(),
+      });
+
+      render(<PartnerCreateEditModal />, { wrapper: createWrapper() });
+
+      const paper = document.querySelector('.MuiDialog-paper');
+      expect(paper).toBeTruthy();
+      expect(paper?.className).not.toContain('MuiDialog-paperFullScreen');
     });
 
     it('should_trapFocus_when_modalOpen', async () => {

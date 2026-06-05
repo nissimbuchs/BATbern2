@@ -78,7 +78,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 }) => {
   const { t } = useTranslation('userManagement');
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
 

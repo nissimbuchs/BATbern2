@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon, Warning as WarningIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useDeleteCompany } from '@/hooks/useCompanyMutations/useCompanyMutations';
 import type { components } from '@/types/generated/company-api.types';
 
@@ -31,6 +32,7 @@ const DeleteCompanyDialog: React.FC<DeleteCompanyDialogProps> = ({
   onSuccess,
 }) => {
   const { t } = useTranslation('common');
+  const { isMobile } = useBreakpoints();
   const deleteCompanyMutation = useDeleteCompany();
 
   const handleDelete = async () => {
@@ -54,6 +56,7 @@ const DeleteCompanyDialog: React.FC<DeleteCompanyDialogProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isMobile}
       aria-labelledby="delete-company-dialog-title"
     >
       <DialogTitle id="delete-company-dialog-title">

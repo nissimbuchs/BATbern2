@@ -31,6 +31,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import { AxiosError } from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
 import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
 import { useEvent } from '@/hooks/useEvents';
@@ -89,6 +90,7 @@ const timetableTypeToStructural = (type: TimetableSlot['type']): StructuralType 
 
 export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ eventCode }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
 
   const {
@@ -412,9 +414,11 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 {t('slotAssignment.timeline.title')}
               </Typography>
 
-              {/* Timeline Grid */}
+              {/* Timeline Grid — fluid to viewport width on mobile AND desktop; the
+                  proportional Grid fractions handle column sizing. overflowX wrapper
+                  kept as a harmless safety net. */}
               <Box data-testid="timeline-grid" sx={{ overflowX: 'auto' }}>
-                <Box sx={{ minWidth: 800 }}>
+                <Box>
                   {/* Header Row */}
                   <Grid container spacing={1} sx={{ mb: 1 }}>
                     <Grid size={2}>
@@ -424,7 +428,11 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                     </Grid>
                     {ROOMS.map((room) => (
                       <Grid size={10 / ROOMS.length} key={room}>
-                        <Typography variant="caption" fontWeight="bold" noWrap>
+                        <Typography
+                          variant="caption"
+                          fontWeight="bold"
+                          sx={{ whiteSpace: { xs: 'normal', md: 'nowrap' } }}
+                        >
                           {room}
                         </Typography>
                       </Grid>
@@ -522,11 +530,19 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                                 >
                                   {assignedSession ? (
                                     <Box>
-                                      <Typography variant="caption" fontWeight="bold" noWrap>
+                                      <Typography
+                                        variant="caption"
+                                        fontWeight="bold"
+                                        sx={{ whiteSpace: { xs: 'normal', md: 'nowrap' } }}
+                                      >
                                         {assignedSession.title}
                                       </Typography>
                                       {assignedSession.speakers?.[0] && (
-                                        <Typography variant="caption" display="block" noWrap>
+                                        <Typography
+                                          variant="caption"
+                                          display="block"
+                                          sx={{ whiteSpace: { xs: 'normal', md: 'nowrap' } }}
+                                        >
                                           {assignedSession.speakers[0].firstName}{' '}
                                           {assignedSession.speakers[0].lastName}
                                         </Typography>
@@ -648,6 +664,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           setStructuralAlreadyExist(false);
           setGenerateStructuralError(null);
         }}
+        fullScreen={isMobile}
         data-testid="generate-structural-modal"
       >
         <DialogTitle>{t('slotAssignment.modals.generateStructure.title')}</DialogTitle>
@@ -700,6 +717,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       <Dialog
         open={autoAssignModalOpen}
         onClose={() => setAutoAssignModalOpen(false)}
+        fullScreen={isMobile}
         data-testid="auto-assign-modal"
       >
         <DialogTitle>{t('slotAssignment.modals.autoAssign.title')}</DialogTitle>
@@ -732,7 +750,11 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       </Dialog>
 
       {/* Clear All Confirmation Modal */}
-      <Dialog open={clearAllModalOpen} onClose={() => setClearAllModalOpen(false)}>
+      <Dialog
+        open={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        fullScreen={isMobile}
+      >
         <DialogTitle>{t('slotAssignment.modals.clearAll.title')}</DialogTitle>
         <DialogContent>
           <Typography>{t('slotAssignment.modals.clearAll.message')}</Typography>

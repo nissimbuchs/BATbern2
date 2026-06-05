@@ -12,12 +12,16 @@ import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Box,
+  Card,
+  CardActions,
+  CardContent,
   Container,
   IconButton,
   MenuItem,
   Paper,
   Select,
   Skeleton,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -29,6 +33,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
@@ -76,6 +81,7 @@ function sortTopics(topics: TopicDTO[], key: SortKey, dir: SortDir): TopicDTO[] 
 
 const TopicStatusPanel: React.FC = () => {
   const { t } = useTranslation('partners');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
   const [sortKey, setSortKey] = useState<SortKey>('voteCount');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -187,6 +193,79 @@ const TopicStatusPanel: React.FC = () => {
     },
   });
 
+  // ─── Shared per-row controls (used by both table rows and mobile cards) ──────
+
+  const renderStatusSelect = (topic: TopicDTO, row: RowState) => (
+    <Select
+      size="small"
+      value={row.status}
+      onChange={(e) => setRowField(topic.id, 'status', e.target.value as RowState['status'])}
+      sx={{ minWidth: 120 }}
+      data-testid={`status-select-${topic.id}`}
+    >
+      <MenuItem value="PROPOSED">{t('portal.topics.status.proposed')}</MenuItem>
+      <MenuItem value="SELECTED">{t('portal.topics.status.selected')}</MenuItem>
+      <MenuItem value="DECLINED">{t('portal.topics.status.declined')}</MenuItem>
+    </Select>
+  );
+
+  const renderPlannedEventField = (topic: TopicDTO, row: RowState) =>
+    row.status === 'SELECTED' ? (
+      <TextField
+        size="small"
+        placeholder={t('topicStatus.eventCodePlaceholder')}
+        value={row.plannedEvent}
+        onChange={(e) => setRowField(topic.id, 'plannedEvent', e.target.value)}
+        inputProps={{ maxLength: 100 }}
+        data-testid={`planned-event-${topic.id}`}
+      />
+    ) : null;
+
+  const renderActions = (topic: TopicDTO, row: RowState) => (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 0.5,
+      }}
+    >
+      <Tooltip title={t('common:actions.save')}>
+        <span>
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={() => handleSave(topic.id)}
+            disabled={row.saving || row.status === 'PROPOSED'}
+            data-testid={`save-status-${topic.id}`}
+          >
+            <SaveIcon fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Tooltip title={t('common:actions.edit')}>
+        <IconButton
+          size="small"
+          onClick={() => setEditingTopic(topic)}
+          data-testid={`edit-topic-${topic.id}`}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={t('common:actions.delete')}>
+        <IconButton
+          size="small"
+          color="error"
+          onClick={() => deleteMutation.mutate(topic.id)}
+          disabled={deleteMutation.isPending}
+          data-testid={`delete-topic-${topic.id}`}
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+
   // ─── Loading state ─────────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -216,9 +295,78 @@ const TopicStatusPanel: React.FC = () => {
 
       {!topics || topics.length === 0 ? (
         <Typography color="text.secondary">{t('portal.topics.empty')}</Typography>
+      ) : isMobile ? (
+        <Box data-testid="organizer-topics-cards">
+          {sortedTopics.map((topic) => {
+            const row = getRowStateById(topic.id, topics);
+            return (
+              <Card
+                key={topic.id}
+                variant="outlined"
+                sx={{ mb: 2 }}
+                data-testid={`organizer-topic-card-${topic.id}`}
+              >
+                <CardContent>
+                  <Stack spacing={1.5}>
+                    {/* Title + description */}
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {topic.title}
+                      </Typography>
+                      {topic.description && (
+                        <Typography variant="caption" color="text.secondary">
+                          {topic.description}
+                        </Typography>
+                      )}
+                    </Box>
+
+                    {/* Company + votes */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 1,
+                      }}
+                    >
+                      <CompanyLogo
+                        companyName={topic.suggestedByCompany}
+                        variant="full"
+                        maxWidth={80}
+                        maxHeight={40}
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {t('portal.topics.organizer.col.votes')}: {topic.voteCount}
+                      </Typography>
+                    </Box>
+
+                    {/* Created date (parity with table Date column) */}
+                    <Typography variant="caption" color="text.secondary">
+                      {format(parseISO(topic.createdAt), 'd MMM yyyy')}
+                    </Typography>
+
+                    {/* Status select */}
+                    {renderStatusSelect(topic, row)}
+
+                    {/* Planned event (only when SELECTED) */}
+                    {renderPlannedEventField(topic, row)}
+                  </Stack>
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'flex-end' }}>
+                  {renderActions(topic, row)}
+                </CardActions>
+              </Card>
+            );
+          })}
+        </Box>
       ) : (
-        <TableContainer component={Paper} variant="outlined" data-testid="organizer-topics-table">
-          <Table size="small">
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          data-testid="organizer-topics-table"
+          sx={{ overflowX: 'auto' }}
+        >
+          <Table size="small" sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, width: '30%' }}>
@@ -306,81 +454,13 @@ const TopicStatusPanel: React.FC = () => {
                     </TableCell>
 
                     {/* Status select */}
-                    <TableCell>
-                      <Select
-                        size="small"
-                        value={row.status}
-                        onChange={(e) =>
-                          setRowField(topic.id, 'status', e.target.value as RowState['status'])
-                        }
-                        sx={{ minWidth: 120 }}
-                        data-testid={`status-select-${topic.id}`}
-                      >
-                        <MenuItem value="PROPOSED">{t('portal.topics.status.proposed')}</MenuItem>
-                        <MenuItem value="SELECTED">{t('portal.topics.status.selected')}</MenuItem>
-                        <MenuItem value="DECLINED">{t('portal.topics.status.declined')}</MenuItem>
-                      </Select>
-                    </TableCell>
+                    <TableCell>{renderStatusSelect(topic, row)}</TableCell>
 
                     {/* Planned event */}
-                    <TableCell>
-                      {row.status === 'SELECTED' && (
-                        <TextField
-                          size="small"
-                          placeholder={t('topicStatus.eventCodePlaceholder')}
-                          value={row.plannedEvent}
-                          onChange={(e) => setRowField(topic.id, 'plannedEvent', e.target.value)}
-                          inputProps={{ maxLength: 100 }}
-                          data-testid={`planned-event-${topic.id}`}
-                        />
-                      )}
-                    </TableCell>
+                    <TableCell>{renderPlannedEventField(topic, row)}</TableCell>
 
                     {/* Actions: save + edit + delete */}
-                    <TableCell align="right">
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-end',
-                          gap: 0.5,
-                        }}
-                      >
-                        <Tooltip title={t('common:actions.save')}>
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleSave(topic.id)}
-                              disabled={row.saving || row.status === 'PROPOSED'}
-                              data-testid={`save-status-${topic.id}`}
-                            >
-                              <SaveIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title={t('common:actions.edit')}>
-                          <IconButton
-                            size="small"
-                            onClick={() => setEditingTopic(topic)}
-                            data-testid={`edit-topic-${topic.id}`}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t('common:actions.delete')}>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => deleteMutation.mutate(topic.id)}
-                            disabled={deleteMutation.isPending}
-                            data-testid={`delete-topic-${topic.id}`}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
+                    <TableCell align="right">{renderActions(topic, row)}</TableCell>
                   </TableRow>
                 );
               })}

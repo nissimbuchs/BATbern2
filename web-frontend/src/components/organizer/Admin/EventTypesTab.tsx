@@ -21,6 +21,7 @@ import Grid from '@mui/material/Grid';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useEventTypes, useUpdateEventType } from '@/hooks/useEventTypes';
 import { EventTypeConfigurationForm } from '@/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm';
 import { SlotTemplatePreview } from '@/components/organizer/SlotTemplatePreview/SlotTemplatePreview';
@@ -32,6 +33,7 @@ type UpdateEventSlotConfigurationRequest =
 
 export const EventTypesTab: React.FC = () => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const { data: eventTypes, isLoading, error } = useEventTypes();
   const updateMutation = useUpdateEventType();
 
@@ -109,6 +111,7 @@ export const EventTypesTab: React.FC = () => {
         onClose={handleCloseModal}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         data-testid="edit-event-type-modal"
       >
         <DialogTitle>

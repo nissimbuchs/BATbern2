@@ -133,24 +133,30 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase }) =>
             aria-label={t('livePreview.desktopPreview')}
             aria-pressed={device === 'desktop'}
           >
-            <DesktopIcon sx={{ mr: 1 }} />
-            {t('livePreview.desktop')}
+            <DesktopIcon sx={{ mr: { xs: 0, md: 1 } }} />
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+              {t('livePreview.desktop')}
+            </Box>
           </ToggleButton>
           <ToggleButton
             value="mobile"
             aria-label={t('livePreview.mobilePreview')}
             aria-pressed={device === 'mobile'}
           >
-            <MobileIcon sx={{ mr: 1 }} />
-            {t('livePreview.mobile')}
+            <MobileIcon sx={{ mr: { xs: 0, md: 1 } }} />
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+              {t('livePreview.mobile')}
+            </Box>
           </ToggleButton>
           <ToggleButton
             value="print"
             aria-label={t('livePreview.printPreview')}
             aria-pressed={device === 'print'}
           >
-            <PrintIcon sx={{ mr: 1 }} />
-            {t('livePreview.print')}
+            <PrintIcon sx={{ mr: { xs: 0, md: 1 } }} />
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+              {t('livePreview.print')}
+            </Box>
           </ToggleButton>
         </ToggleButtonGroup>
 

@@ -467,6 +467,87 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
     });
   });
 
+  describe('Responsive timeline (organizer mobile)', () => {
+    /**
+     * The timeline grid is now FLUID on every viewport — the fixed
+     * minWidth ({ xs: 560, md: 800 }) was removed (round 3) so the grid
+     * fills the available width with no horizontal scroll forced by a min
+     * width. jsdom never evaluates media queries, so we inspect the injected
+     * emotion stylesheet for the element's css-* class.
+     */
+    const cssForClass = (className: string): string => {
+      let combined = '';
+      document.querySelectorAll('style').forEach((styleEl) => {
+        const css = styleEl.textContent ?? '';
+        if (css.includes(`.${className}`)) combined += css + '\n';
+      });
+      return combined;
+    };
+
+    const emotionClass = (el: HTMLElement): string => {
+      const cssClass = Array.from(el.classList).find((c) => c.startsWith('css-'));
+      return cssClass ?? '';
+    };
+
+    it('should_notSetFixedMinWidthOnTimelineGrid_when_rendered', () => {
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      // The inner grid wrapper must no longer carry any fixed min-width rule.
+      const scroller = screen.getByTestId('timeline-grid');
+      const inner = scroller.firstElementChild as HTMLElement;
+      expect(inner).toBeTruthy();
+
+      // No emotion class at all is the cleanest signal of "no sx min-width".
+      const cls = emotionClass(inner);
+      const css = cls ? cssForClass(cls) : '';
+
+      // Neither the old xs (560px) nor md (800px) min-width may survive.
+      expect(/min-width:\s*560px/.test(css)).toBe(false);
+      expect(/min-width:\s*800px/.test(css)).toBe(false);
+    });
+
+    it('should_wrapSessionTitle_whiteSpaceNormal_atXs', async () => {
+      // Provide an event session assigned to the 09:00 Main Hall slot so the
+      // session-title Typography actually renders in a timeline cell.
+      const assignedSession: Session = {
+        sessionSlug: 'assigned-session',
+        eventCode: mockEventCode,
+        title: 'A Very Long Session Title That Must Wrap On Phones',
+        startTime: '2025-12-15T09:00:00',
+        endTime: '2025-12-15T10:00:00',
+        room: 'Main Hall',
+        speakers: [{ username: 'john.doe', displayName: 'John Doe', companyName: 'Acme Corp' }],
+      };
+      const { useEvent } = await import('@/hooks/useEvents');
+      vi.mocked(useEvent).mockReturnValue({
+        data: {
+          eventCode: mockEventCode,
+          eventType: 'FULL_DAY',
+          date: '2025-12-15',
+          sessions: [...mockUnassignedSessions, assignedSession],
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      const titleEl = screen.getByText(
+        'A Very Long Session Title That Must Wrap On Phones'
+      ) as HTMLElement;
+      const css = cssForClass(emotionClass(titleEl));
+
+      // xs base (min-width:0px) -> white-space:normal (wraps on phones)
+      expect(
+        new RegExp(
+          `@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*white-space:\\s*normal[^}]*\\}`
+        ).test(css)
+      ).toBe(true);
+    });
+  });
+
   describe('Accessibility', () => {
     it('should_supportKeyboardNavigation_when_tabPressed', () => {
       // Given: Component supports keyboard navigation

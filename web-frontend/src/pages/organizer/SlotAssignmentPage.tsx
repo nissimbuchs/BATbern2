@@ -93,6 +93,7 @@ const SlotAssignmentPage: React.FC = () => {
         sx={{
           mb: 3,
           display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
           alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between',
           flexWrap: 'wrap',

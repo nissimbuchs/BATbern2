@@ -33,6 +33,7 @@ import {
   resendConfirmationEmail,
 } from '../../../services/api/eventRegistrationService';
 import type { EventParticipant } from '../../../types/eventParticipant.types';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 interface RegistrationActionsMenuProps {
   participant: EventParticipant;
@@ -40,6 +41,7 @@ interface RegistrationActionsMenuProps {
 
 const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ participant }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
@@ -164,6 +166,7 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ parti
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
+        fullScreen={isMobile}
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
       >

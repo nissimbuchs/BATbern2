@@ -497,7 +497,7 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
           onChange={handleTabChange}
           variant={isMobile ? 'scrollable' : 'standard'}
           scrollButtons={isMobile ? 'auto' : false}
-          sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}
+          sx={{ borderBottom: { xs: 0, md: 1 }, borderColor: 'divider', flexShrink: 0 }}
         >
           <Tab
             value="details"

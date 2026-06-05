@@ -77,7 +77,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
   const { t } = useTranslation('events');
   const queryClient = useQueryClient();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const isEditMode = !!existingTask;
 

@@ -11,7 +11,7 @@
  * Story: 2.5.2 - User Management Frontend
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -21,11 +21,15 @@ import {
   Chip,
   Avatar,
   Tooltip,
+  IconButton,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
   Email as EmailIcon,
   Cloud as CloudIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { User, Role } from '@/types/user.types';
@@ -35,13 +39,30 @@ import CompanyCell from './CompanyCell';
 export interface UserCardProps {
   user: User;
   onClick: (user: User) => void;
+  onAction?: (action: string, user: User) => void;
 }
 
-export const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
+export const UserCard: React.FC<UserCardProps> = ({ user, onClick, onAction }) => {
   const { t } = useTranslation('userManagement');
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleClick = () => {
     onClick(user);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleAction = (event: React.MouseEvent<HTMLElement>, action: string) => {
+    event.stopPropagation();
+    onAction?.(action, user);
+    setAnchorEl(null);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -71,8 +92,47 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
       }}
     >
+      {onAction && (
+        <>
+          <IconButton
+            size="small"
+            onClick={handleMenuOpen}
+            aria-label={t('actions.openMenu')}
+            data-testid={`user-card-menu-${user.id}`}
+            sx={{ position: 'absolute', top: 4, right: 4, zIndex: 1 }}
+          >
+            <MoreVertIcon />
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MenuItem
+              onClick={(e) => handleAction(e, 'view')}
+              data-testid={`user-card-action-view-${user.id}`}
+            >
+              {t('actions.view')}
+            </MenuItem>
+            <MenuItem
+              onClick={(e) => handleAction(e, 'editRoles')}
+              data-testid={`user-card-action-edit-roles-${user.id}`}
+            >
+              {t('actions.editRoles')}
+            </MenuItem>
+            <MenuItem
+              onClick={(e) => handleAction(e, 'delete')}
+              data-testid={`user-card-action-delete-${user.id}`}
+            >
+              {t('common:actions.delete')}
+            </MenuItem>
+          </Menu>
+        </>
+      )}
       <CardActionArea
         onClick={handleClick}
         onKeyDown={handleKeyDown}
@@ -175,7 +235,7 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
             {user.roles.map((role) => (
               <Chip
                 key={role}
-                label={t(`filters.role.${role.toLowerCase()}`)}
+                label={t(`common:role.${role.toLowerCase()}`)}
                 size="small"
                 color={getRoleBadgeColor(role as Role)}
                 icon={<span>{ROLE_ICONS[role as Role]}</span>}

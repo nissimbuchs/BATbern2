@@ -9,6 +9,8 @@ import {
   Typography,
   Box,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -30,6 +32,8 @@ import type { components } from '@/types/generated/company-api.types';
 
 export const PartnerCreateEditModal: React.FC = () => {
   const { t } = useTranslation('partners');
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const { isOpen, mode, partnerToEdit, closeModal } = usePartnerModalStore();
   const createMutation = useCreatePartner();
   const updateMutation = useUpdatePartner();
@@ -156,7 +160,7 @@ export const PartnerCreateEditModal: React.FC = () => {
         onClose={handleClose}
         maxWidth="md"
         fullWidth
-        fullScreen={window.innerWidth < 640}
+        fullScreen={fullScreen}
         TransitionProps={{ timeout: 200 }}
         data-testid="partner-create-edit-modal"
       >

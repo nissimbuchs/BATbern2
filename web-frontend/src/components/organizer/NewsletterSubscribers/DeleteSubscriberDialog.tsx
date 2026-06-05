@@ -22,6 +22,7 @@ import {
 import { Close, ErrorOutline } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/events-api.types';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useDeleteSubscriber } from '@/hooks/useNewsletterSubscribers';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
@@ -41,6 +42,7 @@ const DeleteSubscriberDialog: React.FC<DeleteSubscriberDialogProps> = ({
 }) => {
   const { t } = useTranslation('newsletterSubscribers');
   const { t: tCommon } = useTranslation('common');
+  const { isMobile } = useBreakpoints();
   const mutation = useDeleteSubscriber();
 
   React.useEffect(() => {
@@ -58,7 +60,7 @@ const DeleteSubscriberDialog: React.FC<DeleteSubscriberDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box display="flex" alignItems="center" gap={1}>

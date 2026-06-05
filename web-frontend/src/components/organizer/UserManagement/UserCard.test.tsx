@@ -53,14 +53,18 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 });
 
-const renderUserCard = (user: User = mockUser, onClick = vi.fn()) => {
+const renderUserCard = (
+  user: User = mockUser,
+  onClick = vi.fn(),
+  onAction?: ReturnType<typeof vi.fn>
+) => {
   const onClickFn = onClick;
   render(
     <QueryClientProvider client={queryClient}>
-      <UserCard user={user} onClick={onClickFn} />
+      <UserCard user={user} onClick={onClickFn} onAction={onAction} />
     </QueryClientProvider>
   );
-  return { onClick: onClickFn };
+  return { onClick: onClickFn, onAction };
 };
 
 describe('UserCard', () => {
@@ -100,8 +104,8 @@ describe('UserCard', () => {
 
   it('renders role badges', () => {
     renderUserCard();
-    expect(screen.getByText('filters.role.organizer')).toBeInTheDocument();
-    expect(screen.getByText('filters.role.speaker')).toBeInTheDocument();
+    expect(screen.getByText('common:role.organizer')).toBeInTheDocument();
+    expect(screen.getByText('common:role.speaker')).toBeInTheDocument();
   });
 
   it('calls onClick when card is clicked', () => {
@@ -138,5 +142,39 @@ describe('UserCard', () => {
   it('shows avatar with initials when no profilePictureUrl', () => {
     renderUserCard({ ...mockUser, profilePictureUrl: null });
     expect(screen.getByText('AS')).toBeInTheDocument();
+  });
+
+  it('should_openMenu_when_kebabButtonClicked', () => {
+    renderUserCard(mockUser, vi.fn(), vi.fn());
+    // Menu items are not visible until the kebab opens the menu
+    expect(screen.queryByTestId('user-card-action-view-user-1')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('user-card-menu-user-1'));
+    expect(screen.getByTestId('user-card-action-view-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('user-card-action-edit-roles-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('user-card-action-delete-user-1')).toBeInTheDocument();
+  });
+
+  it('should_renderViewEditRolesDeleteItems_when_menuOpen', () => {
+    renderUserCard(mockUser, vi.fn(), vi.fn());
+    fireEvent.click(screen.getByTestId('user-card-menu-user-1'));
+    expect(screen.getByText('actions.view')).toBeInTheDocument();
+    expect(screen.getByText('actions.editRoles')).toBeInTheDocument();
+    expect(screen.getByText('common:actions.delete')).toBeInTheDocument();
+  });
+
+  it('should_callOnActionWithoutNavigating_when_menuItemClicked', () => {
+    const onClick = vi.fn();
+    const onAction = vi.fn();
+    renderUserCard(mockUser, onClick, onAction);
+    fireEvent.click(screen.getByTestId('user-card-menu-user-1'));
+    fireEvent.click(screen.getByTestId('user-card-action-edit-roles-user-1'));
+    expect(onAction).toHaveBeenCalledWith('editRoles', mockUser);
+    // The card's onClick navigation must NOT fire when acting through the menu
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('does not render the actions menu when onAction is not provided', () => {
+    renderUserCard();
+    expect(screen.queryByTestId('user-card-menu-user-1')).not.toBeInTheDocument();
   });
 });

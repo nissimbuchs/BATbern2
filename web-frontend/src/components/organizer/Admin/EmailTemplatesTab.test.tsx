@@ -17,8 +17,33 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { EmailTemplatesTab } from './EmailTemplatesTab';
+
+/**
+ * Deterministic matchMedia mock keyed on a simulated viewport width so
+ * useBreakpoints().isMobile (down('md')) flips between the mobile Select and the
+ * desktop ToggleButtonGroup. Mirrors PartnerCreateEditModal.test.tsx.
+ */
+const installMatchMediaForWidth = (viewportWidth: number) => {
+  window.matchMedia = vi.fn((query: string) => {
+    const maxMatch = /max-width:\s*([\d.]+)px/.exec(query);
+    const minMatch = /min-width:\s*([\d.]+)px/.exec(query);
+    let matches = false;
+    if (maxMatch) matches = viewportWidth <= parseFloat(maxMatch[1]);
+    else if (minMatch) matches = viewportWidth >= parseFloat(minMatch[1]);
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    };
+  }) as unknown as typeof window.matchMedia;
+};
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_k: string, fallback?: string) => fallback ?? _k }),
@@ -154,6 +179,11 @@ const renderTab = () =>
   );
 
 describe('EmailTemplatesTab', () => {
+  const originalMatchMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeleteMutateAsync.mockResolvedValue(undefined);
@@ -265,5 +295,28 @@ describe('EmailTemplatesTab', () => {
   it('no add-template button is rendered', () => {
     renderTab();
     expect(screen.queryByTestId('add-email-template-btn')).not.toBeInTheDocument();
+  });
+
+  it('should_renderCategorySelect_when_mobileViewport', async () => {
+    installMatchMediaForWidth(375);
+    const user = userEvent.setup();
+    renderTab();
+    // The mobile category filter is a Select (combobox), not a ToggleButtonGroup
+    const select = screen.getByTestId('email-template-category-select');
+    expect(select).toBeInTheDocument();
+    const combobox = screen.getByRole('combobox');
+    await user.click(combobox);
+    // All 5 category options appear in the opened listbox
+    const options = await screen.findAllByRole('option');
+    expect(options).toHaveLength(5);
+  });
+
+  it('should_renderCategoryToggleGroup_when_desktopViewport', () => {
+    installMatchMediaForWidth(1280);
+    renderTab();
+    // Desktop renders the ToggleButtonGroup (no Select combobox for category)
+    expect(screen.queryByTestId('email-template-category-select')).not.toBeInTheDocument();
+    expect(screen.getByText('Speakers')).toBeInTheDocument();
+    expect(screen.getByText('Registration')).toBeInTheDocument();
   });
 });

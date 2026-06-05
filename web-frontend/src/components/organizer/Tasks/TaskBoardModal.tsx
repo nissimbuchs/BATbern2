@@ -285,7 +285,13 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
       </Dialog>
 
       {/* Task Completion Modal */}
-      <Dialog open={!!completingTaskId} onClose={handleCancelComplete} maxWidth="sm" fullWidth>
+      <Dialog
+        open={!!completingTaskId}
+        onClose={handleCancelComplete}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isFullScreen}
+      >
         <DialogTitle>{t('tasks.completeTask', 'Complete Task')}</DialogTitle>
         <DialogContent>
           <TextField

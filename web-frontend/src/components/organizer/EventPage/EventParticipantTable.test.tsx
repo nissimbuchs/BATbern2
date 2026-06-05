@@ -6,7 +6,7 @@
  */
 
 import { render, screen, within } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import EventParticipantTable from './EventParticipantTable';
 import type { EventParticipant } from '../../../types/eventParticipant.types';
@@ -78,6 +78,29 @@ const renderWithProviders = (ui: React.ReactElement) => {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
+/** Concatenate every emotion <style> rule that targets the element's css-* class. */
+const cssForElement = (el: HTMLElement): string => {
+  const cssClass = Array.from(el.classList).find((c) => c.startsWith('css-'));
+  if (!cssClass) return '';
+  let combined = '';
+  document.querySelectorAll('style').forEach((styleEl) => {
+    const css = styleEl.textContent ?? '';
+    if (css.includes(`.${cssClass}`)) combined += css + '\n';
+  });
+  return combined;
+};
+
+/**
+ * True when the element collapses to display:none at the xs base breakpoint.
+ * MUI compiles `display: { xs: 'none', sm: 'table-cell' }` into per-breakpoint
+ * `@media (min-width:…)` rules; the xs value lands behind `@media (min-width:0px)`,
+ * which jsdom never applies — so we inspect the injected stylesheet directly.
+ */
+const isHiddenAtXs = (el: HTMLElement): boolean => {
+  const css = cssForElement(el);
+  return /@media\s*\(min-width:\s*0px\)\s*\{[^}]*display:\s*none[^}]*\}/.test(css);
+};
+
 describe('EventParticipantTable Component', () => {
   describe('Rendering', () => {
     it('should render table headers', () => {
@@ -135,6 +158,24 @@ describe('EventParticipantTable Component', () => {
       expect(companyCells[0]).toHaveTextContent('N/A'); // Bob has no company
       expect(companyCells[1]).toHaveTextContent('company-2'); // Jane
       expect(companyCells[2]).toHaveTextContent('company-1'); // John
+    });
+
+    it('should_hideCompanyAndRegistrationDateColumns_when_xsViewport', () => {
+      renderWithProviders(
+        <EventParticipantTable participants={mockParticipants} isLoading={false} />
+      );
+
+      const companyHeader = screen.getByText('common:labels.company').closest('th') as HTMLElement;
+      const dateHeader = screen
+        .getByText('eventPage.participantTable.headers.registrationDate')
+        .closest('th') as HTMLElement;
+      const nameHeader = screen.getByText('common:labels.name').closest('th') as HTMLElement;
+
+      // Low-value columns collapse to display:none at the xs base breakpoint…
+      expect(isHiddenAtXs(companyHeader)).toBe(true);
+      expect(isHiddenAtXs(dateHeader)).toBe(true);
+      // …while the Name column stays visible.
+      expect(isHiddenAtXs(nameHeader)).toBe(false);
     });
 
     it('should render status chips with correct labels', () => {
@@ -285,6 +326,58 @@ describe('EventParticipantTable Component', () => {
       expect(firstRow).toBeInTheDocument();
       // The formatted date should be visible somewhere in the row
       expect(within(firstRow!).getByText(/2024|Jan|15/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Mobile card view', () => {
+    const originalMatchMedia = window.matchMedia;
+
+    // Simulate a 375px phone so useBreakpoints().isMobile (down('md')) resolves true.
+    const installMobileMatchMedia = (viewportWidth: number) => {
+      window.matchMedia = vi.fn((query: string) => {
+        const maxMatch = /max-width:\s*([\d.]+)px/.exec(query);
+        const minMatch = /min-width:\s*([\d.]+)px/.exec(query);
+        let matches = false;
+        if (maxMatch) matches = viewportWidth <= parseFloat(maxMatch[1]);
+        else if (minMatch) matches = viewportWidth >= parseFloat(minMatch[1]);
+        return {
+          matches,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        };
+      }) as unknown as typeof window.matchMedia;
+    };
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('should_renderCards_when_mobileViewport', () => {
+      installMobileMatchMedia(375);
+      renderWithProviders(
+        <EventParticipantTable participants={mockParticipants} isLoading={false} />
+      );
+
+      // Cards container replaces the table.
+      expect(screen.getByTestId('participant-cards')).toBeInTheDocument();
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+      expect(screen.getByTestId('participant-card-REG-001')).toBeInTheDocument();
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+
+    it('should_renderTable_when_desktopViewport', () => {
+      installMobileMatchMedia(1280);
+      renderWithProviders(
+        <EventParticipantTable participants={mockParticipants} isLoading={false} />
+      );
+
+      expect(screen.getByRole('table')).toBeInTheDocument();
+      expect(screen.queryByTestId('participant-cards')).not.toBeInTheDocument();
     });
   });
 });

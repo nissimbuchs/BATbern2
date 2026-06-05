@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { Warning, Error as ErrorIcon, Info } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { TimingConflictError } from '@/types/event.types';
 
 export interface ConflictDetectionAlertProps {
@@ -38,6 +39,7 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
   onResolve,
 }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
 
   if (!conflict || !isOpen) {
     return null;
@@ -60,7 +62,14 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth role="dialog">
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      fullScreen={isMobile}
+      role="dialog"
+    >
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {getConflictIcon()}

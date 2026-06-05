@@ -3,7 +3,7 @@
  * Story 10.28: Newsletter Subscriber Management Page
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
@@ -68,9 +68,48 @@ const renderComponent = (
   };
 };
 
+/** Concatenate every emotion <style> rule that targets the element's css-* class. */
+const cssForElement = (el: HTMLElement): string => {
+  const cssClass = Array.from(el.classList).find((c) => c.startsWith('css-'));
+  if (!cssClass) return '';
+  let combined = '';
+  document.querySelectorAll('style').forEach((styleEl) => {
+    const css = styleEl.textContent ?? '';
+    if (css.includes(`.${cssClass}`)) combined += css + '\n';
+  });
+  return combined;
+};
+
+/**
+ * True when the element collapses to display:none at the xs base breakpoint.
+ * MUI compiles `display: { xs: 'none', sm: 'table-cell' }` into per-breakpoint
+ * `@media (min-width:…)` rules; the xs value lands behind `@media (min-width:0px)`,
+ * which jsdom never applies — so we inspect the injected stylesheet directly.
+ */
+const isHiddenAtXs = (el: HTMLElement): boolean => {
+  const css = cssForElement(el);
+  return /@media\s*\(min-width:\s*0px\)\s*\{[^}]*display:\s*none[^}]*\}/.test(css);
+};
+
 describe('NewsletterSubscriberTable', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('should_hideLanguageSourceAndSubscribedAtColumns_when_xsViewport', () => {
+    renderComponent();
+
+    const langHeader = screen.getByTestId('sort-language').closest('th') as HTMLElement;
+    const sourceHeader = screen.getByTestId('sort-source').closest('th') as HTMLElement;
+    const subscribedAtHeader = screen.getByTestId('sort-subscribedAt').closest('th') as HTMLElement;
+    const emailHeader = screen.getByTestId('sort-email').closest('th') as HTMLElement;
+
+    // Language / Source / SubscribedAt collapse to display:none at the xs base breakpoint…
+    expect(isHiddenAtXs(langHeader)).toBe(true);
+    expect(isHiddenAtXs(sourceHeader)).toBe(true);
+    expect(isHiddenAtXs(subscribedAtHeader)).toBe(true);
+    // …while the Email column stays visible.
+    expect(isHiddenAtXs(emailHeader)).toBe(false);
   });
 
   it('should_renderTable_when_subscribersProvided', () => {
@@ -119,39 +158,33 @@ describe('NewsletterSubscriberTable', () => {
     expect(props.onSortChange).toHaveBeenCalledWith('email', 'desc');
   });
 
-  it('should_showUnsubscribeAndDelete_when_activeSubscriberMenuOpened', async () => {
-    const user = userEvent.setup();
-    const { props } = renderComponent();
+  it('should_showVisibleUnsubscribeAndDeleteButtons_when_activeSubscriber', () => {
+    renderComponent();
 
-    const menuButton = screen.getByTestId('actions-sub-1');
-    await user.click(menuButton);
+    // No kebab menu anywhere.
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
 
-    expect(screen.getByTestId('action-unsubscribe')).toBeInTheDocument();
-    expect(screen.getByTestId('action-delete')).toBeInTheDocument();
-    expect(screen.queryByTestId('action-resubscribe')).not.toBeInTheDocument();
+    // Visible, status-conditional buttons (no clicking to reveal them).
+    expect(screen.getByTestId('action-unsubscribe-sub-1')).toBeInTheDocument();
+    expect(screen.getByTestId('action-delete-sub-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-resubscribe-sub-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsuppress-sub-1')).not.toBeInTheDocument();
   });
 
-  it('should_showResubscribeAndDelete_when_unsubscribedSubscriberMenuOpened', async () => {
-    const user = userEvent.setup();
-    const { props } = renderComponent();
+  it('should_showVisibleResubscribeAndDeleteButtons_when_unsubscribedSubscriber', () => {
+    renderComponent();
 
-    const menuButton = screen.getByTestId('actions-sub-2');
-    await user.click(menuButton);
-
-    expect(screen.getByTestId('action-resubscribe')).toBeInTheDocument();
-    expect(screen.getByTestId('action-delete')).toBeInTheDocument();
-    expect(screen.queryByTestId('action-unsubscribe')).not.toBeInTheDocument();
+    expect(screen.getByTestId('action-resubscribe-sub-2')).toBeInTheDocument();
+    expect(screen.getByTestId('action-delete-sub-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsubscribe-sub-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsuppress-sub-2')).not.toBeInTheDocument();
   });
 
-  it('should_callOnAction_when_menuItemClicked', async () => {
+  it('should_callOnAction_when_visibleActionButtonClicked', async () => {
     const user = userEvent.setup();
     const { props } = renderComponent();
 
-    const menuButton = screen.getByTestId('actions-sub-1');
-    await user.click(menuButton);
-
-    const unsubscribeItem = screen.getByTestId('action-unsubscribe');
-    await user.click(unsubscribeItem);
+    await user.click(screen.getByTestId('action-unsubscribe-sub-1'));
 
     expect(props.onAction).toHaveBeenCalledWith('unsubscribe', mockActiveSubscriber);
   });
@@ -171,18 +204,83 @@ describe('NewsletterSubscriberTable', () => {
     expect(screen.getByTestId('suppressed-chip-sub-3')).toBeInTheDocument();
   });
 
-  it('should_showUnsuppressAction_when_suppressedSubscriberMenuOpened', async () => {
-    const user = userEvent.setup();
-    const { props } = renderComponent({
+  it('should_showVisibleUnsuppressButton_when_suppressedSubscriber', () => {
+    renderComponent({
       subscribers: [mockActiveSubscriber, mockSuppressedSubscriber],
     });
 
-    const menuButton = screen.getByTestId('actions-sub-3');
-    await user.click(menuButton);
+    expect(screen.getByTestId('action-unsuppress-sub-3')).toBeInTheDocument();
+    expect(screen.getByTestId('action-delete-sub-3')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsubscribe-sub-3')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-resubscribe-sub-3')).not.toBeInTheDocument();
+  });
 
-    expect(screen.getByTestId('action-unsuppress')).toBeInTheDocument();
-    expect(screen.getByTestId('action-delete')).toBeInTheDocument();
-    expect(screen.queryByTestId('action-unsubscribe')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('action-resubscribe')).not.toBeInTheDocument();
+  describe('Mobile card view', () => {
+    const originalMatchMedia = window.matchMedia;
+
+    const installMobileMatchMedia = (viewportWidth: number) => {
+      window.matchMedia = vi.fn((query: string) => {
+        const maxMatch = /max-width:\s*([\d.]+)px/.exec(query);
+        const minMatch = /min-width:\s*([\d.]+)px/.exec(query);
+        let matches = false;
+        if (maxMatch) matches = viewportWidth <= parseFloat(maxMatch[1]);
+        else if (minMatch) matches = viewportWidth >= parseFloat(minMatch[1]);
+        return {
+          matches,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        };
+      }) as unknown as typeof window.matchMedia;
+    };
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('should_renderCards_when_mobileViewport', () => {
+      installMobileMatchMedia(375);
+      renderComponent({ subscribers: [mockActiveSubscriber, mockSuppressedSubscriber] });
+
+      expect(screen.getByTestId('subscriber-cards')).toBeInTheDocument();
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+      expect(screen.getByTestId('subscriber-card-sub-1')).toBeInTheDocument();
+      expect(screen.getByText('active@example.com')).toBeInTheDocument();
+      // Suppressed-state chip still rendered inside the card.
+      expect(screen.getByTestId('suppressed-chip-sub-3')).toBeInTheDocument();
+    });
+
+    it('should_renderTable_when_desktopViewport', () => {
+      installMobileMatchMedia(1280);
+      renderComponent();
+
+      expect(screen.getByRole('table')).toBeInTheDocument();
+      expect(screen.queryByTestId('subscriber-cards')).not.toBeInTheDocument();
+    });
+
+    it('should_showVisibleActionButtonsInCard_when_mobileViewport', async () => {
+      installMobileMatchMedia(375);
+      const user = userEvent.setup();
+      const { props } = renderComponent({
+        subscribers: [mockActiveSubscriber, mockSuppressedSubscriber],
+      });
+
+      // No menu in the card view either.
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+      // Active subscriber: unsubscribe + delete visible directly inside the card.
+      expect(screen.getByTestId('action-unsubscribe-sub-1')).toBeInTheDocument();
+      expect(screen.getByTestId('action-delete-sub-1')).toBeInTheDocument();
+      // Suppressed subscriber: unsuppress + delete.
+      expect(screen.getByTestId('action-unsuppress-sub-3')).toBeInTheDocument();
+      expect(screen.getByTestId('action-delete-sub-3')).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('action-unsuppress-sub-3'));
+      expect(props.onAction).toHaveBeenCalledWith('unsuppress', mockSuppressedSubscriber);
+    });
   });
 });

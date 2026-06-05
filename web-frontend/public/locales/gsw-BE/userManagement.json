@@ -44,5 +44,8 @@
       "additionalEmailDeleteNotFound": "Die zuesätzlechi E-Mail isch nümme i dym Profil.",
       "additionalEmailDeleteAriaLabel": "Zuesätzlechi E-Mail {{email}} entferne"
     }
+  },
+  "actions": {
+    "openMenu": "Aktionsmenü ufmache"
   }
 }
