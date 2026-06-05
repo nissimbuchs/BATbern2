@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import type { AppConfig } from '../config/runtime-config';
 import { loadRuntimeConfig } from '../config/runtime-config';
 import { updateApiClientConfig } from '../services/api/apiClient';
-import { setAmplifyRuntimeConfig } from '../config/amplify';
+import {
+  setAmplifyRuntimeConfig,
+  expectAmplifyRuntimeConfig,
+  cancelExpectedAmplifyRuntimeConfig,
+} from '../config/amplify';
 import { ConfigContext } from './createConfigContext';
 
 export interface ConfigProviderProps {
@@ -39,11 +43,17 @@ export function ConfigProvider({ config: providedConfig, children }: ConfigProvi
     if (providedConfig) return;
 
     let cancelled = false;
+    // 12.8 F8: announce the in-flight fetch so ensureAmplifyConfigured() WAITS for it
+    // instead of silently no-op'ing (auth-touching calls — e.g. the /auth/callback code
+    // exchange — raced this round-trip and left Amplify unconfigured forever).
+    expectAmplifyRuntimeConfig();
     loadRuntimeConfig()
       .then((cfg) => {
-        if (cancelled) return;
+        // Module-level stashes run regardless of unmount — config arrival is a fact, and
+        // skipping them would strand the waiters inside ensureAmplifyConfigured().
         updateApiClientConfig(cfg.apiBaseUrl);
         setAmplifyRuntimeConfig(cfg);
+        if (cancelled) return;
         setLoadedConfig(cfg);
       })
       .catch((error) => {
@@ -51,6 +61,7 @@ export function ConfigProvider({ config: providedConfig, children }: ConfigProvi
         // set at bootstrap; auth/feature-flag UI that needs config surfaces its own
         // error. Do NOT blank the whole app (the old behaviour) — that would defeat
         // "show the page immediately".
+        cancelExpectedAmplifyRuntimeConfig();
         console.error('[Config] Runtime config unavailable; continuing without it:', error);
       });
 
