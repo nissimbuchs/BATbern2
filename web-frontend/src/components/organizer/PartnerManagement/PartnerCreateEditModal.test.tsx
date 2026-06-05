@@ -26,7 +26,7 @@ const mockPartner: PartnerResponse = {
  * Build a deterministic window.matchMedia mock that simulates a viewport of the
  * given width. It parses the `max-width: <n>px` value out of each MUI down()
  * breakpoint query and reports `matches: true` only when the simulated viewport
- * is at or below that breakpoint — so a 375px phone matches down('sm') (599.95px)
+ * is at or below that breakpoint — so a 375px phone matches down('md') (899.95px)
  * while a 1024px desktop does not. Avoids the tautological `/max-width/.test(query)`.
  */
 const installMatchMediaForWidth = (viewportWidth: number) => {
@@ -436,7 +436,7 @@ describe('PartnerCreateEditModal', () => {
     });
 
     it('should_fullscreen_when_mobileViewport', () => {
-      // Simulate a 375px phone: it falls below down('sm') (max-width 599.95px),
+      // Simulate a 375px phone: it falls below down('md') (max-width 899.95px),
       // so MUI's useMediaQuery resolves true and the dialog goes fullScreen.
       // MUI's useMediaQuery reads window.matchMedia (NOT window.innerWidth).
       installMatchMediaForWidth(375);
@@ -459,8 +459,8 @@ describe('PartnerCreateEditModal', () => {
     });
 
     it('should_notFullscreen_when_desktopViewport', () => {
-      // Simulate a 1024px desktop: it is wider than down('sm') (max-width 599.95px),
-      // so down('sm') does NOT match and the dialog stays windowed.
+      // Simulate a 1024px desktop: it is wider than down('md') (max-width 899.95px),
+      // so down('md') does NOT match and the dialog stays windowed.
       installMatchMediaForWidth(1024);
 
       vi.mocked(usePartnerModalStore).mockReturnValue({

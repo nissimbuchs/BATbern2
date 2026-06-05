@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "Visualizza",
-    "editRoles": "Modifica ruoli"
+    "editRoles": "Modifica ruoli",
+    "openMenu": "Apri menu azioni"
   },
   "roles": {
     "organizer": "Organizzatore",

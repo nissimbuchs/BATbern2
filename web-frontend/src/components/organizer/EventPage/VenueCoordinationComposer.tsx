@@ -45,6 +45,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink } from 'react-router-dom';
 import { useEmailTemplates } from '@/hooks/useEmailTemplates';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { getAdminSetting } from '@/services/adminSettingsService';
 import {
   venueCoordinationService,
@@ -72,6 +73,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
   eventCode,
 }) => {
   const { t } = useTranslation(['events', 'common']);
+  const { isMobile } = useBreakpoints();
 
   // ── Admin config (contacts + coordinator) ───────────────────────────────
   const configQuery = useQuery({
@@ -236,7 +238,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             {t('eventPage.venueCoordination.recipients', 'Recipients')}
           </Typography>
-          <Stack direction="row" spacing={3}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -251,6 +253,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
                   ? `${t('eventPage.venueCoordination.venueRole', 'Venue')} — ${config.venue.name} <${config.venue.email}>`
                   : t('eventPage.venueCoordination.venueRole', 'Venue')
               }
+              sx={{ '& .MuiFormControlLabel-label': { wordBreak: 'break-word' } }}
             />
             <FormControlLabel
               control={
@@ -266,6 +269,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
                   ? `${t('eventPage.venueCoordination.cateringRole', 'Catering')} — ${config.catering.name} <${config.catering.email}>`
                   : t('eventPage.venueCoordination.cateringRole', 'Catering')
               }
+              sx={{ '& .MuiFormControlLabel-label': { wordBreak: 'break-word' } }}
             />
           </Stack>
         </Box>
@@ -370,7 +374,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
         </Box>
       </Stack>
 
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} fullScreen={isMobile}>
         <DialogTitle>{t('eventPage.venueCoordination.confirmTitle', 'Send email?')}</DialogTitle>
         <DialogContent>
           <DialogContentText>

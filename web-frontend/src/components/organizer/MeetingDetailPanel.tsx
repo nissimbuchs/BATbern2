@@ -29,6 +29,7 @@ import {
   type PartnerMeetingDTO,
 } from '@/services/api/partnerMeetingsApi';
 import PartnerMeetingRsvpPanel from './PartnerMeetingRsvpPanel';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 interface MeetingDetailPanelProps {
   meeting: PartnerMeetingDTO;
@@ -36,6 +37,7 @@ interface MeetingDetailPanelProps {
 
 const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
   const { t } = useTranslation('partners');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
 
   const [agenda, setAgenda] = useState(meeting.agenda ?? '');
@@ -171,7 +173,12 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
       </Box>
 
       {/* Confirmation dialog */}
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs">
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        maxWidth="xs"
+        fullScreen={isMobile}
+      >
         <DialogTitle>{t('meetings.sendInvite')}</DialogTitle>
         <DialogContent>
           <Typography>{t('meetings.confirmSendInvite')}</Typography>

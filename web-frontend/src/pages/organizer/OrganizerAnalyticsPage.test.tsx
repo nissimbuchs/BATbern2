@@ -48,4 +48,36 @@ describe('OrganizerAnalyticsPage', () => {
     // MUI renders the .MuiTabs-scrollableX scroller element only for variant="scrollable".
     expect(document.querySelector('.MuiTabs-scrollableX')).toBeTruthy();
   });
+
+  it('should_dropTabStripBorderBottom_atXs_and_keepItAtMd', () => {
+    // The tab strip's borderBottom is responsive: { xs: 0, md: 1 }. MUI compiles
+    // this into @media (min-width:0px) -> border-bottom:0 and
+    // @media (min-width:900px) -> border-bottom:1px. jsdom never evaluates media
+    // queries, so inspect the injected emotion stylesheet directly.
+    render(<OrganizerAnalyticsPage />);
+    const tabsRoot = document.querySelector('.MuiTabs-root') as HTMLElement;
+    expect(tabsRoot).toBeTruthy();
+    const cssClass = Array.from(tabsRoot.classList).find((c) => c.startsWith('css-'));
+    expect(cssClass).toBeTruthy();
+
+    let css = '';
+    document.querySelectorAll('style').forEach((styleEl) => {
+      const text = styleEl.textContent ?? '';
+      if (cssClass && text.includes(`.${cssClass}`)) css += text + '\n';
+    });
+
+    // xs base (min-width:0px) drops the border.
+    expect(
+      new RegExp(`@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*border-bottom:\\s*0[^}]*\\}`).test(
+        css
+      )
+    ).toBe(true);
+
+    // md+ (min-width:900px) restores a 1px border.
+    expect(
+      new RegExp(
+        `@media\\s*\\(min-width:\\s*900px\\)\\s*\\{[^}]*border-bottom:\\s*1px[^}]*\\}`
+      ).test(css)
+    ).toBe(true);
+  });
 });

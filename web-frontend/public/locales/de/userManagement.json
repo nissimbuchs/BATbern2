@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "Anzeigen",
-    "editRoles": "Rollen bearbeiten"
+    "editRoles": "Rollen bearbeiten",
+    "openMenu": "Aktionsmenü öffnen"
   },
   "roles": {
     "organizer": "Organisator",

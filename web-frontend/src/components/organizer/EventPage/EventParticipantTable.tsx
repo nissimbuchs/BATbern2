@@ -23,12 +23,17 @@ import {
   Chip,
   Avatar,
   Box,
+  Card,
+  CardActions,
+  CardContent,
+  Stack,
   Typography,
   TableSortLabel,
   Skeleton,
 } from '@mui/material';
 import { People as PeopleIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { EventParticipant, RegistrationStatus } from '../../../types/eventParticipant.types';
 import CompanyCell from '../UserManagement/CompanyCell';
 import RegistrationActionsMenu from './RegistrationActionsMenu';
@@ -48,6 +53,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
   onRowClick,
 }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -191,6 +197,56 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
           {t('eventPage.participantTable.empty')}
         </Typography>
       </Paper>
+    );
+  }
+
+  // Mobile card view
+  if (isMobile) {
+    return (
+      <Box data-testid="participant-cards">
+        {sortedParticipants.map((participant) => (
+          <Card
+            key={participant.registrationCode}
+            sx={{ mb: 2, cursor: onRowClick ? 'pointer' : 'default' }}
+            onClick={() => onRowClick?.(participant)}
+            data-testid={`participant-card-${participant.registrationCode}`}
+          >
+            <CardContent>
+              <Stack spacing={1}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar sx={{ width: 40, height: 40 }}>
+                    {participant.firstName?.[0] ?? ''}
+                    {participant.lastName?.[0] ?? ''}
+                  </Avatar>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {participant.firstName} {participant.lastName}
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
+                  {participant.email}
+                </Typography>
+                <Box>
+                  <CompanyCell companyId={participant.company?.id} />
+                </Box>
+                <Box>
+                  <Chip
+                    label={getStatusLabel(participant.status)}
+                    size="small"
+                    color={getStatusChipColor(participant.status)}
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {t('eventPage.participantTable.headers.registrationDate')}:{' '}
+                  {formatDate(participant.registrationDate)}
+                </Typography>
+              </Stack>
+            </CardContent>
+            <CardActions onClick={(e) => e.stopPropagation()}>
+              <RegistrationActionsMenu participant={participant} />
+            </CardActions>
+          </Card>
+        ))}
+      </Box>
     );
   }
 

@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { PartnerNoteDTO } from '@/services/api/partnerNotesApi';
 
 type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
@@ -61,6 +62,7 @@ const getContentPreview = (htmlContent: string, maxLength: number = 100): string
 
 const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) => {
   const { t } = useTranslation('partners');
+  const { isMobile } = useBreakpoints();
   const { showNoteModal, setShowNoteModal } = usePartnerDetailStore();
   const isPartner = role === 'PARTNER';
   const {
@@ -161,7 +163,13 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
         )}
 
         {/* Note Modal — must be present in empty state too (showNoteModal set in store) */}
-        <Dialog open={showNoteModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+        <Dialog
+          open={showNoteModal}
+          onClose={handleCloseModal}
+          maxWidth="md"
+          fullWidth
+          fullScreen={isMobile}
+        >
           <DialogTitle>{t('detail.notesTab.addNote')}</DialogTitle>
           <DialogContent>
             <Stack spacing={3} mt={1}>
@@ -265,7 +273,7 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
       </Stack>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteConfirm} onClose={handleCancelDelete}>
+      <Dialog open={!!deleteConfirm} onClose={handleCancelDelete} fullScreen={isMobile}>
         <DialogTitle>{t('detail.notesTab.deleteNoteConfirmTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
@@ -288,7 +296,13 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
       </Dialog>
 
       {/* Note Modal */}
-      <Dialog open={showNoteModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+      <Dialog
+        open={showNoteModal}
+        onClose={handleCloseModal}
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
+      >
         <DialogTitle>
           {editingNote ? t('detail.notesTab.editNote') : t('detail.notesTab.addNote')}
         </DialogTitle>

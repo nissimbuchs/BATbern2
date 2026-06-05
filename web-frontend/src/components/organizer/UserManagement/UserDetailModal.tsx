@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { User } from '../../../types/user.types';
 
 interface UserDetailModalProps {
@@ -26,6 +27,7 @@ interface UserDetailModalProps {
 
 const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, onEdit }) => {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
 
   if (!user) {
     return null;
@@ -50,6 +52,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       aria-labelledby="user-detail-dialog-title"
     >
       <DialogTitle id="user-detail-dialog-title">

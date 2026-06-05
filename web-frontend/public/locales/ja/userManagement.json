@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "表示",
-    "editRoles": "役割を編集"
+    "editRoles": "役割を編集",
+    "openMenu": "アクションメニューを開く"
   },
   "roles": {
     "organizer": "オーガナイザー",

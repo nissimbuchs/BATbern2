@@ -73,6 +73,30 @@ describe('LivePreview', () => {
         expect(iframe).toHaveClass(/print/i);
       });
     });
+
+    it('should_hideDeviceToggleLabelText_atXs', () => {
+      // The textual label inside each device ToggleButton is icon-only on phones:
+      // display { xs: 'none', md: 'inline' } -> compiled to @media (min-width:0px)
+      // { display:none } and @media (min-width:900px) { display:inline }. jsdom does
+      // not evaluate media queries, so inspect the injected emotion stylesheet.
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
+
+      const labelSpan = screen.getByText('Desktop');
+      const cssClass = Array.from(labelSpan.classList).find((c) => c.startsWith('css-'));
+      expect(cssClass).toBeTruthy();
+
+      let css = '';
+      document.querySelectorAll('style').forEach((styleEl) => {
+        const text = styleEl.textContent ?? '';
+        if (cssClass && text.includes(`.${cssClass}`)) css += text + '\n';
+      });
+
+      expect(
+        new RegExp(`@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*display:\\s*none[^}]*\\}`).test(
+          css
+        )
+      ).toBe(true);
+    });
   });
 
   describe('Preview Iframe', () => {

@@ -25,6 +25,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { SpeakerWorkflowState } from '@/types/speakerPool.types';
 
 export interface StatusChangeDialogProps {
@@ -47,6 +48,7 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
   onCancel,
 }) => {
   const { t } = useTranslation(['organizer', 'common']);
+  const { isMobile } = useBreakpoints();
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
@@ -113,6 +115,7 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
       onClose={handleCancel}
       maxWidth="sm"
       fullWidth
+      fullScreen={isMobile}
       data-testid="status-change-dialog"
     >
       <DialogTitle>{dialogTitle}</DialogTitle>

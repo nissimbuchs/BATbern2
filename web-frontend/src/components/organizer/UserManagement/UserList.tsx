@@ -48,7 +48,7 @@ const UserList: React.FC = () => {
   const { t } = useTranslation('userManagement');
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { filters, pagination, sortBy, sortDir, setPage, setLimit, setSort } =
     useUserManagementStore();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -66,6 +66,16 @@ const UserList: React.FC = () => {
 
   const handleRowClick = (user: User) => {
     navigate(`/organizer/users/${user.id}`);
+  };
+
+  const handleUserAction = (action: string, user: User) => {
+    if (action === 'view') {
+      handleRowClick(user);
+    } else if (action === 'editRoles') {
+      setRoleManagerUser(user);
+    } else if (action === 'delete') {
+      setDeleteDialogUser(user);
+    }
   };
 
   const handleOpenCreateModal = () => {
@@ -175,7 +185,12 @@ const UserList: React.FC = () => {
         {isMobile ? (
           <Stack spacing={2}>
             {users.map((user) => (
-              <UserCard key={user.id} user={user} onClick={handleRowClick} />
+              <UserCard
+                key={user.id}
+                user={user}
+                onClick={handleRowClick}
+                onAction={handleUserAction}
+              />
             ))}
           </Stack>
         ) : viewMode === 'list' ? (
@@ -185,21 +200,13 @@ const UserList: React.FC = () => {
             sortBy={sortBy as 'name' | 'email' | 'company'}
             sortDir={sortDir}
             onSortChange={(field, dir) => setSort(field, dir)}
-            onAction={(action, user) => {
-              if (action === 'view') {
-                handleRowClick(user);
-              } else if (action === 'editRoles') {
-                setRoleManagerUser(user);
-              } else if (action === 'delete') {
-                setDeleteDialogUser(user);
-              }
-            }}
+            onAction={handleUserAction}
           />
         ) : (
           <Grid container spacing={2}>
             {users.map((user) => (
               <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={user.id}>
-                <UserCard user={user} onClick={handleRowClick} />
+                <UserCard user={user} onClick={handleRowClick} onAction={handleUserAction} />
               </Grid>
             ))}
           </Grid>

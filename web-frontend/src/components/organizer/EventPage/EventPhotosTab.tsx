@@ -31,6 +31,7 @@ import {
   CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useDeleteEventPhoto, useEventPhotos, useUploadEventPhoto } from '@/hooks/useEventPhotos';
 
 interface EventPhotosTabProps {
@@ -39,6 +40,7 @@ interface EventPhotosTabProps {
 
 export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deletePhotoId, setDeletePhotoId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -196,7 +198,7 @@ export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => 
       )}
 
       {/* Delete confirmation dialog */}
-      <Dialog open={!!deletePhotoId} onClose={() => setDeletePhotoId(null)}>
+      <Dialog open={!!deletePhotoId} onClose={() => setDeletePhotoId(null)} fullScreen={isMobile}>
         <DialogTitle>{t('photos.deleteConfirmTitle', 'Delete Photo')}</DialogTitle>
         <DialogContent>
           {t(

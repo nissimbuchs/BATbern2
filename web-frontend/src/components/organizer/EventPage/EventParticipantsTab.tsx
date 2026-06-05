@@ -98,7 +98,13 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
   return (
     <Box sx={{ py: 3 }}>
       {/* Header with participant count + export button */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        justifyContent="space-between"
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
         <Stack direction="row" spacing={2} alignItems="center">
           <PeopleIcon sx={{ fontSize: 32, color: 'primary.main' }} />
           <Typography variant="h5" component="h2">
@@ -106,12 +112,13 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
           </Typography>
           <Chip label={activeTotal} color="primary" size="small" sx={{ fontWeight: 'bold' }} />
         </Stack>
-        <Stack direction="row" spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
           <Button
             variant="outlined"
             startIcon={<DownloadIcon />}
             onClick={handleExport}
             disabled={isExporting || isExportingDocx}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
             data-testid="participants-export-xlsx"
           >
             {t('event.participants.exportNameBadges')}
@@ -121,6 +128,7 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
             startIcon={<ArticleIcon />}
             onClick={handleExportDocx}
             disabled={isExporting || isExportingDocx}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
             data-testid="participants-export-docx"
           >
             {t('event.participants.exportNameBadgesDocx')}

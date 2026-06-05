@@ -5,7 +5,7 @@
  * Mocks `useAddAdditionalEmail` / `useDeleteAdditionalEmail` via `vi.mock`.
  * Assertions use namespace-stripped i18n keys (per CLAUDE.md testing rules).
  */
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UserSettingsTab from './UserSettingsTab';
@@ -193,5 +193,60 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
 
     expect(screen.getByTestId('additional-emails-at-limit')).toBeInTheDocument();
     expect(screen.queryByTestId('additional-email-add-button')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Deterministic matchMedia mock keyed on a simulated viewport width so
+ * useBreakpoints().isMobile (down('md')) flips between icon-only and labelled
+ * sub-tabs. Mirrors PartnerCreateEditModal.test.tsx.
+ */
+const installMatchMediaForWidth = (viewportWidth: number) => {
+  window.matchMedia = vi.fn((query: string) => {
+    const maxMatch = /max-width:\s*([\d.]+)px/.exec(query);
+    const minMatch = /min-width:\s*([\d.]+)px/.exec(query);
+    let matches = false;
+    if (maxMatch) matches = viewportWidth <= parseFloat(maxMatch[1]);
+    else if (minMatch) matches = viewportWidth >= parseFloat(minMatch[1]);
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    };
+  }) as unknown as typeof window.matchMedia;
+};
+
+describe('UserSettingsTab — responsive sub-tabs (organizer mobile)', () => {
+  const originalMatchMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
+  test('should_renderIconOnlySubTabs_when_mobileViewport', () => {
+    installMatchMediaForWidth(375);
+    renderWithProviders([]);
+
+    // Tabs keep their aria-labels for accessibility...
+    const accountTab = screen.getByRole('tab', { name: 'settings.tabs.account' });
+    expect(accountTab).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'settings.tabs.notifications' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'settings.tabs.privacy' })).toBeInTheDocument();
+
+    // ...but the visible textual label is suppressed (icon-only) on phones.
+    expect(accountTab).not.toHaveTextContent('settings.tabs.account');
+  });
+
+  test('should_renderLabelledSubTabs_when_desktopViewport', () => {
+    installMatchMediaForWidth(1280);
+    renderWithProviders([]);
+
+    const accountTab = screen.getByRole('tab', { name: /settings\.tabs\.account/ });
+    // Desktop shows the textual label alongside the icon.
+    expect(accountTab).toHaveTextContent('settings.tabs.account');
   });
 });

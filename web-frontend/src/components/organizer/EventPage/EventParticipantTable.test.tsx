@@ -6,7 +6,7 @@
  */
 
 import { render, screen, within } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import EventParticipantTable from './EventParticipantTable';
 import type { EventParticipant } from '../../../types/eventParticipant.types';
@@ -326,6 +326,58 @@ describe('EventParticipantTable Component', () => {
       expect(firstRow).toBeInTheDocument();
       // The formatted date should be visible somewhere in the row
       expect(within(firstRow!).getByText(/2024|Jan|15/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Mobile card view', () => {
+    const originalMatchMedia = window.matchMedia;
+
+    // Simulate a 375px phone so useBreakpoints().isMobile (down('md')) resolves true.
+    const installMobileMatchMedia = (viewportWidth: number) => {
+      window.matchMedia = vi.fn((query: string) => {
+        const maxMatch = /max-width:\s*([\d.]+)px/.exec(query);
+        const minMatch = /min-width:\s*([\d.]+)px/.exec(query);
+        let matches = false;
+        if (maxMatch) matches = viewportWidth <= parseFloat(maxMatch[1]);
+        else if (minMatch) matches = viewportWidth >= parseFloat(minMatch[1]);
+        return {
+          matches,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        };
+      }) as unknown as typeof window.matchMedia;
+    };
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('should_renderCards_when_mobileViewport', () => {
+      installMobileMatchMedia(375);
+      renderWithProviders(
+        <EventParticipantTable participants={mockParticipants} isLoading={false} />
+      );
+
+      // Cards container replaces the table.
+      expect(screen.getByTestId('participant-cards')).toBeInTheDocument();
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+      expect(screen.getByTestId('participant-card-REG-001')).toBeInTheDocument();
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+
+    it('should_renderTable_when_desktopViewport', () => {
+      installMobileMatchMedia(1280);
+      renderWithProviders(
+        <EventParticipantTable participants={mockParticipants} isLoading={false} />
+      );
+
+      expect(screen.getByRole('table')).toBeInTheDocument();
+      expect(screen.queryByTestId('participant-cards')).not.toBeInTheDocument();
     });
   });
 });

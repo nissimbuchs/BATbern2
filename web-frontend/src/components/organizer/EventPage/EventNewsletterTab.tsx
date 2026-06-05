@@ -54,6 +54,7 @@ import {
 import type { NewsletterSendRequest } from '@/services/newsletterService';
 import { useEmailTemplates } from '@/hooks/useEmailTemplates';
 import type { EmailTemplateResponse } from '@/services/emailTemplateService';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 interface EventNewsletterTabProps {
   eventCode: string;
@@ -67,6 +68,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
   eventTitle,
 }) => {
   const { t } = useTranslation(['events', 'organizer']);
+  const { isMobile } = useBreakpoints();
   const [locale, setLocale] = useState<'de' | 'en'>('de');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingSendType, setPendingSendType] = useState<SendType | null>(null);
@@ -497,7 +499,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
       </Accordion>
 
       {/* Confirmation dialog */}
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} fullScreen={isMobile}>
         <DialogTitle>{t('eventPage.newsletter.confirmSendTitle')}</DialogTitle>
         <DialogContent>
           <DialogContentText>

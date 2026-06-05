@@ -105,18 +105,6 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
         screen.getByText(/The organizer responsible for moderating this event/i)
       ).toBeInTheDocument();
 
-      // Notifications Section
-      expect(screen.getByText(/^Notifications$/i)).toBeInTheDocument();
-      expect(screen.getByText(/active automations/i)).toBeInTheDocument();
-      expect(screen.getByText(/Speaker deadline reminders/i)).toBeInTheDocument();
-      expect(screen.getByText(/Registration confirmation emails/i)).toBeInTheDocument();
-      expect(screen.getByText(/Final agenda distribution/i)).toBeInTheDocument();
-      expect(screen.getByText(/Event day check-in reminders/i)).toBeInTheDocument();
-      expect(screen.getByText(/3 days before deadline/i)).toBeInTheDocument();
-      expect(screen.getByText(/Immediate on registration/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Manage All Notifications/i })).toBeInTheDocument();
-      expect(screen.getByText(/Mar 1, 2025|1 Mar 2025/i)).toBeInTheDocument();
-
       // Danger Zone Section
       expect(screen.getByText(/Danger Zone/i)).toBeInTheDocument();
       expect(screen.getByText(/These actions are irreversible/i)).toBeInTheDocument();
@@ -126,25 +114,17 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       expect(deleteButton).not.toBeDisabled();
     });
 
-    it.skip('displays notification switches when rendered', () => {
+    it('should_notRenderMockNotificationData_when_rendered', () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
-      const switches = screen.getAllByRole('checkbox');
-      expect(switches.length).toBeGreaterThanOrEqual(4);
-    });
-
-    it.skip('toggles notification when switch clicked', async () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
-      const switches = screen.getAllByRole('checkbox');
-      const firstSwitch = switches[0];
-      expect(firstSwitch).toBeChecked();
-
-      fireEvent.click(firstSwitch);
-
-      await waitFor(() => {
-        expect(firstSwitch).not.toBeChecked();
-      });
+      // The mock notification-rules section was removed (backend integration never landed).
+      expect(screen.queryByText(/MOCK DATA/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/mock notification data/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/active automations/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Speaker deadline reminders/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Manage All Notifications/i })
+      ).not.toBeInTheDocument();
     });
   });
 

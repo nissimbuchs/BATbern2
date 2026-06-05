@@ -13,11 +13,15 @@ import {
   Button,
   Chip,
   Divider,
+  FormControl,
   IconButton,
+  InputLabel,
   List,
   ListItem,
   ListItemSecondaryAction,
   ListItemText,
+  MenuItem,
+  Select,
   Snackbar,
   ToggleButton,
   ToggleButtonGroup,
@@ -34,6 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import {
   useDeleteEmailTemplate,
   useEmailTemplates,
@@ -65,8 +70,25 @@ const formatDate = (dateStr: string) => {
   }
 };
 
+const CATEGORY_OPTIONS: Category[] = [
+  'SPEAKER',
+  'REGISTRATION',
+  'TASK_REMINDER',
+  'NEWSLETTER',
+  'VENUE_COORDINATION',
+];
+
+const CATEGORY_LABEL_KEYS: Record<Category, [string, string]> = {
+  SPEAKER: ['emailTemplates.categories.SPEAKER', 'Speakers'],
+  REGISTRATION: ['emailTemplates.categories.REGISTRATION', 'Registration'],
+  TASK_REMINDER: ['emailTemplates.categories.TASK_REMINDER', 'Task Reminders'],
+  NEWSLETTER: ['emailTemplates.categories.NEWSLETTER', 'Newsletter'],
+  VENUE_COORDINATION: ['emailTemplates.categories.VENUE_COORDINATION', 'Venue & Catering'],
+};
+
 export const EmailTemplatesTab: React.FC = () => {
   const { t } = useTranslation();
+  const { isMobile } = useBreakpoints();
 
   const { data: layoutTemplates = [], isLoading: loadingLayouts } = useLayoutTemplates();
   const {
@@ -219,31 +241,42 @@ export const EmailTemplatesTab: React.FC = () => {
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-        <ToggleButtonGroup
-          value={categoryFilter}
-          exclusive
-          onChange={(_, v) => {
-            if (v) setCategoryFilter(v);
-          }}
-          size="small"
-          aria-label={t('common:filters.categoryFilter')}
-        >
-          <ToggleButton value="SPEAKER">
-            {t('emailTemplates.categories.SPEAKER', 'Speakers')}
-          </ToggleButton>
-          <ToggleButton value="REGISTRATION">
-            {t('emailTemplates.categories.REGISTRATION', 'Registration')}
-          </ToggleButton>
-          <ToggleButton value="TASK_REMINDER">
-            {t('emailTemplates.categories.TASK_REMINDER', 'Task Reminders')}
-          </ToggleButton>
-          <ToggleButton value="NEWSLETTER">
-            {t('emailTemplates.categories.NEWSLETTER', 'Newsletter')}
-          </ToggleButton>
-          <ToggleButton value="VENUE_COORDINATION">
-            {t('emailTemplates.categories.VENUE_COORDINATION', 'Venue & Catering')}
-          </ToggleButton>
-        </ToggleButtonGroup>
+        {isMobile ? (
+          <FormControl size="small" sx={{ minWidth: 200, flex: 1 }}>
+            <InputLabel id="email-template-category-label">
+              {t('common:filters.categoryFilter')}
+            </InputLabel>
+            <Select
+              labelId="email-template-category-label"
+              value={categoryFilter}
+              label={t('common:filters.categoryFilter')}
+              onChange={(e) => setCategoryFilter(e.target.value as Category)}
+              data-testid="email-template-category-select"
+            >
+              {CATEGORY_OPTIONS.map((cat) => (
+                <MenuItem key={cat} value={cat}>
+                  {t(CATEGORY_LABEL_KEYS[cat][0], CATEGORY_LABEL_KEYS[cat][1])}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          <ToggleButtonGroup
+            value={categoryFilter}
+            exclusive
+            onChange={(_, v) => {
+              if (v) setCategoryFilter(v);
+            }}
+            size="small"
+            aria-label={t('common:filters.categoryFilter')}
+          >
+            {CATEGORY_OPTIONS.map((cat) => (
+              <ToggleButton key={cat} value={cat}>
+                {t(CATEGORY_LABEL_KEYS[cat][0], CATEGORY_LABEL_KEYS[cat][1])}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        )}
 
         <ToggleButtonGroup
           value={localeFilter}

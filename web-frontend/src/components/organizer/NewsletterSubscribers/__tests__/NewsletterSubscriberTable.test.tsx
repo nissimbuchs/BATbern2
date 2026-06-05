@@ -3,7 +3,7 @@
  * Story 10.28: Newsletter Subscriber Management Page
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
@@ -223,5 +223,53 @@ describe('NewsletterSubscriberTable', () => {
     expect(screen.getByTestId('action-delete')).toBeInTheDocument();
     expect(screen.queryByTestId('action-unsubscribe')).not.toBeInTheDocument();
     expect(screen.queryByTestId('action-resubscribe')).not.toBeInTheDocument();
+  });
+
+  describe('Mobile card view', () => {
+    const originalMatchMedia = window.matchMedia;
+
+    const installMobileMatchMedia = (viewportWidth: number) => {
+      window.matchMedia = vi.fn((query: string) => {
+        const maxMatch = /max-width:\s*([\d.]+)px/.exec(query);
+        const minMatch = /min-width:\s*([\d.]+)px/.exec(query);
+        let matches = false;
+        if (maxMatch) matches = viewportWidth <= parseFloat(maxMatch[1]);
+        else if (minMatch) matches = viewportWidth >= parseFloat(minMatch[1]);
+        return {
+          matches,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        };
+      }) as unknown as typeof window.matchMedia;
+    };
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('should_renderCards_when_mobileViewport', () => {
+      installMobileMatchMedia(375);
+      renderComponent({ subscribers: [mockActiveSubscriber, mockSuppressedSubscriber] });
+
+      expect(screen.getByTestId('subscriber-cards')).toBeInTheDocument();
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+      expect(screen.getByTestId('subscriber-card-sub-1')).toBeInTheDocument();
+      expect(screen.getByText('active@example.com')).toBeInTheDocument();
+      // Suppressed-state chip still rendered inside the card.
+      expect(screen.getByTestId('suppressed-chip-sub-3')).toBeInTheDocument();
+    });
+
+    it('should_renderTable_when_desktopViewport', () => {
+      installMobileMatchMedia(1280);
+      renderComponent();
+
+      expect(screen.getByRole('table')).toBeInTheDocument();
+      expect(screen.queryByTestId('subscriber-cards')).not.toBeInTheDocument();
+    });
   });
 });

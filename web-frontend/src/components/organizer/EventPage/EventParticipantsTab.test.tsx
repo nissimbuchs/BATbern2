@@ -94,6 +94,47 @@ describe('EventParticipantsTab Component', () => {
 
       expect(screen.getByText('42')).toBeInTheDocument();
     });
+
+    it('should_stackHeaderColumn_atXs_andRow_atMd', () => {
+      // The header Stack is direction={{ xs: 'column', md: 'row' }} so the count
+      // block and export buttons stack vertically on phones. MUI compiles this to
+      // @media (min-width:0px) { flex-direction:column } and
+      // @media (min-width:900px) { flex-direction:row }; jsdom never evaluates the
+      // media queries, so inspect the injected emotion stylesheet directly.
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+
+      // Walk up from the title to the outermost MuiStack ancestor (the header row).
+      const title = screen.getByText('eventPage.participantsTab.title');
+      const stacks: HTMLElement[] = [];
+      let node = title.parentElement;
+      while (node) {
+        if (node.classList.contains('MuiStack-root')) stacks.push(node);
+        node = node.parentElement;
+      }
+      const headerStack = stacks[stacks.length - 1];
+      expect(headerStack).toBeTruthy();
+      const cssClass = Array.from(headerStack.classList).find((c) => c.startsWith('css-'));
+      expect(cssClass).toBeTruthy();
+
+      let css = '';
+      document.querySelectorAll('style').forEach((styleEl) => {
+        const text = styleEl.textContent ?? '';
+        if (cssClass && text.includes(`.${cssClass}`)) css += text + '\n';
+      });
+
+      // xs base (min-width:0px) -> flex-direction:column
+      expect(
+        new RegExp(
+          `@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*flex-direction:\\s*column[^}]*\\}`
+        ).test(css)
+      ).toBe(true);
+      // md+ (min-width:900px) -> flex-direction:row
+      expect(
+        new RegExp(
+          `@media\\s*\\(min-width:\\s*900px\\)\\s*\\{[^}]*flex-direction:\\s*row[^}]*\\}`
+        ).test(css)
+      ).toBe(true);
+    });
   });
 
   describe('Event Data', () => {

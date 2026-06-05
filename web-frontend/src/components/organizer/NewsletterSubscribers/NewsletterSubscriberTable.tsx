@@ -6,13 +6,17 @@
  * Story 10.28: Newsletter Subscriber Management Page
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Card,
+  CardActions,
+  CardContent,
   Chip,
   IconButton,
   Menu,
   MenuItem,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -26,6 +30,7 @@ import { MoreVert, PeopleAltOutlined, PersonOutline as PersonIcon } from '@mui/i
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { components } from '@/types/generated/events-api.types';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
@@ -56,8 +61,16 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
   onAction,
 }) => {
   const { t } = useTranslation('newsletterSubscribers');
+  const { isMobile } = useBreakpoints();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuSubscriber, setMenuSubscriber] = useState<SubscriberResponse | null>(null);
+
+  // The actions anchor button unmounts when crossing the table↔card breakpoint,
+  // leaving the Menu pinned to a stale element. Clear menu state on switch.
+  useEffect(() => {
+    setAnchorEl(null);
+    setMenuSubscriber(null);
+  }, [isMobile]);
 
   const handleSort = (field: string) => {
     if (field === sortBy) {
@@ -96,35 +109,39 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
     );
   }
 
+  const renderStatusChip = (sub: SubscriberResponse) =>
+    isSuppressed(sub) ? (
+      <Tooltip title={`${sub.bounceType ?? ''} — ${sub.bounceCount ?? 0} bounce(s)`}>
+        <Chip
+          label={t('status.suppressed')}
+          color="warning"
+          size="small"
+          data-testid={`suppressed-chip-${sub.id}`}
+        />
+      </Tooltip>
+    ) : (
+      <Chip
+        label={isActive(sub) ? t('status.active') : t('status.unsubscribed')}
+        color={isActive(sub) ? 'success' : 'default'}
+        size="small"
+      />
+    );
+
   return (
     <>
-      <TableContainer component={Paper}>
-        <Table data-testid="subscriber-table">
-          <TableHead>
-            <TableRow>
-              {SORTABLE_COLUMNS.map((col) => (
-                <TableCell key={col} sx={hideOnXsSx(col)}>
-                  <TableSortLabel
-                    active={sortBy === col}
-                    direction={sortBy === col ? sortDir : 'asc'}
-                    onClick={() => handleSort(col)}
-                    data-testid={`sort-${col}`}
-                  >
-                    {t(`table.headers.${col}`)}
-                  </TableSortLabel>
-                </TableCell>
-              ))}
-              <TableCell>{t('table.headers.status')}</TableCell>
-              <TableCell align="right">{t('table.headers.actions')}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {subscribers.map((sub) => (
-              <TableRow key={sub.id} hover>
-                <TableCell>{sub.email}</TableCell>
-                <TableCell>
+      {isMobile ? (
+        <Box data-testid="subscriber-cards">
+          {subscribers.map((sub) => (
+            <Card key={sub.id} sx={{ mb: 2 }} data-testid={`subscriber-card-${sub.id}`}>
+              <CardContent>
+                <Stack spacing={1}>
+                  <Typography variant="subtitle1" sx={{ wordBreak: 'break-word' }}>
+                    {sub.email}
+                  </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {sub.firstName ?? '—'}
+                    <Typography variant="body2" color="text.secondary">
+                      {sub.firstName ?? '—'}
+                    </Typography>
                     {sub.username && (
                       <Tooltip title={t('table.registeredUser')}>
                         <PersonIcon
@@ -135,49 +152,106 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
                       </Tooltip>
                     )}
                   </Box>
-                </TableCell>
-                <TableCell sx={hideOnXsSx('language')}>
-                  <Chip label={sub.language ?? '—'} size="small" variant="outlined" />
-                </TableCell>
-                <TableCell sx={hideOnXsSx('source')}>
-                  <Chip label={sub.source ?? '—'} size="small" variant="outlined" />
-                </TableCell>
-                <TableCell sx={hideOnXsSx('subscribedAt')}>
-                  {sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString() : '—'}
-                </TableCell>
-                <TableCell>
-                  {isSuppressed(sub) ? (
-                    <Tooltip title={`${sub.bounceType ?? ''} — ${sub.bounceCount ?? 0} bounce(s)`}>
-                      <Chip
-                        label={t('status.suppressed')}
-                        color="warning"
-                        size="small"
-                        data-testid={`suppressed-chip-${sub.id}`}
-                      />
-                    </Tooltip>
-                  ) : (
-                    <Chip
-                      label={isActive(sub) ? t('status.active') : t('status.unsubscribed')}
-                      color={isActive(sub) ? 'success' : 'default'}
-                      size="small"
-                    />
-                  )}
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, sub)}
-                    aria-label={t('actions.openMenu')}
-                    data-testid={`actions-${sub.id}`}
-                  >
-                    <MoreVert />
-                  </IconButton>
-                </TableCell>
+                  <Box>{renderStatusChip(sub)}</Box>
+                </Stack>
+              </CardContent>
+              <CardActions sx={{ justifyContent: 'flex-end' }}>
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleMenuOpen(e, sub)}
+                  aria-label={t('actions.openMenu')}
+                  data-testid={`actions-${sub.id}`}
+                >
+                  <MoreVert />
+                </IconButton>
+              </CardActions>
+            </Card>
+          ))}
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table data-testid="subscriber-table">
+            <TableHead>
+              <TableRow>
+                {SORTABLE_COLUMNS.map((col) => (
+                  <TableCell key={col} sx={hideOnXsSx(col)}>
+                    <TableSortLabel
+                      active={sortBy === col}
+                      direction={sortBy === col ? sortDir : 'asc'}
+                      onClick={() => handleSort(col)}
+                      data-testid={`sort-${col}`}
+                    >
+                      {t(`table.headers.${col}`)}
+                    </TableSortLabel>
+                  </TableCell>
+                ))}
+                <TableCell>{t('table.headers.status')}</TableCell>
+                <TableCell align="right">{t('table.headers.actions')}</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {subscribers.map((sub) => (
+                <TableRow key={sub.id} hover>
+                  <TableCell>{sub.email}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {sub.firstName ?? '—'}
+                      {sub.username && (
+                        <Tooltip title={t('table.registeredUser')}>
+                          <PersonIcon
+                            sx={{ fontSize: 16, color: 'text.secondary' }}
+                            aria-label={t('table.registeredUser')}
+                            data-testid={`registered-badge-${sub.id}`}
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={hideOnXsSx('language')}>
+                    <Chip label={sub.language ?? '—'} size="small" variant="outlined" />
+                  </TableCell>
+                  <TableCell sx={hideOnXsSx('source')}>
+                    <Chip label={sub.source ?? '—'} size="small" variant="outlined" />
+                  </TableCell>
+                  <TableCell sx={hideOnXsSx('subscribedAt')}>
+                    {sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString() : '—'}
+                  </TableCell>
+                  <TableCell>
+                    {isSuppressed(sub) ? (
+                      <Tooltip
+                        title={`${sub.bounceType ?? ''} — ${sub.bounceCount ?? 0} bounce(s)`}
+                      >
+                        <Chip
+                          label={t('status.suppressed')}
+                          color="warning"
+                          size="small"
+                          data-testid={`suppressed-chip-${sub.id}`}
+                        />
+                      </Tooltip>
+                    ) : (
+                      <Chip
+                        label={isActive(sub) ? t('status.active') : t('status.unsubscribed')}
+                        color={isActive(sub) ? 'success' : 'default'}
+                        size="small"
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, sub)}
+                      aria-label={t('actions.openMenu')}
+                      data-testid={`actions-${sub.id}`}
+                    >
+                      <MoreVert />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         {menuSubscriber && isActive(menuSubscriber) && (

@@ -34,6 +34,10 @@ import {
   DialogActions,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import LockIcon from '@mui/icons-material/Lock';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { isAxiosError } from 'axios';
 import type { AdditionalEmail, UserPreferences, UserSettings } from '@/types/userAccount.types';
 import {
@@ -85,6 +89,7 @@ function TabPanel(props: TabPanelProps) {
  */
 function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: AdditionalEmail[] }) {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
   const addMutation = useAddAdditionalEmail();
   const deleteMutation = useDeleteAdditionalEmail();
   const [emailInput, setEmailInput] = useState('');
@@ -299,6 +304,7 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
       <Dialog
         open={pendingDelete !== null}
         onClose={cancelDelete}
+        fullScreen={isMobile}
         aria-labelledby="additional-email-delete-confirm-title"
         aria-describedby="additional-email-delete-confirm-description"
         data-testid="additional-email-delete-confirm-dialog"
@@ -378,6 +384,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
   additionalEmails,
 }) => {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
   const [activeSubTab, setActiveSubTab] = useState(0);
   const [preferencesForm, setPreferencesForm] = useState(
     preferences || {
@@ -418,10 +425,34 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
 
   return (
     <Box data-testid="user-settings-tab">
-      <Tabs value={activeSubTab} onChange={(_, v) => setActiveSubTab(v)}>
-        <Tab label={t('settings.tabs.account')} data-testid="account-subtab" />
-        <Tab label={t('settings.tabs.notifications')} data-testid="notifications-subtab" />
-        <Tab label={t('settings.tabs.privacy')} data-testid="privacy-subtab" />
+      <Tabs
+        value={activeSubTab}
+        onChange={(_, v) => setActiveSubTab(v)}
+        variant={isMobile ? 'scrollable' : 'standard'}
+        scrollButtons={isMobile ? 'auto' : false}
+        sx={{ borderBottom: { xs: 0, md: 1 }, borderColor: 'divider' }}
+      >
+        <Tab
+          icon={<ManageAccountsIcon />}
+          iconPosition={isMobile ? undefined : 'start'}
+          label={isMobile ? undefined : t('settings.tabs.account')}
+          aria-label={t('settings.tabs.account')}
+          data-testid="account-subtab"
+        />
+        <Tab
+          icon={<NotificationsIcon />}
+          iconPosition={isMobile ? undefined : 'start'}
+          label={isMobile ? undefined : t('settings.tabs.notifications')}
+          aria-label={t('settings.tabs.notifications')}
+          data-testid="notifications-subtab"
+        />
+        <Tab
+          icon={<LockIcon />}
+          iconPosition={isMobile ? undefined : 'start'}
+          label={isMobile ? undefined : t('settings.tabs.privacy')}
+          aria-label={t('settings.tabs.privacy')}
+          data-testid="privacy-subtab"
+        />
       </Tabs>
 
       {/* Account Settings */}

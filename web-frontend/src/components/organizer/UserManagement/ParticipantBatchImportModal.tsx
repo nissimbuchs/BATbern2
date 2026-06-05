@@ -38,6 +38,7 @@ import {
   HourglassEmpty,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useParticipantBatchImport } from '../../../hooks/useParticipantBatchImport';
 import { useUserList } from '../../../hooks/useUserManagement/useUserList';
 import {
@@ -57,6 +58,7 @@ export function ParticipantBatchImportModal({
   onImportComplete,
 }: ParticipantBatchImportModalProps) {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -252,6 +254,7 @@ export function ParticipantBatchImportModal({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       data-testid="participant-import-modal"
     >
       <DialogTitle>{t('participantImport.title')}</DialogTitle>

@@ -20,6 +20,7 @@ import {
 import { Close, WarningAmber } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/events-api.types';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useUnsuppressSubscriber } from '@/hooks/useNewsletterSubscribers';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
@@ -39,6 +40,7 @@ const UnsuppressDialog: React.FC<UnsuppressDialogProps> = ({
 }) => {
   const { t } = useTranslation('newsletterSubscribers');
   const { t: tCommon } = useTranslation('common');
+  const { isMobile } = useBreakpoints();
   const mutation = useUnsuppressSubscriber();
 
   React.useEffect(() => {
@@ -56,7 +58,7 @@ const UnsuppressDialog: React.FC<UnsuppressDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box display="flex" alignItems="center" gap={1}>

@@ -33,7 +33,7 @@ import type { components } from '@/types/generated/company-api.types';
 export const PartnerCreateEditModal: React.FC = () => {
   const { t } = useTranslation('partners');
   const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const { isOpen, mode, partnerToEdit, closeModal } = usePartnerModalStore();
   const createMutation = useCreatePartner();
   const updateMutation = useUpdatePartner();
