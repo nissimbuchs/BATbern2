@@ -12,6 +12,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { useOptionalConfig } from '@/contexts/useConfig';
 import { authService } from '@/services/auth/authService';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 
@@ -19,14 +20,50 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 // sessionStorage so it survives the round-trip to the hosted UI but never leaks across tabs.
 const LINK_RETRY_KEY = 'batbern.link-retry';
 
+// Config-race fix (2026-06-05): bounded escape if the runtime config never arrives
+// (GET /api/v1/config failed) — don't strand the user on the loader forever.
+const CONFIG_WAIT_TIMEOUT_MS = 15000;
+
 export const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { completeFederatedSignIn } = useAuth();
+  /**
+   * Config-race fix (2026-06-05, root cause of the unstable federated login): this page
+   * raced ConfigProvider's background `GET /api/v1/config`. When this effect won,
+   * `ensureAmplifyConfigured()` (inside every authService call) silently NO-OP'd —
+   * `setAmplifyRuntimeConfig` hadn't been called yet — so `Amplify.configure()` never ran.
+   * In Amplify v6 the configure call is the ONLY trigger of the OAuth listener that
+   * exchanges `?code=` for tokens; without it the exchange never happens, the F7 wait
+   * times out after 15s, and the user bounces to /login ("unexpected error"). Nothing
+   * retried configure once the config landed, so the only rescue was an unrelated code
+   * path (e.g. AuthContext session restore for users with leftover tokens — why it
+   * "sometimes worked"). Same race class as the session-restore gate in AuthContext.tsx.
+   * Fix: gate the whole completion flow (incl. the F6 auto-retry, which also needs a
+   * configured Amplify) on the config being loaded; the effect re-runs when it lands.
+   */
+  const config = useOptionalConfig();
   // Guard against double-invocation (React 18 StrictMode dev double-effect).
   const startedRef = useRef(false);
 
+  // Bounded escape: config never arrives (config endpoint down) → fail over to /login
+  // instead of an infinite loader. Cleared as soon as config lands / completion starts.
   useEffect(() => {
+    if (config || startedRef.current) return;
+    const timer = setTimeout(() => {
+      if (!startedRef.current) {
+        startedRef.current = true;
+        console.error('[AuthCallbackPage] Runtime config never arrived — aborting callback');
+        navigate('/login', { replace: true });
+      }
+    }, CONFIG_WAIT_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [config, navigate]);
+
+  useEffect(() => {
+    // Wait for the runtime config — without it Amplify cannot be configured and the
+    // code exchange cannot run (see doc comment on `config` above).
+    if (!config) return;
     // `startedRef` already guards against the React 18 StrictMode dev double-effect,
     // so the federated completion runs exactly once. We deliberately do NOT add a
     // `cancelled` cleanup flag here: under StrictMode the fake unmount would set it on
@@ -66,7 +103,7 @@ export const AuthCallbackPage: React.FC = () => {
       // and preferences.language are already in state before we navigate.
       navigate(outcome.kind === 'success' ? '/dashboard' : '/login', { replace: true });
     })();
-  }, [completeFederatedSignIn, navigate, searchParams]);
+  }, [config, completeFederatedSignIn, navigate, searchParams]);
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center">

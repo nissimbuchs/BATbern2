@@ -413,15 +413,21 @@ class AuthService {
    * `signInWithRedirect`/`signedIn` event or as soon as tokens are present (a 500ms poll
    * covers an event fired before the listener attached); resolves false on
    * `signInWithRedirect_failure` or timeout. Never throws.
+   *
+   * Config-race fix (2026-06-05): the Hub listener is attached BEFORE `amplifyAuth()` —
+   * `ensureAmplifyConfigured()` inside it runs `Amplify.configure()`, which synchronously
+   * kicks off the OAuth code exchange. A fast exchange failure dispatches
+   * `signInWithRedirect_failure` immediately; attaching the listener afterwards (the old
+   * order) missed that event and burned the full timeout before surfacing the error.
    */
   async waitForFederatedSession(timeoutMs = 15000): Promise<boolean> {
-    const { fetchAuthSession } = await this.amplifyAuth();
     // Dynamic import keeps aws-amplify utils off the public-homepage bundle (same rationale
     // as amplifyAuth()).
     const { Hub } = await import('aws-amplify/utils');
 
     return new Promise<boolean>((resolve) => {
       let settled = false;
+      let poller: ReturnType<typeof setInterval> | undefined;
 
       // `finish` closes over the const bindings below; it can only RUN after they are
       // initialised (events/timers fire asynchronously), so the forward references are safe.
@@ -430,7 +436,7 @@ class AuthService {
         settled = true;
         unsubscribe();
         clearTimeout(timer);
-        clearInterval(poller);
+        if (poller !== undefined) clearInterval(poller);
         resolve(ok);
       };
 
@@ -445,18 +451,30 @@ class AuthService {
 
       const timer = setTimeout(() => finish(false), timeoutMs);
 
-      const checkTokens = async () => {
+      // Listener is live — NOW configure Amplify (triggers the code exchange) and start
+      // the token poll. A configure failure settles false instead of hanging to timeout.
+      void (async () => {
         try {
-          const session = await fetchAuthSession();
-          if (session.tokens?.idToken) {
-            finish(true);
-          }
-        } catch {
-          // Exchange still in flight (or transient) — keep waiting until event/timeout.
+          const { fetchAuthSession } = await this.amplifyAuth();
+          if (settled) return;
+
+          const checkTokens = async () => {
+            try {
+              const session = await fetchAuthSession();
+              if (session.tokens?.idToken) {
+                finish(true);
+              }
+            } catch {
+              // Exchange still in flight (or transient) — keep waiting until event/timeout.
+            }
+          };
+          poller = setInterval(() => void checkTokens(), 500);
+          void checkTokens();
+        } catch (error) {
+          console.error('[authService] waitForFederatedSession: Amplify init failed', error);
+          finish(false);
         }
-      };
-      const poller = setInterval(() => void checkTokens(), 500);
-      void checkTokens();
+      })();
     });
   }
 

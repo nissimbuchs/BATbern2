@@ -34,6 +34,16 @@ vi.mock('aws-amplify/utils', () => ({
   Hub: { listen: mockHubListen },
 }));
 
+// Config-race fix (2026-06-05): spy on ensureAmplifyConfigured so the Hub-before-configure
+// ordering is observable (Amplify.configure synchronously kicks off the OAuth code
+// exchange — a fast signInWithRedirect_failure dispatched before Hub.listen attaches
+// would otherwise be missed and burn the full timeout).
+const mockEnsureAmplifyConfigured = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+vi.mock('@/config/amplify', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/amplify')>();
+  return { ...actual, ensureAmplifyConfigured: mockEnsureAmplifyConfigured };
+});
+
 // Import the mocked modules
 import * as amplifyAuth from 'aws-amplify/auth';
 import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
@@ -43,6 +53,9 @@ const mockAuth = vi.mocked(amplifyAuth);
 describe('AuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // clearAllMocks keeps replaced implementations — restore the default resolve so a
+    // mockRejectedValue from one test never leaks into the next.
+    mockEnsureAmplifyConfigured.mockImplementation(() => Promise.resolve());
     // Clear storage before each test
     localStorage.clear();
     sessionStorage.clear();
@@ -668,6 +681,34 @@ describe('AuthService', () => {
       mockHubListen.mockImplementation((() => () => {}) as never);
 
       await expect(authService.waitForFederatedSession(80)).resolves.toBe(false);
+    });
+
+    it('should_attachHubListener_before_amplifyConfigureTriggersExchange', async () => {
+      // Amplify.configure (inside ensureAmplifyConfigured) synchronously starts the OAuth
+      // code exchange; a fast failure dispatches signInWithRedirect_failure immediately.
+      // The Hub listener MUST therefore be live BEFORE ensureAmplifyConfigured runs.
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({
+        tokens: { idToken: { toString: () => 'id-token' } },
+      } as never);
+
+      let hubAttachedBeforeConfigure = false;
+      mockEnsureAmplifyConfigured.mockImplementation(() => {
+        hubAttachedBeforeConfigure = mockHubListen.mock.calls.length > 0;
+        return Promise.resolve();
+      });
+
+      await expect(authService.waitForFederatedSession(2000)).resolves.toBe(true);
+      expect(mockEnsureAmplifyConfigured).toHaveBeenCalled();
+      expect(hubAttachedBeforeConfigure).toBe(true);
+    });
+
+    it('should_resolveFalse_when_amplifyConfigurationFails', async () => {
+      // ensureAmplifyConfigured rejecting (Amplify.configure threw) must settle the wait
+      // promise as false, not leave it hanging until the timeout.
+      mockEnsureAmplifyConfigured.mockRejectedValue(new Error('configure failed'));
+      mockHubListen.mockImplementation((() => () => {}) as never);
+
+      await expect(authService.waitForFederatedSession(5000)).resolves.toBe(false);
     });
   });
 
