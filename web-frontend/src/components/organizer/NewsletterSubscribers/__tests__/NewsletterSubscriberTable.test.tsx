@@ -158,39 +158,33 @@ describe('NewsletterSubscriberTable', () => {
     expect(props.onSortChange).toHaveBeenCalledWith('email', 'desc');
   });
 
-  it('should_showUnsubscribeAndDelete_when_activeSubscriberMenuOpened', async () => {
-    const user = userEvent.setup();
-    const { props } = renderComponent();
+  it('should_showVisibleUnsubscribeAndDeleteButtons_when_activeSubscriber', () => {
+    renderComponent();
 
-    const menuButton = screen.getByTestId('actions-sub-1');
-    await user.click(menuButton);
+    // No kebab menu anywhere.
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
 
-    expect(screen.getByTestId('action-unsubscribe')).toBeInTheDocument();
-    expect(screen.getByTestId('action-delete')).toBeInTheDocument();
-    expect(screen.queryByTestId('action-resubscribe')).not.toBeInTheDocument();
+    // Visible, status-conditional buttons (no clicking to reveal them).
+    expect(screen.getByTestId('action-unsubscribe-sub-1')).toBeInTheDocument();
+    expect(screen.getByTestId('action-delete-sub-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-resubscribe-sub-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsuppress-sub-1')).not.toBeInTheDocument();
   });
 
-  it('should_showResubscribeAndDelete_when_unsubscribedSubscriberMenuOpened', async () => {
-    const user = userEvent.setup();
-    const { props } = renderComponent();
+  it('should_showVisibleResubscribeAndDeleteButtons_when_unsubscribedSubscriber', () => {
+    renderComponent();
 
-    const menuButton = screen.getByTestId('actions-sub-2');
-    await user.click(menuButton);
-
-    expect(screen.getByTestId('action-resubscribe')).toBeInTheDocument();
-    expect(screen.getByTestId('action-delete')).toBeInTheDocument();
-    expect(screen.queryByTestId('action-unsubscribe')).not.toBeInTheDocument();
+    expect(screen.getByTestId('action-resubscribe-sub-2')).toBeInTheDocument();
+    expect(screen.getByTestId('action-delete-sub-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsubscribe-sub-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsuppress-sub-2')).not.toBeInTheDocument();
   });
 
-  it('should_callOnAction_when_menuItemClicked', async () => {
+  it('should_callOnAction_when_visibleActionButtonClicked', async () => {
     const user = userEvent.setup();
     const { props } = renderComponent();
 
-    const menuButton = screen.getByTestId('actions-sub-1');
-    await user.click(menuButton);
-
-    const unsubscribeItem = screen.getByTestId('action-unsubscribe');
-    await user.click(unsubscribeItem);
+    await user.click(screen.getByTestId('action-unsubscribe-sub-1'));
 
     expect(props.onAction).toHaveBeenCalledWith('unsubscribe', mockActiveSubscriber);
   });
@@ -210,19 +204,15 @@ describe('NewsletterSubscriberTable', () => {
     expect(screen.getByTestId('suppressed-chip-sub-3')).toBeInTheDocument();
   });
 
-  it('should_showUnsuppressAction_when_suppressedSubscriberMenuOpened', async () => {
-    const user = userEvent.setup();
-    const { props } = renderComponent({
+  it('should_showVisibleUnsuppressButton_when_suppressedSubscriber', () => {
+    renderComponent({
       subscribers: [mockActiveSubscriber, mockSuppressedSubscriber],
     });
 
-    const menuButton = screen.getByTestId('actions-sub-3');
-    await user.click(menuButton);
-
-    expect(screen.getByTestId('action-unsuppress')).toBeInTheDocument();
-    expect(screen.getByTestId('action-delete')).toBeInTheDocument();
-    expect(screen.queryByTestId('action-unsubscribe')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('action-resubscribe')).not.toBeInTheDocument();
+    expect(screen.getByTestId('action-unsuppress-sub-3')).toBeInTheDocument();
+    expect(screen.getByTestId('action-delete-sub-3')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsubscribe-sub-3')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-resubscribe-sub-3')).not.toBeInTheDocument();
   });
 
   describe('Mobile card view', () => {
@@ -270,6 +260,27 @@ describe('NewsletterSubscriberTable', () => {
 
       expect(screen.getByRole('table')).toBeInTheDocument();
       expect(screen.queryByTestId('subscriber-cards')).not.toBeInTheDocument();
+    });
+
+    it('should_showVisibleActionButtonsInCard_when_mobileViewport', async () => {
+      installMobileMatchMedia(375);
+      const user = userEvent.setup();
+      const { props } = renderComponent({
+        subscribers: [mockActiveSubscriber, mockSuppressedSubscriber],
+      });
+
+      // No menu in the card view either.
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+      // Active subscriber: unsubscribe + delete visible directly inside the card.
+      expect(screen.getByTestId('action-unsubscribe-sub-1')).toBeInTheDocument();
+      expect(screen.getByTestId('action-delete-sub-1')).toBeInTheDocument();
+      // Suppressed subscriber: unsuppress + delete.
+      expect(screen.getByTestId('action-unsuppress-sub-3')).toBeInTheDocument();
+      expect(screen.getByTestId('action-delete-sub-3')).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('action-unsuppress-sub-3'));
+      expect(props.onAction).toHaveBeenCalledWith('unsuppress', mockSuppressedSubscriber);
     });
   });
 });

@@ -414,9 +414,11 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 {t('slotAssignment.timeline.title')}
               </Typography>
 
-              {/* Timeline Grid */}
+              {/* Timeline Grid — fluid to viewport width on mobile AND desktop; the
+                  proportional Grid fractions handle column sizing. overflowX wrapper
+                  kept as a harmless safety net. */}
               <Box data-testid="timeline-grid" sx={{ overflowX: 'auto' }}>
-                <Box sx={{ minWidth: { xs: 560, md: 800 } }}>
+                <Box>
                   {/* Header Row */}
                   <Grid container spacing={1} sx={{ mb: 1 }}>
                     <Grid size={2}>

@@ -469,10 +469,11 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
 
   describe('Responsive timeline (organizer mobile)', () => {
     /**
-     * MUI compiles a responsive sx ({ xs: 560, md: 800 }) into per-breakpoint
-     * @media (min-width:…) rules — xs lands behind @media (min-width:0px) and md
-     * behind @media (min-width:900px). jsdom never evaluates media queries, so we
-     * inspect the injected emotion stylesheet for the element's css-* class.
+     * The timeline grid is now FLUID on every viewport — the fixed
+     * minWidth ({ xs: 560, md: 800 }) was removed (round 3) so the grid
+     * fills the available width with no horizontal scroll forced by a min
+     * width. jsdom never evaluates media queries, so we inspect the injected
+     * emotion stylesheet for the element's css-* class.
      */
     const cssForClass = (className: string): string => {
       let combined = '';
@@ -485,31 +486,24 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
 
     const emotionClass = (el: HTMLElement): string => {
       const cssClass = Array.from(el.classList).find((c) => c.startsWith('css-'));
-      expect(cssClass).toBeTruthy();
-      return cssClass!;
+      return cssClass ?? '';
     };
 
-    it('should_setTimelineGridMinWidth_xs560_md800', () => {
+    it('should_notSetFixedMinWidthOnTimelineGrid_when_rendered', () => {
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
-      // The horizontally-scrollable inner grid wrapper carries the responsive minWidth.
+      // The inner grid wrapper must no longer carry any fixed min-width rule.
       const scroller = screen.getByTestId('timeline-grid');
       const inner = scroller.firstElementChild as HTMLElement;
       expect(inner).toBeTruthy();
-      const css = cssForClass(emotionClass(inner));
 
-      // xs base (min-width:0px) -> min-width:560px
-      expect(
-        new RegExp(`@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*min-width:\\s*560px[^}]*\\}`).test(
-          css
-        )
-      ).toBe(true);
-      // md+ (min-width:900px) -> min-width:800px
-      expect(
-        new RegExp(
-          `@media\\s*\\(min-width:\\s*900px\\)\\s*\\{[^}]*min-width:\\s*800px[^}]*\\}`
-        ).test(css)
-      ).toBe(true);
+      // No emotion class at all is the cleanest signal of "no sx min-width".
+      const cls = emotionClass(inner);
+      const css = cls ? cssForClass(cls) : '';
+
+      // Neither the old xs (560px) nor md (800px) min-width may survive.
+      expect(/min-width:\s*560px/.test(css)).toBe(false);
+      expect(/min-width:\s*800px/.test(css)).toBe(false);
     });
 
     it('should_wrapSessionTitle_whiteSpaceNormal_atXs', async () => {

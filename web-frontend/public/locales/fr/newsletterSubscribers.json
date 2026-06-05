@@ -1,14 +1,14 @@
 {
   "title": "Newsletter Subscribers",
   "loading": {
-    "subscribers": "Loading subscribers\u2026"
+    "subscribers": "Loading subscribers…"
   },
   "error": {
     "loadFailed": "Failed to load subscribers.",
     "retry": "Retry"
   },
   "search": {
-    "placeholder": "Search by email or name\u2026"
+    "placeholder": "Search by email or name…"
   },
   "filters": {
     "status": {
@@ -39,6 +39,7 @@
     "openMenu": "Open actions",
     "unsubscribe": "Unsubscribe",
     "resubscribe": "Re-subscribe",
+    "unsuppress": "Unsuppress",
     "delete": "Delete"
   },
   "pagination": {
