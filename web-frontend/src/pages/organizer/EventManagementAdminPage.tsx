@@ -92,6 +92,9 @@ const EventManagementAdminPage: React.FC = () => {
           onChange={handleTabChange}
           aria-label="Administration tabs"
           data-testid="admin-tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
         >
           {tabs.map((tab, i) => (
             <Tab

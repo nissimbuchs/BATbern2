@@ -70,6 +70,9 @@ const OrganizerAnalyticsPage: React.FC = () => {
         value={activeTab}
         onChange={(_e, v) => setActiveTab(v as TabIndex)}
         sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
       >
         <Tab label={t('common:labels.overview')} />
         <Tab label={t('analytics.tabs.attendance')} />

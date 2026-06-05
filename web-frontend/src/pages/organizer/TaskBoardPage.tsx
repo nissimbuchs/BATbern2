@@ -299,7 +299,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'grey.50',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -336,7 +337,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'warning.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -373,7 +375,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'info.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -410,7 +413,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'success.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}

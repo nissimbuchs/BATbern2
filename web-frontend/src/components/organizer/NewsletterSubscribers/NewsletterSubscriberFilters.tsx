@@ -54,7 +54,7 @@ const NewsletterSubscriberFilters: React.FC = () => {
           value={localSearch}
           onChange={(e) => setLocalSearch(e.target.value)}
           data-testid="subscriber-search-input"
-          sx={{ minWidth: 250 }}
+          sx={{ minWidth: { xs: '100%', sm: 250 } }}
         />
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -149,7 +149,13 @@ export const EventManagementDashboard: React.FC = () => {
           {/* Active Events (Main Column - 8/12) */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Paper sx={{ p: 3 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                spacing={{ xs: 0.5, sm: 0 }}
+                mb={2}
+              >
                 <Typography variant="h5">{t('dashboard.activeEvents')}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   {eventsData?.data?.length || 0}/{eventsData?.pagination?.totalItems || 0}{' '}

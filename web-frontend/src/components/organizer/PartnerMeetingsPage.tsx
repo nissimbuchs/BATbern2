@@ -23,9 +23,11 @@ import {
   DialogTitle,
   IconButton,
   Skeleton,
+  Paper,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -132,33 +134,35 @@ const PartnerMeetingsPage: React.FC = () => {
           {t('meetings.noMeetings')}
         </Typography>
       ) : (
-        <Table size="small" data-testid="partner-meetings-table">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ width: 40 }} />
-              <TableCell>{t('common:labels.event')}</TableCell>
-              <TableCell>{t('meetings.columns.type')}</TableCell>
-              <TableCell>{t('common:labels.date')}</TableCell>
-              <TableCell>{t('meetings.columns.time')}</TableCell>
-              <TableCell>{t('meetings.columns.location')}</TableCell>
-              <TableCell>{t('meetings.columns.inviteStatus')}</TableCell>
-              <TableCell>{t('common:labels.actions')}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {meetings.map((meeting: PartnerMeetingDTO) => (
-              <MeetingRow
-                key={meeting.id}
-                meeting={meeting}
-                expanded={expandedId === meeting.id}
-                onToggle={() => toggleRow(meeting.id)}
-                onEdit={(e) => handleEditClick(e, meeting)}
-                onDelete={(e) => handleDeleteClick(e, meeting)}
-                t={t}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+          <Table size="small" data-testid="partner-meetings-table" sx={{ minWidth: 800 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: 40 }} />
+                <TableCell>{t('common:labels.event')}</TableCell>
+                <TableCell>{t('meetings.columns.type')}</TableCell>
+                <TableCell>{t('common:labels.date')}</TableCell>
+                <TableCell>{t('meetings.columns.time')}</TableCell>
+                <TableCell>{t('meetings.columns.location')}</TableCell>
+                <TableCell>{t('meetings.columns.inviteStatus')}</TableCell>
+                <TableCell>{t('common:labels.actions')}</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {meetings.map((meeting: PartnerMeetingDTO) => (
+                <MeetingRow
+                  key={meeting.id}
+                  meeting={meeting}
+                  expanded={expandedId === meeting.id}
+                  onToggle={() => toggleRow(meeting.id)}
+                  onEdit={(e) => handleEditClick(e, meeting)}
+                  onDelete={(e) => handleDeleteClick(e, meeting)}
+                  t={t}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       <CreateMeetingDialog open={createOpen} onClose={() => setCreateOpen(false)} />

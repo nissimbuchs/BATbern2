@@ -108,7 +108,12 @@ export function AiAssistDrawer({
 
   return (
     <>
-      <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: 480 } }}>
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={onClose}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 480 } } }}
+      >
         <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6">
             <AutoAwesome sx={{ mr: 1, verticalAlign: 'middle' }} />

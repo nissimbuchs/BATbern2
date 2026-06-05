@@ -146,7 +146,7 @@ const UserTable: React.FC<UserTableProps> = ({
                 {t('common:labels.email')}
               </TableSortLabel>
             </TableCell>
-            <TableCell>
+            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
               <TableSortLabel
                 active={sortField === 'company'}
                 direction={sortField === 'company' ? sortDirection : 'asc'}
@@ -157,7 +157,9 @@ const UserTable: React.FC<UserTableProps> = ({
               </TableSortLabel>
             </TableCell>
             <TableCell>{t('table.headers.roles')}</TableCell>
-            <TableCell>{t('common:labels.status')}</TableCell>
+            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+              {t('common:labels.status')}
+            </TableCell>
             {showAdminActions && <TableCell align="right">{t('common:labels.actions')}</TableCell>}
           </TableRow>
         </TableHead>
@@ -198,7 +200,7 @@ const UserTable: React.FC<UserTableProps> = ({
                   {user.email}
                 </Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                 <CompanyCell companyId={user.companyId} />
               </TableCell>
               <TableCell>
@@ -214,7 +216,7 @@ const UserTable: React.FC<UserTableProps> = ({
                   ))}
                 </Box>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                 <Chip
                   label={user.active ? t('status.active') : t('status.inactive')}
                   size="small"

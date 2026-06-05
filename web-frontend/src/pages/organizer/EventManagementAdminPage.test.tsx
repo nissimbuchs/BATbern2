@@ -110,6 +110,15 @@ describe('EventManagementAdminPage', () => {
       await user.click(screen.getByRole('tab', { name: /import data/i }));
       expect(screen.getByTestId('import-data-tab-content')).toBeInTheDocument();
     });
+
+    it('should_renderScrollableTabStrip_when_manyTabs', () => {
+      // The 9-tab strip overflows narrow viewports; it must be horizontally
+      // scrollable (variant="scrollable") so every tab stays reachable on mobile.
+      renderPage();
+      const tabs = screen.getByTestId('admin-tabs');
+      // MUI renders a scrollable scroller element only for variant="scrollable".
+      expect(tabs.querySelector('.MuiTabs-scrollableX')).toBeTruthy();
+    });
   });
 
   describe('AC1 — role guard', () => {

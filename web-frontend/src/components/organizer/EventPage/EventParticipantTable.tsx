@@ -217,7 +217,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 {t('common:labels.email')}
               </TableSortLabel>
             </TableCell>
-            <TableCell>
+            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
               <TableSortLabel
                 active={sortField === 'company'}
                 direction={sortField === 'company' ? sortDirection : 'asc'}
@@ -235,7 +235,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 {t('common:labels.status')}
               </TableSortLabel>
             </TableCell>
-            <TableCell>
+            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
               <TableSortLabel
                 active={sortField === 'registrationDate'}
                 direction={sortField === 'registrationDate' ? sortDirection : 'asc'}
@@ -271,7 +271,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                   {participant.email}
                 </Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                 <CompanyCell companyId={participant.company?.id} />
               </TableCell>
               <TableCell>
@@ -281,7 +281,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                   color={getStatusChipColor(participant.status)}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                 <Typography variant="body2" color="text.secondary">
                   {formatDate(participant.registrationDate)}
                 </Typography>

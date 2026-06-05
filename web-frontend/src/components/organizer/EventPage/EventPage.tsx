@@ -219,7 +219,11 @@ export const EventPage: React.FC = () => {
               {event.title}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
             <Button
               variant="outlined"
               startIcon={<SlideshowIcon />}

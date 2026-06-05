@@ -43,6 +43,11 @@ interface NewsletterSubscriberTableProps {
 
 const SORTABLE_COLUMNS = ['email', 'firstName', 'language', 'source', 'subscribedAt'] as const;
 
+// Low-value columns hidden on phones (<600px) to avoid horizontal crowding.
+const HIDE_ON_XS = new Set<string>(['language', 'source', 'subscribedAt']);
+const hideOnXsSx = (col: string) =>
+  HIDE_ON_XS.has(col) ? { display: { xs: 'none', sm: 'table-cell' } } : undefined;
+
 const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
   subscribers,
   sortBy,
@@ -98,7 +103,7 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
           <TableHead>
             <TableRow>
               {SORTABLE_COLUMNS.map((col) => (
-                <TableCell key={col}>
+                <TableCell key={col} sx={hideOnXsSx(col)}>
                   <TableSortLabel
                     active={sortBy === col}
                     direction={sortBy === col ? sortDir : 'asc'}
@@ -131,13 +136,13 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
                     )}
                   </Box>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={hideOnXsSx('language')}>
                   <Chip label={sub.language ?? '—'} size="small" variant="outlined" />
                 </TableCell>
-                <TableCell>
+                <TableCell sx={hideOnXsSx('source')}>
                   <Chip label={sub.source ?? '—'} size="small" variant="outlined" />
                 </TableCell>
-                <TableCell>
+                <TableCell sx={hideOnXsSx('subscribedAt')}>
                   {sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString() : '—'}
                 </TableCell>
                 <TableCell>

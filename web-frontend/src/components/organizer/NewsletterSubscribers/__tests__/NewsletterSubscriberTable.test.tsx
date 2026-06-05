@@ -68,9 +68,48 @@ const renderComponent = (
   };
 };
 
+/** Concatenate every emotion <style> rule that targets the element's css-* class. */
+const cssForElement = (el: HTMLElement): string => {
+  const cssClass = Array.from(el.classList).find((c) => c.startsWith('css-'));
+  if (!cssClass) return '';
+  let combined = '';
+  document.querySelectorAll('style').forEach((styleEl) => {
+    const css = styleEl.textContent ?? '';
+    if (css.includes(`.${cssClass}`)) combined += css + '\n';
+  });
+  return combined;
+};
+
+/**
+ * True when the element collapses to display:none at the xs base breakpoint.
+ * MUI compiles `display: { xs: 'none', sm: 'table-cell' }` into per-breakpoint
+ * `@media (min-width:…)` rules; the xs value lands behind `@media (min-width:0px)`,
+ * which jsdom never applies — so we inspect the injected stylesheet directly.
+ */
+const isHiddenAtXs = (el: HTMLElement): boolean => {
+  const css = cssForElement(el);
+  return /@media\s*\(min-width:\s*0px\)\s*\{[^}]*display:\s*none[^}]*\}/.test(css);
+};
+
 describe('NewsletterSubscriberTable', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('should_hideLanguageSourceAndSubscribedAtColumns_when_xsViewport', () => {
+    renderComponent();
+
+    const langHeader = screen.getByTestId('sort-language').closest('th') as HTMLElement;
+    const sourceHeader = screen.getByTestId('sort-source').closest('th') as HTMLElement;
+    const subscribedAtHeader = screen.getByTestId('sort-subscribedAt').closest('th') as HTMLElement;
+    const emailHeader = screen.getByTestId('sort-email').closest('th') as HTMLElement;
+
+    // Language / Source / SubscribedAt collapse to display:none at the xs base breakpoint…
+    expect(isHiddenAtXs(langHeader)).toBe(true);
+    expect(isHiddenAtXs(sourceHeader)).toBe(true);
+    expect(isHiddenAtXs(subscribedAtHeader)).toBe(true);
+    // …while the Email column stays visible.
+    expect(isHiddenAtXs(emailHeader)).toBe(false);
   });
 
   it('should_renderTable_when_subscribersProvided', () => {

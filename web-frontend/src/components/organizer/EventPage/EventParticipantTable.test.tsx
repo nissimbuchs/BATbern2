@@ -78,6 +78,29 @@ const renderWithProviders = (ui: React.ReactElement) => {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
+/** Concatenate every emotion <style> rule that targets the element's css-* class. */
+const cssForElement = (el: HTMLElement): string => {
+  const cssClass = Array.from(el.classList).find((c) => c.startsWith('css-'));
+  if (!cssClass) return '';
+  let combined = '';
+  document.querySelectorAll('style').forEach((styleEl) => {
+    const css = styleEl.textContent ?? '';
+    if (css.includes(`.${cssClass}`)) combined += css + '\n';
+  });
+  return combined;
+};
+
+/**
+ * True when the element collapses to display:none at the xs base breakpoint.
+ * MUI compiles `display: { xs: 'none', sm: 'table-cell' }` into per-breakpoint
+ * `@media (min-width:…)` rules; the xs value lands behind `@media (min-width:0px)`,
+ * which jsdom never applies — so we inspect the injected stylesheet directly.
+ */
+const isHiddenAtXs = (el: HTMLElement): boolean => {
+  const css = cssForElement(el);
+  return /@media\s*\(min-width:\s*0px\)\s*\{[^}]*display:\s*none[^}]*\}/.test(css);
+};
+
 describe('EventParticipantTable Component', () => {
   describe('Rendering', () => {
     it('should render table headers', () => {
@@ -135,6 +158,24 @@ describe('EventParticipantTable Component', () => {
       expect(companyCells[0]).toHaveTextContent('N/A'); // Bob has no company
       expect(companyCells[1]).toHaveTextContent('company-2'); // Jane
       expect(companyCells[2]).toHaveTextContent('company-1'); // John
+    });
+
+    it('should_hideCompanyAndRegistrationDateColumns_when_xsViewport', () => {
+      renderWithProviders(
+        <EventParticipantTable participants={mockParticipants} isLoading={false} />
+      );
+
+      const companyHeader = screen.getByText('common:labels.company').closest('th') as HTMLElement;
+      const dateHeader = screen
+        .getByText('eventPage.participantTable.headers.registrationDate')
+        .closest('th') as HTMLElement;
+      const nameHeader = screen.getByText('common:labels.name').closest('th') as HTMLElement;
+
+      // Low-value columns collapse to display:none at the xs base breakpoint…
+      expect(isHiddenAtXs(companyHeader)).toBe(true);
+      expect(isHiddenAtXs(dateHeader)).toBe(true);
+      // …while the Name column stays visible.
+      expect(isHiddenAtXs(nameHeader)).toBe(false);
     });
 
     it('should render status chips with correct labels', () => {

@@ -217,8 +217,13 @@ const TopicStatusPanel: React.FC = () => {
       {!topics || topics.length === 0 ? (
         <Typography color="text.secondary">{t('portal.topics.empty')}</Typography>
       ) : (
-        <TableContainer component={Paper} variant="outlined" data-testid="organizer-topics-table">
-          <Table size="small">
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          data-testid="organizer-topics-table"
+          sx={{ overflowX: 'auto' }}
+        >
+          <Table size="small" sx={{ minWidth: { xs: 550, sm: 800 } }}>
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, width: '30%' }}>
@@ -248,7 +253,9 @@ const TopicStatusPanel: React.FC = () => {
                     {t('portal.topics.organizer.col.votes')}
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, width: '10%' }}>
+                <TableCell
+                  sx={{ fontWeight: 700, width: '10%', display: { xs: 'none', sm: 'table-cell' } }}
+                >
                   <TableSortLabel
                     active={sortKey === 'createdAt'}
                     direction={sortKey === 'createdAt' ? sortDir : 'desc'}
@@ -260,7 +267,9 @@ const TopicStatusPanel: React.FC = () => {
                 <TableCell sx={{ fontWeight: 700, width: '14%' }}>
                   {t('common:labels.status')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, width: '16%' }}>
+                <TableCell
+                  sx={{ fontWeight: 700, width: '16%', display: { xs: 'none', sm: 'table-cell' } }}
+                >
                   {t('portal.topics.organizer.plannedEvent')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, width: '15%' }} align="right">
@@ -299,7 +308,7 @@ const TopicStatusPanel: React.FC = () => {
                     <TableCell align="right">{topic.voteCount}</TableCell>
 
                     {/* Date column */}
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                       <Typography variant="body2" color="text.secondary" noWrap>
                         {format(parseISO(topic.createdAt), 'd MMM yyyy')}
                       </Typography>
@@ -323,7 +332,7 @@ const TopicStatusPanel: React.FC = () => {
                     </TableCell>
 
                     {/* Planned event */}
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                       {row.status === 'SELECTED' && (
                         <TextField
                           size="small"

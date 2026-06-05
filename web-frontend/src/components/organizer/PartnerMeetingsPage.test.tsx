@@ -157,6 +157,29 @@ describe('PartnerMeetingsPage', () => {
     expect(screen.getByText('BATbern56')).toBeInTheDocument();
   });
 
+  // Test: table sits in a horizontally scrollable TableContainer (mobile responsiveness)
+  it('should_wrapTableInScrollableContainer_when_meetingsLoaded', () => {
+    vi.mocked(usePartnerMeetings).mockReturnValue({
+      data: MOCK_MEETINGS,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderPage();
+    const table = screen.getByTestId('partner-meetings-table');
+    // The Table must be wrapped in a MUI TableContainer that allows horizontal scroll.
+    const container = table.closest('.MuiTableContainer-root') as HTMLElement;
+    expect(container).toBeTruthy();
+
+    const cssClass = Array.from(container.classList).find((c) => c.startsWith('css-'));
+    let css = '';
+    document.querySelectorAll('style').forEach((s) => {
+      const text = s.textContent ?? '';
+      if (cssClass && text.includes(`.${cssClass}`)) css += text + '\n';
+    });
+    expect(css).toMatch(/overflow-x:\s*auto/);
+  });
+
   // Test: invite sent chip shows for meetings with inviteSentAt
   it('should_showInviteSentChip_when_inviteWasSent', () => {
     vi.mocked(usePartnerMeetings).mockReturnValue({

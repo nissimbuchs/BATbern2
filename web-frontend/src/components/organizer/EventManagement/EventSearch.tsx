@@ -194,7 +194,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           </FormControl>
 
           {/* Workflow State Filter */}
-          <FormControl sx={{ minWidth: 200 }}>
+          <FormControl sx={{ minWidth: { sm: 200 } }}>
             <InputLabel id="workflow-state-filter-label">
               {t('dashboard.filter.workflowState')}
             </InputLabel>
@@ -230,7 +230,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           </FormControl>
 
           {/* Year Filter */}
-          <FormControl sx={{ minWidth: 150 }}>
+          <FormControl sx={{ minWidth: { sm: 150 } }}>
             <TextField
               data-testid="filter-year"
               type="number"
