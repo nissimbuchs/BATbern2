@@ -68,9 +68,40 @@ export default defineConfig({
       workbox: {
         // Service worker caching strategies
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // 2026-06-05 — index.html is deliberately NOT precached and navigations are
+        // served NetworkFirst (see runtimeCaching below). Precache-pinning index.html
+        // froze BOTH the app shell AND its response headers (CSP!) until the SW
+        // updated: after every deploy, each SW-controlled client ran the OLD bundle for
+        // one more full page-load cycle. Two prod incidents: the CSP connect-src fix
+        // never reaching SW clients (2026-06-04), and the 12.8-F8 federated-login fix
+        // failing one last time per client (2026-06-05, first registration of
+        // buchsjosefnissim@gmail.com). Hashed assets stay precached — they are
+        // immutable; only the HTML entry must always be fresh.
+        globIgnores: ['**/index.html'],
+        // Disable the precache-bound SPA navigation route (createHandlerBoundToURL
+        // requires index.html in the manifest). Navigations fall through to the
+        // runtimeCaching NetworkFirst route below; CloudFront handles 404→index.html.
+        navigateFallback: null,
         skipWaiting: true, // Activate new service worker immediately
         clientsClaim: true, // Take control of all pages immediately
         runtimeCaching: [
+          // Navigations (full page loads): network first so a fresh deploy reaches
+          // every client on their NEXT page load; cached copy only as offline fallback.
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-cache',
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // offline fallback for up to 1 week
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
           // Google Fonts caching removed — the app loads no web fonts (system
           // font stack only). See index.html.
           {
