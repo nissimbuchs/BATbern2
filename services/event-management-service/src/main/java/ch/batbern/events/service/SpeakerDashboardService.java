@@ -267,22 +267,32 @@ public class SpeakerDashboardService {
     private SpeakerDashboardDto buildEmptyDashboard(String username) {
         // Code review 2026-05-18 (P23): fall back to the User's display name from CUMS
         // rather than echoing the raw username (e.g. "alice.muller" → "Alice Müller").
+        // 2026-06-05: also carry profileCompleteness + profilePictureUrl from the SAME
+        // profile fetch — the hardcoded 0 made the speaker-portal dashboard show "0%
+        // complete" for membership-less speakers while /profile showed 100%.
         String fallbackName = username;
+        String profilePictureUrl = null;
+        int profileCompleteness = 0;
         try {
             UserResponse userProfile = userApiClient.getUserByUsername(username);
-            if (userProfile != null
-                    && userProfile.getFirstName() != null
-                    && userProfile.getLastName() != null) {
-                fallbackName = (userProfile.getFirstName() + " " + userProfile.getLastName())
-                        .trim();
+            if (userProfile != null) {
+                if (userProfile.getFirstName() != null && userProfile.getLastName() != null) {
+                    fallbackName = (userProfile.getFirstName() + " "
+                            + userProfile.getLastName()).trim();
+                }
+                if (userProfile.getProfilePictureUrl() != null) {
+                    profilePictureUrl = userProfile.getProfilePictureUrl().toString();
+                }
+                profileCompleteness = calculateProfileCompleteness(userProfile);
             }
         } catch (Exception e) {
-            LOG.debug("Could not resolve display name for empty-dashboard: {} ({})",
+            LOG.debug("Could not resolve profile for empty-dashboard: {} ({})",
                     username, e.getMessage());
         }
         return SpeakerDashboardDto.builder()
                 .speakerName(fallbackName)
-                .profileCompleteness(0)
+                .profilePictureUrl(profilePictureUrl)
+                .profileCompleteness(profileCompleteness)
                 .upcomingEvents(List.of())
                 .pastEvents(List.of())
                 .build();

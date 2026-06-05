@@ -126,7 +126,11 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
               {isAuthenticated ? (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2 px-3">
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 px-3"
+                      data-testid="public-nav-user-menu"
+                    >
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-none">
                         {initials}
                       </span>
@@ -137,16 +141,17 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
                     <div className="flex flex-col gap-1">
                       {/* 2026-05-20 (Q#2b) — Portal + My Sessions moved out to the main
                           nav bar above. The dropdown is now secondary actions only:
-                          My Profile (speakers), language switcher, logout. */}
-                      {isSpeaker && (
-                        <Link
-                          to="/profile"
-                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
-                        >
-                          <UserCircle className="h-4 w-4" />
-                          {t('navigation.myProfile', 'My Profile')}
-                        </Link>
-                      )}
+                          My Profile, language switcher, logout.
+                          2026-06-05 — My Profile shown to EVERY authenticated user (the
+                          role-neutral /profile page serves all roles since Story 12.11;
+                          canAccess allows '/profile' for all four roles). */}
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+                      >
+                        <UserCircle className="h-4 w-4" />
+                        {t('navigation.myProfile', 'My Profile')}
+                      </Link>
                       <div className="py-1 px-1">
                         <LanguageSwitcher />
                       </div>
@@ -270,14 +275,14 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
                   {user?.email ?? ''}
                 </Link>
               </Button>
-              {isSpeaker && (
-                <Button asChild variant="secondary" className="w-full">
-                  <Link to="/profile" onClick={closeMobileMenu} className="flex items-center gap-2">
-                    <UserCircle className="h-4 w-4" />
-                    {t('navigation.myProfile', 'My Profile')}
-                  </Link>
-                </Button>
-              )}
+              {/* 2026-06-05 — My Profile for every authenticated user (role-neutral
+                  /profile since Story 12.11), mirroring the desktop dropdown. */}
+              <Button asChild variant="secondary" className="w-full">
+                <Link to="/profile" onClick={closeMobileMenu} className="flex items-center gap-2">
+                  <UserCircle className="h-4 w-4" />
+                  {t('navigation.myProfile', 'My Profile')}
+                </Link>
+              </Button>
               <div className="px-1">
                 <LanguageSwitcher />
               </div>
