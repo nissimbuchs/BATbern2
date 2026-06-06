@@ -197,8 +197,13 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
     } else {
       // No row at all → brand-new federated user. Do NOT link; canonical JIT
       // (Story 12.3) creates the user_profiles row lazily on the first API call.
+      // Log the raw email_verified attribute: when it is anything but 'true', the
+      // verified-additional-email fallback above was gate-blocked. Found live
+      // 2026-06-06 — the IdP attributeMapping lacked email_verified, Cognito
+      // defaulted it to "false", and the only symptom was this branch firing.
       console.log('New federated user (no native account to link); JIT will provision', {
         email,
+        emailVerified: event.request.userAttributes.email_verified,
       });
       publishMetric('FederatedNewUser', 1).catch((err) =>
         console.error('Metric publish failed', err)
