@@ -7,6 +7,8 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Topic;
 import ch.batbern.events.dto.TestFixtureCleanupRequest;
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.notification.Notification;
+import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.TopicRepository;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -87,6 +90,12 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
     @Autowired
     private RegistrationRepository registrationRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void cleanState() {
         // Tests start from a known-empty slate so deletion counts are deterministic.
@@ -94,6 +103,9 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         registrationRepository.deleteAll();
         eventRepository.deleteAll();
         topicRepository.deleteAll();
+        // notifications carry no FK to events (ADR-003 soft string ref), so they are NOT
+        // reached by eventRepository.deleteAll() — clear them explicitly.
+        notificationRepository.deleteAll();
     }
 
     // ---------- Authorization ----------
@@ -442,7 +454,174 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
     }
 
+    // ---------- Notification cleanup ----------
+
+    @Nested
+    @DisplayName("Notification cleanup")
+    class NotificationCleanup {
+
+        @Test
+        @DisplayName("returns 403 when caller is SPEAKER (not ORGANIZER) for notifications")
+        @WithMockUser(roles = {"SPEAKER"})
+        void returns403_whenSpeakerForNotifications() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("notifications")
+                    .prefix("BRUNO-TEST-")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("returns 400 when notifications prefix is not the bound sentinel (e.g. 'BRUNO')")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenNotificationsPrefixNotSentinel() throws Exception {
+            // "BRUNO" doesn't match the anchored ^BRUNO-TEST-$ — server-side guard.
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("notifications")
+                    .prefix("BRUNO")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("deletes BRUNO-TEST- / reserved-number / bruno.test.* / subject/body-marker "
+                + "notifications; real ones (incl. 11-digit pathological tail) survive")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesTestNotifications_preservesRealNotifications() throws Exception {
+            // Five test notifications (one per discriminator) ...
+            notificationRepository.save(buildNotification("real.organizer", "BRUNO-TEST-1779647142000"));
+            notificationRepository.save(buildNotification("real.organizer", "BATbern10001"));
+            notificationRepository.save(buildNotification("bruno.test.foo", null));
+            // (i) NULL event_code + real-organizer recipient, but the run's BRUNO-TEST-X marker
+            //     is stamped in the SUBJECT → must be deleted via the subject predicate.
+            notificationRepository.save(buildNotification(
+                    "real.organizer", null, "Reminder for BRUNO-TEST-X event", "Innocent body"));
+            // (ii) marker only in the BODY → must be deleted via the body predicate.
+            notificationRepository.save(buildNotification(
+                    "real.organizer", null, "Innocent subject", "References BRUNO-TEST-X internally"));
+            // ... plus THREE survivors:
+            // - a real event_code below the reserved range,
+            // - a real recipient with a NULL event_code and no marker (the exact in-app
+            //   notification an organizer would receive),
+            // - a PATHOLOGICAL 11-digit BATbern tail: matches the ^BATbern[0-9]+$ shape but
+            //   overflows INTEGER. The {1,9} digit bound makes it fail the numeric branch
+            //   (rather than raising a CAST overflow that would 500 the whole sweep), so the
+            //   row survives AND the endpoint still returns 200.
+            notificationRepository.save(buildNotification("real.organizer", "BATbern56"));
+            notificationRepository.save(buildNotification("real.organizer", null));
+            notificationRepository.save(buildNotification("real.organizer", "BATbern99999999999"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("notifications")
+                    .prefix("BRUNO-TEST-")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.notifications").value(5))
+                    .andExpect(jsonPath("$.entityType").value("notifications"))
+                    .andExpect(jsonPath("$.prefix").value("BRUNO-TEST-"));
+
+            // Three survivors remain — assert via COUNT (native delete bypassed the L1 cache).
+            Integer survivorCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM notifications", Integer.class);
+            assertThat(survivorCount).isEqualTo(3);
+            Integer realEventCode = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM notifications WHERE event_code = 'BATbern56'", Integer.class);
+            assertThat(realEventCode).isEqualTo(1);
+            Integer realRecipientNullEvent = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM notifications "
+                            + "WHERE recipient_username = 'real.organizer' AND event_code IS NULL "
+                            + "AND subject NOT LIKE '%BRUNO-TEST-%' AND body NOT LIKE '%BRUNO-TEST-%'",
+                    Integer.class);
+            assertThat(realRecipientNullEvent).isEqualTo(1);
+            // The pathological 11-digit tail survived (numeric branch skipped, no SQL error).
+            Integer pathological = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM notifications WHERE event_code = 'BATbern99999999999'",
+                    Integer.class);
+            assertThat(pathological).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("does NOT delete the boundary event BATbern9999 (just below the reserved range)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void preservesEventNumberBelowThreshold() throws Exception {
+            notificationRepository.save(buildNotification("real.organizer", "BATbern9999"));
+            notificationRepository.save(buildNotification("real.organizer", "BATbern10000")); // deleted
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("notifications")
+                    .prefix("BRUNO-TEST-")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.notifications").value(1));
+
+            Integer remaining = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM notifications WHERE event_code = 'BATbern9999'", Integer.class);
+            assertThat(remaining).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("is idempotent — re-running with nothing to delete returns 0 counts")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void isIdempotent_whenNoNotificationsMatch() throws Exception {
+            notificationRepository.save(buildNotification("real.organizer", "BATbern56"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("notifications")
+                    .prefix("BRUNO-TEST-")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.notifications").value(0));
+
+            assertThat(notificationRepository.count()).isEqualTo(1);
+        }
+    }
+
     // ---------- Test data builders ----------
+
+    private Notification buildNotification(String recipientUsername, String eventCode) {
+        return buildNotification(
+                recipientUsername, eventCode,
+                "Cleanup test notification", "Body for cleanup integration test");
+    }
+
+    /**
+     * Build a notification with explicit subject/body — used by the subject/body-marker
+     * widening tests where the BRUNO-TEST- sentinel lives in the rendered text rather than
+     * in event_code or recipient_username.
+     */
+    private Notification buildNotification(
+            String recipientUsername, String eventCode, String subject, String body) {
+        return Notification.builder()
+                .recipientUsername(recipientUsername)
+                .eventCode(eventCode)
+                .notificationType("EVENT_PUBLISHED")
+                .channel("EMAIL")
+                .priority("NORMAL")
+                .subject(subject)
+                .body(body)
+                .status("PENDING")
+                .build();
+    }
 
     private Event buildEvent(String eventCode) {
         return buildEvent(eventCode, EVENT_NUMBER_SEQ.incrementAndGet());

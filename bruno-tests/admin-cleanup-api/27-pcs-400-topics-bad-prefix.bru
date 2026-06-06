@@ -1,0 +1,39 @@
+meta {
+  name: PCS cleanup — topics prefix=Bruno (too loose) rejected
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "topics",
+    "prefix": "Bruno"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns 400 when topics prefix is not the bound 'Bruno Test Topic' literal", function() {
+    // "Bruno" would match "Bruno Test Topic" AND any real topic merely starting with
+    // the word Bruno — the anchored ^Bruno Test Topic$ regex rejects it server-side.
+    expect(res.getStatus()).to.equal(400);
+  });
+}

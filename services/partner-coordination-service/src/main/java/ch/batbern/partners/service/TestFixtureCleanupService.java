@@ -65,7 +65,16 @@ public class TestFixtureCleanupService {
      */
     public enum CleanupEntityType {
         PARTNERS(Pattern.compile("^brtest$")),
-        MEETINGS(null);
+        MEETINGS(null),
+        /**
+         * Prefix-based cleanup of {@code topic_suggestions} by {@code title}. Accepts only the
+         * literal prefix {@code Bruno Test Topic} (anchored regex {@code ^Bruno Test Topic$}) —
+         * the {@code 10-suggest-topic-as-partner} fixture titles every test topic
+         * {@code "Bruno Test Topic - …"}. The DELETE then runs {@code title LIKE 'Bruno Test Topic%'};
+         * {@code topic_votes} cascade-delete via the {@code topic_id} FK ON DELETE CASCADE (V4),
+         * so no separate vote delete is required.
+         */
+        TOPICS(Pattern.compile("^Bruno Test Topic$"));
 
         private final Pattern allowedPrefix;
 
@@ -95,7 +104,7 @@ public class TestFixtureCleanupService {
             } catch (IllegalArgumentException ex) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Unknown entityType: '" + value + "'. Allowed: partners, meetings"
+                        "Unknown entityType: '" + value + "'. Allowed: partners, meetings, topics"
                 );
             }
         }
@@ -124,10 +133,9 @@ public class TestFixtureCleanupService {
                 // FK ON DELETE CASCADE handles partner_meeting_attendance + partner_notes
                 // automatically. topic_votes / topic_suggestions are NOT linked by FK after
                 // the V4 rebuild (they reference company_name as a string per ADR-003) and
-                // are NOT cleaned up here — Bruno tests that create those rows must clean
-                // them up explicitly, or scripts/db/bruno-staging-pre-cleanup.sql handles
-                // them in one-shot for legacy junk. Counts are omitted rather than
-                // -1-sentinelled to keep the API shape clean.
+                // are NOT reached by this partners sweep — they are cleaned by their own
+                // entityType=topics case below (prefix on title). Counts are omitted rather
+                // than -1-sentinelled to keep the API shape clean.
                 break;
             case MEETINGS:
                 List<UUID> ids = validateMeetingIds(request.getMeetingIds());
@@ -136,6 +144,14 @@ public class TestFixtureCleanupService {
                 auditTarget = "meetingIds=" + ids.size();
                 // partner_meeting_attendance + partner_meeting_rsvps cascade from
                 // partner_meetings(id) via ON DELETE CASCADE (V2:152 + V9:9).
+                break;
+            case TOPICS:
+                validatePrefix(entityType, request.getPrefix());
+                int topics = repository.deleteTopicsByTitleLike(request.getPrefix() + "%");
+                counts.put("topics", topics);
+                auditTarget = "prefix=" + request.getPrefix();
+                // topic_votes cascade-delete from topic_suggestions(id) via the topic_id FK
+                // ON DELETE CASCADE (V4) — no explicit vote delete needed.
                 break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);

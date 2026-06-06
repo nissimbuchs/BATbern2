@@ -62,13 +62,15 @@ public class TestFixtureCleanupController {
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Delete Bruno test fixture rows matching a canonical prefix",
-            description = "Removes rows from EMS-owned tables (events, sessions, topics) whose "
-                    + "identifier column starts with the canonical Bruno test prefix for the "
-                    + "given entity type. Cascade-deletes via FK constraints handle dependent "
-                    + "rows in event_tasks, speaker_pool, registrations, session_users, "
-                    + "session_materials, topic_usage_history, etc. Bypasses the event workflow "
-                    + "state machine — native DELETE is used regardless of current state. "
-                    + "ORGANIZER role required."
+            description = "Removes rows from EMS-owned tables (events, sessions, topics, "
+                    + "events_by_number, notifications) whose identifier column starts with the "
+                    + "canonical Bruno test prefix for the given entity type. Cascade-deletes via "
+                    + "FK constraints handle dependent rows in event_tasks, speaker_pool, "
+                    + "registrations, session_users, session_materials, topic_usage_history, etc. "
+                    + "entityType=notifications uses a composite predicate (BRUNO-TEST- event_code "
+                    + "OR reserved-range BATbern{N} OR bruno.test.* recipient) since notifications "
+                    + "carry no FK to events. Bypasses the event workflow state machine — native "
+                    + "DELETE is used regardless of current state. ORGANIZER role required."
     )
     @ApiResponses(value = {
         @ApiResponse(

@@ -8,10 +8,13 @@ import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.domain.PartnerMeetingRsvp;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.domain.RsvpStatus;
+import ch.batbern.partners.domain.TopicSuggestion;
 import ch.batbern.partners.dto.TestFixtureCleanupRequest;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerMeetingRsvpRepository;
 import ch.batbern.partners.repository.PartnerRepository;
+import ch.batbern.partners.repository.TopicRepository;
+import ch.batbern.partners.repository.TopicVoteRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -85,6 +89,15 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
     @Autowired
     private PartnerMeetingRsvpRepository rsvpRepository;
 
+    @Autowired
+    private TopicRepository topicRepository;
+
+    @Autowired
+    private TopicVoteRepository topicVoteRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void cleanState() {
         // Tests start from a known-empty slate so deletion counts are deterministic.
@@ -94,6 +107,11 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         rsvpRepository.deleteAll();
         meetingRepository.deleteAll();
         partnerRepository.deleteAll();
+        // topic_suggestions / topic_votes reference company_name as a string (ADR-003), NOT a
+        // partner FK, so partnerRepository.deleteAll() does not reach them — clear explicitly
+        // (votes first, FK to suggestions).
+        topicVoteRepository.deleteAll();
+        topicRepository.deleteAll();
     }
 
     // ---------- Authorization ----------
@@ -403,7 +421,128 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
     }
 
+    // ---------- Topic cleanup (prefix-based) ----------
+
+    @Nested
+    @DisplayName("Topic cleanup (prefix-based)")
+    class TopicCleanup {
+
+        @Test
+        @DisplayName("returns 400 when topics prefix is not the bound literal (e.g. 'Bruno')")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenTopicsPrefixNotBoundLiteral() throws Exception {
+            // "Bruno" would match "Bruno Test Topic" AND any real topic merely starting with
+            // the word Bruno — the anchored regex ^Bruno Test Topic$ rejects it.
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("topics")
+                    .prefix("Bruno")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 403 when caller is PARTNER (not ORGANIZER) for topics")
+        @WithMockUser(roles = {"PARTNER"})
+        void returns403_whenPartnerForTopics() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("topics")
+                    .prefix("Bruno Test Topic")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("deletes 'Bruno Test Topic*' suggestions (cascading votes) but leaves real topics alone")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesTestTopics_cascadesVotes_preservesRealTopics() throws Exception {
+            // Given: two test topics (canonical "Bruno Test Topic" prefix), one carrying a vote,
+            // plus a real-looking topic that must survive.
+            TopicSuggestion test1 = topicRepository.saveAndFlush(
+                    buildTopic("Bruno Test Topic - Digital Transformation in Architecture"));
+            topicRepository.save(buildTopic("Bruno Test Topic - Cloud Native"));
+            TopicSuggestion real = topicRepository.save(buildTopic("AI in Enterprise Architecture"));
+
+            // Vote on the first test topic — must cascade-delete with the suggestion (V4 FK).
+            // saveAndFlush above makes the suggestion row visible to this raw JDBC insert.
+            jdbcTemplate.update(
+                    "INSERT INTO topic_votes (topic_id, company_name) VALUES (?, ?)",
+                    test1.getId(), "ELCA");
+            Integer votesBefore = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_votes WHERE topic_id = ?", Integer.class, test1.getId());
+            assertThat(votesBefore).isEqualTo(1);
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("topics")
+                    .prefix("Bruno Test Topic")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.topics").value(2))
+                    .andExpect(jsonPath("$.entityType").value("topics"))
+                    .andExpect(jsonPath("$.prefix").value("Bruno Test Topic"));
+
+            // Both test topics gone; the real one survives. Assert via raw SQL COUNT rather than
+            // findById — the native DELETE bypassed Hibernate's L1 cache, so findById would
+            // return the stale managed entity.
+            Integer test1Rows = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_suggestions WHERE id = ?", Integer.class, test1.getId());
+            assertThat(test1Rows).isZero();
+            Integer realRows = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_suggestions WHERE id = ?", Integer.class, real.getId());
+            assertThat(realRows).isEqualTo(1);
+            Integer brunoRows = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_suggestions WHERE title LIKE 'Bruno Test Topic%'",
+                    Integer.class);
+            assertThat(brunoRows).isZero();
+
+            // topic_votes cascade-deleted via topic_id FK ON DELETE CASCADE (V4).
+            Integer votesAfter = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_votes WHERE topic_id = ?", Integer.class, test1.getId());
+            assertThat(votesAfter).isZero();
+        }
+
+        @Test
+        @DisplayName("is idempotent — re-running with nothing to delete returns 0 counts")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void isIdempotent_whenNoTopicsMatch() throws Exception {
+            topicRepository.save(buildTopic("AI in Enterprise Architecture"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("topics")
+                    .prefix("Bruno Test Topic")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.topics").value(0));
+
+            assertThat(topicRepository.count()).isEqualTo(1);
+        }
+    }
+
     // ---------- Test data builders ----------
+
+    private TopicSuggestion buildTopic(String title) {
+        return TopicSuggestion.builder()
+                .companyName("ELCA")
+                .suggestedBy("partner.user")
+                .title(title)
+                .description("Cleanup integration-test topic")
+                .build();
+    }
 
     private Partner buildPartner(String companyName) {
         Instant now = Instant.now();

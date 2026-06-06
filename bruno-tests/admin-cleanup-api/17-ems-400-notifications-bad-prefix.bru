@@ -1,0 +1,39 @@
+meta {
+  name: EMS cleanup — notifications prefix=BRUNO (not the bound sentinel) rejected
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "notifications",
+    "prefix": "BRUNO"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns 400 when prefix is not the bound BRUNO-TEST- sentinel", function() {
+    // The notifications sweep is locked to the anchored ^BRUNO-TEST-$ sentinel;
+    // a looser value like "BRUNO" is rejected server-side before any DELETE runs.
+    expect(res.getStatus()).to.equal(400);
+  });
+}

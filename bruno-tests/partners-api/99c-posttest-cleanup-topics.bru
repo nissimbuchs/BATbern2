@@ -1,0 +1,49 @@
+meta {
+  name: Posttest cleanup — final sweep of Bruno Test Topic* suggestions (PCS, cascades votes)
+  type: http
+  seq: 99.8
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "topics",
+    "prefix": "Bruno Test Topic"
+  }
+}
+
+tests {
+  test("posttest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, topics deletion count is reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.entityType).to.equal("topics");
+      expect(body.deletionCounts.topics).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Final canonical sweep of "Bruno Test Topic*" topic_suggestions, the defense after the
+  per-ID 98-delete-test-topics. Catches any topic left behind by a run whose explicit
+  delete did not execute. topic_votes cascade-delete via the topic_id FK ON DELETE
+  CASCADE (V4). Runs after 99b-posttest-cleanup (brtest* partners). Status assertion
+  oneOf([200, 204, 404]) so it never fails the run.
+}

@@ -40,14 +40,15 @@ public class TestFixtureCleanupRequest {
     @Schema(
             description = "Which PCS-owned entity table to clean. Each entity has its own bound prefix regex.",
             example = "partners",
-            allowableValues = {"partners", "meetings"},
+            allowableValues = {"partners", "meetings", "topics"},
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String entityType;
 
     @Schema(
-            description = "Literal prefix to match (entityType=partners). Must satisfy the bound regex "
-                    + "for the entityType. Ignored for entityType=meetings.",
+            description = "Literal prefix to match (entityType=partners → company_name; "
+                    + "entityType=topics → title). Must satisfy the bound regex for the entityType. "
+                    + "Ignored for entityType=meetings.",
             example = "brtest"
     )
     private String prefix;
