@@ -67,4 +67,19 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Partner, UUI
             nativeQuery = true
     )
     int deleteMeetingsByIdIn(@Param("ids") List<UUID> ids);
+
+    /**
+     * Delete topic_suggestions whose {@code title} starts with the prefix.
+     * topic_votes cascade-delete via {@code topic_id} FK ON DELETE CASCADE (V4) — no
+     * explicit vote delete is needed.
+     *
+     * @param titlePattern {@code LIKE} pattern for the title column
+     * @return number of topic_suggestions rows deleted (cascade votes not counted)
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM topic_suggestions WHERE title LIKE :titlePattern",
+            nativeQuery = true
+    )
+    int deleteTopicsByTitleLike(@Param("titlePattern") String titlePattern);
 }

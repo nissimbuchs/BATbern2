@@ -9,9 +9,11 @@
 #   --collection NAME    Run only the named collection (iterate one folder at a time).
 #                        Useful for hardening a single entity. Example:
 #                          run-bruno-tests.sh staging --collection companies-api
-#   --cleanup-only       Run only the cleanup .bru files (00-pretest-cleanup.bru,
-#                        99-posttest-cleanup.bru) in each collection. Belt-and-suspenders
-#                        after a Bruno runner crash to ensure test data is wiped.
+#   --cleanup-only       Run only the cleanup .bru files in each collection — every file
+#                        whose name contains 'pretest-cleanup' or 'posttest-cleanup'
+#                        (e.g. 00-pretest-cleanup.bru, 99-posttest-cleanup.bru, and any
+#                        suffixed 99b-/99c-/*-cleanup-topics variants), in filename order.
+#                        Belt-and-suspenders after a Bruno runner crash to wipe test data.
 #   --no-bail            Disable early-exit on script-level errors. Collection-level
 #                        failures already accumulate without bailing (see exit-code logic
 #                        at the bottom), so this is rarely needed — mainly a future-proof
@@ -237,12 +239,28 @@ fi
 run_cleanup_for_collection() {
     local collection="$1"
     local collection_path="bruno-tests/$collection"
-    local cleanup_files=("00-pretest-cleanup.bru" "99-posttest-cleanup.bru")
+
+    # Glob-discover every cleanup .bru in the collection rather than hardcoding two
+    # filenames. The old fixed list ("00-pretest-cleanup.bru" "99-posttest-cleanup.bru")
+    # silently skipped suffixed variants — pre-existing 99b-/99c- sweeps and any new
+    # *-cleanup-topics.bru — so --cleanup-only mode and the post-failure defensive sweep
+    # never ran them. We match anything containing 'pretest-cleanup' or 'posttest-cleanup'
+    # and run them in filename (lexical) order so pretest sweeps precede posttest ones.
+    local cleanup_files=()
+    local f
+    for f in "$collection_path"/*pretest-cleanup*.bru "$collection_path"/*posttest-cleanup*.bru; do
+        # Guard against the no-match case where the glob stays literal.
+        [ -f "$f" ] && cleanup_files+=("$(basename "$f")")
+    done
+    # Sort by filename so 00-* runs before 99-*, 99b-*, 99c-*, etc.
+    if [ ${#cleanup_files[@]} -gt 0 ]; then
+        IFS=$'\n' cleanup_files=($(printf '%s\n' "${cleanup_files[@]}" | sort)) || true
+        unset IFS
+    fi
+
     for f in "${cleanup_files[@]}"; do
-        if [ -f "$collection_path/$f" ]; then
-            echo -e "${BLUE}  Cleanup:${NC} $collection/$f"
-            (cd bruno-tests && bru run "$collection/$f" --env "$ENVIRONMENT" 2>&1) || true
-        fi
+        echo -e "${BLUE}  Cleanup:${NC} $collection/$f"
+        (cd bruno-tests && bru run "$collection/$f" --env "$ENVIRONMENT" 2>&1) || true
     done
 }
 

@@ -1,0 +1,44 @@
+meta {
+  name: PCS cleanup — topics happy path
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "topics",
+    "prefix": "Bruno Test Topic"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.entityType: eq topics
+  res.body.prefix: eq Bruno Test Topic
+}
+
+tests {
+  test("returns 200 and routes to PCS", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.entityType).to.equal("topics");
+    expect(body.prefix).to.equal("Bruno Test Topic");
+    expect(body.deletionCounts).to.be.an("object");
+    expect(body.deletionCounts.topics).to.be.a("number");
+  });
+}

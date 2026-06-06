@@ -86,7 +86,23 @@ public class TestFixtureCleanupService {
          * the per-test {@code DELETE /events/{code}} teardown gets 409 and silently skips it.
          * The repository-level force delete is the only safe teardown for such events.
          */
-        EVENTS_BY_NUMBER(Pattern.compile("^10000$"));
+        EVENTS_BY_NUMBER(Pattern.compile("^10000$")),
+        /**
+         * Sweeps test-generated {@code notifications} — the in-app/email notification rows that
+         * entity and state changes (workflow transitions, publishes, registrations) create as
+         * side effects. They carry no FK to events (ADR-003 soft string ref), so the EVENTS
+         * cascade never reaches them; left uncleaned, BRUNO-TEST notifications land in REAL
+         * organizers' in-app notification lists on the production account.
+         *
+         * <p>The {@code prefix} field carries the literal sentinel {@code BRUNO-TEST-}
+         * (validated by {@code ^BRUNO-TEST-$}); the actual delete is a composite predicate
+         * (see {@code TestFixtureCleanupRepository#deleteTestNotifications}) that also reaches
+         * server-coded {@code BATbern{N}} (N &gt;= {@link #TEST_EVENT_NUMBER_THRESHOLD}),
+         * {@code bruno.test.*} recipient rows, AND rows carrying a {@code BRUNO-TEST-} marker in
+         * their {@code subject}/{@code body} (which catches test notifications with a NULL
+         * {@code event_code}) — none of which the bare event_code sentinel can reach.
+         */
+        NOTIFICATIONS(Pattern.compile("^BRUNO-TEST-$"));
 
         private final Pattern allowedPrefix;
 
@@ -112,7 +128,7 @@ public class TestFixtureCleanupService {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Unknown entityType: '" + value
-                                + "'. Allowed: events, sessions, topics, events_by_number"
+                                + "'. Allowed: events, sessions, topics, events_by_number, notifications"
                 );
             }
         }
@@ -149,6 +165,10 @@ public class TestFixtureCleanupService {
 
         Map<String, Integer> counts = new LinkedHashMap<>();
         String likePattern = request.getPrefix() + "%";
+        // Audit descriptor for the structured log below. Defaults to the bound prefix
+        // (mirrors how PCS logs `prefix=`); the NOTIFICATIONS case overrides it with the
+        // FULL composite criteria so the audit line records exactly what was matched.
+        String auditTarget = "prefix=" + request.getPrefix();
 
         // Cascade-deleted tables (via FK ON DELETE CASCADE) are documented in the
         // TestFixtureCleanupResponse Javadoc and the per-case comments below. Their counts
@@ -183,6 +203,27 @@ public class TestFixtureCleanupService {
                         repository.deleteEventsByEventNumberGte(TEST_EVENT_NUMBER_THRESHOLD);
                 counts.put("events", eventsByNumber);
                 break;
+            case NOTIFICATIONS:
+                // Composite sweep: BRUNO-TEST-% event_code OR reserved-range BATbern{N}
+                // (N >= threshold) OR bruno.test.% recipient OR a BRUNO-TEST- marker anywhere
+                // in subject/body. No FK cascade — notifications are standalone (ADR-003 soft
+                // event_code ref). The bare event_code sentinel can't reach server-coded
+                // BATbern{N} / bruno.test.* rows, nor test notifications that carry a NULL
+                // event_code but stamp the run's BRUNO-TEST- marker into their rendered text —
+                // hence the composite predicate.
+                String markerPattern = "%" + request.getPrefix() + "%";
+                int notifications = repository.deleteTestNotifications(
+                        likePattern, TEST_EVENT_NUMBER_THRESHOLD, "bruno.test.%",
+                        markerPattern, markerPattern);
+                counts.put("notifications", notifications);
+                // Record the full composite criteria in the audit line (not just the prefix),
+                // so an operator reading the log sees every discriminator that could have
+                // matched a deleted row.
+                auditTarget = "criteria=[event_code LIKE " + likePattern
+                        + " OR BATbern{N>=" + TEST_EVENT_NUMBER_THRESHOLD + "}"
+                        + " OR recipient_username LIKE bruno.test.%"
+                        + " OR subject/body LIKE " + markerPattern + "]";
+                break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);
         }
@@ -191,8 +232,8 @@ public class TestFixtureCleanupService {
                 ? SecurityContextHolder.getContext().getAuthentication().getName()
                 : "unknown";
         log.warn(
-                "Test fixture cleanup executed: caller={} entityType={} prefix={} counts={}",
-                caller, entityType, request.getPrefix(), counts
+                "Test fixture cleanup executed: caller={} entityType={} {} counts={}",
+                caller, entityType, auditTarget, counts
         );
 
         return TestFixtureCleanupResponse.builder()

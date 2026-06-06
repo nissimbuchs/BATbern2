@@ -1,0 +1,50 @@
+meta {
+  name: Pretest cleanup — sweep leftover Bruno Test Topic* suggestions (PCS, cascades votes)
+  type: http
+  seq: 0.01
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "topics",
+    "prefix": "Bruno Test Topic"
+  }
+}
+
+tests {
+  test("pretest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, topics deletion count is reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.entityType).to.equal("topics");
+      expect(body.deletionCounts.topics).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Pretest sweep of "Bruno Test Topic*" topic_suggestions. 10-suggest-topic-as-partner
+  and 13-suggest-topic-as-organizer create rows titled "Bruno Test Topic - …" with a
+  FIXED title prefix (unlike brtest{{$randomInt}} partners), so an aborted prior run
+  leaves orphans that the per-ID 98-delete-test-topics cannot reach. This sweep clears
+  them before the run starts. topic_votes cascade-delete via the topic_id FK ON DELETE
+  CASCADE (V4). Status oneOf([200, 204, 404]) so it never fails the run.
+}

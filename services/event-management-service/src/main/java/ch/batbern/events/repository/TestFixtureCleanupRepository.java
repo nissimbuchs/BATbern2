@@ -107,4 +107,60 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Event, UUID>
             nativeQuery = true
     )
     int deleteTopicsByTopicCodeLike(@Param("topicCodePattern") String topicCodePattern);
+
+    /**
+     * Delete test-generated notifications. These are side effects of entity/state changes
+     * (workflow transitions, publishes, registrations) and have no FK to events (ADR-003 soft
+     * string reference), so they are NOT reached by the events cascade and need their own sweep.
+     *
+     * <p>A notification is a test artifact when ANY of:
+     * <ul>
+     *   <li>{@code event_code} starts with the {@code BRUNO-TEST-} sentinel; or</li>
+     *   <li>{@code event_code} is a server-generated {@code BATbern{N}} whose number is at or
+     *       above the reserved test threshold (real BATbern events sit far below it); or</li>
+     *   <li>{@code recipient_username} starts with the {@code bruno.test.} sentinel; or</li>
+     *   <li>{@code subject} contains the {@code BRUNO-TEST-} marker; or</li>
+     *   <li>{@code body} contains the {@code BRUNO-TEST-} marker.</li>
+     * </ul>
+     * The subject/body markers catch test notifications that carry a NULL {@code event_code}
+     * and a real-looking recipient (e.g. a workflow notification stamped with the run's
+     * {@code BRUNO-TEST-X} sentinel in its rendered text) — rows the event_code / recipient
+     * discriminators alone would miss.
+     *
+     * <p>Real organizers' in-app notifications (real event_code below the threshold, or a real
+     * recipient with a NULL event_code and no marker in subject/body) are left untouched.
+     * PostgreSQL-specific regex/substring is used deliberately — these run against the real
+     * PostgreSQL database. The {@code BATbern[0-9]{1,9}} regex is bounded to at most 9 digits so
+     * the subsequent {@code CAST(... AS INTEGER)} can never overflow a 32-bit INTEGER on a
+     * pathological 10+-digit tail (which would otherwise raise a SQL error and 500 the whole
+     * sweep); such a row simply fails the numeric branch and is left untouched.
+     *
+     * @param eventCodePattern {@code LIKE} pattern for the {@code BRUNO-TEST-} sentinel
+     *        (e.g. {@code BRUNO-TEST-%})
+     * @param numberThreshold inclusive lower bound for the {@code BATbern{N}} numeric tail
+     * @param recipientPattern {@code LIKE} pattern for the {@code bruno.test.} recipient sentinel
+     *        (e.g. {@code bruno.test.%})
+     * @param subjectPattern {@code LIKE} pattern for the {@code BRUNO-TEST-} subject marker
+     *        (e.g. {@code %BRUNO-TEST-%})
+     * @param bodyPattern {@code LIKE} pattern for the {@code BRUNO-TEST-} body marker
+     *        (e.g. {@code %BRUNO-TEST-%})
+     * @return number of notification rows deleted
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM notifications WHERE event_code LIKE :eventCodePattern "
+                    + "OR (event_code ~ '^BATbern[0-9]{1,9}$' "
+                    + "AND CAST(SUBSTRING(event_code FROM 8) AS INTEGER) >= :numberThreshold) "
+                    + "OR recipient_username LIKE :recipientPattern "
+                    + "OR subject LIKE :subjectPattern "
+                    + "OR body LIKE :bodyPattern",
+            nativeQuery = true
+    )
+    int deleteTestNotifications(
+            @Param("eventCodePattern") String eventCodePattern,
+            @Param("numberThreshold") int numberThreshold,
+            @Param("recipientPattern") String recipientPattern,
+            @Param("subjectPattern") String subjectPattern,
+            @Param("bodyPattern") String bodyPattern
+    );
 }

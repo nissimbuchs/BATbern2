@@ -64,11 +64,13 @@ public class TestFixtureCleanupController {
     @PostMapping("/cleanup")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
-            summary = "Delete Bruno test fixture rows by canonical prefix (partners) or id allowlist (meetings)",
+            summary = "Delete Bruno test fixture rows by canonical prefix (partners/topics) or id allowlist (meetings)",
             description = "entityType=partners: removes rows from the PCS-owned partners table whose "
                     + "company_name starts with the canonical Bruno test prefix; FK cascade handles "
-                    + "partner_meeting_attendance, partner_meeting_rsvps, partner_notes, topic_suggestions "
-                    + "(and transitively topic_votes). entityType=meetings: removes partner_meetings rows "
+                    + "partner_meeting_attendance, partner_meeting_rsvps, partner_notes. "
+                    + "entityType=topics: removes topic_suggestions rows whose title starts with the "
+                    + "canonical 'Bruno Test Topic' prefix; topic_votes cascade from topic_suggestions(id). "
+                    + "entityType=meetings: removes partner_meetings rows "
                     + "by an explicit meetingIds allowlist (those rows are standalone with no Bruno prefix); "
                     + "partner_meeting_attendance + partner_meeting_rsvps cascade from partner_meetings(id). "
                     + "ORGANIZER role required."
