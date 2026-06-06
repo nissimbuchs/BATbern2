@@ -215,6 +215,20 @@ export class CognitoUserSyncTriggers extends Construct {
       })
     );
 
+    // PR #745: the PostAuthentication trigger restores the canonical primary email
+    // after a federated sign-in of a linked user — Cognito re-syncs mapped IdP
+    // attributes (incl. email) into the destination user on every sign-in, which
+    // for additional-email-linked accounts overwrites the native email and breaks
+    // the email sign-in alias. Same wildcard-resource rationale as the grant above
+    // (scoping to the pool ARN would be a circular dependency).
+    this.postAuthenticationTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cognito-idp:AdminUpdateUserAttributes'],
+        resources: [`arn:aws:cognito-idp:${region}:${account}:userpool/*`],
+      })
+    );
+
     // Note: Database security group ingress rule is configured in VpcConstruct
     // to avoid cyclic dependency (Network -> CompanyManagement -> Network)
 
