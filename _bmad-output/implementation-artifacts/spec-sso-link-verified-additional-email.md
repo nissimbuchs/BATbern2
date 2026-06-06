@@ -2,7 +2,8 @@
 title: 'Google SSO login via verified additional email (Epic 12 follow-up)'
 type: 'feature'
 created: '2026-06-06'
-status: 'draft'
+status: 'done'
+baseline_commit: '88978256'
 context:
   - '{project-root}/_bmad-output/project-context.md'
 ---
@@ -49,12 +50,12 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `infrastructure/test/unit/pre-signup.test.ts` — RED first: mock pg client; cases = happy link (verified+email_verified → AdminLinkProviderForUser with owner's username), unverified row, email_verified absent/'false', owner without cognito_user_id, fallback query throws → still auto-confirms
-- [ ] `infrastructure/lib/lambda/triggers/pre-signup.ts` — after empty primary-match result: if `email_verified === 'true'` (case-insensitive), query `SELECT u.cognito_user_id, u.username FROM user_additional_emails ae JOIN user_profiles u ON u.id = ae.user_id WHERE LOWER(ae.email) = LOWER($1) AND ae.verified_at IS NOT NULL`; on hit with `cognito_user_id` → same AdminLink block as primary path + new metric; on hit without → log, fall through; reuse the single client/finally-release
-- [ ] `services/company-user-management-service/.../repository/UserAdditionalEmailRepository.java` — `Optional<UserAdditionalEmail> findVerifiedByEmailIgnoreCase(String email)` via `@Query` with `JOIN FETCH ae.user`
-- [ ] `services/company-user-management-service/.../interceptor/JITUserProvisioningInterceptor.java` — before JIT-create: if JWT email matches a verified additional email → skip creation, WARN (masked email) referencing pre-signup linking; never touch owner's `cognito_user_id`
-- [ ] `services/company-user-management-service/src/test/...JITUserProvisioning*IntegrationTest` — RED first: duplicate-guard case (no user row created), unverified case (existing create behaviour unchanged)
-- [ ] `docs/architecture/ADR-010-federated-identity-via-cognito.md` — amend D3 with the verified-additional-email fallback (same commit, doc-drift rule)
+- [x] `infrastructure/test/unit/pre-signup.test.ts` — RED first: mock pg client; cases = happy link (verified+email_verified → AdminLinkProviderForUser with owner's username), unverified row, email_verified absent/'false', owner without cognito_user_id, fallback query throws → still auto-confirms
+- [x] `infrastructure/lib/lambda/triggers/pre-signup.ts` — after empty primary-match result: if `email_verified === 'true'` (case-insensitive), query `SELECT u.cognito_user_id, u.username FROM user_additional_emails ae JOIN user_profiles u ON u.id = ae.user_id WHERE LOWER(ae.email) = LOWER($1) AND ae.verified_at IS NOT NULL`; on hit with `cognito_user_id` → same AdminLink block as primary path + new metric; on hit without → log, fall through; reuse the single client/finally-release
+- [x] `services/company-user-management-service/.../repository/UserAdditionalEmailRepository.java` — `Optional<UserAdditionalEmail> findVerifiedByEmailIgnoreCase(String email)` via `@Query` with `JOIN FETCH ae.user`
+- [x] `services/company-user-management-service/.../interceptor/JITUserProvisioningInterceptor.java` — before JIT-create: if JWT email matches a verified additional email → skip creation, WARN (masked email) referencing pre-signup linking; never touch owner's `cognito_user_id`
+- [x] `services/company-user-management-service/src/test/...JITUserProvisioning*IntegrationTest` — RED first: duplicate-guard case (no user row created), unverified case (existing create behaviour unchanged)
+- [x] `docs/architecture/ADR-010-federated-identity-via-cognito.md` — amend D3 with the verified-additional-email fallback (same commit, doc-drift rule)
 
 **Acceptance Criteria:**
 - Given user X with verified additional email g@gmail.com and a Cognito-linked profile, when a Google sign-in for g@gmail.com fires PreSignUp_ExternalProvider, then AdminLinkProviderForUser is called with X as destination and no new user is provisioned
@@ -73,3 +74,34 @@ JIT guard deliberately does NOT resolve the request to the owning user: granting
 **Commands:**
 - `cd infrastructure && set -o pipefail; npx jest test/unit/pre-signup.test.ts 2>&1 | tee /tmp/presignup-test.log` — expected: green, new cases included
 - `set -o pipefail; ./gradlew :services:company-user-management-service:test 2>&1 | tee /tmp/cums-test-b.log` — expected: BUILD SUCCESSFUL
+
+## Suggested Review Order
+
+**Lambda fallback — the linking core**
+
+- Double-gated fallback: runs only when primary match is empty AND IdP asserts email_verified
+  [`pre-signup.ts:135`](../../infrastructure/lib/lambda/triggers/pre-signup.ts#L135)
+- SQL gate: verified additional emails only, joined to the owning profile
+  [`pre-signup.ts:145`](../../infrastructure/lib/lambda/triggers/pre-signup.ts#L145)
+- Shared AdminLink helper — primary path refactored, behavior byte-identical
+  [`pre-signup.ts:240`](../../infrastructure/lib/lambda/triggers/pre-signup.ts#L240)
+- Cognito string-attribute semantics ('true'/'false', case-insensitive)
+  [`pre-signup.ts:229`](../../infrastructure/lib/lambda/triggers/pre-signup.ts#L229)
+
+**JIT duplicate guard — defensive twin**
+
+- Skip creation when email is someone's verified additional email; never touch owner's sub
+  [`JITUserProvisioningInterceptor.java:170`](../../services/company-user-management-service/src/main/java/ch/batbern/companyuser/interceptor/JITUserProvisioningInterceptor.java#L170)
+- Primary lookup aligned to case-insensitive (review patch — was findByEmail)
+  [`JITUserProvisioningInterceptor.java:147`](../../services/company-user-management-service/src/main/java/ch/batbern/companyuser/interceptor/JITUserProvisioningInterceptor.java#L147)
+- Verified-only finder with JOIN FETCH
+  [`UserAdditionalEmailRepository.java:48`](../../services/company-user-management-service/src/main/java/ch/batbern/companyuser/repository/UserAdditionalEmailRepository.java#L48)
+
+**Peripherals — tests, docs**
+
+- 18 handler-level Lambda tests (happy link, gates, fail-open, metric coverage)
+  [`pre-signup.test.ts:229`](../../infrastructure/test/unit/lambda/pre-signup.test.ts#L229)
+- Testcontainers guard tests (no duplicate row, owner untouched)
+  [`JITAdditionalEmailGuardIntegrationTest.java:46`](../../services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITAdditionalEmailGuardIntegrationTest.java#L46)
+- ADR-010 D3 amendment (doc-drift rule, same commit)
+  [`ADR-010-federated-identity-via-cognito.md:59`](../../docs/architecture/ADR-010-federated-identity-via-cognito.md#L59)

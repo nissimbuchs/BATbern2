@@ -126,39 +126,56 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
 
     const existing = result.rows[0];
     if (existing && existing.cognito_user_id) {
-      // Parse "Google_<sub>" → provider name + the Google subject. Split on the FIRST
-      // underscore (Google subjects are numeric, but be robust to any provider prefix).
-      const sep = event.userName.indexOf('_');
-      const providerName = sep > 0 ? event.userName.substring(0, sep) : 'Google';
-      const providerUserId = sep > 0 ? event.userName.substring(sep + 1) : event.userName;
-
-      await cognitoClient.send(
-        new AdminLinkProviderForUserCommand({
-          UserPoolId: event.userPoolId,
-          // Destination = the existing native Cognito user (its username IS the sub for
-          // an email-alias pool), so the sub is preserved on link.
-          DestinationUser: {
-            ProviderName: 'Cognito',
-            ProviderAttributeValue: existing.cognito_user_id,
-          },
-          // Source = the incoming external (Google) identity.
-          SourceUser: {
-            ProviderName: providerName,
-            ProviderAttributeName: 'Cognito_Subject',
-            ProviderAttributeValue: providerUserId,
-          },
-        })
+      await linkFederatedIdentity(
+        event,
+        existing.cognito_user_id,
+        existing.username,
+        'FederatedUserLinked'
+      );
+    } else if (!existing && isIdpEmailVerified(event)) {
+      // Primary user_profiles.email match found nothing. Epic 12 follow-up: fall back to a
+      // VERIFIED additional email (Story A's verified_at), gated on BOTH the DB row being
+      // verified AND the IdP asserting email_verified='true' — so a Google sign-in for a
+      // user's verified private Gmail links into the existing account instead of JIT-creating
+      // a duplicate ATTENDEE. This runs ONLY on the zero-primary-rows path, BEFORE the
+      // brand-new-user outcome. Reuses the same client/try/finally (an error here hits the
+      // existing catch → never throws → never 503s the sign-in).
+      const fallback = await client.query(
+        `SELECT u.cognito_user_id, u.username
+         FROM user_additional_emails ae
+         JOIN user_profiles u ON u.id = ae.user_id
+         WHERE LOWER(ae.email) = LOWER($1) AND ae.verified_at IS NOT NULL`,
+        [email]
       );
 
-      console.log('Linked federated identity to existing native user', {
-        email,
-        destinationSub: existing.cognito_user_id,
-        username: existing.username,
-        providerName,
-      });
-      publishMetric('FederatedUserLinked', 1).catch((err) =>
-        console.error('Metric publish failed', err)
-      );
+      const owner = fallback.rows[0];
+      if (owner && owner.cognito_user_id) {
+        await linkFederatedIdentity(
+          event,
+          owner.cognito_user_id,
+          owner.username,
+          'FederatedUserLinkedViaAdditionalEmail'
+        );
+      } else if (owner) {
+        // Owner found via verified additional email but has NO cognito_user_id yet (no
+        // Cognito DESTINATION to link to). Do NOT link; fall through to the brand-new-user
+        // outcome — canonical JIT will reconcile once the owner has a sub.
+        console.log(
+          'Verified additional email matches an owner without a Cognito sub; cannot link, deferring',
+          { email, username: owner.username }
+        );
+        publishMetric('FederatedAnonymousPendingJit', 1).catch((err) =>
+          console.error('Metric publish failed', err)
+        );
+      } else {
+        // No verified additional-email owner either → genuinely a brand-new federated user.
+        console.log('New federated user (no native or additional-email account to link); JIT will provision', {
+          email,
+        });
+        publishMetric('FederatedNewUser', 1).catch((err) =>
+          console.error('Metric publish failed', err)
+        );
+      }
     } else if (existing) {
       // A user_profiles row exists for this email but has NO cognito_user_id — i.e. an
       // anonymous event registrant (ADR-005, V11__Make_cognito_id_nullable_for_anonymous_users).
@@ -202,6 +219,62 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
   }
 
   return event;
+}
+
+/**
+ * Whether the IdP asserted a verified email. Cognito delivers external-provider
+ * attributes as STRINGS, so {@code email_verified} arrives as 'true'/'false' (not a
+ * boolean). Compare case-insensitively against 'true'; absent/any-other value → false.
+ */
+function isIdpEmailVerified(event: PreSignUpTriggerEvent): boolean {
+  const raw = event.request.userAttributes.email_verified;
+  return typeof raw === 'string' && raw.toLowerCase() === 'true';
+}
+
+/**
+ * Merge the incoming external (Google) identity into an existing native Cognito user via
+ * AdminLinkProviderForUser (DESTINATION sub preserved → user_profiles.cognito_user_id stays
+ * stable). Shared by the primary-email match and the verified-additional-email fallback; the
+ * caller passes the distinguishing CloudWatch metric name.
+ */
+async function linkFederatedIdentity(
+  event: PreSignUpTriggerEvent,
+  destinationSub: string,
+  username: string,
+  metricName: string
+): Promise<void> {
+  // Parse "Google_<sub>" → provider name + the Google subject. Split on the FIRST
+  // underscore (Google subjects are numeric, but be robust to any provider prefix).
+  const sep = event.userName.indexOf('_');
+  const providerName = sep > 0 ? event.userName.substring(0, sep) : 'Google';
+  const providerUserId = sep > 0 ? event.userName.substring(sep + 1) : event.userName;
+
+  await cognitoClient.send(
+    new AdminLinkProviderForUserCommand({
+      UserPoolId: event.userPoolId,
+      // Destination = the existing native Cognito user (its username IS the sub for
+      // an email-alias pool), so the sub is preserved on link.
+      DestinationUser: {
+        ProviderName: 'Cognito',
+        ProviderAttributeValue: destinationSub,
+      },
+      // Source = the incoming external (Google) identity.
+      SourceUser: {
+        ProviderName: providerName,
+        ProviderAttributeName: 'Cognito_Subject',
+        ProviderAttributeValue: providerUserId,
+      },
+    })
+  );
+
+  console.log('Linked federated identity to existing native user', {
+    email: event.request.userAttributes.email,
+    destinationSub,
+    username,
+    providerName,
+    metric: metricName,
+  });
+  publishMetric(metricName, 1).catch((err) => console.error('Metric publish failed', err));
 }
 
 /**

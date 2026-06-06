@@ -2,6 +2,7 @@ package ch.batbern.companyuser.interceptor;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.event.UserCreatedEvent;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,6 +55,9 @@ class JITUserProvisioningInterceptorTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock(lenient = true)
+    private UserAdditionalEmailRepository userAdditionalEmailRepository;
+
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
@@ -73,6 +77,11 @@ class JITUserProvisioningInterceptorTest {
     void setUp() {
         // Setup security context
         SecurityContextHolder.setContext(securityContext);
+        // Default: the JIT-create path's verified-additional-email duplicate guard finds nothing,
+        // so existing create/link tests are unaffected. Lenient so tests that never reach the
+        // guard (e.g. already-exists-by-cognito-id) do not trip unnecessary-stubbing strictness.
+        when(userAdditionalEmailRepository.findVerifiedByEmailIgnoreCase(anyString()))
+                .thenReturn(Optional.empty());
     }
 
     /**
@@ -255,7 +264,7 @@ class JITUserProvisioningInterceptorTest {
         User preExistingUser = createUser(null, "partner.user", email, Set.of(Role.PARTNER));
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(preExistingUser));
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(preExistingUser));
         when(userRepository.save(preExistingUser)).thenReturn(preExistingUser);
 
         // When
@@ -285,7 +294,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         User savedUser = createUser(cognitoUserId, "jane.smith", email, Set.of(Role.ATTENDEE));
@@ -315,6 +324,72 @@ class JITUserProvisioningInterceptorTest {
     }
 
     // ============================================================================
+    // Epic 12 follow-up — verified-additional-email duplicate guard.
+    // Before JIT-creating a brand-new user, the interceptor checks whether the email is a
+    // VERIFIED additional email of an existing user (PreSignUp should have linked it). If so,
+    // it skips creation — without resolving the request to the owner or touching the owner's
+    // cognito_user_id. Unverified additional emails are transparent to the guard.
+    // ============================================================================
+
+    @Test
+    void should_skipUserCreation_when_emailIsVerifiedAdditionalEmailOfExistingUser() throws Exception {
+        String cognitoUserId = "unlinked-federated-sub-222";
+        String email = "private.gmail@gmail.com";
+        Jwt jwt = createJwt(cognitoUserId, email, "Anon", "Federated");
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt,
+                List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))
+        );
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        // The duplicate guard fires: this email is a verified additional email of an owner.
+        ch.batbern.companyuser.domain.UserAdditionalEmail verifiedRow =
+                ch.batbern.companyuser.domain.UserAdditionalEmail.builder()
+                        .email(email)
+                        .verifiedAt(Instant.now())
+                        .build();
+        when(userAdditionalEmailRepository.findVerifiedByEmailIgnoreCase(email))
+                .thenReturn(Optional.of(verifiedRow));
+
+        boolean result = interceptor.preHandle(request, response, new Object());
+
+        // Request continues, but NO new user is created and NO event is published.
+        assertThat(result).isTrue();
+        verify(userRepository, never()).save(any(User.class));
+        verify(eventPublisher, never()).publishEvent(any(UserCreatedEvent.class));
+    }
+
+    @Test
+    void should_createUser_when_emailIsUnverifiedAdditionalEmail() throws Exception {
+        String cognitoUserId = "fresh-federated-sub-444";
+        String email = "unverified.box@gmail.com";
+        Jwt jwt = createJwt(cognitoUserId, email, "Fresh", "User");
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt,
+                List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))
+        );
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        // Unverified → the verified-only finder returns empty → guard is transparent.
+        when(userAdditionalEmailRepository.findVerifiedByEmailIgnoreCase(email))
+                .thenReturn(Optional.empty());
+        User savedUser = createUser(cognitoUserId, "fresh.user", email, Set.of(Role.ATTENDEE));
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        boolean result = interceptor.preHandle(request, response, new Object());
+
+        // Existing behaviour preserved: a new user IS JIT-created.
+        assertThat(result).isTrue();
+        verify(userRepository).save(any(User.class));
+        verify(eventPublisher).publishEvent(any(UserCreatedEvent.class));
+    }
+
+    // ============================================================================
     // 2026-05-18 regression — JIT used to read first/last name only from JWT
     // given_name / family_name. The signup form actually packs those into a
     // single `custom:preferences` JSON attribute (per ADR-001), so JIT ended
@@ -333,7 +408,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -361,7 +436,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -383,7 +458,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -412,7 +487,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -441,7 +516,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -467,7 +542,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -500,7 +575,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -524,7 +599,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -548,7 +623,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -570,7 +645,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -594,7 +669,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("organizer@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("organizer@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         // When: Interceptor pre-handle is called
@@ -623,7 +698,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("multi@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("multi@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         // When: Interceptor pre-handle is called
@@ -646,7 +721,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("norole@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("norole@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         // When: Interceptor pre-handle is called
@@ -677,7 +752,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername("john.doe")).thenReturn(false);
 
         // When: Interceptor pre-handle is called
@@ -704,7 +779,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername("duplicate.user")).thenReturn(true);
         when(userRepository.existsByUsername("duplicate.user.2")).thenReturn(false);
 
@@ -775,7 +850,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         User savedUser = createUser(cognitoUserId, "event", email, Set.of(Role.ATTENDEE));
@@ -836,7 +911,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("saveerror@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("saveerror@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class)))
                 .thenThrow(new RuntimeException("Database constraint violation"));
@@ -860,7 +935,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("eventerror@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("eventerror@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         User savedUser = createUser(cognitoUserId, "eventerror", "eventerror@example.com", Set.of(Role.ATTENDEE));
@@ -910,7 +985,7 @@ class JITUserProvisioningInterceptorTest {
         );
         when(securityContext.getAuthentication()).thenReturn(newAuthentication);
         when(userRepository.findByCognitoUserId(newCognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("new@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         assertThat(interceptor.preHandle(request, response, new Object())).isTrue();
 

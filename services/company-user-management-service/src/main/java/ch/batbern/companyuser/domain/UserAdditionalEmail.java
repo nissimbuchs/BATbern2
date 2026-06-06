@@ -35,9 +35,12 @@ import java.util.UUID;
  *       when the registration belongs to a known user.</li>
  * </ul>
  *
- * <p>Ownership verification is intentionally not implemented in v1 — the
- * {@code verifiedAt} column is reserved for a future verification flow
- * (Story 10.32 Resolved Decision #1).
+ * <p>Ownership is verified via the additional-email verification flow (Story A,
+ * 2026-06-06): the user receives a signed 48h verification link and, on confirmation,
+ * {@code verifiedAt} is stamped. SSO account-linking (the PreSignUp Lambda) and the JIT
+ * duplicate guard ({@link ch.batbern.companyuser.interceptor.JITUserProvisioningInterceptor})
+ * both rely on {@code verifiedAt} being non-null — only a VERIFIED additional email links
+ * a federated identity into an existing account / blocks a duplicate-ATTENDEE JIT create.
  */
 @Entity
 @Table(
@@ -82,7 +85,10 @@ public class UserAdditionalEmail {
     private Instant createdAt;
 
     /**
-     * Reserved for the v2 verification flow. v1 always writes {@code null}.
+     * Timestamp the owner confirmed control of this address via the additional-email
+     * verification flow (Story A, 2026-06-06 — signed 48h verification link). Null until
+     * confirmed. SSO account-linking (PreSignUp Lambda) and the JIT duplicate guard gate on
+     * this being non-null before they treat the address as belonging to the owning user.
      */
     @Column(name = "verified_at")
     private Instant verifiedAt;

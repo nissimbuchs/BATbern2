@@ -221,6 +221,240 @@ describe('pre-signup Lambda handler', () => {
     expect(result.response.autoVerifyEmail).toBe(true);
   });
 
+  // ----------------------------------------------------------------
+  // Verified-additional-email fallback (Epic 12 follow-up)
+  // Runs ONLY on the zero-rows primary-match path, BEFORE the brand-new-user outcome.
+  // ----------------------------------------------------------------
+
+  it('should_linkViaAdditionalEmail_when_primaryMissesAndAdditionalEmailVerifiedAndIdpVerified', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    // 1st query (primary user_profiles match) → empty; 2nd query (additional-email fallback) → hit.
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({
+        rows: [{ cognito_user_id: 'owner-sub-uuid', username: 'jane.owner' }],
+        rowCount: 1,
+      });
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'gmail-private@gmail.com', email_verified: 'true' },
+      'Google_700abc'
+    );
+    const result = await handler(event, {} as any, jest.fn() as any);
+
+    const linkCalls = mockCognitoSend.mock.calls.filter(
+      (c: any[]) => c[0]?.__type === 'AdminLinkProviderForUser'
+    );
+    expect(linkCalls).toHaveLength(1);
+    const input = linkCalls[0][0];
+    expect(input.UserPoolId).toBe('eu-central-1_TEST');
+    expect(input.DestinationUser).toEqual({
+      ProviderName: 'Cognito',
+      ProviderAttributeValue: 'owner-sub-uuid',
+    });
+    expect(input.SourceUser).toEqual({
+      ProviderName: 'Google',
+      ProviderAttributeName: 'Cognito_Subject',
+      ProviderAttributeValue: '700abc',
+    });
+
+    expect(result.response.autoConfirmUser).toBe(true);
+    expect(result.response.autoVerifyEmail).toBe(true);
+    expect(mockDbRelease).toHaveBeenCalled();
+
+    // The fallback query joins user_additional_emails and gates on verified_at + LOWER(email).
+    const fallbackSql = mockDbQuery.mock.calls[1][0] as string;
+    expect(fallbackSql).toMatch(/user_additional_emails/i);
+    expect(fallbackSql).toMatch(/verified_at\s+is\s+not\s+null/i);
+    expect(fallbackSql).toMatch(/lower\(\s*ae\.email\s*\)\s*=\s*lower\(\s*\$1\s*\)/i);
+
+    // Distinct metric so the additional-email link is observable separately.
+    const metricNames = mockCloudWatchSend.mock.calls.map(
+      (c: any[]) => c[0]?.MetricData?.[0]?.MetricName
+    );
+    expect(metricNames).toContain('FederatedUserLinkedViaAdditionalEmail');
+  });
+
+  it('should_notQueryAdditionalEmail_when_emailVerifiedAttributeIsFalse', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'gmail-private@gmail.com', email_verified: 'false' },
+      'Google_700abc'
+    );
+    const result = await handler(event, {} as any, jest.fn() as any);
+
+    // Only the primary query ran — the IdP-unverified gate blocks the fallback entirely.
+    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    const linkCalls = mockCognitoSend.mock.calls.filter(
+      (c: any[]) => c[0]?.__type === 'AdminLinkProviderForUser'
+    );
+    expect(linkCalls).toHaveLength(0);
+    // Falls through to the existing brand-new-user outcome.
+    expect(result.response.autoConfirmUser).toBe(true);
+    const metricNames = mockCloudWatchSend.mock.calls.map(
+      (c: any[]) => c[0]?.MetricData?.[0]?.MetricName
+    );
+    expect(metricNames).toContain('FederatedNewUser');
+  });
+
+  it('should_notQueryAdditionalEmail_when_emailVerifiedAttributeAbsent', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'gmail-private@gmail.com' },
+      'Google_700abc'
+    );
+    await handler(event, {} as any, jest.fn() as any);
+
+    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    const linkCalls = mockCognitoSend.mock.calls.filter(
+      (c: any[]) => c[0]?.__type === 'AdminLinkProviderForUser'
+    );
+    expect(linkCalls).toHaveLength(0);
+  });
+
+  it('should_treatEmailVerifiedCaseInsensitively_when_attributeIsUpperTrue', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({
+        rows: [{ cognito_user_id: 'owner-sub-uuid', username: 'jane.owner' }],
+        rowCount: 1,
+      });
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'gmail-private@gmail.com', email_verified: 'TRUE' },
+      'Google_700abc'
+    );
+    await handler(event, {} as any, jest.fn() as any);
+
+    const linkCalls = mockCognitoSend.mock.calls.filter(
+      (c: any[]) => c[0]?.__type === 'AdminLinkProviderForUser'
+    );
+    expect(linkCalls).toHaveLength(1);
+  });
+
+  it('should_notLinkAndFallThrough_when_additionalEmailOwnerHasNoCognitoId', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({
+        rows: [{ cognito_user_id: null, username: 'jane.owner' }],
+        rowCount: 1,
+      });
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'gmail-private@gmail.com', email_verified: 'true' },
+      'Google_700abc'
+    );
+    const result = await handler(event, {} as any, jest.fn() as any);
+
+    // No destination Cognito user → no link; falls through, still auto-confirmed.
+    const linkCalls = mockCognitoSend.mock.calls.filter(
+      (c: any[]) => c[0]?.__type === 'AdminLinkProviderForUser'
+    );
+    expect(linkCalls).toHaveLength(0);
+    expect(result.response.autoConfirmUser).toBe(true);
+    expect(result.response.autoVerifyEmail).toBe(true);
+    expect(mockDbRelease).toHaveBeenCalled();
+
+    // Owner found via a verified additional email but with no Cognito sub yet → the
+    // deferred-adoption outcome, observable via FederatedAnonymousPendingJit (canonical
+    // JIT reconciles once the owner has a sub).
+    const metricNames = mockCloudWatchSend.mock.calls.map(
+      (c: any[]) => c[0]?.MetricData?.[0]?.MetricName
+    );
+    expect(metricNames).toContain('FederatedAnonymousPendingJit');
+  });
+
+  it('should_treatAsNewUser_when_primaryMissesAndFallbackReturnsZeroRowsBecauseAdditionalEmailUnverified', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    // 1st query (primary user_profiles match) → empty.
+    // 2nd query (additional-email fallback) → ZERO rows: the additional email exists but is
+    // UNVERIFIED (verified_at IS NULL), so the SQL `verified_at IS NOT NULL` gate excludes it.
+    // This documents that an unverified additional email must NOT link a federated identity.
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'gmail-private@gmail.com', email_verified: 'true' },
+      'Google_700abc'
+    );
+    const result = await handler(event, {} as any, jest.fn() as any);
+
+    // Fallback ran (IdP verified + primary missed) but matched nothing → no link.
+    expect(mockDbQuery).toHaveBeenCalledTimes(2);
+    const linkCalls = mockCognitoSend.mock.calls.filter(
+      (c: any[]) => c[0]?.__type === 'AdminLinkProviderForUser'
+    );
+    expect(linkCalls).toHaveLength(0);
+
+    // Genuinely a brand-new federated user → FederatedNewUser outcome, auto-confirmed.
+    expect(result.response.autoConfirmUser).toBe(true);
+    expect(result.response.autoVerifyEmail).toBe(true);
+    expect(mockDbRelease).toHaveBeenCalled();
+    const metricNames = mockCloudWatchSend.mock.calls.map(
+      (c: any[]) => c[0]?.MetricData?.[0]?.MetricName
+    );
+    expect(metricNames).toContain('FederatedNewUser');
+  });
+
+  it('should_notQueryAdditionalEmail_when_primaryMatchAlreadyLinked', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    mockDbQuery.mockResolvedValueOnce({
+      rows: [{ cognito_user_id: 'native-sub-uuid', username: 'john.doe' }],
+      rowCount: 1,
+    });
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'john@example.com', email_verified: 'true' },
+      'Google_117xyz'
+    );
+    await handler(event, {} as any, jest.fn() as any);
+
+    // Primary path wins — the fallback is never queried.
+    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    const metricNames = mockCloudWatchSend.mock.calls.map(
+      (c: any[]) => c[0]?.MetricData?.[0]?.MetricName
+    );
+    expect(metricNames).toContain('FederatedUserLinked');
+    expect(metricNames).not.toContain('FederatedUserLinkedViaAdditionalEmail');
+  });
+
+  it('should_returnEventAndNotThrow_when_additionalEmailFallbackQueryThrows', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockRejectedValueOnce(new Error('fallback query exploded'));
+
+    const event = makeEvent(
+      'PreSignUp_ExternalProvider',
+      { email: 'gmail-private@gmail.com', email_verified: 'true' },
+      'Google_700abc'
+    );
+    const result = await handler(event, {} as any, jest.fn() as any);
+
+    // Never throws; auto-confirm preserved; failure surfaced as PreSignUpFailure metric.
+    expect(result.response.autoConfirmUser).toBe(true);
+    expect(result.response.autoVerifyEmail).toBe(true);
+    expect(mockDbRelease).toHaveBeenCalled();
+    const metricNames = mockCloudWatchSend.mock.calls.map(
+      (c: any[]) => c[0]?.MetricData?.[0]?.MetricName
+    );
+    expect(metricNames).toContain('PreSignUpFailure');
+  });
+
   // AC5.5 — missing-email guard
   it('should_notLinkAndNotThrow_when_federatedEventHasNoEmail', async () => {
     const event = makeEvent('PreSignUp_ExternalProvider', { email: '' }, 'Google_555');

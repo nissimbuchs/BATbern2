@@ -3,8 +3,10 @@ package ch.batbern.companyuser.interceptor;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserPreferences;
+import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.event.UserCreatedEvent;
+import ch.batbern.shared.utils.LoggingUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,6 +64,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             JITUserProvisioningInterceptor.class.getName() + ".resolvedUser";
 
     private final UserRepository userRepository;
+    private final UserAdditionalEmailRepository userAdditionalEmailRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /** For parsing the `custom:preferences` JSON blob set by the signup form. */
@@ -141,7 +144,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             // before the user self-registered in Cognito). If so, link the Cognito ID to that record
             // instead of creating a duplicate.
             if (email != null && !email.isEmpty()) {
-                Optional<User> existingByEmail = userRepository.findByEmail(email);
+                Optional<User> existingByEmail = userRepository.findByEmailIgnoreCase(email);
                 if (existingByEmail.isPresent()) {
                     User existing = existingByEmail.get();
                     existing.setCognitoUserId(cognitoUserId);
@@ -151,6 +154,24 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                             mapOf("cognitoUserId", cognitoUserId, "username", existing.getUsername(), "email", email));
                     return true;
                 }
+            }
+
+            // Epic 12 follow-up — duplicate guard. Before JIT-creating a brand-new user, check
+            // whether this email is a VERIFIED additional email (Story A {@code verified_at}) of
+            // an existing user. If so, the PreSignUp Lambda should have linked this federated
+            // identity into that owner; reaching here means linking did not happen. Creating a
+            // user now would produce a duplicate ATTENDEE for an email that already belongs to a
+            // real account, so we skip creation entirely. We deliberately do NOT resolve the
+            // request to the owner (that would grant the unlinked session the owner's identity at
+            // service level only — Cognito still split — a half-linked state worse than a
+            // degraded session; the real link belongs to PreSignUp) and we NEVER touch the
+            // owner's cognito_user_id.
+            if (email != null && !email.isEmpty()
+                    && userAdditionalEmailRepository.findVerifiedByEmailIgnoreCase(email).isPresent()) {
+                log.warn("Skipping JIT creation: email is a verified additional email of an existing "
+                                + "user; PreSignUp account-linking should have linked this identity",
+                        mapOf("cognitoUserId", cognitoUserId, "email", LoggingUtils.maskEmail(email)));
+                return true;
             }
 
             // No record at all — perform JIT provisioning (create new user)
