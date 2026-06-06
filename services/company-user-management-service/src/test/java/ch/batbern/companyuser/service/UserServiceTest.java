@@ -77,6 +77,12 @@ class UserServiceTest {
     @Mock
     private ch.batbern.companyuser.repository.UserAdditionalEmailRepository additionalEmailRepository;
 
+    @Mock
+    private AdditionalEmailVerificationTokenService verificationTokenService;
+
+    @Mock
+    private AdditionalEmailVerificationEmailService verificationEmailService;
+
     private UserService userService;
 
     @BeforeEach
@@ -92,7 +98,9 @@ class UserServiceTest {
             responseMapper,
             companyService,
             roleService,
-            passwordGenerator
+            passwordGenerator,
+            verificationTokenService,
+            verificationEmailService
         );
     }
 

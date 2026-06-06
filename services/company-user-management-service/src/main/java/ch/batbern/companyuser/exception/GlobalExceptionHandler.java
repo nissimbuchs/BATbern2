@@ -118,6 +118,72 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Additional-email verification (v2) — malformed / bad-signature / wrong-type
+     * token. Maps to 400 with errorCode {@code TOKEN_INVALID}. Never a 500.
+     */
+    @ExceptionHandler(VerificationTokenInvalidException.class)
+    public ResponseEntity<ErrorResponse> handleVerificationTokenInvalidException(
+            VerificationTokenInvalidException ex,
+            HttpServletRequest request) {
+        log.warn("Verification token invalid: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .errorCode("TOKEN_INVALID")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Additional-email verification (v2) — expired token. Maps to 400 with
+     * errorCode {@code TOKEN_EXPIRED}. Never a 500.
+     */
+    @ExceptionHandler(VerificationTokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleVerificationTokenExpiredException(
+            VerificationTokenExpiredException ex,
+            HttpServletRequest request) {
+        log.warn("Verification token expired: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .errorCode("TOKEN_EXPIRED")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Additional-email verification (v2) — resend requested for an
+     * already-verified email. Maps to 409 with errorCode {@code ALREADY_VERIFIED}.
+     */
+    @ExceptionHandler(AdditionalEmailAlreadyVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailAlreadyVerifiedException(
+            AdditionalEmailAlreadyVerifiedException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email already verified: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .errorCode("ALREADY_VERIFIED")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Story 10.32 (P1-1 from 2026-05-22 review) — translate Spring's
      * {@link DataIntegrityViolationException} into the same 409 envelope as
      * {@link AdditionalEmailDuplicateException} when the underlying SQLState

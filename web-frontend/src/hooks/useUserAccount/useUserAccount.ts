@@ -179,3 +179,18 @@ export const useDeleteAdditionalEmail = () => {
     },
   });
 };
+
+/**
+ * Additional-email verification (v2) — resend the verification email for one of
+ * the caller's own unverified additional emails. Invalidates the user-profile
+ * cache so any status changes are reflected.
+ */
+export const useResendVerification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string) => userAccountApi.resendAdditionalEmailVerification(email),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    },
+  });
+};

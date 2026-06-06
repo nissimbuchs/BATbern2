@@ -229,7 +229,14 @@
       "additionalEmailRemoveConfirmCancel": "Annulla",
       "additionalEmailDeleteFailed": "Impossibile rimuovere questo indirizzo email aggiuntivo. Riprova.",
       "additionalEmailDeleteNotFound": "Questo indirizzo email aggiuntivo non è più nel tuo profilo.",
-      "additionalEmailDeleteAriaLabel": "Rimuovi indirizzo email aggiuntivo {{email}}"
+      "additionalEmailDeleteAriaLabel": "Rimuovi indirizzo email aggiuntivo {{email}}",
+      "additionalEmailVerifiedPill": "Verificato",
+      "additionalEmailResendButton": "Invia di nuovo",
+      "additionalEmailResendSuccess": "E-mail di verifica inviata.",
+      "additionalEmailResendFailed": "Impossibile inviare l'e-mail di verifica. Riprovare.",
+      "additionalEmailResendAlreadyVerified": "Questo indirizzo e-mail è già verificato.",
+      "additionalEmailResendAriaLabel": "Invia di nuovo l'e-mail di verifica a {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} è verificato"
     },
     "notifications": {
       "title": "Preferenze notifiche",
@@ -292,5 +299,16 @@
     "linked": "Cognito collegato",
     "notLinked": "Nessun account Cognito",
     "tooltip": "Account Cognito collegato"
+  },
+  "verifyEmail": {
+    "title": "Conferma il tuo indirizzo e-mail",
+    "loading": "Verifica del tuo link in corso…",
+    "confirmMessage": "Conferma che {{email}} è il tuo indirizzo e-mail.",
+    "confirmButton": "Conferma indirizzo e-mail",
+    "success": "Il tuo indirizzo e-mail è stato confermato. Puoi chiudere questa pagina.",
+    "alreadyVerified": "Questo indirizzo e-mail è già confermato.",
+    "homeLink": "Vai a batbern.ch",
+    "invalidToken": "Questo link di verifica non è valido o è scaduto. Richiedine uno nuovo nelle impostazioni del tuo account.",
+    "notFound": "Questo indirizzo e-mail non è più presente sul profilo a cui era stato aggiunto. Se lo hai aggiunto di nuovo, usa il link dell'e-mail di verifica più recente."
   }
 }

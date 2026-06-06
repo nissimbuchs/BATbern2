@@ -160,6 +160,11 @@ const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/Spea
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
 
+// Additional-email verification (v2): public token-credentialed verify page
+const VerifyAdditionalEmailPage = React.lazy(
+  () => import('@pages/public/VerifyAdditionalEmailPage')
+);
+
 // Story 10.12: Self-service deregistration page
 const DeregistrationPage = React.lazy(() => import('@pages/public/DeregistrationPage'));
 
@@ -344,6 +349,9 @@ function App() {
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                    {/* Additional-email verification (v2): public token-credentialed verify */}
+                    <Route path="/verify-email" element={<VerifyAdditionalEmailPage />} />
 
                     {/* Story 10.12: Self-service deregistration (token-protected, no auth required) */}
                     <Route path="/deregister" element={<DeregistrationPage />} />

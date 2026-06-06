@@ -997,6 +997,134 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/me/additional-emails/{email}/resend-verification:
+    post:
+      tags:
+        - User Account
+      summary: Resend the verification email for an additional email address
+      description: |
+        Additional-email verification v2 — re-dispatch the signed verification
+        link to one of the caller's own (still unverified) additional emails.
+        Idempotent in effect: a 204 means a fresh email was queued. The token is
+        regenerated on each call (stateless HMAC JWT, 48h TTL).
+      operationId: resendAdditionalEmailVerification
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: |
+            URL-encoded email address. Case-insensitive match against the caller's
+            additional emails.
+          schema:
+            type: string
+            format: email
+          example: info@berner-architekten-treffen.ch
+      responses:
+        '204':
+          description: A fresh verification email was dispatched.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No matching additional email on the caller's profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            The email is already verified. Error code: `ALREADY_VERIFIED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/additional-emails/verify:
+    get:
+      tags:
+        - User Account
+      summary: Check an additional-email verification token (no mutation)
+      description: |
+        Additional-email verification v2 — public, token-credentialed pre-flight
+        check used by the `/verify-email` landing page. Validates the token's
+        signature + expiry and returns the (masked) email and its current
+        verification status WITHOUT mutating any state. Mail-scanner prefetches
+        of the link land here (GET) and never confirm; the actual confirm is a
+        separate POST. No JWT — the token IS the credential.
+      operationId: checkAdditionalEmailVerification
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: The signed verification token from the email link.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token is valid; returns masked email + status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdditionalEmailVerificationCheckResponse'
+        '400':
+          description: |
+            Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - User Account
+      summary: Confirm an additional-email verification token (mutates)
+      description: |
+        Additional-email verification v2 — public, token-credentialed confirm.
+        POST-only so mail-scanner prefetches (GET) cannot accidentally verify.
+        On success sets `verified_at` and returns the masked email. Idempotent:
+        a token for an already-verified row returns 200 with
+        `alreadyVerified: true`. If the underlying row was deleted (or re-added
+        with a new id) since the token was issued, returns 404. No JWT — the
+        token IS the credential.
+      operationId: confirmAdditionalEmailVerification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmAdditionalEmailVerificationRequest'
+      responses:
+        '200':
+          description: Email verified (or already verified).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdditionalEmailVerificationConfirmResponse'
+        '400':
+          description: |
+            Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: |
+            The additional-email row referenced by the token no longer exists
+            (deleted or re-added with a new id since issuance).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /users/{username}/roles:
     get:
       tags:
@@ -2089,6 +2217,59 @@ components:
           nullable: true
           maxLength: 100
           example: Hostpoint shared
+
+    AdditionalEmailVerificationCheckResponse:
+      type: object
+      description: |
+        Additional-email verification v2 — GET-check response. Returns the masked
+        email and current verification status without mutating state.
+      required:
+        - email
+        - verified
+      properties:
+        email:
+          type: string
+          description: |
+            Masked form of the additional email (e.g. `in***@example.com`). The
+            full address is never returned on the public verify path.
+          example: in***@berner-architekten-treffen.ch
+        verified:
+          type: boolean
+          description: True if the row's verified_at is already set.
+          example: false
+
+    ConfirmAdditionalEmailVerificationRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: The signed verification token from the email link.
+
+    AdditionalEmailVerificationConfirmResponse:
+      type: object
+      description: |
+        Additional-email verification v2 — POST-confirm response.
+      required:
+        - email
+        - verified
+        - alreadyVerified
+      properties:
+        email:
+          type: string
+          description: Masked form of the additional email.
+          example: in***@berner-architekten-treffen.ch
+        verified:
+          type: boolean
+          description: Always true after a successful confirm.
+          example: true
+        alreadyVerified:
+          type: boolean
+          description: |
+            True when the row was already verified before this call (idempotent
+            re-confirm); false when this call set verified_at.
+          example: false
 
     UserPreferences:
       type: object

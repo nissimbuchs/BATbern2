@@ -10,6 +10,9 @@ import ch.batbern.companyuser.dto.ReconciliationReportDTO;
 import ch.batbern.companyuser.dto.SyncStatusDTO;
 import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;
 import ch.batbern.companyuser.dto.generated.AdditionalEmail;
+import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationCheckResponse;
+import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationConfirmResponse;
+import ch.batbern.companyuser.dto.generated.ConfirmAdditionalEmailVerificationRequest;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
@@ -576,6 +579,58 @@ public class UserController {
         log.info("Removing additional email for current user");
         userService.deleteAdditionalEmail(email);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Additional-email verification (v2) — resend the verification email for one of
+     * the caller's own (still unverified) additional emails.
+     *
+     * <p>204 on success; 404 if the email is not the caller's; 409
+     * ({@code ALREADY_VERIFIED}) if it is already verified.
+     *
+     * <p>The {@code {email:.+}} regex is required for the same reason as the
+     * delete endpoint above — Spring would otherwise strip a trailing {@code .com}.
+     */
+    @PostMapping("/me/additional-emails/{email:.+}/resend-verification")
+    @Timed(value = "users.additionalEmails.resendVerification",
+            description = "Time to resend an additional-email verification email",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<Void> resendAdditionalEmailVerification(@PathVariable String email) {
+        log.info("Resending additional-email verification for current user");
+        userService.resendVerification(email);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Additional-email verification (v2) — public GET-check of a verification token.
+     * Validates the token and returns the masked email + status WITHOUT mutating
+     * state (mail-scanner prefetches land here). The token IS the credential — no
+     * JWT. Permitted in both SecurityConfig layers (CUMS + api-gateway).
+     */
+    @GetMapping("/additional-emails/verify")
+    @Timed(value = "users.additionalEmails.verifyCheck",
+            description = "Time to check an additional-email verification token",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<AdditionalEmailVerificationCheckResponse> checkAdditionalEmailVerification(
+            @RequestParam String token) {
+        log.info("Checking additional-email verification token");
+        return ResponseEntity.ok(userService.checkVerificationToken(token));
+    }
+
+    /**
+     * Additional-email verification (v2) — public POST-confirm of a verification
+     * token. POST-only so mail-scanner GET prefetches cannot verify. Sets
+     * {@code verified_at}; idempotent ({@code alreadyVerified}). The token IS the
+     * credential — no JWT.
+     */
+    @PostMapping("/additional-emails/verify")
+    @Timed(value = "users.additionalEmails.verifyConfirm",
+            description = "Time to confirm an additional-email verification token",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<AdditionalEmailVerificationConfirmResponse> confirmAdditionalEmailVerification(
+            @Valid @RequestBody ConfirmAdditionalEmailVerificationRequest request) {
+        log.info("Confirming additional-email verification token");
+        return ResponseEntity.ok(userService.confirmVerificationToken(request.getToken()));
     }
 
     /**

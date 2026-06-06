@@ -5,6 +5,8 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;
 import ch.batbern.companyuser.dto.generated.AdditionalEmail;
+import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationCheckResponse;
+import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationConfirmResponse;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
 import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
@@ -17,10 +19,13 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.events.UserDeletedEvent;
 import ch.batbern.companyuser.events.UserUpdatedEvent;
+import ch.batbern.companyuser.exception.AdditionalEmailAlreadyVerifiedException;
 import ch.batbern.companyuser.exception.AdditionalEmailDuplicateException;
 import ch.batbern.companyuser.exception.AdditionalEmailLimitReachedException;
 import ch.batbern.companyuser.exception.AdditionalEmailNotFoundException;
 import ch.batbern.companyuser.exception.UnprocessableInvitationStateException;
+import ch.batbern.companyuser.exception.VerificationTokenExpiredException;
+import ch.batbern.companyuser.exception.VerificationTokenInvalidException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
@@ -29,6 +34,9 @@ import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
 import ch.batbern.shared.utils.LoggingUtils;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.micrometer.core.annotation.Counted;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -70,6 +78,9 @@ public class UserService {
     private final RoleService roleService;
     // Story 11.E.2: throwaway temp passwords at READY, fresh temp passwords at INVITED.
     private final PasswordGenerator passwordGenerator;
+    // Additional-email verification (v2): stateless token + verification email.
+    private final AdditionalEmailVerificationTokenService verificationTokenService;
+    private final AdditionalEmailVerificationEmailService verificationEmailService;
 
     /**
      * Story 10.32: per-user cap on additional emails (Resolved Decision #3).
@@ -1383,7 +1394,13 @@ public class UserService {
                 .createdAt(java.time.Instant.now())
                 .build();
         user.addAdditionalEmail(entity);
-        userRepository.save(user);
+        // `user` is the managed entity returned by findByUsernameForUpdate, so the
+        // collection mutation is cascade-persisted directly on flush — assigning the
+        // generated UUID to THIS `entity` instance (the verification token below binds
+        // to entity.getId()). We deliberately avoid userRepository.save(user) here:
+        // save() on an already-managed entity is a merge, which persists a managed
+        // *copy* of the new child and leaves this `entity` transient with a null id.
+        userRepository.flush();
 
         // Audit: persistent audit table is reserved infra (activity_history has
         // no JPA entity yet — see Story 10.32 Dev Notes; AC19 deferred per the
@@ -1396,7 +1413,152 @@ public class UserService {
                 LoggingUtils.maskEmail(user.getEmail()),
                 LoggingUtils.maskEmail(emailNormalized));
 
+        // Additional-email verification (v2): dispatch a signed verification link.
+        // Send is failure-tolerant — a mail failure (SES outage, template missing,
+        // reserved-domain recipient) must NEVER fail or roll back the add. We only
+        // WARN-log (with a masked email) and still return 201.
+        sendVerificationEmailSafely(entity, user);
+
         return UserResponseMapper.mapAdditionalEmailToDto(entity);
+    }
+
+    /**
+     * Additional-email verification (v2) — best-effort dispatch of the verification
+     * email. Swallows all exceptions (logged as WARN with masked email) so the add
+     * flow always succeeds.
+     */
+    private void sendVerificationEmailSafely(UserAdditionalEmail entity, User user) {
+        try {
+            String token = verificationTokenService.generateToken(entity.getId(), entity.getEmail());
+            String locale = resolveUserLocale(user);
+            verificationEmailService.sendVerificationEmail(entity.getEmail(), token, locale);
+        } catch (Exception e) {
+            log.warn("Failed to send additional-email verification to: {} — {}",
+                    LoggingUtils.maskEmail(entity.getEmail()), e.getMessage());
+        }
+    }
+
+    /**
+     * Resolve the user's language preference (de/en) for verification email
+     * locale selection. Anything other than 'de' resolves to 'en' (the email
+     * templates only exist in de + en per the project localization rule).
+     */
+    private String resolveUserLocale(User user) {
+        if (user.getPreferences() != null && user.getPreferences().getLanguage() != null) {
+            String language = user.getPreferences().getLanguage();
+            // Any German variant (de, de-DE, de-CH, …) gets the German template; everything
+            // else (including gsw-BE per the email-template DE+EN-only rule) falls back to en.
+            return language.toLowerCase(Locale.ROOT).startsWith("de") ? "de" : "en";
+        }
+        return "en";
+    }
+
+    /**
+     * Additional-email verification (v2) — resend the verification email for one of
+     * the caller's own additional emails.
+     *
+     * @throws AdditionalEmailNotFoundException        if the email is not on the caller's profile (404)
+     * @throws AdditionalEmailAlreadyVerifiedException if the email is already verified (409)
+     */
+    public void resendVerification(String email) {
+        String username = securityContext.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
+
+        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
+        UserAdditionalEmail row = additionalEmailRepository
+                .findByUserAndEmailIgnoreCase(user, emailNormalized)
+                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+
+        if (row.getVerifiedAt() != null) {
+            throw new AdditionalEmailAlreadyVerifiedException(emailNormalized);
+        }
+
+        String token = verificationTokenService.generateToken(row.getId(), row.getEmail());
+        String locale = resolveUserLocale(user);
+        verificationEmailService.sendVerificationEmail(row.getEmail(), token, locale);
+
+        log.info("ADDITIONAL_EMAIL_VERIFICATION_RESENT user={} email={}",
+                LoggingUtils.maskEmail(user.getEmail()),
+                LoggingUtils.maskEmail(emailNormalized));
+    }
+
+    /**
+     * Additional-email verification (v2) — GET-check path. Validates the token and
+     * returns the (masked) email + current verification status WITHOUT mutating
+     * any state. Mail-scanner prefetches land here.
+     *
+     * @throws VerificationTokenExpiredException if the token has expired (400)
+     * @throws VerificationTokenInvalidException if the token is malformed/forged (400)
+     */
+    @Transactional(readOnly = true)
+    public AdditionalEmailVerificationCheckResponse checkVerificationToken(String token) {
+        Claims claims = parseVerificationToken(token);
+        java.util.UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
+        String claimEmail = verificationTokenService.getEmail(claims);
+
+        // The check path does not 404 on a missing row — it reports the token's
+        // email + a "not verified" status so the landing page can still render a
+        // sensible prompt. The actual confirm (POST) is the one that 404s.
+        boolean verified = additionalEmailRepository.findById(rowId)
+                .filter(r -> r.getEmail().equalsIgnoreCase(claimEmail))
+                .map(r -> r.getVerifiedAt() != null)
+                .orElse(false);
+
+        return new AdditionalEmailVerificationCheckResponse()
+                .email(LoggingUtils.maskEmail(claimEmail))
+                .verified(verified);
+    }
+
+    /**
+     * Additional-email verification (v2) — POST-confirm path. Validates the token,
+     * loads the row by UUID, confirms the email claim matches, and sets
+     * {@code verified_at} if not already set. Idempotent: a token for an
+     * already-verified row returns {@code alreadyVerified = true}.
+     *
+     * @throws VerificationTokenExpiredException if the token has expired (400)
+     * @throws VerificationTokenInvalidException if the token is malformed/forged (400)
+     * @throws AdditionalEmailNotFoundException  if the row was deleted/re-added since issuance (404)
+     */
+    @Transactional
+    public AdditionalEmailVerificationConfirmResponse confirmVerificationToken(String token) {
+        Claims claims = parseVerificationToken(token);
+        java.util.UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
+        String claimEmail = verificationTokenService.getEmail(claims);
+
+        UserAdditionalEmail row = additionalEmailRepository.findById(rowId)
+                .filter(r -> r.getEmail().equalsIgnoreCase(claimEmail))
+                .orElseThrow(() -> new AdditionalEmailNotFoundException(claimEmail));
+
+        boolean alreadyVerified = row.getVerifiedAt() != null;
+        if (!alreadyVerified) {
+            row.setVerifiedAt(java.time.Instant.now());
+            additionalEmailRepository.save(row);
+            log.info("ADDITIONAL_EMAIL_VERIFIED email={}", LoggingUtils.maskEmail(row.getEmail()));
+        }
+
+        return new AdditionalEmailVerificationConfirmResponse()
+                .email(LoggingUtils.maskEmail(row.getEmail()))
+                .verified(true)
+                .alreadyVerified(alreadyVerified);
+    }
+
+    /**
+     * Parse + validate a verification token, mapping JJWT exceptions to the
+     * service-level 400 exceptions. Never throws a raw runtime exception that
+     * would surface as a 500.
+     */
+    private Claims parseVerificationToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new VerificationTokenInvalidException();
+        }
+        try {
+            return verificationTokenService.validateToken(token);
+        } catch (ExpiredJwtException e) {
+            throw new VerificationTokenExpiredException();
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new VerificationTokenInvalidException();
+        }
     }
 
     /**

@@ -229,7 +229,14 @@
       "additionalEmailRemoveConfirmCancel": "Abbrechen",
       "additionalEmailDeleteFailed": "Zusätzliche E-Mail konnte nicht entfernt werden. Bitte versuche es erneut.",
       "additionalEmailDeleteNotFound": "Diese zusätzliche E-Mail ist nicht mehr in deinem Profil.",
-      "additionalEmailDeleteAriaLabel": "Zusätzliche E-Mail {{email}} entfernen"
+      "additionalEmailDeleteAriaLabel": "Zusätzliche E-Mail {{email}} entfernen",
+      "additionalEmailVerifiedPill": "Bestätigt",
+      "additionalEmailResendButton": "Erneut senden",
+      "additionalEmailResendSuccess": "Bestätigungs-E-Mail gesendet.",
+      "additionalEmailResendFailed": "Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+      "additionalEmailResendAlreadyVerified": "Diese E-Mail-Adresse ist bereits bestätigt.",
+      "additionalEmailResendAriaLabel": "Bestätigungs-E-Mail erneut an {{email}} senden",
+      "additionalEmailVerifiedAriaLabel": "{{email}} ist bestätigt"
     },
     "notifications": {
       "title": "Benachrichtigungseinstellungen",
@@ -292,5 +299,16 @@
     "linked": "Cognito verknüpft",
     "notLinked": "Kein Cognito-Konto",
     "tooltip": "Cognito-Konto verknüpft"
+  },
+  "verifyEmail": {
+    "title": "Bestätigen Sie Ihre E-Mail-Adresse",
+    "loading": "Ihr Bestätigungslink wird geprüft…",
+    "confirmMessage": "Bestätigen Sie, dass {{email}} Ihre E-Mail-Adresse ist.",
+    "confirmButton": "E-Mail-Adresse bestätigen",
+    "success": "Ihre E-Mail-Adresse wurde bestätigt. Sie können diese Seite schliessen.",
+    "alreadyVerified": "Diese E-Mail-Adresse ist bereits bestätigt.",
+    "homeLink": "Zu batbern.ch",
+    "invalidToken": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte fordern Sie in Ihren Kontoeinstellungen einen neuen an.",
+    "notFound": "Diese E-Mail-Adresse befindet sich nicht mehr auf dem Profil, zu dem sie hinzugefügt wurde. Falls Sie sie erneut hinzugefügt haben, verwenden Sie den Link aus der neuesten Bestätigungs-E-Mail."
   }
 }

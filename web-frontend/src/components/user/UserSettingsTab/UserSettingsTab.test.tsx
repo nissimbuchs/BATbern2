@@ -26,6 +26,7 @@ vi.mock('react-i18next', () => ({
 
 const mockAddMutate = vi.fn();
 const mockDeleteMutate = vi.fn();
+const mockResendMutate = vi.fn();
 
 vi.mock('@/hooks/useUserAccount/useUserAccount', () => ({
   useUpdateUserPreferences: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -36,6 +37,10 @@ vi.mock('@/hooks/useUserAccount/useUserAccount', () => ({
   }),
   useDeleteAdditionalEmail: () => ({
     mutateAsync: mockDeleteMutate,
+    isPending: false,
+  }),
+  useResendVerification: () => ({
+    mutateAsync: mockResendMutate,
     isPending: false,
   }),
 }));
@@ -58,6 +63,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
   beforeEach(() => {
     mockAddMutate.mockReset();
     mockDeleteMutate.mockReset();
+    mockResendMutate.mockReset();
   });
 
   test('should render the additional-emails section heading', () => {
@@ -248,5 +254,57 @@ describe('UserSettingsTab — responsive sub-tabs (organizer mobile)', () => {
     const accountTab = screen.getByRole('tab', { name: /settings\.tabs\.account/ });
     // Desktop shows the textual label alongside the icon.
     expect(accountTab).toHaveTextContent('settings.tabs.account');
+  });
+
+  // Additional-email verification (v2)
+
+  test('should render verified pill (no resend) for a verified additional email', () => {
+    renderWithProviders([
+      {
+        email: 'box@example.com',
+        label: null,
+        createdAt: '2026-06-06T10:00:00Z',
+        verifiedAt: '2026-06-06T11:00:00Z',
+      },
+    ]);
+    expect(screen.getByTestId('additional-email-verified-box@example.com')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('additional-email-unverified-box@example.com')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('additional-email-resend-box@example.com')).not.toBeInTheDocument();
+  });
+
+  test('should render unverified pill + resend link for an unverified additional email', () => {
+    renderWithProviders([
+      {
+        email: 'box@example.com',
+        label: null,
+        createdAt: '2026-06-06T10:00:00Z',
+        verifiedAt: null,
+      },
+    ]);
+    expect(screen.getByTestId('additional-email-unverified-box@example.com')).toBeInTheDocument();
+    expect(screen.getByTestId('additional-email-resend-box@example.com')).toBeInTheDocument();
+  });
+
+  test('should call resendVerification when the Resend link is clicked', async () => {
+    mockResendMutate.mockResolvedValueOnce(undefined);
+    renderWithProviders([
+      {
+        email: 'box@example.com',
+        label: null,
+        createdAt: '2026-06-06T10:00:00Z',
+        verifiedAt: null,
+      },
+    ]);
+
+    fireEvent.click(screen.getByTestId('additional-email-resend-box@example.com'));
+
+    await waitFor(() => {
+      expect(mockResendMutate).toHaveBeenCalledWith('box@example.com');
+    });
+    expect(
+      await screen.findByText('settings.account.additionalEmailResendSuccess')
+    ).toBeInTheDocument();
   });
 });

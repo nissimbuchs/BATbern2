@@ -229,7 +229,14 @@
       "additionalEmailRemoveConfirmCancel": "Annuler",
       "additionalEmailDeleteFailed": "Impossible de supprimer cette adresse e-mail supplémentaire. Veuillez réessayer.",
       "additionalEmailDeleteNotFound": "Cette adresse e-mail supplémentaire n'est plus dans votre profil.",
-      "additionalEmailDeleteAriaLabel": "Supprimer l'adresse e-mail supplémentaire {{email}}"
+      "additionalEmailDeleteAriaLabel": "Supprimer l'adresse e-mail supplémentaire {{email}}",
+      "additionalEmailVerifiedPill": "Vérifié",
+      "additionalEmailResendButton": "Renvoyer",
+      "additionalEmailResendSuccess": "E-mail de vérification envoyé.",
+      "additionalEmailResendFailed": "Impossible d'envoyer l'e-mail de vérification. Veuillez réessayer.",
+      "additionalEmailResendAlreadyVerified": "Cette adresse e-mail est déjà vérifiée.",
+      "additionalEmailResendAriaLabel": "Renvoyer l'e-mail de vérification à {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} est vérifié"
     },
     "notifications": {
       "title": "Préférences de notification",
@@ -292,5 +299,16 @@
     "linked": "Cognito lié",
     "notLinked": "Pas de compte Cognito",
     "tooltip": "Compte Cognito associé"
+  },
+  "verifyEmail": {
+    "title": "Confirmez votre adresse e-mail",
+    "loading": "Vérification de votre lien…",
+    "confirmMessage": "Confirmez que {{email}} est votre adresse e-mail.",
+    "confirmButton": "Confirmer l'adresse e-mail",
+    "success": "Votre adresse e-mail a été confirmée. Vous pouvez fermer cette page.",
+    "alreadyVerified": "Cette adresse e-mail est déjà confirmée.",
+    "homeLink": "Aller sur batbern.ch",
+    "invalidToken": "Ce lien de vérification est invalide ou a expiré. Veuillez en demander un nouveau dans les paramètres de votre compte.",
+    "notFound": "Cette adresse e-mail ne figure plus sur le profil auquel elle avait été ajoutée. Si vous l'avez ajoutée à nouveau, utilisez le lien du dernier e-mail de vérification."
   }
 }

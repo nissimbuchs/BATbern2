@@ -229,7 +229,14 @@
       "additionalEmailRemoveConfirmCancel": "Interrumper",
       "additionalEmailDeleteFailed": "Impussibel da stizzar questa e-mail supplementara. Empruvescha danovamain.",
       "additionalEmailDeleteNotFound": "Questa e-mail supplementara n'è betg pli en tes profil.",
-      "additionalEmailDeleteAriaLabel": "Stizzar e-mail supplementara {{email}}"
+      "additionalEmailDeleteAriaLabel": "Stizzar e-mail supplementara {{email}}",
+      "additionalEmailVerifiedPill": "Verifitgà",
+      "additionalEmailResendButton": "Trametter danovamain",
+      "additionalEmailResendSuccess": "E-mail da verificaziun tramessa.",
+      "additionalEmailResendFailed": "Impussibel da trametter l'e-mail da verificaziun. Empruvai anc ina giada.",
+      "additionalEmailResendAlreadyVerified": "Questa adressa d'e-mail è gia verifitgada.",
+      "additionalEmailResendAriaLabel": "Trametter danovamain l'e-mail da verificaziun a {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} è verifitgà"
     },
     "notifications": {
       "title": "Preferenzas da notificaziun",
@@ -292,5 +299,16 @@
     "linked": "Cognito collià",
     "notLinked": "Nagin conto Cognito",
     "tooltip": "Conto Cognito collià"
+  },
+  "verifyEmail": {
+    "title": "Confermai Vossa adressa d'e-mail",
+    "loading": "Vossa colliaziun da verificaziun vegn controllada…",
+    "confirmMessage": "Confermai che {{email}} è Vossa adressa d'e-mail.",
+    "confirmButton": "Confermar l'adressa d'e-mail",
+    "success": "Vossa adressa d'e-mail è vegnida confermada. Vus pudais serrar questa pagina.",
+    "alreadyVerified": "Questa adressa d'e-mail è gia confermada.",
+    "homeLink": "Ir a batbern.ch",
+    "invalidToken": "Questa colliaziun da verificaziun è nunvalida u scadida. Dumandai per plaschair ina nova en Vossas configuraziuns dal conto.",
+    "notFound": "Questa adressa d'e-mail n'è betg pli sin il profil al qual ella è vegnida agiuntada. Sche Vus l'avais agiuntada danovamain, dovrai la colliaziun da l'ultim e-mail da verificaziun."
   }
 }

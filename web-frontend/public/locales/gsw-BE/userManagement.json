@@ -42,10 +42,28 @@
       "additionalEmailRemoveConfirmCancel": "Abbräche",
       "additionalEmailDeleteFailed": "D zuesätzlechi E-Mail het nid chöne entfernt wärde. Bitte versuechs nomal.",
       "additionalEmailDeleteNotFound": "Die zuesätzlechi E-Mail isch nümme i dym Profil.",
-      "additionalEmailDeleteAriaLabel": "Zuesätzlechi E-Mail {{email}} entferne"
+      "additionalEmailDeleteAriaLabel": "Zuesätzlechi E-Mail {{email}} entferne",
+      "additionalEmailVerifiedPill": "Bestätigt",
+      "additionalEmailResendButton": "No einisch schicke",
+      "additionalEmailResendSuccess": "Bestätigungs-E-Mail gschickt.",
+      "additionalEmailResendFailed": "D'Bestätigungs-E-Mail het nid chönne gschickt wärde. Probier's bitte nomal.",
+      "additionalEmailResendAlreadyVerified": "Die E-Mail-Adrässe isch scho bestätigt.",
+      "additionalEmailResendAriaLabel": "Bestätigungs-E-Mail no einisch a {{email}} schicke",
+      "additionalEmailVerifiedAriaLabel": "{{email}} isch bestätigt"
     }
   },
   "actions": {
     "openMenu": "Aktionsmenü ufmache"
+  },
+  "verifyEmail": {
+    "title": "Bestätig dini E-Mail-Adrässe",
+    "loading": "Dyy Bestätigungs-Link wird prüeft…",
+    "confirmMessage": "Bestätig, dass {{email}} dini E-Mail-Adrässe isch.",
+    "confirmButton": "E-Mail-Adrässe bestätige",
+    "success": "Dini E-Mail-Adrässe isch bestätigt. Du chasch die Syte zuemache.",
+    "alreadyVerified": "Die E-Mail-Adrässe isch scho bestätigt.",
+    "homeLink": "Uf batbern.ch ga",
+    "invalidToken": "Dä Bestätigungs-Link isch ungültig oder abgloffe. Bitte foddere i de Konto-Yystellige e neue a.",
+    "notFound": "Die E-Mail-Adrässe isch nümme uf em Profil, wo si derzue gleit worde isch. Wenn du si nomal derzue gleit hesch, bruuch dr Link us em neuste Bestätigungs-E-Mail."
   }
 }

@@ -229,7 +229,14 @@
       "additionalEmailRemoveConfirmCancel": "Cancelar",
       "additionalEmailDeleteFailed": "No se ha podido eliminar este correo adicional. Inténtalo de nuevo.",
       "additionalEmailDeleteNotFound": "Este correo adicional ya no está en tu perfil.",
-      "additionalEmailDeleteAriaLabel": "Eliminar correo adicional {{email}}"
+      "additionalEmailDeleteAriaLabel": "Eliminar correo adicional {{email}}",
+      "additionalEmailVerifiedPill": "Verificado",
+      "additionalEmailResendButton": "Reenviar",
+      "additionalEmailResendSuccess": "Correo de verificación enviado.",
+      "additionalEmailResendFailed": "No se pudo enviar el correo de verificación. Inténtelo de nuevo.",
+      "additionalEmailResendAlreadyVerified": "Esta dirección de correo ya está verificada.",
+      "additionalEmailResendAriaLabel": "Reenviar el correo de verificación a {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} está verificado"
     },
     "notifications": {
       "title": "Preferencias de notificación",
@@ -292,5 +299,16 @@
     "linked": "Cognito vinculado",
     "notLinked": "Sin cuenta Cognito",
     "tooltip": "Cuenta de Cognito vinculada"
+  },
+  "verifyEmail": {
+    "title": "Confirme su dirección de correo electrónico",
+    "loading": "Comprobando su enlace de verificación…",
+    "confirmMessage": "Confirme que {{email}} es su dirección de correo electrónico.",
+    "confirmButton": "Confirmar dirección de correo",
+    "success": "Su dirección de correo ha sido confirmada. Puede cerrar esta página.",
+    "alreadyVerified": "Esta dirección de correo ya está confirmada.",
+    "homeLink": "Ir a batbern.ch",
+    "invalidToken": "Este enlace de verificación no es válido o ha caducado. Solicite uno nuevo en la configuración de su cuenta.",
+    "notFound": "Esta dirección de correo ya no está en el perfil al que se añadió. Si la volvió a añadir, utilice el enlace del correo de verificación más reciente."
   }
 }

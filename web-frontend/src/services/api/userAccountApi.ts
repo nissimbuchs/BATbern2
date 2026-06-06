@@ -390,6 +390,60 @@ export const deleteAdditionalEmail = async (email: string): Promise<void> => {
   await apiClient.delete(`${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`);
 };
 
+// =====================================================================
+// Additional-email verification (v2)
+// =====================================================================
+
+export interface AdditionalEmailVerificationCheck {
+  /** Masked email (e.g. in***@example.com). */
+  email: string;
+  verified: boolean;
+}
+
+export interface AdditionalEmailVerificationConfirm {
+  email: string;
+  verified: boolean;
+  alreadyVerified: boolean;
+}
+
+/**
+ * Additional-email verification (v2) — GET-check a token (no mutation). Public:
+ * the token IS the credential. Throws on invalid/expired (surface errorCode via
+ * the Axios error shape).
+ */
+export const checkAdditionalEmailVerification = async (
+  token: string
+): Promise<AdditionalEmailVerificationCheck> => {
+  const response = await apiClient.get<AdditionalEmailVerificationCheck>(
+    `${USER_API_PATH}/additional-emails/verify`,
+    { params: { token } }
+  );
+  return response.data;
+};
+
+/**
+ * Additional-email verification (v2) — POST-confirm a token (mutates). Public.
+ */
+export const confirmAdditionalEmailVerification = async (
+  token: string
+): Promise<AdditionalEmailVerificationConfirm> => {
+  const response = await apiClient.post<AdditionalEmailVerificationConfirm>(
+    `${USER_API_PATH}/additional-emails/verify`,
+    { token }
+  );
+  return response.data;
+};
+
+/**
+ * Additional-email verification (v2) — resend the verification email for one of
+ * the caller's own (unverified) additional emails. 204 on success.
+ */
+export const resendAdditionalEmailVerification = async (email: string): Promise<void> => {
+  await apiClient.post(
+    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}/resend-verification`
+  );
+};
+
 // Admin endpoints for uploading profile pictures for other users
 
 /**
