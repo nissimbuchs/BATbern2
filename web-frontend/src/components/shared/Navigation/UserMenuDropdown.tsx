@@ -43,15 +43,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   const { t, i18n } = useTranslation();
 
   const handleProfileClick = () => {
-    console.log('[UserMenuDropdown] Profile clicked, navigating to /account');
-    console.log('[UserMenuDropdown] navigate function:', navigate);
-    console.log('[UserMenuDropdown] Current location:', window.location.pathname);
-    try {
-      navigate('/account');
-      console.log('[UserMenuDropdown] Navigation called successfully');
-    } catch (error) {
-      console.error('[UserMenuDropdown] Navigation error:', error);
-    }
+    navigate('/account/profile');
     onClose();
   };
 
@@ -61,14 +53,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   };
 
   const handleSettingsClick = () => {
-    console.log('[UserMenuDropdown] Settings clicked, navigating to /account');
-    console.log('[UserMenuDropdown] navigate function:', navigate);
-    try {
-      navigate('/account');
-      console.log('[UserMenuDropdown] Navigation called successfully');
-    } catch (error) {
-      console.error('[UserMenuDropdown] Navigation error:', error);
-    }
+    navigate('/account/settings');
     onClose();
   };
 
@@ -136,6 +121,14 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         <ListItemText>{t('menu.profile')}</ListItemText>
       </MenuItem>
 
+      {/* Settings Menu Item */}
+      <MenuItem onClick={handleSettingsClick} role="menuitem">
+        <ListItemIcon>
+          <SettingsIcon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText>{t('menu.settings')}</ListItemText>
+      </MenuItem>
+
       {/* Administration Menu Item - organizer only (Story 10.1; Story 11.E.3 multi-role aware) */}
       {(user.roles ?? (user.role ? [user.role] : [])).includes('organizer') && (
         <MenuItem
@@ -149,14 +142,6 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
           <ListItemText>{t('menu.administration')}</ListItemText>
         </MenuItem>
       )}
-
-      {/* Settings Menu Item */}
-      <MenuItem onClick={handleSettingsClick} role="menuitem">
-        <ListItemIcon>
-          <SettingsIcon fontSize="small" />
-        </ListItemIcon>
-        <ListItemText>{t('menu.settings')}</ListItemText>
-      </MenuItem>
 
       {/* Language Switcher */}
       <Box sx={{ px: 2, py: 1.5 }}>

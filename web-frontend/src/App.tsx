@@ -709,9 +709,9 @@ function App() {
                       }
                     />
 
-                    {/* User Account Page - Story 2.6 */}
+                    {/* User Account Page - Story 2.6; :tab? = profile (default) | settings */}
                     <Route
-                      path="/account"
+                      path="/account/:tab?"
                       element={
                         <ProtectedRoute>
                           <AuthLayout>

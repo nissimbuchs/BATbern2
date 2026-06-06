@@ -4,7 +4,8 @@
  * Main page container with Profile and Settings tabs
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Box, Tabs, Tab, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
@@ -49,7 +50,11 @@ const UserAccountPage: React.FC = () => {
   const { user } = useAuth();
   console.log('[UserAccountPage] User:', user);
   const { t } = useTranslation('common');
-  const [activeTab, setActiveTab] = useState(0);
+  const navigate = useNavigate();
+  // Tab state lives in the URL (/account/profile | /account/settings) so both
+  // tabs are deep-linkable from the user menu; unknown or missing → profile.
+  const { tab } = useParams<{ tab?: string }>();
+  const activeTab = tab === 'settings' ? 1 : 0;
 
   const { data: profileData, isLoading, isError, error } = useUserProfile(user?.userId || '');
   console.log('[UserAccountPage] Profile data:', { profileData, isLoading, isError, error });
@@ -62,7 +67,7 @@ const UserAccountPage: React.FC = () => {
   );
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+    navigate(newValue === 1 ? '/account/settings' : '/account/profile', { replace: true });
   };
 
   if (isLoading) {
