@@ -10,7 +10,7 @@
  * - Generated types from OpenAPI spec (ADR-006)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   TextField,
   Button,
@@ -24,6 +24,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useEventType } from '@/hooks/useEventTypes';
 import { SchedulePreview } from './SchedulePreview';
+import { computeScheduleEndTime } from './scheduleTimeline';
 import type { components } from '@/types/generated/events-api.types';
 
 // Import generated types from OpenAPI spec (ADR-006 compliance)
@@ -73,6 +74,10 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // End time is read-only and derived from the scheduled timetable (start + slots +
+  // breaks/lunch + moderation), recomputed live as the start time or any duration changes.
+  const computedEndTime = useMemo(() => computeScheduleEndTime(formData), [formData]);
 
   // Populate form with current configuration when loaded
   useEffect(() => {
@@ -136,7 +141,9 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
 
     setIsSubmitting(true);
     try {
-      await onSave(formData);
+      // Persist the derived end time so downstream consumers (public event logistics,
+      // EventTimeResolver) read the same value the organizer sees in the preview.
+      await onSave({ ...formData, typicalEndTime: computedEndTime });
     } catch {
       setErrors({ general: t('form.eventTypeConfig.saveFailed') });
     } finally {
@@ -144,7 +151,7 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
     }
   };
 
-  const handleChange = (field: keyof FormData, value: number | boolean) => {
+  const handleChange = (field: keyof FormData, value: number | boolean | string | undefined) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear field-specific errors on change
     if (errors[field as keyof ValidationErrors]) {
@@ -249,6 +256,31 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
             fullWidth
             required
             inputProps={{ min: 1 }}
+          />
+        </Stack>
+
+        {/* Row 2b: Typical Start Time | Typical End Time
+            Editing these here is what keeps the values from being nulled on save
+            (an empty string is normalised to undefined below so the API leaves it unset). */}
+        <Stack direction="row" spacing={2}>
+          <TextField
+            label={t('form.eventTypeConfig.typicalStartTime')}
+            type="time"
+            value={formData.typicalStartTime ?? ''}
+            onChange={(e) => handleChange('typicalStartTime', e.target.value || undefined)}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ step: 300 }}
+          />
+          <TextField
+            label={t('form.eventTypeConfig.typicalEndTime')}
+            type="time"
+            value={computedEndTime}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            InputProps={{ readOnly: true }}
+            inputProps={{ step: 300 }}
+            helperText={t('form.eventTypeConfig.typicalEndTimeHint')}
           />
         </Stack>
 
