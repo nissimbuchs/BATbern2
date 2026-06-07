@@ -214,6 +214,11 @@ export default defineConfig({
             name: 'screencast-training',
             use: {
               browserName: 'chromium' as const,
+              // Safety net: a flaky interaction in this 14-min single-shot must FAIL FAST
+              // (and surface where), never hang indefinitely. Without these, a missed MUI
+              // click waits forever (observed multi-minute silent freezes).
+              actionTimeout: 45000,
+              navigationTimeout: 45000,
               viewport: { width: 1920, height: 1080 }, // Full HD viewport
               deviceScaleFactor: 1, // No zoom distortion
               isMobile: false,

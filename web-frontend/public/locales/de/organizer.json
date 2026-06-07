@@ -326,6 +326,7 @@
   "speakerDrawer": {
     "secondaryActions": {
       "decline": "Mit Grund absagen",
+      "acceptOnBehalf": "Zusage im Namen erfassen (ohne Einladung)",
       "reassignOrganizer": "Organisator neu zuweisen",
       "editDetails": "Details bearbeiten",
       "overrideState": "Status überschreiben"

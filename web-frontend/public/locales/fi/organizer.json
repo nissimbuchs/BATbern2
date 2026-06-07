@@ -563,6 +563,7 @@
   "speakerDrawer": {
     "secondaryActions": {
       "decline": "Decline with reason",
+      "acceptOnBehalf": "Hyväksy puhujan puolesta (ilman kutsua)",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
       "overrideState": "Override state"
