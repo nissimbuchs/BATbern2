@@ -98,7 +98,7 @@
     {
       "marker": "NARRATION_19",
       "description": "Referenten-Kandidaten hinzufügen",
-      "text": "[enthusiastic] Jetzt sammeln wir potenzielle Referenten für das gewählte Thema! [professional] In dieser Phase erstellen wir einen Pool von Kandidaten, die wir später kontaktieren werden. [pause] Wir fügen vier Referenten-Kandidaten hinzu. [strategic] Dies gibt uns ausreichend Optionen für die Kontaktaufnahme, falls nicht alle zusagen. [playful] Denn Referenten sind wie Katzen, manchmal sagen sie einfach nein, ohne Grund."
+      "text": "[enthusiastic] Jetzt sammeln wir potenzielle Referenten für das gewählte Thema! [professional] In dieser Phase erstellen wir einen Pool von Kandidaten, die wir später kontaktieren werden. [pause] Wir fügen fünf Referenten-Kandidaten hinzu. [strategic] Dies gibt uns ausreichend Optionen für die Kontaktaufnahme, falls nicht alle zusagen. [playful] Denn Referenten sind wie Katzen, manchmal sagen sie einfach nein, ohne Grund."
     },
     {
       "marker": "NARRATION_20",
@@ -113,22 +113,32 @@
     {
       "marker": "NARRATION_22",
       "description": "Referenten kontaktieren (Kontakt erfassen)",
-      "text": "[methodical] Jetzt kontaktieren wir systematisch alle Referenten-Kandidaten. [instructional] Für jeden Kandidaten klicken wir auf der Karte auf \"Kontakt erfassen\". [professional] Im Dialog wählen wir die Kontaktmethode, zum Beispiel E-Mail oder Telefon, und halten Notizen zur Antwort fest. [playful] Sonst fragt nächste Woche jemand: \"Haben wir den schon kontaktiert?\" Und niemand weiß es. [chuckling] Chaos vermieden! [satisfied] Die Karten wandern dabei automatisch in die Spalte \"Kontaktiert\"."
+      "text": "[methodical] Jetzt kontaktieren wir systematisch alle fünf Referenten-Kandidaten. [instructional] Für jeden Kandidaten klicken wir auf der Karte auf \"Kontakt erfassen\". [professional] Im Dialog wählen wir die Kontaktmethode, zum Beispiel E-Mail oder Telefon, und halten Notizen zur Antwort fest. [playful] Sonst fragt nächste Woche jemand: \"Haben wir den schon kontaktiert?\" Und niemand weiß es. [chuckling] Chaos vermieden! [satisfied] Die Karten wandern dabei automatisch in die Spalte \"Kontaktiert\"."
     },
     {
       "marker": "NARRATION_23",
       "description": "Referenten befördern (CONTACTED → READY)",
-      "text": "[positive] Drei Kandidaten haben positiv reagiert. [excited] Zeit, sie zu richtigen Referenten zu befördern! [instructional] Ein Klick auf \"Zum Speaker befördern\" öffnet die Detail-Ansicht. Dort legen wir für jeden Referenten ein Benutzerkonto mit Name und E-Mail-Adresse an. [informative] Damit erhält der Referent später Zugang zum Referenten-Portal. [playful] Das System erledigt die ganze Bürokratie im Hintergrund. [satisfied] Die Karten wandern in die Spalte \"Bereit\"."
+      "text": "[positive] Drei Kandidaten haben positiv reagiert. [excited] Zeit, sie zu richtigen Referenten zu befördern! [instructional] Ein Klick auf \"Zum Speaker befördern\" öffnet die Detail-Ansicht. Dort legen wir für Nissim, Baltisar und Andreas je ein Benutzerkonto mit Name und E-Mail-Adresse an. [informative] Damit erhalten sie später Zugang zum Referenten-Portal. [playful] Das System erledigt die ganze Bürokratie im Hintergrund. [satisfied] Die drei Karten wandern in die Spalte \"Bereit\"."
     },
     {
       "marker": "NARRATION_24",
-      "description": "Zusagen erfassen (READY → ACCEPTED)",
-      "text": "[confident] Jetzt erfassen wir die Zusagen. [informative] Normalerweise erhalten Referenten eine Einladung und antworten selbst im Referenten-Portal. [casual] Haben sie aber bereits mündlich zugesagt, erfassen wir das direkt: In der Detail-Ansicht wählen wir \"Zusage im Namen erfassen\" und geben eine kurze Begründung an. [pause] Drei Referenten sagen zu."
+      "description": "Zusage Nissim (READY → ACCEPTED)",
+      "text": "[confident] Jetzt erfassen wir die Zusagen. [informative] Normalerweise erhalten Referenten eine Einladung und antworten selbst im Referenten-Portal. [casual] Haben sie aber bereits mündlich zugesagt, erfassen wir das direkt. [instructional] Wir öffnen Nissims Karte, wählen \"Zusage im Namen erfassen\" und geben eine kurze Begründung an. [satisfied] Nissim ist dabei!"
     },
     {
       "marker": "NARRATION_24B",
-      "description": "Daniels Absage (CONTACTED → DECLINED)",
-      "text": "[playful] Und Daniel? [dramatic] Daniel hat leider keine Zeit. [casual] Ihn lehnen wir mit \"Mit Grund absagen\" ab — natürlich ebenfalls mit Begründung. [chuckling] Referenten sind eben wie Katzen."
+      "description": "Zusage Baltisar (READY → ACCEPTED)",
+      "text": "[cheerful] Weiter mit Baltisar von Galenica. [instructional] Auch seine Karte öffnen wir, wählen erneut \"Zusage im Namen erfassen\" und bestätigen mit einer kurzen Notiz. [playful] Zwei von drei — läuft wie geschmiert!"
+    },
+    {
+      "marker": "NARRATION_24C",
+      "description": "Zusage Andreas (READY → ACCEPTED)",
+      "text": "[enthusiastic] Und Andreas von der Mobiliar? [satisfied] Ebenfalls mit an Bord! [instructional] Auch seine Zusage erfassen wir im Namen, wieder mit kurzer Begründung. [excited] Damit haben wir drei zugesagte Referenten — genug, um den Abend zu füllen."
+    },
+    {
+      "marker": "NARRATION_24D",
+      "description": "Daniels Absage + Vanessa bleibt im Pool",
+      "text": "[playful] Und Daniel? [dramatic] Daniel hat leider keine Zeit. [casual] Ihn lehnen wir mit \"Mit Grund absagen\" ab — natürlich ebenfalls mit Begründung. [informative] Vanessa lassen wir bewusst noch als Kandidatin im Pool, falls wir später doch noch jemanden brauchen. [chuckling] Referenten sind eben wie Katzen."
     },
     {
       "marker": "NARRATION_25",
@@ -143,12 +153,12 @@
     {
       "marker": "NARRATION_27",
       "description": "Referenten veröffentlichen",
-      "text": "[pause] Nach der Inhaltseinreichung folgt die Qualitätsprüfung. [professional] Da wir jetzt die Inhalte haben, können wir die Referenten veröffentlichen. [instructional] Wir klicken auf \"Referenten veröffentlichen\". [excited] Und jetzt kommt's! [satisfied] Nun sind auf der öffentlichen Webseite nicht nur das Thema, sondern auch die zugesagten Referenten mit ihrem Thema ersichtlich. [cheerful] Die Welt kann es sehen!"
+      "text": "[professional] Die Inhalte sind eingereicht. [instructional] Als Nächstes schalten wir die Referenten öffentlich: Wir klicken auf \"Referenten veröffentlichen\". [excited] Und jetzt kommt's! [satisfied] Nun sind auf der öffentlichen Webseite nicht nur das Thema, sondern auch die zugesagten Referenten mit ihrem Vortrag ersichtlich. [cheerful] Die Welt kann es sehen!"
     },
     {
       "marker": "NARRATION_28",
       "description": "Präsentationen prüfen und genehmigen",
-      "text": "[professional] Zurück im Kanban prüfen wir nun jede eingereichte Präsentation. [instructional] Der Aktions-Button heißt diesmal \"Inhalt prüfen\". [playful] Wir spielen jetzt Qualitätskontrolle. [pause] Sieht gut aus, sieht gut aus, das auch. [confident] Wir genehmigen alle drei Präsentationen. [satisfied] Grünes Licht für alle!"
+      "text": "[pause] Und jetzt folgt die eigentliche Qualitätsprüfung. [professional] Zurück im Kanban prüfen wir jede eingereichte Präsentation. [instructional] Der Aktions-Button heißt diesmal \"Inhalt prüfen\". [playful] Wir spielen jetzt Qualitätskontrolle. [pause] Sieht gut aus, sieht gut aus, das auch. [confident] Wir genehmigen alle drei Präsentationen. [satisfied] Grünes Licht für alle!"
     },
     {
       "marker": "NARRATION_29",

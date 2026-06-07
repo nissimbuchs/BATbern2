@@ -11,8 +11,6 @@
  * ```
  */
 
-import { USER_FIRST_NAME, USER_LAST_NAME } from '../../helpers/test-data-factory';
-
 export const testConfig = {
   /**
    * Event Configuration
@@ -93,6 +91,18 @@ export const testConfig = {
       contactMethod: 'Persönlich',
       contactNotes: 'OK.',
     },
+    {
+      // 5th candidate — contacted but deliberately NOT promoted; stays CONTACTED in the pool
+      // to show a realistic "still open" card at the end (see declinedSpeaker / NARRATION_24D).
+      firstName: 'Vanessa Deubel',
+      lastName: '',
+      company: 'BKW',
+      expertise: 'SAP',
+      assignedUserId: null,
+      assignedUserName: 'Vanessa Deubel',
+      contactMethod: 'E-Mail',
+      contactNotes: 'Angefragt — überlegt es sich noch.',
+    },
   ],
 
   /**
@@ -130,34 +140,52 @@ export const testConfig = {
       notes: 'Leider keine Zeit dieses Mal.',
       speakerIndex: 3,
     },
+    {
+      cardName: 'Vanessa',
+      displayName: 'V Vanessa Deubel BKW SAP',
+      contactMethod: 'email' as const,
+      notes: 'Angefragt — überlegt es sich noch.',
+      speakerIndex: 4,
+    },
   ],
 
   /**
    * Speakers promoted CONTACTED → READY (creates a SPEAKER user account; provisions
    * Cognito out-of-band — Pattern N).
    *
-   * The created users are ALL named Bruno/Test: CUMS derives the username from
-   * `firstname.lastname`, so the names (not the email) are what makes the global-teardown
-   * `bruno.test%` sweep remove the CUMS rows after a run — "the names ARE the lever"
-   * (see e2e/helpers/test-data-factory.ts). The kanban card keeps the brainstormed
-   * speaker name visible as a caption, so name-based card lookup still works post-promote.
-   * The Cognito accounts are NOT swept (CUMS delete is DB-only) — manual cleanup.
-   * The email is generated per run via factory email() (@e2e.batbern.invalid — never
-   * deliverable).
+   * Real names are used so the tutorial video reads authentically (the kanban card shows
+   * the linked user's name once promoted). The created CUMS rows do NOT match the
+   * `bruno.test%` global sweep, so the spec's afterAll deletes them explicitly via
+   * `DELETE /api/v1/users/{username}` (organizer-authorized) — see the spec's afterAll.
+   * The Cognito accounts still leak (CUMS delete is DB-only) — documented manual sweep.
+   * Each `marker` is the per-speaker accept narration (NARRATION_24/24B/24C), so the
+   * voice talks through every accept instead of one segment covering all three.
    *
-   * Daniel is NOT promoted — he declines from CONTACTED, so no orphan placeholder
-   * session blocks agenda publishing.
+   * Daniel and Vanessa are NOT promoted — Daniel declines from CONTACTED, Vanessa stays
+   * CONTACTED — so neither creates an orphan placeholder session that blocks agenda publishing.
    */
   promotedSpeakers: [
-    { cardName: 'Nissim', user: { firstName: USER_FIRST_NAME, lastName: USER_LAST_NAME } },
-    { cardName: 'Balti', user: { firstName: USER_FIRST_NAME, lastName: USER_LAST_NAME } },
-    { cardName: 'Andreas', user: { firstName: USER_FIRST_NAME, lastName: USER_LAST_NAME } },
+    {
+      cardName: 'Nissim',
+      marker: 'NARRATION_24',
+      user: { firstName: 'Nissim', lastName: 'Buchs' },
+    },
+    {
+      cardName: 'Balti',
+      marker: 'NARRATION_24B',
+      user: { firstName: 'Baltisar', lastName: 'Oswald' },
+    },
+    {
+      cardName: 'Andreas',
+      marker: 'NARRATION_24C',
+      user: { firstName: 'Andreas', lastName: 'Grütter' },
+    },
   ],
 
   /** READY → ACCEPTED via drawer "Accept on behalf" (reason required, no invitation email). */
   acceptOnBehalfReason: 'Mündlich zugesagt (Screencast-Demo)',
 
-  /** Daniel declines from CONTACTED via the drawer "Decline with reason" action. */
+  /** Daniel declines from CONTACTED via the drawer "Decline with reason" action (NARRATION_24D). */
   declinedSpeaker: {
     cardName: 'Daniel',
     reason: 'Hat dieses Mal leider keine Zeit (Screencast-Demo)',

@@ -105,7 +105,7 @@ export class EventWorkflowPage {
    */
   async navigateToDashboard(): Promise<void> {
     await this.page.goto('http://localhost:8100/organizer/events?includeArchived=false');
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**
@@ -124,7 +124,7 @@ export class EventWorkflowPage {
 
     // Navigate to the app first
     await this.page.goto('http://localhost:8100/');
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
 
     // Inject auth token into localStorage
     if (authToken) {
@@ -276,7 +276,7 @@ export class EventWorkflowPage {
    */
   async submitEventForm(): Promise<void> {
     await this.saveAndCreateButton.click();
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
     await this.page.waitForTimeout(1000); // Wait for event to be created
   }
 
@@ -326,6 +326,6 @@ export class EventWorkflowPage {
     await this.navigateToTab('settings');
     await this.deleteEventButton.click();
     await this.confirmDeleteButton.click();
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
   }
 }

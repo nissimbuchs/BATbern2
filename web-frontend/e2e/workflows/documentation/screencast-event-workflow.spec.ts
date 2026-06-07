@@ -69,6 +69,12 @@ test.describe('Event Workflow Screencast for Training Video', () => {
     flushTimeline();
     console.log('\n🧹 Cleaning up test data...\n');
     if (authToken) {
+      // Promoted speakers use REAL names (for the video) but their emails are factory
+      // `@e2e.batbern.invalid` addresses — Playwright global-teardown's
+      // `cums/users_by_email prefix=@e2e.batbern.invalid` sweep deletes their CUMS rows
+      // regardless of name (verified: 3 user_profiles removed). So no per-user delete is
+      // needed here; just delete the event (cascades pool + sessions). The Cognito accounts
+      // still leak (CUMS delete is DB-only) — documented manual sweep.
       await cleanupAfterTests(authToken, testEventCode);
     }
     console.log('\n✅ Screencast Recording Complete\n');
@@ -124,7 +130,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        */
       logNarration('NARRATION_02', 'Dashboard und Authentifizierung');
       await eventPage.navigateToDashboard();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(eventPage.createEventButton).toBeVisible({ timeout: 10000 });
       console.log('    ✓ Dashboard loaded - authentication successful');
       await waitForNarration('NARRATION_02', page);
@@ -200,7 +206,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
 
       testEventCode = `BATbern${uniqueEventNumber}`;
       console.log(`    → Waiting for event creation to complete...`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(2000);
 
       const modalStillOpen = await eventPage.eventNumberField
@@ -226,7 +232,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        */
       logNarration('NARRATION_11', 'Zur Event-Detailseite navigieren');
       await page.goto(eventUrl);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
 
       const editButton = page.getByTestId('edit-event-button');
@@ -248,10 +254,10 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       const taskAssignments = [
         { taskName: 'Venue Booking', assignee: 'Nissim Buchs' },
         { taskName: 'Partner Meeting', assignee: 'Daniel Kühni' },
-        { taskName: 'Moderator Assignment', assignee: 'Andreas Grütter' },
+        { taskName: 'Moderator Assignment', assignee: 'Vanessa Deubel' },
         { taskName: 'Newsletter: Topic', assignee: 'Baltisar Oswald' },
-        { taskName: 'Newsletter: Speaker', assignee: 'Baltisar Oswald' },
-        { taskName: 'Newsletter: Final', assignee: 'Baltisar Oswald' },
+        { taskName: 'Newsletter: Speaker', assignee: 'Andreas Grütter' },
+        { taskName: 'Newsletter: Final', assignee: 'Vanessa Deubel' },
       ];
 
       for (let i = 0; i < taskAssignments.length; i++) {
@@ -263,10 +269,17 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         const assigneeSelect = taskRow.getByRole('combobox');
         await assigneeSelect.scrollIntoViewIfNeeded();
         await assigneeSelect.click();
-        await page.waitForTimeout(400);
 
-        await page.getByRole('option', { name: assignee }).first().click();
-        await page.waitForTimeout(400);
+        // Wait for the MUI menu, then scroll the target option into view INSIDE the listbox
+        // before clicking. Adding Vanessa lengthened the assignee list, so options below the
+        // fold are not actionable until scrolled — a plain click would otherwise wait forever.
+        const listbox = page.getByRole('listbox');
+        await expect(listbox).toBeVisible();
+        const option = listbox.getByRole('option', { name: assignee }).first();
+        await option.scrollIntoViewIfNeeded();
+        await option.click();
+        await expect(listbox).toBeHidden();
+        await page.waitForTimeout(300);
       }
 
       console.log(`    ✓ All ${taskAssignments.length} tasks assigned`);
@@ -290,7 +303,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_14', 'Aufgabenliste überprüfen');
       const tasksButton = page.getByTestId('tasks-button');
       await tasksButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       const filterCombobox = page.getByRole('combobox', {
@@ -305,7 +318,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await waitForNarration('NARRATION_14', page);
 
       await page.goto(eventUrl);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       const topicButton = page.getByTestId('select-topic-button');
@@ -344,7 +357,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.waitForTimeout(500);
 
       await topicPage.confirmSelection();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       await expect(page.getByTestId('speaker-name-field')).toBeVisible({
@@ -379,7 +392,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_20', 'Zur Kontaktierung übergehen');
       await expect(speakerPage.proceedToOutreachButton).toBeVisible({ timeout: 5000 });
       await speakerPage.proceedToOutreach();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
 
       await expect(speakerPage.getCardByName('Nissim')).toBeVisible({ timeout: 10000 });
@@ -425,7 +438,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         await paceWithinNarration('NARRATION_23', i, testConfig.promotedSpeakers.length, page);
         console.log(`    → Promoting ${promoted.cardName} to READY`);
         await page.goto(kanbanUrl);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         await speakerPage.promoteCreatingNewUser(promoted.cardName, {
           ...promoted.user,
           email: factoryEmail(),
@@ -436,38 +449,43 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await waitForNarration('NARRATION_23', page);
 
       /*
-       * NARRATION_24: [confident] Jetzt erfassen wir die Zusagen. [informative] Normalerweise erhalten Referenten eine Einladung und antworten selbst im Referenten-Portal. [casual] Haben sie aber bereits mündlich zugesagt, erfassen wir das direkt: In der Detail-Ansicht wählen wir "Zusage im Namen erfassen" und geben eine kurze Begründung an. [pause] Drei Referenten sagen zu.
+       * Each accept gets its OWN narration segment (NARRATION_24/24B/24C) so the voice talks
+       * through every accept — a single segment left ~55s of silent UI while accepts 2-3 ran.
+       * NARRATION_24:  [confident] Jetzt erfassen wir die Zusagen. [informative] Normalerweise erhalten Referenten eine Einladung und antworten selbst im Referenten-Portal. [casual] Haben sie aber bereits mündlich zugesagt, erfassen wir das direkt. [instructional] Wir öffnen Nissims Karte, wählen "Zusage im Namen erfassen" und geben eine kurze Begründung an. [satisfied] Nissim ist dabei!
+       * NARRATION_24B: [cheerful] Weiter mit Baltisar von Galenica. [instructional] Auch seine Karte öffnen wir, wählen erneut "Zusage im Namen erfassen" und bestätigen mit einer kurzen Notiz. [playful] Zwei von drei — läuft wie geschmiert!
+       * NARRATION_24C: [enthusiastic] Und Andreas von der Mobiliar? [satisfied] Ebenfalls mit an Bord! [instructional] Auch seine Zusage erfassen wir im Namen, wieder mit kurzer Begründung. [excited] Damit haben wir drei zugesagte Referenten — genug, um den Abend zu füllen.
        */
-      logNarration('NARRATION_24', 'Zusagen erfassen');
-      for (const [i, promoted] of testConfig.promotedSpeakers.entries()) {
-        await paceWithinNarration('NARRATION_24', i, testConfig.promotedSpeakers.length, page);
+      for (const promoted of testConfig.promotedSpeakers) {
+        logNarration(promoted.marker, `Zusage erfassen: ${promoted.cardName}`);
         console.log(`    → Accepting on behalf: ${promoted.cardName}`);
         await page.goto(kanbanUrl);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         await speakerPage.drawerStatusChange(
           promoted.cardName,
           'accept-on-behalf',
           testConfig.acceptOnBehalfReason
         );
         console.log(`    ✓ ${promoted.cardName} ACCEPTED`);
+        await waitForNarration(promoted.marker, page);
       }
-      await waitForNarration('NARRATION_24', page);
 
       /*
-       * NARRATION_24B: [playful] Und Daniel? [dramatic] Daniel hat leider keine Zeit. [casual] Ihn lehnen wir mit "Mit Grund absagen" ab — natürlich ebenfalls mit Begründung. [chuckling] Referenten sind eben wie Katzen.
+       * NARRATION_24D: [playful] Und Daniel? [dramatic] Daniel hat leider keine Zeit. [casual] Ihn lehnen wir mit "Mit Grund absagen" ab — natürlich ebenfalls mit Begründung. [informative] Vanessa lassen wir bewusst noch als Kandidatin im Pool, falls wir später doch noch jemanden brauchen. [chuckling] Referenten sind eben wie Katzen.
        */
-      logNarration('NARRATION_24B', 'Daniels Absage');
+      logNarration('NARRATION_24D', 'Daniels Absage + Vanessa bleibt im Pool');
       console.log(`    → Declining ${testConfig.declinedSpeaker.cardName}`);
       await page.goto(kanbanUrl);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await speakerPage.drawerStatusChange(
         testConfig.declinedSpeaker.cardName,
         'decline',
         testConfig.declinedSpeaker.reason
       );
-      console.log(`    ✓ ${testConfig.declinedSpeaker.cardName} DECLINED`);
+      console.log(
+        `    ✓ ${testConfig.declinedSpeaker.cardName} DECLINED (Vanessa stays CONTACTED)`
+      );
       console.log('\n✅ Phase B Complete\n');
-      await waitForNarration('NARRATION_24B', page);
+      await waitForNarration('NARRATION_24D', page);
 
       // ========================================
       // PHASE B.5: CONTENT SUBMISSION
@@ -479,7 +497,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        */
       logNarration('NARRATION_25', 'Thema veröffentlichen');
       await page.goto(`${eventUrl}?tab=publishing`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(500);
 
       await page.getByTestId('publish-topic-button').click();
@@ -495,7 +513,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         await paceWithinNarration('NARRATION_26', i, testConfig.presentations.length, page);
         console.log(`    → Submitting content for ${presentation.cardName}`);
         await page.goto(kanbanUrl);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         await speakerPage.enterContent(presentation.cardName, {
           title: presentation.title,
           abstract: presentation.abstract,
@@ -515,7 +533,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        */
       logNarration('NARRATION_27', 'Referenten veröffentlichen');
       await page.goto(`${eventUrl}?tab=publishing`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(500);
 
       await page.getByTestId('publish-speakers-button').click();
@@ -531,7 +549,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         await paceWithinNarration('NARRATION_28', i, testConfig.presentations.length, page);
         console.log(`    → Approving content of ${presentation.cardName}`);
         await page.goto(kanbanUrl);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         await speakerPage.approveContent(presentation.cardName);
         console.log(`    ✓ Content approved for ${presentation.cardName}`);
       }
@@ -673,14 +691,17 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_35', 'Workflow-Validierung überschreiben');
       const overrideCheckbox = page.getByTestId('override-workflow-validation-checkbox');
       await overrideCheckbox.waitFor({ state: 'visible', timeout: 5000 });
+      // Let the voice introduce the override ("Aktivieren Sie die Checkbox …") BEFORE we tick
+      // it, then leave the checked box on screen a moment so the viewer connects word to action.
+      await page.waitForTimeout(5000);
       await overrideCheckbox.check();
-      await page.waitForTimeout(500);
       console.log('    ✓ Override checkbox enabled');
+      await page.waitForTimeout(2500);
 
+      // Let the rest of NARRATION_35 (the "Notausgang" remark) play with the checked box still
+      // visible, THEN save — so the modal closes only after the explanation is complete.
+      await waitForNarration('NARRATION_35', page);
       await saveButtonFinal.click();
-      await page.waitForTimeout(2000);
-
-      // Wait for modal to close
       await page.waitForTimeout(2000);
 
       console.log('    ✓ Event archived successfully');
@@ -690,8 +711,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       console.log('    ✓ ARCHIVED badge visible');
 
       console.log('\n✅ Phase E Complete: Event archived successfully\n');
-      await page.waitForTimeout(2000);
-      await waitForNarration('NARRATION_35', page);
+      await page.waitForTimeout(1500);
 
       /*
        * NARRATION_36: [triumphant] Damit ist der vollständige Event-Workflow abgeschlossen! [excited] Von der ersten Idee bis zum Archiv, wir haben die ganze Reise gemeinsam gemacht! [satisfied] Sie sind jetzt ein Event-Management-Profi! [cheerful] Vielen Dank für Ihre Aufmerksamkeit! [playful] Und denken Sie daran: Events planen macht Spaß, [chuckling] zumindest mit der richtigen Software! [laughing] Tschüss!
