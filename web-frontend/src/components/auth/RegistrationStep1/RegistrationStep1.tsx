@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useFormContext } from 'react-hook-form';
 import {
   Box,
+  Divider,
   TextField,
   IconButton,
   InputAdornment,
@@ -26,7 +27,15 @@ import {
   LinearProgress,
   Button,
 } from '@mui/material';
-import { Visibility, VisibilityOff, CheckCircle, RadioButtonUnchecked } from '@mui/icons-material';
+import {
+  Visibility,
+  VisibilityOff,
+  CheckCircle,
+  RadioButtonUnchecked,
+  Google,
+} from '@mui/icons-material';
+import { useFeature } from '@/contexts/useFeature';
+import { authService } from '@/services/auth/authService';
 import * as passwordStrength from '../../../utils/passwordStrength/passwordStrength';
 
 const { checkPasswordRequirements, calculatePasswordStrength } = passwordStrength;
@@ -45,6 +54,9 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
   const { t, i18n } = useTranslation('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // Story 12.9 follow-up: same flag-gated Google SSO entry as LoginForm — registering
+  // via Google skips the whole wizard (JIT provisioning + ToS consent gate handle the rest).
+  const ssoEnabled = useFeature('sso');
 
   const {
     register,
@@ -165,6 +177,22 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
       <Typography variant="h5" gutterBottom>
         {t('register.step1.title')}
       </Typography>
+
+      {ssoEnabled && (
+        <>
+          <Button
+            variant="outlined"
+            fullWidth
+            startIcon={<Google />}
+            onClick={() => authService.signInWithFederated('Google')}
+            sx={{ mt: 1, mb: 1 }}
+            data-testid="register-with-google"
+          >
+            {t('login.continueWithGoogle')}
+          </Button>
+          <Divider sx={{ my: 2 }}>{t('login.orDivider')}</Divider>
+        </>
+      )}
 
       {familyNameFirst ? (
         <>

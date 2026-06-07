@@ -229,7 +229,14 @@
       "additionalEmailRemoveConfirmCancel": "キャンセル",
       "additionalEmailDeleteFailed": "追加のメールアドレスを削除できませんでした。もう一度お試しください。",
       "additionalEmailDeleteNotFound": "この追加のメールアドレスはプロフィールにありません。",
-      "additionalEmailDeleteAriaLabel": "追加のメールアドレス {{email}} を削除"
+      "additionalEmailDeleteAriaLabel": "追加のメールアドレス {{email}} を削除",
+      "additionalEmailVerifiedPill": "確認済み",
+      "additionalEmailResendButton": "再送信",
+      "additionalEmailResendSuccess": "確認メールを送信しました。",
+      "additionalEmailResendFailed": "確認メールを送信できませんでした。もう一度お試しください。",
+      "additionalEmailResendAlreadyVerified": "このメールアドレスはすでに確認済みです。",
+      "additionalEmailResendAriaLabel": "{{email}} に確認メールを再送信",
+      "additionalEmailVerifiedAriaLabel": "{{email}} は確認済みです"
     },
     "notifications": {
       "title": "通知設定",
@@ -292,5 +299,16 @@
     "linked": "Cognito連携済み",
     "notLinked": "Cognitoアカウントなし",
     "tooltip": "Cognitoアカウントあり"
+  },
+  "verifyEmail": {
+    "title": "メールアドレスを確認してください",
+    "loading": "確認リンクを確認しています…",
+    "confirmMessage": "{{email}} があなたのメールアドレスであることを確認してください。",
+    "confirmButton": "メールアドレスを確認",
+    "success": "メールアドレスが確認されました。このページを閉じてかまいません。",
+    "alreadyVerified": "このメールアドレスはすでに確認済みです。",
+    "homeLink": "batbern.ch へ移動",
+    "invalidToken": "この確認リンクは無効または期限切れです。アカウント設定から新しいリンクをリクエストしてください。",
+    "notFound": "このメールアドレスは、追加された元のプロフィールにはもう登録されていません。再度追加した場合は、最新の確認メールのリンクをご利用ください。"
   }
 }

@@ -393,6 +393,64 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/me/additional-emails/{email}/resend-verification': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resend the verification email for an additional email address
+     * @description Additional-email verification v2 — re-dispatch the signed verification
+     *     link to one of the caller's own (still unverified) additional emails.
+     *     Idempotent in effect: a 204 means a fresh email was queued. The token is
+     *     regenerated on each call (stateless HMAC JWT, 48h TTL).
+     */
+    post: operations['resendAdditionalEmailVerification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/additional-emails/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check an additional-email verification token (no mutation)
+     * @description Additional-email verification v2 — public, token-credentialed pre-flight
+     *     check used by the `/verify-email` landing page. Validates the token's
+     *     signature + expiry and returns the (masked) email and its current
+     *     verification status WITHOUT mutating any state. Mail-scanner prefetches
+     *     of the link land here (GET) and never confirm; the actual confirm is a
+     *     separate POST. No JWT — the token IS the credential.
+     */
+    get: operations['checkAdditionalEmailVerification'];
+    put?: never;
+    /**
+     * Confirm an additional-email verification token (mutates)
+     * @description Additional-email verification v2 — public, token-credentialed confirm.
+     *     POST-only so mail-scanner prefetches (GET) cannot accidentally verify.
+     *     On success sets `verified_at` and returns the masked email. Idempotent:
+     *     a token for an already-verified row returns 200 with
+     *     `alreadyVerified: true`. If the underlying row was deleted (or re-added
+     *     with a new id) since the token was issued, returns 404. No JWT — the
+     *     token IS the credential.
+     */
+    post: operations['confirmAdditionalEmailVerification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/{username}/roles': {
     parameters: {
       query?: never;
@@ -1013,6 +1071,46 @@ export interface components {
       email: string;
       /** @example Hostpoint shared */
       label?: string | null;
+    };
+    /**
+     * @description Additional-email verification v2 — GET-check response. Returns the masked
+     *     email and current verification status without mutating state.
+     */
+    AdditionalEmailVerificationCheckResponse: {
+      /**
+       * @description Masked form of the additional email (e.g. `in***@example.com`). The
+       *     full address is never returned on the public verify path.
+       * @example in***@berner-architekten-treffen.ch
+       */
+      email: string;
+      /**
+       * @description True if the row's verified_at is already set.
+       * @example false
+       */
+      verified: boolean;
+    };
+    ConfirmAdditionalEmailVerificationRequest: {
+      /** @description The signed verification token from the email link. */
+      token: string;
+    };
+    /** @description Additional-email verification v2 — POST-confirm response. */
+    AdditionalEmailVerificationConfirmResponse: {
+      /**
+       * @description Masked form of the additional email.
+       * @example in***@berner-architekten-treffen.ch
+       */
+      email: string;
+      /**
+       * @description Always true after a successful confirm.
+       * @example true
+       */
+      verified: boolean;
+      /**
+       * @description True when the row was already verified before this call (idempotent
+       *     re-confirm); false when this call set verified_at.
+       * @example false
+       */
+      alreadyVerified: boolean;
     };
     UserPreferences: {
       /**
@@ -2156,6 +2254,130 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       /** @description No matching additional email on the caller's profile. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  resendAdditionalEmailVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description URL-encoded email address. Case-insensitive match against the caller's
+         *     additional emails.
+         * @example info@berner-architekten-treffen.ch
+         */
+        email: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A fresh verification email was dispatched. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No matching additional email on the caller's profile. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description The email is already verified. Error code: `ALREADY_VERIFIED`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  checkAdditionalEmailVerification: {
+    parameters: {
+      query: {
+        /** @description The signed verification token from the email link. */
+        token: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Token is valid; returns masked email + status. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdditionalEmailVerificationCheckResponse'];
+        };
+      };
+      /** @description Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  confirmAdditionalEmailVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmAdditionalEmailVerificationRequest'];
+      };
+    };
+    responses: {
+      /** @description Email verified (or already verified). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdditionalEmailVerificationConfirmResponse'];
+        };
+      };
+      /** @description Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description The additional-email row referenced by the token no longer exists
+       *     (deleted or re-added with a new id since issuance).
+       */
       404: {
         headers: {
           [name: string]: unknown;

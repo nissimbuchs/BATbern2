@@ -56,6 +56,19 @@ company, and history all remain intact. The user can subsequently sign in with *
 **or** Google. Without this, Cognito's email sign-in alias would raise `AliasExistsException` or
 orphan the user's roles under a new `sub`.
 
+**Amendment (2026-06-06) — link via verified additional email.** The email match above
+extends to **verified additional emails** (`user_additional_emails.verified_at IS NOT NULL`,
+Story A). When the primary `user_profiles.email` lookup finds nothing, `PreSignUp_ExternalProvider`
+falls back to a verified additional-email lookup; on a hit whose owner has a `cognito_user_id`, the
+**same `AdminLinkProviderForUser`** merge runs (metric `FederatedUserLinkedViaAdditionalEmail`).
+The fallback is **double-gated**: the DB row must be verified **and** the IdP must assert
+`email_verified='true'` (Cognito sends this as a string). An owner with no `cognito_user_id` is
+not linked (no destination) and falls through. As before, the federated path **never throws**.
+A defensive twin in `JITUserProvisioningInterceptor` guards against a missed link: before
+JIT-creating a user it checks `findVerifiedByEmailIgnoreCase`, and on a hit **skips creation**
+(WARN, masked email) rather than producing a duplicate — without resolving the request to the
+owner or touching the owner's `cognito_user_id` (the real link belongs to PreSignUp).
+
 ### D4 — Brand-new Google users auto-provision as ATTENDEE
 A Google identity with no matching account is created with the default **ATTENDEE** role
 (consistent with existing self-registration). Organizers promote via the existing role workflows.

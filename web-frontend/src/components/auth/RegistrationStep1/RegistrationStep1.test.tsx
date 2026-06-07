@@ -12,12 +12,47 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
 import { FormProvider, useForm } from 'react-hook-form';
 import i18n from '@/i18n/config';
+import { ConfigProvider } from '@/contexts/ConfigContext';
+import type { AppConfig } from '@/config/runtime-config';
+
+// Mock authService (the Google SSO button calls authService.signInWithFederated).
+// vi.hoisted is required because the mock factory references the fn eagerly.
+const mockSignInWithFederated = vi.hoisted(() => vi.fn());
+vi.mock('@/services/auth/authService', () => ({
+  authService: { signInWithFederated: mockSignInWithFederated },
+}));
 
 // Create theme for MUI components
 const theme = createTheme();
 
-// Wrapper component for FormProvider
-const FormWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Mock config — `features.sso` gates the "Continue with Google" button
+const mockConfig: AppConfig = {
+  environment: 'development',
+  apiBaseUrl: 'http://localhost:8080/api/v1',
+  cognito: {
+    userPoolId: 'eu-central-1_XXXXXXXXX',
+    clientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX',
+    region: 'eu-central-1',
+  },
+  features: {
+    notifications: true,
+    analytics: false,
+    pwa: false,
+    turnstile: false,
+    sso: false,
+  },
+};
+
+const ssoOnConfig: AppConfig = {
+  ...mockConfig,
+  features: { ...mockConfig.features, sso: true },
+};
+
+// Wrapper component for FormProvider (+ ConfigProvider for the useFeature('sso') gate)
+const FormWrapper: React.FC<{ children: React.ReactNode; config?: AppConfig }> = ({
+  children,
+  config = mockConfig,
+}) => {
   const methods = useForm({
     defaultValues: {
       firstName: '',
@@ -30,11 +65,13 @@ const FormWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   });
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <ThemeProvider theme={theme}>
-        <FormProvider {...methods}>{children}</FormProvider>
-      </ThemeProvider>
-    </I18nextProvider>
+    <ConfigProvider config={config}>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider theme={theme}>
+          <FormProvider {...methods}>{children}</FormProvider>
+        </ThemeProvider>
+      </I18nextProvider>
+    </ConfigProvider>
   );
 };
 
@@ -456,5 +493,55 @@ describe('RegistrationStep1 Component', () => {
     expect(family.compareDocumentPosition(given) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     await i18n.changeLanguage('en');
+  });
+
+  // "Continue with Google" on the registration form, gated on features.sso —
+  // same entry point as LoginForm so registering does not require the 2-step wizard.
+  describe('Continue with Google button (features.sso)', () => {
+    it('should_renderGoogleButton_when_ssoFeatureEnabled', async () => {
+      await act(async () => {
+        render(
+          <FormWrapper config={ssoOnConfig}>
+            <RegistrationStep1 onContinue={mockOnContinue} />
+          </FormWrapper>
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('register-with-google')).toBeInTheDocument();
+      });
+    });
+
+    it('should_notRenderGoogleButton_when_ssoFeatureDisabled', async () => {
+      await act(async () => {
+        render(
+          <FormWrapper>
+            <RegistrationStep1 onContinue={mockOnContinue} />
+          </FormWrapper>
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('register-with-google')).not.toBeInTheDocument();
+    });
+
+    it('should_callSignInWithFederatedGoogle_when_googleButtonClicked', async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        render(
+          <FormWrapper config={ssoOnConfig}>
+            <RegistrationStep1 onContinue={mockOnContinue} />
+          </FormWrapper>
+        );
+      });
+
+      const googleButton = await screen.findByTestId('register-with-google');
+      await user.click(googleButton);
+
+      expect(mockSignInWithFederated).toHaveBeenCalledTimes(1);
+      expect(mockSignInWithFederated).toHaveBeenCalledWith('Google');
+    });
   });
 });

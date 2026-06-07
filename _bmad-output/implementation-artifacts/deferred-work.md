@@ -210,3 +210,20 @@
 
 ## 2026-06-05 — from spec-organizer-mobile-responsiveness-2 review
 - `web-frontend/src/pages/organizer/EventManagementAdminPage.tsx:64` — pre-existing: `?tab=<non-numeric>` deep link yields `Number()=NaN` → no tab content renders and (since round 2) the mobile BottomNavigation selects nothing. Guard: `Number.isFinite(n) ? clamp(n,0,8) : 0`.
+
+## Deferred from: spec-additional-email-verification (2026-06-06) — Story B queued next
+
+**Google SSO login via verified additional email** (implement immediately after Story A merges; user-approved scope):
+- `infrastructure/lib/lambda/triggers/pre-signup.ts` (PreSignUp_ExternalProvider, lines ~91-205): after the primary-email `LOWER(email)` match on `user_profiles`, add fallback lookup on `user_additional_emails` gated on `verified_at IS NOT NULL` AND IdP claim `email_verified=true`; on match → `AdminLinkProviderForUser` to owning user (same as primary path). Trigger must never throw (503s all auth).
+- `services/company-user-management-service/.../interceptor/JITUserProvisioningInterceptor.java` (~lines 140-160): same verified-additional-email fallback before JIT-creating a new user.
+- Tests: Lambda handler unit tests importing/running the handler (mandatory rule); CUMS integration tests for JIT fallback.
+
+## Deferred from: review of spec-additional-email-verification (2026-06-06)
+
+- **SES IAM grant includes `identity/*` wildcard** — both `partner-coordination-stack.ts:99-103` (origin of the pattern) and the new grant in `company-management-stack.ts` carry a third resource ARN `identity/*` that negates the scoped domain ARNs. Tighten both stacks together after verifying which identity ARNs SES sends actually require (test in staging; sending uses From `noreply@batbern.ch` → `identity/batbern.ch` should suffice).
+- **No cooldown/rate-limit on `POST /me/additional-emails/{email}/resend-verification`** — authenticated user can spam SES sends to their registered addresses. Add a per-row 60s cooldown (compare token issue time or a lightweight in-memory Caffeine cache) if abuse is observed.
+
+## Deferred from: review of spec-sso-link-verified-additional-email (2026-06-06)
+
+- **Primary-email federated linking has no `email_verified` gate** — `pre-signup.ts` links a federated identity to a matching `user_profiles.email` WITHOUT checking the IdP's `email_verified` attribute (pre-existing Epic 12 behavior; the new additional-email fallback IS gated). Low risk while Google is the only IdP (always verified); MUST be hardened before Apple/generic OIDC lands (backlog Story 12.10) — an IdP asserting an arbitrary unverified email could link into a victim's account.
+- **`AdminLinkProviderForUser` "already linked" not distinguished from real failures** — a concurrent sign-in/retry throws `InvalidParameterException` and pollutes the `PreSignUpFailure` metric. `post-authentication.ts:105` already special-cases this; mirror that in `pre-signup.ts` for both linking paths.

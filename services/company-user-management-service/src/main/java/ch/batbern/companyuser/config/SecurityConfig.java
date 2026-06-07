@@ -76,6 +76,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Local-dev email inbox (DevEmailController, @Profile("local") only)
+                .requestMatchers("/dev/emails/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
@@ -88,6 +90,9 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
                 // Story 10.8a: Public presentation settings (moderator page)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
+                // Additional-email verification (v2): public token-credentialed verify endpoints
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/users/additional-emails/verify").permitAll()
                 // Public user profile endpoint (GET only for service-to-service calls from localhost)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/*").permitAll()
                 // W2.2: Watch pairing endpoints — unauthenticated (code/token IS the credential)
@@ -132,6 +137,13 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
                 // Story 10.8a: Public presentation settings (moderator page)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
+                // Additional-email verification (v2): public token-credentialed verify endpoints.
+                // MUST precede both the /api/v1/users/me authenticated rule and the
+                // /api/v1/users/* VPC rule (the path has two segments after /users/, so it
+                // would not match the single-segment "*" wildcard anyway — but listed first
+                // to be unambiguous and immune to future matcher reordering).
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/users/additional-emails/verify").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
                 // Service-to-service: Allow user profile lookups from VPC internal network
@@ -194,6 +206,9 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
                 // Story 10.8a: Public presentation settings (moderator page)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
+                // Additional-email verification (v2): public token-credentialed verify endpoints
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/users/additional-emails/verify").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
                 // Test environment: Enforce authentication for all user endpoints

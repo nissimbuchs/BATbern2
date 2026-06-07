@@ -203,7 +203,14 @@
       "additionalEmailRemoveConfirmCancel": "Cancel",
       "additionalEmailDeleteFailed": "Failed to remove this additional email. Please try again.",
       "additionalEmailDeleteNotFound": "This additional email is no longer on your profile.",
-      "additionalEmailDeleteAriaLabel": "Remove additional email {{email}}"
+      "additionalEmailDeleteAriaLabel": "Remove additional email {{email}}",
+      "additionalEmailVerifiedPill": "Verified",
+      "additionalEmailResendButton": "Resend",
+      "additionalEmailResendSuccess": "Verification email sent.",
+      "additionalEmailResendFailed": "Could not send the verification email. Please try again.",
+      "additionalEmailResendAlreadyVerified": "This email is already verified.",
+      "additionalEmailResendAriaLabel": "Resend verification email to {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} is verified"
     },
     "notifications": {
       "title": "Notification Preferences",
@@ -292,5 +299,16 @@
         "WAITLISTED": "Waitlisted"
       }
     }
+  },
+  "verifyEmail": {
+    "title": "Confirm your email address",
+    "loading": "Checking your verification link…",
+    "confirmMessage": "Confirm that {{email}} is your email address.",
+    "confirmButton": "Confirm email address",
+    "success": "Your email address has been confirmed. You can close this page.",
+    "alreadyVerified": "This email address is already confirmed.",
+    "homeLink": "Go to batbern.ch",
+    "invalidToken": "This verification link is invalid or has expired. Please request a new one from your account settings.",
+    "notFound": "This email address is no longer on the profile it was added to. If you re-added it, use the link from the newest verification email."
   }
 }

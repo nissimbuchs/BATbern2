@@ -41,16 +41,18 @@ describe('devEmailService', () => {
   beforeEach(() => vi.clearAllMocks());
 
   describe('fetchAll', () => {
-    it('merges emails from EMS and PCS, sorted newest first, tagged with source URL', async () => {
+    it('merges emails from EMS, PCS and CUMS, sorted newest first, tagged with source URL', async () => {
       mockFetch
         .mockResolvedValueOnce({ ok: true, json: async () => [EMS_EMAIL] }) // EMS
-        .mockResolvedValueOnce({ ok: true, json: async () => [PCS_EMAIL] }); // PCS
+        .mockResolvedValueOnce({ ok: true, json: async () => [PCS_EMAIL] }) // PCS
+        .mockResolvedValueOnce({ ok: true, json: async () => [] }); // CUMS (empty)
 
       const result = await devEmailService.fetchAll();
 
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8002/dev/emails'));
       expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8004/dev/emails'));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8001/dev/emails'));
       // PCS email is newer → should come first
       expect(result[0].id).toBe('pcs-1');
       expect(result[0]._sourceBaseUrl).toContain('8004');
@@ -100,16 +102,19 @@ describe('devEmailService', () => {
   });
 
   describe('clearAll', () => {
-    it('sends DELETE to both EMS and PCS', async () => {
+    it('sends DELETE to EMS, PCS and CUMS', async () => {
       mockFetch.mockResolvedValue({ ok: true, status: 204 });
 
       await devEmailService.clearAll();
 
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8002/dev/emails'), {
         method: 'DELETE',
       });
       expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8004/dev/emails'), {
+        method: 'DELETE',
+      });
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8001/dev/emails'), {
         method: 'DELETE',
       });
     });

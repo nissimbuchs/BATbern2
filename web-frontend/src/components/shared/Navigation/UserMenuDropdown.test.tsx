@@ -248,6 +248,7 @@ describe('UserMenuDropdown', () => {
       }
 
       await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/account/profile');
         expect(mockOnClose).toHaveBeenCalled();
       });
     });
@@ -273,6 +274,7 @@ describe('UserMenuDropdown', () => {
       }
 
       await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/account/settings');
         expect(mockOnClose).toHaveBeenCalled();
       });
     });

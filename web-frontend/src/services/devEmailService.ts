@@ -2,12 +2,14 @@
  * Dev-only email service for the local email inbox.
  * Aggregates captured emails from all services that have a DevEmailController.
  *
- * Currently: Event Management Service (EMS, :8002) + Partner Coordination Service (PCS, :8004).
+ * Currently: Event Management Service (EMS, :8002) + Partner Coordination Service (PCS, :8004)
+ * + Company/User Management Service (CUMS, :8001 — additional-email verification mails).
  * Only used by DevEmailInboxPage (accessible at /dev/emails in local dev).
  */
 
 const EMS_BASE = `http://localhost:${import.meta.env.VITE_EMS_PORT ?? 8002}`;
 const PCS_BASE = `http://localhost:${import.meta.env.VITE_PCS_PORT ?? 8004}`;
+const CUMS_BASE = `http://localhost:${import.meta.env.VITE_CUMS_PORT ?? 8001}`;
 
 export interface CapturedEmail {
   id: string;
@@ -45,12 +47,13 @@ async function fetchFromService(baseUrl: string): Promise<CapturedEmailWithSourc
 
 export const devEmailService = {
   fetchAll: async (): Promise<CapturedEmailWithSource[]> => {
-    const [emsEmails, pcsEmails] = await Promise.all([
+    const [emsEmails, pcsEmails, cumsEmails] = await Promise.all([
       fetchFromService(EMS_BASE),
       fetchFromService(PCS_BASE),
+      fetchFromService(CUMS_BASE),
     ]);
     // Merge and sort newest first
-    return [...emsEmails, ...pcsEmails].sort(
+    return [...emsEmails, ...pcsEmails, ...cumsEmails].sort(
       (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime()
     );
   },
@@ -63,6 +66,7 @@ export const devEmailService = {
     await Promise.all([
       fetch(`${EMS_BASE}/dev/emails`, { method: 'DELETE' }),
       fetch(`${PCS_BASE}/dev/emails`, { method: 'DELETE' }).catch(() => undefined),
+      fetch(`${CUMS_BASE}/dev/emails`, { method: 'DELETE' }).catch(() => undefined),
     ]);
   },
 

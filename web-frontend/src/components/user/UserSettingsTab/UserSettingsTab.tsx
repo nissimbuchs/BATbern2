@@ -43,6 +43,7 @@ import type { AdditionalEmail, UserPreferences, UserSettings } from '@/types/use
 import {
   useAddAdditionalEmail,
   useDeleteAdditionalEmail,
+  useResendVerification,
   useUpdateUserPreferences,
   useUpdateUserSettings,
 } from '@/hooks/useUserAccount/useUserAccount';
@@ -92,6 +93,7 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
   const { isMobile } = useBreakpoints();
   const addMutation = useAddAdditionalEmail();
   const deleteMutation = useDeleteAdditionalEmail();
+  const resendMutation = useResendVerification();
   const [emailInput, setEmailInput] = useState('');
   const [labelInput, setLabelInput] = useState('');
   const [inlineError, setInlineError] = useState<string | null>(null);
@@ -198,6 +200,35 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
     }
   }
 
+  async function handleResend(email: string) {
+    // MUI <Link component="button"> does not reliably honour the `disabled` prop, so a
+    // rapid double-click could fire two resend requests (and two emails). Guard the
+    // handler explicitly while a resend is in flight.
+    if (resendMutation.isPending) {
+      return;
+    }
+    try {
+      await resendMutation.mutateAsync(email);
+      setToast({
+        message: t('settings.account.additionalEmailResendSuccess'),
+        severity: 'success',
+      });
+    } catch (err) {
+      const code = readErrorCode(err);
+      if (code === 'ALREADY_VERIFIED') {
+        setToast({
+          message: t('settings.account.additionalEmailResendAlreadyVerified'),
+          severity: 'error',
+        });
+      } else {
+        setToast({
+          message: t('settings.account.additionalEmailResendFailed'),
+          severity: 'error',
+        });
+      }
+    }
+  }
+
   return (
     <Box sx={{ mt: 4 }} data-testid="additional-emails-section">
       <Typography variant="subtitle1" gutterBottom>
@@ -232,11 +263,42 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
                 primary={
                   <Stack direction="row" spacing={1} alignItems="center">
                     <span>{entry.email}</span>
-                    {entry.verifiedAt === null && (
+                    {entry.verifiedAt === null ? (
+                      <>
+                        <Chip
+                          size="small"
+                          color="warning"
+                          label={t('settings.account.additionalEmailUnverifiedPill')}
+                          data-testid={`additional-email-unverified-${entry.email}`}
+                        />
+                        <Link
+                          component="button"
+                          type="button"
+                          variant="caption"
+                          underline="always"
+                          data-testid={`additional-email-resend-${entry.email}`}
+                          aria-label={t('settings.account.additionalEmailResendAriaLabel', {
+                            email: entry.email,
+                          })}
+                          aria-disabled={resendMutation.isPending}
+                          onClick={() => handleResend(entry.email)}
+                          sx={{
+                            pointerEvents: resendMutation.isPending ? 'none' : 'auto',
+                            opacity: resendMutation.isPending ? 0.5 : 1,
+                          }}
+                        >
+                          {t('settings.account.additionalEmailResendButton')}
+                        </Link>
+                      </>
+                    ) : (
                       <Chip
                         size="small"
-                        label={t('settings.account.additionalEmailUnverifiedPill')}
-                        data-testid={`additional-email-unverified-${entry.email}`}
+                        color="success"
+                        label={t('settings.account.additionalEmailVerifiedPill')}
+                        data-testid={`additional-email-verified-${entry.email}`}
+                        aria-label={t('settings.account.additionalEmailVerifiedAriaLabel', {
+                          email: entry.email,
+                        })}
                       />
                     )}
                   </Stack>

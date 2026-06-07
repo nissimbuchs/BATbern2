@@ -229,7 +229,14 @@
       "additionalEmailRemoveConfirmCancel": "Peruuta",
       "additionalEmailDeleteFailed": "Lisäsähköpostin poistaminen epäonnistui. Yritä uudelleen.",
       "additionalEmailDeleteNotFound": "Tämä lisäsähköposti ei ole enää profiilissasi.",
-      "additionalEmailDeleteAriaLabel": "Poista lisäsähköposti {{email}}"
+      "additionalEmailDeleteAriaLabel": "Poista lisäsähköposti {{email}}",
+      "additionalEmailVerifiedPill": "Vahvistettu",
+      "additionalEmailResendButton": "Lähetä uudelleen",
+      "additionalEmailResendSuccess": "Vahvistusviesti lähetetty.",
+      "additionalEmailResendFailed": "Vahvistusviestin lähettäminen epäonnistui. Yritä uudelleen.",
+      "additionalEmailResendAlreadyVerified": "Tämä sähköpostiosoite on jo vahvistettu.",
+      "additionalEmailResendAriaLabel": "Lähetä vahvistusviesti uudelleen osoitteeseen {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} on vahvistettu"
     },
     "notifications": {
       "title": "Ilmoitusasetukset",
@@ -292,5 +299,16 @@
     "linked": "Cognito yhdistetty",
     "notLinked": "Ei Cognito-tiliä",
     "tooltip": "Cognito-tili yhdistetty"
+  },
+  "verifyEmail": {
+    "title": "Vahvista sähköpostiosoitteesi",
+    "loading": "Tarkistetaan vahvistuslinkkiäsi…",
+    "confirmMessage": "Vahvista, että {{email}} on sähköpostiosoitteesi.",
+    "confirmButton": "Vahvista sähköpostiosoite",
+    "success": "Sähköpostiosoitteesi on vahvistettu. Voit sulkea tämän sivun.",
+    "alreadyVerified": "Tämä sähköpostiosoite on jo vahvistettu.",
+    "homeLink": "Siirry osoitteeseen batbern.ch",
+    "invalidToken": "Tämä vahvistuslinkki on virheellinen tai vanhentunut. Pyydä uusi tilisi asetuksista.",
+    "notFound": "Tätä sähköpostiosoitetta ei enää ole profiilissa, johon se lisättiin. Jos lisäsit sen uudelleen, käytä uusimman vahvistussähköpostin linkkiä."
   }
 }

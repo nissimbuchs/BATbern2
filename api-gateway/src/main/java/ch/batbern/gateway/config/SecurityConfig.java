@@ -286,6 +286,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
 
+                        // Additional-email verification (v2): public token-credentialed verify
+                        // endpoints (GET-check / POST-confirm). The token IS the credential.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users/additional-emails/verify").permitAll()
+
                         // Story 10.12: Self-service deregistration (token-protected)
                         .requestMatchers(HttpMethod.GET, "/api/v1/registrations/deregister/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister").permitAll()

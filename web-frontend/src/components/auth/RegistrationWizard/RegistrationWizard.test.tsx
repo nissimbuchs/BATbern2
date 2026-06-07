@@ -13,9 +13,29 @@ import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n/config';
+import { ConfigProvider } from '@/contexts/ConfigContext';
+import type { AppConfig } from '@/config/runtime-config';
 
 // Create theme for MUI components
 const theme = createTheme();
+
+// Minimal config — Step1 reads useFeature('sso'); sso:false keeps the wizard DOM unchanged
+const mockConfig: AppConfig = {
+  environment: 'development',
+  apiBaseUrl: 'http://localhost:8080/api/v1',
+  cognito: {
+    userPoolId: 'eu-central-1_XXXXXXXXX',
+    clientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX',
+    region: 'eu-central-1',
+  },
+  features: {
+    notifications: true,
+    analytics: false,
+    pwa: false,
+    turnstile: false,
+    sso: false,
+  },
+};
 
 // Mock useNavigate
 const mockNavigate = vi.fn();
@@ -50,13 +70,15 @@ const AllProviders: React.FC<{ children: React.ReactNode; initialEntries?: strin
   });
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>
-        <I18nextProvider i18n={i18n}>
-          <ThemeProvider theme={theme}>{children}</ThemeProvider>
-        </I18nextProvider>
-      </MemoryRouter>
-    </QueryClientProvider>
+    <ConfigProvider config={mockConfig}>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={initialEntries}>
+          <I18nextProvider i18n={i18n}>
+            <ThemeProvider theme={theme}>{children}</ThemeProvider>
+          </I18nextProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ConfigProvider>
   );
 };
 

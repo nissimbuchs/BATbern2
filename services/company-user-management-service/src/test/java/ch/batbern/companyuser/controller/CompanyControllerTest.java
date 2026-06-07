@@ -71,6 +71,10 @@ class CompanyControllerTest {
     @MockitoBean
     private ch.batbern.companyuser.repository.UserRepository userRepository;
 
+    // Required by WebMvcConfig -> JITUserProvisioningInterceptor (verified-additional-email guard)
+    @MockitoBean
+    private ch.batbern.companyuser.repository.UserAdditionalEmailRepository userAdditionalEmailRepository;
+
     // Required by WebMvcConfig -> FederatedAvatarImportInterceptor (Story 12.12)
     @MockitoBean
     private ch.batbern.companyuser.service.FederatedAvatarImportService federatedAvatarImportService;

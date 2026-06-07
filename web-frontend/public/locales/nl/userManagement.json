@@ -229,7 +229,14 @@
       "additionalEmailRemoveConfirmCancel": "Annuleren",
       "additionalEmailDeleteFailed": "Kon dit extra e-mailadres niet verwijderen. Probeer het opnieuw.",
       "additionalEmailDeleteNotFound": "Dit extra e-mailadres staat niet meer in je profiel.",
-      "additionalEmailDeleteAriaLabel": "Extra e-mailadres {{email}} verwijderen"
+      "additionalEmailDeleteAriaLabel": "Extra e-mailadres {{email}} verwijderen",
+      "additionalEmailVerifiedPill": "Geverifieerd",
+      "additionalEmailResendButton": "Opnieuw verzenden",
+      "additionalEmailResendSuccess": "Verificatie-e-mail verzonden.",
+      "additionalEmailResendFailed": "Kan de verificatie-e-mail niet verzenden. Probeer het opnieuw.",
+      "additionalEmailResendAlreadyVerified": "Dit e-mailadres is al geverifieerd.",
+      "additionalEmailResendAriaLabel": "Verificatie-e-mail opnieuw verzenden naar {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} is geverifieerd"
     },
     "notifications": {
       "title": "Meldingsvoorkeuren",
@@ -292,5 +299,16 @@
     "linked": "Cognito gekoppeld",
     "notLinked": "Geen Cognito-account",
     "tooltip": "Cognito-account gekoppeld"
+  },
+  "verifyEmail": {
+    "title": "Bevestig uw e-mailadres",
+    "loading": "Uw verificatielink wordt gecontroleerd…",
+    "confirmMessage": "Bevestig dat {{email}} uw e-mailadres is.",
+    "confirmButton": "E-mailadres bevestigen",
+    "success": "Uw e-mailadres is bevestigd. U kunt deze pagina sluiten.",
+    "alreadyVerified": "Dit e-mailadres is al bevestigd.",
+    "homeLink": "Ga naar batbern.ch",
+    "invalidToken": "Deze verificatielink is ongeldig of verlopen. Vraag een nieuwe aan in uw accountinstellingen.",
+    "notFound": "Dit e-mailadres staat niet meer op het profiel waaraan het was toegevoegd. Als u het opnieuw hebt toegevoegd, gebruik dan de link uit de nieuwste verificatie-e-mail."
   }
 }

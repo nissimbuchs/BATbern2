@@ -232,6 +232,13 @@ export class CognitoStack extends cdk.Stack {
         // email is REQUIRED: it keys the Phase-2 account-linking (AdminLinkProviderForUser)
         // and resolves the email sign-in alias.
         email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+        // email_verified MUST be mapped explicitly — without this mapping Cognito defaults
+        // the federated user's email_verified to "false" even though Google asserts true,
+        // which blocks the PreSignUp verified-additional-email linking gate (found live
+        // 2026-06-06: orphan Google_* shell user + JIT duplicate-guard wedge → blank
+        // dashboard). Applied to the live pool via update-identity-provider the same day;
+        // this line makes CDK converge with that state.
+        emailVerified: cognito.ProviderAttribute.GOOGLE_EMAIL_VERIFIED,
         // Names fold to standard attributes (see standardAttributes above). The canonical
         // JIT path (Story 12.3) reads these for federated users — the federated counterpart
         // of how post-confirmation.ts reads firstName/lastName from custom:preferences for
