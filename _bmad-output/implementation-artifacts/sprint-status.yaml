@@ -222,6 +222,22 @@ development_status:
   12-12-google-profile-picture-import: review                         # Dev-story 2026-06-04 (Opus 4.8): all 8 ACs implemented TDD. OPEN-VERIFY RESOLVED: ID token reaches CUMS (apiClient.ts:38 sends idToken; JIT already reads ID-token-only claims in prod) -> Jwt.getClaimAsString("picture") works directly. CDK: picture mapped + client read/writeAttributes (F1b applied; PR#735 Schema-trap regression test). CUMS: V18 migration (12-11 holds V17 in parallel) + FederatedAvatarImportService + sibling interceptor AFTER JIT + plain injected Executor (no @Async proxy; non-blocking unit-proven). Mark-attempt-BEFORE-dispatch = one-attempt-ever incl. all failure paths; worker re-checks null before write (never clobber); SSRF guard https+googleusercontent.com-host-only, =s96-c->=s512-c. 2 CDK + 7 IT + 11 unit tests green; full CUMS suite green except 12-11's own WIP V17 tests; infra 392 green; checkstyle clean. Docs: plan §9 + 06b Pattern 1c. PENDING: post-deploy manual smoke (fresh Google sign-in -> /profile picture + S3 object). Prereq: none (independent of 12-11)
   epic-12-retrospective: optional
 
+  # Epic 13: Spring Boot 4 Migration — PLANNED 2026-06-07 (docs/plans/spring-boot-4-migration.md)
+  # Driver: SB 3.5 OSS support ends 2026-06-30; we are on 3.5.7. Staged per-module PRs,
+  # Jackson-2-compat flag until 13-4, Bruno/Playwright blocking gates as the payload-diff safety net.
+  epic-13: backlog
+  13-1-zero-deprecation-baseline-compat-matrix: backlog
+  13-2-shared-kernel-pilot-service-sb4: backlog          # attendee-experience pilot; >=2 days mixed-fleet gate
+  13-3-remaining-domain-services-sb4: backlog            # 4 PRs: CUMS, EMS, speaker-coordination, partner-coordination
+  13-4-api-gateway-closeout-jackson3-flag-flip: backlog  # gateway + flip Jackson-2-compat OFF + docs/versions update
+
+  # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
+  # not yet scheduled. Cluster A is a REQUIRED precondition for 12-10 (Apple/generic OIDC).
+  cluster-a-auth-sso-hardening: backlog
+  cluster-b-cognito-db-consistency-outbox: backlog
+  cluster-c-i18n-date-handling-sweep: backlog
+  cluster-d-test-ux-papercuts: backlog
+
   # ============================================================
   # BATBERN WATCH APP EPICS (Separate track)
   # ============================================================
