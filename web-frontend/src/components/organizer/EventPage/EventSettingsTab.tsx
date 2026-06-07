@@ -12,11 +12,6 @@ import {
   Button,
   Stack,
   Divider,
-  Switch,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   Alert,
   Chip,
   Dialog,
@@ -34,8 +29,6 @@ import {
   InputLabel,
 } from '@mui/material';
 import {
-  Notifications as NotificationsIcon,
-  Edit as EditIcon,
   Warning as WarningIcon,
   Delete as DeleteIcon,
   Cancel as CancelIcon,
@@ -46,7 +39,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useDeleteEvent, useUpdateEvent } from '@/hooks/useEvents';
 import {
   useUploadTeaserImage,
@@ -64,16 +57,9 @@ interface EventSettingsTabProps {
   eventCode: string;
 }
 
-interface NotificationRule {
-  id: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-  scheduledDate?: string;
-}
-
 export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, eventCode }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const navigate = useNavigate();
   const deleteEventMutation = useDeleteEvent();
 
@@ -105,36 +91,6 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const [teaserUploadError, setTeaserUploadError] = useState<string | null>(null);
   const [teaserRemoveError, setTeaserRemoveError] = useState<string | null>(null);
   const [teaserPositionError, setTeaserPositionError] = useState<string | null>(null);
-
-  // ⚠️ MOCK DATA - Notification rules (backend integration pending)
-  const [notifications, setNotifications] = useState<NotificationRule[]>([
-    {
-      id: '1',
-      name: t('eventPage.settings.speakerReminders', 'Speaker deadline reminders'),
-      description: t('eventPage.settings.speakerRemindersDesc', '3 days before deadline'),
-      enabled: true,
-    },
-    {
-      id: '2',
-      name: t('eventPage.settings.registrationEmails', 'Registration confirmation emails'),
-      description: t('eventPage.settings.registrationEmailsDesc', 'Immediate on registration'),
-      enabled: true,
-    },
-    {
-      id: '3',
-      name: t('eventPage.settings.agendaDistribution', 'Final agenda distribution'),
-      description: t('eventPage.settings.agendaDistributionDesc', 'Scheduled for event day -14'),
-      enabled: true,
-      scheduledDate: '2025-03-01',
-    },
-    {
-      id: '4',
-      name: t('eventPage.settings.checkInReminders', 'Event day check-in reminders'),
-      description: t('eventPage.settings.checkInRemindersDesc', 'Morning of event'),
-      enabled: true,
-      scheduledDate: '2025-03-15',
-    },
-  ]);
 
   const handleCapacitySave = async () => {
     setCapacityError(null);
@@ -176,10 +132,6 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           : t('eventPage.settings.moderatorUpdateError', 'Failed to update moderator.')
       );
     }
-  };
-
-  const handleToggleNotification = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, enabled: !n.enabled } : n)));
   };
 
   const handleDeleteEvent = async () => {
@@ -496,73 +448,6 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         )}
       </Paper>
 
-      {/* Notifications */}
-      <Paper sx={{ p: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <NotificationsIcon color="action" />
-            <Typography variant="h6">
-              {t('eventPage.settings.notifications', 'Notifications')}
-            </Typography>
-            <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {notifications.filter((n) => n.enabled).length}{' '}
-            {t('eventPage.settings.activeAutomations', 'active automations')}
-          </Typography>
-        </Stack>
-        <Divider sx={{ mb: 2 }} />
-        <Alert severity="info" sx={{ mb: 2 }}>
-          ⚠️ This is mock notification data. Backend integration pending.
-        </Alert>
-
-        <List disablePadding>
-          {notifications.map((rule) => (
-            <ListItem
-              key={rule.id}
-              sx={{
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                py: 1.5,
-              }}
-            >
-              <ListItemText
-                primary={rule.name}
-                secondaryTypographyProps={{ component: 'div' }}
-                secondary={
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="caption" color="text.secondary">
-                      {rule.description}
-                    </Typography>
-                    {rule.scheduledDate && (
-                      <Typography variant="caption" color="primary">
-                        • {format(new Date(rule.scheduledDate), 'MMM d, yyyy')}
-                      </Typography>
-                    )}
-                  </Stack>
-                }
-              />
-              <ListItemSecondaryAction>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Switch
-                    checked={rule.enabled}
-                    onChange={() => handleToggleNotification(rule.id)}
-                    size="small"
-                  />
-                  <IconButton size="small">
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
-        </List>
-
-        <Button variant="text" sx={{ mt: 2 }}>
-          {t('eventPage.settings.manageAll', 'Manage All Notifications')}
-        </Button>
-      </Paper>
-
       {/* Danger Zone */}
       <Paper sx={{ p: 3, borderColor: 'error.main', borderWidth: 1, borderStyle: 'solid' }}>
         <Stack direction="row" spacing={1} alignItems="center" mb={2}>
@@ -625,7 +510,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               <Typography variant="body2" color="text.secondary">
                 {t(
                   'eventPage.settings.deleteEventDesc',
-                  'Permanently removes event (only if no registrations)'
+                  'Permanently removes event (only if no attendee registrations)'
                 )}
               </Typography>
             </Box>
@@ -634,17 +519,17 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               color="error"
               startIcon={<DeleteIcon />}
               onClick={() => setDeleteDialogOpen(true)}
-              disabled={(event.currentAttendeeCount || 0) > 0}
+              disabled={(event.realAttendeeCount || 0) > 0}
             >
               {t('eventPage.settings.deleteEvent', 'Delete Event')}
             </Button>
           </Stack>
 
-          {(event.currentAttendeeCount || 0) > 0 && (
+          {(event.realAttendeeCount || 0) > 0 && (
             <Alert severity="info">
               {t(
                 'eventPage.settings.cannotDelete',
-                'Cannot delete event with registrations. Cancel the event instead.'
+                'Cannot delete event with attendee registrations. Cancel the event instead.'
               )}
             </Alert>
           )}
@@ -652,7 +537,11 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
       </Paper>
 
       {/* Cancel Confirmation Dialog */}
-      <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)}>
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={() => setCancelDialogOpen(false)}
+        fullScreen={isMobile}
+      >
         <DialogTitle>{t('eventPage.settings.confirmCancel', 'Cancel Event?')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -674,6 +563,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
       <Dialog
         open={deleteDialogOpen}
         onClose={() => !deleteEventMutation.isPending && setDeleteDialogOpen(false)}
+        fullScreen={isMobile}
       >
         <DialogTitle color="error">
           {t('eventPage.settings.confirmDelete', 'Delete Event?')}

@@ -7,6 +7,7 @@
  */
 
 import { confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
+import { ensureAmplifyConfigured } from '@/config/amplify';
 
 export interface VerifyEmailInput {
   email: string;
@@ -27,6 +28,8 @@ export interface VerifyEmailResult {
  */
 export async function verifyEmail(input: VerifyEmailInput): Promise<VerifyEmailResult> {
   try {
+    // Amplify is configured lazily (perf/public-homepage-followup #2) — ensure before use.
+    await ensureAmplifyConfigured();
     const result = await confirmSignUp({
       username: input.email,
       confirmationCode: input.code,
@@ -106,6 +109,8 @@ export async function verifyEmail(input: VerifyEmailInput): Promise<VerifyEmailR
  */
 export async function resendVerificationCode(email: string): Promise<VerifyEmailResult> {
   try {
+    // Amplify is configured lazily (perf/public-homepage-followup #2) — ensure before use.
+    await ensureAmplifyConfigured();
     await resendSignUpCode({
       username: email,
     });

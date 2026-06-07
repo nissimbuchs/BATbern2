@@ -33,24 +33,22 @@
 
 <p>Wir wuerden uns sehr freuen, Sie als Referenten bei unserem Event begruessen zu duerfen. Ihre Expertise und Ihr Wissen waeren eine wertvolle Bereicherung fuer unser Publikum.</p>
 
-<div class="cta-section">
-    <p><strong>Bitte teilen Sie uns Ihre Entscheidung mit:</strong></p>
-    <a href="{{acceptLink}}" class="cta-button cta-accept">Einladung annehmen</a>
-    <a href="{{declineLink}}" class="cta-button cta-decline">Leider absagen</a>
+<div class="login-section">
+    <h3>Ihr Referenten-Portal-Konto</h3>
+    <p>Um diese Einladung zu beantworten und Ihre Session-Unterlagen zu verwalten, melden Sie sich bitte im Referenten-Portal an:</p>
+    <p style="text-align: center; margin: 20px 0;">
+        <a href="{{loginUrl}}" class="cta-button cta-accept" style="display: inline-block; padding: 12px 24px; background-color: #0066cc; color: white; text-decoration: none; border-radius: 4px;">Zum Referenten-Portal anmelden</a>
+    </p>
+    <p><strong>Anmelde-URL:</strong> <a href="{{loginUrl}}" style="color: #0066cc; word-break: break-all;">{{loginUrl}}</a></p>
+    <p><strong>Benutzername:</strong> {{usernameForLogin}}</p>
+    {{#temporaryPassword}}
+    <p><strong>Temporäres Passwort:</strong> <code style="font-family: monospace; background-color: #f5f5f5; padding: 4px 8px; border-radius: 3px;">{{temporaryPassword}}</code></p>
+    <p style="font-size: 13px; color: #666;">Bei der ersten Anmeldung werden Sie aufgefordert, ein eigenes Passwort festzulegen. Das temporaere Passwort ist {{tempPasswordValidityDays}} Tage gueltig.</p>
+    {{/temporaryPassword}}
+    {{#useExistingPassword}}
+    <p style="font-size: 14px;">Sie verfuegen bereits ueber ein BATbern-Konto. Bitte melden Sie sich mit Ihrem bestehenden Passwort an oder verwenden Sie die Funktion "Passwort vergessen" auf der Anmeldeseite, falls Sie es zuruecksetzen moechten.</p>
+    {{/useExistingPassword}}
 </div>
-
-<p style="font-size: 12px; color: #666; text-align: center;">
-    Falls die Buttons nicht funktionieren, kopieren Sie bitte diesen Link in Ihren Browser:<br>
-    <strong>Annehmen:</strong> <a href="{{acceptLink}}" style="color: #0066cc; word-break: break-all;">{{acceptLink}}</a>
-</p>
-
-<p style="text-align: center; margin-top: 15px;">
-    <a href="{{jwtMagicLink}}" style="color: #0066cc; font-size: 14px; font-weight: bold;">Zum Referenten-Portal anmelden</a>
-</p>
-
-<p style="text-align: center; margin-top: 10px;">
-    <a href="{{dashboardLink}}" style="color: #0066cc; font-size: 13px;">Oder direkt zum Dashboard</a>
-</p>
 
 {{#responseDeadline}}
 <div class="deadline-box">

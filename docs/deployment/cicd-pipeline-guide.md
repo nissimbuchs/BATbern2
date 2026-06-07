@@ -2,7 +2,7 @@
 
 ## Overview
 
-The BATbern platform uses GitHub Actions for continuous integration and deployment. The pipeline automates building, testing, security scanning, and deploying all microservices and frontend applications across dev, staging, and production environments.
+The BATbern platform uses GitHub Actions for continuous integration and deployment. The pipeline automates building, testing, security scanning, and deploying all microservices and frontend applications to production (single AWS account 188701360969).
 
 ## Pipeline Architecture
 
@@ -29,20 +29,22 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      Deployments                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │     Dev      │  │   Staging    │  │  Production  │     │
-│  │  (Auto)      │  │  (Manual)    │  │   (Manual)   │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│         ↓                  ↓                  ↓             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │ Smoke Tests  │  │ Smoke Tests  │  │ Smoke Tests  │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│                                              ↓               │
-│                                     ┌──────────────┐        │
-│                                     │   Rollback   │        │
-│                                     │ (On Failure) │        │
-│                                     └──────────────┘        │
+│                      Deployment                              │
+│                  ┌──────────────┐                              │
+│                  │  Production  │                              │
+│                  │  (Auto from  │                              │
+│                  │   develop)   │                              │
+│                  └──────────────┘                              │
+│                          ↓                                    │
+│                  ┌──────────────┐                              │
+│                  │ Smoke Tests  │                              │
+│                  │ + E2E Tests  │                              │
+│                  └──────────────┘                              │
+│                          ↓                                    │
+│                  ┌──────────────┐                              │
+│                  │   Rollback   │                              │
+│                  │ (On Failure) │                              │
+│                  └──────────────┘                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -108,78 +110,34 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
    - Checks npm dependency licenses
    - Fails on GPL, AGPL, or other copyleft licenses
 
-### 3. Development Deployment (`deploy-dev.yml`)
+### 3. Production Deployment (`deploy-staging.yml`)
+
+> **Note:** The `deploy-staging.yml` workflow deploys to the production environment (staging account 188701360969 serves production traffic at www.batbern.ch).
 
 **Triggers:**
 - Automatic after successful build on `develop` branch
+- Manual workflow dispatch
 
 **Jobs:**
-1. **Deploy to Dev**
-   - Runs Flyway database migrations
-   - Deploys infrastructure with AWS CDK
+1. **Detect Changes**
+   - Analyzes changed components via git diff
+   - Selects deployment strategy (fast-path, hotswap, or full CDK)
+
+2. **Database Backup** (if migrations detected)
+   - Creates RDS snapshot before deployment
+
+3. **Deploy**
+   - Deploys with AWS CDK (layer-based for infrastructure changes)
    - Waits for ECS services to stabilize
-   - Runs smoke tests
-   - Duration: ~8-10 minutes
+   - Runs full E2E test suite (smoke, CORS, Bruno, Playwright)
+   - Duration: 2-30 minutes depending on deployment tier
 
-**Environment:** https://dev.batbern.ch
+**Environment:** https://www.batbern.ch
 
-### 4. Staging Deployment (`deploy-staging.yml`)
+### 4. Tagged Release Deployment (`deploy-production.yml`)
 
-**Triggers:**
-- Manual workflow dispatch with version input
-
-**Jobs:**
-1. **Pre-deployment Validation**
-   - Validates version exists
-   - Checks dev deployment status
-   - Requires manual approval
-
-2. **Deploy to Staging**
-   - Creates database backup snapshot
-   - Runs Flyway migrations
-   - Deploys with AWS CDK
-   - Waits for ECS services
-   - Runs smoke tests
-   - Duration: ~12-15 minutes
-
-**Environment:** https://staging.batbern.ch
-
-### 5. Production Deployment (`deploy-production.yml`)
-
-**Triggers:**
-- Manual workflow dispatch with version input
-- Requires two approvals
-
-**Jobs:**
-1. **Pre-deployment Checks**
-   - Verifies version tag exists
-   - Validates staging deployment
-   - Requires production approval
-
-2. **Database Backup**
-   - Creates RDS snapshot
-   - Waits for snapshot completion
-   - Stores snapshot ID for rollback
-
-3. **Database Migration**
-   - Runs Flyway migrations (optional)
-   - Can be disabled via workflow input
-
-4. **Blue-Green Deployment**
-   - Deploys new version alongside old
-   - Gradually shifts traffic
-   - Monitors health checks
-   - Duration: ~15-20 minutes
-
-5. **Smoke Tests**
-   - Verifies critical endpoints
-   - Checks service health
-   - Validates database connectivity
-
-6. **Rollback on Failure**
-   - Automatically triggers on any failure
-   - Reverts to previous task definitions
-   - Notifies team via GitHub output
+> **Note:** This workflow is being phased out. It targets the former production account (422940799530) which is decommissioned.
+> Production deploys now go through `deploy-staging.yml` automatically.
 
 **Environment:** https://www.batbern.ch
 
@@ -188,20 +146,13 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
 Configure these secrets in GitHub repository settings:
 
 ### AWS Credentials
-- `AWS_ACCESS_KEY_ID` - AWS access key for deployments
-- `AWS_SECRET_ACCESS_KEY` - AWS secret key
-- `AWS_ACCOUNT_ID` - AWS account ID for ECR
+- AWS credentials are managed via OIDC federation (no long-lived keys)
+- Role: `arn:aws:iam::188701360969:role/batbern-staging-github-actions-role`
 
 ### Database Credentials
-- `DEV_DB_URL` - Dev database JDBC URL
-- `DEV_DB_USER` - Dev database username
-- `DEV_DB_PASSWORD` - Dev database password
-- `STAGING_DB_URL` - Staging database JDBC URL
-- `STAGING_DB_USER` - Staging database username
-- `STAGING_DB_PASSWORD` - Staging database password
-- `PROD_DB_URL` - Production database JDBC URL
-- `PROD_DB_USER` - Production database username
-- `PROD_DB_PASSWORD` - Production database password
+- Database credentials are managed via AWS Secrets Manager
+- Microservices access credentials at runtime via ECS task IAM roles
+- No database credentials stored in GitHub Secrets
 
 ### Security Scanning
 - `SNYK_TOKEN` - Snyk API token for vulnerability scanning
@@ -226,40 +177,24 @@ The platform uses semantic versioning: `v{major}.{minor}.{patch}`
 
 ### Image Tagging Strategy
 
-**Development:**
-- `{sha}-dev.{run_number}` - e.g., `a1b2c3d-dev.42`
-- `latest-dev` - Latest develop branch build
-
-**Staging/Production:**
-- `{version}` - e.g., `v1.2.3`
-- `latest` - Latest production release
+**Production (via develop branch):**
+- `{sha}-staging.{run_number}` - e.g., `a1b2c3d-staging.142`
+- Used for all deployments to production (staging account serves production traffic)
 
 ## Deployment Process
 
-### To Development
+### To Production (automatic)
 1. Merge feature branch to `develop`
 2. Build pipeline runs automatically
-3. On success, deployment to dev triggers automatically
-4. Smoke tests validate deployment
+3. On success, deployment to production triggers automatically
+4. Full E2E test suite validates deployment
+5. Automatic rollback on failure
 
-### To Staging
-1. Navigate to Actions → Deploy to Staging
-2. Click "Run workflow"
-3. Enter version (commit SHA or tag)
-4. Approve deployment
-5. Monitor deployment progress
-6. Validate with smoke tests
-
-### To Production
-1. Create version tag: `git tag v1.2.3 && git push origin v1.2.3`
-2. Navigate to Actions → Deploy to Production
-3. Click "Run workflow"
-4. Enter version tag (e.g., `v1.2.3`)
-5. Select whether to run migrations
-6. Get two approvals from team
-7. Monitor blue-green deployment
-8. Validate with smoke tests
-9. Automatic rollback on failure
+### Tagged Releases (manual)
+1. Merge `develop → main` via PR on GitHub
+2. Note the 7-char SHA of the merge commit
+3. Navigate to Actions → Deploy to Production → Run workflow → version: `<sha7>`
+4. GitHub Release is created automatically on success
 
 ## Monitoring and Troubleshooting
 
@@ -344,10 +279,10 @@ Solution: Check service logs, rollback if necessary
 
 ### Deployment Time Optimization
 
-**Current:**
-- Dev: ~8-10 minutes
-- Staging: ~12-15 minutes
-- Production: ~15-20 minutes
+**Current (3-tier deployment):**
+- Fast-path (code-only): ~2-5 minutes
+- Hotswap (service changes): ~10-20 minutes
+- Full CDK (infrastructure): ~20-30 minutes
 
 **Optimizations:**
 - Pre-build Docker images

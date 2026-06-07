@@ -162,6 +162,134 @@ describe('StorageStack', () => {
     });
   });
 
+  describe('Image Resize Lambda@Edge', () => {
+    test('should_createImageResizeCachePolicy_when_distributionCreated', () => {
+      // Arrange
+      const app = new App();
+
+      // Act
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+
+      // Assert
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::CachePolicy', {
+        CachePolicyConfig: Match.objectLike({
+          ParametersInCacheKeyAndForwardedToOrigin: Match.objectLike({
+            QueryStringsConfig: Match.objectLike({
+              QueryStringBehavior: 'whitelist',
+              QueryStrings: Match.arrayWith(['w', 'h', 'fit']),
+            }),
+          }),
+        }),
+      });
+    });
+
+    test('should_associateLambdaEdgeOriginRequest_when_distributionCreated', () => {
+      // Arrange
+      const app = new App();
+
+      // Act
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+
+      // Assert
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::Distribution', {
+        DistributionConfig: Match.objectLike({
+          DefaultCacheBehavior: Match.objectLike({
+            LambdaFunctionAssociations: Match.arrayWith([
+              Match.objectLike({
+                EventType: 'origin-request',
+              }),
+            ]),
+          }),
+        }),
+      });
+    });
+  });
+
+  describe('Browser caching of media', () => {
+    // Content-addressed media (UUID filenames) must reach the browser with an
+    // immutable Cache-Control so repeat visits don't re-download it — PageSpeed
+    // flagged "Cache TTL: None" on cdn.batbern.ch assets.
+    // See docs/plans/public-homepage-performance.md (Phase 6).
+
+    test('should_setImmutableCacheControl_on_contentDistribution', () => {
+      const app = new App();
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+        ResponseHeadersPolicyConfig: Match.objectLike({
+          CustomHeadersConfig: {
+            Items: Match.arrayWith([
+              {
+                Header: 'Cache-Control',
+                Value: 'public, max-age=31536000, immutable',
+                Override: false,
+              },
+            ]),
+          },
+        }),
+      });
+    });
+
+    test('should_attachResponseHeadersPolicy_to_defaultBehavior', () => {
+      const app = new App();
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::Distribution', {
+        DistributionConfig: Match.objectLike({
+          DefaultCacheBehavior: Match.objectLike({
+            ResponseHeadersPolicyId: Match.anyValue(),
+          }),
+        }),
+      });
+    });
+
+    // Story 12.12 review (finding #3): users can upload SVGs (profile pictures,
+    // logos) served from cdn.batbern.ch as image/svg+xml; without these headers a
+    // script-bearing SVG executes when its object URL is opened top-level (stored
+    // XSS on the cdn origin). CSP `sandbox` neutralizes top-level SVG documents
+    // without affecting <img> embedding; nosniff prevents MIME-sniffing surprises.
+    test('should_setSvgSafeSecurityHeaders_on_contentDistribution', () => {
+      const app = new App();
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+        ResponseHeadersPolicyConfig: Match.objectLike({
+          SecurityHeadersConfig: Match.objectLike({
+            ContentSecurityPolicy: {
+              ContentSecurityPolicy: 'sandbox',
+              Override: true,
+            },
+            ContentTypeOptions: {
+              Override: true,
+            },
+          }),
+        }),
+      });
+    });
+  });
+
   describe('AC5: Resource Tagging', () => {
     test('should_applyConsistentTags_when_resourcesCreated', () => {
       // Arrange

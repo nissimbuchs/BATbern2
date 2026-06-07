@@ -34,6 +34,7 @@ import Grid from '@mui/material/Grid';
 import { Add as AddIcon, Visibility as ViewIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { Topic } from '@/types/event.types';
 
 export interface TopicsListProps {
@@ -54,6 +55,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
   error = null,
 }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const navigate = useNavigate();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [topicToRemove, setTopicToRemove] = useState<string | null>(null);
@@ -242,6 +244,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
       <Dialog
         open={confirmDialogOpen}
         onClose={handleCancelRemove}
+        fullScreen={isMobile}
         aria-labelledby="remove-topic-dialog-title"
         aria-describedby="remove-topic-dialog-description"
       >

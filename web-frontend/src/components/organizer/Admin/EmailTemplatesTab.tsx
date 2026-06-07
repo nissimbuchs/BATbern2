@@ -6,18 +6,22 @@
  * - Content Templates section: filterable by category/locale, editable with TinyMCE
  */
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
   Chip,
   Divider,
+  FormControl,
   IconButton,
+  InputLabel,
   List,
   ListItem,
   ListItemSecondaryAction,
   ListItemText,
+  MenuItem,
+  Select,
   Snackbar,
   ToggleButton,
   ToggleButtonGroup,
@@ -34,6 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import {
   useDeleteEmailTemplate,
   useEmailTemplates,
@@ -41,10 +46,21 @@ import {
 } from '@/hooks/useEmailTemplates';
 import type { EmailTemplateResponse } from '@/hooks/useEmailTemplates';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
-import { EmailTemplateEditModal } from './EmailTemplateEditModal';
-import { EmailTemplatePreviewModal } from './EmailTemplatePreviewModal';
 
-type Category = 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'NEWSLETTER';
+// Lazy-load the edit modal because it statically imports TinyMCE + Monaco,
+// which run side-effectful init at module load. Keeping this eager would make
+// TinyMCE initialize on every admin page visit (even when the user never opens
+// the Email Templates tab), which can crash the whole admin page if TinyMCE
+// self-init fails (e.g. chunk load / CSP / peer-dep issues). Loading it only
+// when the modal actually opens keeps the rest of the admin page resilient.
+const EmailTemplateEditModal = React.lazy(() =>
+  import('./EmailTemplateEditModal').then((m) => ({ default: m.EmailTemplateEditModal }))
+);
+const EmailTemplatePreviewModal = React.lazy(() =>
+  import('./EmailTemplatePreviewModal').then((m) => ({ default: m.EmailTemplatePreviewModal }))
+);
+
+type Category = 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'NEWSLETTER' | 'VENUE_COORDINATION';
 
 const formatDate = (dateStr: string) => {
   try {
@@ -54,8 +70,25 @@ const formatDate = (dateStr: string) => {
   }
 };
 
+const CATEGORY_OPTIONS: Category[] = [
+  'SPEAKER',
+  'REGISTRATION',
+  'TASK_REMINDER',
+  'NEWSLETTER',
+  'VENUE_COORDINATION',
+];
+
+const CATEGORY_LABEL_KEYS: Record<Category, [string, string]> = {
+  SPEAKER: ['emailTemplates.categories.SPEAKER', 'Speakers'],
+  REGISTRATION: ['emailTemplates.categories.REGISTRATION', 'Registration'],
+  TASK_REMINDER: ['emailTemplates.categories.TASK_REMINDER', 'Task Reminders'],
+  NEWSLETTER: ['emailTemplates.categories.NEWSLETTER', 'Newsletter'],
+  VENUE_COORDINATION: ['emailTemplates.categories.VENUE_COORDINATION', 'Venue & Catering'],
+};
+
 export const EmailTemplatesTab: React.FC = () => {
   const { t } = useTranslation();
+  const { isMobile } = useBreakpoints();
 
   const { data: layoutTemplates = [], isLoading: loadingLayouts } = useLayoutTemplates();
   const {
@@ -129,7 +162,7 @@ export const EmailTemplatesTab: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box data-testid="email-templates-tab">
       {/* ── Layout Templates ── */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Typography variant="h6">
@@ -208,28 +241,42 @@ export const EmailTemplatesTab: React.FC = () => {
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-        <ToggleButtonGroup
-          value={categoryFilter}
-          exclusive
-          onChange={(_, v) => {
-            if (v) setCategoryFilter(v);
-          }}
-          size="small"
-          aria-label={t('common:filters.categoryFilter')}
-        >
-          <ToggleButton value="SPEAKER">
-            {t('emailTemplates.categories.SPEAKER', 'Speakers')}
-          </ToggleButton>
-          <ToggleButton value="REGISTRATION">
-            {t('emailTemplates.categories.REGISTRATION', 'Registration')}
-          </ToggleButton>
-          <ToggleButton value="TASK_REMINDER">
-            {t('emailTemplates.categories.TASK_REMINDER', 'Task Reminders')}
-          </ToggleButton>
-          <ToggleButton value="NEWSLETTER">
-            {t('emailTemplates.categories.NEWSLETTER', 'Newsletter')}
-          </ToggleButton>
-        </ToggleButtonGroup>
+        {isMobile ? (
+          <FormControl size="small" sx={{ minWidth: 200, flex: 1 }}>
+            <InputLabel id="email-template-category-label">
+              {t('common:filters.categoryFilter')}
+            </InputLabel>
+            <Select
+              labelId="email-template-category-label"
+              value={categoryFilter}
+              label={t('common:filters.categoryFilter')}
+              onChange={(e) => setCategoryFilter(e.target.value as Category)}
+              data-testid="email-template-category-select"
+            >
+              {CATEGORY_OPTIONS.map((cat) => (
+                <MenuItem key={cat} value={cat}>
+                  {t(CATEGORY_LABEL_KEYS[cat][0], CATEGORY_LABEL_KEYS[cat][1])}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          <ToggleButtonGroup
+            value={categoryFilter}
+            exclusive
+            onChange={(_, v) => {
+              if (v) setCategoryFilter(v);
+            }}
+            size="small"
+            aria-label={t('common:filters.categoryFilter')}
+          >
+            {CATEGORY_OPTIONS.map((cat) => (
+              <ToggleButton key={cat} value={cat}>
+                {t(CATEGORY_LABEL_KEYS[cat][0], CATEGORY_LABEL_KEYS[cat][1])}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        )}
 
         <ToggleButtonGroup
           value={localeFilter}
@@ -350,26 +397,30 @@ export const EmailTemplatesTab: React.FC = () => {
         )}
       </List>
 
-      {/* Edit Modal */}
+      {/* Edit Modal (lazy — loads TinyMCE/Monaco only when opened) */}
       {editOpen && (
-        <EmailTemplateEditModal
-          template={editTemplate}
-          isLayoutMode={isLayoutEdit}
-          initialCategory={createCategory}
-          cloneFrom={cloneFromTemplate}
-          onClose={() => {
-            setEditOpen(false);
-            setCloneFromTemplate(undefined);
-          }}
-        />
+        <Suspense fallback={null}>
+          <EmailTemplateEditModal
+            template={editTemplate}
+            isLayoutMode={isLayoutEdit}
+            initialCategory={createCategory}
+            cloneFrom={cloneFromTemplate}
+            onClose={() => {
+              setEditOpen(false);
+              setCloneFromTemplate(undefined);
+            }}
+          />
+        </Suspense>
       )}
 
       {/* Preview Modal */}
       {previewTemplate && (
-        <EmailTemplatePreviewModal
-          template={previewTemplate}
-          onClose={() => setPreviewTemplate(null)}
-        />
+        <Suspense fallback={null}>
+          <EmailTemplatePreviewModal
+            template={previewTemplate}
+            onClose={() => setPreviewTemplate(null)}
+          />
+        </Suspense>
       )}
 
       <Snackbar

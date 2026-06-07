@@ -12,7 +12,6 @@ import { ValidationDashboard } from '@/components/Publishing/ValidationDashboard
 import { PublishingControls } from '@/components/Publishing/PublishingControls/PublishingControls';
 import { LivePreview } from '@/components/Publishing/LivePreview/LivePreview';
 import { PublishingTimeline } from '@/components/Publishing/PublishingTimeline/PublishingTimeline';
-import { VersionControl } from '@/components/Publishing/VersionControl/VersionControl';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
 
@@ -24,8 +23,6 @@ interface EventPublishingTabProps {
 export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, eventCode }) => {
   const { publishingStatus, isLoadingStatus, validationErrors } = usePublishing(eventCode);
   const { unassignedSessions } = useSlotAssignment(eventCode);
-
-  const publishingMode = 'progressive' as const;
 
   // Loading state
   if (isLoadingStatus) {
@@ -116,12 +113,7 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
 
       {/* Live Preview - Preview published content */}
       <Box data-testid="live-preview-container">
-        <LivePreview eventCode={eventCode} phase={currentPhase} mode={publishingMode} />
-      </Box>
-
-      {/* Version Control - Publishing history and rollback */}
-      <Box data-testid="version-control-container">
-        <VersionControl eventCode={eventCode} />
+        <LivePreview eventCode={eventCode} phase={currentPhase} />
       </Box>
     </Stack>
   );

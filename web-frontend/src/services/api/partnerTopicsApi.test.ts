@@ -17,6 +17,8 @@ import {
   suggestTopic,
   castVote,
   removeVote,
+  updateTopic,
+  deleteTopic,
   updateTopicStatus,
   type TopicDTO,
   type TopicSuggestionRequest,
@@ -154,6 +156,56 @@ describe('Partner Topics API Client - Story 8.2', () => {
     });
   });
 
+  describe('updateTopic', () => {
+    it('should_callPatchEndpoint_when_updateTopicInvoked', async () => {
+      const request: TopicSuggestionRequest = {
+        title: 'Updated Topic Title',
+        description: 'Updated description',
+      };
+      const updated = {
+        ...mockTopic,
+        title: 'Updated Topic Title',
+        description: 'Updated description',
+      };
+      vi.mocked(apiClient.patch).mockResolvedValue({ data: updated });
+
+      const result = await updateTopic('topic-1', request);
+
+      expect(apiClient.patch).toHaveBeenCalledWith('/partners/topics/topic-1', request);
+      expect(result).toEqual(updated);
+    });
+
+    it('should_propagateError_when_updateTopicFails', async () => {
+      vi.mocked(apiClient.patch).mockRejectedValue(new Error('Forbidden'));
+
+      await expect(updateTopic('topic-1', { title: 'x' })).rejects.toThrow('Forbidden');
+    });
+  });
+
+  describe('deleteTopic', () => {
+    it('should_callDeleteEndpoint_when_deleteTopicInvoked', async () => {
+      vi.mocked(apiClient.delete).mockResolvedValue({ data: undefined });
+
+      await deleteTopic('topic-1');
+
+      expect(apiClient.delete).toHaveBeenCalledWith('/partners/topics/topic-1');
+    });
+
+    it('should_returnVoid_when_deleteTopicSuccessful', async () => {
+      vi.mocked(apiClient.delete).mockResolvedValue({ data: undefined });
+
+      const result = await deleteTopic('topic-1');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should_propagateError_when_deleteTopicFails', async () => {
+      vi.mocked(apiClient.delete).mockRejectedValue(new Error('Not found'));
+
+      await expect(deleteTopic('topic-1')).rejects.toThrow('Not found');
+    });
+  });
+
   describe('updateTopicStatus', () => {
     it('should_callPatchEndpoint_when_updateTopicStatusInvoked', async () => {
       const request: TopicStatusUpdateRequest = {
@@ -182,9 +234,9 @@ describe('Partner Topics API Client - Story 8.2', () => {
     it('should_propagateError_when_updateTopicStatusFails', async () => {
       vi.mocked(apiClient.patch).mockRejectedValue(new Error('Unauthorized'));
 
-      await expect(
-        updateTopicStatus('topic-1', { status: 'SELECTED' })
-      ).rejects.toThrow('Unauthorized');
+      await expect(updateTopicStatus('topic-1', { status: 'SELECTED' })).rejects.toThrow(
+        'Unauthorized'
+      );
     });
   });
 });

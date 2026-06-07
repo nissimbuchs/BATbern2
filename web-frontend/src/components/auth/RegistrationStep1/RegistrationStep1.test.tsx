@@ -12,15 +12,51 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
 import { FormProvider, useForm } from 'react-hook-form';
 import i18n from '@/i18n/config';
+import { ConfigProvider } from '@/contexts/ConfigContext';
+import type { AppConfig } from '@/config/runtime-config';
+
+// Mock authService (the Google SSO button calls authService.signInWithFederated).
+// vi.hoisted is required because the mock factory references the fn eagerly.
+const mockSignInWithFederated = vi.hoisted(() => vi.fn());
+vi.mock('@/services/auth/authService', () => ({
+  authService: { signInWithFederated: mockSignInWithFederated },
+}));
 
 // Create theme for MUI components
 const theme = createTheme();
 
-// Wrapper component for FormProvider
-const FormWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Mock config — `features.sso` gates the "Continue with Google" button
+const mockConfig: AppConfig = {
+  environment: 'development',
+  apiBaseUrl: 'http://localhost:8080/api/v1',
+  cognito: {
+    userPoolId: 'eu-central-1_XXXXXXXXX',
+    clientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX',
+    region: 'eu-central-1',
+  },
+  features: {
+    notifications: true,
+    analytics: false,
+    pwa: false,
+    turnstile: false,
+    sso: false,
+  },
+};
+
+const ssoOnConfig: AppConfig = {
+  ...mockConfig,
+  features: { ...mockConfig.features, sso: true },
+};
+
+// Wrapper component for FormProvider (+ ConfigProvider for the useFeature('sso') gate)
+const FormWrapper: React.FC<{ children: React.ReactNode; config?: AppConfig }> = ({
+  children,
+  config = mockConfig,
+}) => {
   const methods = useForm({
     defaultValues: {
-      fullName: '',
+      firstName: '',
+      lastName: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -29,11 +65,13 @@ const FormWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   });
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <ThemeProvider theme={theme}>
-        <FormProvider {...methods}>{children}</FormProvider>
-      </ThemeProvider>
-    </I18nextProvider>
+    <ConfigProvider config={config}>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider theme={theme}>
+          <FormProvider {...methods}>{children}</FormProvider>
+        </ThemeProvider>
+      </I18nextProvider>
+    </ConfigProvider>
   );
 };
 
@@ -57,7 +95,9 @@ describe('RegistrationStep1 Component', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      // Story 12.6a: two name fields replace the single Full Name field.
+      expect(screen.getByLabelText(/given name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/family name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^email/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
@@ -65,8 +105,8 @@ describe('RegistrationStep1 Component', () => {
     });
   });
 
-  // Test 1.2: should_validateFullName_when_invalidInput
-  it('should_showError_when_fullNameTooShort', async () => {
+  // Test 1.2: should_validateGivenName_when_invalidInput
+  it('should_showError_when_givenNameTooShort', async () => {
     const user = userEvent.setup();
 
     await act(async () => {
@@ -77,7 +117,7 @@ describe('RegistrationStep1 Component', () => {
       );
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const nameInput = screen.getByLabelText(/given name/i);
 
     await act(async () => {
       await user.type(nameInput, 'A');
@@ -85,12 +125,12 @@ describe('RegistrationStep1 Component', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/name must be at least 2 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/given name must be at least 2 characters/i)).toBeInTheDocument();
     });
   });
 
-  // Test 1.2b: should_validateFullName_when_invalidCharacters
-  it('should_showError_when_fullNameHasInvalidCharacters', async () => {
+  // Test 1.2b: should_validateName_when_invalidCharacters
+  it('should_showError_when_familyNameHasInvalidCharacters', async () => {
     const user = userEvent.setup();
 
     await act(async () => {
@@ -101,15 +141,51 @@ describe('RegistrationStep1 Component', () => {
       );
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const nameInput = screen.getByLabelText(/family name/i);
 
     await act(async () => {
-      await user.type(nameInput, 'John123');
+      await user.type(nameInput, 'Doe123');
       await user.tab();
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/name contains invalid characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/family name contains invalid characters/i)).toBeInTheDocument();
+    });
+  });
+
+  // 2026-05-18 bug fix — auth-form regex rejected é/è/à/ç (and stripped fields
+  // silently when users retried). Names with any Unicode letter must be valid.
+  it.each([
+    ['René Strauss'], // French é — primary reproducer
+    ['François Müller'], // French ç + German ü mixed
+    ['Renée Gressly'], // double é
+    ['Çağlar Şahin'], // Turkish (cedilla, breve)
+    ['José García'], // Spanish
+    ['Søren Olesen'], // Danish
+    ['Łukasz Kowalski'], // Polish stroke
+    ['Müller-Lüdenscheid'], // hyphen + double umlaut
+    ["D'Angelo Smith"], // apostrophe
+  ])('should_accept_when_unicodeName: %s', async (name) => {
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <FormWrapper>
+          <RegistrationStep1 onContinue={mockOnContinue} />
+        </FormWrapper>
+      );
+    });
+
+    const nameInput = screen.getByLabelText(/given name/i);
+
+    await act(async () => {
+      await user.type(nameInput, name);
+      await user.tab();
+    });
+
+    // Wait long enough for the onBlur validator to settle.
+    await waitFor(() => {
+      expect(screen.queryByText(/name contains invalid characters/i)).not.toBeInTheDocument();
     });
   });
 
@@ -160,6 +236,7 @@ describe('RegistrationStep1 Component', () => {
       expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
       expect(screen.getByText(/uppercase and lowercase/i)).toBeInTheDocument();
       expect(screen.getByText(/at least one number/i)).toBeInTheDocument();
+      expect(screen.getByText(/at least one special character/i)).toBeInTheDocument();
     });
   });
 
@@ -268,17 +345,19 @@ describe('RegistrationStep1 Component', () => {
       );
     });
 
-    const nameInput = screen.getByLabelText(/full name/i);
+    const givenInput = screen.getByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
     const continueButton = screen.getByRole('button', { name: /continue/i });
 
     await act(async () => {
-      await user.type(nameInput, 'John Doe');
+      await user.type(givenInput, 'John');
+      await user.type(familyInput, 'Doe');
       await user.type(emailInput, 'john.doe@example.com');
-      await user.type(passwordInput, 'Password123');
-      await user.type(confirmInput, 'Password123');
+      await user.type(passwordInput, 'Password123!');
+      await user.type(confirmInput, 'Password123!');
       await user.click(continueButton);
     });
 
@@ -309,6 +388,40 @@ describe('RegistrationStep1 Component', () => {
     expect(mockOnContinue).not.toHaveBeenCalled();
   });
 
+  // Test 1.7b: symbol validation blocks continue
+  it('should_notCallOnContinue_when_passwordMissingSpecialChar', async () => {
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <FormWrapper>
+          <RegistrationStep1 onContinue={mockOnContinue} />
+        </FormWrapper>
+      );
+    });
+
+    const givenInput = screen.getByLabelText(/given name/i);
+    const familyInput = screen.getByLabelText(/family name/i);
+    const emailInput = screen.getByLabelText(/^email/i);
+    const passwordInput = screen.getByLabelText(/^password$/i);
+    const confirmInput = screen.getByLabelText(/confirm password/i);
+    const continueButton = screen.getByRole('button', { name: /continue/i });
+
+    await act(async () => {
+      await user.type(givenInput, 'John');
+      await user.type(familyInput, 'Doe');
+      await user.type(emailInput, 'john.doe@example.com');
+      await user.type(passwordInput, 'Password123');
+      await user.type(confirmInput, 'Password123');
+      await user.click(continueButton);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/must contain at least one special character/i)).toBeInTheDocument();
+    });
+    expect(mockOnContinue).not.toHaveBeenCalled();
+  });
+
   // Password visibility toggle tests
   it('should_togglePasswordVisibility_when_iconClicked', async () => {
     const user = userEvent.setup();
@@ -336,6 +449,99 @@ describe('RegistrationStep1 Component', () => {
 
     await waitFor(() => {
       expect(passwordInput.type).toBe('text');
+    });
+  });
+
+  // Story 12.6a AC5b: locale-aware field order.
+  it('should_renderGivenNameBeforeFamilyName_when_localeIsGivenFirst', async () => {
+    await i18n.changeLanguage('en');
+
+    await act(async () => {
+      render(
+        <FormWrapper>
+          <RegistrationStep1 onContinue={mockOnContinue} />
+        </FormWrapper>
+      );
+    });
+
+    // EN placeholders: given="Anna", family="Schmidt".
+    const given = screen.getByPlaceholderText('Anna');
+    const family = screen.getByPlaceholderText('Schmidt');
+
+    // given precedes family in DOM order
+    expect(given.compareDocumentPosition(family) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('should_renderFamilyNameBeforeGivenName_when_localeIsFamilyFirst', async () => {
+    // Japanese is a family-name-first culture (FAMILY_NAME_FIRST_LOCALES).
+    await i18n.changeLanguage('ja');
+
+    await act(async () => {
+      render(
+        <FormWrapper>
+          <RegistrationStep1 onContinue={mockOnContinue} />
+        </FormWrapper>
+      );
+    });
+
+    // JA placeholders: given="太郎", family="山田".
+    const given = screen.getByPlaceholderText('太郎');
+    const family = screen.getByPlaceholderText('山田');
+
+    // family precedes given in DOM order — only the visual sequence flips, the
+    // firstName=given / lastName=family data mapping is unchanged.
+    expect(family.compareDocumentPosition(given) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await i18n.changeLanguage('en');
+  });
+
+  // "Continue with Google" on the registration form, gated on features.sso —
+  // same entry point as LoginForm so registering does not require the 2-step wizard.
+  describe('Continue with Google button (features.sso)', () => {
+    it('should_renderGoogleButton_when_ssoFeatureEnabled', async () => {
+      await act(async () => {
+        render(
+          <FormWrapper config={ssoOnConfig}>
+            <RegistrationStep1 onContinue={mockOnContinue} />
+          </FormWrapper>
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('register-with-google')).toBeInTheDocument();
+      });
+    });
+
+    it('should_notRenderGoogleButton_when_ssoFeatureDisabled', async () => {
+      await act(async () => {
+        render(
+          <FormWrapper>
+            <RegistrationStep1 onContinue={mockOnContinue} />
+          </FormWrapper>
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('register-with-google')).not.toBeInTheDocument();
+    });
+
+    it('should_callSignInWithFederatedGoogle_when_googleButtonClicked', async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        render(
+          <FormWrapper config={ssoOnConfig}>
+            <RegistrationStep1 onContinue={mockOnContinue} />
+          </FormWrapper>
+        );
+      });
+
+      const googleButton = await screen.findByTestId('register-with-google');
+      await user.click(googleButton);
+
+      expect(mockSignInWithFederated).toHaveBeenCalledTimes(1);
+      expect(mockSignInWithFederated).toHaveBeenCalledWith('Google');
     });
   });
 });

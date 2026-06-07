@@ -1,14 +1,19 @@
 /**
- * NewsletterSubscribeWidget Tests (Story 10.7 — AC4, AC12)
+ * NewsletterSubscribeWidget Tests (Story 10.7 — AC4, AC12; Story 10.31 — AC8, AC10, AC12)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewsletterSubscribeWidget } from '../NewsletterSubscribeWidget';
 
-// Mock the hook
+// Mock the newsletter hook
 vi.mock('@/hooks/useNewsletter/useNewsletter', () => ({
   useNewsletterSubscribe: vi.fn(),
+}));
+
+// Mock useTurnstile
+vi.mock('@/hooks/useTurnstile', () => ({
+  useTurnstile: vi.fn(),
 }));
 
 // Mock axios so axios.isAxiosError works in tests
@@ -45,6 +50,20 @@ vi.mock('react-i18next', () => ({
 }));
 
 import { useNewsletterSubscribe } from '@/hooks/useNewsletter/useNewsletter';
+import { useTurnstile } from '@/hooks/useTurnstile';
+
+const mockUseTurnstile = vi.mocked(useTurnstile);
+
+function defaultTurnstileMock() {
+  const mockGetToken = vi.fn().mockResolvedValue(null);
+  const mockResetWidget = vi.fn();
+  mockUseTurnstile.mockReturnValue({
+    getToken: mockGetToken,
+    resetWidget: mockResetWidget,
+    widgetRef: { current: null },
+  });
+  return { mockGetToken, mockResetWidget };
+}
 
 function renderWidget() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -66,6 +85,7 @@ describe('NewsletterSubscribeWidget', () => {
       mutate: mockMutate,
       isPending: false,
     } as ReturnType<typeof useNewsletterSubscribe>);
+    defaultTurnstileMock();
 
     renderWidget();
 
@@ -80,6 +100,7 @@ describe('NewsletterSubscribeWidget', () => {
       mutate: mockMutate,
       isPending: false,
     } as ReturnType<typeof useNewsletterSubscribe>);
+    defaultTurnstileMock();
 
     renderWidget();
 
@@ -94,10 +115,17 @@ describe('NewsletterSubscribeWidget', () => {
     expect(mockMutate).not.toHaveBeenCalled();
   });
 
-  it('shows success state after successful subscription', async () => {
-    let onSuccessCallback: (() => void) | undefined;
-    const mockMutate = vi.fn((_data, options?: { onSuccess?: () => void }) => {
-      onSuccessCallback = options?.onSuccess;
+  it('sends X-Turnstile-Token header when token returned (AC8)', async () => {
+    const mockGetToken = vi.fn().mockResolvedValue('test-turnstile-token');
+    mockUseTurnstile.mockReturnValue({
+      getToken: mockGetToken,
+      resetWidget: vi.fn(),
+      widgetRef: { current: null },
+    });
+
+    let capturedVars: unknown;
+    const mockMutate = vi.fn((vars) => {
+      capturedVars = vars;
     });
     vi.mocked(useNewsletterSubscribe).mockReturnValue({
       mutate: mockMutate,
@@ -110,6 +138,63 @@ describe('NewsletterSubscribeWidget', () => {
       target: { value: 'test@example.com' },
     });
     fireEvent.click(screen.getByText('Subscribe'));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+    });
+
+    expect((capturedVars as { turnstileToken: string }).turnstileToken).toBe(
+      'test-turnstile-token'
+    );
+    expect((capturedVars as { request: { email: string } }).request.email).toBe('test@example.com');
+  });
+
+  it('sends null turnstileToken when disabled (AC5)', async () => {
+    const { mockGetToken } = defaultTurnstileMock(); // returns null
+
+    let capturedVars: unknown;
+    const mockMutate = vi.fn((vars) => {
+      capturedVars = vars;
+    });
+    vi.mocked(useNewsletterSubscribe).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    } as ReturnType<typeof useNewsletterSubscribe>);
+
+    renderWidget();
+
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.click(screen.getByText('Subscribe'));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+    });
+
+    expect(mockGetToken).toHaveBeenCalled();
+    expect((capturedVars as { turnstileToken: null }).turnstileToken).toBeNull();
+  });
+
+  it('shows success state after successful subscription', async () => {
+    let onSuccessCallback: (() => void) | undefined;
+    const mockMutate = vi.fn((_data, options?: { onSuccess?: () => void }) => {
+      onSuccessCallback = options?.onSuccess;
+    });
+    vi.mocked(useNewsletterSubscribe).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    } as ReturnType<typeof useNewsletterSubscribe>);
+    defaultTurnstileMock();
+
+    renderWidget();
+
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.click(screen.getByText('Subscribe'));
+
+    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
     onSuccessCallback?.();
 
     await waitFor(() => {
@@ -127,6 +212,7 @@ describe('NewsletterSubscribeWidget', () => {
       mutate: mockMutate,
       isPending: false,
     } as ReturnType<typeof useNewsletterSubscribe>);
+    defaultTurnstileMock();
 
     renderWidget();
 
@@ -134,11 +220,42 @@ describe('NewsletterSubscribeWidget', () => {
       target: { value: 'existing@example.com' },
     });
     fireEvent.click(screen.getByText('Subscribe'));
+    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
     onErrorCallback?.(axiosError);
 
     await waitFor(() => {
       expect(screen.getByText('You are already subscribed.')).toBeInTheDocument();
     });
+  });
+
+  it('calls resetWidget and shows error on 403 turnstile_failed (AC10)', async () => {
+    const turnstileError = {
+      isAxiosError: true,
+      response: { status: 403, data: { error: 'turnstile_failed' } },
+    };
+    let onErrorCallback: ((e: unknown) => void) | undefined;
+    const mockMutate = vi.fn((_data, options?: { onError?: (e: unknown) => void }) => {
+      onErrorCallback = options?.onError;
+    });
+    vi.mocked(useNewsletterSubscribe).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    } as ReturnType<typeof useNewsletterSubscribe>);
+    const { mockResetWidget } = defaultTurnstileMock();
+
+    renderWidget();
+
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.click(screen.getByText('Subscribe'));
+    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
+    onErrorCallback?.(turnstileError);
+
+    await waitFor(() => {
+      expect(screen.getByText('Something went wrong. Please try again.')).toBeInTheDocument();
+    });
+    expect(mockResetWidget).toHaveBeenCalled();
   });
 
   it('shows generic error message on non-409 error', async () => {
@@ -151,6 +268,7 @@ describe('NewsletterSubscribeWidget', () => {
       mutate: mockMutate,
       isPending: false,
     } as ReturnType<typeof useNewsletterSubscribe>);
+    defaultTurnstileMock();
 
     renderWidget();
 
@@ -158,6 +276,7 @@ describe('NewsletterSubscribeWidget', () => {
       target: { value: 'test@example.com' },
     });
     fireEvent.click(screen.getByText('Subscribe'));
+    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
     onErrorCallback?.(genericError);
 
     await waitFor(() => {

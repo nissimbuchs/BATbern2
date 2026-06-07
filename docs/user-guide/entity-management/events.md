@@ -179,7 +179,7 @@ See [Workflow System](../workflow/README.md) for complete workflow documentation
 **Event Date & Time**:
 - Primary conference date and time
 - Used for countdown timers
-- Displayed on event landing pages
+- Displayed on event landing pages — the resolved start **and** end times are shown on the public event page so that prospective attendees see the full duration at a glance
 
 **Registration Window**:
 - **Registration Opens**: When public can register

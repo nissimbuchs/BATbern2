@@ -150,19 +150,15 @@ public class BatbernAiService {
         }
 
         try {
-            String dallePrompt = applyVariables(aiPromptService.getPromptText("theme_image"), vars);
+            String prompt = applyVariables(aiPromptService.getPromptText("theme_image"), vars);
 
-            String dalleImageUrl = callImageGeneration(dallePrompt);
-            if (dalleImageUrl == null) {
-                return Optional.empty();
-            }
-
-            byte[] imageBytes = downloadBytes(dalleImageUrl);
+            byte[] imageBytes = callImageGeneration(prompt);
             if (imageBytes == null) {
                 return Optional.empty();
             }
 
-            String s3Key = "ai-themes/" + cacheKey + ".png";
+            // Use colon-free key for S3/CloudFront — colons in URL path segments cause 503s
+            String s3Key = "ai-themes/" + cacheKey.replace(':', '_') + ".png";
             s3Client.putObject(
                 PutObjectRequest.builder()
                     .bucket(s3BucketName)
@@ -268,13 +264,23 @@ public class BatbernAiService {
         return resp.choices().get(0).message().content();
     }
 
-    private String callImageGeneration(String prompt) {
+    /**
+     * Calls OpenAI's /images/generations endpoint and returns the raw PNG bytes.
+     *
+     * Migrated from `dall-e-3` (retired 2026-05-12) to `gpt-image-1`. Key contract
+     * differences vs the old API:
+     *   - size enum changed: 1792x1024 → 1536x1024 (closest landscape)
+     *   - quality enum changed: "standard|hd" → "low|medium|high|auto"
+     *   - response is always base64 in `b64_json` — the `url` field is gone, so we
+     *     no longer need a second HTTP fetch (or the old Azure-blob URL allow-list).
+     */
+    private byte[] callImageGeneration(String prompt) {
         Map<String, Object> body = Map.of(
-            "model", "dall-e-3",
+            "model", "gpt-image-1",
             "prompt", prompt,
             "n", 1,
-            "size", "1792x1024",
-            "quality", "standard"
+            "size", "1536x1024",
+            "quality", "high"
         );
         OpenAiImageResponse resp = openAiClient.post()
             .uri("/images/generations")
@@ -284,43 +290,14 @@ public class BatbernAiService {
         if (resp == null || resp.data() == null || resp.data().isEmpty()) {
             return null;
         }
-        return resp.data().get(0).url();
-    }
-
-    private static boolean isAllowedImageUrl(String url) {
-        if (url == null) {
-            return false;
+        String b64 = resp.data().get(0).b64Json();
+        if (b64 == null || b64.isBlank()) {
+            return null;
         }
-        return url.startsWith("https://oaidalleapiprodscus.blob.core.windows.net/")
-            || url.startsWith("https://dalleprodsec.blob.core.windows.net/")
-            || url.contains(".openai.com/");
-    }
-
-    private byte[] downloadBytes(String url) {
         try {
-            if (!isAllowedImageUrl(url)) {
-                log.warn("Refusing to download from untrusted URL: {}", url);
-                return null;
-            }
-            // Use HttpURLConnection (not HttpClient / URI.create) because DALL-E returns
-            // Azure Blob SAS URLs whose signature contains base64 '+' characters.
-            // URI.create() normalises those, corrupting the signature and causing
-            // Azure to reject with 403 AuthenticationFailed / Signature not well formed.
-            // HttpURLConnection accepts the raw URL string without any URI parsing.
-            @SuppressWarnings("deprecation")
-            var conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
-            conn.setConnectTimeout(15_000);
-            conn.setReadTimeout(30_000);
-            int status = conn.getResponseCode();
-            if (status >= 400) {
-                log.warn("Failed to download DALL-E image: HTTP {}", status);
-                return null;
-            }
-            try (var in = conn.getInputStream()) {
-                return in.readAllBytes();
-            }
-        } catch (Exception e) {
-            log.warn("Failed to download DALL-E image: {}", e.getMessage());
+            return Base64.getDecoder().decode(b64);
+        } catch (IllegalArgumentException e) {
+            log.warn("OpenAI returned invalid base64 image payload: {}", e.getMessage());
             return null;
         }
     }
@@ -396,6 +373,6 @@ public class BatbernAiService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record OpenAiImageResponse(List<ImageData> data) {
         @JsonIgnoreProperties(ignoreUnknown = true)
-        record ImageData(String url) {}
+        record ImageData(@com.fasterxml.jackson.annotation.JsonProperty("b64_json") String b64Json) {}
     }
 }

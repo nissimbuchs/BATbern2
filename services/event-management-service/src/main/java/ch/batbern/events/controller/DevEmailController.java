@@ -5,6 +5,8 @@ import ch.batbern.shared.service.CapturedEmail;
 import ch.batbern.shared.service.LocalEmailCapture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,11 +25,12 @@ import java.util.UUID;
  * Active only on the 'local' Spring profile — never registered in staging/production.
  *
  * Endpoints:
- *   GET    /dev/emails               — list all captured emails (JSON, newest first)
- *   GET    /dev/emails/{id}          — get single email metadata (JSON)
- *   GET    /dev/emails/{id}/preview  — render full HTML body in browser
- *   POST   /dev/emails/{id}/reply    — simulate an inbound reply (routes via InboundEmailRouter)
- *   DELETE /dev/emails               — clear all captured emails
+ *   GET    /dev/emails                              — list all captured emails (JSON, newest first)
+ *   GET    /dev/emails/{id}                         — get single email metadata (JSON)
+ *   GET    /dev/emails/{id}/preview                 — render full HTML body in browser
+ *   GET    /dev/emails/{id}/attachments/{filename}  — download raw attachment bytes
+ *   POST   /dev/emails/{id}/reply                   — simulate an inbound reply (routes via InboundEmailRouter)
+ *   DELETE /dev/emails                              — clear all captured emails
  *
  * Browse from the frontend at http://localhost:8100/dev/emails
  */
@@ -62,6 +65,31 @@ public class DevEmailController {
             .map(e -> ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
                 .body(e.htmlBody()))
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/attachments/{filename}")
+    public ResponseEntity<byte[]> downloadAttachment(
+            @PathVariable UUID id,
+            @PathVariable String filename) {
+        return localEmailCapture.getAll().stream()
+            .filter(e -> e.id().equals(id))
+            .findFirst()
+            .flatMap(email -> {
+                String mimeType = email.attachments().stream()
+                    .filter(a -> a.filename().equals(filename))
+                    .findFirst()
+                    .map(CapturedEmail.AttachmentInfo::mimeType)
+                    .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+                return localEmailCapture.getAttachmentBytes(id, filename)
+                    .map(bytes -> {
+                        HttpHeaders headers = new HttpHeaders();
+                        headers.setContentType(MediaType.parseMediaType(mimeType));
+                        headers.setContentDisposition(
+                            ContentDisposition.attachment().filename(filename).build());
+                        return ResponseEntity.ok().headers(headers).body(bytes);
+                    });
+            })
             .orElse(ResponseEntity.notFound().build());
     }
 

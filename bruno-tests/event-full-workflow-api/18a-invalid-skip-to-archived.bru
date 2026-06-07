@@ -1,0 +1,45 @@
+meta {
+  name: Invalid skip — CREATED → ARCHIVED rejected without override
+  type: http
+  seq: 18.1
+}
+
+put {
+  url: {{baseUrl}}/events/{{invalidTransitionEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "ARCHIVED"
+  }
+}
+
+tests {
+  test("state machine rejects the illegal jump with 400 or 422", function() {
+    expect([400, 422]).to.include(res.getStatus());
+  });
+
+  test("error body identifies the failure", function() {
+    const body = res.getBody();
+    expect(body).to.be.an("object");
+    expect(body.message || body.error).to.be.a("string");
+  });
+}
+
+docs {
+  PR 2b: validates that EventWorkflowStateMachine enforces transition
+  validity when overrideValidation is omitted. CREATED → ARCHIVED skips
+  6 intermediate states; the validator should reject with 400 (raised
+  via InvalidStateTransitionException) or 422 (raised via
+  WorkflowValidationException — depending on which check fires first).
+
+  Runs against the 00d holdout event (which never advances past CREATED)
+  so this test is independent of the 00c workflow event's state at this
+  point in the run (already ARCHIVED via the override walk).
+}

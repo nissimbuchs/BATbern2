@@ -17,6 +17,7 @@ vi.mock('aws-amplify/auth', () => ({
   fetchAuthSession: vi.fn(),
   resetPassword: vi.fn(),
   confirmResetPassword: vi.fn(),
+  signInWithRedirect: vi.fn(),
 }));
 
 // Mock Cognito token provider for storage configuration
@@ -25,6 +26,23 @@ vi.mock('aws-amplify/auth/cognito', () => ({
     setKeyValueStorage: vi.fn(),
   },
 }));
+
+// Mock Amplify Hub (Story 12.8 F7 — waitForFederatedSession listens for auth events).
+// listen MUST return an unsubscribe function (the implementation calls it on settle).
+const mockHubListen = vi.hoisted(() => vi.fn(() => () => {}));
+vi.mock('aws-amplify/utils', () => ({
+  Hub: { listen: mockHubListen },
+}));
+
+// Config-race fix (2026-06-05): spy on ensureAmplifyConfigured so the Hub-before-configure
+// ordering is observable (Amplify.configure synchronously kicks off the OAuth code
+// exchange — a fast signInWithRedirect_failure dispatched before Hub.listen attaches
+// would otherwise be missed and burn the full timeout).
+const mockEnsureAmplifyConfigured = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+vi.mock('@/config/amplify', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/amplify')>();
+  return { ...actual, ensureAmplifyConfigured: mockEnsureAmplifyConfigured };
+});
 
 // Import the mocked modules
 import * as amplifyAuth from 'aws-amplify/auth';
@@ -35,6 +53,9 @@ const mockAuth = vi.mocked(amplifyAuth);
 describe('AuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // clearAllMocks keeps replaced implementations — restore the default resolve so a
+    // mockRejectedValue from one test never leaks into the next.
+    mockEnsureAmplifyConfigured.mockImplementation(() => Promise.resolve());
     // Clear storage before each test
     localStorage.clear();
     sessionStorage.clear();
@@ -164,7 +185,10 @@ describe('AuthService', () => {
       const result = await authService.signIn(credentials);
 
       expect(result.user?.userId).toBeDefined();
-      expect(result.user?.companyId).toBeDefined();
+      // Story 12.1: company is no longer sourced from the token (custom:companyId
+      // dropped from extraction). AuthContext.hydrateUserFromDb fills it from /users/me.
+      expect(result.user?.companyId).toBeUndefined();
+      // preferences defaults to a complete object at extraction; hydration overrides it.
       expect(result.user?.preferences).toBeDefined();
       expect(result.accessToken).toBeDefined();
     });
@@ -354,6 +378,36 @@ describe('AuthService', () => {
       });
     });
 
+    it('should_notWriteCustomCompanyId_evenWhenCompanyIdProvided_perStory12_1', async () => {
+      // Story 12.1 AC4: the `...(signUpData.companyId && { 'custom:companyId': … })`
+      // spread (was authService.ts:318) is removed. Company is owned by
+      // user_profiles.company_id via the user-management path, never seeded from the
+      // token attribute. Even if a caller passes companyId, it must NOT reach Cognito.
+      const signUpData: SignUpData = {
+        email: 'withcompany@company.com',
+        password: 'ValidPassword123!',
+        confirmPassword: 'ValidPassword123!',
+        role: 'attendee',
+        companyId: 'some-company-id',
+        firstName: 'Jane',
+        lastName: 'Roe',
+        acceptTerms: true,
+      };
+
+      mockAuth.signUp.mockResolvedValue({
+        isSignUpComplete: false,
+        userId: 'withcompany-id',
+        nextStep: { signUpStep: 'CONFIRM_SIGN_UP' },
+      });
+
+      await authService.signUp(signUpData);
+
+      const call = mockAuth.signUp.mock.calls[0][0] as {
+        options: { userAttributes: Record<string, unknown> };
+      };
+      expect(call.options.userAttributes).not.toHaveProperty('custom:companyId');
+    });
+
     it('should_validatePasswordMatch_when_signingUp', async () => {
       // Test 9.6: should_validatePasswordMatch_when_signingUp
       const signUpData: SignUpData = {
@@ -469,9 +523,81 @@ describe('AuthService', () => {
       expect(user?.role).toMatch(/^(organizer|speaker|partner|attendee)$/);
     });
 
+    it('should_notSourceCompanyIdOrPreferencesFromToken_perStory12_1', async () => {
+      // Story 12.1 AC1: extractUserContextFromToken no longer reads custom:companyId
+      // (was authService.ts:448) nor custom:preferences (was authService.ts:425).
+      // Even when the token carries those claims, the UserContext must not pick them up
+      // — company + preferences come from GET /users/me via AuthContext hydration.
+      // Identity (sub/email) + authorization (custom:role/custom:username) stay intact.
+      const mockSession = {
+        tokens: {
+          idToken: {
+            payload: {
+              sub: 'user-999',
+              email: 'hygiene@batbern.ch',
+              email_verified: true,
+              'custom:role': 'SPEAKER',
+              'custom:username': 'jane.doe',
+              'custom:companyId': 'stale-company-from-token',
+              'custom:preferences': JSON.stringify({
+                language: 'fr',
+                theme: 'dark',
+                notifications: { email: true, sms: false, push: true },
+                privacy: { showProfile: true, allowMessages: true },
+              }),
+              iat: Math.floor(Date.now() / 1000),
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-id-token',
+          },
+          accessToken: {
+            payload: { exp: Math.floor(Date.now() / 1000) + 3600 },
+            toString: () => 'mock-access-token',
+          },
+        },
+      };
+
+      mockAuth.getCurrentUser.mockResolvedValue({
+        username: 'hygiene@batbern.ch',
+        userId: 'user-999',
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
+
+      const user = await authService.getCurrentUser();
+
+      expect(user).toBeDefined();
+      // companyId NOT read from the token claim
+      expect(user?.companyId).toBeUndefined();
+      // preferences NOT read from the token claim — extraction returns the COMPLETE
+      // default object (language 'en', theme 'light'), NOT the token's 'fr'/'dark'.
+      // Asserting the default value (rather than undefined) proves the token claim was
+      // not sourced AND that the UserPreferences type contract holds before hydration.
+      expect(user?.preferences?.language).toBe('en');
+      expect(user?.preferences?.theme).toBe('light');
+      // identity + authorization preserved
+      expect(user?.username).toBe('jane.doe');
+      expect(user?.role).toBe('speaker');
+      expect(user?.email).toBe('hygiene@batbern.ch');
+    });
+
     it('should_returnNull_when_userNotAuthenticated', async () => {
       // Test 9.8: should_returnNull_when_userNotAuthenticated
       mockAuth.getCurrentUser.mockRejectedValue(new Error('No current user'));
+
+      const user = await authService.getCurrentUser();
+
+      expect(user).toBeNull();
+    });
+
+    it('should_returnNull_when_sessionHasNoIdToken', async () => {
+      // Covers lines 266-267: session resolves but tokens.idToken is absent
+      mockAuth.getCurrentUser.mockResolvedValue({
+        username: 'test@batbern.ch',
+        userId: 'user-123',
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue({
+        tokens: undefined,
+      });
 
       const user = await authService.getCurrentUser();
 
@@ -483,6 +609,106 @@ describe('AuthService', () => {
     it('should_signOutUser_when_called', async () => {
       await authService.signOut();
       expect(mockAuth.signOut).toHaveBeenCalled();
+    });
+  });
+
+  describe('signInWithFederated', () => {
+    it('should_callSignInWithRedirect_when_signInWithFederatedInvokedWithGoogle', async () => {
+      // Story 12.7 AC1
+      vi.mocked(mockAuth.signInWithRedirect).mockResolvedValue(undefined);
+
+      await authService.signInWithFederated('Google');
+
+      expect(mockAuth.signInWithRedirect).toHaveBeenCalledTimes(1);
+      expect(mockAuth.signInWithRedirect).toHaveBeenCalledWith({ provider: 'Google' });
+    });
+
+    it('should_propagateError_when_redirectInitiationFails', async () => {
+      // No catch-and-swallow — initiation errors reach the caller (AC1).
+      vi.mocked(mockAuth.signInWithRedirect).mockRejectedValue(new Error('redirect failed'));
+
+      await expect(authService.signInWithFederated('Google')).rejects.toThrow('redirect failed');
+    });
+  });
+
+  // Story 12.8 F7: the /auth/callback race — wait (bounded) for Amplify's async ?code= →
+  // token exchange to settle instead of checking the session once and bailing.
+  describe('waitForFederatedSession', () => {
+    it('should_resolveTrue_when_tokensAlreadyPresent', async () => {
+      // Exchange already completed before we were called — the immediate token check wins.
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({
+        tokens: { idToken: { toString: () => 'id-token' } },
+      } as never);
+
+      await expect(authService.waitForFederatedSession(2000)).resolves.toBe(true);
+    });
+
+    it('should_resolveTrue_when_hubReportsSignInWithRedirect', async () => {
+      // No tokens yet — the Hub event signals the exchange settled.
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({ tokens: undefined } as never);
+      let hubCallback: ((capsule: { payload: { event: string } }) => void) | undefined;
+      mockHubListen.mockImplementation(((_channel: string, cb: typeof hubCallback) => {
+        hubCallback = cb;
+        return () => {};
+      }) as never);
+
+      const pending = authService.waitForFederatedSession(2000);
+      // Let the listener attach, then fire the success event.
+      await new Promise((r) => setTimeout(r, 10));
+      hubCallback?.({ payload: { event: 'signInWithRedirect' } });
+
+      await expect(pending).resolves.toBe(true);
+    });
+
+    it('should_resolveFalse_when_hubReportsRedirectFailure', async () => {
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({ tokens: undefined } as never);
+      let hubCallback: ((capsule: { payload: { event: string } }) => void) | undefined;
+      mockHubListen.mockImplementation(((_channel: string, cb: typeof hubCallback) => {
+        hubCallback = cb;
+        return () => {};
+      }) as never);
+
+      const pending = authService.waitForFederatedSession(2000);
+      await new Promise((r) => setTimeout(r, 10));
+      hubCallback?.({ payload: { event: 'signInWithRedirect_failure' } });
+
+      await expect(pending).resolves.toBe(false);
+    });
+
+    it('should_resolveFalse_when_timeoutElapsesWithoutSession', async () => {
+      // Never settles: no tokens, no Hub event → bounded false (never throws/hangs).
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({ tokens: undefined } as never);
+      mockHubListen.mockImplementation((() => () => {}) as never);
+
+      await expect(authService.waitForFederatedSession(80)).resolves.toBe(false);
+    });
+
+    it('should_attachHubListener_before_amplifyConfigureTriggersExchange', async () => {
+      // Amplify.configure (inside ensureAmplifyConfigured) synchronously starts the OAuth
+      // code exchange; a fast failure dispatches signInWithRedirect_failure immediately.
+      // The Hub listener MUST therefore be live BEFORE ensureAmplifyConfigured runs.
+      vi.mocked(mockAuth.fetchAuthSession).mockResolvedValue({
+        tokens: { idToken: { toString: () => 'id-token' } },
+      } as never);
+
+      let hubAttachedBeforeConfigure = false;
+      mockEnsureAmplifyConfigured.mockImplementation(() => {
+        hubAttachedBeforeConfigure = mockHubListen.mock.calls.length > 0;
+        return Promise.resolve();
+      });
+
+      await expect(authService.waitForFederatedSession(2000)).resolves.toBe(true);
+      expect(mockEnsureAmplifyConfigured).toHaveBeenCalled();
+      expect(hubAttachedBeforeConfigure).toBe(true);
+    });
+
+    it('should_resolveFalse_when_amplifyConfigurationFails', async () => {
+      // ensureAmplifyConfigured rejecting (Amplify.configure threw) must settle the wait
+      // promise as false, not leave it hanging until the timeout.
+      mockEnsureAmplifyConfigured.mockRejectedValue(new Error('configure failed'));
+      mockHubListen.mockImplementation((() => () => {}) as never);
+
+      await expect(authService.waitForFederatedSession(5000)).resolves.toBe(false);
     });
   });
 
@@ -589,6 +815,44 @@ describe('AuthService', () => {
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe('USER_NOT_CONFIRMED');
       expect(result.error?.message).toBe('Please confirm your email address');
+    });
+
+    it('should_mapTooManyRequestsException_when_rateLimited', async () => {
+      // Covers line 399: TooManyRequestsException mapping
+      const credentials: LoginCredentials = {
+        email: 'user@example.com',
+        password: 'Password123!',
+      };
+
+      mockAuth.signIn.mockRejectedValue({
+        name: 'TooManyRequestsException',
+        message: 'Rate exceeded',
+      });
+
+      const result = await authService.signIn(credentials);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('TOO_MANY_REQUESTS');
+      expect(result.error?.message).toBe('Too many attempts. Please try again later');
+    });
+
+    it('should_mapUnknownError_when_errorCodeNotRecognized', async () => {
+      // Covers default case in mapCognitoError
+      const credentials: LoginCredentials = {
+        email: 'user@example.com',
+        password: 'Password123!',
+      };
+
+      mockAuth.signIn.mockRejectedValue({
+        name: 'SomeUnknownException',
+        message: 'Something unexpected happened',
+      });
+
+      const result = await authService.signIn(credentials);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('SomeUnknownException');
+      expect(result.error?.message).toBe('Something unexpected happened');
     });
   });
 });

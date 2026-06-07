@@ -16,12 +16,12 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import Alert from '@mui/material/Alert';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
+import { Checkbox } from '@/components/public/ui/checkbox';
+import { Label } from '@/components/public/ui/label';
 import { PersonalDetailsStep, type PersonalDetailsStepRef } from './PersonalDetailsStep';
 import { ConfirmRegistrationStep } from './ConfirmRegistrationStep';
 import { RegistrationAccordion } from './RegistrationAccordion';
+import { AttendeeQuickRegisterPanel } from './AttendeeQuickRegisterPanel';
 import { Button } from '@/components/public/ui/button';
 import { eventApiClient } from '@/services/eventApiClient';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
@@ -30,6 +30,7 @@ import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
 import type { CreateRegistrationRequest } from '@/types/event.types';
 import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 export interface RegistrationWizardProps {
   /** Event code for registration */
@@ -57,7 +58,7 @@ export const RegistrationWizard = ({
   spotsRemaining,
 }: RegistrationWizardProps) => {
   const navigate = useNavigate();
-  const { t } = useTranslation(['registration', 'common']);
+  const { t, i18n } = useTranslation(['registration', 'common']);
   const queryClient = useQueryClient();
   const step1Ref = useRef<PersonalDetailsStepRef>(null);
 
@@ -65,11 +66,17 @@ export const RegistrationWizard = ({
   const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(eventCode);
 
   // Pre-fill form from user profile when authenticated
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { userProfile } = useUserProfile({ enabled: isAuthenticated });
 
   // AC8 (Story 10.11): event is full when spotsRemaining is exactly 0 (not null/undefined)
   const isEventFull = spotsRemaining === 0;
+
+  const {
+    getToken: getTurnstileToken,
+    resetWidget: resetTurnstileWidget,
+    widgetRef: turnstileWidgetRef,
+  } = useTurnstile();
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -181,7 +188,8 @@ export const RegistrationWizard = ({
     setError(null);
 
     try {
-      const response = await eventApiClient.createRegistration(eventCode, formData);
+      const turnstileToken = await getTurnstileToken();
+      const response = await eventApiClient.createRegistration(eventCode, formData, turnstileToken);
 
       // Store registration in sessionStorage to show "already registered" on homepage
       sessionStorage.setItem(
@@ -202,6 +210,17 @@ export const RegistrationWizard = ({
       // AC7: Invalidate my-registration cache so banner/guard reflect new status immediately
       queryClient.invalidateQueries({ queryKey: ['my-registration', eventCode] });
     } catch (err) {
+      // Handle Turnstile 403 errors (AC10, Story 10.31)
+      const isTurnstileError =
+        err instanceof Error &&
+        (err.message.includes('turnstile_required') || err.message.includes('turnstile_failed'));
+      if (isTurnstileError) {
+        resetTurnstileWidget();
+        setError(t('wizard.errors.failed'));
+        setIsSubmitting(false);
+        return;
+      }
+
       // Handle duplicate registration (409 Conflict)
       // Backend returns 409 only for confirmed/cancelled registrations
       // For pending registrations, backend returns 200 OK (reuses existing)
@@ -239,6 +258,23 @@ export const RegistrationWizard = ({
     </div>
   );
 
+  // Quick registration for authenticated ATTENDEEs who are not yet registered:
+  // skip the 2-step form and show a one-click inline confirmation panel.
+  if (
+    isAuthenticated &&
+    user?.role === 'attendee' &&
+    !isRegistrationLoading &&
+    myRegistration == null
+  ) {
+    return (
+      <AttendeeQuickRegisterPanel
+        eventCode={eventCode}
+        onCancel={onCancel ?? (() => {})}
+        inline={inline}
+      />
+    );
+  }
+
   // AC6: Registration Wizard guard (Story 10.10, T11)
   // When the authenticated user already has a non-null registration:
   // - REGISTERED / CONFIRMED / WAITLIST → show guard with "Go back" button
@@ -246,7 +282,11 @@ export const RegistrationWizard = ({
   if (!isRegistrationLoading && myRegistration != null) {
     const isCancelled = myRegistration.status === 'CANCELLED';
     const formattedDate = myRegistration.registrationDate
-      ? new Date(myRegistration.registrationDate).toLocaleDateString()
+      ? new Date(myRegistration.registrationDate).toLocaleDateString(i18n.language, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
       : null;
 
     return (
@@ -257,11 +297,15 @@ export const RegistrationWizard = ({
         <div className="text-center mb-6">
           <AlertCircle className="h-12 w-12 text-amber-400 mx-auto mb-4" />
           <h2 className="text-2xl font-light mb-2">
-            {t('registrationStatusGuard.alreadyRegistered')}
+            {isCancelled
+              ? t('registrationStatusGuard.unregistered')
+              : t('registrationStatusGuard.alreadyRegistered')}
           </h2>
           {formattedDate && (
             <p className="text-sm text-zinc-400">
-              {myRegistration.status} · {formattedDate}
+              {isCancelled
+                ? formattedDate
+                : `${t(`registrationStatusBanner.${(myRegistration.status ?? '').toLowerCase()}`)} · ${formattedDate}`}
             </p>
           )}
         </div>
@@ -316,7 +360,10 @@ export const RegistrationWizard = ({
   // Success view
   if (registrationSuccess) {
     return (
-      <div className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}>
+      <div
+        data-testid="registration-success"
+        className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}
+      >
         <div className="text-center">
           <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
           {isWaitlistRegistration ? (
@@ -340,7 +387,12 @@ export const RegistrationWizard = ({
               {registeredEmail && (
                 <p className="text-zinc-300 mb-3">
                   {t('success.emailSentTo')}{' '}
-                  <span className="font-mono text-blue-400">{registeredEmail}</span>
+                  <span
+                    data-testid="registration-success-email"
+                    className="font-mono text-blue-400"
+                  >
+                    {registeredEmail}
+                  </span>
                 </p>
               )}
               <p className="text-sm text-zinc-400 mb-4">
@@ -448,21 +500,23 @@ export const RegistrationWizard = ({
       {/* AC8 (Story 10.11): Waitlist acknowledgment — shown in Step 2 when event is full */}
       {isEventFull && currentStep === 2 && (
         <div className="mt-4">
-          <Alert severity="info" sx={{ mb: 1 }}>
+          <div
+            role="alert"
+            className="mb-2 rounded-md border border-blue-400/30 bg-blue-400/15 px-4 py-2.5 text-sm text-blue-200"
+          >
             {t('wizard.waitlistWarning')}
-          </Alert>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={waitlistAcknowledged}
-                onChange={(e) => setWaitlistAcknowledged(e.target.checked)}
-                data-testid="waitlist-acknowledge-checkbox"
-                sx={{ color: 'info.main' }}
-              />
-            }
-            label={t('wizard.waitlistAcknowledgeLabel')}
-            sx={{ color: 'text.secondary', mt: 0.5 }}
-          />
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <Checkbox
+              id="waitlist-acknowledge"
+              checked={waitlistAcknowledged}
+              onCheckedChange={(checked) => setWaitlistAcknowledged(checked === true)}
+              data-testid="waitlist-acknowledge-checkbox"
+            />
+            <Label htmlFor="waitlist-acknowledge" className="text-sm text-zinc-400">
+              {t('wizard.waitlistAcknowledgeLabel')}
+            </Label>
+          </div>
         </div>
       )}
 
@@ -472,6 +526,9 @@ export const RegistrationWizard = ({
           <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
+
+      {/* Invisible Turnstile widget container (Story 10.31, AC9) */}
+      <div ref={turnstileWidgetRef} />
 
       {/* Navigation Buttons */}
       <div className="mt-8 flex justify-between">

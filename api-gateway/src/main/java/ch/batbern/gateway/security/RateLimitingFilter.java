@@ -29,6 +29,10 @@ import java.io.IOException;
  * - Uses existing RateLimiter and RateLimitStorage infrastructure
  *
  * Implements AC6: Rate Limiting from Story 1.11
+ *
+ * CORS: not handled here. CORS is owned solely by the AWS API Gateway edge (ADR-008); it adds
+ * the CORS response headers — including on this filter's 429 — for allowed origins. See
+ * infrastructure/lib/stacks/api-gateway-stack.ts `corsPreflight` and SecurityConfig.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE) // After Spring Security authentication
@@ -55,8 +59,15 @@ public class RateLimitingFilter implements Filter {
         try {
             // Get user context (or anonymous if not authenticated)
             UserContext userContext = getUserContext(httpRequest);
-            String userId = userContext != null ? userContext.getUserId() : "anonymous";
             String role = userContext != null ? userContext.getRole() : "anonymous";
+
+            // Resolve the bucket key — must match what RateLimiter.isAnonymousRequestAllowed /
+            // isRequestAllowed write to, otherwise the rate-limit response headers report
+            // counts from a different bucket than the one actually enforced.
+            // Story 11.C.1 / D3: anonymous requests are bucketed per client IP.
+            String userId = userContext != null
+                ? userContext.getUserId()
+                : "anonymous:" + getClientIp(httpRequest);
 
             // Get current count and rate limit
             String endpoint = httpRequest.getRequestURI();
@@ -74,13 +85,11 @@ public class RateLimitingFilter implements Filter {
             addRateLimitHeaders(httpResponse, rateLimit, remaining);
 
             if (!isAllowed) {
-                log.warn("Rate limit exceeded for user: {} role: {} endpoint: {} (count: {}, limit: {})",
+                log.warn("Rate limit exceeded for principal: {} role: {} endpoint: {} (count: {}, limit: {})",
                     LogSanitizer.sanitize(userId), LogSanitizer.sanitize(role),
                     LogSanitizer.sanitize(endpoint), currentCount, rateLimit);
 
-                // Add CORS headers to 429 response
-                addCorsHeaders(httpRequest, httpResponse);
-
+                // CORS headers on this 429 are added by the AWS API Gateway edge (ADR-008).
                 httpResponse.setStatus(429); // HTTP 429 Too Many Requests
                 httpResponse.setContentType("application/json");
                 httpResponse.getWriter().write(String.format(
@@ -92,7 +101,7 @@ public class RateLimitingFilter implements Filter {
                 return;
             }
 
-            log.debug("Rate limit check passed for user: {} role: {} endpoint: {} (count: {}, limit: {})",
+            log.debug("Rate limit check passed for principal: {} role: {} endpoint: {} (count: {}, limit: {})",
                 LogSanitizer.sanitize(userId), LogSanitizer.sanitize(role),
                 LogSanitizer.sanitize(endpoint), currentCount, rateLimit);
 
@@ -102,50 +111,14 @@ public class RateLimitingFilter implements Filter {
         } catch (RateLimitExceededException e) {
             log.warn("Rate limit exception: {}", e.getMessage());
 
-            // Add CORS headers to exception response
-            addCorsHeaders(httpRequest, httpResponse);
-
+            // CORS headers are added by the AWS API Gateway edge (ADR-008) for allowed origins,
+            // including on this 429 — the gateway no longer manages CORS. See SecurityConfig.
             httpResponse.setStatus(429); // HTTP 429 Too Many Requests
             httpResponse.setContentType("application/json");
             httpResponse.getWriter().write(
                 "{\"error\":\"Rate limit exceeded\",\"message\":\"" + e.getMessage() + "\"}"
             );
         }
-    }
-
-    /**
-     * Adds CORS headers to allow cross-origin requests
-     */
-    private void addCorsHeaders(HttpServletRequest request, HttpServletResponse response) {
-        String origin = request.getHeader("Origin");
-        if (origin != null && isOriginAllowed(origin)) {
-            response.setHeader("Access-Control-Allow-Origin", origin);
-            response.setHeader("Access-Control-Allow-Credentials", "true");
-            response.setHeader("Access-Control-Allow-Methods",
-                "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
-            response.setHeader("Access-Control-Allow-Headers",
-                "Authorization, Content-Type, X-Requested-With, X-Request-Id, "
-                + "X-Correlation-ID, Accept, Accept-Language");
-            response.setHeader("Access-Control-Expose-Headers",
-                "X-Request-Id, X-Correlation-ID, X-RateLimit-Limit, "
-                + "X-RateLimit-Remaining, X-RateLimit-Reset");
-            response.setHeader("Vary", "Origin");
-        }
-    }
-
-    /**
-     * Checks if the origin is allowed for CORS
-     */
-    private boolean isOriginAllowed(String origin) {
-        if (origin == null) {
-            return false;
-        }
-        // Allow localhost for development
-        if (origin.startsWith("http://localhost:") || origin.startsWith("https://localhost:")) {
-            return true;
-        }
-        // Allow staging and production
-        return origin.equals("https://staging.batbern.ch") || origin.equals("https://www.batbern.ch");
     }
 
     /**
@@ -163,6 +136,22 @@ public class RateLimitingFilter implements Filter {
     private long getNextMinuteTimestamp() {
         long currentMinute = System.currentTimeMillis() / 60000;
         return (currentMinute + 1) * 60000;
+    }
+
+    /**
+     * Resolves the client IP for anonymous bucketing, honoring X-Forwarded-For and X-Real-IP
+     * (set by the AWS HTTP API in front of the gateway).
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
     }
 
     /**

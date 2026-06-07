@@ -10,7 +10,7 @@
  * - Content mode (isLayoutMode=false): TinyMCE WYSIWYG, subject field, layoutKey selector
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { Editor as TinyMCEEditor } from '@tinymce/tinymce-react';
 import {
@@ -29,6 +29,8 @@ import {
   Select,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import {
@@ -67,6 +69,8 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isEdit = Boolean(template);
 
   // Create-mode fields
@@ -83,6 +87,14 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
   );
   const [error, setError] = useState<string | null>(null);
 
+  // Track TinyMCE content in a ref to avoid re-renders on every keystroke
+  // (re-renders cause cursor to jump to top). Sync to state on blur for validation.
+  const tinymceContentRef = useRef(htmlBody);
+
+  const syncHtmlBodyFromEditor = useCallback(() => {
+    setHtmlBody(tinymceContentRef.current);
+  }, []);
+
   const { data: layouts = [] } = useLayoutTemplates();
   const createMutation = useCreateEmailTemplate();
   const updateMutation = useUpdateEmailTemplate();
@@ -98,12 +110,23 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
   }, [template]);
 
   const missingContentPlaceholder = isLayoutMode && !htmlBody.includes('{{content}}');
-  const detectedVars = extractVariables(htmlBody);
+  const detectedVars = [
+    ...new Set([
+      ...(template?.variables ? Object.keys(template.variables) : []),
+      ...extractVariables(htmlBody),
+    ]),
+  ];
 
   const handleSave = async () => {
     setError(null);
 
-    if (!htmlBody.trim()) {
+    // Sync latest TinyMCE content before validation (ref may be ahead of state)
+    const currentHtmlBody = isLayoutMode ? htmlBody : tinymceContentRef.current;
+    if (!isLayoutMode) {
+      setHtmlBody(currentHtmlBody);
+    }
+
+    if (!currentHtmlBody.trim()) {
       setError(t('emailTemplates.validation.htmlBodyRequired', 'HTML body is required.'));
       return;
     }
@@ -121,7 +144,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
           locale: template.locale,
           req: {
             subject: isLayoutMode ? undefined : subject,
-            htmlBody,
+            htmlBody: currentHtmlBody,
             layoutKey: isLayoutMode ? undefined : layoutKey || undefined,
           },
         });
@@ -150,7 +173,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
             | 'NEWSLETTER',
           isLayout: false,
           subject,
-          htmlBody,
+          htmlBody: currentHtmlBody,
           layoutKey: layoutKey || undefined,
         });
       }
@@ -177,7 +200,14 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
       : t('emailTemplates.createTitle', 'New Template');
 
   return (
-    <Dialog open onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog
+      open
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      fullScreen={isFullScreen}
+      data-testid="email-template-modal"
+    >
       <DialogTitle>{title}</DialogTitle>
       <DialogContent dividers>
         {/* Metadata chips (edit mode) */}
@@ -206,6 +236,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
               fullWidth
               required
               helperText="e.g. my-custom-invitation"
+              inputProps={{ 'data-testid': 'email-template-key-input' }}
             />
             <FormControl sx={{ minWidth: 100 }}>
               <InputLabel>{t('emailTemplates.locale', 'Locale')}</InputLabel>
@@ -229,7 +260,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
             onChange={(e) => setSubject(e.target.value)}
             fullWidth
             required
-            inputProps={{ maxLength: 500 }}
+            inputProps={{ maxLength: 500, 'data-testid': 'email-template-subject-input' }}
             sx={{ mb: 2 }}
           />
         )}
@@ -264,17 +295,17 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
           </Box>
         ) : (
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-            {/* Security note: TinyMCE API key is intentionally committed.
-               It is a domain-locked free-tier key restricted to BATbern domains.
-               No sensitive data is processed by TinyMCE cloud — it only loads the editor JS bundle.
-               Risk accepted (code review 2026-02-28). */}
             <TinyMCEEditor
-              apiKey="vfen2deuuzo9vxkqtwegdhngiujb74mu2pb3l5fg9o31ekvf"
-              value={htmlBody}
-              onEditorChange={(val: string) => setHtmlBody(val)}
+              tinymceScriptSrc="/tinymce/tinymce.min.js"
+              initialValue={htmlBody}
+              onEditorChange={(val: string) => {
+                tinymceContentRef.current = val;
+              }}
+              licenseKey="gpl"
               init={{
                 height: 400,
                 menubar: false,
+                z_index: 1400, // Must exceed MUI Dialog z-index (1300) so source code dialog is clickable
                 plugins: 'code table lists link',
                 toolbar:
                   'code | blocks | bold italic underline' +
@@ -283,6 +314,9 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
                 entity_encoding: 'raw',
                 valid_elements: '*[*]',
                 branding: false,
+                setup: (editor) => {
+                  editor.on('blur', syncHtmlBodyFromEditor);
+                },
               }}
             />
           </Box>
@@ -337,6 +371,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
           variant="contained"
           disabled={isSaving}
           startIcon={isSaving ? <CircularProgress size={16} /> : undefined}
+          data-testid="email-template-save"
         >
           {t('actions.save', 'Save')}
         </Button>

@@ -1,0 +1,36 @@
+meta {
+  name: Get partner meeting by id
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/partner-meetings/{{createdMeetingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{createdMeetingId}}
+}
+
+tests {
+  test("returns 200 with the requested meeting", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.id).to.equal(bru.getVar("createdMeetingId"));
+    expect(body.startTime).to.be.a("string");
+    expect(body.endTime).to.be.a("string");
+    expect(body.createdBy).to.be.a("string");
+  });
+}

@@ -27,6 +27,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useAiPrompts, useUpdateAiPrompt, useResetAiPrompt } from '@/hooks/useAiPrompts';
 import type { AiPromptResponse } from '@/services/aiPromptService';
 
@@ -45,6 +46,7 @@ interface PromptCardProps {
 
 const PromptCard: React.FC<PromptCardProps> = ({ prompt }) => {
   const { t } = useTranslation('common');
+  const { isMobile } = useBreakpoints();
   const [text, setText] = useState(prompt.promptText);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; error: boolean; message: string }>({
@@ -149,7 +151,11 @@ const PromptCard: React.FC<PromptCardProps> = ({ prompt }) => {
       </Card>
 
       {/* Reset confirmation dialog */}
-      <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)}>
+      <Dialog
+        open={resetDialogOpen}
+        onClose={() => setResetDialogOpen(false)}
+        fullScreen={isMobile}
+      >
         <DialogTitle>{t('admin.aiPrompts.resetDialogTitle')}</DialogTitle>
         <DialogContent>
           <DialogContentText>{t('admin.aiPrompts.resetDialogText')}</DialogContentText>
@@ -194,7 +200,7 @@ export const AiPromptsTab: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box data-testid="ai-prompts-tab">
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         {t('admin.aiPrompts.description')}
       </Typography>

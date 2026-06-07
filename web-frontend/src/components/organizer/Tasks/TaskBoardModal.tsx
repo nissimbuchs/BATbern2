@@ -37,6 +37,8 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
@@ -66,6 +68,8 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
 }) => {
   const { t, i18n } = useTranslation('events');
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const locale = i18n.language === 'de' ? de : enUS;
 
   const [filter, setFilter] = useState<'all' | 'mine'>('mine');
@@ -144,10 +148,11 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
         onClose={onClose}
         maxWidth={false}
         fullWidth
+        fullScreen={isFullScreen}
         PaperProps={{
           sx: {
-            width: '90vw',
-            maxHeight: '90vh',
+            width: isFullScreen ? '100vw' : '90vw',
+            maxHeight: isFullScreen ? '100vh' : '90vh',
           },
         }}
       >
@@ -280,7 +285,13 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
       </Dialog>
 
       {/* Task Completion Modal */}
-      <Dialog open={!!completingTaskId} onClose={handleCancelComplete} maxWidth="sm" fullWidth>
+      <Dialog
+        open={!!completingTaskId}
+        onClose={handleCancelComplete}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isFullScreen}
+      >
         <DialogTitle>{t('tasks.completeTask', 'Complete Task')}</DialogTitle>
         <DialogContent>
           <TextField

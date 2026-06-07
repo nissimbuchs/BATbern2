@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useUpdateUserRoles } from '../../../hooks/useUserManagement';
 import type { User, Role } from '../../../types/user.types';
 
@@ -27,6 +28,7 @@ interface RoleManagerModalProps {
 
 const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose, onSuccess }) => {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
   const updateRolesMutation = useUpdateUserRoles();
 
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
@@ -94,7 +96,9 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isMobile}
       aria-labelledby="role-manager-dialog-title"
+      data-testid="role-manager-dialog"
     >
       <DialogTitle id="role-manager-dialog-title">
         <Box display="flex" justifyContent="space-between" alignItems="center">

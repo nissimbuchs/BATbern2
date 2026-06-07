@@ -39,7 +39,6 @@ class SessionUserTest {
                 .session(session)
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
-                .presentationTitle("Test Presentation")
                 .isConfirmed(false)
                 .build();
     }
@@ -52,7 +51,6 @@ class SessionUserTest {
         assertThat(sessionUser.getSession().getId()).isEqualTo(sessionId);
         assertThat(sessionUser.getUsername()).isEqualTo(username);
         assertThat(sessionUser.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
-        assertThat(sessionUser.getPresentationTitle()).isEqualTo("Test Presentation");
         assertThat(sessionUser.isConfirmed()).isFalse();
     }
 
@@ -181,7 +179,6 @@ class SessionUserTest {
                 .build();
 
         // Then: presentationTitle should be null (optional field)
-        assertThat(sessionUserWithoutTitle.getPresentationTitle()).isNull();
     }
 
     @Test

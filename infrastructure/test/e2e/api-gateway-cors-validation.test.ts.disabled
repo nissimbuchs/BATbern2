@@ -110,7 +110,7 @@ describeIf('API Gateway CORS Configuration', () => {
     const expectedOrigin = environment === 'production'
       ? 'https://www.batbern.ch'
       : environment === 'staging'
-      ? 'https://staging.batbern.ch'
+      ? 'https://www.batbern.ch'
       : 'http://localhost:3000';
 
     // Get API Gateway resources

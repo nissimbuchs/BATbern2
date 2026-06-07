@@ -1,0 +1,41 @@
+meta {
+  name: Promote Speaker - Missing Email Returns 400 (Story 11.D.1 AC2)
+  type: http
+  seq: 46
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{promoteTestSpeakerId}}/promote
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns 400 Bad Request when email is missing (Story 11.D.1 AC2)", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("response identifies the invalid field", function() {
+    const body = res.getBody();
+    // Bean Validation surfaces the field name in the message or details map.
+    expect(JSON.stringify(body).toLowerCase()).to.include('email');
+  });
+}
+
+docs {
+  Contract test for Story 11.D.1 AC2: empty body → 400 (Bean Validation on `email`
+  @NotBlank @Email). No state change, no provisioning call, no history row (verified at
+  the Java integration-test layer in SpeakerPromoteControllerIntegrationTest).
+}

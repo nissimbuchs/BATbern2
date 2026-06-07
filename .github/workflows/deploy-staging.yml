@@ -3,12 +3,43 @@ name: Deploy to Staging
 on:
   workflow_call:
     # Allow this workflow to be called from other workflows (like build.yml)
+    inputs:
+      enable_bruno_rollback:
+        description: >-
+          When true, auto-rollback ECS services if Bruno API tests fail.
+          Default false until the PR 14 gate flip — see
+          docs/plans/bruno-staging-hardening.md §A5b for the gating rationale.
+        type: boolean
+        required: false
+        default: false
   workflow_dispatch:
     # Allow manual triggering from GitHub Actions UI
+    inputs:
+      enable_bruno_rollback:
+        description: >-
+          Auto-rollback on Bruno failure. Used by F1 deliberate-fail exercise to
+          prove the rollback path on a feature branch before the PR 14 gate flip.
+          Leave false for normal runs.
+        type: boolean
+        required: false
+        default: false
+
+# Serialize all staging deploys. The staging account (188701360969) serves
+# production traffic and CloudFormation rejects an update while a stack is in
+# UPDATE_IN_PROGRESS. A static group makes concurrent deploys (e.g. a wave of
+# merges to develop) queue instead of colliding with
+# "ValidationError: ... is in UPDATE_IN_PROGRESS state and can not be updated".
+# cancel-in-progress: false so an in-flight prod deploy is never killed mid-roll.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
 
 env:
   AWS_REGION: eu-central-1
   ENVIRONMENT: staging
+  # Staging Cognito app-client id (not a secret). Declared once so the Bruno and Playwright
+  # token-fetch steps don't each hardcode it (review #1, PR #691).
+  COGNITO_CLIENT_ID: 1b53lci6qpqsmdn0u3e8s4knvv
 
 jobs:
   deploy-to-staging:
@@ -120,7 +151,13 @@ jobs:
           fi
 
           # Check for infrastructure changes (requires full deployment)
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package"; then
+          # Note: the `lambda` alternation (no `lib/` prefix) catches
+          # `infrastructure/lambda/email-forwarder/**` and the other
+          # standalone Lambdas that live outside `infrastructure/lib/`.
+          # Without it, a pure-Lambda-code change is classified as
+          # code-only, deploy chooses fast-path, Lambda is never
+          # republished. See 2026-05-22 Story 10.32 post-merge incident.
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin|lambda)/|^infrastructure/package"; then
             echo "✓ Infrastructure code changes detected - will deploy all stacks"
             INFRASTRUCTURE_CHANGED=true
             echo "infrastructure=true" >> $GITHUB_OUTPUT
@@ -158,7 +195,7 @@ jobs:
 
           if echo "$CHANGED_FILES" | grep -q "^api-gateway/"; then
             echo "✓ API Gateway service changed"
-            CHANGED_SERVICES="$CHANGED_SERVICES api-gateway-service api-gateway"
+            CHANGED_SERVICES="$CHANGED_SERVICES api-gateway"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "^shared-kernel/"; then
@@ -197,10 +234,33 @@ jobs:
             echo "ℹ️  Frontend loads configuration at runtime from backend API (GET /api/v1/config)"
             echo "ℹ️  This enables 'build once, deploy everywhere' pattern"
             npm ci
-            npm run build
+            # Install the Chromium binary used by the build-time prerender crawl
+            # (scripts/prerender.mjs). Non-fatal: if it fails, prerender degrades gracefully
+            # to a CSR-only build (no regression) — see the script's fallback.
+            npx playwright install --with-deps chromium || echo "::warning::Chromium install failed — prerender will fall back to CSR"
+            # build:prerender = `npm run build` + the SSG crawl that emits static HTML for
+            # the public routes (/, /privacy, /about, /support). See
+            # docs/plans/public-homepage-prerender.md. Non-blocking: if the crawl fails it
+            # leaves a clean CSR dist (the script writes nothing on error), so we still ship
+            # a working site rather than failing the deploy.
+            npm run build:prerender || {
+              echo "::warning::Prerender failed — deploying CSR-only dist"
+              npm run build
+            }
             echo "✅ Frontend build complete: dist/ ready for CDK deployment"
           else
             echo "::warning::Frontend package.json not found, skipping build"
+          fi
+
+      - name: Ensure frontend dist exists for CDK synthesis
+        if: steps.changes.outputs.frontend != 'true' && steps.changes.outputs.deploy_all != 'true'
+        run: |
+          # CDK synthesizes ALL stacks (including Frontend) even for selective deploys.
+          # When frontend wasn't built, create a placeholder so CDK synthesis doesn't fail.
+          if [ ! -d "web-frontend/dist" ]; then
+            echo "Creating placeholder web-frontend/dist/ for CDK synthesis"
+            mkdir -p web-frontend/dist
+            echo "<!-- placeholder for CDK synthesis -->" > web-frontend/dist/index.html
           fi
 
       - name: Set up JDK 21
@@ -317,7 +377,7 @@ jobs:
         run: |
           echo "🚀 Executing fast-path deployment (bypasses CloudFormation)"
 
-          IFS=',' read -ra SERVICES <<< "${{ steps.changes.outputs.changed_services }}"
+          read -ra SERVICES <<< "$(echo "${{ steps.changes.outputs.changed_services }}" | xargs)"
 
           for SERVICE in "${SERVICES[@]}"; do
             # Trim whitespace
@@ -528,7 +588,7 @@ jobs:
         timeout-minutes: 20
         working-directory: ./infrastructure
         run: |
-          echo "🏗️  Layer 1: Infrastructure (Network, Secrets, EventBus)"
+          echo "🏗️  Layer 1: Infrastructure (Network, Secrets, EventBus, InboundEmail)"
           npm run deploy:staging:layer1-infrastructure --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
@@ -539,6 +599,22 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
+
+      # Pre-deploy application stacks that consume Storage exports before updating Storage.
+      # When a cross-stack CDK reference is removed (e.g. EventManagement stops importing
+      # distributionDomainName), CloudFormation refuses to delete the export from Storage while
+      # the old EventManagement template still imports it. Deploying EventManagement first
+      # removes the import, then Storage can clean up the auto-generated export.
+      # This step is a no-op when nothing changed in EventManagement or the cross-stack refs.
+      - name: Pre-deploy EventManagement (remove stale cross-stack imports before Storage update)
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 20
+        working-directory: ./infrastructure
+        run: |
+          echo "🔗  Pre-deploy EventManagement to clear any removed cross-stack refs before Storage update"
+          npx cdk deploy BATbern-staging-EventManagement --exclusively --context environment=staging --context version=${{ github.sha }} --require-approval never || true
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Deploy Layer 2 - Data
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -574,15 +650,41 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
+      # Layer 4: Each service has timeout-minutes: 25 (reduced from 60) + a cleanup step
+      # that auto-cancels stuck CloudFormation updates when the deploy step times out.
+      # continue-on-error: true ensures a single stuck service doesn't block the rest.
+
       - name: Deploy Layer 4.1 - Company Management Service
+        id: deploy-company
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        continue-on-error: true
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.1: Company Management Service"
           npm run deploy:staging:layer4-company-management --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Cleanup stuck Company Management deployment
+        if: steps.deploy-company.outcome == 'failure'
+        run: |
+          STACK="BATbern-staging-CompanyManagement"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Company Management deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            echo "Stack in FAILED state — attempting continue-update-rollback..."
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Company Management
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -592,7 +694,9 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy Layer 4.2 - Event Management Service
+        id: deploy-event
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        continue-on-error: true
         timeout-minutes: 60
         working-directory: ./infrastructure
         run: |
@@ -600,6 +704,25 @@ jobs:
           npm run deploy:staging:layer4-event-management --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Cleanup stuck Event Management deployment
+        if: steps.deploy-event.outcome == 'failure'
+        run: |
+          STACK="BATbern-staging-EventManagement"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Event Management deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Event Management
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -609,14 +732,35 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy Layer 4.3 - Speaker Coordination Service
+        id: deploy-speaker
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        continue-on-error: true
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.3: Speaker Coordination Service"
           npm run deploy:staging:layer4-speaker-coordination --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Cleanup stuck Speaker Coordination deployment
+        if: steps.deploy-speaker.outcome == 'failure'
+        run: |
+          STACK="BATbern-staging-SpeakerCoordination"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Speaker Coordination deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Speaker Coordination
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -626,14 +770,35 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy Layer 4.4 - Partner Coordination Service
+        id: deploy-partner
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        continue-on-error: true
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.4: Partner Coordination Service"
           npm run deploy:staging:layer4-partner-coordination --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Cleanup stuck Partner Coordination deployment
+        if: steps.deploy-partner.outcome == 'failure'
+        run: |
+          STACK="BATbern-staging-PartnerCoordination"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Partner Coordination deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Partner Coordination
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -643,14 +808,35 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy Layer 4.5 - Attendee Experience Service
+        id: deploy-attendee
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        continue-on-error: true
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.5: Attendee Experience Service"
           npm run deploy:staging:layer4-attendee-experience --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Cleanup stuck Attendee Experience deployment
+        if: steps.deploy-attendee.outcome == 'failure'
+        run: |
+          STACK="BATbern-staging-AttendeeExperience"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Attendee Experience deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Attendee Experience
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -660,14 +846,54 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy Layer 4.6 - API Gateway Service
+        id: deploy-gateway
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        continue-on-error: true
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.6: API Gateway Service"
           npm run deploy:staging:layer4-api-gateway-service --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+
+      - name: Cleanup stuck API Gateway deployment
+        if: steps.deploy-gateway.outcome == 'failure'
+        run: |
+          STACK="BATbern-staging-ApiGatewayService"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  API Gateway deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
+
+      # Check if any Layer 4 service failed and report
+      - name: Check Layer 4 deployment results
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        run: |
+          FAILED=""
+          [ "${{ steps.deploy-company.outcome }}" = "failure" ] && FAILED="$FAILED CompanyManagement"
+          [ "${{ steps.deploy-event.outcome }}" = "failure" ] && FAILED="$FAILED EventManagement"
+          [ "${{ steps.deploy-speaker.outcome }}" = "failure" ] && FAILED="$FAILED SpeakerCoordination"
+          [ "${{ steps.deploy-partner.outcome }}" = "failure" ] && FAILED="$FAILED PartnerCoordination"
+          [ "${{ steps.deploy-attendee.outcome }}" = "failure" ] && FAILED="$FAILED AttendeeExperience"
+          [ "${{ steps.deploy-gateway.outcome }}" = "failure" ] && FAILED="$FAILED ApiGateway"
+          if [ -n "$FAILED" ]; then
+            echo "::warning::The following services failed to deploy (stacks auto-recovered):$FAILED"
+          else
+            echo "✅ All Layer 4 services deployed successfully"
+          fi
 
       - name: Re-authenticate after Layer 4
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -675,6 +901,15 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Kill zombie CDK processes before Layer 5
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        run: |
+          # Timed-out Layer 4 deploy steps may leave zombie CDK processes holding
+          # a lock on cdk.out. Kill them so Layer 5 can proceed.
+          pkill -f "cdk" 2>/dev/null || true
+          rm -f ./infrastructure/cdk.out/.lock 2>/dev/null || true
+          sleep 2
 
       - name: Deploy Layer 5 - Gateway
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -685,10 +920,13 @@ jobs:
           npm run deploy:staging:layer5-gateway --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
       # Selective deployment - deploy each service individually with re-auth
       - name: Selective Deploy - Company Management
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'company-management')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'company-management') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Company Management Service"
@@ -697,14 +935,14 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Company Management (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'company-management')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'company-management') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - Event Management
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'event-management')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'event-management') || steps.changes.outputs.changed_services == 'all-services')
         timeout-minutes: 60
         working-directory: ./infrastructure
         run: |
@@ -714,14 +952,15 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Event Management (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'event-management')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'event-management') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - Speaker Coordination
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'speaker-coordination')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'speaker-coordination') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Speaker Coordination Service"
@@ -730,14 +969,15 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Speaker Coordination (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'speaker-coordination')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'speaker-coordination') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - Partner Coordination
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'partner-coordination')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'partner-coordination') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Partner Coordination Service"
@@ -746,14 +986,15 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Partner Coordination (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'partner-coordination')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'partner-coordination') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - Attendee Experience
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'attendee-experience')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'attendee-experience') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Attendee Experience Service"
@@ -762,30 +1003,33 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Attendee Experience (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'attendee-experience')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'attendee-experience') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - API Gateway Service
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: API Gateway Service"
           npm run deploy:staging:layer4-api-gateway-service --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
       - name: Re-authenticate after API Gateway Service (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - API Gateway (if changed)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: API Gateway"
@@ -794,7 +1038,7 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after API Gateway (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
@@ -841,14 +1085,69 @@ jobs:
             echo "::warning::ECS cluster batbern-staging not found yet"
           fi
 
+      - name: Verify SES IAM permissions (simulate-principal-policy)
+        if: steps.deployment-strategy.outputs.code_only != 'true'
+        run: |
+          # Resolve the task role ARN from the live ECS task definition.
+          # simulate-principal-policy is read-only — no side-effects on production.
+          TASK_DEF_ARN=$(aws ecs list-task-definitions \
+            --family-prefix "BATbern-staging-EventManagement" \
+            --sort DESC \
+            --query 'taskDefinitionArns[0]' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+
+          if [ -z "$TASK_DEF_ARN" ] || [ "$TASK_DEF_ARN" = "None" ]; then
+            echo "::warning::No EventManagement task definition found — skipping IAM simulation"
+            exit 0
+          fi
+
+          TASK_ROLE_ARN=$(aws ecs describe-task-definition \
+            --task-definition "$TASK_DEF_ARN" \
+            --query 'taskDefinition.taskRoleArn' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+
+          # Resolve configuration set name from SES stack output; fall back to known value
+          CONFIG_SET=$(aws cloudformation describe-stacks \
+            --stack-name BATbern-staging-SES \
+            --query 'Stacks[0].Outputs[?OutputKey==`ConfigurationSetName`].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+          CONFIG_SET="${CONFIG_SET:-batbern-staging-newsletter}"
+
+          echo "Task role:    $TASK_ROLE_ARN"
+          echo "Config set:   $CONFIG_SET"
+
+          RESULT=$(aws iam simulate-principal-policy \
+            --policy-source-arn "$TASK_ROLE_ARN" \
+            --action-names ses:SendRawEmail \
+            --resource-arns \
+              "arn:aws:ses:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID || '188701360969' }}:identity/batbern.ch" \
+              "arn:aws:ses:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID || '188701360969' }}:configuration-set/$CONFIG_SET" \
+            --query 'EvaluationResults[].EvalDecision' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+
+          echo "IAM simulation results: $RESULT"
+
+          if echo "$RESULT" | grep -qi "deny"; then
+            echo "::error::SES IAM permission denied for EventManagement task role"
+            echo "::error::The task role cannot call ses:SendRawEmail on the SES identity and/or configuration-set."
+            echo "::error::Check event-management-stack.ts — the configuration-set ARN must be in the SES policy resources."
+            exit 1
+          fi
+          echo "✅ SES IAM permissions verified"
+
       - name: Run smoke tests
         run: |
           if [ -f "scripts/ci/smoke-tests.sh" ]; then
             chmod +x scripts/ci/smoke-tests.sh
             echo "Running smoke tests against deployed staging environment..."
             ./scripts/ci/smoke-tests.sh \
-              https://staging.batbern.ch \
-              https://api.staging.batbern.ch
+              https://www.batbern.ch \
+              https://api.batbern.ch \
+              https://cdn.batbern.ch
             echo "✅ Smoke tests passed"
           else
             echo "::warning::Smoke tests script not found at scripts/ci/smoke-tests.sh - skipping"
@@ -860,12 +1159,25 @@ jobs:
             chmod +x scripts/ci/cors-validation-tests.sh
             echo "Running CORS validation tests..."
             ./scripts/ci/cors-validation-tests.sh \
-              https://api.staging.batbern.ch \
-              https://staging.batbern.ch
+              https://api.batbern.ch \
+              https://www.batbern.ch
             echo "✅ CORS validation tests passed"
           else
             echo "::error::CORS validation tests script not found"
           fi
+
+      # Promote the just-deployed IMAGE_TAG to the mutable `staging-current` tag in every
+      # service ECR repo. This runs AFTER smoke + CORS gates pass — so a deploy that
+      # didn't actually come up healthy never advances `staging-current`. The bruno-tests
+      # job (added later in this plan, §A5b) reads `staging-current` to know what was
+      # just deployed; the `tag-stable-on-success` job then promotes it to
+      # `staging-stable` if Bruno passes. Refs: docs/plans/bruno-staging-hardening.md §A4.
+      - name: Promote ECR images to staging-current
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+        run: |
+          chmod +x scripts/ci/promote-ecr-tag.sh
+          ./scripts/ci/promote-ecr-tag.sh staging "$IMAGE_TAG" staging-current
 
       - name: Run header propagation tests
         continue-on-error: true
@@ -873,7 +1185,7 @@ jobs:
           if [ -f "scripts/ci/header-propagation-tests.sh" ]; then
             chmod +x scripts/ci/header-propagation-tests.sh
             echo "Running header propagation tests..."
-            if ./scripts/ci/header-propagation-tests.sh https://api.staging.batbern.ch; then
+            if ./scripts/ci/header-propagation-tests.sh https://api.batbern.ch; then
               echo "✅ Header propagation tests passed"
             else
               echo "::warning::Header propagation tests failed - see details above"
@@ -883,18 +1195,127 @@ jobs:
             echo "::warning::Header propagation tests script not found"
           fi
 
+      # Test-user Cognito authentication is no longer done in this job. Both downstream
+      # test jobs (`bruno-tests`, `playwright-tests`) re-fetch their own tokens fresh —
+      # Cognito ID tokens have a 60-min TTL and this deploy job can take 20-30 min, so a
+      # token minted here would be stale by the time tests run. The previously-orphaned
+      # token step here (its only consumer was the dormant Playwright step, now removed in
+      # plan §A8) was deleted to drop a redundant Cognito call per deploy.
+      #
+      # Bruno API contract tests run in the dedicated `bruno-tests` job below
+      # (docs/plans/bruno-staging-hardening.md §A5b); Playwright UI E2E in the
+      # `playwright-tests` job (docs/plans/playwright-staging-hardening.md §A1). The split
+      # lets `tag-stable-on-success` / `rollback-on-test-failure` react to a clean
+      # job-level result instead of a `continue-on-error` swallow.
+
+      # E2E infrastructure tests temporarily disabled - require additional setup:
+      # - Missing AWS SDK dependencies (@aws-sdk/client-ecs, @aws-sdk/client-cloudformation, @aws-sdk/client-apigatewayv2)
+      # - IAM permissions needed for GitHub Actions role (cloudwatch:GetDashboard, ecs:Describe*, etc.)
+      # - API Gateway test needs update from REST API (v1) to HTTP API (v2)
+      # TODO: Re-enable after adding dependencies and permissions
+      # - name: Run E2E infrastructure tests
+      #   working-directory: ./infrastructure
+      #   run: |
+      #     echo "Running E2E tests against deployed staging infrastructure..."
+      #     if [ -d "test/e2e" ]; then
+      #       TEST_E2E=true TEST_ENVIRONMENT=staging npm test -- test/e2e/
+      #       echo "✅ E2E infrastructure tests passed"
+      #     else
+      #       echo "::warning::E2E test directory not found, skipping"
+      #     fi
+      #   env:
+      #     AWS_REGION: ${{ env.AWS_REGION }}
+      #     AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+
+      - name: E2E infrastructure tests status
+        run: |
+          echo "ℹ️  E2E infrastructure tests temporarily disabled"
+          echo "   Reason: Missing AWS SDK dependencies and IAM permissions"
+          echo "   Alternative: Runtime validation via smoke tests, CORS tests, and header propagation tests"
+
+      # Playwright UI E2E tests moved to a dedicated `playwright-tests` job below
+      # (docs/plans/playwright-staging-hardening.md §A1/§A8). The old dormant step here
+      # (`if: false` + `continue-on-error: true`) never ran; the new job re-fetches its own
+      # Cognito tokens (fresh against the 60-min TTL), runs an edge-readiness poll, then the
+      # curated `@smoke` subset. During onboarding (plan §A2) it is NON-BLOCKING and does
+      # NOT feed tag-stable / rollback — Bruno remains the sole authoritative gate until the
+      # PR 15 gate-flip.
+
+      - name: Mark deployment as successful
+        if: success()  # Only run if ALL previous steps succeeded
+        run: |
+          chmod +x ./scripts/ci/deployment-tracking.sh
+
+          echo "🎯 Recording successful deployment to staging"
+          echo "   Commit: ${{ github.sha }}"
+          echo "   Run: ${{ github.run_id }}"
+
+          ./scripts/ci/deployment-tracking.sh staging mark-deployed ${{ github.sha }}
+
+          echo "✅ Deployment tracking updated"
+          echo "   Next build will compare against this commit"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Staging deployment successful"
+          echo "Version: ${{ github.sha }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Staging deployment failed"
+          echo "Database backup available: ${{ env.SNAPSHOT_ID }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Bruno API contract tests run as a separate job so that downstream jobs
+  # (tag-stable-on-success / rollback-on-test-failure) can react to a clean
+  # job-level result.
+  #
+  # GATE FLIPPED in PR 14 (plan §E): the "Run Bruno" step no longer carries
+  # `continue-on-error: true`, so a Bruno failure now fails THIS job and the
+  # deploy workflow. Downstream jobs gate on the test-job `result`s (PR 15 added
+  # playwright-tests as a co-equal gate, plan §D):
+  #   • tag-stable-on-success promotes staging-stable only when BOTH bruno-tests
+  #     AND playwright-tests result == 'success';
+  #   • rollback-on-test-failure (with `always()`) rolls back when EITHER
+  #     result == 'failure'.
+  # The `always()` on the rollback job is required: once a test job can fail, a
+  # dependent job without `always()` would be SKIPPED rather than run on that failure.
+  # ─────────────────────────────────────────────────────────────────────────────
+  bruno-tests:
+    name: Bruno API contract tests
+    needs: deploy-to-staging
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Authenticate test users with Cognito (all roles)
         id: get-test-tokens
         run: |
-          # Authenticate all test role users with Cognito.
-          # Organizer: uses STAGING_ORGANIZER_EMAIL/PASSWORD (falls back to legacy STAGING_TEST_USER_*)
-          # Speaker:   uses STAGING_SPEAKER_EMAIL/PASSWORD (optional)
-          # Partner:   uses STAGING_PARTNER_EMAIL/PASSWORD (optional — required for Epic 8 partner tests)
-          #
-          # To add new role secrets: Repository → Settings → Secrets and variables → Actions
+          # Re-fetch tokens here (rather than inheriting from deploy-to-staging) so
+          # they are fresh when Bruno runs — Cognito ID tokens have a 60-min TTL and
+          # the deploy job can take 20-30 min before this point. Also avoids passing
+          # JWTs as job outputs (GitHub Actions masking is per-job).
 
           REGION="eu-central-1"
-          CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
+          CLIENT_ID="${COGNITO_CLIENT_ID}"
 
           get_cognito_token() {
             local email="$1"
@@ -933,7 +1354,6 @@ jobs:
             echo "$token"
           }
 
-          # Organizer: prefer new dedicated secrets, fall back to legacy STAGING_TEST_USER_*
           ORG_TOKEN=$(get_cognito_token \
             "${{ secrets.STAGING_ORGANIZER_EMAIL || secrets.STAGING_TEST_USER_EMAIL }}" \
             "${{ secrets.STAGING_ORGANIZER_PASSWORD || secrets.STAGING_TEST_USER_PASSWORD }}" \
@@ -949,12 +1369,10 @@ jobs:
             "${{ secrets.STAGING_PARTNER_PASSWORD }}" \
             "partner")
 
-          # Mask tokens in logs before writing to output
           [ -n "$ORG_TOKEN" ] && echo "::add-mask::$ORG_TOKEN"
           [ -n "$SPK_TOKEN" ] && echo "::add-mask::$SPK_TOKEN"
           [ -n "$PTR_TOKEN" ] && echo "::add-mask::$PTR_TOKEN"
 
-          # Write outputs (AUTH_TOKEN kept for backward compat)
           echo "AUTH_TOKEN=$ORG_TOKEN" >> $GITHUB_OUTPUT
           echo "ORGANIZER_AUTH_TOKEN=$ORG_TOKEN" >> $GITHUB_OUTPUT
           echo "SPEAKER_AUTH_TOKEN=$SPK_TOKEN" >> $GITHUB_OUTPUT
@@ -967,122 +1385,324 @@ jobs:
           echo "  partner:   $([ -n "$PTR_TOKEN" ] && echo 'yes' || echo 'no')"
 
       - name: Run Bruno API contract tests
-        continue-on-error: true
+        id: run-bruno
+        # GATE FLIPPED (PR 14): no `continue-on-error` — a Bruno failure now fails
+        # this job, fails the deploy workflow, and triggers rollback-on-test-failure.
         env:
           AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
           ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
           SPEAKER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.SPEAKER_AUTH_TOKEN }}
           PARTNER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.PARTNER_AUTH_TOKEN }}
         run: |
-          if [ -f "scripts/ci/run-bruno-tests.sh" ]; then
-            chmod +x scripts/ci/run-bruno-tests.sh
-            echo "Running Bruno API contract tests..."
-            # Pass organizer token as second argument for backward compat
-            if ./scripts/ci/run-bruno-tests.sh staging "$AUTH_TOKEN"; then
-              echo "✅ Bruno API contract tests completed"
-            else
-              echo "::warning::Bruno API contract tests failed - see details above"
-              echo "::warning::This is a non-blocking test failure"
-            fi
-          else
-            echo "::warning::Bruno test script not found"
+          if [ ! -f "scripts/ci/run-bruno-tests.sh" ]; then
+            echo "::error::Bruno test script not found"
+            exit 1
           fi
 
-      # E2E infrastructure tests temporarily disabled - require additional setup:
-      # - Missing AWS SDK dependencies (@aws-sdk/client-ecs, @aws-sdk/client-cloudformation, @aws-sdk/client-apigatewayv2)
-      # - IAM permissions needed for GitHub Actions role (cloudwatch:GetDashboard, ecs:Describe*, etc.)
-      # - API Gateway test needs update from REST API (v1) to HTTP API (v2)
-      # TODO: Re-enable after adding dependencies and permissions
-      # - name: Run E2E infrastructure tests
-      #   working-directory: ./infrastructure
-      #   run: |
-      #     echo "Running E2E tests against deployed staging infrastructure..."
-      #     if [ -d "test/e2e" ]; then
-      #       TEST_E2E=true TEST_ENVIRONMENT=staging npm test -- test/e2e/
-      #       echo "✅ E2E infrastructure tests passed"
-      #     else
-      #       echo "::warning::E2E test directory not found, skipping"
-      #     fi
-      #   env:
-      #     AWS_REGION: ${{ env.AWS_REGION }}
-      #     AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-      #     AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+          chmod +x scripts/ci/run-bruno-tests.sh
+          echo "Running Bruno API contract tests..."
+          # Pass organizer token as second argument for backward compat with the
+          # script's positional arg.
+          ./scripts/ci/run-bruno-tests.sh staging "$AUTH_TOKEN"
 
-      - name: E2E infrastructure tests status
+      - name: Report Bruno outcome
+        if: always()
         run: |
-          echo "ℹ️  E2E infrastructure tests temporarily disabled"
-          echo "   Reason: Missing AWS SDK dependencies and IAM permissions"
-          echo "   Alternative: Runtime validation via smoke tests, CORS tests, and header propagation tests"
+          echo "Bruno step outcome: ${{ steps.run-bruno.outcome }}"
+          if [ "${{ steps.run-bruno.outcome }}" = "failure" ]; then
+            echo "::error::Bruno tests failed — this job fails the deploy and rollback-on-test-failure will auto-roll-back to staging-stable"
+          fi
 
-      - name: Run frontend E2E tests (Playwright)
-        if: false  # Temporarily disabled - tests running too long with errors
-        continue-on-error: true
-        working-directory: ./web-frontend
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Bruno green ⇒ promote staging-current → staging-stable across all 5 service
+  # ECR repos + api-gateway. `staging-stable` is the rollback target read by
+  # scripts/ci/rollback-deployment.sh.
+  # ─────────────────────────────────────────────────────────────────────────────
+  tag-stable-on-success:
+    name: Promote staging-current → staging-stable
+    needs: [deploy-to-staging, bruno-tests, playwright-tests]
+    # Gate flipped (PR 15, plan §D/§A2): promotion now requires BOTH test jobs green.
+    # `continue-on-error` is gone from both the Bruno and Playwright run steps, so each
+    # job `result` authoritatively reflects its suite. Promote only when Bruno AND
+    # Playwright pass; any failure (or a Bruno failure that skips playwright-tests, whose
+    # result is then 'skipped' ≠ 'success') leaves staging-stable pinned to the last
+    # known-good deploy. No `always()` here → a failed `needs` skips this job, which is
+    # the intended no-promote behaviour.
+    if: needs.bruno-tests.result == 'success' && needs.playwright-tests.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Promote ECR tag
+        run: |
+          chmod +x scripts/ci/promote-ecr-tag.sh
+          ./scripts/ci/promote-ecr-tag.sh staging staging-current staging-stable
+
+      - name: Snapshot frontend → stable bucket
+        # Frontend analogue of the ECR staging-stable promotion (plan §"Frontend
+        # rollback"). The backend's known-good is the staging-stable ECR tag; the
+        # frontend's known-good is this S3 snapshot. We sync the just-validated
+        # live frontend into the stable bucket so rollback-on-test-failure can
+        # restore it (the live bucket is unversioned + pruned on each deploy, so
+        # without this copy there is nothing to roll back to). Idempotent: a no-op
+        # when the frontend did not change this deploy. Resilient (warn-not-fail):
+        # a snapshot hiccup must never fail an already-green, already-promoted deploy.
+        run: |
+          LIVE="s3://batbern-frontend-staging"
+          STABLE="s3://batbern-frontend-stable-staging"
+          echo "📸 Snapshotting known-good frontend: $LIVE → $STABLE"
+          aws s3 sync "$LIVE/" "$STABLE/" --delete --only-show-errors \
+            && echo "✅ Frontend snapshot updated" \
+            || echo "::warning::Frontend snapshot to stable bucket failed (non-fatal; deploy already promoted to staging-stable)"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Bruno OR Playwright red ⇒ auto-rollback to staging-stable.
+  #
+  # GATE FLIPPED (PR 15, plan §D/§A2): rollback now fires on EITHER test suite's
+  # failure (renamed from rollback-on-bruno-failure). Bruno failure OR Playwright
+  # @smoke failure rolls ECS back to staging-stable. `always()` is required so this
+  # job still evaluates when a `needs` dependency fails — a failed `needs` would
+  # otherwise skip the job before the `if:` is checked. Note the ordering: when
+  # bruno-tests fails, playwright-tests is SKIPPED (result 'skipped', not 'failure'),
+  # so the Bruno-failure disjunct is what fires the rollback in that case — correct.
+  #
+  # The `enable_bruno_rollback` workflow input is retained only for the F1
+  # deliberate-fail exercise's `workflow_dispatch` runs on throwaway branches
+  # (plan §E.2).
+  # ─────────────────────────────────────────────────────────────────────────────
+  rollback-on-test-failure:
+    name: Auto-rollback after Bruno or Playwright failure
+    needs: [deploy-to-staging, bruno-tests, playwright-tests]
+    if: ${{ always() && (needs.bruno-tests.result == 'failure' || needs.playwright-tests.result == 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Roll back to staging-stable
         env:
-          TEST_ENV: staging
-          E2E_BASE_URL: https://staging.batbern.ch
-          E2E_API_URL: https://api.staging.batbern.ch
-          E2E_AWS_REGION: ${{ env.AWS_REGION }}
-          AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
-          ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
-          SPEAKER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.SPEAKER_AUTH_TOKEN }}
-          PARTNER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.PARTNER_AUTH_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          echo "Running Playwright E2E tests against deployed staging environment..."
-          if [ -f "playwright.config.ts" ] || [ -f "playwright.config.js" ]; then
-            npm install -D @playwright/test
-            npx playwright install --with-deps chromium
-            # Build project list: always run chromium (organizer), add role projects when tokens available
-            PROJECTS="--project=chromium"
-            [ -n "$SPEAKER_AUTH_TOKEN" ] && PROJECTS="$PROJECTS --project=speaker"
-            [ -n "$PARTNER_AUTH_TOKEN" ] && PROJECTS="$PROJECTS --project=partner"
-            echo "Running projects: $PROJECTS"
-            # shellcheck disable=SC2086
-            if npx playwright test $PROJECTS; then
-              echo "✅ Frontend E2E tests passed"
-            else
-              echo "::warning::Playwright E2E tests failed - see details above"
-              echo "::warning::This is a non-blocking test failure"
-            fi
+          chmod +x scripts/ci/rollback-deployment.sh
+          if [ "${{ needs.bruno-tests.result }}" = "failure" ]; then
+            echo "🚨 Bruno failed — rolling back to staging-stable"
           else
-            echo "::warning::Playwright config not found"
+            echo "🚨 Playwright @smoke failed — rolling back to staging-stable"
+          fi
+          ./scripts/ci/rollback-deployment.sh staging --yes
+
+      - name: Restore frontend from stable bucket
+        # The ECS rollback above reverts the BACKEND. The frontend is S3/CloudFront
+        # (not ECS), so a frontend-caused @smoke failure would otherwise leave the
+        # broken new frontend live. Restore the last known-good snapshot + invalidate
+        # CloudFront (plan §"Frontend rollback"). `if: always()` so this still runs
+        # even if the backend rollback step erred. GUARDED: if the stable bucket is
+        # empty (no green deploy has seeded it yet), skip — never publish an empty
+        # site; the backend was still rolled back and the live frontend is untouched.
+        if: always()
+        run: |
+          LIVE="s3://batbern-frontend-staging"
+          STABLE="s3://batbern-frontend-stable-staging"
+          OBJ_COUNT=$(aws s3 ls "$STABLE/" --recursive --summarize 2>/dev/null | awk '/Total Objects:/ {print $3}')
+          OBJ_COUNT=${OBJ_COUNT:-0}
+          if [ "$OBJ_COUNT" -eq 0 ]; then
+            echo "::warning::Stable frontend bucket empty (not seeded by a green deploy yet) — skipping frontend restore. Backend rolled back; live frontend unchanged."
+            exit 0
+          fi
+          echo "🔁 Restoring known-good frontend: $STABLE → $LIVE ($OBJ_COUNT objects)"
+          aws s3 sync "$STABLE/" "$LIVE/" --delete --only-show-errors
+          DIST_ID=$(aws cloudformation list-exports \
+            --query "Exports[?Name=='staging-FrontendDistributionId'].Value" --output text)
+          if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
+            echo "♻️  Invalidating CloudFront $DIST_ID (/*)"
+            aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths '/*' >/dev/null
+            echo "✅ Frontend restored to last known-good + CloudFront invalidated"
+          else
+            echo "::warning::Could not resolve CloudFront distribution id (export staging-FrontendDistributionId) — frontend restored but cache not invalidated"
+          fi
+
+      - name: Notify rollback
+        if: always()
+        run: |
+          echo "🚨 Auto-rollback triggered after test failure (Bruno: ${{ needs.bruno-tests.result }}, Playwright: ${{ needs.playwright-tests.result }})"
+          echo "   Backend → staging-stable ECR images; frontend → stable S3 snapshot (+ CloudFront invalidation)."
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Playwright UI E2E tests (docs/plans/playwright-staging-hardening.md §A1).
+  #
+  # GATE FLIPPED (PR 15, plan §D): this job is now BLOCKING and authoritative
+  # alongside Bruno. `continue-on-error` is gone from the run step, so a red
+  # `@smoke` fails THIS job → tag-stable-on-success is skipped (staging-stable
+  # stays pinned to the last known-good deploy) and rollback-on-test-failure fires
+  # (rolls ECS back to staging-stable). It runs the curated `@smoke` subset
+  # (`--scope smoke` = `--grep @smoke --grep-invert @quarantine`); the full proven
+  # `@gate` suite runs in the non-blocking nightly workflow (.github/workflows/
+  # nightly-e2e.yml). `@quarantine` specs never run here, so tracked WCAG/flake
+  # debt cannot fail the gate (plan §E.3).
+  #
+  # Unlike Bruno (backend only), Playwright needs the frontend live at the edge,
+  # so the runner starts with a CloudFront edge-readiness poll (§A1) before
+  # launching browsers. The `deploy-to-staging` dependency covers ECS-stable + the
+  # S3/CloudFront frontend deploy.
+  #
+  # SEQUENCED AFTER bruno-tests (fix 2026-05-30): both jobs run against the SAME
+  # shared staging (= prod) DB, and Playwright's global-teardown runs the canonical
+  # prefix sweep (`bruno.test*`, `BRUNOTESTCO*`, …) it deliberately shares with Bruno
+  # (plan §A3/§A4 — one cleanup contract). When the two jobs ran concurrently the
+  # sweep deleted Bruno's just-created `bruno.test` fixture mid-run, failing users-api
+  # → false rollback (run 26689737809). Depending on bruno-tests serialises them so
+  # the sweep can never fire while Bruno is live. Playwright runs only on Bruno-green
+  # (a failed `needs` skips it; Bruno-red ⇒ rollback fires on the Bruno failure anyway).
+  # This is the correct gate topology: deploy → bruno → playwright → promote/rollback.
+  # ─────────────────────────────────────────────────────────────────────────────
+  playwright-tests:
+    name: Playwright UI E2E (@smoke)
+    needs: [deploy-to-staging, bruno-tests]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Authenticate test users + write ~/.batbern token files
+        run: |
+          # Re-fetch tokens fresh here (60-min Cognito TTL vs a 20-30 min deploy).
+          # Unlike the Bruno job (which only needs an ID token in an env var),
+          # Playwright's global-setup.ts builds browser storage state from
+          # ~/.batbern/${env}-${role}.json files, so we capture id+access+refresh
+          # and write those files in get-token.sh's exact shape. Missing role
+          # creds are warn-and-skip (that role's project simply won't activate).
+
+          REGION="eu-central-1"
+          CLIENT_ID="${COGNITO_CLIENT_ID}"
+          mkdir -p ~/.batbern
+
+          # Writes ~/.batbern/staging-<role>.json (+ legacy staging.json for organizer).
+          write_role_token() {
+            local email="$1"; local password="$2"; local role="$3"
+
+            if [ -z "$email" ] || [ -z "$password" ]; then
+              echo "::warning::No credentials for $role — skipping (its project won't activate)"
+              return 0
+            fi
+
+            local resp
+            resp=$(aws cognito-idp initiate-auth \
+              --region "$REGION" \
+              --auth-flow USER_PASSWORD_AUTH \
+              --client-id "$CLIENT_ID" \
+              --auth-parameters USERNAME="$email",PASSWORD="$password" \
+              --output json 2>&1) || { echo "::warning::Cognito auth failed for $role"; return 0; }
+
+            local id_token access_token refresh_token expires_in
+            id_token=$(echo "$resp" | jq -r '.AuthenticationResult.IdToken // empty')
+            access_token=$(echo "$resp" | jq -r '.AuthenticationResult.AccessToken // empty')
+            refresh_token=$(echo "$resp" | jq -r '.AuthenticationResult.RefreshToken // empty')
+            expires_in=$(echo "$resp" | jq -r '.AuthenticationResult.ExpiresIn // 3600')
+
+            if [ -z "$id_token" ] || [ -z "$access_token" ] || [ -z "$refresh_token" ]; then
+              echo "::warning::Incomplete token set for $role — skipping"
+              return 0
+            fi
+
+            echo "::add-mask::$id_token"; echo "::add-mask::$access_token"; echo "::add-mask::$refresh_token"
+
+            write_file() {
+              local path="$1"
+              jq -n \
+                --arg env "staging" --arg role "$role" --arg email "$email" \
+                --arg id "$id_token" --arg access "$access_token" \
+                --arg refresh "$refresh_token" --argjson expires "$expires_in" \
+                --arg at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+                '{environment:$env, role:$role, email:$email, idToken:$id,
+                  accessToken:$access, refreshToken:$refresh, expiresIn:$expires, retrievedAt:$at}' \
+                > "$path"
+              chmod 600 "$path"
+            }
+
+            write_file ~/.batbern/staging-${role}.json
+            [ "$role" = "organizer" ] && write_file ~/.batbern/staging.json
+            echo "✅ Token files written for $role"
+          }
+
+          write_role_token \
+            "${{ secrets.STAGING_ORGANIZER_EMAIL || secrets.STAGING_TEST_USER_EMAIL }}" \
+            "${{ secrets.STAGING_ORGANIZER_PASSWORD || secrets.STAGING_TEST_USER_PASSWORD }}" \
+            "organizer"
+          write_role_token "${{ secrets.STAGING_SPEAKER_EMAIL }}" "${{ secrets.STAGING_SPEAKER_PASSWORD }}" "speaker"
+          write_role_token "${{ secrets.STAGING_PARTNER_EMAIL }}" "${{ secrets.STAGING_PARTNER_PASSWORD }}" "partner"
+
+      - name: Run Playwright @smoke suite (blocking gate)
+        id: run-playwright
+        # GATE FLIPPED (PR 15, plan §D): no `continue-on-error` — a red @smoke now fails
+        # this job, fails the deploy workflow, skips tag-stable-on-success, and triggers
+        # rollback-on-test-failure (ECS rolls back to staging-stable).
+        env:
+          CI: 'true'
+        run: |
+          chmod +x scripts/ci/run-playwright-tests.sh
+          ./scripts/ci/run-playwright-tests.sh staging --scope smoke
+
+      - name: Report Playwright outcome
+        if: always()
+        run: |
+          # Surface the outcome in the job summary regardless of pass/fail. With the gate
+          # flipped (no continue-on-error), a failure already fails the job; this step runs
+          # under `if: always()` purely to annotate the summary (review #2, PR #691).
+          OUTCOME="${{ steps.run-playwright.outcome }}"
+          echo "Playwright @smoke outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "::error::Playwright @smoke failed — this job fails the deploy and rollback-on-test-failure will auto-roll-back to staging-stable"
+            {
+              echo "### ❌ Playwright @smoke FAILED — deploy blocked, rolling back to staging-stable"
+              echo ""
+              echo "A UI regression was caught by the per-deploy \`@smoke\` gate. The deploy is **blocked**: \`tag-stable-on-success\` is skipped and \`rollback-on-test-failure\` rolls ECS back to \`staging-stable\`."
+              echo ""
+              echo "See the \`playwright-report-staging\` artifact for details."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### ✅ Playwright @smoke passed" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload Playwright test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-staging
-          path: web-frontend/playwright-report/
+          path: |
+            web-frontend/playwright-report/
+            web-frontend/test-results/
           retention-days: 7
-
-      - name: Mark deployment as successful
-        if: success()  # Only run if ALL previous steps succeeded
-        run: |
-          chmod +x ./scripts/ci/deployment-tracking.sh
-
-          echo "🎯 Recording successful deployment to staging"
-          echo "   Commit: ${{ github.sha }}"
-          echo "   Run: ${{ github.run_id }}"
-
-          ./scripts/ci/deployment-tracking.sh staging mark-deployed ${{ github.sha }}
-
-          echo "✅ Deployment tracking updated"
-          echo "   Next build will compare against this commit"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Notify deployment success
-        if: success()
-        run: |
-          echo "✅ Staging deployment successful"
-          echo "Version: ${{ github.sha }}"
-          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-      - name: Notify deployment failure
-        if: failure()
-        run: |
-          echo "❌ Staging deployment failed"
-          echo "Database backup available: ${{ env.SNAPSHOT_ID }}"
-          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

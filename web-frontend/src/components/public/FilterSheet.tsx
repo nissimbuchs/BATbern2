@@ -38,7 +38,8 @@ export function FilterSheet({
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        data-testid="filter-sheet-trigger"
       >
         {t('archive.filters.title')}
       </button>
@@ -51,27 +52,30 @@ export function FilterSheet({
         >
           {/* Sheet */}
           <div
-            className="bg-white w-full max-h-[80vh] rounded-t-lg overflow-y-auto p-6"
+            className="bg-background text-foreground w-full max-h-[80vh] rounded-t-lg overflow-y-auto p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">{t('archive.filters.title')}</h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-foreground"
               >
                 ✕
               </button>
             </div>
 
-            {/* Filter Content */}
+            {/* Filter Content.
+                onFilterChange must NOT auto-close the sheet: FilterSidebar fires it on
+                mount (300 ms-debounced search effect) and on every topic toggle, which
+                used to close the sheet the moment the user opened it. The sheet now
+                stays open until the user explicitly closes via the ✕ button or the
+                backdrop, so multiple topics can be selected in one go. Sort and Clear
+                remain one-shot actions that close the sheet after applying. */}
             <FilterSidebar
               filters={filters}
               topics={topics}
-              onFilterChange={(f) => {
-                onFilterChange(f);
-                setIsOpen(false);
-              }}
+              onFilterChange={onFilterChange}
               onClearFilters={() => {
                 onClearFilters();
                 setIsOpen(false);

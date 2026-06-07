@@ -33,5 +33,18 @@ public interface EventTeaserImageRepository extends JpaRepository<EventTeaserIma
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EventTeaserImage e WHERE e.eventCode = :eventCode ORDER BY e.displayOrder ASC")
-    List<EventTeaserImage> findByEventCodeForUpdate(@Param("eventCode") String eventCode);
+    List<EventTeaserImage> findByEventCodeForUpdate(
+            @Param("eventCode") @org.springframework.lang.NonNull String eventCode);
+
+    // ── Global teaser images (event_code IS NULL) ────────────────────────────
+
+    List<EventTeaserImage> findByEventCodeIsNullOrderByDisplayOrderAsc();
+
+    Optional<EventTeaserImage> findByIdAndEventCodeIsNull(UUID id);
+
+    long countByEventCodeIsNull();
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM EventTeaserImage e WHERE e.eventCode IS NULL ORDER BY e.displayOrder ASC")
+    List<EventTeaserImage> findGlobalForUpdate();
 }

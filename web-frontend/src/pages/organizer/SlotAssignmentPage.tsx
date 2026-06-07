@@ -52,7 +52,11 @@ const SlotAssignmentPage: React.FC = () => {
   }, [eventCode, queryClient]);
 
   const handleBackToEvent = () => {
-    navigate(`/organizer/events/${eventCode}`);
+    // 2026-05-20 (Q#C) — return to the Speakers tab → Sessions sub-tab that the
+    // organizer was on before navigating here. Without the query string the
+    // EventDetailPage defaults to the overview/details tab and the user loses
+    // their place.
+    navigate(`/organizer/events/${eventCode}?tab=speakers&view=sessions`);
   };
 
   return (
@@ -89,6 +93,7 @@ const SlotAssignmentPage: React.FC = () => {
         sx={{
           mb: 3,
           display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
           alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between',
           flexWrap: 'wrap',

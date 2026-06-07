@@ -100,8 +100,8 @@ jobs:
           if [ -f "scripts/ci/smoke-tests.sh" ]; then
             chmod +x scripts/ci/smoke-tests.sh
             ./scripts/ci/smoke-tests.sh \
-              https://staging.batbern.ch \
-              https://api.staging.batbern.ch
+              https://www.batbern.ch \
+              https://api.batbern.ch
           else
             echo "::warning::Smoke tests script not found, skipping"
           fi

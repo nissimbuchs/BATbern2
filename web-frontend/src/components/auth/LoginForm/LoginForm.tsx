@@ -3,7 +3,7 @@
  * Story 1.2.1: AWS Cognito Authentication UI with i18n
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   TextField,
@@ -18,16 +18,20 @@ import {
   Container,
   IconButton,
   InputAdornment,
+  Divider,
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Visibility, VisibilityOff, Google } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { useFeature } from '@/contexts/useFeature';
+import { authService } from '@/services/auth/authService';
+import { consumeLogoutReason } from '@/services/auth/logoutReason';
 import { LoginCredentials } from '@/types/auth';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
-import { ReleaseNotesInfoBox } from '@components/auth/ReleaseNotesInfoBox';
 
 type LoginFormData = {
   email: string;
@@ -70,9 +74,35 @@ const getErrorTranslationKey = (errorCode?: string): string => {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword, onSignUp }) => {
   const { t } = useTranslation(['auth', 'validation']);
-  const { signIn, isLoading, error, clearError } = useAuth();
+  const { signIn, confirmNewPassword, isLoading, error, clearError } = useAuth();
+  // Story 12.9: "Continue with Google" button gated on the runtime features.sso flag.
+  const ssoEnabled = useFeature('sso');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Story 12.7 / G1: the API client redirects here with ?reason=account_deactivated
+  // after the gateway returns 403 ACCOUNT_DEACTIVATED (it also forced a logout).
+  // Surface a dismissible notice so the user understands why they were signed out.
+  const [searchParams] = useSearchParams();
+  const [deactivatedDismissed, setDeactivatedDismissed] = useState(false);
+  // Story 12.8 F5: the reason may also arrive via the sessionStorage hand-off instead of
+  // the query param — e.g. the AuthCallbackPage navigates to plain `/login` after a failed
+  // federated hydration (its `replace` wipes the interceptor's ?reason=), or Amplify's
+  // hosted-UI logout redirect swallowed the in-app navigation entirely.
+  const [storedLogoutReason] = useState(() => consumeLogoutReason());
+  const showDeactivatedNotice =
+    (searchParams.get('reason') === 'account_deactivated' ||
+      storedLogoutReason === 'account_deactivated') &&
+    !deactivatedDismissed;
   const [showPassword, setShowPassword] = useState(false);
+  // Epic 11 bug fix 2026-05-19 — when Cognito returns
+  // CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED on first sign-in (with the temp
+  // password issued by issueInvitationCredentials), switch the form to the
+  // "set new password" panel. Previously the form silently failed with a
+  // generic error.
+  const [pendingNewPassword, setPendingNewPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPasswordValue, setConfirmPasswordValue] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [newPasswordError, setNewPasswordError] = useState<string | null>(null);
 
   const {
     control,
@@ -90,12 +120,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
     mode: 'onChange',
   });
 
-  // Clear errors when user starts typing
+  // Clear errors when the user starts typing — but ONLY on an actual change of the
+  // watched values. `error`/`submitError` must stay in the deps (exhaustive-deps), yet
+  // without the prev-value guard the effect re-fires the moment the error APPEARS and
+  // wipes it before the Alert ever renders (2026-06-04 regression: wrong-password
+  // INVALID_CREDENTIALS was never shown — the form just silently re-rendered).
   const watchedEmail = watch('email');
   const watchedPassword = watch('password');
+  const prevCredentialsRef = useRef({ email: watchedEmail, password: watchedPassword });
 
   useEffect(() => {
-    if (error || submitError) {
+    const prev = prevCredentialsRef.current;
+    const typed = prev.email !== watchedEmail || prev.password !== watchedPassword;
+    prevCredentialsRef.current = { email: watchedEmail, password: watchedPassword };
+    if (typed && (error || submitError)) {
       clearError();
       setSubmitError(null);
     }
@@ -116,19 +154,52 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
       };
 
       console.log('[LoginForm] Calling signIn...');
-      const success = await signIn(credentials);
-      console.log('[LoginForm] signIn result:', success);
+      const outcome = await signIn(credentials);
+      console.log('[LoginForm] signIn outcome:', outcome.kind);
 
-      if (success) {
+      if (outcome.kind === 'success') {
         console.log('[LoginForm] Sign in successful, calling onSuccess callback');
         reset();
         onSuccess?.();
+      } else if (outcome.kind === 'requires-new-password') {
+        console.log('[LoginForm] FORCE_CHANGE_PASSWORD — switching to new-password panel');
+        setPendingNewPassword(true);
+        setNewPassword('');
+        setConfirmPasswordValue('');
+        setNewPasswordError(null);
       } else {
         console.log('[LoginForm] Sign in failed');
       }
     } catch (err) {
       console.error('[LoginForm] Error during sign in:', err);
       setSubmitError(t('auth:errors.unknownError'));
+    }
+  };
+
+  const handleSubmitNewPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setNewPasswordError(null);
+    const trimmed = newPassword.trim();
+    if (trimmed.length < 8) {
+      setNewPasswordError(t('validation:password.tooShort'));
+      return;
+    }
+    if (trimmed.length > 128) {
+      setNewPasswordError(t('validation:password.tooLong'));
+      return;
+    }
+    if (newPassword !== confirmPasswordValue) {
+      setNewPasswordError(t('auth:newPassword.mismatch', 'Passwords do not match'));
+      return;
+    }
+    const success = await confirmNewPassword(newPassword);
+    if (success) {
+      console.log('[LoginForm] confirmNewPassword successful');
+      reset();
+      setPendingNewPassword(false);
+      setNewPassword('');
+      setConfirmPasswordValue('');
+      onSuccess?.();
     }
   };
 
@@ -144,161 +215,239 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
   const displayError = error ? t(getErrorTranslationKey(error.code)) : submitError;
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="sm">
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
         <LanguageSwitcher />
       </Box>
       <Box
         sx={{
           display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          gap: 3,
+          flexDirection: 'column',
+          alignItems: 'center',
           mt: 2,
-          alignItems: 'flex-start',
         }}
       >
-        {/* Release Notes - Left Side */}
-        <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 40%' } }}>
-          <ReleaseNotesInfoBox />
-        </Box>
+        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography component="h1" variant="h4" gutterBottom>
+              {pendingNewPassword
+                ? t('auth:newPassword.title', 'Set a new password')
+                : t('auth:login.title')}
+            </Typography>
 
-        {/* Login Form - Right Side */}
-        <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 calc(60% - 24px)' } }}>
-          <Paper elevation={3} sx={{ p: 4 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Typography component="h1" variant="h4" gutterBottom>
-                {t('auth:login.title')}
-              </Typography>
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+              {pendingNewPassword
+                ? t(
+                    'auth:newPassword.subtitle',
+                    'You signed in with a temporary password. Choose a permanent password to continue.'
+                  )
+                : t('auth:login.subtitle')}
+            </Typography>
 
-              <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-                {t('auth:login.subtitle')}
-              </Typography>
+            {showDeactivatedNotice && (
+              <Alert
+                severity="warning"
+                onClose={() => setDeactivatedDismissed(true)}
+                sx={{ width: '100%', mb: 2 }}
+              >
+                {t('auth:login.deactivatedNotice')}
+              </Alert>
+            )}
 
-              {displayError && (
-                <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-                  {displayError}
-                </Alert>
-              )}
+            {(displayError || newPasswordError) && (
+              <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+                {newPasswordError || displayError}
+              </Alert>
+            )}
 
-              <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ width: '100%' }}>
-                <Controller
-                  name="email"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label={t('auth:login.emailLabel')}
-                      placeholder={t('auth:login.emailPlaceholder')}
-                      type="email"
-                      autoComplete="email username"
-                      autoFocus
-                      margin="normal"
-                      error={!!errors.email}
-                      helperText={errors.email?.message}
-                      disabled={isLoading}
-                    />
-                  )}
+            {pendingNewPassword ? (
+              <Box component="form" onSubmit={handleSubmitNewPassword} sx={{ width: '100%' }}>
+                <TextField
+                  fullWidth
+                  label={t('auth:newPassword.newPasswordLabel', 'New password')}
+                  type={showNewPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  autoFocus
+                  margin="normal"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={isLoading}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={
+                            showNewPassword
+                              ? t('auth:login.hidePassword')
+                              : t('auth:login.showPassword')
+                          }
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          edge="end"
+                        >
+                          {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
-
-                <Controller
-                  name="password"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label={t('auth:login.passwordLabel')}
-                      placeholder={t('auth:login.passwordPlaceholder')}
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      margin="normal"
-                      error={!!errors.password}
-                      helperText={errors.password?.message}
-                      disabled={isLoading}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              aria-label={
-                                showPassword
-                                  ? t('auth:login.hidePassword')
-                                  : t('auth:login.showPassword')
-                              }
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  )}
+                <TextField
+                  fullWidth
+                  label={t('auth:newPassword.confirmPasswordLabel', 'Confirm new password')}
+                  type={showNewPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  margin="normal"
+                  value={confirmPasswordValue}
+                  onChange={(e) => setConfirmPasswordValue(e.target.value)}
+                  disabled={isLoading}
                 />
-
-                <Controller
-                  name="rememberMe"
-                  control={control}
-                  render={({ field: { value, onChange, ...field } }) => (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          {...field}
-                          checked={value}
-                          onChange={(e) => onChange(e.target.checked)}
-                          disabled={isLoading}
-                        />
-                      }
-                      label={t('auth:login.rememberMe')}
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                />
-
                 <Button
                   type="submit"
                   fullWidth
                   variant="contained"
                   sx={{ mt: 3, mb: 2 }}
-                  disabled={isLoading || !isValid}
+                  disabled={isLoading || !newPassword || !confirmPasswordValue}
                   startIcon={isLoading ? <CircularProgress size={20} /> : null}
                 >
-                  {t('auth:login.signInButton')}
+                  {t('auth:newPassword.submitButton', 'Set password and sign in')}
                 </Button>
+              </Box>
+            ) : (
+              <>
+                {ssoEnabled && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      startIcon={<Google />}
+                      disabled={isLoading}
+                      onClick={() => authService.signInWithFederated('Google')}
+                      sx={{ mb: 1 }}
+                    >
+                      {t('auth:login.continueWithGoogle')}
+                    </Button>
+                    <Divider sx={{ my: 2 }}>{t('auth:login.orDivider')}</Divider>
+                  </>
+                )}
+                <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ width: '100%' }}>
+                  <Controller
+                    name="email"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label={t('auth:login.emailLabel')}
+                        placeholder={t('auth:login.emailPlaceholder')}
+                        type="email"
+                        autoComplete="email username"
+                        autoFocus
+                        margin="normal"
+                        error={!!errors.email}
+                        helperText={errors.email?.message}
+                        disabled={isLoading}
+                      />
+                    )}
+                  />
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                  <Link
-                    component="button"
-                    variant="body2"
-                    type="button"
-                    onClick={handleForgotPassword}
-                    disabled={isLoading}
-                    sx={{ textDecoration: 'none' }}
+                  <Controller
+                    name="password"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label={t('auth:login.passwordLabel')}
+                        placeholder={t('auth:login.passwordPlaceholder')}
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        margin="normal"
+                        error={!!errors.password}
+                        helperText={errors.password?.message}
+                        disabled={isLoading}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                aria-label={
+                                  showPassword
+                                    ? t('auth:login.hidePassword')
+                                    : t('auth:login.showPassword')
+                                }
+                                onClick={() => setShowPassword(!showPassword)}
+                                edge="end"
+                              >
+                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+
+                  <Controller
+                    name="rememberMe"
+                    control={control}
+                    render={({ field: { value, onChange, ...field } }) => (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            {...field}
+                            checked={value}
+                            onChange={(e) => onChange(e.target.checked)}
+                            disabled={isLoading}
+                          />
+                        }
+                        label={t('auth:login.rememberMe')}
+                        sx={{ mt: 1 }}
+                      />
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 3, mb: 2 }}
+                    disabled={isLoading || !isValid}
+                    startIcon={isLoading ? <CircularProgress size={20} /> : null}
                   >
-                    {t('auth:login.forgotPassword')}
-                  </Link>
+                    {t('auth:login.signInButton')}
+                  </Button>
 
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" component="span" color="text.secondary">
-                      {t('auth:login.noAccount')}{' '}
-                    </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                     <Link
                       component="button"
                       variant="body2"
                       type="button"
-                      onClick={handleSignUp}
+                      onClick={handleForgotPassword}
                       disabled={isLoading}
                       sx={{ textDecoration: 'none' }}
                     >
-                      {t('auth:login.createAccount')}
+                      {t('auth:login.forgotPassword')}
                     </Link>
+
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="body2" component="span" color="text.secondary">
+                        {t('auth:login.noAccount')}{' '}
+                      </Typography>
+                      <Link
+                        component="button"
+                        variant="body2"
+                        type="button"
+                        onClick={handleSignUp}
+                        disabled={isLoading}
+                        sx={{ textDecoration: 'none' }}
+                      >
+                        {t('auth:login.createAccount')}
+                      </Link>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
-            </Box>
-          </Paper>
-        </Box>
+              </>
+            )}
+          </Box>
+        </Paper>
       </Box>
     </Container>
   );

@@ -14,11 +14,18 @@ auth:bearer {
   token: {{authToken}}
 }
 
+script:pre-request {
+  // PR 11: firstName=Bruno, lastName=Test convention for CUMS cleanup-regex match.
+  // Capture the email so 08b-promote can re-use it (CUMS getOrCreateUser is idempotent
+  // on email).
+  bru.setVar("declineSpeakerEmail", "bruno-test-decline-" + Date.now() + "@e2e.batbern.invalid");
+}
+
 body:json {
   {
-    "email": "decline-test-{{$guid}}@example.com",
-    "firstName": "Decline",
-    "lastName": "Speaker",
+    "email": "{{declineSpeakerEmail}}",
+    "firstName": "Bruno",
+    "lastName": "Test",
     "company": "Test Decline AG"
   }
 }
@@ -26,6 +33,7 @@ body:json {
 script:post-response {
   if (res.getStatus() === 200 || res.getStatus() === 201) {
     bru.setVar("declineSpeakerUsername", res.getBody().username);
+    bru.setVar("declineSpeakerPoolId", res.getBody().speakerPoolId);
   }
 }
 

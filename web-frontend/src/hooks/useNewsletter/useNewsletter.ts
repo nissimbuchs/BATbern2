@@ -17,6 +17,7 @@ import type {
   NewsletterSubscriptionStatusResponse,
   NewsletterSendRequest,
   NewsletterSendResponse,
+  NewsletterSendStatusResponse,
   NewsletterPreviewResponse,
   NewsletterSendHistoryItem,
   SubscriberCountResponse,
@@ -28,14 +29,20 @@ export const NEWSLETTER_QUERY_KEYS = {
   history: (eventCode: string) => ['newsletter', 'history', eventCode] as const,
 };
 
-/** Subscribe anonymous email to newsletter. */
+export interface NewsletterSubscribeMutationVars {
+  request: NewsletterSubscribeRequest;
+  turnstileToken?: string | null;
+}
+
+/** Subscribe anonymous email to newsletter. Accepts optional turnstileToken (Story 10.31, AC8). */
 export function useNewsletterSubscribe(): UseMutationResult<
   void,
   Error,
-  NewsletterSubscribeRequest
+  NewsletterSubscribeMutationVars
 > {
   return useMutation({
-    mutationFn: newsletterService.subscribe,
+    mutationFn: ({ request, turnstileToken }) =>
+      newsletterService.subscribe(request, turnstileToken),
   });
 }
 
@@ -114,7 +121,7 @@ export function useNewsletterPreview(): UseMutationResult<
   });
 }
 
-/** Send newsletter for an event. */
+/** Send newsletter for an event. Returns immediately with PENDING status and a sendId. */
 export function useSendNewsletter(
   eventCode: string
 ): UseMutationResult<NewsletterSendResponse, Error, NewsletterSendRequest> {
@@ -124,6 +131,49 @@ export function useSendNewsletter(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.history(eventCode) });
       queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.subscriberCount });
+    },
+  });
+}
+
+const TERMINAL_STATUSES = new Set(['COMPLETED', 'PARTIAL', 'FAILED']);
+
+/**
+ * Poll send-job status every 3 seconds while status is PENDING or IN_PROGRESS.
+ * Stops polling automatically when a terminal status is reached.
+ */
+export function useSendStatus(
+  eventCode: string,
+  sendId: string | null
+): UseQueryResult<NewsletterSendStatusResponse, Error> {
+  return useQuery({
+    queryKey: ['newsletter', 'send-status', eventCode, sendId],
+    queryFn: () => newsletterService.getSendStatus(eventCode, sendId!),
+    enabled: !!sendId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (!status || TERMINAL_STATUSES.has(status)) {
+        return false;
+      }
+      return 3000;
+    },
+    staleTime: 0,
+  });
+}
+
+/** Retry failed recipients for a PARTIAL or FAILED send. */
+export function useRetryFailedRecipients(
+  eventCode: string
+): UseMutationResult<NewsletterSendResponse, Error, string> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sendId) => newsletterService.retryFailedRecipients(eventCode, sendId),
+    onSuccess: (_data, sendId) => {
+      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.history(eventCode) });
+      // Reset the cached send-status so the terminal PARTIAL/FAILED state is cleared
+      // and polling resumes (refetchInterval sees undefined status → returns 3000ms).
+      queryClient.resetQueries({
+        queryKey: ['newsletter', 'send-status', eventCode, sendId],
+      });
     },
   });
 }

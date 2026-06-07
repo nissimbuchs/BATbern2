@@ -44,6 +44,7 @@ import {
   PhotoCamera as PhotoCameraIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useSpeakerBatchImport } from '@/hooks/useSpeakerBatchImport';
 import { useUserList } from '@/hooks/useUserManagement';
 import { parseSpeakersJson, createImportCandidates, detectChanges } from '@/utils/speakerImport';
@@ -102,6 +103,7 @@ export const SpeakerBatchImportModal: React.FC<SpeakerBatchImportModalProps> = (
   onImportComplete,
 }) => {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
   const [parseError, setParseError] = useState<string | null>(null);
   const [importCandidates, setImportCandidates] = useState<SpeakerImportCandidate[]>([]);
   const [importResult, setImportResult] = useState<SpeakerBatchImportResult | null>(null);
@@ -280,6 +282,7 @@ export const SpeakerBatchImportModal: React.FC<SpeakerBatchImportModalProps> = (
       onClose={handleClose}
       maxWidth="lg"
       fullWidth
+      fullScreen={isMobile}
       aria-labelledby="speaker-batch-import-dialog-title"
     >
       <DialogTitle id="speaker-batch-import-dialog-title">

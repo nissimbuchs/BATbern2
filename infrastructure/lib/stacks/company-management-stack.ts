@@ -75,12 +75,24 @@ export class CompanyManagementStack extends cdk.Stack {
       ...(props.eventBus && {
         EVENT_BUS_NAME: props.eventBus.eventBusName,
       }),
+      // Additional-email verification (v2): public base URL used to build the
+      // {{baseUrl}}/verify-email?token= link in verification emails. Must match
+      // the frontend domain so the link resolves to the SPA verify page.
+      ...(props.config.domain && {
+        APP_BASE_URL: `https://${props.config.domain.frontendDomain}`,
+      }),
     };
 
     // Secrets from Secrets Manager
     const additionalSecrets: Record<string, ecs.Secret> = {};
     if (props.watchJwtSecret) {
       additionalSecrets.WATCH_JWT_SECRET = ecs.Secret.fromSecretsManager(props.watchJwtSecret);
+      // JWT_SECRET provides a stable HMAC key for AdditionalEmailVerificationTokenService
+      // (additional-email verification links). Without it the service generates a random
+      // key on each start, invalidating all in-flight verification tokens whenever ECS
+      // replaces a Fargate Spot task or a new deployment lands. Reuses the WATCH_JWT_SECRET
+      // secret (same pattern as event-management-stack).
+      additionalSecrets.JWT_SECRET = ecs.Secret.fromSecretsManager(props.watchJwtSecret);
     }
 
     // Create domain service using reusable helper function
@@ -92,6 +104,7 @@ export class CompanyManagementStack extends cdk.Stack {
         routePattern: '/api/v1/companies,/api/v1/users',
         cpu: 256,
         memoryLimitMiB: 1024, // Increased from 512 MB (Priority 4: ECS Right-Sizing - was at 93-99% utilization)
+        healthCheckStartPeriodSeconds: 300, // DB + Flyway + JPA needs more startup time than 120s default
         additionalEnvironment,
         additionalSecrets,
       },
@@ -156,6 +169,47 @@ export class CompanyManagementStack extends cdk.Stack {
         resources: [props.eventBus.eventBusArn],
       }));
     }
+
+    // Additional-email verification (v2): grant SES send permissions so the
+    // shared-kernel EmailService can dispatch verification emails to additional
+    // addresses. Mirrors the partner-coordination-stack SES grant (same
+    // isProdTraffic domain selection + scoped identity ARNs).
+    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'berner-architekten-treffen.ch';
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: [
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/${sesFromDomain}`,
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@${sesFromDomain}`,
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
+        ],
+      }),
+    );
+
+    // Story 11.E.1 / AR30 / cherry-pick d5cf0fcc: Grant Cognito admin perms for speaker provisioning (Story 11.E.2).
+    // Scope: this service's task role only. Resource: the BATbern User Pool ARN (no wildcard).
+    // AdminAddUserToGroup is intentionally NOT granted (Resolved Q#1, PM 2026-05-17): roles live in
+    // PostgreSQL user_roles per ADR-001; no Cognito groups exist; granting the permission would be a useless
+    // least-privilege violation. ADR-009 §Decision 3, PRD AR30, and PRD NFR5 are updated in the same commit.
+    // ListUsers + ResendConfirmationCode added for the daily unconfirmed-signup nudge
+    // (CognitoConfirmationResendJob) and the nightly reconciliation's missing-user scan
+    // (UserReconciliationService), which both page through the pool. ResendConfirmationCode is a
+    // non-admin API but is still IAM-scoped to this pool; the SPA client has no secret so no
+    // SecretHash is required.
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminInitiateAuth',
+        'cognito-idp:AdminGetUser',
+        'cognito-idp:ListUsers',
+        'cognito-idp:ResendConfirmationCode',
+      ],
+      resources: [props.userPool.userPoolArn],
+    }));
 
     // Note: Cognito Lambda triggers (Story 1.2.5) are now created in CognitoStack
     // to avoid cyclic dependencies. Database tables are created by Flyway migrations

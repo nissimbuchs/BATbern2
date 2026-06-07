@@ -4,8 +4,11 @@
  */
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { fetchAuthSession } from 'aws-amplify/auth';
 import i18n from '@/i18n/config';
+import { hasCognitoSession } from '@/utils/auth/cognitoSession';
+import { ensureAmplifyConfigured } from '@/config/amplify';
+import { authService } from '@/services/auth/authService';
+import { setLogoutReason } from '@/services/auth/logoutReason';
 
 /**
  * Generate a unique correlation ID for request tracing
@@ -21,7 +24,16 @@ function generateCorrelationId(): string {
  * @returns ID token string or null if not authenticated
  */
 async function getIdToken(): Promise<string | null> {
+  // Anonymous visitors (public homepage / archive / event discovery) have no Cognito
+  // tokens in storage. Short-circuit BEFORE importing aws-amplify so the ~426 KB dependency
+  // never loads for them (perf/public-homepage-followup #2). Authenticated requests fall
+  // through to lazily configure + query Amplify.
+  if (!hasCognitoSession()) {
+    return null;
+  }
   try {
+    await ensureAmplifyConfigured();
+    const { fetchAuthSession } = await import('aws-amplify/auth');
     const session = await fetchAuthSession();
     return session.tokens?.idToken?.toString() || null;
   } catch {
@@ -135,8 +147,35 @@ apiClient.interceptors.response.use(
           }
           break;
         case 403:
-          // Forbidden - insufficient permissions
-          console.error(`[${correlationId}] Forbidden: Insufficient permissions`);
+          // Story 12.7 / G1 (from Story 12.2 is_active gate): the gateway emits
+          //   403 { "error": "ACCOUNT_DEACTIVATED", "message": "..." }
+          // when a user's account is deactivated — for BOTH password and federated
+          // sessions (the gate is provider-agnostic). Force a clean logout + route to
+          // the login surface with a deactivated indicator so the user sees a clear
+          // message rather than a raw 403.
+          // CRITICAL: this is a 403, NOT a 401 — it must NOT go through the
+          // token-refresh path (a refresh loop would result).
+          if (error.response.data?.error === 'ACCOUNT_DEACTIVATED') {
+            console.error(`[${correlationId}] Account deactivated - forcing logout`);
+            // Story 12.8 F5: for a FEDERATED session, Amplify signOut() performs a
+            // full-page redirect to the Cognito hosted-UI /logout — which clobbers the
+            // in-app navigation below (and its ?reason= param). Persist the reason in
+            // sessionStorage so it survives the round-trip; LogoutPage/LoginForm consume it.
+            setLogoutReason('account_deactivated');
+            // Best-effort sign-out; clears the Amplify session (native or federated).
+            void authService.signOut().catch(() => {
+              /* ignore — we redirect regardless */
+            });
+            const target = '/login?reason=account_deactivated';
+            if (navigateCallback) {
+              navigateCallback(target);
+            } else {
+              window.location.href = target;
+            }
+          } else {
+            // Forbidden - insufficient permissions
+            console.error(`[${correlationId}] Forbidden: Insufficient permissions`);
+          }
           break;
         case 500:
           // Server error

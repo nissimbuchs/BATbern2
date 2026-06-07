@@ -155,15 +155,11 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
                       size="small"
                     />
                     <Chip
-                      icon={user.cognitoUserId ? <CloudIcon /> : <CloudOffIcon />}
-                      label={user.cognitoUserId ? t('cognito.linked') : t('cognito.notLinked')}
-                      color={user.cognitoUserId ? 'info' : 'default'}
+                      icon={user.hasCognitoAccount ? <CloudIcon /> : <CloudOffIcon />}
+                      label={user.hasCognitoAccount ? t('cognito.linked') : t('cognito.notLinked')}
+                      color={user.hasCognitoAccount ? 'info' : 'default'}
                       size="small"
-                      title={
-                        user.cognitoUserId
-                          ? t('cognito.tooltip', { id: user.cognitoUserId })
-                          : undefined
-                      }
+                      title={user.hasCognitoAccount ? t('cognito.tooltip') : undefined}
                     />
                   </Box>
                 </Box>

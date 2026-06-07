@@ -1,13 +1,15 @@
 /**
- * Hooks for event teaser image management.
- * Story 10.22: Event Teaser Images for Moderator Presentation Page
+ * Hooks for teaser image management (event-specific or global).
  *
- * 3-phase presigned PUT upload pattern (mirrors useEventPhotos):
- * 1. POST /teaser-images/upload-url → { uploadUrl, s3Key }
+ * Pass eventCode for event-specific images, or null/undefined for global images
+ * (shown on all event presentations).
+ *
+ * 3-phase presigned PUT upload pattern:
+ * 1. POST .../upload-url → { uploadUrl, s3Key }
  * 2. Client PUT to S3 directly (no backend involvement)
- * 3. POST /teaser-images/confirm → TeaserImageItem
+ * 3. POST .../confirm → TeaserImageItem
  */
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { components } from '@/types/generated/events-api.types';
@@ -15,11 +17,27 @@ import type { components } from '@/types/generated/events-api.types';
 type TeaserImageUploadUrlRequest = components['schemas']['TeaserImageUploadUrlRequest'];
 type TeaserImageUpdateRequest = components['schemas']['TeaserImageUpdateRequest'];
 
+const GLOBAL_KEY = ['global-teaser-images'] as const;
+
+function cacheKey(eventCode?: string | null) {
+  return eventCode ? ['event', eventCode] : [...GLOBAL_KEY];
+}
+
+/**
+ * Fetch teaser images. For event-specific pass eventCode; for global pass null.
+ */
+export const useTeaserImages = (eventCode?: string | null) => {
+  return useQuery({
+    queryKey: cacheKey(eventCode),
+    queryFn: () => eventApiClient.listTeaserImages(eventCode),
+    enabled: eventCode === null || eventCode === undefined || eventCode.length > 0,
+  });
+};
+
 /**
  * 3-phase upload mutation.
- * On success: invalidates ['event', eventCode] so EventResponse.teaserImages refreshes.
  */
-export const useUploadTeaserImage = (eventCode: string) => {
+export const useUploadTeaserImage = (eventCode?: string | null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -31,30 +49,30 @@ export const useUploadTeaserImage = (eventCode: string) => {
       return eventApiClient.confirmTeaserImageUpload(eventCode, { s3Key: urlResponse.s3Key });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+      queryClient.invalidateQueries({ queryKey: cacheKey(eventCode) });
     },
   });
 };
 
-export const useDeleteTeaserImage = (eventCode: string) => {
+export const useDeleteTeaserImage = (eventCode?: string | null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (imageId: string) => eventApiClient.deleteTeaserImage(eventCode, imageId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+      queryClient.invalidateQueries({ queryKey: cacheKey(eventCode) });
     },
   });
 };
 
-export const useUpdateTeaserImagePosition = (eventCode: string) => {
+export const useUpdateTeaserImagePosition = (eventCode?: string | null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ imageId, request }: { imageId: string; request: TeaserImageUpdateRequest }) =>
       eventApiClient.updateTeaserImage(eventCode, imageId, request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+      queryClient.invalidateQueries({ queryKey: cacheKey(eventCode) });
     },
   });
 };

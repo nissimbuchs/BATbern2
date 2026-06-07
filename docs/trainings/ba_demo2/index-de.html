@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training — Aktive Partner-Meeting-Agenda: Vom Brainstorming zur Spezifikation</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --accent4: #ffd166;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --user-bg: #1e2a45;
+    --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a;
+    --agent-border: #00d4aa;
+    --artifact-bg: #2a1e45;
+    --artifact-border: #6c63ff;
+    --note-bg: #2e2a1a;
+    --note-border: #ffd166;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* ── Navigation ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover, nav a.active { background: var(--accent); color: white; }
+  nav .sep { color: var(--border); font-size: 11px; }
+
+  /* ── Layout ── */
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+
+  /* ── Language switcher ── */
+  .lang-switch {
+    display: inline-block;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+  }
+  .lang-switch a {
+    color: var(--accent2);
+    text-decoration: none;
+    border: 1px solid var(--accent2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    transition: all .2s;
+  }
+  .lang-switch a:hover { background: var(--accent2); color: var(--bg); }
+
+  /* ── Section headers ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .phase-1 { background: rgba(0,212,170,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(108,99,255,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(255,107,107,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-bridge { background: rgba(255,209,102,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* ── Overview cards ── */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .overview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .overview-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .overview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { color: var(--text-muted); font-size: 0.88rem; }
+  .overview-card.phase1 { border-color: rgba(0,212,170,.4); }
+  .overview-card.phase2 { border-color: rgba(108,99,255,.4); }
+  .overview-card.phase3 { border-color: rgba(255,107,107,.4); }
+  .overview-card.bridge { border-color: rgba(255,209,102,.4); }
+
+  /* ── Conversation turns ── */
+  .turn { margin-bottom: 20px; }
+
+  .turn-user {
+    background: var(--user-bg);
+    border: 1px solid var(--user-border);
+    border-left: 4px solid var(--user-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-agent {
+    background: var(--agent-bg);
+    border: 1px solid var(--agent-border);
+    border-left: 4px solid var(--agent-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-artifact {
+    background: var(--artifact-bg);
+    border: 1px solid var(--artifact-border);
+    border-left: 4px solid var(--artifact-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-note {
+    background: var(--note-bg);
+    border: 1px solid var(--note-border);
+    border-left: 4px solid var(--note-border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 0.88rem;
+  }
+
+  .turn-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .turn-label .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .label-user { color: var(--user-border); }
+  .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); }
+  .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); }
+  .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); }
+  .label-note .dot { background: var(--accent4); }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: var(--text-muted); }
+  .turn-content code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .turn-content pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    margin: 12px 0;
+    white-space: pre;
+  }
+
+  /* ── Collapsible ── */
+  details {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 10px;
+  }
+  summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::before { content: '▶'; font-size: 10px; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { color: var(--text); }
+  .details-body { padding: 12px 14px; font-size: 0.87rem; border-top: 1px solid var(--border); }
+
+  /* ── Tags ── */
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .tag-green { background: rgba(0,212,170,.12); color: var(--accent2); border: 1px solid rgba(0,212,170,.3); }
+  .tag-purple { background: rgba(108,99,255,.12); color: var(--accent); border: 1px solid rgba(108,99,255,.3); }
+  .tag-yellow { background: rgba(255,209,102,.12); color: var(--accent4); border: 1px solid rgba(255,209,102,.3); }
+  .tag-red { background: rgba(255,107,107,.12); color: var(--accent3); border: 1px solid rgba(255,107,107,.3); }
+
+  /* ── Divider ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* ── Command pill ── */
+  .cmd {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.85rem;
+    padding: 2px 10px;
+    color: var(--accent4);
+  }
+
+  /* ── Connector ── */
+  .connector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .connector::before, .connector::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Takeaway grid ── */
+  .takeaway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .takeaway {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .takeaway h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .takeaway p { font-size: 0.87rem; color: var(--text-muted); }
+
+  /* ── Idea card ── */
+  .idea-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+  }
+  .idea-card .idea-id { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 0.5px; }
+  .idea-card h4 { font-size: 0.9rem; font-weight: 700; margin: 2px 0 4px; }
+  .idea-card p { font-size: 0.82rem; color: var(--text-muted); }
+
+  /* ── Future phase placeholder ── */
+  .future-phase {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 40px;
+    text-align: center;
+  }
+  .future-phase .icon { font-size: 2rem; margin-bottom: 12px; }
+  .future-phase h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+  .future-phase p { color: var(--text-muted); font-size: 0.9rem; }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#overview" class="active">Überblick</a>
+  <a href="#setup">Agent-Setup</a>
+  <a href="#session-setup">Session-Setup</a>
+  <a href="#technique-selection">Techniken</a>
+  <a href="#phase1-morphological">Morphological</a>
+  <a href="#phase1-roleplaying">Role Playing</a>
+  <a href="#phase1-crosspollination">Cross-Pollination</a>
+  <a href="#organization">Organisation</a>
+  <a href="#artifact">Artefakt</a>
+  <span class="sep">|</span>
+  <a href="#next-ux" style="opacity:.5">UX-Design</a>
+  <a href="#next-arch" style="opacity:.5">Architektur</a>
+  <a href="#next-prd" style="opacity:.5">PRD</a>
+  <a href="#takeaways">Erkenntnisse</a>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════════════════════ HERO ══════════════════════════════════════════════ -->
+  <div class="hero">
+    <div class="lang-switch"><a href="index.html">English Version</a></div>
+    <div class="badge">BMAD Praxis-Training &mdash; Session 2</div>
+    <h1>Aktive Partner-Meeting-Agenda<br><span>Vom Brainstorming zur Spezifikation</span></h1>
+    <p>Ein vollständiger Durchgang einer realen BMAD-Brainstorming-Session &mdash; wie Business-Analysten mit dem Analyst Agent (Mary) interagieren, um systematisch Features mithilfe strukturierter Kreativtechniken zu entdecken und ein priorisiertes Feature-Inventar zu erstellen, das für die UX-, Architektur- und PRD-Phasen bereit ist.</p>
+    <div class="hero-meta">
+      <div><div class="label">Projekt</div><div class="value">BATbern</div></div>
+      <div><div class="label">Feature</div><div class="value">Active Meeting Agenda</div></div>
+      <div><div class="label">Session-Datum</div><div class="value">2026-04-04</div></div>
+      <div><div class="label">Generierte Ideen</div><div class="value">35</div></div>
+      <div><div class="label">Abgedeckte Phasen</div><div class="value">1 (Analyse)</div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ OVERVIEW ══════════════════════════════════════════════ -->
+  <section id="overview">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F5FA;</div>
+      <div class="section-header-text">
+        <h2>Session-Überblick</h2>
+        <p>In diesem Training durchgeführte BMAD-Phasen und was als Nächstes kommt</p>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-card phase1">
+        <div class="icon">&#x1F4CA;</div>
+        <h3>Phase 1 &mdash; Analyse (Diese Session)</h3>
+        <p>Den Analyst Agent (Mary) laden. Den Problemraum beschreiben. KI-empfohlene Brainstorming-Techniken auswählen. Features systematisch durch Morphological Analysis, Role Playing und Cross-Pollination erkunden. 35 Ideen organisieren und priorisieren.</p>
+      </div>
+      <div class="overview-card phase2">
+        <div class="icon">&#x1F3A8;</div>
+        <h3>Phase 2 &mdash; UX-Design (Kommt als Nächstes)</h3>
+        <p>Den UX Designer Agent laden. Das priorisierte Feature-Inventar in Interaktionsmuster, Wireframes und User Flows für die aktive Agenda-Erfahrung umwandeln.</p>
+      </div>
+      <div class="overview-card phase3">
+        <div class="icon">&#x1F3D7;</div>
+        <h3>Phase 3 &mdash; Architektur (Kommt als Nächstes)</h3>
+        <p>Den Architect Agent laden. Die technische Lösung entwerfen &mdash; Entities, APIs, Komponentenarchitektur &mdash; basierend auf dem Brainstorming-Output und den UX-Spezifikationen.</p>
+      </div>
+      <div class="overview-card bridge">
+        <div class="icon">&#x1F4DD;</div>
+        <h3>PRD &mdash; Anforderungen (Kommt als Nächstes)</h3>
+        <p>Den PM Agent laden. Brainstorming, UX und Architektur in ein produktionsreifes Product Requirements Document mit Epics und Stories zusammenführen.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ AGENT SETUP ══════════════════════════════════════════════ -->
+  <section id="setup">
+    <div class="section-header">
+      <div class="phase-badge phase-1">1</div>
+      <div class="section-header-text">
+        <h2>Schritt 1: Den Analyst Agent laden</h2>
+        <p>Mary aktivieren, den BMAD Business Analyst Agent</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content">
+        <p>Das BMAD-Framework stellt spezialisierte Agents für jede Phase bereit. Der <strong>Analyst Agent (Mary)</strong> ist eine strategische Business-Analystin mit Expertise in Marktforschung, Wettbewerbsanalyse und Anforderungserhebung. Sie spricht "mit der Begeisterung einer Schatzsucherin."</p>
+        <p>Um sie zu aktivieren, verwende den Slash-Befehl <code>/bmad-agent-bmm-analyst</code>. Das System lädt die Agent-Persona, liest die Projektkonfiguration und zeigt ein Menü mit Fähigkeiten an.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+      <div class="turn-content"><code>/bmad-agent-bmm-analyst</code></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort (Mary)</div>
+      <div class="turn-content">
+        <p>&#x1F4CA; <strong>Hallo, Nissim!</strong> Ich bin <strong>Mary</strong>, deine strategische Business-Analystin. Stell dir mich als Schatzsucherin für Erkenntnisse vor.</p>
+        <p>Der Agent zeigt ein nummeriertes Menü:</p>
+        <table>
+          <tr><th>#</th><th>Befehl</th><th>Beschreibung</th></tr>
+          <tr><td>1</td><td><strong>[MH]</strong></td><td>Menühilfe erneut anzeigen</td></tr>
+          <tr><td>2</td><td><strong>[CH]</strong></td><td>Mit dem Agent chatten</td></tr>
+          <tr><td>3</td><td><strong>[BP]</strong></td><td>Projekt brainstormen &mdash; Expertengeleitete Moderation</td></tr>
+          <tr><td>4</td><td><strong>[MR]</strong></td><td>Marktforschung</td></tr>
+          <tr><td>5</td><td><strong>[DR]</strong></td><td>Domänenforschung</td></tr>
+          <tr><td>6</td><td><strong>[TR]</strong></td><td>Technische Forschung</td></tr>
+          <tr><td>7</td><td><strong>[CB]</strong></td><td>Brief erstellen</td></tr>
+          <tr><td>8</td><td><strong>[DP]</strong></td><td>Projekt dokumentieren</td></tr>
+          <tr><td>9</td><td><strong>[PM]</strong></td><td>Party Mode starten</td></tr>
+          <tr><td>10</td><td><strong>[DA]</strong></td><td>Agent entlassen</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content">
+        <p><strong>Wichtige Erkenntnis:</strong> Du kannst den Kurzbefehl (<code>bp</code>), den vollständigen Befehl (<code>BP</code>) oder einen unscharfen Treffer wie "brainstorm" verwenden, um Menüpunkte auszuwählen. Der Agent verwendet Gross-/Kleinschreibung-unabhängigen Abgleich.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+      <div class="turn-content"><code>bp</code></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+      <div class="turn-content">
+        <p>Der Agent lädt den Brainstorming-Workflow, initialisiert ein Session-Dokument unter <code>_bmad-output/brainstorming/brainstorming-session-2026-04-04.md</code>, lädt das Projektkontext-Template und stellt zwei Entdeckungsfragen:</p>
+        <ol>
+          <li><strong>Worüber brainstormen wir?</strong> (Das zentrale Thema oder die Herausforderung)</li>
+          <li><strong>Welche konkreten Ergebnisse erhoffst du dir?</strong> (Arten von Ideen, Lösungen oder Erkenntnissen)</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ SESSION SETUP ══════════════════════════════════════════════ -->
+  <section id="session-setup">
+    <div class="section-header">
+      <div class="phase-badge phase-1">2</div>
+      <div class="section-header-text">
+        <h2>Schritt 2: Das Brainstorming-Thema definieren</h2>
+        <p>Den Problemraum mit genügend Kontext für den Agent beschreiben</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+      <div class="turn-content">
+        <p>i want to brainstorm on additional features for the partner meeting functionality. as organizers we send an invite with an agenda in text format, the partners receive it, accept the invite, and thats it. I want to make the agenda items active.</p>
+        <p>today we have the following agenda normally:</p>
+        <ol>
+          <li>greet all partners present (we know the partners are the users with role PARTNER)</li>
+          <li>analytics on past years events and attendances and feedback from attendees (we have a toplevel analytics page we show)</li>
+          <li>show the costs of past years events and the auditors revision pdf and get the sign of for the organizers from the partners, that books are well managed</li>
+          <li>show last years costs and present years budget assumption, resulting in the new fee per partner. get sign off of this new fee</li>
+          <li>discuss current years topics, the partners would be interested in (partners can login and add topics, and vote on other partners topics). we also have the topic selection blob game to help us find good topics</li>
+          <li>discuss any other current hot architecture topic partners are interested in.</li>
+        </ol>
+        <p>help me brainstorm, how we could create such an active agenda, that is supported by the batbern event management system, and where we could add functionality, to make it even better</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content">
+        <p><strong>Wichtige Erkenntnis:</strong> Gib dem Agent <em>reichhaltigen Kontext</em> darüber, was heute existiert. Beachte, wie der Benutzer alle 6 aktuellen Agendapunkte mit Einzelheiten beschrieben hat &mdash; was das System bereits unterstützt (Rolle PARTNER, Analytics-Seite, Themenabstimmung, Blob-Spiel). Das ermöglicht dem Agent, die Lücke zwischen "Was ist" und "Was könnte sein" zu kartieren, anstatt von Null zu erfinden.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+      <div class="turn-content">
+        <p>Der Agent bestätigt das Verständnis mit einer strukturierten Zusammenfassung:</p>
+        <p><strong>Session-Parameter:</strong></p>
+        <ul>
+          <li><strong>Themenfokus:</strong> Aktive/interaktive Partner-Meeting-Agenden</li>
+          <li><strong>Hauptziele:</strong> Jeden Agendapunkt systemgestützt machen, neue Funktionalität identifizieren, Engagement vor/während/nach verbessern</li>
+          <li><strong>Vorhandene Basis:</strong> Partner-Rollen &amp; Auth, Teilnahme-Analytics, Themenabstimmung, ICS-Einladungen, Partner-Portal</li>
+        </ul>
+        <p>Dann bietet er 4 Technik-Ansätze an: Benutzergewählt, <strong>KI-Empfohlen</strong>, Zufällig, Progressiver Ablauf.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ TECHNIQUE SELECTION ══════════════════════════════════════════════ -->
+  <section id="technique-selection">
+    <div class="section-header">
+      <div class="phase-badge phase-1">3</div>
+      <div class="section-header-text">
+        <h2>Schritt 3: KI-empfohlene Technikauswahl</h2>
+        <p>Der Agent analysiert den Session-Kontext und empfiehlt optimale Brainstorming-Techniken</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+      <div class="turn-content"><code>2</code> &mdash; KI-empfohlene Techniken</div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+      <div class="turn-content">
+        <p>Der Agent analysiert die Session über mehrere Dimensionen (Zieltyp, Komplexität, Energie, Zeit) und empfiehlt eine 3-phasige Technik-Sequenz:</p>
+
+        <table>
+          <tr><th>Phase</th><th>Technik</th><th>Kategorie</th><th>Warum</th><th>Dauer</th></tr>
+          <tr><td>1</td><td><strong>Morphological Analysis</strong></td><td>Tiefgehend</td><td>6 Agendapunkte &times; Interaktionsdimensionen = systematisches Raster, das jede Feature-Möglichkeit aufdeckt</td><td>~20 Min.</td></tr>
+          <tr><td>2</td><td><strong>Role Playing</strong></td><td>Kollaborativ</td><td>Das Raster aus Partner-, Organisator-, Revisor- und Abwesender-Partner-Perspektive durchgehen</td><td>~20 Min.</td></tr>
+          <tr><td>3</td><td><strong>Cross-Pollination</strong></td><td>Kreativ</td><td>Muster aus anderen Domänen entlehnen (GVs, Board-Plattformen, Retro-Tools)</td><td>~15 Min.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content">
+        <p><strong>Wichtige Erkenntnis:</strong> Der KI-empfohlene Ansatz passt die Techniken an deine spezifische Problemform an. Morphological Analysis wurde gewählt, weil du 6 diskrete Punkte hast, die auf einem Raster abgebildet werden können. Role Playing, weil du unterschiedliche Stakeholder hast. Cross-Pollination, um externe Innovation einzubringen. Jede Technik baut auf dem Output der vorherigen auf.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+      <div class="turn-content"><code>c</code> &mdash; Mit empfohlenen Techniken fortfahren</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ MORPHOLOGICAL ANALYSIS ══════════════════════════════════════════════ -->
+  <section id="phase1-morphological">
+    <div class="section-header">
+      <div class="phase-badge phase-1">T1</div>
+      <div class="section-header-text">
+        <h2>Technik 1: Morphological Analysis</h2>
+        <p>Systematische Abbildung von 6 Agendapunkten &times; 5 Interaktionsdimensionen</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent richtet die Matrix ein</div>
+      <div class="turn-content">
+        <p>Der Agent erstellt ein zweiachsiges Raster:</p>
+        <p><strong>Zeilen</strong> &mdash; 6 Agendapunkte: Begrüssung, Analytics, Revisions-Abnahme, Budget/Beitrag, Themen, Offene Diskussion</p>
+        <p><strong>Spalten</strong> &mdash; 5 Dimensionen: PRE (vor dem Meeting), LIVE (während), POST (danach), ARTIFACT (was es produziert), NOTIFICATION (Benachrichtigungen/Auslöser)</p>
+        <p>Dann geht er das Raster Zelle für Zelle durch, beginnend bei <strong>A1 &times; PRE</strong> mit Seed-Ideen und fragt nach dem Input des Benutzers.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content">
+        <p><strong>Wichtige Erkenntnis:</strong> Der Agent wirft nicht einfach 30 Ideen auf einmal hin. Er arbeitet <em>eine Zelle nach der anderen</em>, bietet Seed-Ideen an und wartet auf deine Reaktion. Das ist kollaborative Moderation &mdash; du formst den Output. Deine Antworten steuern, welche Ideen weiterentwickelt und welche verworfen werden.</p>
+      </div>
+    </div>
+
+    <!-- A1 conversation -->
+    <div class="connector">A1: Partner-Begrüssung / Anwesenheit</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; A1 PRE+LIVE</div>
+      <div class="turn-content">rsvp view and partner profile, so all know who is who (especially if we have new partners in the room)</div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst Ideen #1-#2, fragt dann nach LIVE</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">A1-PRE #1</div><h4>RSVP-Anwesenheits-Dashboard</h4><p>Partner bestätigen Teilnahme über das Portal. Organisatoren sehen live die Zählung: bestätigt/abgesagt/ausstehend.</p></div>
+        <div class="idea-card"><div class="idea-id">A1-PRE #2</div><h4>Partner-Profilkarten</h4><p>Foto, Firma, Rolle, Jahre als Partner. Besonders wertvoll für neue Partner.</p></div>
+        <p>Der Agent schlägt ausserdem Stellvertretung, Live-Check-in, Begrüssungsanzeige und Quorum-Indikator vor.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Richtung steuern</div>
+      <div class="turn-content">just one click on the agenda who is who, showing all partner companies, with their partner delegate card and photo (all already stored in the user entity). no welcome, no live checkin, but show present badge on who is who view</div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content">
+        <p><strong>Wichtige Erkenntnis:</strong> Der Benutzer <em>lehnt</em> überentwickelte Ideen ab (Live-Check-in, Begrüssungsanzeige) und steuert in Richtung Einfachheit. Das ist entscheidend &mdash; du akzeptierst nicht einfach alles, was der Agent vorschlägt. Du bist der Domänenexperte, der nach dem filtert, was in deinem Kontext praktikabel ist. Der Agent passt sich sofort an.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #3</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">A1-LIVE #3</div><h4>Who Is Who &mdash; Partner-Galerie-Ansicht</h4><p>Ein-Klick-Galerie-Raster: Firmenlogo, Delegiertenname, Foto, Rolle. Grünes "Anwesend"-Badge. Null Zeremonie.</p></div>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Entdeckung eines querschnittlichen Musters</div>
+      <div class="turn-content">yes, i think we should anyway have meeting notes of the meeting, with the info shown, the decisions taken, actions, ... where the attendance is one part of it</div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis &mdash; Durchbruch-Moment</div>
+      <div class="turn-content">
+        <p><strong>Wichtige Erkenntnis:</strong> Dies ist die grösste Entdeckung der Session. Der Benutzer erwähnte Meeting-Notizen, und der Agent erkannte dies als ein <strong>querschnittliches Artefakt</strong>, das ALLE 6 Agendapunkte umspannt. Das Sitzungsprotokoll wird zum Rückgrat des gesamten Systems &mdash; jeder Agendapunkt trägt automatisch einen Abschnitt bei. Diese einzelne Erkenntnis verwandelte "6 separate Features" in "ein zusammenhängendes System."</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst die querschnittliche Entdeckung #4-#5</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">CROSS-CUTTING #4</div><h4>Automatisch generiertes Sitzungsprotokoll</h4><p>Das System pflegt eine PartnerMeetingMinutes-Entity, die sich progressiv aufbaut, während der Organisator durch die aktive Agenda geht. Jeder Punkt trägt seinen Abschnitt bei. Exportierbar als PDF.</p></div>
+        <div class="idea-card"><div class="idea-id">A1-POST #5</div><h4>Anwesenheits-Abschnitt im Protokoll</h4><p>Who-Is-Who-Anwesenheitsdaten füllen den Abschnitt "Teilnehmer" automatisch. Der erste Abschnitt schreibt sich selbst.</p></div>
+        <p>Ab diesem Punkt wird jeder Agendapunkt durch die Linse bewertet: <em>"Was trägt das zum Protokoll bei?"</em></p>
+      </div>
+    </div>
+
+    <!-- A2 conversation -->
+    <div class="connector">A2: Analytics-Überprüfung</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+      <div class="turn-content">i think a link to the analytics page in the meeting invite is already enough.</div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #6</div>
+      <div class="turn-content"><div class="idea-card"><div class="idea-id">A2-PRE #6</div><h4>Analytics-Deep-Link in der Meeting-Einladung</h4><p>Direktlink zur Analytics-Seite in der ICS-Einladung. Null Entwicklungsaufwand.</p></div></div>
+    </div>
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+      <div class="turn-content">nothing missing here. just be sure to historize the data and attach the graphs to the meeting notes</div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #7-#8</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">A2-LIVE #7</div><h4>Analytics-Snapshot für das Protokoll</h4><p>Eingefrorener Snapshot der Grafiken + Metriken, dem Protokoll beigefügt. Unveränderlicher historischer Nachweis.</p></div>
+        <div class="idea-card"><div class="idea-id">A2-POST #8</div><h4>Historisiertes Analytics-Archiv</h4><p>Jedes Meeting erzeugt einen datierten Snapshot. Durchsuchbares Jahresvergleichs-Archiv.</p></div>
+      </div>
+    </div>
+
+    <!-- A3 conversation -->
+    <div class="connector">A3: Finanzielle Revisions-Abnahme</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Reale Rahmenbedingung</div>
+      <div class="turn-content">no, none of this [pre-meeting prep]. we are doing all this aside our real job, so no time for preparation. we create the report for that meeting day ;-)</div>
+    </div>
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> Reale Rahmenbedingungen zählen! Der Agent schlug vor, das Revisions-PDF vorab zu verteilen, aber der Benutzer korrigierte: Dies ist eine ehrenamtlich organisierte Konferenz, der Bericht wird erst am Sitzungstag erstellt. Der Agent überspringt PRE vollständig und konzentriert sich auf LIVE. Bringe immer deine Domänenrealität in das Gespräch ein.</p></div>
+    </div>
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+      <div class="turn-content">yes, pdf viewer (upload the report first). no formal digital approval. just a button to approve or decline the report. then the meeting notes log, that all present partners approved</div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #9-#11</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">A3-LIVE #9</div><h4>Revisionsbericht-Upload &amp; Viewer</h4><p>PDF hochladen, eingebetteter Viewer, permanent dem Meeting-Eintrag beigefügt.</p></div>
+        <div class="idea-card"><div class="idea-id">A3-LIVE #10</div><h4>Einfache Genehmigen/Ablehnen-Abstimmung</h4><p>Ein Klick pro Partner. System zählt und protokolliert das Ergebnis. Ersetzt verbales Nicken durch nachverfolgbaren Nachweis.</p></div>
+        <div class="idea-card"><div class="idea-id">A3-POST #11</div><h4>Revisions-Abschnitt im Sitzungsprotokoll</h4><p>PDF-Anhang + Abstimmungsergebnis + Diskussionsnotizen automatisch protokolliert.</p></div>
+      </div>
+    </div>
+
+    <!-- A4 conversation -->
+    <div class="connector">A4: Budget &amp; Beitrags-Genehmigung</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Verknüpfung mit einem anderen Feature</div>
+      <div class="turn-content">yes, this is a spreadsheet today. i have another feature, where we add invoicing to partner management service. so for now, this is showing the spreadsheet, and then record the new partner fee, same as before. but here it might be interesting to ask the partners if they would be ready to login prior to it, and then see and approve the expected new budget, or better, we ask them to do this after the meeting and approve the new fee in the system.</div>
+    </div>
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> Der Benutzer entdeckte eine <em>Zeitphasen-Aufteilung</em> &mdash; Live-Präsentation während des Meetings, aber asynchrone Genehmigung danach. Das ist realistischer, als zu versuchen, eine formelle Zustimmung im Raum zu erhalten. Der Agent erkannte, dass dies mit dem geplanten Rechnungsstellungs-Feature verknüpft ist, und schaffte eine Brücke zwischen zwei Arbeitsströmen.</p></div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #12-#15</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">A4-LIVE #12</div><h4>Budget-Tabelle Upload &amp; Viewer</h4><p>Gleiches Upload-/Viewer-Muster wie beim Revisions-PDF. Konsistente UX.</p></div>
+        <div class="idea-card"><div class="idea-id">A4-LIVE #13</div><h4>Live-Abstimmung zur Budget-Richtung</h4><p>Weichere Abstimmung &mdash; richtungsweisende Zustimmung, nicht bindend.</p></div>
+        <div class="idea-card"><div class="idea-id">A4-POST #14</div><h4>Asynchrone Beitrags-Akzeptanz im Partner-Portal</h4><p>Nach dem Meeting überprüft und bestätigt jeder Partner den neuen Beitrag im Portal. 100% Partner-Abdeckung.</p></div>
+        <div class="idea-card"><div class="idea-id">A4-POST #15</div><h4>Beitrags-Akzeptanz-Tracker</h4><p>Organisator-Dashboard: akzeptiert / ausstehend / abgelehnt. Speist die Rechnungsstellungs-Pipeline.</p></div>
+      </div>
+    </div>
+
+    <!-- A5-A6 quick -->
+    <div class="connector">A5: Themenabstimmung &amp; A6: Offene Diskussion</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+      <div class="turn-content">i think, all is here. just a link in the meeting invite, to the topic selection page for the partners</div>
+    </div>
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+      <div class="turn-content">lets leave this as an open item (or we will just discuss on the topics they submitted. might enhance that later)</div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #16-#18</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">A5-PRE #16</div><h4>Themenabstimmungs-Deep-Link in Einladung</h4><p>Gleiches Deep-Link-Muster. Null neue Entwicklung.</p></div>
+        <div class="idea-card"><div class="idea-id">A5-POST #17</div><h4>Themenergebnisse im Protokoll</h4><p>Blob-Spiel-Ergebnisse und Diskussionsnotizen historisiert.</p></div>
+        <div class="idea-card"><div class="idea-id">A6 #18</div><h4>Offene Diskussion</h4><p>Bewusst unstrukturiert. Nur Freitext-Notizen. Später erweitern.</p></div>
+      </div>
+    </div>
+
+    <!-- Artifact and Notification columns sweep -->
+    <div class="connector">Matrix-Durchlauf: ARTIFACT- &amp; NOTIFICATION-Spalten</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent fasst die verbleibenden Spalten zusammen</div>
+      <div class="turn-content">
+        <p>Nachdem alle 6 Zeilen durchgegangen wurden, durchläuft der Agent die ARTIFACT- und NOTIFICATION-Spalten in einem Durchgang:</p>
+        <table>
+          <tr><th>Agendapunkt</th><th>Artefakt</th></tr>
+          <tr><td>A1 Begrüssung</td><td>Anwesenheitsliste (automatisch im Protokoll)</td></tr>
+          <tr><td>A2 Analytics</td><td>Snapshot der Grafiken + Metriken (eingefroren)</td></tr>
+          <tr><td>A3 Revision</td><td>Hochgeladenes PDF + Abstimmungsergebnis</td></tr>
+          <tr><td>A4 Budget/Beitrag</td><td>Hochgeladene Tabelle + Live-Abstimmung + asynchrone Akzeptanz</td></tr>
+          <tr><td>A5 Themen</td><td>Blob-Spiel-Ergebnisse + Diskussionsnotizen</td></tr>
+          <tr><td>A6 Offen</td><td>Freitext-Notizen</td></tr>
+          <tr><td><strong>Querschnittlich</strong></td><td><strong>Vollständiges Sitzungsprotokoll (PDF-Export)</strong></td></tr>
+        </table>
+        <p><strong>18 Ideen generiert</strong> aus der Morphological Analysis. Wichtige strukturelle Entdeckungen: Sitzungsprotokoll als Rückgrat, wiederverwendbare Abstimmungskomponente, wiederverwendbarer Dokument-Viewer, intelligente ICS-Einladung mit Deep-Links.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ ROLE PLAYING ══════════════════════════════════════════════ -->
+  <section id="phase1-roleplaying">
+    <div class="section-header">
+      <div class="phase-badge phase-1">T2</div>
+      <div class="section-header-text">
+        <h2>Technik 2: Role Playing</h2>
+        <p>Die aktive Agenda aus 4 verschiedenen Stakeholder-Perspektiven durchgehen</p>
+      </div>
+    </div>
+
+    <div class="connector">Perspektive: Der neue Partner</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+      <div class="turn-content">as a first time partner, when logging in, a tour on the platform and the partner functionality and what will happen during the meeting and what the current fees are, would be great. also show him the analytics, the organizers, the other partners. so he is already up to speed in the meeting start.</div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #19-#21</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">ROLE-NEW #19</div><h4>Onboarding-Tour für neue Partner</h4><p>Geführter Rundgang beim ersten Login auf der Partner-Plattform.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-NEW #20</div><h4>Kontext-Paket für neue Partner</h4><p>Automatisch zusammengestelltes Briefing: Beiträge, Analytics, Organisatoren, andere Partner.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-NEW #21</div><h4>"Neuer Partner"-Badge</h4><p>Dezentes Badge in Who Is Who. Signalisiert "sei willkommen."</p></div>
+      </div>
+    </div>
+
+    <div class="connector">Perspektive: Der abwesende Partner</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Aufdecken eines Governance-Grenzfalls</div>
+      <div class="turn-content">yes, he would need meeting minutes access and vote on the fee A4. A3 is already approved. he could send in a standin, so we should be able to record that, even if he has no batbern partner access</div>
+    </div>
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> Role Playing deckte einen echten Governance-Grenzfall auf &mdash; Stellvertretung für jemanden ohne Systemkonto. Das wäre bei reinem Feature-Brainstorming nie aufgetaucht. Indem man <em>in die Rolle</em> des abwesenden Partners schlüpft, denkt man natürlich darüber nach, was diese Person braucht.</p></div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #22-#25</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">ROLE-ABSENT #22</div><h4>Protokoll-Zugang nach dem Meeting</h4><p>Alle Partner werden benachrichtigt, wenn das Protokoll veröffentlicht wird.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-ABSENT #23</div><h4>Asynchrone Beitrags-Abstimmung für abwesende Partner</h4><p>Gleicher Beitrags-Akzeptanz-Flow, ohne im Raum zu sein.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-ABSENT #24</div><h4>Stellvertretungs-Erfassung</h4><p>Freitext-Name, kein Konto nötig. "Vertreten durch"-Badge in Who Is Who.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-ABSENT #25</div><h4>Stellvertreter-Abstimmungszuordnung</h4><p>Organisator stimmt im Auftrag ab. Klare Zuordnungskette im Protokoll.</p></div>
+      </div>
+    </div>
+
+    <div class="connector">Perspektive: Der Organisator</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Eine zentrale Design-Anforderung hinzufügen</div>
+      <div class="turn-content">yes, that are all great important ideas. we should also be able to select, which active agenda items are relevant for that meeting, and maybe add additional passive agenda points manually to be discussed or presented</div>
+    </div>
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> In der Organisator-Rolle erkannte der Benutzer, dass die Agenda nicht fest codiert sein kann. Manche Meetings überspringen die Revision; manche brauchen zusätzliche Punkte. Diese fundamentale Design-Erkenntnis &mdash; <strong>konfigurierbare Agenda mit aktiven + passiven Punkten</strong> &mdash; wurde zum Fundament des gesamten Systems.</p></div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #26-#30</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">ROLE-ORG #26</div><h4>Agenda Builder</h4><p>Aktive Punkte ein-/ausschalten, per Drag umordnen. Jedes Meeting individuell angepasst.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-ORG #27</div><h4>Benutzerdefinierte passive Agendapunkte</h4><p>Freitext-Einträge für alles, was nicht systemgestützt ist.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-ORG #28</div><h4>Meeting-Vorbereitungscheckliste</h4><p>Automatisch generiert basierend auf aktivierten Punkten.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-ORG #29</div><h4>Präsentator-/Controller-Modus</h4><p>Das Meeting Punkt für Punkt steuern. Jede "Folie" ist interaktiv.</p></div>
+        <div class="idea-card"><div class="idea-id">ROLE-ORG #30</div><h4>Pro-Punkt-Notizen</h4><p>Kontextuelle Notizen an jedem Agendapunkt.</p></div>
+      </div>
+    </div>
+
+    <div class="connector">Perspektive: Der Revisor</div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+      <div class="turn-content">let's keep it simple, so the auditor email can be set on the admin page, then he also gets the partner meeting invite, if his agenda point is on the agenda. he can then send the pdf to an organizer who uploads it</div>
+    </div>
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #31</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">ROLE-AUDITOR #31</div><h4>Revisor-E-Mail-Konfiguration</h4><p>Admin-Feld für Revisor-E-Mail. Bedingte automatische Einladung, wenn der Revisionspunkt auf der Agenda steht. Null System-Overhead.</p></div>
+        <p><strong>13 Ideen generiert</strong> aus Role Playing (#19-#31). Wichtige Entdeckungen: Onboarding für neue Partner, Stellvertretung, konfigurierbarer Agenda Builder, Präsentatormodus.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ CROSS-POLLINATION ══════════════════════════════════════════════ -->
+  <section id="phase1-crosspollination">
+    <div class="section-header">
+      <div class="phase-badge phase-1">T3</div>
+      <div class="section-header-text">
+        <h2>Technik 3: Cross-Pollination</h2>
+        <p>Bewährte Muster aus anderen Domänen entlehnen</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent schlägt Muster aus der Unternehmensführung vor</div>
+      <div class="turn-content">Schlägt Muster von Aktionärs-GVs (Live-Abstimmungsergebnisse, Stellvertreter-Abstimmung), Board-Meeting-Plattformen (Board Book, Konsent-Agenda), WEG-Verwaltung (Action-Item-Tracker) vor.</div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Eine ganze Domäne ablehnen</div>
+      <div class="turn-content">none of these.</div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> Es ist völlig in Ordnung, eine ganze Reihe von Vorschlägen abzulehnen! Unternehmensführungs-Tools waren zu formal für ein Community-geführtes Architektur-Meetup. Der Agent schwenkt auf leichtere Domänen um. Fühle dich nicht verpflichtet, Ideen zu akzeptieren, die nicht in deinen Kontext passen &mdash; ein einfaches "none of these" ist vollkommen gültig.</p></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent schwenkt auf leichtere Domänen</div>
+      <div class="turn-content">Versucht Konferenz-/Meetup-Plattformen (Post-Meeting-Feedback-Pulse), kollaborative Workshop-Tools (Live-Wortwolken) und Retrospektive-Tools (Action Items mit Carry-Forward).</div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Auswählen, was passt</div>
+      <div class="turn-content">yes, feedback pulse is great. also send out the meeting minutes after the meeting manually by the organizer to all invited. yes, action items should always be there. so the organizer can add notes on each presented item, but also add action items with an owner (one of the organizers or partners)</div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #32-#35</div>
+      <div class="turn-content">
+        <div class="idea-card"><div class="idea-id">CROSS-POLL #32</div><h4>Post-Meeting-Feedback-Pulse</h4><p>3-4 Fragen-Umfrage nach Veröffentlichung des Protokolls. Zufriedenheitstrends über Jahre verfolgen.</p></div>
+        <div class="idea-card"><div class="idea-id">CROSS-POLL #33</div><h4>Manuelle Protokoll-Veröffentlichung &amp; Verteilung</h4><p>Organisator überprüft, bearbeitet, dann "Veröffentlichen &amp; Senden" an alle Teilnehmer.</p></div>
+        <div class="idea-card"><div class="idea-id">CROSS-POLL #34</div><h4>Action Items mit Zuständigkeitszuweisung</h4><p>Titel, Beschreibung, zugewiesener Verantwortlicher (Organisator oder Partner), optionale Frist.</p></div>
+        <div class="idea-card"><div class="idea-id">CROSS-POLL #35</div><h4>Action Item Carry-Forward</h4><p>Offene Punkte tauchen automatisch beim nächsten Meeting auf. Nichts fällt durchs Raster.</p></div>
+        <p><strong>4 Ideen generiert</strong> aus Cross-Pollination (#32-#35). Diese vervollständigen den Post-Meeting-Lebenszyklus.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ ORGANIZATION ══════════════════════════════════════════════ -->
+  <section id="organization">
+    <div class="section-header">
+      <div class="phase-badge phase-1">4</div>
+      <div class="section-header-text">
+        <h2>Schritt 4: Organisation &amp; Priorisierung</h2>
+        <p>35 Ideen in Themen und Umsetzungspriorität strukturieren</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent organisiert in 6 Themen</div>
+      <div class="turn-content">
+        <table>
+          <tr><th>Thema</th><th>Ideen</th><th>Kernkonzept</th></tr>
+          <tr><td><strong>1. Konfigurierbare Agenda-Engine</strong></td><td>#26-#30</td><td>Agenda Builder, Präsentatormodus, Notizen</td></tr>
+          <tr><td><strong>2. Sitzungsprotokoll (Lebendes Dokument)</strong></td><td>#4,5,7,8,11,33</td><td>Automatisch zusammengestellt, historisiert, publizierbar</td></tr>
+          <tr><td><strong>3. Partner-Interaktionskomponenten</strong></td><td>#1-3,9,10,12,13</td><td>RSVP, Galerie, Abstimmung, Dokument-Viewer</td></tr>
+          <tr><td><strong>4. Post-Meeting-Workflows</strong></td><td>#14,15,23,32,34,35</td><td>Asynchrone Beitrags-Akzeptanz, Feedback, Actions</td></tr>
+          <tr><td><strong>5. Neuer Partner &amp; Stellvertretung</strong></td><td>#19-21,24,25</td><td>Onboarding-Tour, Delegation</td></tr>
+          <tr><td><strong>6. Intelligente Meeting-Einladung</strong></td><td>#2,6,16,31</td><td>Deep-Links, bedingte Revisor-Einladung</td></tr>
+        </table>
+        <p>Der Agent fragt: <em>Was sind deine Top-3-Must-haves? Einfachste Quick Wins? Was kann warten?</em></p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>Benutzer priorisiert</div>
+      <div class="turn-content">
+        <p><strong>Must-have:</strong> Thema 1, 2, 3, 4</p>
+        <p><strong>Quick Wins:</strong> Thema 6 (Deep-Links) und Thema 3 wiederverwendbare Komponenten (Abstimmung, Upload/Viewer)</p>
+        <p><strong>Kann warten:</strong> Thema 5 (neue Partner)</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> Der Benutzer priorisierte 4 von 6 Themen als Must-have, was viel ist. Aber da die Themen klare <em>Abhängigkeitsschichten</em> haben, kann der Agent eine Bau-Reihenfolge vorschlagen, bei der Basiskomponenten zuerst kommen und alles andere sich einklinkt. Priorisierung bedeutet nicht nur "was zuerst" &mdash; sondern "was hängt wovon ab."</p></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent erstellt eine 4-schichtige Bau-Reihenfolge</div>
+      <div class="turn-content">
+<pre>SCHICHT 1 &mdash; Fundament
+&#9500;&#9472;&#9472; #26  Agenda Builder (Kern-Entity + UI)
+&#9500;&#9472;&#9472; #9   Dokument-Upload &amp; Viewer-Komponente
+&#9500;&#9472;&#9472; #10  Genehmigen/Ablehnen-Abstimmungskomponente
+&#9492;&#9472;&#9472; #1   RSVP-Dashboard
+
+SCHICHT 2 &mdash; Meeting-Ablauf
+&#9500;&#9472;&#9472; #3   Who Is Who Galerie
+&#9500;&#9472;&#9472; #27  Benutzerdefinierte passive Agendapunkte
+&#9500;&#9472;&#9472; #29  Präsentator-/Controller-Modus
+&#9500;&#9472;&#9472; #30  Pro-Punkt-Notizen
+&#9492;&#9472;&#9472; #4   Sitzungsprotokoll-Entity
+
+SCHICHT 3 &mdash; Agendapunkt-Interaktionen
+&#9500;&#9472;&#9472; #5   Anwesenheit &rarr; Protokoll
+&#9500;&#9472;&#9472; #7   Analytics-Snapshot &rarr; Protokoll
+&#9500;&#9472;&#9472; #11  Revisions-PDF + Abstimmung &rarr; Protokoll
+&#9500;&#9472;&#9472; #12  Budget-Dokument + Abstimmung &rarr; Protokoll
+&#9500;&#9472;&#9472; #28  Meeting-Vorbereitungscheckliste
+&#9492;&#9472;&#9472; #34  Action Items mit Verantwortlichen
+
+SCHICHT 4 &mdash; Post-Meeting &amp; Lebenszyklus
+&#9500;&#9472;&#9472; #33  Protokoll veröffentlichen &amp; verteilen
+&#9500;&#9472;&#9472; #35  Action Item Carry-Forward
+&#9500;&#9472;&#9472; #32  Feedback-Pulse
+&#9500;&#9472;&#9472; #14  Asynchrone Beitrags-Akzeptanz
+&#9500;&#9472;&#9472; #15  Beitrags-Akzeptanz-Tracker
+&#9492;&#9472;&#9472; #23  Abwesender Partner Beitrags-Abstimmung</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ ARTIFACT ══════════════════════════════════════════════ -->
+  <section id="artifact">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F4BE;</div>
+      <div class="section-header-text">
+        <h2>Output-Artefakt</h2>
+        <p>Was die Brainstorming-Session produziert hat</p>
+      </div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>Generiertes Dokument</div>
+      <div class="turn-content">
+        <p><strong>Datei:</strong> <code>_bmad-output/brainstorming/brainstorming-session-2026-04-04.md</code></p>
+        <p><strong>Inhalt:</strong></p>
+        <ul>
+          <li>Session-Überblick mit Thema, Zielen und vorhandenen Fähigkeiten</li>
+          <li>Begründung der Technikauswahl (3 KI-empfohlene Techniken)</li>
+          <li>Alle 35 Ideen im strukturierten Format (ID, Titel, Konzept, Neuheitswert)</li>
+          <li>6 thematische Cluster mit Muster-Erkenntnissen</li>
+          <li>3-stufige Priorisierung (Must-have / Quick-Win / Nice-to-have)</li>
+          <li>4-schichtige Bau-Reihenfolge mit Abhängigkeitskartierung</li>
+          <li>5 zentrale Architekturentscheidungen, die aufgetaucht sind</li>
+          <li>Session-Narrativ und Durchbruch-Momente</li>
+        </ul>
+        <p>Dieses Artefakt fliesst direkt in die nächsten BMAD-Phasen ein: UX-Design, Architektur und PRD-Erstellung.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Trainings-Hinweis</div>
+      <div class="turn-content">
+        <p><strong>Wichtige Erkenntnis:</strong> Der Brainstorming-Workflow speichert seinen Output progressiv &mdash; das Frontmatter des Dokuments verfolgt, welche Schritte abgeschlossen sind, sodass du bei einer Unterbrechung der Session dort weitermachen kannst, wo du aufgehört hast. Das finale Dokument ist sowohl für menschliche Überprüfung als auch für den Konsum durch andere BMAD-Agents (UX Designer, Architect, PM) strukturiert.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ ARCHITECTURE DIAGRAM ══════════════════════════════════════════════ -->
+  <section id="architecture-emerged">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F3D7;</div>
+      <div class="section-header-text">
+        <h2>Entstandene Systemarchitektur</h2>
+        <p>Das Brainstorming hat auf natürliche Weise ein Systemdesign offenbart</p>
+      </div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>Entstandene Architektur</div>
+      <div class="turn-content">
+<pre>VOR DEM MEETING         WÄHREND DES MEETINGS     NACH DEM MEETING
+&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;       &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;       &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+Intelligente ICS-        Agenda-Controller        Protokoll veröffentlichen
+  Einladung mit           Präsentatormodus         Feedback-Pulse
+  Deep-Links            Pro-Punkt-Interaktionen:  Asynchrone Beitrags-
+RSVP-Tracking             - Who Is Who Galerie      Abstimmung
+Meeting-Vorbereitung      - PDF/Dokument-Viewer   Action-Item-Tracking
+  Checkliste              - Genehmigen/Ablehnen   Carry-Forward zum
+Neue-Partner-Tour         - Themenabstimmung/Blob   nächsten Meeting
+Revisor-Auto-Einladung    - Notizen &amp; Actions
+                        Stellvertretungs-Erfassung
+
+         &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+         &#9474;  SITZUNGSPROTOKOLL (Lebendes Dok.)  &#9474;
+         &#9474;  Baut sich progressiv auf, während  &#9474;
+         &#9474;  jeder Agendapunkt präsentiert wird  &#9474;
+         &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ FUTURE PHASES ══════════════════════════════════════════════ -->
+  <section id="next-ux">
+    <div class="future-phase">
+      <div class="icon">&#x1F3A8;</div>
+      <h3>Kommt als Nächstes: Phase 2 &mdash; UX-Design</h3>
+      <p>Den UX Designer Agent laden, um diese 35 Ideen in Interaktionsmuster, Wireframes und User Flows für den Agenda Builder, Präsentatormodus, Abstimmungskomponenten und die Sitzungsprotokoll-Erfahrung umzuwandeln.</p>
+      <div class="tags" style="justify-content: center; margin-top: 16px;">
+        <span class="tag tag-purple">UX DESIGNER AGENT</span>
+        <span class="tag tag-purple">WIREFRAMES</span>
+        <span class="tag tag-purple">USER FLOWS</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="next-arch">
+    <div class="future-phase">
+      <div class="icon">&#x1F3D7;</div>
+      <h3>Kommt als Nächstes: Phase 3 &mdash; Architektur</h3>
+      <p>Den Architect Agent laden, um die technische Lösung zu entwerfen &mdash; PartnerMeeting-Entity, AgendaItem-Typen, Vote-Komponente, MeetingMinutes-Engine, Action-Item-System &mdash; basierend auf Brainstorming-Output und UX-Spezifikationen.</p>
+      <div class="tags" style="justify-content: center; margin-top: 16px;">
+        <span class="tag tag-red">ARCHITECT AGENT</span>
+        <span class="tag tag-red">ENTITIES</span>
+        <span class="tag tag-red">APIS</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="next-prd">
+    <div class="future-phase">
+      <div class="icon">&#x1F4DD;</div>
+      <h3>Kommt als Nächstes: PRD &mdash; Anforderungen</h3>
+      <p>Den PM Agent laden, um Brainstorming, UX und Architektur in ein produktionsreifes Product Requirements Document mit Epics, Stories und Akzeptanzkriterien zusammenzuführen.</p>
+      <div class="tags" style="justify-content: center; margin-top: 16px;">
+        <span class="tag tag-yellow">PM AGENT</span>
+        <span class="tag tag-yellow">EPICS</span>
+        <span class="tag tag-yellow">STORIES</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ TAKEAWAYS ══════════════════════════════════════════════ -->
+  <section id="takeaways">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F4A1;</div>
+      <div class="section-header-text">
+        <h2>Zentrale Erkenntnisse für Business-Analysten</h2>
+        <p>Was man beim Brainstorming mit dem BMAD Analyst Agent beachten sollte</p>
+      </div>
+    </div>
+
+    <div class="takeaway-grid">
+      <div class="takeaway">
+        <h3>&#x1F3AF; Reichhaltigen Kontext geben</h3>
+        <p>Beschreibe detailliert, was heute existiert &mdash; der Agent kartiert die Lücke zwischen "Was ist" und "Was könnte sein." Erwähne vorhandene Entities, Rollen, Seiten und Workflows. Je reichhaltiger der Input, desto gezielter die Ideen.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x2702;&#xFE0F; Frei steuern und ablehnen</h3>
+        <p>Du bist der Domänenexperte. Lehne überentwickelte Ideen ab ("keine Begrüssungsanzeige, kein Live-Check-in"). Sage "none of these" zu einer ganzen Reihe. Der Agent passt sich an. Fühle dich nicht verpflichtet, Vorschläge zu akzeptieren, die nicht zu deinen realen Rahmenbedingungen passen.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F50D; Auf querschnittliche Muster achten</h3>
+        <p>Die grösste Entdeckung in dieser Session &mdash; das Sitzungsprotokoll als lebendes Dokument &mdash; entstand aus einer beiläufigen Bemerkung über die Anwesenheit. Querschnittliche Artefakte verbergen sich oft in Gesprächen über einzelne Features. Der Agent hilft, sie aufzudecken.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F3AD; Role Playing findet Grenzfälle</h3>
+        <p>Stellvertretung, Abstimmung abwesender Partner, Onboarding neuer Partner &mdash; nichts davon entstand aus Feature-Brainstorming. Es kam daher, dass man diese Stakeholder <em>verkörperte</em>. Wenn der Agent fragt "Was würde [Persona] brauchen?" &mdash; schlüpfe wirklich in diese Rolle.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F6A7; Reale Rahmenbedingungen sind Features</h3>
+        <p>"Wir erstellen den Bericht am Sitzungstag" hat 3 Pre-Meeting-Features eliminiert &mdash; und das ist gut so. Rahmenbedingungen formen das System in Richtung dessen, was tatsächlich nutzbar ist. Verstecke deine Einschränkungen nicht; sie sind Design-Inputs.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F4CA; KI-empfohlene Techniken funktionieren</h3>
+        <p>Die KI wählte Morphological Analysis (systematisches Raster), Role Playing (Stakeholder-Perspektiven) und Cross-Pollination (externe Muster). Jede Technik baute auf dem Output der vorherigen auf. Vertraue der Technikauswahl &mdash; sie ist auf deine Problemform abgestimmt.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F4C4; Das Artefakt baut sich selbst auf</h3>
+        <p>Das Session-Dokument wuchs progressiv &mdash; jede Idee erfasst in einem strukturierten Format (ID, Titel, Konzept, Neuheitswert). Am Ende war die Organisation nur noch das Gruppieren dessen, was bereits existierte. Keine separate "Zusammenfassungs"-Phase nötig.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F517; Es speist die nächste Phase</h3>
+        <p>Der Brainstorming-Output ist für den Konsum durch andere BMAD-Agents strukturiert. Der UX Designer liest das Feature-Inventar, der Architect liest die entstandenen Entities, der PM liest die Prioritäten. Jede Phase baut auf der vorherigen auf.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">
+      <p><strong>BMAD Framework</strong> &mdash; Business Analyst Training Session 2</p>
+      <p>BATbern Projekt &mdash; Aktive Partner-Meeting-Agenda</p>
+      <p>Session-Datum: 2026-04-04 &mdash; 35 Ideen &mdash; 3 Techniken &mdash; 6 Themen</p>
+      <p style="margin-top: 12px;">Nächste Sessions: UX-Design &rarr; Architektur &rarr; PRD</p>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

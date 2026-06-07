@@ -1,0 +1,55 @@
+meta {
+  name: Posttest cleanup — final sweep of CUMS users provisioned by promote tests
+  type: http
+  seq: 99.1
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "users",
+    "prefix": "bruno.test"
+  }
+}
+
+tests {
+  test("posttest CUMS user cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, deletion counts are reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.user_profiles).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  PR 11 (plan §C): final sweep of CUMS users created by the promote tests.
+  Paired with 00a-pretest-cleanup-users.bru. The cleanup endpoint regex was
+  widened in PR 11 to accept `bruno.test` (no trailing dot) so the LIKE
+  pattern `bruno.test%` catches both the bare-collision form and the suffixed
+  form — see CUMS TestFixtureCleanupService.USERS Javadoc.
+
+  Replaces the TODO from PR 2's 99-posttest-cleanup.bru ("PR 11 — D.9
+  speaker-pool-api audit: ... two fix paths: (a) widen CUMS USERS regex …
+  (b) change tests 45–47 to use firstName=Bruno, lastName=Test"). PR 11
+  takes option (b) for the test data AND option (a) for the regex —
+  combined, the bare `bruno.test` username is now both produced AND swept.
+}

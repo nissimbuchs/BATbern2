@@ -32,14 +32,11 @@ const EVENTS_API_PATH = '/events';
  */
 class SpeakerStatusService {
   /**
-   * Update speaker status (AC1-2, AC10-12)
+   * Update speaker status.
    *
-   * Valid state transitions:
-   * - OPEN → CONTACTED
-   * - CONTACTED → READY, DECLINED
-   * - READY → ACCEPTED, DECLINED
-   * - ACCEPTED → SLOT_ASSIGNED (cannot go back to DECLINED)
-   * - DECLINED is terminal (cannot transition out)
+   * Valid transitions are defined in ADR-009 §0.2 (target model: 8-state
+   * machine). Invalid transitions are rejected server-side; DECLINED is
+   * reachable from every non-terminal state.
    *
    * @param eventCode Event code (e.g., "BATbern56")
    * @param speakerId Speaker pool UUID

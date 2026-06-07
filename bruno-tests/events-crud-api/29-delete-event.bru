@@ -1,0 +1,32 @@
+meta {
+  name: Delete Event (Cleanup)
+  type: http
+  seq: 29
+}
+
+delete {
+  url: {{baseUrl}}/events/{{createdEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 status", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("publish deletedEventCode for 29a-verify-event-deleted", function() {
+    // PR 6 (plan §D step 4): hand the just-deleted eventCode to 29a so it
+    // can assert GET → 404. We keep createdEventCode populated for 29a's
+    // URL substitution and clear both vars there.
+    bru.setVar("deletedEventCode", bru.getVar("createdEventCode"));
+  });
+}

@@ -45,8 +45,9 @@ export class SpeakerCoordinationStack extends cdk.Stack {
         serviceName,
         componentTag: 'SpeakerCoordination-Service',
         routePattern: '/api/v1/speakers',
-        cpu: 256,
-        memoryLimitMiB: 512,
+        cpu: 256, // Reduced from 512: CPU avg 2.7%, lowest of all services
+        memoryLimitMiB: 1024,
+        healthCheckStartPeriodSeconds: 300, // DB + Flyway + JPA
       },
       cluster: props.cluster,
       vpc: props.vpc,

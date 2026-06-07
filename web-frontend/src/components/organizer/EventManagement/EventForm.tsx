@@ -162,7 +162,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   const { t: tOrg } = useTranslation('organizer');
   const { user, isLoading: isAuthLoading } = useAuth();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Mutation hooks for proper cache management (MVC pattern)
   const createEventMutation = useCreateEvent();
@@ -400,6 +400,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         handleAutoSave(changedFields);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedFormValues, mode, isDirty, event, hasEditPermission]);
 
   const handleAutoSave = async (changedFields: PartialEventFormData) => {
@@ -653,7 +654,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   // Don't show permission error while auth is still loading
   if (!isAuthLoading && !hasEditPermission) {
     return (
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
         <DialogContent>
           <Alert severity="error">{t('errors.unauthorized')}</Alert>
         </DialogContent>
@@ -1080,6 +1081,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       <Dialog
         open={showUnsavedWarning}
         onClose={handleCancelClose}
+        fullScreen={isMobile}
         data-testid="unsaved-changes-dialog"
       >
         <DialogTitle>{t('confirmations.unsavedChanges')}</DialogTitle>

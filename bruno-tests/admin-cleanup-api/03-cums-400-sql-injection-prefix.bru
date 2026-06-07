@@ -1,0 +1,40 @@
+meta {
+  name: CUMS cleanup — SQL-injection-shaped prefix rejected
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "companies",
+    "prefix": "BRUNOTESTCO'; DROP TABLE companies; --"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns 400 (not 500) when prefix fails the bound regex", function() {
+    // Guards against the ResponseStatusException-swallowed-into-500 regression
+    // (fixed in c.f. fix(events): 5aaff459 and fix(partners): 3a398e80) coming back
+    // — proves the GlobalExceptionHandler chain hands 400 back through the gateway.
+    expect(res.getStatus()).to.equal(400);
+  });
+}

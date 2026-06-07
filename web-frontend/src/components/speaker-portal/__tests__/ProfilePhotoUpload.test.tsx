@@ -5,7 +5,9 @@
  * Tests for:
  * - Drag-and-drop support (AC7.1)
  * - Click to browse (AC7.2)
- * - File type validation - JPEG, PNG, WebP (AC7.3)
+ * - File type validation - JPEG, PNG, SVG (AC7.3; aligned to backend ProfilePictureService
+ *   png/jpg/jpeg/svg allow-list in the Story 12.12 follow-up — webp was frontend-only and
+ *   400'd at the presigned-url phase)
  * - File size validation - max 5MB (AC7.4)
  * - Image preview after selection (AC7.5)
  * - Upload progress indicator (AC7.7)
@@ -17,20 +19,25 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ProfilePhotoUpload from '../ProfilePhotoUpload';
 
-// Mock the speakerPortalService
-vi.mock('@/services/speakerPortalService', () => ({
-  speakerPortalService: {
-    uploadProfilePhoto: vi.fn(),
-  },
+// Code review 2026-05-18 (D1): mock the CUMS user-picture upload helper. The old
+// speakerPortalService.uploadProfilePhoto pointed at the deleted speaker-portal /profile
+// endpoints; the component now calls userAccountApi.uploadProfilePicture, which returns
+// { uploadId, cloudFrontUrl } from /api/v1/users/me/picture/*.
+vi.mock('@/services/api/userAccountApi', () => ({
+  uploadProfilePicture: vi.fn(),
 }));
 
-import { speakerPortalService } from '@/services/speakerPortalService';
+import { uploadProfilePicture } from '@/services/api/userAccountApi';
 
-const mockUploadProfilePhoto = vi.mocked(speakerPortalService.uploadProfilePhoto);
+const mockUploadProfilePhoto = vi.mocked(uploadProfilePicture);
+
+const mockSuccess = (cloudFrontUrl: string) =>
+  mockUploadProfilePhoto.mockResolvedValue(cloudFrontUrl);
 
 describe('ProfilePhotoUpload Component', () => {
+  // Code review 2026-05-18 (D1): the eventCode prop was removed — profile photo lives on
+  // User (CUMS), not per-event.
   const defaultProps = {
-    token: 'test-token-123',
     currentPhotoUrl: null as string | null,
     onPhotoUploaded: vi.fn(),
     onError: vi.fn(),
@@ -78,7 +85,7 @@ describe('ProfilePhotoUpload Component', () => {
     it('should_displayAcceptedFormatsHint_when_dropzoneVisible', () => {
       render(<ProfilePhotoUpload {...defaultProps} />);
 
-      expect(screen.getByText(/jpeg, png, webp/i)).toBeInTheDocument();
+      expect(screen.getByText(/jpeg, png, svg/i)).toBeInTheDocument();
       expect(screen.getByText(/max 5mb/i)).toBeInTheDocument();
     });
   });
@@ -88,7 +95,7 @@ describe('ProfilePhotoUpload Component', () => {
   describe('File Type Validation (AC7.3)', () => {
     it('should_acceptJPEGFiles_when_jpegProvided', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.jpg');
+      mockSuccess('https://cdn.batbern.ch/new-photo.jpg');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -99,17 +106,13 @@ describe('ProfilePhotoUpload Component', () => {
       await user.upload(input, file);
 
       await waitFor(() => {
-        expect(mockUploadProfilePhoto).toHaveBeenCalledWith(
-          'test-token-123',
-          file,
-          expect.any(Function)
-        );
+        expect(mockUploadProfilePhoto).toHaveBeenCalledWith(file, expect.any(Function));
       });
     });
 
     it('should_acceptPNGFiles_when_pngProvided', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.png');
+      mockSuccess('https://cdn.batbern.ch/new-photo.png');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -124,13 +127,39 @@ describe('ProfilePhotoUpload Component', () => {
       });
     });
 
-    it('should_acceptWebPFiles_when_webpProvided', async () => {
-      const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.webp');
-
+    // Story 12.12 follow-up: webp passed the old frontend check but the backend
+    // ProfilePictureService only accepts png/jpg/jpeg/svg → the upload 400'd at the
+    // presigned-url phase. The frontend list now mirrors the backend: webp rejected
+    // client-side with a proper message, svg accepted.
+    it('should_rejectWebPFiles_when_webpProvided', async () => {
       render(<ProfilePhotoUpload {...defaultProps} />);
 
       const file = new File(['image content'], 'photo.webp', { type: 'image/webp' });
+      const dropzone = screen.getByTestId('photo-dropzone');
+
+      // Use drag-and-drop which bypasses the accept attribute (same as the GIF test) —
+      // file pickers already filter on accept, drops do not.
+      fireEvent.drop(dropzone, {
+        dataTransfer: {
+          files: [file],
+        },
+      });
+
+      await waitFor(() => {
+        expect(defaultProps.onError).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'INVALID_FILE_TYPE' })
+        );
+      });
+      expect(mockUploadProfilePhoto).not.toHaveBeenCalled();
+    });
+
+    it('should_acceptSvgFiles_when_svgProvided', async () => {
+      const user = userEvent.setup();
+      mockSuccess('https://cdn.batbern.ch/new-photo.svg');
+
+      render(<ProfilePhotoUpload {...defaultProps} />);
+
+      const file = new File(['<svg></svg>'], 'photo.svg', { type: 'image/svg+xml' });
       const dropzone = screen.getByTestId('photo-dropzone');
       const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
 
@@ -191,7 +220,7 @@ describe('ProfilePhotoUpload Component', () => {
   describe('File Size Validation (AC7.4)', () => {
     it('should_acceptFile_when_under5MB', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.jpg');
+      mockSuccess('https://cdn.batbern.ch/new-photo.jpg');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -331,7 +360,7 @@ describe('ProfilePhotoUpload Component', () => {
     it('should_callOnPhotoUploaded_when_uploadSucceeds', async () => {
       const user = userEvent.setup();
       const newPhotoUrl = 'https://cdn.batbern.ch/speakers/new-photo.jpg';
-      mockUploadProfilePhoto.mockResolvedValue(newPhotoUrl);
+      mockSuccess(newPhotoUrl);
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -349,7 +378,7 @@ describe('ProfilePhotoUpload Component', () => {
     it('should_displayNewPhoto_when_uploadSucceeds', async () => {
       const user = userEvent.setup();
       const newPhotoUrl = 'https://cdn.batbern.ch/speakers/new-photo.jpg';
-      mockUploadProfilePhoto.mockResolvedValue(newPhotoUrl);
+      mockSuccess(newPhotoUrl);
 
       const { rerender } = render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -372,7 +401,7 @@ describe('ProfilePhotoUpload Component', () => {
 
     it('should_hideProgressBar_when_uploadSucceeds', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.jpg');
+      mockSuccess('https://cdn.batbern.ch/new-photo.jpg');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 

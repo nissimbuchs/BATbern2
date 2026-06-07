@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
  * Excludes database auto-configuration as this is a stateless gateway
  * that routes requests to downstream services without direct database access.
  */
+// Build alignment: 2026-04-05
 @SpringBootApplication(exclude = {
     DataSourceAutoConfiguration.class,
     HibernateJpaAutoConfiguration.class

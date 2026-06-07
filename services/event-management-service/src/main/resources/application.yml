@@ -68,6 +68,11 @@ aws:
     queue-url: ${AWS_INBOUND_EMAIL_QUEUE_URL:}
     bucket-name: ${AWS_INBOUND_EMAIL_BUCKET_NAME:}
     enabled: ${AWS_INBOUND_EMAIL_ENABLED:false}
+  ses:
+    bounce:
+      enabled: ${AWS_BOUNCE_ENABLED:false}
+      queue-url: ${AWS_BOUNCE_QUEUE_URL:}
+      soft-threshold: ${SES_BOUNCE_SOFT_THRESHOLD:3}
 
 # User Service Configuration (API-based user data access)
 # Uses ECS Service Connect DNS for service-to-service communication in AWS
@@ -83,6 +88,28 @@ app:
     from-name: ${EMAIL_FROM_NAME:BATbern Platform}
     organizer-name: ${EMAIL_ORGANIZER_NAME:BATbern Team}
     organizer-email: ${EMAIL_ORGANIZER:events@batbern.ch}
+    # ORGANIZER address embedded in registration confirmation .ics files.
+    # MUST NOT be a forwarded SES alias — mail clients auto-send iMIP REPLYs here
+    # on Accept/Decline, which would otherwise fan out to every organizer.
+    calendar-organizer-email: ${EMAIL_CALENDAR_ORGANIZER:calendar@batbern.ch}
+    reply-to: ${EMAIL_REPLY_TO:replies@batbern.ch}
+  # Registration confirmation lifecycle (link validity + cleanup + auto-resend).
+  # INVARIANT: cleanup-after-hours > confirmation-token-validity-hours, so a still-valid
+  # confirmation link always has a registration row to confirm (a longer link is useless
+  # if the row was already deleted). Enforced by RegistrationCleanupService at startup.
+  registration:
+    confirmation-token-validity-hours: ${REG_CONFIRMATION_TOKEN_VALIDITY_HOURS:96}   # 4 days
+    cleanup-after-hours: ${REG_CLEANUP_AFTER_HOURS:120}                               # 5 days
+    resend:
+      enabled: ${REG_RESEND_ENABLED:true}
+      cron: "0 30 8 * * *"                       # daily 08:30 (after speaker reminders, before deadline reminders)
+      after-hours: ${REG_RESEND_AFTER_HOURS:48}  # resend once a registration is >2 days unconfirmed
+      max-attempts: ${REG_RESEND_MAX_ATTEMPTS:2} # at most this many auto-resends per registration
+
+# Story 10.29: Newsletter send tuning (canary mode)
+newsletter:
+  send:
+    inter-page-delay-ms: ${NEWSLETTER_INTER_PAGE_DELAY_MS:0}
 
 # OpenAI Configuration (Story 10.4: Topic Similarity + Trending Topics)
 openai:
@@ -114,6 +141,8 @@ workflow:
 batbern:
   ai:
     enabled: ${AI_ENABLED:false}
+  ses:
+    configuration-set-name: ${SES_CONFIGURATION_SET_NAME:}
   reminders:
     enabled: true
     cron: "0 0 8 * * *"  # Daily at 8 AM (before 9 AM registration reminder)

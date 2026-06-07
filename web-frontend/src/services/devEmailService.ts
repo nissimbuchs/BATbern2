@@ -1,15 +1,21 @@
 /**
  * Dev-only email service for the local email inbox.
- * Talks directly to the Event Management Service — no auth, no API gateway needed.
+ * Aggregates captured emails from all services that have a DevEmailController.
  *
+ * Currently: Event Management Service (EMS, :8002) + Partner Coordination Service (PCS, :8004)
+ * + Company/User Management Service (CUMS, :8001 — additional-email verification mails).
  * Only used by DevEmailInboxPage (accessible at /dev/emails in local dev).
  */
 
 const EMS_BASE = `http://localhost:${import.meta.env.VITE_EMS_PORT ?? 8002}`;
+const PCS_BASE = `http://localhost:${import.meta.env.VITE_PCS_PORT ?? 8004}`;
+const CUMS_BASE = `http://localhost:${import.meta.env.VITE_CUMS_PORT ?? 8001}`;
 
 export interface CapturedEmail {
   id: string;
   to: string;
+  /** Story 10.32 — additional recipient addresses copied via CC. Empty array when none. */
+  cc: string[];
   subject: string;
   htmlBody: string;
   fromEmail: string;
@@ -22,20 +28,46 @@ export interface CapturedEmail {
   }>;
 }
 
+/** Frontend-only: CapturedEmail annotated with the service base URL it came from. */
+export interface CapturedEmailWithSource extends CapturedEmail {
+  _sourceBaseUrl: string;
+}
+
+async function fetchFromService(baseUrl: string): Promise<CapturedEmailWithSource[]> {
+  try {
+    const response = await fetch(`${baseUrl}/dev/emails`);
+    if (!response.ok) return [];
+    const emails: CapturedEmail[] = await response.json();
+    return emails.map((e) => ({ ...e, _sourceBaseUrl: baseUrl }));
+  } catch {
+    // Service may not be running — silently return empty
+    return [];
+  }
+}
+
 export const devEmailService = {
-  fetchAll: async (): Promise<CapturedEmail[]> => {
-    const response = await fetch(`${EMS_BASE}/dev/emails`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch emails: ${response.status}`);
-    }
-    return response.json();
+  fetchAll: async (): Promise<CapturedEmailWithSource[]> => {
+    const [emsEmails, pcsEmails, cumsEmails] = await Promise.all([
+      fetchFromService(EMS_BASE),
+      fetchFromService(PCS_BASE),
+      fetchFromService(CUMS_BASE),
+    ]);
+    // Merge and sort newest first
+    return [...emsEmails, ...pcsEmails, ...cumsEmails].sort(
+      (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime()
+    );
   },
 
+  /** Returns the direct download URL for an attachment (opens in browser / triggers save). */
+  attachmentDownloadUrl: (email: CapturedEmailWithSource, filename: string): string =>
+    `${email._sourceBaseUrl}/dev/emails/${email.id}/attachments/${filename}`,
+
   clearAll: async (): Promise<void> => {
-    const response = await fetch(`${EMS_BASE}/dev/emails`, { method: 'DELETE' });
-    if (!response.ok && response.status !== 204) {
-      throw new Error(`Failed to clear inbox: ${response.status}`);
-    }
+    await Promise.all([
+      fetch(`${EMS_BASE}/dev/emails`, { method: 'DELETE' }),
+      fetch(`${PCS_BASE}/dev/emails`, { method: 'DELETE' }).catch(() => undefined),
+      fetch(`${CUMS_BASE}/dev/emails`, { method: 'DELETE' }).catch(() => undefined),
+    ]);
   },
 
   /**

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partnermanagement-Erweiterungen — Ausgewählte Features</title>
+<style>
+  :root { --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350; --accent: #6c63ff; --accent2: #00d4aa; --accent4: #ffd166; --text: #e8eaf6; --text-muted: #8890b5; --radius: 12px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 1.2rem; font-weight: 700; margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--accent2); }
+  p { margin-bottom: 10px; }
+  strong { color: white; }
+  em { color: var(--text-muted); }
+  .meta { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 28px; }
+  code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', monospace; font-size: 0.85em; }
+
+  .feature { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 14px; }
+  .feature .num { display: inline-block; background: rgba(0,212,170,.15); color: var(--accent2); font-weight: 700; font-size: 0.82rem; padding: 2px 10px; border-radius: 20px; border: 1px solid rgba(0,212,170,.3); margin-bottom: 6px; }
+  .feature h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .feature p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0; }
+
+  .note { background: var(--surface2); border: 1px solid var(--border); border-left: 4px solid var(--accent4); border-radius: 6px; padding: 14px 18px; margin: 20px 0; font-size: 0.88rem; }
+  .note strong { color: var(--accent4); }
+
+  .back-link { display: inline-block; color: var(--accent2); text-decoration: none; font-size: 0.85rem; margin-bottom: 24px; }
+  .back-link:hover { text-decoration: underline; }
+  .lang-link { display: inline-block; color: var(--accent); text-decoration: none; font-size: 0.85rem; margin-bottom: 24px; float: right; }
+  .lang-link:hover { text-decoration: underline; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+</style>
+</head>
+<body>
+<main>
+
+<a href="bmad-analyst-training-de.html" class="back-link">&larr; Zurück zur Schulung</a>
+<a href="project_partner_enhancements.html" class="lang-link">English version &rarr;</a>
+
+<h1>Partnermanagement-<span>Erweiterungen</span></h1>
+<div class="meta">
+  <strong>Branch:</strong> <code>demo/partner-management-enhancements</code> &nbsp;|&nbsp;
+  <strong>Quelle:</strong> Brainstorming-Sitzung April 2026
+</div>
+
+<p>Ausgewählte Features zur Verbesserung des Partner-Self-Service und der Organisator-Effizienz.</p>
+
+<h2>Ausgewählte Features</h2>
+
+<div class="feature">
+  <div class="num">#1</div>
+  <h3>RSVP-Sichtbarkeit im Portal</h3>
+  <p>Partner können ihren eigenen RSVP-Status pro Meeting im Portal einsehen. Backend-Daten sind bereits vorhanden — nur Frontend-Anpassung nötig.</p>
+</div>
+
+<div class="feature">
+  <div class="num">#2</div>
+  <h3>Teilen von Nachbesprechungs-Notizen</h3>
+  <p>Organisatoren können Meeting-Notizen über einen Schalter am bestehenden Notiz-Modell für den Partner „veröffentlichen".</p>
+</div>
+
+<div class="feature">
+  <div class="num">#3</div>
+  <h3>Sitzungsprotokolle &amp; Aufgaben</h3>
+  <p>Strukturierter Aufgabenbereich in den Sitzungsnotizen. Partner erhalten nach dem Meeting eine Zusammenfassung.</p>
+</div>
+
+<div class="feature">
+  <div class="num">#4</div>
+  <h3>Dokumente &amp; Anhänge teilen</h3>
+  <p>Organisatoren laden Dateien zum Partnerprofil hoch (Rechnungen, Verträge, Logos). Partner können diese herunterladen.</p>
+</div>
+
+<div class="note">
+  <strong>Hinweis zur Analyse:</strong> BATbern verfügt bereits über eine übergeordnete Analyse-Seite, die sowohl für Organisatoren als auch für Partner sichtbar ist und Teilnahme-Trends, Jahresvergleiche, Benchmarking usw. abdeckt — keine neuen Analyse-Features erforderlich.
+</div>
+
+<h2>In Planung</h2>
+<p><strong>Nächstes Brainstorming-Thema:</strong> Jährliche Rechnungsverwaltung für die Partner-Abrechnung.</p>
+
+<hr class="divider">
+<p style="text-align:center;color:var(--text-muted);font-size:0.82rem">
+  Generiert aus <code>project_partner_enhancements.md</code><br>
+  <a href="bmad-analyst-training-de.html" style="color:var(--accent2)">Schulungssitzung</a>
+</p>
+
+</main>
+</body>
+</html>

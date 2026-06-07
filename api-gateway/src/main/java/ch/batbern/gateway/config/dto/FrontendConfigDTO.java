@@ -35,4 +35,10 @@ public class FrontendConfigDTO {
      * Feature flags for conditional functionality
      */
     private FeatureFlagsDTO features;
+
+    /**
+     * Turnstile public configuration (only present when turnstile is enabled).
+     * Contains only siteKey — secretKey is never exposed (Story 10.31, AC6).
+     */
+    private TurnstileConfigDTO turnstile;
 }

@@ -7,11 +7,10 @@ import ch.batbern.events.domain.SpeakerReminderLog;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
-import ch.batbern.events.service.MagicLinkService;
+import ch.batbern.events.service.PrimarySpeakerResolver;
 import ch.batbern.events.service.SpeakerReminderEmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -62,8 +60,13 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
     @MockitoBean
     private SpeakerReminderEmailService reminderEmailService;
 
+    // Phase B: PrimarySpeakerResolver is the canonical recipient-routing seam. The
+    // legacy fixture seeds only SpeakerPool rows (no Session / session_users), so a real
+    // resolver would return Optional.empty() and short-circuit reminder dispatch.
+    // Mock it to fall back to the pool email (legacy contract) — full session-overlay
+    // integration is covered by the unit test.
     @MockitoBean
-    private MagicLinkService magicLinkService;
+    private PrimarySpeakerResolver primarySpeakerResolver;
 
     private Event testEvent;
     private SpeakerPool invitedSpeaker;
@@ -94,7 +97,6 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
         invitedSpeaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("John Invited")
-                .email("john@example.com")
                 .status(SpeakerWorkflowState.INVITED)
                 .responseDeadline(LocalDate.now().plusDays(14))
                 .remindersDisabled(false)
@@ -104,19 +106,23 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
         acceptedSpeaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("Jane Accepted")
-                .email("jane@example.com")
                 .status(SpeakerWorkflowState.ACCEPTED)
-                .contentStatus("PENDING")
                 .contentDeadline(LocalDate.now().plusDays(7))
                 .remindersDisabled(false)
                 .build();
         acceptedSpeaker = speakerPoolRepository.save(acceptedSpeaker);
 
-        // Mock email service and magic link
+        // Story 11.F.1: portalToken parameter dropped from sendReminderEmail (6 args).
         doNothing().when(reminderEmailService).sendReminderEmail(
-                any(), any(), any(), any(), any(), any(), any());
-        when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
-                .thenReturn("test-magic-token");
+                any(), any(), any(), any(), any(), any());
+
+        // Story 11.E.9: the pool.email column is gone. The resolver returns the email
+        // from the seeded session_users / UserApiClient pair, but the existing reminder
+        // tests in this class do not seed those rows. Stub the resolver to return a
+        // deterministic test address so the email-send assertions keep working without
+        // re-architecting every fixture.
+        when(primarySpeakerResolver.resolveEmail(any(SpeakerPool.class)))
+                .thenAnswer(inv -> java.util.Optional.of("reminder-recipient@test.local"));
     }
 
     @Nested
@@ -138,7 +144,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.message", is("Reminder sent successfully")))
                     .andExpect(jsonPath("$.tier", is("TIER_1")))
-                    .andExpect(jsonPath("$.emailAddress", is("john@example.com")));
+                    .andExpect(jsonPath("$.emailAddress", is("reminder-recipient@test.local")));
 
             // Verify reminder was logged
             assertThat(reminderLogRepository.findAll()).hasSize(1);

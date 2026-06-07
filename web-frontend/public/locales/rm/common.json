@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organisatur",
+      "speaker": "Relatur",
+      "partner": "Partenari",
+      "attendee": "Participant"
+    }
   },
   "public": {
     "login": "Annunziar",
@@ -74,13 +80,13 @@
     "close": "Serrar",
     "sending": "Trametter...",
     "loading": "Chargiar...",
-    "retry": "Retry",
-    "back": "Back",
-    "confirm": "Confirm",
-    "clearFilters": "Clear filters",
-    "previous": "Previous",
-    "next": "Next",
-    "deleting": "Deleting..."
+    "retry": "Turnar ad empruvar",
+    "back": "Enavos",
+    "confirm": "Confermar",
+    "clearFilters": "Stizzar ils filtros",
+    "previous": "Anteriur",
+    "next": "Suandant",
+    "deleting": "Stizzar..."
   },
   "language": {
     "select": "Tscherner lingua",
@@ -493,7 +499,7 @@
       "emailReadOnly": "E-mail (mo da legger)",
       "bio": "Biografia",
       "bioPlaceholder": "Cuntar nos da vus...",
-      "bioExceeds": "La biografia na sto betg surpassar 500 segns",
+      "bioExceeds": "La biografia na sto betg surpassar 5000 segns",
       "maxExpertiseAreas": "Maximalmain 10 domenis da cumpetenza permess",
       "maxSpeakingTopics": "Maximalmain 10 temas da presentaziun permess",
       "socialLinks": "Links sozials",
@@ -509,12 +515,12 @@
       "saveFailed": "La memorisaziun dal profil ha fallì"
     },
     "photo": {
-      "invalidFileType": "Tip da file nunvalid. Formats acceptads: JPEG, PNG, WebP",
+      "invalidFileType": "Tip da file nunvalid. Formats acceptads: JPEG, PNG, SVG",
       "fileTooLarge": "La dimensiun dal file sto esser pli pitschna che 5 MB",
       "changePhoto": "Midar la foto",
       "dragDropHere": "Drizzar ina foto qua",
       "orClickBrowse": "u cliccar per tschertgar",
-      "supportedFormats": "JPEG, PNG, WebP (max 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5 MB)",
       "uploading": "Chargament...",
       "cancel": "Interrumper",
       "uploadAria": "Chargiar la foto da profil"
@@ -554,6 +560,11 @@
     "detail": {
       "backToArchive": "← Enavos a l'archiv",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "I pli novs",
+      "oldest": "I pli vegls",
+      "mostAttended": "Il pli frequentà"
     }
   },
   "notifications": {
@@ -588,7 +599,8 @@
       "SPEAKER": "Referents",
       "REGISTRATION": "Inscripziun",
       "TASK_REMINDER": "Memorials da incumbensas",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Lieu & Catering"
     },
     "layoutKey": "Layout",
     "standalone": "Nagin (independent)",
@@ -694,24 +706,24 @@
   },
   "labels": {
     "status": "Status",
-    "title": "Title",
-    "date": "Date",
-    "overview": "Overview",
-    "sortBy": "Sort by",
-    "actions": "Actions",
-    "company": "Company",
-    "email": "Email",
-    "dueDate": "Due Date",
-    "emailAddress": "Email Address",
-    "name": "Name",
-    "description": "Description",
-    "notes": "Notes",
-    "event": "Event",
-    "viewMode": "View mode",
-    "gridView": "Grid view",
-    "listView": "List view",
-    "sessions": "Sessions",
-    "topics": "Topics",
+    "title": "Titel",
+    "date": "Data",
+    "overview": "Survista",
+    "sortBy": "Sortir per",
+    "actions": "Acziuns",
+    "company": "Interpresa",
+    "email": "E-mail",
+    "dueDate": "Data da termin",
+    "emailAddress": "Adressa e-mail",
+    "name": "Num",
+    "description": "Descripziun",
+    "notes": "Remarcas",
+    "event": "Eveniment",
+    "viewMode": "Moda da visualisaziun",
+    "gridView": "Vista da grallar",
+    "listView": "Vista da glista",
+    "sessions": "Sessiuns",
+    "topics": "Temas",
     "firstName": "Prenum",
     "lastName": "Num"
   },
@@ -763,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Voss profil",
+    "pageSubtitle": "Administrai vossas datas persunalas, il consentiment ed il newsletter",
+    "tabs": {
+      "profile": "Profil",
+      "consent": "Consentiment & Newsletter"
+    },
+    "companyLabel": "Interpresa",
+    "companyInvalid": "L'ID da l'interpresa sto cuntegnair 1 fin 12 bustabs u cifras",
+    "onboardingNotice": "Cumplettai p.pl. voss profil per cuntinuar: acceptai sutvart las cundiziuns d’utilisaziun e la decleraziun da protecziun da datas.",
+    "consentTitle": "Cundiziuns d’utilisaziun & protecziun da datas",
+    "consentLabelPrefix": "Jau accept las",
+    "consentLabelAnd": "e la",
+    "termsOfService": "cundiziuns d’utilisaziun",
+    "privacyPolicy": "decleraziun da protecziun da datas",
+    "consentAcceptedOn": "Acceptà ils {{date}}",
+    "consentSave": "Acceptar e memorisar",
+    "consentSaveError": "Memorisar voss consentiment n’è betg reussì. Empruvai anc ina giada.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Retschavai invitaziuns e novitads davart ils proxims eveniments BATbern.",
+    "newsletterLabel": "Abunar il newsletter da BATbern"
   }
 }

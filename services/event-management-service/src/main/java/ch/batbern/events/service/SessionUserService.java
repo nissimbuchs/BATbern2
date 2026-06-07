@@ -36,14 +36,24 @@ public class SessionUserService {
     private final SessionUserRepository sessionUserRepository;
     private final SessionRepository sessionRepository;
     private final UserApiClient userApiClient;
+    // Spec: auto-participant-email-aliases-excel-export F1 — auto-register session speakers
+    // (CO_SPEAKER added via the Sessions tab) as event participants of the host event.
+    private final SpeakerAutoRegistrationService speakerAutoRegistrationService;
 
     /**
-     * Assign a speaker to a session
+     * Assign a speaker to a session.
+     *
+     * <p>Story 11.E.8 consolidation: the optional {@code presentationTitle} parameter is
+     * retained on the API surface for source-compat with existing callers, but the value
+     * is discarded — {@code session_users.presentation_title} was dropped in V100. The
+     * session-level title ({@code sessions.title}) is the single source for the talk
+     * title; per-speaker subtitle overrides are not part of BATbern's current pattern.
+     * If a future story needs them, the column can be re-added as additive schema.
      *
      * @param sessionId Session UUID
      * @param username User's username (public identifier per ADR-003/1.16.2)
      * @param speakerRole Role of the speaker
-     * @param presentationTitle Optional speaker-specific presentation title
+     * @param presentationTitle ignored; preserved as a parameter for source-compat
      * @return SessionSpeakerResponse with enriched user data
      * @throws IllegalArgumentException if session or user not found, or duplicate assignment
      * @throws UserNotFoundException if user not found via API
@@ -77,7 +87,6 @@ public class SessionUserService {
                 .session(session)
                 .username(username)
                 .speakerRole(speakerRole)
-                .presentationTitle(presentationTitle)
                 .speakerFirstName(user.getFirstName())  // Cache for full-text search
                 .speakerLastName(user.getLastName())    // Cache for full-text search
                 .isConfirmed(false)
@@ -87,6 +96,21 @@ public class SessionUserService {
         sessionUserRepository.save(sessionUser);
 
         log.info("Successfully assigned speaker {} to session {}", username, sessionId);
+
+        // Spec F1: auto-register any session-level speaker as an event participant. The
+        // PRIMARY_SPEAKER path is normally handled by SpeakerWorkflowService at READY (which
+        // uses TRIGGER_SESSION_PRIMARY_SPEAKER), but a direct
+        // assignSpeakerToSession(PRIMARY_SPEAKER) call would otherwise bypass auto-reg —
+        // so we also handle PRIMARY_SPEAKER here. The call is idempotent, so the duplicate
+        // attempt during the workflow path is a safe no-op.
+        if (speakerRole == SpeakerRole.PRIMARY_SPEAKER || speakerRole == SpeakerRole.CO_SPEAKER) {
+            speakerAutoRegistrationService.autoRegisterIfAbsent(
+                    session.getEventId(),
+                    username,
+                    speakerRole == SpeakerRole.PRIMARY_SPEAKER
+                            ? SpeakerAutoRegistrationService.TRIGGER_SESSION_PRIMARY_SPEAKER
+                            : SpeakerAutoRegistrationService.TRIGGER_SESSION_CO_SPEAKER);
+        }
 
         return enrichWithUserData(sessionUser, user);
     }
@@ -233,7 +257,9 @@ public class SessionUserService {
                     .company(null) // No company data available for archived speakers
                     .profilePictureUrl(null) // No profile picture for archived speakers
                     .speakerRole(sessionUser.getSpeakerRole())
-                    .presentationTitle(sessionUser.getPresentationTitle())
+                    // Story 11.E.8: session_users.presentation_title dropped (V102). The
+                    // response field is retained for FE source-compat but always null now.
+                    .presentationTitle(null)
                     .isConfirmed(sessionUser.isConfirmed())
                     .build();
         }
@@ -248,13 +274,29 @@ public class SessionUserService {
                 .username(user.getId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .company(user.getCompanyId()) // companyId is the company name per Story 1.16.2
+                .company(user.getCompanyId()) // companyId is the company name (slug) per Story 1.16.2
+                .companyDisplayName(resolveCompanyDisplayName(user.getCompanyId()))
                 .profilePictureUrl(user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null)
                 .bio(user.getBio())
                 .speakerRole(sessionUser.getSpeakerRole())
-                .presentationTitle(sessionUser.getPresentationTitle())
+                // Story 11.E.8: session_users.presentation_title dropped (V102).
+                .presentationTitle(null)
                 .isConfirmed(sessionUser.isConfirmed())
                 .build();
+    }
+
+    /**
+     * Resolve a company slug to its human-readable display name via a per-slug cached
+     * lookup against {@code GET /companies/{slug}}. Falls back to the slug itself when
+     * the company is unknown / CUMS is degraded. Returns {@code null} when the speaker
+     * has no company at all.
+     */
+    private String resolveCompanyDisplayName(String companySlug) {
+        if (companySlug == null || companySlug.isBlank()) {
+            return null;
+        }
+        String displayName = userApiClient.getCompanyDisplayName(companySlug);
+        return displayName != null ? displayName : companySlug;
     }
 
 }

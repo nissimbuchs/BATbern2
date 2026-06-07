@@ -38,6 +38,7 @@ import {
   HourglassEmpty,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useParticipantBatchImport } from '../../../hooks/useParticipantBatchImport';
 import { useUserList } from '../../../hooks/useUserManagement/useUserList';
 import {
@@ -57,6 +58,7 @@ export function ParticipantBatchImportModal({
   onImportComplete,
 }: ParticipantBatchImportModalProps) {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -77,51 +79,54 @@ export function ParticipantBatchImportModal({
   });
 
   // Parse CSV when file is uploaded
-  const handleFileDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) {
-      return;
-    }
-
-    const file = acceptedFiles[0];
-    setCsvFile(file);
-    setParseError(null);
-    setPreviewCandidates([]);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const participants = parseParticipantCsv(content);
-
-        // Convert to preview candidates with constructed usernames
-        const previewCands: ParticipantImportCandidate[] = participants.map((p) => {
-          const requests = convertParticipantToRegistrationRequest(p);
-          const eventCodes = requests.registrations.map((r) => r.eventCode);
-          const username = constructUsername(requests.firstName, requests.lastName);
-
-          return {
-            firstName: requests.firstName,
-            lastName: requests.lastName,
-            email: requests.participantEmail,
-            username,
-            eventCount: eventCodes.length,
-            eventCodes, // Add event codes array for display
-            isSyntheticEmail: requests.participantEmail.endsWith('@batbern.ch'),
-            importStatus: 'pending',
-            isExisting: undefined, // Will be set after checking existing users
-          };
-        });
-
-        setPreviewCandidates(previewCands);
-
-        // Trigger user list fetch to check for existing users
-        setShouldCheckUsers(true);
-      } catch (error) {
-        setParseError(error instanceof Error ? error.message : t('participantImport.parseError'));
+  const handleFileDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (acceptedFiles.length === 0) {
+        return;
       }
-    };
-    reader.readAsText(file);
-  }, []);
+
+      const file = acceptedFiles[0];
+      setCsvFile(file);
+      setParseError(null);
+      setPreviewCandidates([]);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const participants = parseParticipantCsv(content);
+
+          // Convert to preview candidates with constructed usernames
+          const previewCands: ParticipantImportCandidate[] = participants.map((p) => {
+            const requests = convertParticipantToRegistrationRequest(p);
+            const eventCodes = requests.registrations.map((r) => r.eventCode);
+            const username = constructUsername(requests.firstName, requests.lastName);
+
+            return {
+              firstName: requests.firstName,
+              lastName: requests.lastName,
+              email: requests.participantEmail,
+              username,
+              eventCount: eventCodes.length,
+              eventCodes, // Add event codes array for display
+              isSyntheticEmail: requests.participantEmail.endsWith('@batbern.ch'),
+              importStatus: 'pending',
+              isExisting: undefined, // Will be set after checking existing users
+            };
+          });
+
+          setPreviewCandidates(previewCands);
+
+          // Trigger user list fetch to check for existing users
+          setShouldCheckUsers(true);
+        } catch (error) {
+          setParseError(error instanceof Error ? error.message : t('participantImport.parseError'));
+        }
+      };
+      reader.readAsText(file);
+    },
+    [t]
+  );
 
   // Update candidates with existing user information
   useEffect(() => {
@@ -140,7 +145,7 @@ export function ParticipantBatchImportModal({
         isExisting: existingUsernames.has(candidate.username),
       }))
     );
-  }, [existingUsersData]);
+  }, [existingUsersData, previewCandidates.length]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFileDrop,
@@ -175,7 +180,7 @@ export function ParticipantBatchImportModal({
       }
     };
     reader.readAsText(csvFile);
-  }, [csvFile, importCandidates, onImportComplete]);
+  }, [csvFile, importCandidates, onImportComplete, t]);
 
   // Reset modal state
   const handleClose = useCallback(() => {
@@ -249,6 +254,7 @@ export function ParticipantBatchImportModal({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       data-testid="participant-import-modal"
     >
       <DialogTitle>{t('participantImport.title')}</DialogTitle>

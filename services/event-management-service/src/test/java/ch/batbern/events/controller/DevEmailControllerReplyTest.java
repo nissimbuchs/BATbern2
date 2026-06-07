@@ -41,6 +41,7 @@ class DevEmailControllerReplyTest {
         CapturedEmail captured = new CapturedEmail(
             id,
             "attendee@example.com",
+            List.of(),
             "BATbern42 Registration Confirmation",
             "<p>You are registered</p>",
             "noreply@batbern.ch",

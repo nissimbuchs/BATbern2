@@ -1,0 +1,37 @@
+meta {
+  name: PCS cleanup — speaker JWT rejected
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{speakerAuthToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "partners",
+    "prefix": "brtest"
+  }
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("returns 403 when caller lacks ORGANIZER role", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

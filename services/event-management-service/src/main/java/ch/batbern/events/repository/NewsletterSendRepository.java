@@ -14,4 +14,13 @@ import java.util.UUID;
 public interface NewsletterSendRepository extends JpaRepository<NewsletterSend, UUID> {
 
     List<NewsletterSend> findByEventIdOrderBySentAtDesc(UUID eventId);
+
+    /** Returns the first IN_PROGRESS send for this event (for duplicate-send prevention). */
+    java.util.Optional<NewsletterSend> findFirstByEventIdAndStatus(UUID eventId, String status);
+
+    /** Validates that a send record belongs to a specific event (security guard). */
+    java.util.Optional<NewsletterSend> findByIdAndEventId(UUID id, UUID eventId);
+
+    /** All sends currently in one of the given statuses — used for startup orphan recovery. */
+    java.util.List<NewsletterSend> findByStatusIn(java.util.Collection<String> statuses);
 }

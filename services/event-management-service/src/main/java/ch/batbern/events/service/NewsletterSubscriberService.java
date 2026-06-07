@@ -4,6 +4,7 @@ import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.dto.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.dto.SubscriberResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
+import ch.batbern.events.exception.ReservedEmailDomainException;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -26,6 +29,36 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class NewsletterSubscriberService {
+
+    /** RFC 2606 reserved second-level domains. */
+    private static final Set<String> RESERVED_DOMAINS = Set.of(
+            "example.com", "example.org", "example.net", "localhost"
+    );
+
+    /** RFC 2606 / RFC 6761 reserved TLDs (matched as suffix). */
+    private static final List<String> RESERVED_TLD_SUFFIXES = List.of(
+            ".example", ".test", ".invalid", ".localhost"
+    );
+
+    static boolean isReservedDomain(String email) {
+        if (email == null) {
+            return false;
+        }
+        int at = email.lastIndexOf('@');
+        if (at < 0 || at == email.length() - 1) {
+            return false;
+        }
+        String domain = email.substring(at + 1).toLowerCase(Locale.ROOT);
+        if (RESERVED_DOMAINS.contains(domain)) {
+            return true;
+        }
+        for (String suffix : RESERVED_TLD_SUFFIXES) {
+            if (domain.endsWith(suffix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private final NewsletterSubscriberRepository subscriberRepository;
 
@@ -45,9 +78,18 @@ public class NewsletterSubscriberService {
      * @param username  cognito username for authenticated users; null for anonymous
      * @return saved subscriber entity
      */
-    @Transactional(noRollbackFor = DuplicateSubscriberException.class)
+    @Transactional(noRollbackFor = {DuplicateSubscriberException.class, ReservedEmailDomainException.class})
     public NewsletterSubscriber subscribe(String email, String firstName, String language,
                                           String source, String username) {
+        // Block RFC 2606 / RFC 6761 reserved domains so test fixtures and scanners
+        // (e.g. zaproxy@example.com, speaker-test-…@example.com) can't pollute prod.
+        if (isReservedDomain(email)) {
+            log.warn("Rejected newsletter subscribe for reserved domain: {}", email);
+            throw new ReservedEmailDomainException(email);
+        }
+        // Infer name from email when not provided (e.g. "david.baumgartner@ace.ch" → "David Baumgartner")
+        String resolvedName = (firstName != null && !firstName.isBlank()) ? firstName : inferNameFromEmail(email);
+
         Optional<NewsletterSubscriber> existing = subscriberRepository.findByEmail(email);
 
         if (existing.isPresent()) {
@@ -59,8 +101,8 @@ public class NewsletterSubscriberService {
             // Reactivate: clear unsubscribedAt, preserve original token
             sub.setUnsubscribedAt(null);
             sub.setSubscribedAt(Instant.now());
-            if (firstName != null && !firstName.isBlank()) {
-                sub.setFirstName(firstName);
+            if (resolvedName != null && !resolvedName.isBlank()) {
+                sub.setFirstName(resolvedName);
             }
             if (language != null && !language.isBlank()) {
                 sub.setLanguage(language);
@@ -76,7 +118,7 @@ public class NewsletterSubscriberService {
         // New subscriber
         NewsletterSubscriber sub = NewsletterSubscriber.builder()
                 .email(email)
-                .firstName(firstName)
+                .firstName(resolvedName)
                 .language(language != null && !language.isBlank() ? language : "de")
                 .source(source != null ? source : "explicit")
                 .username(username)
@@ -182,16 +224,16 @@ public class NewsletterSubscriberService {
         return getMySubscription(username, email);
     }
 
-    /** Returns total count of active (non-unsubscribed) subscribers. */
+    /** Returns total count of active (non-unsubscribed, non-suppressed) subscribers. */
     @Transactional(readOnly = true)
     public long getActiveCount() {
-        return subscriberRepository.countByUnsubscribedAtIsNull();
+        return subscriberRepository.countByUnsubscribedAtIsNullAndSuppressedAtIsNull();
     }
 
-    /** Returns all active subscribers (for bulk send). */
+    /** Returns all active subscribers (for bulk send). Excludes suppressed (Story 10.29). */
     @Transactional(readOnly = true)
     public List<NewsletterSubscriber> findActiveSubscribers() {
-        return subscriberRepository.findByUnsubscribedAtIsNull();
+        return subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull();
     }
 
     /**
@@ -219,6 +261,157 @@ public class NewsletterSubscriberService {
                 .source(sub.getSource())
                 .username(sub.getUsername())
                 .subscribedAt(sub.getSubscribedAt())
+                .unsubscribedAt(sub.getUnsubscribedAt())
+                .bounceType(sub.getBounceType())
+                .bounceCount(sub.getBounceCount())
+                .lastBouncedAt(sub.getLastBouncedAt())
+                .suppressedAt(sub.getSuppressedAt())
                 .build();
+    }
+
+    // ── Story 10.28: Organizer subscriber management ────────────────────────
+
+    private static final java.util.Set<String> ALLOWED_SORT_FIELDS =
+            java.util.Set.of("email", "firstName", "subscribedAt", "unsubscribedAt", "source", "language",
+                    "suppressedAt", "bounceCount", "lastBouncedAt");
+
+    /**
+     * Find subscribers with filtering, search, sorting, and pagination.
+     *
+     * @param search   case-insensitive partial match against email or firstName
+     * @param status   "active", "unsubscribed", or "all"
+     * @param sortBy   field name (whitelisted)
+     * @param sortDir  "asc" or "desc"
+     * @param params   pagination params (1-based page + limit)
+     */
+    @Transactional(readOnly = true)
+    public List<NewsletterSubscriber> findSubscribers(String search, String status,
+                                                       String sortBy, String sortDir,
+                                                       ch.batbern.shared.api.PaginationParams params) {
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "subscribedAt";
+        org.springframework.data.domain.Sort.Direction direction =
+                "asc".equalsIgnoreCase(sortDir) ? org.springframework.data.domain.Sort.Direction.ASC
+                        : org.springframework.data.domain.Sort.Direction.DESC;
+
+        int springPage = params.getOffset() / params.getLimit();
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                springPage, params.getLimit(),
+                org.springframework.data.domain.Sort.by(direction, safeSortBy));
+
+        String searchParam = (search != null && !search.isBlank()) ? search.toLowerCase() : null;
+        String searchLikeParam = (searchParam != null) ? "%" + searchParam + "%" : "%";
+
+        return subscriberRepository.findFiltered(searchParam, searchLikeParam,
+                status != null ? status : "all", pageable);
+    }
+
+    /**
+     * Count subscribers matching search + status filter.
+     */
+    @Transactional(readOnly = true)
+    public long countSubscribers(String search, String status) {
+        String searchParam = (search != null && !search.isBlank()) ? search.toLowerCase() : null;
+        String searchLikeParam = (searchParam != null) ? "%" + searchParam + "%" : "%";
+        return subscriberRepository.countFiltered(searchParam, searchLikeParam,
+                status != null ? status : "all");
+    }
+
+    /**
+     * Unsubscribe a subscriber by ID (organizer action).
+     *
+     * @throws NoSuchElementException if not found
+     * @throws IllegalStateException if already unsubscribed (409)
+     */
+    @Transactional
+    public NewsletterSubscriber unsubscribeById(UUID id) {
+        NewsletterSubscriber sub = subscriberRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
+        if (sub.getUnsubscribedAt() != null) {
+            throw new IllegalStateException("Subscriber is already unsubscribed: " + sub.getEmail());
+        }
+        sub.setUnsubscribedAt(Instant.now());
+        log.info("Organizer unsubscribed subscriber: {}", sub.getEmail());
+        return subscriberRepository.save(sub);
+    }
+
+    /**
+     * Re-subscribe a subscriber by ID (organizer action).
+     *
+     * @throws NoSuchElementException if not found
+     * @throws IllegalStateException if already active (409)
+     */
+    @Transactional
+    public NewsletterSubscriber resubscribeById(UUID id) {
+        NewsletterSubscriber sub = subscriberRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
+        if (sub.getUnsubscribedAt() == null) {
+            throw new IllegalStateException("Subscriber is already active: " + sub.getEmail());
+        }
+        sub.setUnsubscribedAt(null);
+        sub.setSubscribedAt(Instant.now());
+        log.info("Organizer re-subscribed subscriber: {}", sub.getEmail());
+        return subscriberRepository.save(sub);
+    }
+
+    /**
+     * Unsuppress a subscriber by ID (organizer action — Story 10.29 AC8).
+     * Clears suppressed_at, resets bounce_count to 0, clears bounce_type.
+     *
+     * @throws NoSuchElementException if not found
+     * @throws IllegalStateException if not suppressed (409)
+     */
+    @Transactional
+    public NewsletterSubscriber unsuppressById(UUID id) {
+        NewsletterSubscriber sub = subscriberRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
+        if (sub.getSuppressedAt() == null) {
+            throw new IllegalStateException("Subscriber is not suppressed: " + sub.getEmail());
+        }
+        sub.setSuppressedAt(null);
+        sub.setBounceCount(0);
+        sub.setBounceType(null);
+        log.info("Organizer unsuppressed subscriber: {}", sub.getEmail());
+        return subscriberRepository.save(sub);
+    }
+
+    /**
+     * Hard delete a subscriber by ID (organizer action).
+     *
+     * @throws NoSuchElementException if not found
+     */
+    @Transactional
+    public void deleteById(UUID id) {
+        NewsletterSubscriber sub = subscriberRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
+        subscriberRepository.delete(sub);
+        log.info("Organizer deleted subscriber: {}", sub.getEmail());
+    }
+
+    /**
+     * Infer a display name from an email address local part.
+     * E.g. "david.baumgartner@ace.ch" → "David Baumgartner",
+     *      "john_doe@example.com" → "John Doe",
+     *      "info@example.com" → "Info"
+     */
+    static String inferNameFromEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return null;
+        }
+        String local = email.substring(0, email.indexOf('@'));
+        // Split on dots, underscores, hyphens
+        String[] parts = local.split("[._-]");
+        StringBuilder name = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isBlank()) {
+                if (!name.isEmpty()) {
+                    name.append(' ');
+                }
+                name.append(Character.toUpperCase(part.charAt(0)));
+                if (part.length() > 1) {
+                    name.append(part.substring(1).toLowerCase());
+                }
+            }
+        }
+        return name.isEmpty() ? null : name.toString();
     }
 }

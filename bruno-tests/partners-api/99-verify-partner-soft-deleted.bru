@@ -1,0 +1,52 @@
+meta {
+  name: Verify partner is soft-deleted (200, inactive)
+  type: http
+  seq: 99.2
+}
+
+get {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.isActive: eq false
+  res.body.partnershipEndDate: isDefined
+}
+
+tests {
+  test("partner still resolves (DELETE is a soft delete)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("soft delete took effect — isActive false, end date set", function() {
+    const body = res.getBody();
+    expect(body.isActive).to.equal(false);
+    expect(body.partnershipEndDate).to.exist;
+  });
+}
+
+docs {
+  PR 13 audit-step 4 (plan §D), corrected for the actual delete semantics:
+  PartnerService.deletePartner is a SOFT delete — it sets partnershipEndDate=today
+  (isActive() then returns false) and keeps the row, so DELETE returns 204 but a
+  later GET /partners/{companyName} still returns 200. A naive "expect 404 after
+  delete" assertion is therefore wrong here (the 404 path is the company-not-found
+  case, covered by 03-get-partner-not-found). This verifies the delete had its
+  intended effect: the partnership is now inactive with an end date set.
+
+  FINDING for the plan: partners DELETE is soft, not hard. The canonical hard
+  cleanup is the PCS cleanup endpoint (99b-posttest-cleanup), which DELETEs the
+  brtest* rows outright.
+}

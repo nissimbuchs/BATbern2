@@ -7,14 +7,7 @@
  * (localStorage vs sessionStorage) to control session persistence.
  */
 
-import {
-  signIn as amplifySignIn,
-  signUp as amplifySignUp,
-  signOut as amplifySignOut,
-  getCurrentUser as amplifyGetCurrentUser,
-  fetchAuthSession,
-} from 'aws-amplify/auth';
-import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
+import { ensureAmplifyConfigured } from '@/config/amplify';
 import {
   UserContext,
   LoginCredentials,
@@ -33,6 +26,14 @@ interface SignInResult {
   accessToken?: string;
   error?: AuthError;
   mfaChallenge?: MfaChallenge;
+  /**
+   * Set when Cognito returns a next-step that the user can complete inline (no
+   * separate MFA channel). Today only `CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED`
+   * — emitted when a user signs in for the first time with the temporary password
+   * issued by `issueInvitationCredentials`. The caller (AuthContext / LoginForm)
+   * switches to a "set new password" panel and calls `confirmNewPassword(...)`.
+   */
+  pendingChallenge?: 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED';
 }
 
 interface SignUpResult {
@@ -61,19 +62,43 @@ function createStorageAdapter(storage: Storage) {
 
 class AuthService {
   /**
+   * Lazily ensure Amplify is configured, then return its auth module.
+   *
+   * Public-homepage performance (perf/public-homepage-followup #2): authService is reachable
+   * from the eager app root (AuthProvider), so a static `import 'aws-amplify/auth'` here would
+   * drag aws-amplify (~426 KB) onto every page including the anonymous homepage. Instead each
+   * method awaits this helper, which configures Amplify on first use and dynamically imports
+   * the auth module so it lands in a lazy chunk. AuthProvider/apiClient gate their callers on
+   * `hasCognitoSession()`, so anonymous visitors never reach here.
+   */
+  private async amplifyAuth() {
+    await ensureAmplifyConfigured();
+    return import('aws-amplify/auth');
+  }
+
+  /**
    * Configure session persistence based on "Remember me" preference
    * @param rememberMe - localStorage (persistent) or sessionStorage (temporary)
    */
-  private configureSessionPersistence(rememberMe: boolean): void {
+  private async configureSessionPersistence(rememberMe: boolean): Promise<void> {
+    const { cognitoUserPoolsTokenProvider } = await import('aws-amplify/auth/cognito');
     const storage = rememberMe ? localStorage : sessionStorage;
     const storageAdapter = createStorageAdapter(storage);
     cognitoUserPoolsTokenProvider.setKeyValueStorage(storageAdapter);
   }
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
+    // Acquire (and configure) Amplify before configuring storage so the rememberMe choice
+    // overrides ensureAmplifyConfigured()'s detect-based storage. `auth` is declared outside
+    // the try so the UserAlreadyAuthenticatedException retry path in catch can reuse it.
+    const {
+      signIn: amplifySignIn,
+      signOut: amplifySignOut,
+      fetchAuthSession,
+    } = await this.amplifyAuth();
+    await this.configureSessionPersistence(credentials.rememberMe || false);
+
     try {
       console.log('[authService] signIn called with email:', credentials.email);
-      this.configureSessionPersistence(credentials.rememberMe || false);
-
       console.log('[authService] Calling amplifySignIn');
       const result = await amplifySignIn({
         username: credentials.email,
@@ -82,11 +107,23 @@ class AuthService {
       console.log('[authService] amplifySignIn result:', { nextStep: result.nextStep?.signInStep });
 
       if (result.nextStep && result.nextStep.signInStep !== 'DONE') {
-        console.log('[authService] MFA challenge required:', result.nextStep.signInStep);
+        const step = result.nextStep.signInStep;
+        console.log('[authService] Sign-in next step:', step);
+        // Epic 11 bug fix 2026-05-19 — surface the FORCE_CHANGE_PASSWORD challenge
+        // distinctly so LoginForm can render an inline "set new password" panel.
+        // Previously this was bucketed as "mfaChallenge" + success=false, which
+        // looked identical to a generic auth failure to the caller and dropped the
+        // user with no path forward.
+        if (step === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+          return {
+            success: false,
+            pendingChallenge: 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED',
+          };
+        }
         return {
           success: false,
           mfaChallenge: {
-            challengeName: result.nextStep.signInStep,
+            challengeName: step,
             challengeParameters: {},
             session: '',
           },
@@ -141,10 +178,17 @@ class AuthService {
           });
 
           if (retryResult.nextStep && retryResult.nextStep.signInStep !== 'DONE') {
+            const step = retryResult.nextStep.signInStep;
+            if (step === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+              return {
+                success: false,
+                pendingChallenge: 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED',
+              };
+            }
             return {
               success: false,
               mfaChallenge: {
-                challengeName: retryResult.nextStep.signInStep,
+                challengeName: step,
                 challengeParameters: {},
                 session: '',
               },
@@ -155,7 +199,7 @@ class AuthService {
           const tokens = session.tokens;
 
           if (!tokens?.idToken) {
-            throw new Error('No ID token found in session');
+            throw new Error('No ID token found in session', { cause: error });
           }
 
           const userContext = this.extractUserContextFromToken(
@@ -193,6 +237,59 @@ class AuthService {
   }
 
   /**
+   * Complete the `CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED` challenge.
+   *
+   * Called when a user signs in for the first time with the temporary password
+   * issued by `issueInvitationCredentials` (CUMS, Story 11.E.2). Submits the
+   * organizer-chosen new password to Cognito; on success, Cognito flips the user
+   * to CONFIRMED + a permanent password, and we proceed exactly as a normal
+   * successful sign-in (fetch session, extract user context).
+   *
+   * Epic 11 bug fix 2026-05-19. Mirrors the post-success branch of `signIn`.
+   */
+  async confirmNewPassword(newPassword: string): Promise<SignInResult> {
+    try {
+      console.log('[authService] confirmNewPassword called');
+      const { confirmSignIn: amplifyConfirmSignIn, fetchAuthSession } = await this.amplifyAuth();
+      const result = await amplifyConfirmSignIn({ challengeResponse: newPassword });
+      console.log('[authService] confirmSignIn result:', { nextStep: result.nextStep?.signInStep });
+
+      if (result.nextStep && result.nextStep.signInStep !== 'DONE') {
+        // Unexpected — confirming the FORCE_CHANGE_PASSWORD challenge should land at DONE.
+        // Surface as a generic error rather than silently dropping the user.
+        return {
+          success: false,
+          error: {
+            code: 'UNEXPECTED_NEXT_STEP',
+            message: `Unexpected next step after confirmNewPassword: ${result.nextStep.signInStep}`,
+          },
+        };
+      }
+
+      const session = await fetchAuthSession();
+      const tokens = session.tokens;
+      if (!tokens?.idToken) {
+        throw new Error('No ID token found in session');
+      }
+      const userContext = this.extractUserContextFromToken(
+        tokens.idToken.payload as unknown as CognitoTokenClaims
+      );
+      return {
+        success: true,
+        user: userContext,
+        accessToken: tokens.accessToken?.toString() || '',
+      };
+    } catch (error: unknown) {
+      console.error('[authService] Error during confirmNewPassword:', error);
+      const mappedError = this.mapCognitoError(error);
+      return {
+        success: false,
+        error: mappedError,
+      };
+    }
+  }
+
+  /**
    * Sign up new user with Cognito
    */
   async signUp(signUpData: SignUpData): Promise<SignUpResult> {
@@ -212,6 +309,7 @@ class AuthService {
       // ADR-001: Only send attributes allowed by Cognito writeAttributes configuration
       // Cognito = authentication only; Database = user profile data
       // See cognito-stack.ts:212-214 for writeAttributes configuration
+      const { signUp: amplifySignUp } = await this.amplifyAuth();
       const result = await amplifySignUp({
         username: signUpData.email,
         password: signUpData.password,
@@ -235,7 +333,9 @@ class AuthService {
                 allowMessages: true,
               },
             }),
-            ...(signUpData.companyId && { 'custom:companyId': signUpData.companyId }),
+            // Story 12.1 AC4: `custom:companyId` is no longer written at signup.
+            // Company is owned by `user_profiles.company_id` via the user-management
+            // path (ADR-003/004); post-confirmation.ts never reads custom:companyId.
           },
         },
       });
@@ -258,6 +358,7 @@ class AuthService {
    */
   async getCurrentUser(): Promise<UserContext | null> {
     try {
+      const { getCurrentUser: amplifyGetCurrentUser, fetchAuthSession } = await this.amplifyAuth();
       await amplifyGetCurrentUser();
       const session = await fetchAuthSession();
       const tokens = session.tokens;
@@ -280,11 +381,106 @@ class AuthService {
   }
 
   async signOut(): Promise<void> {
+    const { signOut: amplifySignOut } = await this.amplifyAuth();
     await amplifySignOut();
+  }
+
+  /**
+   * Story 12.7 (SSO Phase 4): initiate Google federation via Amplify v6's hosted-UI
+   * redirect. `signInWithRedirect` navigates the browser to the Cognito hosted UI
+   * (using the dormant `loginWith.oauth` config in amplify.ts); on return, the
+   * `/auth/callback` route completes the session through the SAME hydration path as
+   * password login (ADR-010 D1 — federated sessions yield the same JWT shape). The
+   * promise normally does not resolve in-page (the browser navigates away); a
+   * redirect-initiation failure propagates so the caller can surface it (no swallow).
+   * `provider` is typed `'Google'` — the only supported provider per ADR-010 D2.
+   */
+  async signInWithFederated(provider: 'Google'): Promise<void> {
+    const { signInWithRedirect } = await this.amplifyAuth();
+    await signInWithRedirect({ provider });
+  }
+
+  /**
+   * Story 12.8 finding F7 (2026-06-04): on `/auth/callback`, Amplify v6 performs the OAuth
+   * `?code=` → token exchange ASYNCHRONOUSLY after configure. Checking the session once
+   * races that exchange — and the premature "no session" verdict makes the callback page
+   * navigate to /login, which CANCELS the in-flight exchange. (Observed in prod right after
+   * the auth.batbern.ch custom-domain switch made the exchange a little slower: every
+   * federated login silently bounced back to /login while Cognito/DB provisioning had
+   * actually succeeded.)
+   *
+   * Waits — bounded — for the exchange to settle: resolves true on the Hub
+   * `signInWithRedirect`/`signedIn` event or as soon as tokens are present (a 500ms poll
+   * covers an event fired before the listener attached); resolves false on
+   * `signInWithRedirect_failure` or timeout. Never throws.
+   *
+   * Config-race fix (2026-06-05): the Hub listener is attached BEFORE `amplifyAuth()` —
+   * `ensureAmplifyConfigured()` inside it runs `Amplify.configure()`, which synchronously
+   * kicks off the OAuth code exchange. A fast exchange failure dispatches
+   * `signInWithRedirect_failure` immediately; attaching the listener afterwards (the old
+   * order) missed that event and burned the full timeout before surfacing the error.
+   */
+  async waitForFederatedSession(timeoutMs = 15000): Promise<boolean> {
+    // Dynamic import keeps aws-amplify utils off the public-homepage bundle (same rationale
+    // as amplifyAuth()).
+    const { Hub } = await import('aws-amplify/utils');
+
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      let poller: ReturnType<typeof setInterval> | undefined;
+
+      // `finish` closes over the const bindings below; it can only RUN after they are
+      // initialised (events/timers fire asynchronously), so the forward references are safe.
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        unsubscribe();
+        clearTimeout(timer);
+        if (poller !== undefined) clearInterval(poller);
+        resolve(ok);
+      };
+
+      const unsubscribe = Hub.listen('auth', ({ payload }) => {
+        if (payload.event === 'signInWithRedirect' || payload.event === 'signedIn') {
+          finish(true);
+        } else if (payload.event === 'signInWithRedirect_failure') {
+          console.warn('[authService] signInWithRedirect_failure during callback processing');
+          finish(false);
+        }
+      });
+
+      const timer = setTimeout(() => finish(false), timeoutMs);
+
+      // Listener is live — NOW configure Amplify (triggers the code exchange) and start
+      // the token poll. A configure failure settles false instead of hanging to timeout.
+      void (async () => {
+        try {
+          const { fetchAuthSession } = await this.amplifyAuth();
+          if (settled) return;
+
+          const checkTokens = async () => {
+            try {
+              const session = await fetchAuthSession();
+              if (session.tokens?.idToken) {
+                finish(true);
+              }
+            } catch {
+              // Exchange still in flight (or transient) — keep waiting until event/timeout.
+            }
+          };
+          poller = setInterval(() => void checkTokens(), 500);
+          void checkTokens();
+        } catch (error) {
+          console.error('[authService] waitForFederatedSession: Amplify init failed', error);
+          finish(false);
+        }
+      })();
+    });
   }
 
   async refreshToken(): Promise<TokenRefreshResponse> {
     try {
+      const { fetchAuthSession } = await this.amplifyAuth();
       const session = await fetchAuthSession({ forceRefresh: true });
       const tokens = session.tokens;
 
@@ -342,7 +538,23 @@ class AuthService {
    * Story 1.2.6: Updated to read custom:role claim (ADR-001 migration)
    */
   private extractUserContextFromToken(tokenPayload: CognitoTokenClaims): UserContext {
-    const preferences: UserPreferences = JSON.parse(tokenPayload['custom:preferences'] || '{}');
+    // Story 12.1 (ADR-001 "minimal target footprint"): company + preferences are
+    // business data owned by `user_profiles`, NOT identity/authorization, so they are
+    // no longer sourced from the token. `AuthContext.hydrateUserFromDb` fills `companyId`
+    // + `preferences` from GET /users/me. The token carries only identity (sub, email) +
+    // authorization (custom:role, custom:username).
+    //
+    // Default to a COMPLETE UserPreferences object (not `{}`): the type requires all
+    // fields and downstream consumers read `preferences.language`/`.theme` directly, so
+    // the contract must hold even when DB hydration is skipped (no `/users/me`
+    // preferences row) or fails transiently. Hydration overrides these with the DB
+    // values when available.
+    const preferences: UserPreferences = {
+      language: 'en',
+      theme: 'light',
+      notifications: { email: true, sms: false, push: true },
+      privacy: { showProfile: true, allowMessages: true },
+    };
 
     // Extract roles from custom:role claim (singular)
     // Format: "ORGANIZER,SPEAKER" -> ['organizer', 'speaker']
@@ -365,9 +577,9 @@ class AuthService {
       emailVerified: tokenPayload.email_verified,
       role: primaryRole,
       roles: roles,
-      companyId: tokenPayload['custom:companyId'],
+      companyId: undefined, // Story 12.1: hydrated from GET /users/me (was custom:companyId)
       companyName: tokenPayload['custom:companyName'] || undefined, // Story 8.0: resolved from JWT if present
-      preferences,
+      preferences, // Story 12.1: hydrated from GET /users/me (was custom:preferences)
       issuedAt: tokenPayload.iat,
       expiresAt: tokenPayload.exp,
       tokenId: tokenPayload.sub,

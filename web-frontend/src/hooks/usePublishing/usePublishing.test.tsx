@@ -47,17 +47,14 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        result.current.publishPhase('topic', { mode: 'progressive', notifySubscribers: true });
+        result.current.publishPhase('topic');
       });
 
       await waitFor(() => {
         expect(result.current.isPublishing).toBe(false);
       });
 
-      expect(publishingService.publishPhase).toHaveBeenCalledWith('BATbern142', 'topic', {
-        mode: 'progressive',
-        notifySubscribers: true,
-      });
+      expect(publishingService.publishPhase).toHaveBeenCalledWith('BATbern142', 'topic');
     });
 
     it('should handle validation error when content not ready', async () => {
@@ -85,7 +82,7 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        result.current.publishPhase('agenda', { mode: 'progressive' });
+        result.current.publishPhase('agenda');
       });
 
       await waitFor(() => {
@@ -123,89 +120,6 @@ describe('usePublishing', () => {
     });
   });
 
-  describe('version history', () => {
-    it('should fetch version history', async () => {
-      const mockVersions = [
-        {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          eventCode: 'BATbern142',
-          versionNumber: 2,
-          publishedPhase: 'SPEAKERS',
-          publishedAt: '2025-01-15T12:00:00Z',
-          publishedBy: 'john.doe',
-          isCurrent: true,
-        },
-        {
-          id: '123e4567-e89b-12d3-a456-426614174001',
-          eventCode: 'BATbern142',
-          versionNumber: 1,
-          publishedPhase: 'TOPIC',
-          publishedAt: '2025-01-15T10:00:00Z',
-          publishedBy: 'john.doe',
-          isCurrent: false,
-        },
-      ];
-
-      vi.mocked(publishingService.getVersionHistory).mockResolvedValue(mockVersions);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.versionHistory).toEqual(mockVersions);
-      });
-
-      expect(publishingService.getVersionHistory).toHaveBeenCalledWith('BATbern142');
-    });
-
-    it('should handle loading state for version history', async () => {
-      vi.mocked(publishingService.getVersionHistory).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.isLoadingVersions).toBe(true);
-    });
-  });
-
-  describe('rollbackVersion', () => {
-    it('should rollback to previous version successfully', async () => {
-      const mockRollbackResponse = {
-        id: '123e4567-e89b-12d3-a456-426614174002',
-        eventCode: 'BATbern142',
-        versionNumber: 3,
-        publishedPhase: 'TOPIC',
-        publishedAt: '2025-01-15T13:00:00Z',
-        publishedBy: 'john.doe',
-        isCurrent: true,
-        rolledBackAt: '2025-01-15T13:00:00Z',
-        rolledBackBy: 'john.doe',
-      };
-
-      vi.mocked(publishingService.rollbackVersion).mockResolvedValue(mockRollbackResponse);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.rollbackVersion(1, { reason: 'Incorrect information' });
-      });
-
-      await waitFor(() => {
-        expect(result.current.isRollingBack).toBe(false);
-      });
-
-      expect(publishingService.rollbackVersion).toHaveBeenCalledWith('BATbern142', 1, {
-        reason: 'Incorrect information',
-      });
-    });
-  });
-
   describe('preview', () => {
     it('should fetch publish preview', async () => {
       const mockPreview = {
@@ -230,47 +144,14 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        result.current.fetchPreview('speakers', 'progressive');
+        result.current.fetchPreview('speakers');
       });
 
       await waitFor(() => {
         expect(result.current.preview).toEqual(mockPreview);
       });
 
-      expect(publishingService.getPublishPreview).toHaveBeenCalledWith(
-        'BATbern142',
-        'speakers',
-        'progressive'
-      );
-    });
-  });
-
-  describe('change log', () => {
-    it('should fetch change log', async () => {
-      const mockChangeLog = {
-        eventCode: 'BATbern142',
-        changes: [
-          {
-            timestamp: '2025-01-15T14:00:00Z',
-            changedBy: 'john.doe',
-            changeType: 'SPEAKER_ADDED',
-            description: 'Added speaker: Jane Smith',
-            affectedPhase: 'SPEAKERS',
-          },
-        ],
-      };
-
-      vi.mocked(publishingService.getChangeLog).mockResolvedValue(mockChangeLog);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.changeLog).toEqual(mockChangeLog);
-      });
-
-      expect(publishingService.getChangeLog).toHaveBeenCalledWith('BATbern142');
+      expect(publishingService.getPublishPreview).toHaveBeenCalledWith('BATbern142', 'speakers');
     });
   });
 
@@ -293,7 +174,6 @@ describe('usePublishing', () => {
       await waitFor(() => {
         result.current.scheduleAutoPublish('speakers', {
           scheduledDate: '2025-04-15T08:00:00Z',
-          notifySubscribers: true,
         });
       });
 
@@ -303,7 +183,6 @@ describe('usePublishing', () => {
 
       expect(publishingService.scheduleAutoPublish).toHaveBeenCalledWith('BATbern142', 'speakers', {
         scheduledDate: '2025-04-15T08:00:00Z',
-        notifySubscribers: true,
       });
     });
 
@@ -344,25 +223,20 @@ describe('usePublishing', () => {
         publishedBy: 'john.doe',
         cdnInvalidationId: 'INV123',
         cdnInvalidationStatus: 'PENDING',
-        contentSnapshot: {},
-        isCurrent: true,
       };
 
-      const mockVersions = [mockPublishResponse];
-
       vi.mocked(publishingService.publishPhase).mockResolvedValue(mockPublishResponse);
-      vi.mocked(publishingService.getVersionHistory).mockResolvedValue(mockVersions);
 
       const { result } = renderHook(() => usePublishing('BATbern142'), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => {
-        result.current.publishPhase('topic', { mode: 'progressive' });
+        result.current.publishPhase('topic');
       });
 
       await waitFor(() => {
-        expect(result.current.versionHistory).toEqual(mockVersions);
+        expect(result.current.isPublishing).toBe(false);
       });
     });
   });

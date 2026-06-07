@@ -1,6 +1,6 @@
 # Epic 10: Additional Stories
 
-**Status:** 🔨 **IN PROGRESS** — Stories 10.1–10.4 in sprint (2026-02-24). Stories 10.19–10.25 added (2026-03-02).
+**Status:** 🔨 **IN PROGRESS** — Stories 10.1–10.4 in sprint (2026-02-24). Stories 10.19–10.25 added (2026-03-02). Story 10.26 added (2026-03-11).
 
 **Epic Goal**: Consolidate scattered admin configuration and tooling into coherent, discoverable interfaces. These are standalone improvements that don't belong to any prior epic's domain.
 
@@ -408,7 +408,7 @@ public/locales/en/organizer.json + de/organizer.json     — analytics.* keys
 ### Story 10.7: Newsletter Subscription & Sending
 
 **Story file**: `_bmad-output/implementation-artifacts/10-7-newsletter-subscription-and-sending.md`
-**Status**: ready-for-dev
+**Status**: done
 **Prerequisites**: Story 10.2 (Email Template Management — provides `EmailTemplateService`, `EmailTemplateSeedService`, `NEWSLETTER` category, `batbern-default` layout)
 
 **User Story:**
@@ -489,18 +489,24 @@ docs/api/events.openapi.yml                                          ← newslet
 ```
 
 **Definition of Done (Story 10.7):**
-- [ ] V67 migration runs cleanly; subscribe/unsubscribe endpoints work without auth
-- [ ] Registration with newsletter checkbox auto-subscribes (silent, no UI change)
-- [ ] Homepage footer widget subscribes anonymous users; duplicate → 409 shown inline
-- [ ] `/unsubscribe?token=valid` confirms and unsubscribes; invalid token → error state
-- [ ] `/account` Settings → Notifications shows newsletter toggle for authenticated users
-- [ ] EventPage → Newsletter tab: subscriber count, send history, preview, send/reminder buttons with confirmation
-- [ ] Every sent email contains `{{unsubscribeLink}}` footer link (GDPR)
-- [ ] Newsletter templates visible/editable in admin Email Templates tab (NEWSLETTER category)
-- [ ] OpenAPI spec committed before any backend implementation (ADR-006)
-- [ ] All tests pass: `NewsletterSubscriberServiceTest`, `NewsletterControllerIntegrationTest`, `NewsletterEmailServiceTest` + 3 frontend tests
-- [ ] Type-check passes, no TypeScript errors; Checkstyle passes
-- [ ] i18n: `newsletter.*` keys in both `en.json` and `de.json`
+- [x] V67 migration runs cleanly; subscribe/unsubscribe endpoints work without auth
+- [x] Registration with newsletter checkbox auto-subscribes (silent, no UI change)
+- [x] Homepage footer widget subscribes anonymous users; duplicate → 409 shown inline
+- [x] `/unsubscribe?token=valid` confirms and unsubscribes; invalid token → error state
+- [x] `/account` Settings → Notifications shows newsletter toggle for authenticated users
+- [x] EventPage → Newsletter tab: subscriber count, send history, preview, send/reminder buttons with confirmation
+- [x] Every sent email contains `{{unsubscribeLink}}` footer link (GDPR)
+- [x] Newsletter templates visible/editable in admin Email Templates tab (NEWSLETTER category)
+- [x] OpenAPI spec committed before any backend implementation (ADR-006)
+- [x] All tests pass: `NewsletterSubscriberServiceTest`, `NewsletterControllerIntegrationTest`, `NewsletterEmailServiceTest` + 3 frontend tests
+- [x] Type-check passes, no TypeScript errors; Checkstyle passes
+- [x] i18n: `newsletter.*` keys in both `en.json` and `de.json`
+
+**Robustness Addendum (2026-03-10):** Fixed P0 thread-pool overflow bug (only ~110/3000 emails actually sent).
+Redesigned `sendNewsletter()` as fire-and-forget with single `@Async` background job + paginated processing (50/page).
+Added: V87 migration (status tracking), duplicate-send prevention (409), SES rate limiting (70ms/email),
+retry for PARTIAL/FAILED sends, progress polling endpoint, frontend LinearProgress UI.
+See `docs/plans/newsletter-robustness-v87-plan.md` for full details.
 
 ---
 
@@ -1930,6 +1936,373 @@ services/partner-coordination-service/.../repository/PartnerMeetingRepository.ja
 - [ ] TDD: `PartnerMeetingAutoCreateListenerTest` (mocked client, idempotency, failure isolation); `YearEndReminderSchedulerTest` (task creation, dedup); `PartnerInviteEmailServiceTest` (template load, fallback)
 - [ ] No OpenAPI changes needed (no new public endpoints)
 - [ ] Checkstyle passes; Type-check passes
+
+---
+
+### Story 10.26: SES Email Forwarding & Role-Based Distribution Lists
+
+**Story file**: `_bmad-output/implementation-artifacts/10-26-ses-email-forwarding-distribution-lists.md`
+**Status**: draft
+**Prerequisites**: Story 10.17 (InboundEmailStack, SES receipt rules)
+
+**User Story:**
+As an **organizer**, I want `ok@batbern.ch`, `info@batbern.ch`, `events@batbern.ch`, `partner@batbern.ch`, `support@batbern.ch`, and `batbern{N}@batbern.ch` to automatically forward emails to the right recipients based on user roles and event registrations, so that we have zero-cost distribution lists without needing any mailbox provider.
+
+**Scope:**
+- Extend existing `InboundEmailStack` with SES receipt rules for forwarding addresses
+- New Lambda forwarder (Node.js 20.x) triggered by S3 events under `forwarding/` prefix
+- **Address resolution** via existing APIs (no new service endpoints):
+  - `ok@batbern.ch` → all ORGANIZER users (organizers only can send)
+  - `info@batbern.ch` / `events@batbern.ch` → all ORGANIZER users (anyone can send)
+  - `partner@batbern.ch` → all PARTNER users (organizers only can send)
+  - `support@batbern.ch` → configurable contacts from Admin Settings (anyone can send)
+  - `batbern{N}@batbern.ch` → confirmed registrants of event N (organizers only can send)
+- **Sender authorization**: organizer-only for restricted addresses; 5-min TTL cache
+- **Admin Settings tab** on `/admin` page for configuring `support@` forwarding recipients
+- New `app_settings` table (key-value) in Event Management Service
+- Rate-limited sending (70ms delay, matching newsletter pattern) — 300 recipients ≈ 21s, fits 60s Lambda timeout
+- Route 53 MX record for `batbern.ch` → SES inbound SMTP
+- CloudWatch metrics (`EmailsForwarded`, `EmailsRejected`, `EmailsUnresolved`) + alarm
+
+**Key files (estimated):**
+```
+infrastructure/lib/stacks/inbound-email-stack.ts            — extended with forwarding receipt rules + Lambda
+infrastructure/lambda/email-forwarder/index.ts              — new Lambda forwarder
+infrastructure/lambda/email-forwarder/package.json          — new
+infrastructure/test/unit/inbound-email-stack.test.ts        — extended
+services/event-management-service/.../domain/AppSetting.java                    — new entity
+services/event-management-service/.../repository/AppSettingRepository.java      — new repository
+services/event-management-service/.../service/AdminSettingsService.java         — new service
+services/event-management-service/.../controller/AdminSettingsController.java   — new controller
+services/event-management-service/.../resources/db/migration/V*.sql             — new migration
+web-frontend/src/components/organizer/admin/AdminSettingsTab.tsx                — new component
+web-frontend/src/services/adminSettingsService.ts                               — new service
+```
+
+**Definition of Done (Story 10.26):**
+- [ ] Sending email to `ok@batbern.ch` from organizer → delivered to all organizers
+- [ ] Sending email to `info@batbern.ch` or `events@batbern.ch` from anyone → delivered to all organizers
+- [ ] Sending email to `partner@batbern.ch` from organizer → delivered to all partners
+- [ ] Sending email to `support@batbern.ch` from anyone → delivered to configured support contacts
+- [ ] Sending email to `batbern58@batbern.ch` from organizer → delivered to all confirmed registrants of event 58
+- [ ] Non-organizer sending to `ok@` / `partner@` / `batbern{N}@` → silently rejected
+- [ ] Admin Settings tab visible on `/admin` page; support contacts configurable and persisted
+- [ ] From rewritten to `{name} via BATbern <noreply@batbern.ch>`; Reply-To = original sender
+- [ ] CloudWatch metrics published; alarm fires on >20 rejections/hour
+- [ ] MX record for `batbern.ch` resolves to SES inbound SMTP
+- [ ] CDK unit tests + Lambda Jest tests + Admin Settings integration tests all pass
+- [ ] Cost: ~$0.20/month (SES free tier + Lambda free tier)
+
+---
+
+### Story 10.29: SES Bounce Processing & Newsletter List Hygiene
+
+**Story file**: `_bmad-output/implementation-artifacts/10-29-ses-bounce-processing-newsletter-list-hygiene.md`
+**Status**: draft
+**Prerequisites**: Story 10.7 (newsletter sending), Story 10.28 (subscriber management page)
+
+**User Story:**
+As an **organizer**, I want emails that permanently bounce or generate spam complaints to be automatically suppressed from future newsletter sends, so that BATbern's SES sender reputation stays healthy and the platform's email delivery is not disrupted.
+
+**Context:**
+All subscribers from the old Mailman 3 mailing list (`lists.hostpoint.ch`) have been imported. Many of these emails likely no longer exist — email lists degrade ~2-3%/year. AWS SES flags accounts at 5% hard bounce rate and can suspend sending at 10%. Since the SES account handles ALL platform email (registrations, partner invitations, speaker coordination), a suspension would break the entire platform.
+
+**Scope:**
+
+- **SES Account-Level Suppression List** — enable via AWS CLI (zero code, immediate safety net)
+- **CDK Infrastructure** — SES Configuration Set (`batbern-newsletter`), SNS Topic for BOUNCE + COMPLAINT events, SQS Queue for reliable processing, event destination routing
+- **Database Migration** (V91) — add `bounce_type`, `bounce_count`, `last_bounced_at`, `suppressed_at` to `newsletter_subscribers`; add `bounce_type`, `bounced_at` to `newsletter_recipients`
+- **EmailService** — optional `configurationSetName` on `SendEmailRequest`, controlled by Spring property
+- **BounceProcessingService** — new `@SqsListener` that processes SNS-wrapped SES bounce/complaint notifications; hard bounce → immediate suppression; soft bounce → increment count, suppress after 3; complaint → immediate suppression
+- **Exclude suppressed from sends** — modify `findByUnsubscribedAtIsNull` queries to also filter `suppressed_at IS NULL`
+- **Batched canary send mode** — optional `maxRecipients` parameter + configurable inter-page delay for safe first sends to imported lists
+- **Admin visibility** — expose bounce status (bounceType, bounceCount, suppressedAt) in subscriber list; add `?status=suppressed` filter; add unsuppress action
+- **Monitoring** — CloudWatch alarms on SES Configuration Set metrics: bounce rate >3% warning, >5% critical; complaint rate >0.05% critical
+
+**Key files (estimated):**
+```
+infrastructure/lib/stacks/ses-stack.ts                                         — SES Config Set, SNS, SQS
+infrastructure/lib/stacks/monitoring-stack.ts                                  — bounce rate alarms
+shared-kernel/.../service/EmailService.java                                    — configurationSetName support
+services/event-management-service/.../domain/NewsletterSubscriber.java         — bounce fields
+services/event-management-service/.../repository/NewsletterSubscriberRepository.java — suppress filter
+services/event-management-service/.../repository/NewsletterRecipientRepository.java  — bounce update
+services/event-management-service/.../service/NewsletterEmailService.java      — exclude suppressed, canary mode
+services/event-management-service/.../service/BounceProcessingService.java     — NEW: SQS bounce listener
+services/event-management-service/.../controller/NewsletterController.java     — expose bounce status in API
+services/event-management-service/src/main/resources/db/migration/V91__*.sql   — NEW: bounce columns
+web-frontend/src/components/organizer/NewsletterSubscribers/                   — suppressed badge, filter
+```
+
+**Definition of Done (Story 10.29):**
+- [ ] SES Account-Level Suppression List enabled (BOUNCE + COMPLAINT)
+- [ ] SES Configuration Set `batbern-newsletter` created via CDK with SNS + SQS event pipeline
+- [ ] Newsletter sends use configuration set (via `configurationSetName` on `SendEmailRequest`)
+- [ ] Hard bounce → subscriber `suppressed_at` set, `bounce_type = 'hard'`
+- [ ] Soft bounce → `bounce_count` incremented; suppressed after 3 soft bounces
+- [ ] Complaint → subscriber immediately suppressed (`bounce_type = 'complaint'`)
+- [ ] Suppressed subscribers excluded from `findByUnsubscribedAtIsNull` queries (no newsletter delivery)
+- [ ] Canary send mode: `maxRecipients` parameter limits first send; configurable inter-page delay
+- [ ] Admin subscriber list shows bounce status badge, filterable by `?status=suppressed`
+- [ ] Organizer can unsuppress a subscriber via admin action
+- [ ] CloudWatch alarm fires on bounce rate >5% or complaint rate >0.05%
+- [ ] Integration tests: BounceProcessingService processes hard/soft/complaint notifications correctly
+- [ ] CDK unit tests pass for ses-stack changes
+- [ ] All existing newsletter tests still pass (no regressions)
+
+---
+
+### Story 10.30: Speaker Drawer Redesign — Tabbed Layout, Organizer Assignment, Mobile UX
+
+**Story file**: `_bmad-output/implementation-artifacts/10-30-speaker-drawer-redesign.md`
+**Status**: ready-for-dev
+
+**User Story:**
+As an **organizer**, I want the speaker detail drawer to be organized into tabs (Overview, Details, Activity) with the ability to edit the assigned organizer inline, so that I can efficiently manage speaker outreach without excessive scrolling, and the drawer works properly on mobile devices.
+
+**Scope:**
+
+**Backend — PATCH endpoint (Phase 1, already committed):**
+- `PATCH /api/v1/events/{eventCode}/speakers/pool/{speakerId}` — partial update for `assignedOrganizerId`, `notes`, `email`
+- `PatchSpeakerPoolRequest` DTO, `SpeakerPoolService.patchEntry()`, controller endpoint
+- Frontend service (`patchSpeakerPool`), type, `usePatchSpeakerPool` hook (Phase 2, already committed)
+
+**Frontend — Unified Tabbed Drawer (Phase 3):**
+- Replace 823-line `SpeakerOutreachDetailsDrawer` monolith with 7 decomposed components in `web-frontend/src/components/organizer/SpeakerDrawer/`
+- Three tabs: **Overview** (organizer assignment, action buttons), **Details** (response/decline/content info), **Activity** (contact history + mark-contacted form)
+- Default tab selection by speaker workflow state
+- Content submission and quality review rendered as in-drawer sub-views (eliminates "drawer spawns drawer" pattern)
+- Responsive: 520px desktop, full-width mobile, scrollable tabs, sticky action footer
+
+**Wiring & Cleanup (Phase 4–5):**
+- `EventSpeakersTab.tsx` simplified from 3 drawers + 6 state vars to 1 drawer + 2 state vars
+- Delete old `SpeakerOutreachDetailsDrawer.tsx`, `ContentSubmissionDrawer.tsx`, `QualityReviewDrawer.tsx`
+- i18n keys for tab labels
+- Preserve `data-testid` attributes for Playwright compatibility
+
+**Acceptance Criteria:**
+
+1. **AC1**: Organizer can click a speaker card and see a tabbed drawer with Overview, Details, and Activity tabs
+2. **AC2**: Default tab matches speaker state (IDENTIFIED/CONTACTED → Activity, DECLINED/CONTENT_SUBMITTED → Details, others → Overview)
+3. **AC3**: Organizer can edit the assigned organizer via inline autocomplete on the Overview tab, saved via PATCH endpoint
+4. **AC4**: "Submit Content" and "Review Content" render as in-drawer sub-views with back navigation (no separate drawer)
+5. **AC5**: Contact history and mark-contacted form are in the Activity tab with full-height scrolling (no nested scroll)
+6. **AC6**: Drawer is fully functional on mobile (full-width, scrollable tabs, sticky action footer)
+7. **AC7**: All existing `data-testid` attributes preserved for Playwright E2E tests
+8. **AC8**: Frontend builds with zero TypeScript errors; existing tests pass
+
+**Source tree (changed/new):**
+```
+web-frontend/src/components/organizer/SpeakerDrawer/           — NEW directory
+  SpeakerDetailDrawer.tsx                                       — Container with tabs + sub-view state
+  SpeakerDrawerHeader.tsx                                       — Header: name, company, status, close
+  OverviewTabPanel.tsx                                          — Organizer field, action buttons, quick info
+  DetailsTabPanel.tsx                                           — Response/decline/tentative/content sections
+  ActivityTabPanel.tsx                                          — Mark-contacted form + contact history
+  AssignedOrganizerField.tsx                                    — Editable organizer autocomplete + PATCH
+  index.ts                                                      — Barrel export
+web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx — Simplified orchestrator
+web-frontend/src/components/organizer/SpeakerOutreach/SpeakerOutreachDetailsDrawer.tsx — DELETED
+web-frontend/src/components/organizer/SpeakerStatus/ContentSubmissionDrawer.tsx — DELETED
+web-frontend/src/components/organizer/SpeakerStatus/QualityReviewDrawer.tsx — DELETED
+```
+
+**Definition of Done (Story 10.30):**
+- [ ] Tabbed drawer renders with 3 tabs (Overview, Details, Activity)
+- [ ] Default tab selection logic works per speaker workflow state
+- [ ] Assigned organizer editable via autocomplete, persisted via PATCH
+- [ ] Content submission and quality review render in-drawer (no second drawer)
+- [ ] Contact history scrolls within Activity tab without nested scrolling
+- [ ] Mobile: full-width drawer, scrollable tabs, sticky action footer
+- [ ] All existing `data-testid` attributes preserved
+- [ ] `npm run build` passes with zero errors
+- [ ] Old drawer files deleted (SpeakerOutreachDetailsDrawer, ContentSubmissionDrawer, QualityReviewDrawer)
+- [ ] i18n keys added for tab labels
+
+---
+
+### Story 10.31: Bot Protection — Cloudflare Turnstile for Newsletter & Event Registration
+
+**Story file**: `_bmad-output/implementation-artifacts/10-31-bot-protection-turnstile.md`
+**Status**: ready-for-dev
+**Source**: [GH#582](../../issues/582)
+
+**User Story:**
+As a **platform operator**, I want newsletter subscriptions and event registrations protected by Cloudflare Turnstile, so that bot submissions are rejected before they reach domain services without degrading UX for legitimate users.
+
+**Why Turnstile:**
+- Privacy-first — no tracking cookies, no cross-site data collection → no cookie consent banner needed
+- GDPR / Swiss nFADP compliant out of the box
+- Invisible to most users (no puzzles)
+- Free tier: 1M verifications/month
+- No Cloudflare CDN/DNS required
+
+**Endpoints protected:**
+- `POST /api/v1/newsletter/subscribe` (NewsletterSubscribeWidget)
+- `POST /api/v1/events/{eventCode}/registrations` (RegistrationWizard)
+
+Cognito signup is out of scope (AWS handles its own bot protection).
+
+**Architecture:**
+
+**Gateway-centralized, endpoint-selective filter:**
+A new `TurnstileVerificationFilter` in `api-gateway` intercepts only configured endpoint patterns. Follows the existing `RateLimitingFilter` pattern (`@Component`, `@Order`, `jakarta.servlet.Filter`). Domain service controllers are untouched.
+
+**Token transport:** `X-Turnstile-Token` HTTP header (not request body) — avoids DTO / OpenAPI spec changes.
+
+**Fail-open:** If Cloudflare siteverify is unreachable, log a warning and allow the request. Legitimate users are never blocked by a third-party outage.
+
+**Feature flag:** `turnstile.enabled=false` by default — existing behaviour is fully preserved when disabled.
+
+**Scope:**
+
+**Phase 1 — Backend Config Layer:**
+- `TurnstileProperties` (`@ConfigurationProperties(prefix="turnstile")`) with `enabled`, `siteKey`, `secretKey`, `verifyUrl`, `protectedEndpoints`
+- `TurnstileConfigDTO` — `{ siteKey: String }` (never expose secretKey)
+- `FeatureFlagsDTO.turnstile: boolean` + `FrontendConfigDTO.turnstile: TurnstileConfigDTO`
+- `ConfigController` conditionally includes site key and feature flag
+- `application.yml` turnstile block with `${TURNSTILE_ENABLED:false}` default
+
+**Phase 2 — Backend Verification Filter:**
+- `TurnstileVerificationFilter`: `@Order(Ordered.LOWEST_PRECEDENCE - 1)`, runs before `RateLimitingFilter`
+- AntPathMatcher for wildcard endpoint matching (`events/*/registrations`)
+- Missing header → 403 `turnstile_required`; invalid token → 403 `turnstile_failed`; Cloudflare unreachable → pass (fail-open)
+- Full unit test coverage (6 scenarios)
+
+**Phase 3 — Frontend Hook:**
+- `useTurnstile` hook: reads `useConfig()`, loads Turnstile script from CDN (no npm dependency), renders invisible widget via `window.turnstile`
+- Exports `{ getToken, resetWidget, widgetRef }`; when disabled `getToken()` returns `null`
+
+**Phase 4 — Frontend Form Integration:**
+- `AppConfig` extended with `features.turnstile` + optional `turnstile.siteKey`
+- `newsletterService.subscribe()` and `eventApiClient.createRegistration()` accept optional `turnstileToken` param → passed as header
+- `NewsletterSubscribeWidget` and public `RegistrationWizard` integrated with `useTurnstile`
+- 403 error handling: show user-friendly message + `resetWidget()`
+
+**Phase 5 — Environment Activation:**
+
+| Environment | TURNSTILE_ENABLED | Site Key | Secret Key |
+|---|---|---|---|
+| Development | `false` | — | — |
+| Staging | `true` | `1x00000000000000000000AA` (always-pass test) | `1x0000000000000000000000000000000AA` |
+| Production | `true` | Real key from Cloudflare dashboard | Real secret |
+
+**New files (7):**
+```
+api-gateway/.../config/TurnstileProperties.java
+api-gateway/.../config/dto/TurnstileConfigDTO.java
+api-gateway/.../security/TurnstileVerificationFilter.java
+api-gateway/src/test/.../security/TurnstileVerificationFilterTest.java
+web-frontend/src/hooks/useTurnstile/useTurnstile.ts
+web-frontend/src/hooks/useTurnstile/index.ts
+web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts
+```
+
+**Modified files (12):**
+```
+api-gateway/.../config/dto/FeatureFlagsDTO.java       — add boolean turnstile
+api-gateway/.../config/dto/FrontendConfigDTO.java     — add TurnstileConfigDTO turnstile
+api-gateway/.../config/ConfigController.java          — inject TurnstileProperties, set flags
+api-gateway/src/main/resources/application.yml        — add turnstile.* block
+web-frontend/src/config/runtime-config.ts             — extend AppConfig
+web-frontend/src/services/newsletterService.ts        — add turnstileToken param
+web-frontend/src/services/eventApiClient.ts           — add turnstileToken param
+web-frontend/src/hooks/useNewsletter/useNewsletter.ts — update mutation type
+web-frontend/.../NewsletterSubscribeWidget.tsx         — integrate useTurnstile
+web-frontend/.../Registration/RegistrationWizard.tsx   — integrate useTurnstile
+web-frontend/.../__tests__/NewsletterSubscribeWidget.test.tsx — verify header
+web-frontend/.../Registration/__tests__/RegistrationWizard.test.tsx — verify header
++ CDK / ECS task definition (staging + production env vars)
+```
+
+**Acceptance Criteria:**
+
+1. **AC1**: `TurnstileVerificationFilter` intercepts only `POST /api/v1/newsletter/subscribe` and `POST /api/v1/events/*/registrations` when enabled; all other endpoints unaffected
+2. **AC2**: Missing `X-Turnstile-Token` on protected endpoints → 403 `turnstile_required`
+3. **AC3**: Invalid token (Cloudflare `success: false`) → 403 `turnstile_failed`
+4. **AC4**: Cloudflare unreachable → log warning, let request through (fail-open)
+5. **AC5**: `turnstile.enabled=false` (default) → filter is a no-op; all existing behaviour preserved
+6. **AC6**: `GET /api/v1/config` includes `features.turnstile: boolean` and optional `turnstile.siteKey`
+7. **AC7**: `useTurnstile` hook: disabled → `getToken()` returns `null`; enabled → loads widget, returns token
+8. **AC8**: `NewsletterSubscribeWidget` calls `getToken()` before subscribe mutation, passes header
+9. **AC9**: `RegistrationWizard` calls `getToken()` before `createRegistration()`, passes header
+10. **AC10**: 403 with `turnstile_required`/`turnstile_failed` → user-friendly error + `resetWidget()`
+11. **AC11**: `TurnstileVerificationFilterTest` covers 6 scenarios; `./gradlew :api-gateway:test` passes
+12. **AC12**: `useTurnstile.test.ts` and updated component tests pass; `npm run build` passes
+13. **AC13**: All existing tests pass; no regressions
+
+**Definition of Done (Story 10.31):**
+- [ ] `TurnstileVerificationFilter` passes all 6 unit test scenarios
+- [ ] `GET /api/v1/config` includes `features.turnstile` and optional `turnstile.siteKey`
+- [ ] `useTurnstile` hook: disabled path returns null; enabled path resolves token
+- [ ] `NewsletterSubscribeWidget` sends `X-Turnstile-Token` header when token obtained
+- [ ] `RegistrationWizard` sends `X-Turnstile-Token` header when token obtained
+- [ ] 403 error handling shows user-friendly message and resets widget
+- [ ] `turnstile.enabled=false` default — local dev fully functional without any Turnstile config
+- [ ] Staging configured with Cloudflare always-pass test keys
+- [ ] `./gradlew :api-gateway:test` passes
+- [ ] `npm run build` passes with zero errors
+- [ ] All existing tests pass
+
+---
+
+### Story 10.32: Additional Email Addresses per User Profile
+
+**Story file**: `_bmad-output/implementation-artifacts/10-32-additional-user-emails.md`
+**Status**: ready-for-dev
+**Prerequisites**: Story 10.26 (SES email forwarding + sender-auth Lambda)
+**Trigger**: 2026-05-20 incident — Nissim's iPhone-Mail forward from legacy `info@berner-architekten-treffen.ch` to `ok@batbern.ch` was silently dropped because the shared mailbox is not in `role_assignments` for `ORGANIZER`.
+
+**User Story:**
+As a **logged-in user (primarily an organizer)**, I want to register one or more additional email addresses on my profile, so that mail forwarded or sent to me by BATbern (`ok@batbern.ch` fan-out, event-registration confirmations, etc.) reaches all of my addresses AND mail I send to BATbern from any of those addresses is treated as authorised — without needing my legacy/shared mailbox to be a separate BATbern user.
+
+**Scope:**
+- **Data model**: new `user_additional_emails` table (one row per (user, email)), unique on `LOWER(email)` across both `user_profiles.email` and `user_additional_emails.email`; per-user cap of 5 (configurable)
+- **API (CUMS)**: `POST /users/me/additional-emails`, `DELETE /users/me/additional-emails/{email}`; `UserResponse` (on `GET /users/me` AND `GET /users`) gains `additionalEmails[]`
+- **Frontend**: new "Additional emails" section in `UserSettingsTab.tsx` → Account sub-tab (below the read-only primary email); inline add form + chip-list + delete; 13 new i18n keys in all 10 locales
+- **Email Forwarder Lambda (Story 10.26)**: `sender-auth.ts` `getOrganizerEmails()` and `address-resolver.ts` `fetchUsersByRole()` flatten primary + additional emails — closes the 2026-05-20 regression
+- **Registration confirmation**: `RegistrationEmailService.sendRegistrationConfirmation` CCs additional emails when the registration belongs to a known user (anonymous registrations unchanged)
+- **Partner meeting calendar invites (Phase 6, added 2026-05-22)**: `PartnerMeetingService.fetchEmailsByRole` flattens primary + additional emails for both `POST /partner-meetings/{id}/send-invite` and the `METHOD:CANCEL` notice in `DELETE /partner-meetings/{id}`. Dedup is case-insensitive via the existing `distinct()` step. A null `additionalEmails` field on the generated client DTO is tolerated for rolling-deploy backwards-compat.
+- **EMS transactional senders (Phase 7, added 2026-05-22)**: every EMS email-sender that delivers a user-addressed transactional message now CCs the recipient's additional emails — speaker invitations (`SpeakerInvitationEmailService`), speaker acceptance confirmations (`SpeakerAcceptanceEmailService`), speaker reminders (`SpeakerReminderEmailService`), quality-review revision requests (`QualityReviewService.notifySpeakerOfRejection`), waitlist promotion (`WaitlistPromotionEmailService.sendPromotionEmail`), waitlist confirmation (`WaitlistPromotionEmailService.sendWaitlistConfirmationEmail`). Newsletter and inbound-email confirmation replies are explicitly excluded.
+- **Shared-kernel `EmailService` plumbing (Phase 7)**: new `sendHtmlEmail(to, cc, subject, html)` async + `sendHtmlEmailSync(to, cc, subject, html, configSet)` overloads using SES `Destination.ccAddresses`. CC entries matching `to` case-insensitively are dropped. 3-arg `sendHtmlEmail` retained as a thin delegate so existing callers compile unchanged.
+- **`PrimarySpeakerResolver.PrimarySpeakerProfile` (Phase 7)**: 6th record field `List<String> additionalEmails` (compact constructor null-coerces to `List.of()`); backwards-compatible 5-arg secondary constructor preserves the 11 existing test fixtures.
+- **Audit log**: `ActivityHistoryEntity` rows on add/remove
+- **Out of scope (v1)**: ownership verification of additional emails (column reserved); newsletter auto-routing to additional emails; Cognito primary-email change; admin-managed editing of other users' additional emails; `address-resolver.fetchEventRegistrants` (event-registration distribution stays attendee-email-driven per AC15); `InboundEmailConfirmationEmailService` (recipients are arbitrary external senders, not registered users)
+
+**Key files (estimated):**
+```
+services/company-user-management-service/.../db/migration/V16__create_user_additional_emails.sql       — NEW
+services/company-user-management-service/.../domain/UserAdditionalEmail.java                            — NEW entity
+services/company-user-management-service/.../repository/UserAdditionalEmailRepository.java              — NEW
+services/company-user-management-service/.../domain/User.java                                           — extend with @OneToMany collection
+services/company-user-management-service/.../service/UserService.java                                   — add/remove methods + audit
+services/company-user-management-service/.../controller/UserController.java                             — 2 new endpoints under /me/additional-emails
+docs/api/users-api.openapi.yml                                                                          — AdditionalEmail schema + 2 paths + UserResponse extension
+web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.tsx                                    — Account-tab section
+web-frontend/src/hooks/useUserAccount/useAdditionalEmails.ts                                            — NEW hook
+web-frontend/public/locales/{de,en,...,gsw-BE}/userManagement.json                                      — 13 new keys × 10 locales
+infrastructure/lambda/email-forwarder/sender-auth.ts                                                    — flatten in getOrganizerEmails
+infrastructure/lambda/email-forwarder/address-resolver.ts                                               — flatten in fetchUsersByRole
+services/event-management-service/.../service/RegistrationEmailService.java                             — CC additional emails
+bruno-tests/users/add-additional-email.bru + list + delete                                              — NEW contract tests
+web-frontend/e2e/organizer/user-settings-additional-emails.spec.ts                                      — NEW Playwright spec
+```
+
+**Definition of Done (Story 10.32):**
+- [ ] V16 migration applies cleanly; unique-across-primary-and-additional constraint enforced
+- [ ] `POST /users/me/additional-emails` returns 201; 409 on collision (vs any primary or any additional); 422 at cap; 400 on bad format
+- [ ] `DELETE /users/me/additional-emails/{email}` returns 204; 404 on unknown
+- [ ] `GET /users/me` and `GET /users` responses include `additionalEmails[]`
+- [ ] Organizer adds `info@berner-architekten-treffen.ch` → sends mail to `ok@batbern.ch` from that mailbox → CloudWatch shows `outcome: 'forwarded'`, all organizers (including sender at both addresses) receive a copy. **Regression test for the 2026-05-20 incident.**
+- [ ] User with additional emails receives event-registration confirmation at all addresses (CC); anonymous registrants unchanged
+- [ ] `UserSettingsTab` Account sub-tab shows the new section; add/remove flows wired; limit alert at 5
+- [ ] Bruno + Vitest + Playwright + Lambda Jest + EMS integration test suites all GREEN
+- [ ] Audit-log row written on add and remove
+- [ ] Backwards-compatible: Lambda continues to authorise organizers by primary email if the CUMS response is missing `additionalEmails` (no regression to Story 10.26 happy path)
+- [ ] **Phase 6 (AC23)**: `POST /partner-meetings/{id}/send-invite` returned `recipientCount` reflects primary + additional emails across PARTNER and ORGANIZER roles; deduplicated case-insensitively
+- [ ] **Phase 7 (AC24)**: speaker invitation, speaker acceptance, speaker reminder, quality-review revision, waitlist promotion, and waitlist confirmation emails all CC the recipient's additional emails when present (verified by `verify(emailService).sendHtmlEmail(to, cc, ...)` assertions in `SpeakerInvitationEmailServiceTest` + EMS sweep 1167/1167 green; shared-kernel 321/321 green; PCS 153/153 green)
+
+**Resolved Decisions** (PM 2026-05-22, all 6 OQs): no ownership verification in v1 (`verified_at` column reserved); separate table (not JSONB / not `@ElementCollection`); cap = 5 (configurable); newsletter NOT auto-routed to additional emails (UI helper text explicit); `additionalEmails` included on every `GET /users` response the caller can already see; audit-log entries include the email value.
 
 ---
 

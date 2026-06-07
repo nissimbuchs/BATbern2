@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "Mussar",
-    "editRoles": "Modifitgar rollas"
+    "editRoles": "Modifitgar rollas",
+    "openMenu": "Avrir il menu d'acziuns"
   },
   "roles": {
     "organizer": "Organisatur",
@@ -210,7 +211,32 @@
       "themeDark": "Stgir",
       "themeAuto": "Automatic (suandar il sistem)",
       "timezone": "Zona temporala",
-      "save": "Memorisar ils parameters dal conto"
+      "save": "Memorisar ils parameters dal conto",
+      "additionalEmailsTitle": "Adressas dad e-mail supplementaras",
+      "additionalEmailsHelp": "Ils e-mails che BATbern ta tramet u tradusch (distribuziun organisatur, confirmaziuns d'occurrenzas) arrivan er a quellas adressas, e ti pos trametter ad ok@/partner@/batbern{N}@ da mintgina d'ellas. Las copias da la newsletter van mo a tia adressa principala — abuna mintga adressa separadamain sche necessari. Las midadas pon prender fin a 5 minutas avant ch'ellas vegnan effectivas per la distribuziun entranta.",
+      "additionalEmailLabel": "Etichetta (opziunal)",
+      "additionalEmailAddButton": "Agiuntar e-mail",
+      "additionalEmailAtLimit": "Ti has cuntanschì la quantitad maximala dad e-mails supplementars. Stizza ina per agiuntar in'autra.",
+      "additionalEmailAdded": "E-mail supplementara agiuntada",
+      "additionalEmailRemoved": "E-mail supplementara stizzada",
+      "additionalEmailErrorDuplicate": "Quest e-mail è gia registrà sin in profil.",
+      "additionalEmailErrorLimit": "Ti has gia la quantitad maximala dad e-mails supplementars.",
+      "additionalEmailErrorInvalid": "Endatescha per plaschair ina adressa d'e-mail valida.",
+      "additionalEmailUnverifiedPill": "Betg verifitgà",
+      "additionalEmailRemoveConfirm": "Stizzar {{email}} da tes profil?",
+      "additionalEmailRemoveConfirmTitle": "Stizzar e-mail supplementara?",
+      "additionalEmailRemoveConfirmYes": "Stizzar",
+      "additionalEmailRemoveConfirmCancel": "Interrumper",
+      "additionalEmailDeleteFailed": "Impussibel da stizzar questa e-mail supplementara. Empruvescha danovamain.",
+      "additionalEmailDeleteNotFound": "Questa e-mail supplementara n'è betg pli en tes profil.",
+      "additionalEmailDeleteAriaLabel": "Stizzar e-mail supplementara {{email}}",
+      "additionalEmailVerifiedPill": "Verifitgà",
+      "additionalEmailResendButton": "Trametter danovamain",
+      "additionalEmailResendSuccess": "E-mail da verificaziun tramessa.",
+      "additionalEmailResendFailed": "Impussibel da trametter l'e-mail da verificaziun. Empruvai anc ina giada.",
+      "additionalEmailResendAlreadyVerified": "Questa adressa d'e-mail è gia verifitgada.",
+      "additionalEmailResendAriaLabel": "Trametter danovamain l'e-mail da verificaziun a {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} è verifitgà"
     },
     "notifications": {
       "title": "Preferenzas da notificaziun",
@@ -272,6 +298,17 @@
   "cognito": {
     "linked": "Cognito collià",
     "notLinked": "Nagin conto Cognito",
-    "tooltip": "ID Cognito: {{id}}"
+    "tooltip": "Conto Cognito collià"
+  },
+  "verifyEmail": {
+    "title": "Confermai Vossa adressa d'e-mail",
+    "loading": "Vossa colliaziun da verificaziun vegn controllada…",
+    "confirmMessage": "Confermai che {{email}} è Vossa adressa d'e-mail.",
+    "confirmButton": "Confermar l'adressa d'e-mail",
+    "success": "Vossa adressa d'e-mail è vegnida confermada. Vus pudais serrar questa pagina.",
+    "alreadyVerified": "Questa adressa d'e-mail è gia confermada.",
+    "homeLink": "Ir a batbern.ch",
+    "invalidToken": "Questa colliaziun da verificaziun è nunvalida u scadida. Dumandai per plaschair ina nova en Vossas configuraziuns dal conto.",
+    "notFound": "Questa adressa d'e-mail n'è betg pli sin il profil al qual ella è vegnida agiuntada. Sche Vus l'avais agiuntada danovamain, dovrai la colliaziun da l'ultim e-mail da verificaziun."
   }
 }

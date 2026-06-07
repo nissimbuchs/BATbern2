@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -85,6 +86,15 @@ public class TestRateLimitConfig {
         @Override
         public int getBurstLimit(String role) {
             return TEST_BURST_LIMIT;
+        }
+
+        @Override
+        public boolean tryAcquireForPath(String clientIp, String method, String path,
+                                         Integer limit, Duration window) {
+            // Always allow in test profile — integration tests already exercise
+            // many requests against the same endpoint; per-path limits would
+            // flake the suite. Unit tests use a Mockito mock instead.
+            return true;
         }
 
         private String createKey(String userId, String endpoint) {

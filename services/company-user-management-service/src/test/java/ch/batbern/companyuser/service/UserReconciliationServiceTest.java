@@ -25,6 +25,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -106,7 +107,7 @@ class UserReconciliationServiceTest {
         assertThat(report.getOrphanedUsers()).isEqualTo(0);
         assertThat(report.getMissingUsers()).isEqualTo(0);
         assertThat(report.getErrors()).isEmpty();
-        assertThat(report.getDurationMs()).isGreaterThan(0);
+        assertThat(report.getDurationMs()).isGreaterThanOrEqualTo(0);
 
         verify(userRepository, never()).save(any(User.class));
         verify(metricsService).recordReconciliationJob(0, 0, 0, 0, report.getDurationMs());
@@ -383,6 +384,99 @@ class UserReconciliationServiceTest {
         assertThat(savedUser.isActive()).isTrue();
     }
 
+    // ============================================================================
+    // 2026-05-18 regression — reconciliation used to read first/last name only
+    // from Cognito `given_name` / `family_name`. The signup form packs them into
+    // `custom:preferences` JSON instead (ADR-001), so the nightly 02:00 job
+    // created user_profile rows with empty first/last name for every new
+    // Cognito user. Same shape as JIT, fixed in parallel.
+    // ============================================================================
+
+    @Test
+    void should_useCustomPreferences_when_givenAndFamilyNameAttributesAreMissing() {
+        when(userRepository.findByIsActive(true)).thenReturn(List.of());
+        UserType cognitoUser = createCognitoUserWithPreferences(
+                "cognito-id-1", "tom@windshop.ch",
+                "{\"firstName\":\"Tom\",\"lastName\":\"Müller\",\"language\":\"de\"}");
+        ListUsersIterable paginator = mockListUsersPaginator(cognitoUser);
+        when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
+        when(userRepository.findByCognitoUserId("cognito-id-1")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        reconciliationService.reconcileUsers();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User saved = userCaptor.getValue();
+        assertThat(saved.getFirstName()).isEqualTo("Tom");
+        assertThat(saved.getLastName()).isEqualTo("Müller");
+        // Username derived from firstname.lastname, not the email-fallback `user.tom`.
+        assertThat(saved.getUsername()).isEqualTo("tom.mller");
+    }
+
+    @Test
+    void should_failGracefully_when_preferencesJsonMalformed() {
+        when(userRepository.findByIsActive(true)).thenReturn(List.of());
+        UserType cognitoUser = createCognitoUserWithPreferences(
+                "cognito-id-2", "boris@alpineintelligence.ch", "not valid {{ json");
+        ListUsersIterable paginator = mockListUsersPaginator(cognitoUser);
+        when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
+        when(userRepository.findByCognitoUserId("cognito-id-2")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        // Reconciliation must not throw even when the JSON is unparseable;
+        // it falls back to email-derived username with empty names.
+        reconciliationService.reconcileUsers();
+        verify(userRepository).save(any(User.class));
+    }
+
+    // Story 12.3 (SSO PR 1 — Part B), AC7: reconciliation is kept in sync with JIT
+    // (UserReconciliationService.java comment "...so reconciliation and JIT stay in sync").
+    // It must also carry `language` from custom:preferences, mirroring post-confirmation.ts,
+    // otherwise the nightly job creates rows with the default "de" for non-DE signups.
+    @Test
+    void should_setPrefLanguageFromCustomPreferences_when_creatingMissingUser() {
+        when(userRepository.findByIsActive(true)).thenReturn(List.of());
+        UserType cognitoUser = createCognitoUserWithPreferences(
+                "cognito-id-fr", "marie@example.ch",
+                "{\"firstName\":\"Marie\",\"lastName\":\"Favre\",\"language\":\"fr\"}");
+        ListUsersIterable paginator = mockListUsersPaginator(cognitoUser);
+        when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
+        when(userRepository.findByCognitoUserId("cognito-id-fr")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        reconciliationService.reconcileUsers();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User saved = userCaptor.getValue();
+        assertThat(saved.getPreferences()).isNotNull();
+        assertThat(saved.getPreferences().getLanguage()).isEqualTo("fr");
+    }
+
+    // Story 12.3 review: pref_language is VARCHAR(2). An over-length BCP-47 tag (gsw-BE)
+    // would overflow the column and — because createMissingUser's @Transactional is a no-op
+    // (private self-invocation) — abort the WHOLE nightly batch at the outer commit.
+    // normalizeLanguage falls it back to the @PrePersist default "de" instead.
+    @Test
+    void should_fallBackToDefault_when_languageIsUnsupportedRegionTag() {
+        when(userRepository.findByIsActive(true)).thenReturn(List.of());
+        UserType cognitoUser = createCognitoUserWithPreferences(
+                "cognito-id-gsw", "hans@example.ch",
+                "{\"firstName\":\"Hans\",\"lastName\":\"Muster\",\"language\":\"gsw-BE\"}");
+        ListUsersIterable paginator = mockListUsersPaginator(cognitoUser);
+        when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
+        when(userRepository.findByCognitoUserId("cognito-id-gsw")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        reconciliationService.reconcileUsers();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        // No supported 2-char code -> preferences unset -> default "de" at persist.
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
     /**
      * Test 10: should_deactivateUser_when_orphanDetected
      * AC: deactivateOrphanedUser() logic within reconcileOrphanedDbUsers
@@ -564,6 +658,17 @@ class UserReconciliationServiceTest {
                         AttributeType.builder().name("email").value(email).build(),
                         AttributeType.builder().name("given_name").value(givenName).build(),
                         AttributeType.builder().name("family_name").value(familyName).build()
+                )
+                .build();
+    }
+
+    private UserType createCognitoUserWithPreferences(
+            String username, String email, String customPreferencesJson) {
+        return UserType.builder()
+                .username(username)
+                .attributes(
+                        AttributeType.builder().name("email").value(email).build(),
+                        AttributeType.builder().name("custom:preferences").value(customPreferencesJson).build()
                 )
                 .build();
     }

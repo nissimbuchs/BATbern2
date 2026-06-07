@@ -8,16 +8,30 @@ import ch.batbern.companyuser.dto.ProfilePictureUploadConfirmResponse;
 import ch.batbern.companyuser.dto.ProfilePictureUploadRequest;
 import ch.batbern.companyuser.dto.ReconciliationReportDTO;
 import ch.batbern.companyuser.dto.SyncStatusDTO;
+import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;
+import ch.batbern.companyuser.dto.generated.AdditionalEmail;
+import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationCheckResponse;
+import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationConfirmResponse;
+import ch.batbern.companyuser.dto.generated.ConfirmAdditionalEmailVerificationRequest;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
+import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.dto.generated.UserRolesResponse;
+import ch.batbern.companyuser.exception.UserValidationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.annotation.PatchMapping;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.companyuser.service.ImageUrlFetcher;
 import ch.batbern.companyuser.service.ProfilePictureService;
 import ch.batbern.companyuser.service.UserSearchService;
 import ch.batbern.companyuser.service.UserService;
@@ -140,26 +154,32 @@ public class UserController {
      * @return Paginated list of users
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ORGANIZER')")
+    // No @PreAuthorize: Story 10.26 — Lambda email forwarder calls GET /api/v1/users?role=ORGANIZER/PARTNER
+    // without auth (routes via NAT GW, not VPC). Security enforced at filter chain (SecurityConfig.permitAll).
     @Timed(value = "users.listUsers",
             description = "Time to list users (admin/organizer)",
             percentiles = {0.5, 0.95, 0.99})
+    // CHECKSTYLE.OFF: ParameterNumber - search endpoint with sort/filter/pagination params
     public ResponseEntity<PaginatedUserResponse> listUsers(
             @RequestParam(required = false) String filter,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String company,
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "20") int limit) {
-        log.debug("UserController Listing users with filters: role={}, company={}, search={}, page={}, limit={}",
-                role, company, search, page, limit);
+            @RequestParam(required = false, defaultValue = "20") int limit,
+            @RequestParam(required = false, defaultValue = "name") String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String sortDir) {
+    // CHECKSTYLE.ON: ParameterNumber
+        log.debug("UserController Listing users: role={}, company={}, search={},"
+                + " page={}, limit={}, sortBy={}, sortDir={}",
+                role, company, search, page, limit, sortBy, sortDir);
 
         // Convert 1-based page to 0-based for service layer
         int pageIndex = Math.max(0, page - 1);
 
         // Use optimized paginated service method
         Page<UserResponse> usersPage = userService.listUsersPaginated(
-                role, company, search, filter, pageIndex, limit);
+                role, company, search, filter, pageIndex, limit, sortBy, sortDir);
 
         // Build pagination metadata (using 1-based page numbers)
         ch.batbern.shared.api.PaginationMetadata paginationMetadata =
@@ -172,6 +192,41 @@ public class UserController {
         paginationMetadata.setHasPrev(usersPage.hasPrevious());
 
         // Use generated PaginatedUserResponse
+        PaginatedUserResponse response = new PaginatedUserResponse();
+        response.setData(usersPage.getContent());
+        response.setPagination(paginationMetadata);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Service-to-service endpoint: list users by company and role.
+     * VPC-internal only — protected by VpcInternalAuthorizationManager via /api/v1/users/* filter chain rule.
+     * Called by partner-coordination (and other services) without forwarding the user JWT.
+     * No @PreAuthorize — authorization is enforced at the filter chain level.
+     *
+     * GET /api/v1/users/by-company?company={companyName}&role={role}
+     */
+    @GetMapping("/by-company")
+    @Timed(value = "users.listUsersByCompany", description = "Time to list users by company (service-to-service)")
+    public ResponseEntity<PaginatedUserResponse> listUsersByCompany(
+            @RequestParam String company,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "100") int limit) {
+        log.debug("Service-to-service: listing users by company={}, role={}", company, role);
+
+        int pageIndex = Math.max(0, page - 1);
+        Page<UserResponse> usersPage = userService.listUsersPaginated(role, company, null, null, pageIndex, limit);
+
+        ch.batbern.shared.api.PaginationMetadata paginationMetadata = new ch.batbern.shared.api.PaginationMetadata();
+        paginationMetadata.setPage(page);
+        paginationMetadata.setLimit(limit);
+        paginationMetadata.setTotalItems(usersPage.getTotalElements());
+        paginationMetadata.setTotalPages(usersPage.getTotalPages());
+        paginationMetadata.setHasNext(usersPage.hasNext());
+        paginationMetadata.setHasPrev(usersPage.hasPrevious());
+
         PaginatedUserResponse response = new PaginatedUserResponse();
         response.setData(usersPage.getContent());
         response.setPagination(paginationMetadata);
@@ -221,6 +276,141 @@ public class UserController {
         log.info("Updating user {} by organizer/admin", username);
 
         UserResponse response = userService.updateUserByUsername(username, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.C.2 (AR13): Provision a User with a role.
+     * POST /api/v1/users/provision
+     *
+     * <p>Service-to-service endpoint called by
+     * {@code SpeakerWorkflowService.transition()} (event-management-service) at the
+     * CONTACTED → READY hook to materialise the Speaker as a User + SPEAKER role
+     * (replaces the deleted {@code Speaker} entity per ADR-009 / Story 11.C.1).
+     *
+     * <p>Idempotent: re-calling for an already-provisioned user is a no-op and returns
+     * the same canonical username with {@code created=false}.
+     *
+     * <p>Cognito wiring is stubbed (Story 11.E.2 owns it); {@code temporaryPassword} is
+     * always {@code null} in this story.
+     *
+     * @param request username (optional), email (required), firstName, lastName, role (required)
+     * @return canonical username + {@code created} flag + {@code temporaryPassword=null}
+     */
+    @PostMapping("/provision")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @Timed(value = "users.provisionUser",
+            description = "Time to provision a user with role (Story 11.C.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<ProvisionUserResponse> provisionUser(
+            @Valid @RequestBody ProvisionUserRequest request) {
+        // P2 (review patch): enforce `additionalProperties: false` at the controller level.
+        // The OpenAPI Generator emits `@JsonAnySetter` on the request DTO which silently
+        // collects unknown fields into a map instead of rejecting them. Read that map and
+        // 400 if non-empty, matching the spec contract (Resolved Decision §3).
+        if (request.getAdditionalProperties() != null && !request.getAdditionalProperties().isEmpty()) {
+            throw new UserValidationException(
+                    "request",
+                    "Unknown fields not allowed on ProvisionUserRequest: "
+                            + request.getAdditionalProperties().keySet());
+        }
+        log.info("POST /api/v1/users/provision — email: {}, role: {}",
+                request.getEmail(), request.getRole());
+
+        ProvisionUserResponse response = userService.provisionUserWithRole(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.E.2 (AR15, FR9): Issue (or skip) Cognito temp credentials at invitation time.
+     * POST /api/v1/users/{username}/issue-invitation-credentials
+     *
+     * <p>Service-to-service endpoint called by
+     * {@code SpeakerWorkflowService.runInvitedHook} at READY → INVITED. Delegates to Cognito
+     * {@code AdminGetUser} + conditional {@code AdminSetUserPassword(Permanent=false)} via
+     * {@link UserService#issueInvitationCredentials} to issue a fresh temp password (or
+     * confirm the existing password remains valid for previously-confirmed users).
+     *
+     * <p>Idempotent: repeated calls are safe. Returns {@link InvitationCredentialsResponse}
+     * with an action discriminator (FRESH_TEMP_PASSWORD or USE_EXISTING_PASSWORD).
+     *
+     * @param username target user's username
+     * @return action discriminator + fresh temp password (or null when use-existing)
+     */
+    @PostMapping("/{username}/issue-invitation-credentials")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Timed(value = "users.issueInvitationCredentials",
+            description = "Time to issue invitation credentials (Story 11.E.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<InvitationCredentialsResponse> issueInvitationCredentials(
+            @PathVariable String username) {
+        // Story 11.E.2 review patch (D3): narrow from hasAnyRole('ORGANIZER','ADMIN') to
+        // hasRole('ORGANIZER') and log the actor → target → action triple for post-incident
+        // review. The endpoint rotates Cognito passwords; minting credentials for arbitrary
+        // users by ADMIN was unnecessary in the current trust model.
+        String actor = securityContextHelper.getCurrentUsername();
+        log.info("POST /api/v1/users/{}/issue-invitation-credentials (actor={})",
+                username, actor != null ? actor : "<unknown>");
+        InvitationCredentialsResponse response = userService.issueInvitationCredentials(username);
+        log.info("Issued invitation credentials: actor={} target={} action={}",
+                actor != null ? actor : "<unknown>", username, response.getAction());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.C.2 (AR14): Patch user profile fields (bio, profilePictureUrl).
+     * PATCH /api/v1/users/{username}/profile
+     *
+     * <p>Narrow profile-patch entry point used by the consolidated
+     * {@code ContentSubmissionService} when speaker content includes a CV blurb or a
+     * portrait. Replaces the broader Story 6.2b {@code PUT /api/v1/users/{username}}
+     * path for this specific flow with sharper auth semantics.
+     *
+     * <p>Authorization: ORGANIZER, ADMIN, or SPEAKER. SPEAKERS may patch only their own
+     * profile (the method body enforces {@code currentUsername == pathVariable.username}
+     * and throws {@link AccessDeniedException} otherwise).
+     *
+     * @param username target user's username
+     * @param request  bio + profilePictureUrl (≥1 must be present; null fields are left unchanged)
+     * @return updated user profile
+     */
+    @PatchMapping("/{username}/profile")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN', 'SPEAKER')")
+    @Timed(value = "users.patchUserProfile",
+            description = "Time to patch user profile fields (Story 11.C.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<UserResponse> patchUserProfile(
+            @PathVariable String username,
+            @Valid @RequestBody PatchUserProfileRequest request) {
+        // P2 (review patch): enforce `additionalProperties: false` at the controller level
+        // (the generated DTO silently absorbs unknown fields via `@JsonAnySetter`).
+        if (request.getAdditionalProperties() != null && !request.getAdditionalProperties().isEmpty()) {
+            throw new UserValidationException(
+                    "request",
+                    "Unknown fields not allowed on PatchUserProfileRequest: "
+                            + request.getAdditionalProperties().keySet());
+        }
+        log.info("PATCH /api/v1/users/{}/profile", username);
+
+        // Method-level role-scope enforcement: a SPEAKER that is not also ORGANIZER/ADMIN
+        // may patch only their own profile. The class-level @PreAuthorize already
+        // restricts the endpoint to ORGANIZER/ADMIN/SPEAKER principals.
+        if (!securityContextHelper.hasRole("ORGANIZER") && !securityContextHelper.hasRole("ADMIN")) {
+            String currentUsername = securityContextHelper.getCurrentUsername();
+            // P3 (review patch): case-insensitive username comparison. The JWT issues canonical-case
+            // usernames; URL path-segments can be CDN-lowercased or mistyped. Both refer to the
+            // same identity.
+            if (currentUsername == null || !currentUsername.equalsIgnoreCase(username)) {
+                log.warn("Cross-speaker profile patch rejected: caller={}, target={}",
+                        currentUsername, username);
+                throw new AccessDeniedException(
+                        "SPEAKER may only patch their own profile");
+            }
+        }
+
+        UserResponse response = userService.patchUserProfile(username, request);
 
         return ResponseEntity.ok(response);
     }
@@ -355,6 +545,95 @@ public class UserController {
     }
 
     /**
+     * Story 10.32 — Register an additional email on the caller's profile.
+     */
+    @PostMapping("/me/additional-emails")
+    @Timed(value = "users.additionalEmails.add",
+            description = "Time to add an additional email to the current user",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<AdditionalEmail> addAdditionalEmail(
+            @Valid @RequestBody AddAdditionalEmailRequest request) {
+        log.info("Adding additional email for current user");
+        AdditionalEmail created = userService.addAdditionalEmail(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /**
+     * Story 10.32 — Remove an additional email from the caller's profile.
+     *
+     * <p>The {@code {email:.+}} path-variable regex is critical: Spring's
+     * default path matcher historically strips file-style extensions from
+     * path variables, so {@code /additional-emails/foo@example.com} would
+     * leave {@code email = "foo@example"} (with {@code .com} dropped). The
+     * regex tells Spring to greedy-match the remainder of the URL. Found in
+     * review 2026-05-22 finding P1-7.
+     *
+     * <p>Frontend callers MUST {@code encodeURIComponent} the email before
+     * embedding it in the URL — see {@code userAccountApi.ts}.
+     */
+    @DeleteMapping("/me/additional-emails/{email:.+}")
+    @Timed(value = "users.additionalEmails.delete",
+            description = "Time to remove an additional email from the current user",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<Void> deleteAdditionalEmail(@PathVariable String email) {
+        log.info("Removing additional email for current user");
+        userService.deleteAdditionalEmail(email);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Additional-email verification (v2) — resend the verification email for one of
+     * the caller's own (still unverified) additional emails.
+     *
+     * <p>204 on success; 404 if the email is not the caller's; 409
+     * ({@code ALREADY_VERIFIED}) if it is already verified.
+     *
+     * <p>The {@code {email:.+}} regex is required for the same reason as the
+     * delete endpoint above — Spring would otherwise strip a trailing {@code .com}.
+     */
+    @PostMapping("/me/additional-emails/{email:.+}/resend-verification")
+    @Timed(value = "users.additionalEmails.resendVerification",
+            description = "Time to resend an additional-email verification email",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<Void> resendAdditionalEmailVerification(@PathVariable String email) {
+        log.info("Resending additional-email verification for current user");
+        userService.resendVerification(email);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Additional-email verification (v2) — public GET-check of a verification token.
+     * Validates the token and returns the masked email + status WITHOUT mutating
+     * state (mail-scanner prefetches land here). The token IS the credential — no
+     * JWT. Permitted in both SecurityConfig layers (CUMS + api-gateway).
+     */
+    @GetMapping("/additional-emails/verify")
+    @Timed(value = "users.additionalEmails.verifyCheck",
+            description = "Time to check an additional-email verification token",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<AdditionalEmailVerificationCheckResponse> checkAdditionalEmailVerification(
+            @RequestParam String token) {
+        log.info("Checking additional-email verification token");
+        return ResponseEntity.ok(userService.checkVerificationToken(token));
+    }
+
+    /**
+     * Additional-email verification (v2) — public POST-confirm of a verification
+     * token. POST-only so mail-scanner GET prefetches cannot verify. Sets
+     * {@code verified_at}; idempotent ({@code alreadyVerified}). The token IS the
+     * credential — no JWT.
+     */
+    @PostMapping("/additional-emails/verify")
+    @Timed(value = "users.additionalEmails.verifyConfirm",
+            description = "Time to confirm an additional-email verification token",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<AdditionalEmailVerificationConfirmResponse> confirmAdditionalEmailVerification(
+            @Valid @RequestBody ConfirmAdditionalEmailVerificationRequest request) {
+        log.info("Confirming additional-email verification token");
+        return ResponseEntity.ok(userService.confirmVerificationToken(request.getToken()));
+    }
+
+    /**
      * AC10: Request presigned URL for profile picture upload
      * POST /api/v1/users/me/picture/presigned-url
      *
@@ -417,6 +696,36 @@ public class UserController {
             .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * AC13: Remove the current user's own profile picture.
+     * DELETE /api/v1/users/me/picture
+     *
+     * <p>Self-service counterpart to {@code DELETE /{username}/picture} (admin). The literal
+     * {@code /me/picture} mapping takes precedence over the {@code /{username}/picture}
+     * template, so a self-removal no longer falls through to the admin handler with a literal
+     * {@code username="me"} (which 404s). Resolves {@code me} from the security context exactly
+     * like {@code /me/picture/presigned-url} and {@code /me/picture/confirm}.
+     *
+     * @return No content on success
+     */
+    @DeleteMapping("/me/picture")
+    @Timed(value = "users.profilePicture.remove",
+            description = "Time to remove own profile picture",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<Void> removeOwnProfilePicture() {
+        String currentUsername = securityContextHelper.getCurrentUsername();
+        log.info("Removing own profile picture for user: {}", currentUsername);
+
+        User user = userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
+
+        user.setProfilePictureUrl(null);
+        user.setProfilePictureS3Key(null);
+        userRepository.save(user);
+
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -553,66 +862,28 @@ public class UserController {
         log.info("Admin uploading profile picture from URL for user: {}, url: {}", username, url);
 
         try {
-            // Fetch image from URL
-            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
-                    .connectTimeout(java.time.Duration.ofSeconds(10))
-                    .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
-                    .build();
+            // Shared fetch + image validation pipeline (12.12 review, finding #7);
+            // 5MB cap for profile pictures.
+            ImageUrlFetcher.FetchedImage image = ImageUrlFetcher.fetch(url, 5 * 1024 * 1024);
 
-            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(url))
-                    .timeout(java.time.Duration.ofSeconds(30))
-                    .GET()
-                    .build();
-
-            java.net.http.HttpResponse<byte[]> response = client.send(request,
-                    java.net.http.HttpResponse.BodyHandlers.ofByteArray());
-
-            if (response.statusCode() != 200) {
-                log.error("Failed to fetch image: HTTP {}", response.statusCode());
-                return ResponseEntity.status(response.statusCode()).build();
-            }
-
-            // Validate content type
-            String contentType = response.headers()
-                    .firstValue("Content-Type")
-                    .orElse("application/octet-stream");
-
-            if (!contentType.startsWith("image/")) {
-                log.error("URL does not point to an image: {}", contentType);
-                return ResponseEntity.badRequest().build();
-            }
-
-            byte[] imageData = response.body();
-
-            // Check size limit (5MB for profile pictures)
-            if (imageData.length > 5 * 1024 * 1024) {
-                log.error("Image too large: {} bytes", imageData.length);
-                return ResponseEntity.status(org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE).build();
-            }
-
-            // Determine file extension from content type
-            String extension = contentType.substring(contentType.indexOf('/') + 1);
-            if (extension.contains(";")) {
-                extension = extension.substring(0, extension.indexOf(';'));
-            }
-            if (extension.equals("svg+xml")) {
-                extension = "svg";
-            }
-
-            String filename = suggestedFilename + "." + extension;
+            String filename = suggestedFilename + "." + image.extension();
 
             // Upload directly to S3 and associate with user
             String profilePictureUrl = profilePictureService.uploadProfilePictureDirectly(
-                    username, imageData, filename, contentType);
+                    username, image.body(), filename, image.contentType());
 
             log.info("Successfully uploaded profile picture for user: {}, URL: {}", username, profilePictureUrl);
 
             return ResponseEntity.ok(Map.of("profilePictureUrl", profilePictureUrl));
 
-        } catch (java.io.IOException | InterruptedException e) {
-            log.error("Error uploading profile picture from URL for user: {}", username, e);
-            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (ImageUrlFetcher.ImageFetchException e) {
+            log.error("Error fetching profile picture from URL for user: {}: {}", username, e.getMessage());
+            return switch (e.getReason()) {
+                case HTTP_STATUS -> ResponseEntity.status(e.getStatusCode()).build();
+                case NOT_AN_IMAGE -> ResponseEntity.badRequest().build();
+                case TOO_LARGE -> ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+                case IO -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            };
         }
     }
 

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD — BATbern Partner-Management-Erweiterungen</title>
+<style>
+  :root { --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350; --accent: #6c63ff; --accent2: #00d4aa; --accent3: #ff6b6b; --accent4: #ffd166; --text: #e8eaf6; --text-muted: #8890b5; --radius: 12px; --radius-sm: 6px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(15,17,23,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; z-index: 100; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 12px; padding: 3px 8px; border-radius: 20px; transition: all .2s; white-space: nowrap; }
+  nav a:hover, nav a.active { background: var(--accent); color: white; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 80px 24px 80px; }
+  section { margin-bottom: 48px; scroll-margin-top: 60px; }
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 1.3rem; font-weight: 700; margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--accent2); }
+  h3 { font-size: 1.05rem; font-weight: 700; margin: 24px 0 10px; }
+  h4 { font-size: 0.92rem; font-weight: 700; margin: 16px 0 6px; }
+  p { margin-bottom: 10px; font-size: 0.92rem; }
+  strong { color: white; }
+  em { color: var(--text-muted); }
+  code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', monospace; font-size: 0.85em; }
+  ul, ol { margin: 8px 0 12px 24px; }
+  li { margin-bottom: 4px; font-size: 0.9rem; }
+  .meta { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 28px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.85rem; }
+  th, td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 14px; }
+  .card h3 { margin-top: 0; }
+  .card p { font-size: 0.88rem; color: var(--text-muted); }
+
+  .fr { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 6px; font-size: 0.88rem; }
+  .fr .id { display: inline-block; color: var(--accent2); font-weight: 700; font-size: 0.82rem; margin-right: 8px; min-width: 48px; }
+
+  .nfr { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent4); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 6px; font-size: 0.88rem; }
+  .nfr .id { display: inline-block; color: var(--accent4); font-weight: 700; font-size: 0.82rem; margin-right: 8px; min-width: 52px; }
+
+  .journey { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
+  .journey h4 { margin-top: 0; color: var(--accent2); }
+  .journey .persona { font-style: italic; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px; }
+  .journey p { font-size: 0.88rem; }
+
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; }
+  .badge-green { background: rgba(0,212,170,.12); color: var(--accent2); border: 1px solid rgba(0,212,170,.3); }
+  .badge-yellow { background: rgba(255,209,102,.12); color: var(--accent4); border: 1px solid rgba(255,209,102,.3); }
+  .badge-red { background: rgba(255,107,107,.12); color: var(--accent3); border: 1px solid rgba(255,107,107,.3); }
+  .badge-purple { background: rgba(108,99,255,.12); color: var(--accent); border: 1px solid rgba(108,99,255,.3); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+  .back-link { display: inline-block; color: var(--accent2); text-decoration: none; font-size: 0.85rem; margin-bottom: 24px; }
+  .back-link:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) { h1 { font-size: 1.5rem; } nav a { font-size: 11px; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#exec">Zusammenfassung</a>
+  <a href="#classification">Klassifikation</a>
+  <a href="#success">Erfolgskriterien</a>
+  <a href="#scoping">Umfang</a>
+  <a href="#journeys">User Journeys</a>
+  <a href="#architecture">Architektur</a>
+  <a href="#functional">Funktionale Anf.</a>
+  <a href="#nonfunctional">Nicht-funktionale</a>
+</nav>
+
+<main>
+
+<a href="bmad-analyst-training-de.html" class="back-link">&larr; Zurueck zur Schulung</a>
+
+<h1>PRD — <span>Partner-Management-Erweiterungen</span></h1>
+<div class="meta">
+  <strong>Autor:</strong> Nissim &nbsp;|&nbsp;
+  <strong>Datum:</strong> 2026-04-04 &nbsp;|&nbsp;
+  <span class="badge badge-purple">Vollstaendig</span>
+</div>
+
+<!-- ZUSAMMENFASSUNG -->
+<section id="exec">
+<h2>Zusammenfassung</h2>
+<p>Die BATbern Partner-Management-Erweiterungen erweitern die bestehende Plattform um zwei Funktionsebenen, die die verbleibenden analogen Luecken im Partner-Beziehungslebenszyklus beseitigen. Zielgruppe: BATbern-Organisatoren (die 5&ndash;10 aktive Sponsoring-Unternehmen verwalten) und Partnerkontakte.</p>
+<p><strong>Zwei geloeste Probleme:</strong></p>
+<ol>
+  <li><strong>Rechnungslebenszyklus</strong> ist komplett manuell &mdash; Organisatoren erstellen Rechnungen von Hand, verfolgen Zahlungen ohne Werkzeuge und haben keine strukturierte Uebersicht ueber Forderungen</li>
+  <li><strong>Partner-Kommunikationsartefakte</strong> (Sitzungsnotizen, Massnahmen) existieren nur in E-Mails, sodass Partner keinen Self-Service-Zugang haben</li>
+</ol>
+<p>BATbern wird zum einzigen massgeblichen System fuer den gesamten Partner-Lebenszyklus &mdash; von der ersten Meeting-Einladung bis zur Rechnungsbegleichung. Das Alleinstellungsmerkmal: Partner oeffnen ihr Portal und sehen Sitzungsnotizen, Massnahmen und Rechnungen an einem Ort; Organisatoren sehen ein Echtzeit-Finanzstatus-Dashboard ohne manuellen Aufwand.</p>
+</section>
+
+<!-- KLASSIFIKATION -->
+<section id="classification">
+<h2>Projektklassifikation</h2>
+<table>
+  <tr><th>Dimension</th><th>Wert</th></tr>
+  <tr><td>Projekttyp</td><td>SaaS B2B &mdash; mandantenfaehig, rollenbasiert (Organisator / Partner)</td></tr>
+  <tr><td>Domaene</td><td>Event- und Vereinsmanagement</td></tr>
+  <tr><td>Komplexitaet</td><td>Mittel &mdash; Rechnungs-Lebenszyklus-Zustandsmaschine, PDF-Generierung</td></tr>
+  <tr><td>Kontext</td><td>Brownfield &mdash; Erweiterung der Produktionsplattform (Epics 1&ndash;8)</td></tr>
+</table>
+</section>
+
+<!-- ERFOLGSKRITERIEN -->
+<section id="success">
+<h2>Erfolgskriterien</h2>
+
+<h3>Nutzererfolg</h3>
+<div class="card">
+  <h3>Organisator</h3>
+  <ul>
+    <li>PDF-Rechnung in unter 2 Minuten erstellen, ohne externes Werkzeug</li>
+    <li>Rechnungsstatus-Board: Echtzeit-Uebersicht aller Partner (DRAFT / SENT / PAID / OVERDUE)</li>
+    <li>Ueberfaellige Rechnungen werden sofort sichtbar; Erinnerung mit einem Klick</li>
+    <li>Sitzungsnotizen mit einem Klick an Partner veroeffentlichen</li>
+  </ul>
+</div>
+<div class="card">
+  <h3>Partner</h3>
+  <ul>
+    <li>Aktuelle und vergangene Rechnungen mit Download-Links finden &mdash; ohne den Organisator zu kontaktieren</li>
+    <li>Veroeffentlichte Sitzungsnotizen und Massnahmen einsehen</li>
+    <li>Eigene Rechnungsinformationen ohne Organisator-Beteiligung pflegen</li>
+    <li>RSVP-Status im Portal sichtbar</li>
+  </ul>
+</div>
+
+<h3>Messbare Ergebnisse</h3>
+<table>
+  <tr><th>Ergebnis</th><th>Ziel</th><th>Zeitrahmen</th></tr>
+  <tr><td>Ueber Plattform ausgestellte Rechnungen</td><td>100% der aktiven Partner</td><td>Erster Abrechnungszyklus</td></tr>
+  <tr><td>Vollstaendigkeit der Partner-Rechnungsdaten</td><td>100% der aktiven Partner</td><td>4 Wochen nach Launch</td></tr>
+  <tr><td>Rechnungsverwaltungszeit des Organisators</td><td>&lt; 5 Min/Jahr pro Partner</td><td>Laufend</td></tr>
+  <tr><td>Verzoegerung bei Ueberfaelligkeitserkennung</td><td>0 Tage (taeglicher Cron)</td><td>Laufend</td></tr>
+</table>
+</section>
+
+<!-- UMFANG -->
+<section id="scoping">
+<h2>Projektumfang</h2>
+
+<h3><span class="badge badge-green">MVP</span> Pflichtfunktionen</h3>
+<ul>
+  <li><code>PartnerInvoice</code>-Entitaet + vollstaendiger Lebenszyklus (DRAFT&rarr;SENT&rarr;PAID&rarr;OVERDUE&rarr;CANCELLED)</li>
+  <li>Jaehrliche Gebuehrentabelle + Inline-Bearbeitung + Massen-Erstellung aller Entwuerfe pro Abrechnungsjahr</li>
+  <li>Einzelrechnung erstellen (Nachzuegler im laufenden Jahr)</li>
+  <li>PDF-Generierung mit BATbern-Branding (Bibliothek offen &mdash; ADR erforderlich)</li>
+  <li>Rechnung per SES-E-Mail versenden; manuelle Zahlungserinnerung mit beigefuegtem PDF</li>
+  <li>Automatische Ueberfaelligkeitserkennung via Spring <code>@Scheduled</code> Cron (taeglich)</li>
+  <li>Als bezahlt markieren mit Zahlungsdatum + optionaler Referenz</li>
+  <li><code>PartnerBillingInfo</code> Self-Service-Tab im Partner-Portal</li>
+  <li>Partner-Rechnungshistorie + PDF-Download</li>
+  <li>Administrativ konfigurierbare Rechnungseinstellungen</li>
+  <li>Sitzungsnotizen + Massnahmen an Partner veroeffentlichen/zurueckziehen</li>
+  <li>Partner-Ansicht der veroeffentlichten Sitzungsnotizen + Massnahmen</li>
+  <li>RSVP-Status im Partner-Portal</li>
+  <li>Anhaenge hochladen/herunterladen</li>
+</ul>
+
+<h3><span class="badge badge-yellow">Phase 2</span> Wachstum</h3>
+<ul>
+  <li>Automatische Zahlungserinnerungs-E-Mails</li>
+  <li>Massenversand aller DRAFT-Rechnungen</li>
+  <li>Umsatz-Dashboard</li>
+  <li>Anpassung des Rechnungsnummernformats</li>
+</ul>
+
+<h3><span class="badge badge-red">Phase 3</span> Zukunft</h3>
+<ul>
+  <li>Schweizer QR-Rechnung (ISO 20022)</li>
+  <li>Zahlungslink-Integration (Stripe / TWINT)</li>
+  <li>Automatischer Bankabgleich</li>
+  <li>Partner-Gesundheitsbewertung</li>
+</ul>
+
+<h3>Risikominderung</h3>
+<table>
+  <tr><th>Risiko</th><th>Massnahme</th></tr>
+  <tr><td>Auswahl der PDF-Bibliothek</td><td>Architektur-ADR vor Sprint 1; Fallback: HTML &rarr; Headless Chrome</td></tr>
+  <tr><td>Marktvalidierung</td><td>Nicht noetig &mdash; bestaetigt durch internen Bedarf</td></tr>
+  <tr><td>Umfangsreduzierung</td><td>Anhaenge am ehesten verschiebbar; Rechnungen + Notizen nicht verhandelbar</td></tr>
+</table>
+</section>
+
+<!-- USER JOURNEYS -->
+<section id="journeys">
+<h2>User Journeys</h2>
+
+<div class="journey">
+  <h4>Journey 1: Organisator &mdash; Rechnungssaison (Happy Path)</h4>
+  <div class="persona">Lukas, BATbern-Organisator. Mitte Januar. Letztes Jahr: ein ganzer Nachmittag, um Rechnungsadressen in E-Mails zusammenzusuchen und PDFs in InDesign zu gestalten.</div>
+  <p>Oeffnet <strong>Partner &rarr; Gebuehren &amp; Rechnungen</strong>. Die Gebuehrentabelle zeigt alle 7 aktiven Partner. Klickt auf <strong>&laquo;Alle Entwuerfe fuer 2026 erstellen&raquo;</strong>. Sieben DRAFT-Rechnungen erscheinen. Aktualisiert zwei Gebuehren inline. Waehlt alle aus, klickt <strong>Rechnungen versenden</strong>. Sieben gebrandete PDFs landen im Posteingang der jeweiligen Rechnungskontakte.</p>
+  <p>Drei Wochen spaeter: fuenf PAID, eine SENT, eine OVERDUE. Klickt auf den ueberfaelligen Partner und sendet eine Erinnerung. In der folgenden Woche: alle sieben PAID.</p>
+</div>
+
+<div class="journey">
+  <h4>Journey 2: Organisator &mdash; Nach dem Partner-Meeting (Happy Path)</h4>
+  <div class="persona">Am Tag nach dem Fruehlings-Partnertreffen. Lukas hat seine Notizen.</div>
+  <p>Oeffnet die Meeting-Detailansicht, fuegt das Protokoll ein, ergaenzt strukturierte <strong>Massnahmen</strong> (drei Eintraege mit Verantwortlichem + Faelligkeitsdatum), klickt <strong>An Partner veroeffentlichen</strong>. Laedt den unterschriebenen Sponsoring-Vertrag ueber den <strong>Anhaenge</strong>-Tab hoch.</p>
+</div>
+
+<div class="journey">
+  <h4>Journey 3: Partner &mdash; Erster Login nach dem Meeting (Happy Path)</h4>
+  <div class="persona">Sandra, Leiterin Community bei Acme AG. Muss ihren CMO briefen.</div>
+  <p>Oeffnet den <strong>Meetings</strong>-Tab &mdash; gruener Indikator &laquo;Notizen veroeffentlicht&raquo;. Oeffnet: vollstaendiges Protokoll, Massnahmen. Laedt PDF herunter. Oeffnet <strong>Rechnungsdaten</strong> &mdash; gibt Adresse und Bestellnummer ein. Zwei Tage spaeter kommt die Rechnung bereits korrekt adressiert an.</p>
+</div>
+
+<div class="journey">
+  <h4>Journey 4: Partner &mdash; Rechnungsverwirrung (Grenzfall)</h4>
+  <div class="persona">Sandras Buchhaltung hat mit falscher Referenz bezahlt.</div>
+  <p>Oeffnet das Portal: Rechnungsstatus <strong>SENT</strong>. Schreibt Lukas eine E-Mail. Lukas klickt <strong>Als bezahlt markieren</strong>, gibt Datum und Bankreferenz ein. Die Rechnung wechselt auf <strong>PAID</strong>. Sandra aktualisiert die Seite &mdash; gruen.</p>
+</div>
+
+<div class="journey">
+  <h4>Journey 5: Organisator &mdash; Neuen Partner einbinden (Admin-Pfad)</h4>
+  <div class="persona">Neuer GOLD-Sponsor kommt mitten im Jahr dazu.</div>
+  <p>Erstellt den Partner-Datensatz, legt eine anteilige Gebuehr fest, erstellt manuell eine einzelne DRAFT-Rechnung. Der Partner fuellt seine Rechnungsdaten aus; die Rechnung wird innerhalb der Woche versendet. Separat: der Verein zieht um &mdash; aktualisiert die Adresse unter <strong>Admin &rarr; Rechnungseinstellungen</strong>.</p>
+</div>
+</section>
+
+<!-- ARCHITEKTUR -->
+<section id="architecture">
+<h2>SaaS-B2B-Architekturanforderungen</h2>
+
+<h3>Mandantenmodell</h3>
+<p>Firmenbasierte Mandantentrennung (ADR-003): <code>companyName</code> (String, max. 12 Zeichen). Neue Entitaeten: <code>PartnerInvoice.companyName</code>, <code>PartnerBillingInfo.companyName</code> (PK), <code>PartnerAttachment.companyName</code>.</p>
+
+<h3>RBAC-Matrix</h3>
+<table>
+  <tr><th>Funktion</th><th>Organisator</th><th>Partner</th></tr>
+  <tr><td>Gebuehrentabelle anzeigen/bearbeiten</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>Rechnung erstellen/senden/stornieren</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>Rechnung als bezahlt markieren</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>Eigene Rechnungen anzeigen + PDF herunterladen</td><td>&#x2705;</td><td>&#x2705; Nur eigene</td></tr>
+  <tr><td>Eigene Rechnungsdaten bearbeiten</td><td>&#x274C; (nur Ansicht)</td><td>&#x2705; Nur eigene</td></tr>
+  <tr><td>Anhaenge hochladen</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>Anhaenge herunterladen</td><td>&#x2705;</td><td>&#x2705; Eigene Firma</td></tr>
+  <tr><td>Sitzungsnotizen veroeffentlichen</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>Veroeffentlichte Notizen anzeigen</td><td>&#x2705;</td><td>&#x2705; Nur eigene</td></tr>
+  <tr><td>Rechnungseinstellungen konfigurieren</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+</table>
+
+<h3>Integrationsvertraege</h3>
+<table>
+  <tr><th>Integration</th><th>Muster</th></tr>
+  <tr><td>PDF-Generierung</td><td>Serverseitige Java-Bibliothek (ADR offen)</td></tr>
+  <tr><td>E-Mail-Versand</td><td>AWS SES asynchron (wiederverwendet)</td></tr>
+  <tr><td>Dateispeicherung</td><td>AWS S3 Presigned URL (wiederverwendet)</td></tr>
+  <tr><td>Ueberfaelligkeitserkennung</td><td>Spring <code>@Scheduled</code> Cron (wiederverwendet)</td></tr>
+</table>
+
+<h3>Implementierungsvorgaben</h3>
+<ul>
+  <li>Bestehende <code>@PreAuthorize</code> + <code>PartnerSecurityService</code> &mdash; keine neue Sicherheitsinfrastruktur</li>
+  <li>OpenAPI-Spezifikation zuerst; Spring Boot + TypeScript-Typen werden generiert</li>
+  <li><code>PartnerInvoice</code>-Zustandsuebergaenge nur serverseitig &mdash; Clients loesen benannte Aktionen aus</li>
+  <li>Rechnungsnummernformat: <code>BAT-{year}-{companyName}-{seq}</code></li>
+  <li><strong>Architektur-ADR erforderlich:</strong> Auswahl der PDF-Bibliothek (iText 7, Apache PDFBox oder OpenPDF)</li>
+</ul>
+</section>
+
+<!-- FUNKTIONALE ANFORDERUNGEN -->
+<section id="functional">
+<h2>Funktionale Anforderungen</h2>
+
+<h3>Rechnungsverwaltung</h3>
+<div class="fr"><span class="id">FR1</span> Organisator kann die jaehrliche Sponsoring-Gebuehr fuer jeden aktiven Partner festlegen und aktualisieren</div>
+<div class="fr"><span class="id">FR2</span> Organisator kann eine einzelne Rechnung fuer einen bestimmten Partner fuer ein Abrechnungsjahr erstellen</div>
+<div class="fr"><span class="id">FR3</span> Organisator kann Entwurfsrechnungen fuer alle aktiven Partner mit festgelegter Gebuehr fuer ein Abrechnungsjahr in einem Schritt erstellen</div>
+<div class="fr"><span class="id">FR4</span> Organisator kann eine Entwurfsrechnung (Betrag, Faelligkeitsdatum, Beschreibung) vor dem Versand ueberpruefen und bearbeiten</div>
+<div class="fr"><span class="id">FR5</span> Organisator kann eine Rechnung versenden, wodurch PDF-Generierung und E-Mail-Zustellung ausgeloest werden</div>
+<div class="fr"><span class="id">FR6</span> Organisator kann eine Zahlungserinnerung fuer eine ueberfaellige Rechnung senden, mit beigefuegtem PDF</div>
+<div class="fr"><span class="id">FR7</span> Organisator kann eine Rechnung als bezahlt markieren und Zahlungsdatum sowie optionale Referenz erfassen</div>
+<div class="fr"><span class="id">FR8</span> Organisator kann eine Rechnung aus jedem nicht-terminalen Status stornieren</div>
+<div class="fr"><span class="id">FR9</span> Organisator kann alle Rechnungen anzeigen, filterbar nach Abrechnungsjahr und Status</div>
+<div class="fr"><span class="id">FR10</span> System setzt SENT auf OVERDUE, wenn das Faelligkeitsdatum ohne Zahlung ueberschritten wird</div>
+<div class="fr"><span class="id">FR11</span> Partner kann die eigene Rechnungshistorie einschliesslich Status einsehen</div>
+<div class="fr"><span class="id">FR12</span> Partner kann eine PDF-Kopie jeder eigenen Rechnung herunterladen</div>
+
+<h3>Partner-Rechnungsinformationen</h3>
+<div class="fr"><span class="id">FR13</span> Partner kann Rechnungsinformationen erstellen und aktualisieren (Kontakt, Adresse, USt-IdNr., Bestellnummer)</div>
+<div class="fr"><span class="id">FR14</span> Organisator kann die Rechnungsinformationen jedes Partners einsehen</div>
+<div class="fr"><span class="id">FR15</span> System befuellt Rechnungs-PDFs automatisch mit den Partner-Rechnungsinformationen</div>
+<div class="fr"><span class="id">FR16</span> Organisator kann Vereins-Rechnungseinstellungen im Admin-Bereich konfigurieren</div>
+<div class="fr"><span class="id">FR17</span> System verwendet die aktuellen Admin-Einstellungen in allen generierten PDFs</div>
+
+<h3>Rechnungs-PDF-Generierung</h3>
+<div class="fr"><span class="id">FR18</span> System generiert ein gebrandetes PDF aus Rechnungsinformationen + Rechnungsdatensatz + Admin-Einstellungen</div>
+<div class="fr"><span class="id">FR19</span> Generierte PDFs werden gespeichert und sind ueber zeitlich begrenzte Links abrufbar</div>
+
+<h3>Sitzungsnotizen &amp; Massnahmen</h3>
+<div class="fr"><span class="id">FR20</span> Organisator kann Sitzungsnotizen und Massnahmen an einen Partner veroeffentlichen</div>
+<div class="fr"><span class="id">FR21</span> Organisator kann zuvor geteilte Sitzungsnotizen zurueckziehen</div>
+<div class="fr"><span class="id">FR22</span> Partner kann veroeffentlichte Sitzungsnotizen und Massnahmen einsehen</div>
+<div class="fr"><span class="id">FR23</span> Organisator kann Massnahmen mit Verantwortlichem und Faelligkeitsdatum strukturieren</div>
+
+<h3>Anhaenge</h3>
+<div class="fr"><span class="id">FR24</span> Organisator kann Dateien zum Datensatz eines Partners hochladen</div>
+<div class="fr"><span class="id">FR25</span> Organisator kann Anhaenge loeschen</div>
+<div class="fr"><span class="id">FR26</span> Partner kann Dateien anzeigen und herunterladen, die der eigenen Firma zugeordnet sind</div>
+
+<h3>Meeting-RSVP &amp; Administration</h3>
+<div class="fr"><span class="id">FR27</span> Partner kann den RSVP-Status fuer eigene Meeting-Einladungen einsehen</div>
+<div class="fr"><span class="id">FR28</span> Organisator kann den RSVP-Status pro Partner pro Meeting einsehen</div>
+<div class="fr"><span class="id">FR29</span> Organisator kann Rechnungskonfigurationseinstellungen verwalten</div>
+<div class="fr"><span class="id">FR30</span> System wendet die aktuellen Admin-Einstellungen auf neu generierte PDFs an</div>
+</section>
+
+<!-- NICHT-FUNKTIONALE ANFORDERUNGEN -->
+<section id="nonfunctional">
+<h2>Nicht-funktionale Anforderungen</h2>
+
+<h3>Leistung</h3>
+<div class="nfr"><span class="id">NFR1</span> Rechnungs-PDF-Generierung &lt; 3 Sekunden p95</div>
+<div class="nfr"><span class="id">NFR2</span> Rechnungsstatus-Board laedt in &lt; 2 Sekunden p95</div>
+<div class="nfr"><span class="id">NFR3</span> Partner-Rechnungsdaten-Tab laedt in &lt; 2 Sekunden p95</div>
+<div class="nfr"><span class="id">NFR4</span> Presigned URL fuer Anhaenge &lt; 1 Sekunde; Upload direkt zu S3</div>
+
+<h3>Sicherheit</h3>
+<div class="nfr"><span class="id">NFR5</span> Keine mandantenuebergreifende Datenlecks an irgendeinem Endpunkt</div>
+<div class="nfr"><span class="id">NFR6</span> Rechnungs-PDFs in S3 privat; Presigned URL max. 15 Min. TTL</div>
+<div class="nfr"><span class="id">NFR7</span> Presigned URLs fuer Anhaenge laufen innerhalb von 15 Minuten ab</div>
+<div class="nfr"><span class="id">NFR8</span> Bestehende <code>@PreAuthorize</code> + <code>PartnerSecurityService</code> &mdash; keine neuen Sicherheitsmuster</div>
+<div class="nfr"><span class="id">NFR9</span> Rechnungskontaktdaten bei Partnerschaftsende loeschbar; Rechnungen gemaess Schweizer 10-Jahres-Aufbewahrungspflicht</div>
+
+<h3>Barrierefreiheit</h3>
+<div class="nfr"><span class="id">NFR10</span> WCAG 2.1 AA (konsistent mit Epic-6-Baseline)</div>
+<div class="nfr"><span class="id">NFR11</span> Rechnungsstatus-Indikatoren verwenden Farbe plus Textbeschriftung</div>
+
+<h3>Integration &amp; Zuverlaessigkeit</h3>
+<div class="nfr"><span class="id">NFR12</span> SES-Async-Muster; Fehler wird protokolliert, Organisator kann erneut senden</div>
+<div class="nfr"><span class="id">NFR13</span> Auto-Ueberfaelligkeits-Cron erholt sich beim naechsten Lauf ohne doppelte Uebergaenge</div>
+<div class="nfr"><span class="id">NFR14</span> PDF-Generierung idempotent &mdash; gleiche Rechnung, gleiches PDF</div>
+<div class="nfr"><span class="id">NFR15</span> Anhang-Upload via Presigned URL &mdash; Backend leitet niemals Bytes weiter</div>
+
+<h3>Internationalisierung</h3>
+<div class="nfr"><span class="id">NFR16</span> Alle UI-Strings externalisiert in <code>public/locales/{de,en}/</code></div>
+<div class="nfr"><span class="id">NFR17</span> Deutsch primaer; Englisch als Fallback</div>
+<div class="nfr"><span class="id">NFR18</span> Rechnungs-PDF-Sprache pro Partner konfigurierbar (DE / EN)</div>
+<div class="nfr"><span class="id">NFR19</span> Alle PDF-Texte durch Locale-Strings gesteuert &mdash; keine fest codierten Sprachen</div>
+<div class="nfr"><span class="id">NFR20</span> Rechnungs-E-Mail-Betreffe/-Texte in konfigurierter Sprache</div>
+</section>
+
+<hr class="divider">
+<p style="text-align:center;color:var(--text-muted);font-size:0.82rem">
+  Generiert aus <code>prd.md</code><br>
+  <a href="bmad-analyst-training-de.html" style="color:var(--accent2)">Schulung</a> &nbsp;|&nbsp;
+  <a href="project_partner_enhancements-de.html" style="color:var(--accent2)">Ausgewaehlte Features</a>
+</p>
+
+</main>
+</body>
+</html>

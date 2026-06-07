@@ -63,6 +63,14 @@ describe('useSessionSpeakers', () => {
         speakerRole: 'PRIMARY_SPEAKER',
       });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['event', 'BATbern142'] });
+      // BATbern75 bug fix (Phase A): the drawer reads speaker identity from
+      // the speakerPool query; without invalidating that key, reassigning a
+      // session speaker leaves the drawer Content subtab showing the OLD
+      // identity (server returns the live session-derived value, but FE
+      // never refetches). Invalidate both keys.
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ['speakerPool', 'list', 'BATbern142'],
+      });
     });
 
     it('should set isError when assignSpeaker fails', async () => {
@@ -100,6 +108,9 @@ describe('useSessionSpeakers', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.removeSpeaker).toHaveBeenCalledWith('BATbern142', 'cloud-talk', 'alice');
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['event', 'BATbern142'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ['speakerPool', 'list', 'BATbern142'],
+      });
     });
   });
 });

@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture — BATbern Active Partner Meeting Agenda</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 96px 24px 80px; }
+
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 40px; }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 56px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent2);
+    scroll-margin-top: 80px;
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+  h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    color: var(--accent4);
+  }
+
+  p { margin-bottom: 12px; font-size: 0.93rem; }
+  strong { color: white; }
+  em { color: var(--text-muted); }
+
+  ul, ol { margin: 8px 0 16px 24px; }
+  li { margin-bottom: 6px; font-size: 0.9rem; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 0.85rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  pre {
+    background: rgba(0,0,0,.3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 12px 0 20px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .highlight {
+    background: var(--surface2);
+    border-left: 4px solid var(--accent2);
+    padding: 16px 20px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 16px 0;
+    font-size: 0.9rem;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .tag-yellow { background: rgba(255,202,76,.12); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+  .tag-red { background: rgba(175,35,34,.12); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+
+  .check { color: var(--accent2); }
+  .status-pass { color: var(--accent2); font-weight: 700; }
+  .status-warn { color: var(--accent4); font-weight: 700; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.5rem; }
+    main { padding: 80px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#context" class="active">Context</a>
+  <a href="#starter">Starter</a>
+  <a href="#decisions">Decisions</a>
+  <a href="#patterns">Patterns</a>
+  <a href="#structure">Structure</a>
+  <a href="#validation">Validation</a>
+  <span class="sep">|</span>
+  <a href="agenda-architecture-session.html">Architecture Session</a>
+</nav>
+
+<main>
+
+<h1>Architecture Decision Document<br><span>BATbern Active Partner Meeting Agenda</span></h1>
+<p class="subtitle">Author: Nissim &nbsp;|&nbsp; Date: 2026-04-05 &nbsp;|&nbsp; Status: Complete &nbsp;|&nbsp; Classification: Brownfield Web App, Medium Complexity &nbsp;|&nbsp; Readiness: HIGH</p>
+
+<!-- PROJECT CONTEXT ANALYSIS -->
+<h2 id="context">Project Context Analysis</h2>
+
+<h3>Requirements Overview</h3>
+
+<h4>Functional Requirements &mdash; 10 Groups (FR1&ndash;FR10)</h4>
+
+<div class="card">
+  <p><strong>FR1 &mdash; Meeting Entity Management:</strong> Configurable agenda with active + passive items, ordering, ICS invites, status lifecycle (DRAFT &rarr; SCHEDULED &rarr; IN_PROGRESS &rarr; COMPLETED)</p>
+  <p><strong>FR2 &mdash; RSVP &amp; Attendance:</strong> Pre-meeting RSVP, live presence toggling, stand-in delegation with "New" badge for first-year partners</p>
+  <p><strong>FR3 &mdash; Presenter Mode:</strong> Full-screen dark-themed projector interface with three-zone layout, linear + sidebar navigation, keyboard shortcuts, persistent auto-saving notes</p>
+  <p><strong>FR4 &mdash; Document Upload &amp; Viewing:</strong> PDF/spreadsheet upload via S3 presigned URLs, embedded viewer in Presenter Mode, permanent attachment to meeting record</p>
+  <p><strong>FR5 &mdash; Voting:</strong> Proxied approve/decline voting &mdash; organizer casts on behalf of each partner with per-partner attribution, reversible before completion</p>
+  <p><strong>FR6 &mdash; Meeting Minutes:</strong> Auto-assembled from agenda item interactions (attendance, votes, documents, snapshots, notes), editable post-meeting, publishable with email distribution</p>
+  <p><strong>FR7 &mdash; Meeting Prep:</strong> Dynamic checklist based on enabled items &mdash; green/yellow/red status, soft-blocking Presenter Mode start</p>
+  <p><strong>FR8 &mdash; Post-Meeting Workflows:</strong> Async fee acceptance with reminders (7/14 days), feedback pulse survey (3 questions, 24h after publish)</p>
+  <p><strong>FR9 &mdash; Action Items:</strong> Created at any agenda item, assigned owners + deadlines, carry-forward to next meeting, urgency indicators for 2+ carry-overs</p>
+  <p><strong>FR10 &mdash; Analytics Snapshot:</strong> Embed existing analytics dashboard, capture immutable snapshot attached to minutes</p>
+</div>
+
+<h4>Non-Functional Requirements</h4>
+
+<table>
+  <tr><th>Category</th><th>Requirement</th></tr>
+  <tr><td>Performance</td><td>Presenter Mode load &lt; 3s (pre-fetch all), item transitions &lt; 300ms (client-side), auto-save &lt; 2s, document render &lt; 5s</td></tr>
+  <tr><td>Security</td><td>Existing Cognito auth, organizer-only for meeting management/voting/publishing, partner-only for minutes viewing/fee acceptance/feedback</td></tr>
+  <tr><td>Reliability</td><td>Auto-save every action server-side, draft persistence, graceful Presenter Mode exit with resume, single-user editing</td></tr>
+  <tr><td>Accessibility</td><td>WCAG 2.1 AAA (7:1+) for Presenter Mode dark theme, WCAG 2.1 AA for partner portal, no color-only information</td></tr>
+  <tr><td>Scalability</td><td>Up to 30 partners per meeting, unlimited meeting history, S3-backed documents</td></tr>
+</table>
+
+<h4>Scale &amp; Complexity</h4>
+<ul>
+  <li><strong>Primary domain:</strong> Event Management / Community Governance (brownfield extension)</li>
+  <li><strong>Complexity level:</strong> Medium &mdash; rich frontend (Presenter Mode), straightforward backend extending existing Partner Coordination Service</li>
+  <li><strong>Estimated components:</strong> ~15 (6 backend entities, 4 reusable frontend components, 3 API endpoint groups, 2 scheduled workflows)</li>
+</ul>
+
+<h3>Technical Constraints &amp; Dependencies</h3>
+
+<h4>Platform Dependencies (Existing &mdash; Reuse)</h4>
+<ul>
+  <li>Partner Coordination Service (Epic 8) &mdash; partner entities, contacts, portal auth, topic voting</li>
+  <li>Company/User Management Service &mdash; partner company data, logos, user profiles (HTTP enrichment, ADR-004)</li>
+  <li>S3 presigned URL upload &mdash; existing file upload pattern (ADR-002)</li>
+  <li>AWS Cognito &mdash; existing auth for organizer and partner roles</li>
+  <li>SES email &mdash; existing infrastructure for notifications</li>
+</ul>
+
+<h4>Architectural Constraints (Existing &mdash; Follow)</h4>
+<ul>
+  <li><strong>ADR-003:</strong> Meaningful identifiers in public APIs &mdash; no UUIDs exposed; use companyName, username</li>
+  <li><strong>ADR-004:</strong> No user field duplication in domain entities &mdash; enrich via HTTP + Caffeine cache</li>
+  <li><strong>ADR-006:</strong> OpenAPI contract-first &mdash; specs are source of truth, controllers implement generated interfaces</li>
+  <li>Single PostgreSQL database, shared public schema, Flyway per-service migrations</li>
+  <li>Backend: Controller &rarr; Service &rarr; Repository with generated DTOs</li>
+  <li>Frontend: React 19 + TypeScript, MUI + Tailwind, service layer, generated types from OpenAPI</li>
+</ul>
+
+<h4>New Constraints (From PRD)</h4>
+<ul>
+  <li>Single-operator model &mdash; no multi-user real-time editing, no WebSocket requirement</li>
+  <li>Bi-annual usage &mdash; UI must be self-explanatory with zero learning curve</li>
+  <li>Projector-first &mdash; Presenter Mode designed for 1920x1080 projected, min 1280px</li>
+  <li>Swiss governance context &mdash; financial sign-off records may be audited years later</li>
+</ul>
+
+<h3>Cross-Cutting Concerns</h3>
+
+<div class="card">
+  <ol>
+    <li><strong>Minutes auto-assembly</strong> &mdash; Every agenda item interaction must contribute to the minutes entity as a side effect. Consistent "minutes contribution" interface across all item types.</li>
+    <li><strong>Auto-save reliability</strong> &mdash; Every organizer action persisted within 2 seconds. Debounced PATCH with optimistic UI and visible save indicator.</li>
+    <li><strong>Email notifications</strong> &mdash; ICS meeting invites, minutes distribution, fee acceptance requests, fee reminders (7/14 day), feedback pulse (24h).</li>
+    <li><strong>Document storage</strong> &mdash; S3 presigned URL upload for audit PDFs, budget spreadsheets. Permanently attached to meeting records.</li>
+    <li><strong>Cross-service enrichment</strong> &mdash; Partner gallery requires company logos + user profiles via HTTP calls (existing Caffeine-cached pattern).</li>
+    <li><strong>Action item lifecycle</strong> &mdash; Spans across meetings: created in one, carried forward to next, urgency escalation at 2+ carry-overs.</li>
+  </ol>
+</div>
+
+<hr>
+
+<!-- STARTER TEMPLATE EVALUATION -->
+<h2 id="starter">Starter Template Evaluation</h2>
+
+<div class="highlight">
+  <strong>No starter template evaluation needed.</strong> This is a brownfield feature extension, not a greenfield project. The entire technology stack, project structure, build tooling, testing infrastructure, and deployment pipeline are already established and production-proven through Epics 1&ndash;8.
+</div>
+
+<h3>Existing Tech Stack (Reuse)</h3>
+
+<table>
+  <tr><th>Layer</th><th>Technology</th></tr>
+  <tr><td>Language &amp; Runtime</td><td>Java 21 (backend) + TypeScript 5.3 / React 19 (frontend)</td></tr>
+  <tr><td>Styling</td><td>Tailwind CSS 4.x + MUI 7.x &mdash; Presenter Mode adds dark theme variant (zinc-950 + blue-400)</td></tr>
+  <tr><td>Build Tooling</td><td>Gradle 8.x (backend, from repo root) + Vite 7.x (frontend)</td></tr>
+  <tr><td>Testing</td><td>JUnit 5 + Testcontainers PostgreSQL (backend), Vitest + RTL + Playwright (frontend)</td></tr>
+  <tr><td>Code Organization</td><td>Layered architecture (Controller &rarr; Service &rarr; Repository), React components in <code>src/components/{role}/</code></td></tr>
+  <tr><td>API Pattern</td><td>OpenAPI 3.1 contract-first (ADR-006), generated interfaces + DTOs</td></tr>
+  <tr><td>State Management</td><td>TanStack Query (server state) + Zustand (client state)</td></tr>
+</table>
+
+<h3>New Architectural Elements (4)</h3>
+
+<ol>
+  <li><code>PresenterLayout</code> &mdash; dedicated full-screen layout for Presenter Mode (alongside existing OrganizerLayout)</li>
+  <li>Meeting lifecycle state machine &mdash; DRAFT &rarr; SCHEDULED &rarr; IN_PROGRESS &rarr; COMPLETED</li>
+  <li>Auto-save debounce pattern &mdash; new frontend hook for &lt; 2s persistence</li>
+  <li>Minutes auto-assembly &mdash; new backend pattern for aggregating agenda item contributions</li>
+</ol>
+
+<p><em>No project initialization story needed. First implementation story begins directly with database schema and entity design.</em></p>
+
+<hr>
+
+<!-- CORE ARCHITECTURAL DECISIONS -->
+<h2 id="decisions">Core Architectural Decisions</h2>
+
+<h3>Decision Priority Analysis</h3>
+
+<p><strong>Critical (Block Implementation):</strong> Entity model structure, Minutes auto-assembly pattern, Presenter Mode layout strategy</p>
+<p><strong>Important (Shape Architecture):</strong> Auto-save API pattern, Agenda item component architecture, Presenter Mode authorization</p>
+<p><strong>Deferred (Post-MVP):</strong> Minutes PDF export, Historized analytics archive, New partner onboarding tour</p>
+
+<h3>Data Architecture &mdash; 11-Entity Model</h3>
+
+<table>
+  <tr><th>Entity</th><th>Meaningful ID (ADR-003)</th><th>Cross-Service Refs</th></tr>
+  <tr><td>PartnerMeetingEntity</td><td><code>meetingCode</code> (e.g., PM-2026-Spring)</td><td>&mdash;</td></tr>
+  <tr><td>MeetingAgendaItemEntity</td><td>&mdash; (UUID FK to meeting)</td><td>&mdash;</td></tr>
+  <tr><td>MeetingAttendanceEntity</td><td>&mdash;</td><td><code>companyName</code> &rarr; Company Service</td></tr>
+  <tr><td>MeetingVoteEntity</td><td>&mdash; (UUID FK to agenda item)</td><td>&mdash;</td></tr>
+  <tr><td>MeetingVoteRecordEntity</td><td>&mdash;</td><td><code>companyName</code> &rarr; Company Service</td></tr>
+  <tr><td>MeetingMinutesEntity</td><td>&mdash; (UUID FK to meeting)</td><td>&mdash;</td></tr>
+  <tr><td>MeetingActionItemEntity</td><td>&mdash;</td><td><code>ownerUsername</code> &rarr; User Service</td></tr>
+  <tr><td>MeetingDocumentEntity</td><td>&mdash; (UUID FK to agenda item)</td><td>&mdash;</td></tr>
+  <tr><td>FeeAcceptanceEntity</td><td>&mdash;</td><td><code>companyName</code> &rarr; Company Service</td></tr>
+  <tr><td>FeedbackPulseEntity</td><td>&mdash;</td><td><code>username</code> &rarr; User Service</td></tr>
+  <tr><td>AnalyticsSnapshotEntity</td><td>&mdash; (UUID FK to meeting)</td><td>&mdash;</td></tr>
+</table>
+
+<h4>Key Design Decisions</h4>
+<ul>
+  <li><code>meetingCode</code> as meaningful public identifier &mdash; pattern: <code>PM-{YYYY}-{Spring|Autumn}</code></li>
+  <li>Minutes content as JSONB &mdash; structured sections for auto-assembly and rendering</li>
+  <li>Action item carry-forward via self-referencing <code>sourceItemId</code> FK</li>
+  <li>All cross-service references use meaningful IDs per ADR-003</li>
+  <li>Meeting status: DRAFT &rarr; SCHEDULED &rarr; IN_PROGRESS &rarr; COMPLETED</li>
+  <li>Minutes status: DRAFT &rarr; PUBLISHED (immutable after publish)</li>
+  <li>Vote records locked once vote is completed</li>
+</ul>
+
+<h3>Authentication &amp; Security</h3>
+
+<table>
+  <tr><th>Role</th><th>Permissions</th></tr>
+  <tr><td>Organizer</td><td>Create/edit meetings, Presenter Mode, voting, minutes publishing</td></tr>
+  <tr><td>Partner</td><td>RSVP, view published minutes, fee acceptance, feedback pulse</td></tr>
+</table>
+
+<p><strong>Presenter Mode Soft Lock:</strong> <code>presenterSessionStartedBy</code> (username) + <code>presenterSessionStartedAt</code> (timestamp) on PartnerMeetingEntity. Informational only for multi-organizer awareness. Cleared on COMPLETED or explicit exit.</p>
+
+<h3>API &amp; Communication Patterns</h3>
+
+<h4>Minutes Auto-Assembly: Query-Based Assembly</h4>
+
+<div class="highlight">
+  <p>Each organizer action persists to its own entity. <code>MeetingMinutesService.assembleMinutes(meetingCode)</code> queries all related entities and structures them into JSONB minutes content. Assembled on-demand when organizer clicks "Review Minutes." After publish, JSONB content becomes the immutable record.</p>
+  <p><em>Rationale: Simple, no new patterns, source data always authoritative, bi-annual usage doesn't justify event sourcing complexity.</em></p>
+</div>
+
+<h4>Auto-Save Pattern</h4>
+<ul>
+  <li>Frontend: Debounced <code>useMutation</code> via TanStack Query &mdash; fires 2 seconds after last input</li>
+  <li>Backend: <code>PATCH /api/v1/partner-meetings/{meetingCode}/agenda-items/{itemId}/notes</code></li>
+  <li>Optimistic UI with "Saved" indicator (fades after 2s)</li>
+  <li>Error handling: toast notification + retry on transient failure</li>
+</ul>
+
+<h4>3 API Endpoint Groups</h4>
+<ol>
+  <li><strong>Meeting management:</strong> CRUD + status transitions + agenda configuration</li>
+  <li><strong>Presenter Mode:</strong> attendance toggling, voting, note saving, document upload, snapshot capture</li>
+  <li><strong>Post-meeting:</strong> minutes review/publish, fee acceptance, feedback pulse</li>
+</ol>
+
+<h3>Frontend Architecture</h3>
+
+<h4>Presenter Mode: Dedicated PresenterLayout</h4>
+<ul>
+  <li>New top-level layout at <code>/partner/meetings/{meetingCode}/present</code></li>
+  <li>Full-screen, no navigation bar, dark theme (zinc-950) forced</li>
+  <li>Three fixed zones: 280px sidebar + fluid main + 180px bottom notes</li>
+  <li>Keyboard shortcuts: &rarr;/&larr; (navigate), 1&ndash;9 (jump), N (focus notes), V (start vote), Esc (exit with confirm)</li>
+</ul>
+
+<h4>Component Architecture</h4>
+<pre>src/components/presenter/
+  PresenterLayout.tsx          # Three-zone shell + keyboard handler
+  AgendaSidebar.tsx            # Agenda navigation with item states
+  NotePanel.tsx                # Auto-saving notes (bottom zone)
+  items/
+    GreetingItem.tsx           # Partner gallery + presence toggle
+    AnalyticsItem.tsx          # Embedded analytics + snapshot
+    AuditSignoffItem.tsx       # Document viewer + vote
+    BudgetApprovalItem.tsx     # Document viewer + vote
+    TopicDiscussionItem.tsx    # Voting results + notes
+    CustomItem.tsx             # Free-form notes only
+  shared/
+    VotePanel.tsx              # Reusable proxied voting
+    DocumentViewer.tsx         # PDF/spreadsheet embedded viewer
+    ActionItemForm.tsx         # Quick action item creation</pre>
+
+<h4>State Management</h4>
+<ul>
+  <li>Meeting data: TanStack Query with <code>staleTime: Infinity</code> (pre-loaded, single-user)</li>
+  <li>Presenter navigation state: Zustand store (current item index, sidebar state)</li>
+  <li>Auto-save: TanStack Query mutations with debounce</li>
+</ul>
+
+<h3>Infrastructure &amp; Deployment</h3>
+
+<h4>Scheduled Workflows: Spring @Scheduled</h4>
+<ul>
+  <li>Fee acceptance reminders: daily cron checks for pending acceptances past 7/14 day thresholds</li>
+  <li>Feedback pulse trigger: daily cron checks for published minutes past 24h without pulse sent</li>
+  <li>Runs within existing partner-coordination-service Fargate task &mdash; no new infrastructure</li>
+</ul>
+
+<div class="highlight">
+  <strong>No New Infrastructure Required:</strong> No new ECS services, databases, WebSocket infrastructure, or CDN configuration. Everything extends existing services and patterns.
+</div>
+
+<h4>Implementation Sequence</h4>
+<ol>
+  <li>Database schema (Flyway migrations) + entity classes</li>
+  <li>OpenAPI spec for meeting management endpoints</li>
+  <li>Backend services (meeting CRUD, agenda management)</li>
+  <li>Presenter Mode frontend layout + navigation</li>
+  <li>Agenda item components (iterative, one type at a time)</li>
+  <li>Minutes assembly + review/publish flow</li>
+  <li>Post-meeting workflows (fee acceptance, feedback pulse, reminders)</li>
+  <li>Action item carry-forward</li>
+</ol>
+
+<hr>
+
+<!-- IMPLEMENTATION PATTERNS -->
+<h2 id="patterns">Implementation Patterns &amp; Consistency Rules</h2>
+
+<p><strong>12 meeting-specific conflict points</strong> identified where AI agents could make different choices. General BATbern patterns (ADR-003, ADR-004, ADR-006) already documented in project-context.md.</p>
+
+<h3>Naming Patterns</h3>
+
+<h4>Database Tables</h4>
+<p>All new tables prefixed with <code>partner_meeting_</code>:</p>
+<pre>partner_meetings                        partner_meeting_agenda_items
+partner_meeting_attendance              partner_meeting_votes
+partner_meeting_vote_records            partner_meeting_minutes
+partner_meeting_action_items            partner_meeting_documents
+partner_meeting_fee_acceptance          partner_meeting_feedback_pulse
+partner_meeting_analytics_snapshots</pre>
+
+<h4>Meeting Code Format</h4>
+<ul>
+  <li>Pattern: <code>PM-{YYYY}-{Spring|Autumn}</code> (e.g., <code>PM-2026-Spring</code>)</li>
+  <li>Generated on creation, immutable after</li>
+  <li>Used in all API URLs: <code>/api/v1/partner-meetings/PM-2026-Spring</code></li>
+  <li>Column: <code>meeting_code VARCHAR(20) UNIQUE NOT NULL</code></li>
+</ul>
+
+<h4>Enums (6 Total)</h4>
+
+<pre>// AgendaItemType
+GREETING, ANALYTICS_REVIEW, AUDIT_SIGNOFF, BUDGET_APPROVAL,
+TOPIC_DISCUSSION, HOT_TOPICS, CUSTOM
+
+// MeetingStatus
+DRAFT, SCHEDULED, IN_PROGRESS, COMPLETED
+
+// MinutesStatus
+DRAFT, PUBLISHED
+
+// VoteDecision
+APPROVE, DECLINE
+
+// FeeAcceptanceStatus
+PENDING, ACCEPTED, DECLINED
+
+// PresenceStatus
+PRESENT, ABSENT, STAND_IN</pre>
+
+<p>Database: stored as <code>lowercase_snake_case</code>. JSON/API: <code>UPPER_CASE</code>. No <code>@JsonValue</code> annotation.</p>
+
+<h3>Structure Patterns</h3>
+
+<h4>Backend Package Structure</h4>
+<pre>ch.batbern.partnercoordination/
+  meeting/
+    controller/    PartnerMeetingController, MeetingMinutesController
+    service/       PartnerMeetingService, MeetingPresenterService,
+                   MeetingMinutesService, FeeAcceptanceService, MeetingScheduledTasks
+    repository/    (11 repository interfaces)
+    domain/        (11 entities + 6 enums)
+    mapper/        PartnerMeetingMapper, MeetingMinutesMapper, MeetingPresenterMapper</pre>
+
+<h4>Frontend Route Structure</h4>
+<table>
+  <tr><th>Route</th><th>Page</th><th>Role</th></tr>
+  <tr><td><code>/partner/meetings</code></td><td>MeetingListPage</td><td>Organizer</td></tr>
+  <tr><td><code>/partner/meetings/create</code></td><td>MeetingCreatePage</td><td>Organizer</td></tr>
+  <tr><td><code>/partner/meetings/:meetingCode</code></td><td>MeetingDetailPage (prep dashboard)</td><td>Organizer</td></tr>
+  <tr><td><code>/partner/meetings/:meetingCode/present</code></td><td>PresenterModePage (full-screen)</td><td>Organizer</td></tr>
+  <tr><td><code>/partner/meetings/:meetingCode/minutes</code></td><td>MinutesReviewPage</td><td>Organizer</td></tr>
+  <tr><td><code>/partner/meetings/:meetingCode/view</code></td><td>MeetingViewPage (published minutes)</td><td>Partner</td></tr>
+  <tr><td><code>/partner/meetings/:meetingCode/fee</code></td><td>FeeAcceptancePage</td><td>Partner</td></tr>
+  <tr><td><code>/partner/meetings/:meetingCode/feedback</code></td><td>FeedbackPulsePage</td><td>Partner</td></tr>
+</table>
+
+<h3>Format Patterns</h3>
+
+<h4>Minutes JSONB Structure</h4>
+<pre>{
+  "meetingCode": "PM-2026-Spring",
+  "date": "2026-05-15",
+  "location": "Bern, Kulturhof",
+  "sections": [
+    {
+      "agendaItemType": "GREETING",
+      "title": "Who Is Who - Attendance",
+      "attendance": {
+        "present": [
+          { "companyName": "TechCorp", "delegateName": "Max Mueller", "isStandIn": false }
+        ],
+        "absent": [
+          { "companyName": "DesignCo", "delegateName": null, "isStandIn": false }
+        ]
+      },
+      "notes": "Welcome remarks by organizer..."
+    },
+    {
+      "agendaItemType": "AUDIT_SIGNOFF",
+      "title": "Financial Report 2025 - Audit Sign-off",
+      "document": { "fileName": "audit-2025.pdf", "s3Key": "..." },
+      "vote": {
+        "result": "APPROVED",
+        "tally": { "approve": 8, "decline": 0 },
+        "records": [
+          { "companyName": "TechCorp", "decision": "APPROVE", "voterType": "PARTNER" }
+        ]
+      },
+      "notes": "Auditor confirmed clean report..."
+    }
+  ],
+  "actionItems": [
+    {
+      "title": "Review venue options",
+      "ownerUsername": "sarah.mueller",
+      "deadline": "2026-08-01",
+      "status": "OPEN",
+      "carriedForwardFrom": null
+    }
+  ]
+}</pre>
+
+<h4>Auto-Save Hook Pattern</h4>
+<pre>// useAutoSave.ts - single implementation, used by all auto-save components
+const useAutoSave = (mutationFn: MutationFunction, delayMs = 2000) =&gt; {
+  const mutation = useMutation({ mutationFn });
+  const debouncedSave = useMemo(
+    () =&gt; debounce((data) =&gt; mutation.mutate(data), delayMs),
+    [mutation, delayMs]
+  );
+  return { save: debouncedSave, status: mutation.status };
+};</pre>
+
+<h4>Vote Result Display Format</h4>
+<p>Consistent format across audit and budget votes:</p>
+<ul>
+  <li>Banner text: <code>"{Document Title} - {Approved|Declined} ({approve}/{total})"</code></li>
+  <li>Example: <code>"Financial Report 2025 - Approved (8/8)"</code></li>
+</ul>
+
+<h3>Communication Patterns</h3>
+
+<h4>Meeting Status Transitions</h4>
+<pre>DRAFT &rarr; SCHEDULED          # Organizer saves + confirms (sends ICS invites)
+SCHEDULED &rarr; IN_PROGRESS    # Organizer clicks "Start Presenter Mode"
+IN_PROGRESS &rarr; COMPLETED    # Organizer clicks "End Meeting"</pre>
+<p>No backward transitions allowed. Status transitions are auditable: <code>statusChangedAt</code>, <code>statusChangedBy</code> fields.</p>
+
+<h4>Email Notification Template Identifiers</h4>
+<pre>partner_meeting_invite          ICS invite on DRAFT &rarr; SCHEDULED
+partner_meeting_minutes         Minutes published notification
+partner_meeting_fee_request     Async fee acceptance request
+partner_meeting_fee_reminder    Fee reminder at 7/14 days
+partner_meeting_feedback_pulse  Feedback survey 24h after publish</pre>
+
+<h3>Process Patterns</h3>
+
+<h4>Presenter Mode Entry/Exit</h4>
+<div class="card">
+  <p><strong>Entry:</strong></p>
+  <ol>
+    <li>Pre-fetch ALL meeting data (agenda items, partners, documents, previous action items)</li>
+    <li>Validate meeting status = SCHEDULED</li>
+    <li>Transition meeting to IN_PROGRESS</li>
+    <li>Set presenterSessionStartedBy/At</li>
+    <li>Render PresenterLayout with first agenda item</li>
+  </ol>
+  <p><strong>Exit (normal):</strong></p>
+  <ol>
+    <li>Organizer clicks "End Meeting" on last item</li>
+    <li>Confirm dialog: "End meeting and proceed to minutes review?"</li>
+    <li>Transition meeting to COMPLETED</li>
+    <li>Clear presenterSession fields</li>
+    <li>Navigate to MinutesReviewPage</li>
+  </ol>
+  <p><strong>Exit (escape):</strong></p>
+  <ol>
+    <li>Organizer presses Esc</li>
+    <li>Confirm dialog: "Exit Presenter Mode? Your progress is saved."</li>
+    <li>Navigate back to meeting detail (meeting stays IN_PROGRESS)</li>
+    <li>Organizer can re-enter Presenter Mode to resume</li>
+  </ol>
+</div>
+
+<h4>Minutes Assembly Sequence</h4>
+<ol>
+  <li>Query MeetingAttendanceRepository &rarr; build attendance section</li>
+  <li>For each agenda item (sorted by sortOrder):
+    <ul>
+      <li>Query item-specific data (votes, documents, snapshots)</li>
+      <li>Query notes for this item</li>
+      <li>Build section with type-appropriate structure</li>
+    </ul>
+  </li>
+  <li>Query MeetingActionItemRepository &rarr; build action items section</li>
+  <li>Merge into JSONB structure</li>
+  <li>Store in MeetingMinutesEntity (DRAFT)</li>
+</ol>
+
+<h4>Action Item Carry-Forward Logic</h4>
+<pre>When creating a new meeting:
+  1. Query all MeetingActionItems where status = OPEN and meeting.status = COMPLETED
+  2. For each open item:
+     a. Create new MeetingActionItem on new meeting
+     b. Set sourceItemId = original item's ID
+     c. Calculate carryForwardCount (follow sourceItemId chain)
+     d. If carryForwardCount &gt;= 2, set urgencyFlag = true</pre>
+
+<h3>Enforcement Guidelines</h3>
+
+<div class="card" style="border-color: rgba(175,35,34,.4);">
+  <p><strong>All AI Agents MUST:</strong></p>
+  <ol>
+    <li>Follow the table naming prefix <code>partner_meeting_*</code> for all new tables</li>
+    <li>Use the exact JSONB structure for minutes content &mdash; no variations</li>
+    <li>Use the <code>useAutoSave</code> hook for all auto-save functionality &mdash; no custom implementations</li>
+    <li>Follow the Presenter Mode entry/exit sequence exactly &mdash; no shortcuts</li>
+    <li>Use meaningful IDs (<code>meetingCode</code>, <code>companyName</code>, <code>ownerUsername</code>) in all API URLs and responses &mdash; never expose UUIDs</li>
+    <li>Store enum values as <code>lowercase_snake_case</code> in the database, <code>UPPER_CASE</code> in JSON/API</li>
+    <li>Place all Presenter Mode components under <code>src/components/presenter/</code> &mdash; not in <code>organizer/</code> or <code>shared/</code></li>
+  </ol>
+</div>
+
+<h3>Anti-Patterns to Avoid</h3>
+
+<table>
+  <tr><th>Anti-Pattern</th><th>Correct Approach</th></tr>
+  <tr><td>Storing partner email/name in attendance entity</td><td>Store <code>companyName</code> only, enrich via HTTP (ADR-004)</td></tr>
+  <tr><td>Creating a separate "meeting-service" microservice</td><td>Extend partner-coordination-service</td></tr>
+  <tr><td>Using WebSocket for auto-save</td><td>Debounced HTTP PATCH is sufficient</td></tr>
+  <tr><td>Storing minutes as flat HTML/text</td><td>Use structured JSONB with typed sections</td></tr>
+  <tr><td>Hardcoding agenda items in frontend</td><td>All items from backend AgendaItem entities</td></tr>
+  <tr><td>Adding <code>@JsonValue</code> to meeting enums</td><td>Default Jackson serialization (project-context.md rule)</td></tr>
+  <tr><td>Direct <code>fetch()</code> calls for auto-save</td><td>Use TanStack Query <code>useMutation</code> via service layer</td></tr>
+  <tr><td>Mutable votes after completion</td><td>VoteRecords are immutable once vote is completed</td></tr>
+</table>
+
+<hr>
+
+<!-- PROJECT STRUCTURE & BOUNDARIES -->
+<h2 id="structure">Project Structure &amp; Boundaries</h2>
+
+<h3>Complete Project Structure (New Files Only)</h3>
+
+<h4>Backend &mdash; Partner Coordination Service</h4>
+<pre>services/partner-coordination-service/src/
+  main/java/ch/batbern/partnercoordination/meeting/
+    controller/   PartnerMeetingController, MeetingMinutesController
+    service/      PartnerMeetingService, MeetingPresenterService,
+                  MeetingMinutesService, FeeAcceptanceService, MeetingScheduledTasks
+    repository/   (11 repositories)
+    domain/       (11 entities + 6 enums)
+    mapper/       (3 mappers)
+  main/resources/db/migration/
+    V{next}__create_partner_meetings.sql
+    V{next+1}__create_meeting_agenda_items.sql
+    ... (10 migration files total)</pre>
+
+<h4>Backend &mdash; Integration Tests</h4>
+<pre>services/partner-coordination-service/src/test/java/.../meeting/
+  controller/   PartnerMeetingControllerIntegrationTest,
+                MeetingPresenterIntegrationTest, MeetingMinutesControllerIntegrationTest
+  service/      PartnerMeetingServiceTest, MeetingMinutesServiceTest,
+                FeeAcceptanceServiceTest</pre>
+
+<h4>Frontend &mdash; New Components</h4>
+<pre>web-frontend/src/
+  components/
+    organizer/meetings/    MeetingListPage, MeetingCreateForm, MeetingPrepDashboard,
+                           AgendaBuilder, MinutesEditor, FeeAcceptanceTracker
+    presenter/             PresenterLayout, AgendaSidebar, NotePanel
+      items/               GreetingItem, AnalyticsItem, AuditSignoffItem,
+                           BudgetApprovalItem, TopicDiscussionItem, CustomItem
+      shared/              VotePanel, DocumentViewer, ActionItemForm
+    partner/meetings/      PublishedMinutesView, FeeAcceptanceWidget, FeedbackPulseForm
+  hooks/                   useAutoSave, usePresenterKeyboard, usePresenterNavigation
+  services/                partnerMeetingService.ts
+  stores/                  presenterStore.ts (Zustand)</pre>
+
+<h4>OpenAPI Spec &amp; Bruno Tests</h4>
+<pre>docs/api/partner-meeting.openapi.yml
+bruno-tests/partner-meetings/
+  create-meeting, get-meeting, update-agenda, start-presenter-mode,
+  toggle-attendance, cast-vote, save-notes, assemble-minutes,
+  publish-minutes, fee-acceptance, feedback-pulse (.bru)</pre>
+
+<h3>Architectural Boundaries</h3>
+
+<h4>API Boundaries</h4>
+<table>
+  <tr><th>Boundary</th><th>Endpoints</th><th>Auth</th></tr>
+  <tr><td>Meeting Management</td><td><code>POST/GET/PUT /api/v1/partner-meetings/**</code></td><td>Organizer</td></tr>
+  <tr><td>Presenter Mode</td><td><code>PATCH .../presenter/**</code></td><td>Organizer</td></tr>
+  <tr><td>Minutes</td><td><code>GET/PUT/POST .../minutes</code></td><td>Organizer (edit/publish), Partner (view published)</td></tr>
+  <tr><td>Fee Acceptance</td><td><code>GET/PUT .../fee-acceptance</code></td><td>Partner</td></tr>
+  <tr><td>Feedback</td><td><code>POST .../feedback</code></td><td>Partner</td></tr>
+  <tr><td>Documents</td><td><code>POST/GET .../documents/**</code></td><td>Organizer (upload), Partner (view via minutes)</td></tr>
+</table>
+
+<h4>Service Boundaries</h4>
+<table>
+  <tr><th>Target Service</th><th>Access Pattern</th><th>Data Retrieved</th></tr>
+  <tr><td>Company Service</td><td>HTTP GET <code>/api/v1/companies/{companyName}</code></td><td>Company logo, displayName</td></tr>
+  <tr><td>User Service</td><td>HTTP GET <code>/api/v1/users/{username}</code></td><td>Profile photo, firstName, lastName</td></tr>
+  <tr><td>Partner Service (same DB)</td><td>Direct repository access</td><td>Partner entities, contacts</td></tr>
+  <tr><td>S3</td><td>Presigned URL generation</td><td>Document upload/download URLs</td></tr>
+  <tr><td>SES</td><td>Email sending</td><td>ICS invites, minutes distribution, reminders</td></tr>
+</table>
+
+<h4>Data Boundaries</h4>
+<ul>
+  <li>All <code>partner_meeting_*</code> tables owned by Partner Coordination Service</li>
+  <li>Cross-service: only <code>companyName</code> and <code>username</code> strings stored &mdash; never UUIDs from other services</li>
+  <li>Minutes JSONB: self-contained document &mdash; no foreign key references, only meaningful IDs</li>
+  <li>Analytics snapshots: immutable JSONB &mdash; captured data, not live references</li>
+</ul>
+
+<h3>Requirements to Structure Mapping</h3>
+
+<table>
+  <tr><th>FR Group</th><th>Backend Package</th><th>Frontend Components</th><th>API Spec Section</th></tr>
+  <tr><td>FR1: Meeting Mgmt</td><td><code>meeting/service/PartnerMeetingService</code></td><td>MeetingCreateForm, AgendaBuilder</td><td>partner-meetings</td></tr>
+  <tr><td>FR2: RSVP</td><td><code>meeting/service/MeetingPresenterService</code></td><td>presenter/items/GreetingItem</td><td>presenter/attendance</td></tr>
+  <tr><td>FR3: Presenter Mode</td><td><code>meeting/controller/*</code></td><td>PresenterLayout, AgendaSidebar, NotePanel</td><td>presenter/*</td></tr>
+  <tr><td>FR4: Documents</td><td><code>meeting/service/MeetingPresenterService</code></td><td>presenter/shared/DocumentViewer</td><td>documents</td></tr>
+  <tr><td>FR5: Voting</td><td><code>meeting/service/MeetingPresenterService</code></td><td>presenter/shared/VotePanel</td><td>presenter/votes</td></tr>
+  <tr><td>FR6: Minutes</td><td><code>meeting/service/MeetingMinutesService</code></td><td>MinutesEditor, PublishedMinutesView</td><td>minutes</td></tr>
+  <tr><td>FR7: Meeting Prep</td><td><code>meeting/service/PartnerMeetingService</code></td><td>MeetingPrepDashboard</td><td>partner-meetings/{code}</td></tr>
+  <tr><td>FR8: Post-Meeting</td><td>FeeAcceptanceService, MeetingScheduledTasks</td><td>FeeAcceptanceWidget, FeedbackPulseForm</td><td>fee-acceptance, feedback</td></tr>
+  <tr><td>FR9: Action Items</td><td><code>meeting/service/MeetingPresenterService</code></td><td>presenter/shared/ActionItemForm</td><td>presenter/action-items</td></tr>
+  <tr><td>FR10: Analytics</td><td><code>meeting/service/MeetingPresenterService</code></td><td>presenter/items/AnalyticsItem</td><td>presenter/snapshots</td></tr>
+</table>
+
+<h3>Data Flow</h3>
+
+<pre>Pre-Meeting:
+  Organizer &rarr; MeetingCreateForm &rarr; POST /api/v1/partner-meetings
+  Organizer &rarr; AgendaBuilder &rarr; PUT .../agenda
+  System &rarr; SES &rarr; Partner (ICS invite email)
+  Partner &rarr; RSVP &rarr; PUT .../rsvp
+
+During Meeting (Presenter Mode):
+  Organizer &rarr; PresenterLayout &rarr; presenterStore (Zustand) &rarr; navigation
+  Organizer &rarr; GreetingItem &rarr; PATCH .../presenter/attendance
+  Organizer &rarr; VotePanel &rarr; POST .../presenter/votes
+  Organizer &rarr; NotePanel &rarr; useAutoSave &rarr; PATCH .../presenter/notes (2s debounce)
+  Organizer &rarr; DocumentViewer &rarr; S3 presigned URL &rarr; browser render
+  All actions &rarr; auto-persisted &rarr; available for minutes assembly
+
+Post-Meeting:
+  Organizer &rarr; "Review Minutes" &rarr; MeetingMinutesService.assembleMinutes() &rarr; JSONB
+  Organizer &rarr; MinutesEditor &rarr; PUT .../minutes &rarr; edits
+  Organizer &rarr; "Publish" &rarr; POST .../minutes/publish &rarr; SES &rarr; all partners
+  Partner &rarr; PublishedMinutesView &rarr; GET .../minutes (published)
+  Partner &rarr; FeeAcceptanceWidget &rarr; PUT .../fee-acceptance
+  System &rarr; @Scheduled &rarr; fee reminders (7/14 days) &rarr; SES
+  System &rarr; @Scheduled &rarr; feedback pulse (24h) &rarr; SES
+  Partner &rarr; FeedbackPulseForm &rarr; POST .../feedback</pre>
+
+<hr>
+
+<!-- VALIDATION -->
+<h2 id="validation">Architecture Validation Results</h2>
+
+<h3>Coherence Validation</h3>
+<table>
+  <tr><th>Check</th><th>Status</th><th>Details</th></tr>
+  <tr><td>Decision Compatibility</td><td class="status-pass">PASS</td><td>All tech from existing stack, zero version conflicts, JSONB supported by PostgreSQL 15</td></tr>
+  <tr><td>Pattern Consistency</td><td class="status-pass">PASS</td><td>All naming conventions align with project-context.md, API URLs follow ADR-003</td></tr>
+  <tr><td>Structure Alignment</td><td class="status-pass">PASS</td><td>Backend sub-packages match existing services, frontend properly separated, tests mirror source</td></tr>
+</table>
+
+<h3>Requirements Coverage</h3>
+<p><span class="tag tag-green">ALL 10 FR GROUPS</span> Fully covered by entity model, component structure, and API boundaries.</p>
+<p><span class="tag tag-green">ALL NFRS</span> Addressed through specific patterns (pre-fetch for performance, debounced save for reliability, dark theme contrast for accessibility, role boundaries for security).</p>
+
+<h3>Implementation Readiness</h3>
+<table>
+  <tr><th>Check</th><th>Status</th></tr>
+  <tr><td>Decision Completeness</td><td class="status-pass">PASS &mdash; 11 entities, 6 enums, API boundaries, JSONB example, auto-save hook</td></tr>
+  <tr><td>Structure Completeness</td><td class="status-pass">PASS &mdash; Every FR mapped to backend + frontend + API spec</td></tr>
+  <tr><td>Pattern Completeness</td><td class="status-pass">PASS &mdash; 7 enforcement rules, 8 anti-patterns, 3 process sequences</td></tr>
+</table>
+
+<h3>Gap Analysis</h3>
+<table>
+  <tr><th>Severity</th><th>Count</th><th>Items</th></tr>
+  <tr><td><span class="tag tag-green">CRITICAL</span></td><td>0</td><td>None</td></tr>
+  <tr><td><span class="tag tag-yellow">IMPORTANT</span></td><td>3</td><td>ICS library (recommend <code>ical4j</code>), PDF viewer (start with native <code>&lt;object&gt;</code>), email template HTML</td></tr>
+  <tr><td><span class="tag tag-purple">NICE-TO-HAVE</span></td><td>2</td><td>Drag-and-drop for AgendaBuilder (<code>@dnd-kit</code>), Presenter transition animations (CSS)</td></tr>
+</table>
+
+<h3>Architecture Completeness Checklist</h3>
+
+<div class="card">
+  <p><span class="check">[x]</span> <strong>Requirements Analysis</strong> &mdash; context analyzed, constraints identified, cross-cutting concerns mapped</p>
+  <p><span class="check">[x]</span> <strong>Architectural Decisions</strong> &mdash; entity model, minutes pattern, layout strategy, auto-save, scheduling</p>
+  <p><span class="check">[x]</span> <strong>Implementation Patterns</strong> &mdash; naming, enums, JSONB structure, process sequences, enforcement</p>
+  <p><span class="check">[x]</span> <strong>Project Structure</strong> &mdash; file structure, API boundaries, service boundaries, data flow</p>
+</div>
+
+<h3>Readiness Assessment</h3>
+
+<div class="highlight" style="border-color: var(--accent2);">
+  <p><strong>Overall Status:</strong> <span class="status-pass">READY FOR IMPLEMENTATION</span></p>
+  <p><strong>Confidence Level:</strong> High &mdash; brownfield extension with established patterns, no novel infrastructure, medium complexity</p>
+  <p><strong>Key Strengths:</strong></p>
+  <ul>
+    <li>Leverages proven BATbern patterns end-to-end (ADR-003/004/006, layered architecture, TanStack Query)</li>
+    <li>Minutes-as-byproduct is architecturally elegant &mdash; no new backend pattern needed, just good entity design</li>
+    <li>Single-operator model eliminates entire classes of complexity (no WebSocket, no conflict resolution, no distributed locking)</li>
+    <li>All cross-service communication follows existing HTTP enrichment pattern</li>
+  </ul>
+</div>
+
+<h4>Implementation Handoff</h4>
+<ol>
+  <li>Read <code>project-context.md</code> (65 rules) before implementing any code</li>
+  <li>Follow all patterns in this architecture document exactly</li>
+  <li>Use enforcement guidelines and anti-patterns as a checklist</li>
+  <li>Respect service boundaries &mdash; never store cross-service UUIDs</li>
+</ol>
+
+<h4>First Implementation Priority</h4>
+<ol>
+  <li>OpenAPI spec: <code>docs/api/partner-meeting.openapi.yml</code></li>
+  <li>Flyway migrations: all <code>partner_meeting_*</code> tables</li>
+  <li>Entity classes with enums</li>
+  <li>Meeting CRUD endpoints (FR1)</li>
+  <li>Then iteratively: Presenter Mode &rarr; agenda items &rarr; minutes &rarr; post-meeting</li>
+</ol>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

@@ -64,14 +64,12 @@ const STATUS_COLOR: Record<string, 'default' | 'success' | 'error'> = {
 
 function sortTopics(topics: TopicDTO[], key: SortKey, dir: SortDir): TopicDTO[] {
   return [...topics].sort((a, b) => {
-    let cmp = 0;
-    if (key === 'voteCount') {
-      cmp = a.voteCount - b.voteCount;
-    } else if (key === 'createdAt') {
-      cmp = a.createdAt.localeCompare(b.createdAt); // ISO strings sort lexicographically
-    } else {
-      cmp = (a[key] ?? '').localeCompare(b[key] ?? '');
-    }
+    const cmp =
+      key === 'voteCount'
+        ? a.voteCount - b.voteCount
+        : key === 'createdAt'
+          ? a.createdAt.localeCompare(b.createdAt) // ISO strings sort lexicographically
+          : (a[key] ?? '').localeCompare(b[key] ?? '');
     return dir === 'asc' ? cmp : -cmp;
   });
 }
@@ -308,7 +306,11 @@ const TopicListPage: React.FC = () => {
                           data-testid={`topic-status-${topic.id}`}
                         />
                         {topic.status === 'SELECTED' && topic.plannedEvent && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            data-testid={`topic-planned-event-${topic.id}`}
+                          >
                             {t('portal.topics.plannedFor')}: {topic.plannedEvent}
                           </Typography>
                         )}

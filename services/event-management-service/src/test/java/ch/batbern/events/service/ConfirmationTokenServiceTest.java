@@ -196,9 +196,9 @@ class ConfirmationTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should have 48-hour expiry period")
-    void should_have48HourExpiry_when_tokenGenerated() {
-        // Arrange
+    @DisplayName("Should default to 4-day (96h) expiry period")
+    void should_have4DayExpiry_byDefault() {
+        // Arrange — the single-arg convenience constructor uses DEFAULT_VALIDITY_HOURS (96h)
         UUID registrationId = UUID.randomUUID();
         String eventCode = "BATbern57";
 
@@ -206,13 +206,42 @@ class ConfirmationTokenServiceTest {
         String token = tokenService.generateConfirmationToken(registrationId, eventCode);
         Claims claims = tokenService.validateConfirmationToken(token);
 
-        // Assert
-        long issuedAt = claims.getIssuedAt().getTime();
-        long expiry = claims.getExpiration().getTime();
-        long validityMs = expiry - issuedAt;
-
-        // Should be 48 hours (in milliseconds)
-        long expectedValidityMs = 48 * 60 * 60 * 1000;
+        // Assert — 4 days (96 hours) in milliseconds
+        long validityMs = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+        long expectedValidityMs = 96L * 60 * 60 * 1000;
         assertThat(validityMs).isEqualTo(expectedValidityMs);
+    }
+
+    @Test
+    @DisplayName("Should honor configured validity hours for confirmation tokens")
+    void should_useConfiguredValidity_when_validityHoursProvided() {
+        // Arrange — explicit non-default validity (72h)
+        ConfirmationTokenService customService =
+                new ConfirmationTokenService("test-secret-key-for-jwt-token-signing-minimum-256-bits", 72);
+        UUID registrationId = UUID.randomUUID();
+
+        // Act
+        Claims claims = customService.validateConfirmationToken(
+                customService.generateConfirmationToken(registrationId, "BATbern57"));
+
+        // Assert
+        long validityMs = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+        assertThat(validityMs).isEqualTo(72L * 60 * 60 * 1000);
+    }
+
+    @Test
+    @DisplayName("Cancellation token should share the configured validity window")
+    void should_useConfiguredValidity_forCancellationToken() {
+        // Arrange — issued together with the confirmation token in the same email,
+        // so it must share the (default 4-day) window.
+        UUID registrationId = UUID.randomUUID();
+
+        // Act
+        Claims claims = tokenService.validateCancellationToken(
+                tokenService.generateCancellationToken(registrationId, "BATbern57"));
+
+        // Assert
+        long validityMs = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+        assertThat(validityMs).isEqualTo(96L * 60 * 60 * 1000);
     }
 }

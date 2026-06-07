@@ -1,0 +1,1 @@
+export { SpeakerDetailDrawer } from './SpeakerDetailDrawer';

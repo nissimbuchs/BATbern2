@@ -1,0 +1,46 @@
+meta {
+  name: Delete Additional Email (10.32)
+  type: http
+  seq: 17
+}
+
+delete {
+  url: {{baseUrl}}/users/me/additional-emails/{{encodedAdditionalEmail}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+script:pre-request {
+  // P3-4 (review 2026-05-22): fail fast if test 15 was skipped — instead of
+  // building a DELETE to `/additional-emails/` (empty segment) which 404s
+  // cryptically, abort with a clear precondition error.
+  const raw = bru.getEnvVar("additionalEmail");
+  if (!raw) {
+    throw new Error("Precondition: env var `additionalEmail` is unset. Run test 15 (add-additional-email) first.");
+  }
+  // P3-5 (review 2026-05-22): the frontend uses `encodeURIComponent` on the
+  // email before embedding in the URL, so the Bruno test must do the same to
+  // exercise the real production traffic shape (handles `+`, percent-encoded
+  // `@`, dotted paths). The controller's `{email:.+}` regex constraint then
+  // ensures the trailing `.com` is not stripped.
+  bru.setVar("encodedAdditionalEmail", encodeURIComponent(raw));
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 on successful delete", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

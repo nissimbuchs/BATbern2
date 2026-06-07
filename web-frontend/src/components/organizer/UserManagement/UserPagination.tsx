@@ -16,6 +16,7 @@ interface UserPaginationProps {
   limit: number;
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
+  namespace?: string;
 }
 
 const UserPagination: React.FC<UserPaginationProps> = ({
@@ -24,8 +25,9 @@ const UserPagination: React.FC<UserPaginationProps> = ({
   limit,
   onPageChange,
   onLimitChange,
+  namespace = 'userManagement',
 }) => {
-  const { t } = useTranslation('userManagement');
+  const { t } = useTranslation(namespace);
 
   const handleLimitChange = (event: SelectChangeEvent<number>) => {
     const newLimit = Number(event.target.value);

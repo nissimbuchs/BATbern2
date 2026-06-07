@@ -1,110 +1,118 @@
 package ch.batbern.shared.types;
 
 /**
- * Speaker Workflow State Enum - Story 5.3
+ * Speaker Workflow State Enum — ADR-009 (Unified Speaker Workflow).
  *
- * Represents the workflow states for potential speakers during event planning.
- * This enum tracks the lifecycle of a speaker from identification through confirmation.
+ * Represents the workflow state of a speaker on an event's speaker pool. Eight states
+ * cover the full lifecycle from initial brainstorming through quality-reviewed content,
+ * plus a single terminal "not happening" state reachable from any non-terminal state.
  *
- * Workflow Phases:
- * 1. Speaker Pool Creation (IDENTIFIED - initial state when added to speaker pool)
- * 2. Outreach (CONTACTED - organizer has made contact)
- * 3. Response (READY, ACCEPTED, DECLINED - speaker has responded to invitation)
- * 4. Content & Logistics (CONTENT_SUBMITTED, QUALITY_REVIEWED, SLOT_ASSIGNED)
- * 5. Finalization (CONFIRMED - speaker locked in final agenda)
- * 6. Special States (WITHDREW - speaker backed out, OVERFLOW - too many speakers)
+ * Workflow Phases (ADR-009 §0.1):
+ * 1. Brainstorming         — IDENTIFIED, CONTACTED        (no User exists; speaker_pool.username is NULL)
+ * 2. Provisioning gate     — READY                        (User lookup-or-create + SPEAKER role grant;
+ *                                                          Cognito user provisioning lands in Phase E)
+ * 3. Invitation & response — INVITED, ACCEPTED, DECLINED  (slot-capacity gate enforced on READY → INVITED)
+ * 4. Content lifecycle     — CONTENT_SUBMITTED, QUALITY_REVIEWED
+ * 5. Terminal              — DECLINED                     (reachable from every non-terminal state, including
+ *                                                          post-QUALITY_REVIEWED drop-outs; reason recorded
+ *                                                          in speaker_status_history)
  *
- * Enum Value Flow (per coding-standards.md):
- * - Java/JSON/API: CONTACTED (UPPER_CASE)
- * - Database: 'contacted' (lowercase_snake_case via AttributeConverter)
- * - Converter: SpeakerWorkflowStateConverter handles Java ↔ Database conversion
+ * Derived flags (NOT stored on speaker_pool — computed at read time per ADR-009 §0.1):
+ * - is_slot_assigned  := session.start_time IS NOT NULL
+ * - is_publishable    := workflow_state = QUALITY_REVIEWED AND is_slot_assigned
  *
- * Note: Stored in speaker_pool.status column (event-management-service database)
+ * Enum Value Flow (per _bmad-output/project-context.md §"Enum Value Flow"):
+ * - Java/JSON/API: UPPER_CASE (e.g., "CONTACTED")
+ * - Database: lowercase_snake_case via SpeakerWorkflowStateConverter (e.g., 'contacted')
+ *
+ * Stored in speaker_pool.status (event-management-service database).
  *
  * @see ch.batbern.speakers.converter.SpeakerWorkflowStateConverter
+ * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1</a>
  */
 public enum SpeakerWorkflowState {
 
     /**
-     * Initial state when speaker is identified and added to pool.
-     * Speaker has not yet been contacted.
-     * Story 5.2: Speaker Brainstorming workflow
+     * Initial state. Name on the brainstorm list. May be a candidate, a lead, or a contact
+     * the organizer plans to ask. No User exists. {@code speaker_pool.username} is NULL.
+     * No Cognito user.
+     *
+     * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1</a>
      */
     IDENTIFIED,
 
     /**
-     * Automated invitation email has been sent to the speaker.
-     * Distinct from CONTACTED (manual outreach) - used for automated invitation flow.
-     * Story 6.1b: Speaker Invitation System
-     */
-    INVITED,
-
-    /**
-     * Organizer has made contact with the speaker.
-     * Outreach has been recorded in speaker_outreach_history.
-     * Story 5.3: Speaker Outreach Tracking workflow
+     * <strong>Still brainstorming.</strong> Organizer is reaching out — to the candidate,
+     * to partners, to network contacts — to figure out who will actually speak. All
+     * conversations logged via {@code OutreachHistory}. No User exists.
+     * {@code speaker_pool.username} is NULL. No Cognito user.
+     *
+     * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1</a>
      */
     CONTACTED,
 
     /**
-     * Speaker has indicated interest/availability.
-     * Ready to move forward with invitation.
-     * Story 5.4: Speaker Status Management workflow
+     * <strong>Provisioning gate.</strong> The real speaker has been identified. Organizer
+     * has a name + email and has committed to inviting this specific person. The transition
+     * INTO this state performs User lookup-or-create + SPEAKER role grant + persists
+     * {@code username} on {@code speaker_pool}. <strong>Cognito user provisioning (with
+     * {@code FORCE_CHANGE_PASSWORD}) is added in Phase E (Story 11.E.2)</strong> — it is
+     * NOT yet wired through this transition. Reached only via
+     * {@code POST /api/v1/events/{code}/speakers/{speakerId}/promote}
+     * (Phase D — Story 11.D.1), which publishes {@code SpeakerPromotedToReadyEvent}.
+     *
+     * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1, §0.2</a>
      */
     READY,
 
     /**
-     * Speaker has formally accepted the invitation.
-     * Commitment to present at the event.
-     * Story 5.4: Speaker Status Management workflow
+     * Formal invitation sent (email contains login link + temporary password). Speaker
+     * can authenticate via Cognito. {@code READY → INVITED} is blocked when
+     * {@code count(ACCEPTED) + count(INVITED) >= max_slots} for the event (slot-capacity
+     * gate replaces removed {@code OVERFLOW} — see ADR-009 §0.7).
+     *
+     * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1, §0.7</a>
+     */
+    INVITED,
+
+    /**
+     * Speaker committed via the portal.
+     *
+     * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1</a>
      */
     ACCEPTED,
 
     /**
-     * Speaker has declined the invitation.
-     * No longer pursuing this speaker.
-     * Story 5.4: Speaker Status Management workflow
-     */
-    DECLINED,
-
-    /**
-     * Speaker has submitted presentation materials.
-     * Content is ready for quality review.
-     * Story 5.5: Speaker Content Collection workflow
+     * Title + abstract submitted to {@code content_submissions}. Either
+     * organizer-on-behalf or speaker-self submission — both flows traverse the same
+     * {@code ContentSubmissionService} per ADR-009 §0.4.
+     *
+     * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1, §0.4</a>
      */
     CONTENT_SUBMITTED,
 
     /**
-     * Presentation content has passed quality review.
-     * Ready for slot assignment.
-     * Story 5.5: Speaker Content Collection workflow
+     * Moderator approved content. <strong>Happy end-state of the content lifecycle</strong> —
+     * the speaker is publishable once a slot is assigned. NOT terminal: a confirmed
+     * speaker who later drops out still transitions to {@code DECLINED} (reason recorded in
+     * {@code speaker_status_history}). {@code DECLINED} is the only terminal state.
+     * {@code is_publishable} is derived as {@code QUALITY_REVIEWED AND slot_assigned}.
+     * {@code is_slot_assigned} is derived from {@code session.start_time IS NOT NULL}.
+     * Neither is persisted.
+     *
+     * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1, §0.5</a>
      */
     QUALITY_REVIEWED,
 
     /**
-     * Speaker has been assigned a presentation time slot.
-     * Waiting for final agenda confirmation.
-     * Story 5.10: Slot Assignment workflow
+     * The single terminal "not happening" state. Reachable from ANY non-terminal state —
+     * covers a lead that didn't pan out (from {@code IDENTIFIED}/{@code CONTACTED}), a
+     * refusal to an invitation (from {@code INVITED}), and a speaker who accepted then
+     * dropped out (from {@code ACCEPTED}/{@code CONTENT_SUBMITTED}/{@code QUALITY_REVIEWED}).
+     * The status-history row records the previous state and reason. Replaces the removed
+     * {@code WITHDREW} state — see ADR-009 §0.7.
+     *
+     * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1, §0.7</a>
      */
-    SLOT_ASSIGNED,
-
-    /**
-     * Speaker is confirmed in the final published agenda.
-     * No more changes expected.
-     * Story 5.12: Agenda Finalization workflow
-     */
-    CONFIRMED,
-
-    /**
-     * Speaker withdrew after initial acceptance.
-     * Need to find replacement speaker.
-     */
-    WITHDREW,
-
-    /**
-     * Speaker accepted but event has too many speakers.
-     * Moved to overflow/backup list.
-     * Story 5.9: Overflow Management workflow
-     */
-    OVERFLOW
+    DECLINED
 }

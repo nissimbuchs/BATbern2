@@ -89,10 +89,14 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     Optional<Session> findByEventIdAndTitle(UUID eventId, String title);
 
     /**
-     * Find unassigned sessions (placeholder sessions without timing)
+     * Find unassigned sessions (placeholder sessions without timing) with
+     * session_users eagerly loaded — controller enriches each session with
+     * speaker data so loading sessionUsers up-front avoids N+1.
      * Story BAT-11 (5.7): Slot Assignment - AC5, AC12
      */
-    List<Session> findByEventIdAndStartTimeIsNull(UUID eventId);
+    @Query("SELECT DISTINCT s FROM Session s LEFT JOIN FETCH s.sessionUsers "
+           + "WHERE s.eventId = :eventId AND s.startTime IS NULL")
+    List<Session> findByEventIdAndStartTimeIsNull(@Param("eventId") UUID eventId);
 
     /**
      * Find sessions with timing assigned for an event

@@ -1,0 +1,42 @@
+meta {
+  name: Distribution list resolver (speakers + moderator)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/distribution-list/speakers
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 200 for an existing event (speakers kind)", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+
+  test("envelope shape includes eventCode, kind, emails when 200", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.eventCode).to.equal("BATbern59");
+      expect(body.kind).to.equal("speakers");
+      expect(body.emails).to.be.an("array");
+    }
+  });
+}
+
+docs {
+  Spec: _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md (F2).
+
+  Smoke test for the per-event distribution-list resolver consumed by the SES inbound
+  forwarder Lambda when a message arrives at batbern{N}-speaker@batbern.ch. Status
+  accepts 200 OR 404 so the test passes in environments where BATbern59 doesn't
+  exist; the staging audit only fails if the envelope shape is wrong on 200.
+
+  Bruno comments live in this docs {} block, not at file scope (free-floating `#`
+  lines silently skip the file — per CLAUDE.md Bruno comments rule).
+}

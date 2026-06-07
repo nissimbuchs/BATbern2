@@ -381,6 +381,57 @@ describe('User Management Store', () => {
     });
   });
 
+  describe('setSort Action', () => {
+    test('should_updateSortByAndDir_when_setSortCalled', () => {
+      const { result } = renderHook(() => useUserManagementStore());
+
+      act(() => {
+        result.current.setSort('email', 'asc');
+      });
+
+      expect(result.current.sortBy).toBe('email');
+      expect(result.current.sortDir).toBe('asc');
+    });
+
+    test('should_resetPage_when_sortChanged', () => {
+      const { result } = renderHook(() => useUserManagementStore());
+
+      act(() => {
+        result.current.setPage(5);
+      });
+
+      expect(result.current.pagination.page).toBe(5);
+
+      act(() => {
+        result.current.setSort('email', 'desc');
+      });
+
+      expect(result.current.pagination.page).toBe(1);
+    });
+
+    test('should_haveDefaultSort_when_storeInitialized', () => {
+      const { result } = renderHook(() => useUserManagementStore());
+
+      expect(result.current.sortBy).toBe('name');
+      expect(result.current.sortDir).toBe('asc');
+    });
+
+    test('should_resetSort_when_resetFiltersCalled', () => {
+      const { result } = renderHook(() => useUserManagementStore());
+
+      act(() => {
+        result.current.setSort('email', 'desc');
+      });
+
+      act(() => {
+        result.current.resetFilters();
+      });
+
+      expect(result.current.sortBy).toBe('name');
+      expect(result.current.sortDir).toBe('asc');
+    });
+  });
+
   describe('reset Action', () => {
     test('should_resetAllState_when_resetCalled', () => {
       const { result } = renderHook(() => useUserManagementStore());

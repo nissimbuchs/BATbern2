@@ -1,0 +1,49 @@
+-- V94__drop_speakers_table.sql
+-- Story 11.C.1 (Phase C, entity-model simplification): drop the `speakers` table.
+--
+-- SOURCE OF TRUTH:
+--   - ADR-009 §0.3 (Decision 2: Speaker is a User with the SPEAKER role, not a separate entity)
+--   - ADR-009 §"Migration to the new state set" (the DROP TABLE speakers CASCADE block)
+--   - docs/plans/speaker-workflow-refactor.md §2.2 (data-model migrations)
+--   - docs/prd/epic-11-speaker-workflow-refactor.md Story 11.C.1 — AR17, NFR4
+--
+-- Rationale:
+--   The `Speaker` JPA entity duplicated user-profile fields that already live on
+--   user_profiles in company-user-management-service. After Phase B consolidated
+--   the workflow into speaker_pool (V93), nothing in the EMS schema needs a
+--   stand-alone `speakers` row: speaker_pool.username is the cross-service
+--   identity (ADR-003), and bio/profile_picture_url live on user_profiles (ADR-004).
+--
+-- Prerequisite migrations (must already be applied):
+--   - V37  — Create speakers table (this migration's reverse)
+--   - V38  — Speaker name search cache fields on session_users (NOT on speakers; unaffected)
+--   - V40  — Backfill speaker names note (NOT on speakers; unaffected)
+--   - V51  — Add speaker profile_picture_url column (dropped with the table via CASCADE)
+--   - V52  — Add speaker profile fields: first_name, last_name, email, bio, etc. (dropped via CASCADE)
+--   - V93  — Migrate legacy speaker_pool.status; drop is_tentative; tighten CHECK (Story 11.B.3)
+--
+-- Confirmed Decision (plan §6 item 4): in-flight speakers — NONE. All speaker
+-- domain data that has any value to retain lives on user_profiles (bio,
+-- profile_picture_url) or on speaker_pool (status, decline_reason,
+-- assigned_session_slug). The speakers table's speaker-only columns
+-- (availability, expertise_areas, speaking_topics, languages, certifications,
+-- linkedin_url, twitter_handle, speaking_history, communication_preferences,
+-- first_name, last_name, email, bio, profile_picture_url) are dropped with
+-- the table — none are backfilled anywhere per ADR-009 §0.3.
+--
+-- CASCADE rationale:
+--   No FK constraint inside this schema points INTO `speakers` (verified at
+--   story authoring via `grep -rn "REFERENCES speakers" services/`). The CASCADE
+--   is defensive: it cleans up any view, dependent index, or constraint that
+--   may have been added since V37 without invalidating this migration. The
+--   seven indexes from V37 (idx_speakers_username, idx_speakers_availability,
+--   idx_speakers_workflow_state, idx_speakers_expertise_areas,
+--   idx_speakers_speaking_topics, idx_speakers_active, plus the PK index)
+--   are dropped implicitly when the table is dropped.
+--
+-- Idempotency: IF EXISTS short-circuits the second apply, so re-running
+--   V94 against a database that already lacks `speakers` is a no-op. Flyway
+--   runs each file in its own transaction (do NOT add BEGIN/COMMIT — Flyway
+--   forbids them).
+
+DROP TABLE IF EXISTS speakers CASCADE;

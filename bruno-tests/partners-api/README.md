@@ -2,7 +2,23 @@
 
 **Story**: 2.7 Partner Coordination Service Foundation
 **API Spec**: `docs/api/partners-api.openapi.yml`
-**Status**: Tests created, awaiting deployment + seed data
+**Status**: Active — green against local dev + staging.
+
+---
+
+## PR 13 light-audit pass (plan §D.11, 2026-05-26)
+
+- **Verbs vs OpenAPI**: GET (list / by-company / 404), PATCH (update), POST/DELETE
+  (partner + company), topic suggestions/votes/contacts all covered. No gaps.
+- **Prefix (step 2)**: fixtures use `brtest{{$randomInt}}` — already the canonical
+  PCS partner prefix (`^brtest$` match for the cleanup endpoint). No normalization needed.
+- **Cleanup hooks (step 3)**: added `99b-posttest-cleanup.bru` (canonical PCS `brtest`
+  sweep, final defense per §B3). A `00-pretest` sweep is intentionally omitted — the
+  random `brtest{N}` fixture name is collision-free across runs, so a dirty start never
+  interferes; the posttest sweep + explicit `99`/`99a` deletes suffice.
+- **DELETE-then-404 (step 4)**: added `99-verify-partner-deleted.bru`.
+- Sibling collection `partner-meetings-api/` (new in PR 13) covers the meeting
+  endpoints + the PCS `entityType=meetings` id-allowlist cleanup.
 
 ---
 
@@ -55,7 +71,7 @@ npm run deploy:staging
 
 ```bru
 vars {
-  baseUrl: https://api.staging.batbern.ch/api/v1
+  baseUrl: https://api.batbern.ch/api/v1
   authToken: {{process.env.AUTH_TOKEN}}
 
   # Partner API test data
@@ -70,7 +86,7 @@ vars {
 ```bash
 # 1. Create test company (if not exists)
 # Via Company Service API or seed script from Story 2.1
-curl -X POST https://api.staging.batbern.ch/api/v1/companies \
+curl -X POST https://api.batbern.ch/api/v1/companies \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -81,7 +97,7 @@ curl -X POST https://api.staging.batbern.ch/api/v1/companies \
 
 # 2. Create test users (if not exist)
 # Via User Service API or seed script from Story 2.1b
-curl -X POST https://api.staging.batbern.ch/api/v1/users \
+curl -X POST https://api.batbern.ch/api/v1/users \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -92,7 +108,7 @@ curl -X POST https://api.staging.batbern.ch/api/v1/users \
   }'
 
 # 3. Create test partner for GoogleZH
-curl -X POST https://api.staging.batbern.ch/api/v1/partners \
+curl -X POST https://api.batbern.ch/api/v1/partners \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

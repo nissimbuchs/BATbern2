@@ -1,0 +1,42 @@
+-- V104__drop_speaker_invitation_tokens_table.sql
+-- Story 11.F.1 (Phase F, magic-link teardown): drop the `speaker_invitation_tokens` table.
+--
+-- SOURCE OF TRUTH:
+--   - ADR-009 §0.3 (the dropped-tables row, colloquially "magic_link_tokens" — the actual
+--     table name created by V43 is `speaker_invitation_tokens`)
+--   - docs/plans/speaker-workflow-refactor.md §5 (Phase F definition)
+--   - docs/prd/epic-11-speaker-workflow-refactor.md Story 11.F.1 — AR9, AR21, AR43
+--
+-- Rationale:
+--   The magic-link authentication path was retired in Phase E (Stories 11.E.1–E.4): speakers
+--   now authenticate via AWS Cognito Bearer tokens, and `@PreAuthorize("hasRole('SPEAKER')")`
+--   on every speaker-portal controller has replaced the magic-link bridge. The supporting
+--   `MagicLinkService`, `JwtConfig` (speaker), `SpeakerMagicLoginController`,
+--   `SpeakerPortalTokenController`, `E2ETestTokenController`, `SpeakerInvitationToken`
+--   entity, `SpeakerInvitationTokenRepository`, and `TokenActionConverter` were deleted in
+--   the same story (Story 11.F.1 AC1). With the JPA entity gone, the table becomes orphaned
+--   storage and is dropped here.
+--
+-- Prerequisite migrations:
+--   - V43  — Create speaker_invitation_tokens (this migration's reverse)
+--   - V93  — Migrate legacy speaker_pool.status; tighten CHECK constraints (Story 11.B.3)
+--   - V103 — Drop speaker_pool.username / speaker_pool.email (Story 11.E.9)
+--
+-- Confirmed decision (Story 11.F.1 RD1, 2026-05-25): no in-flight magic-link sessions to
+-- preserve. CloudWatch query over 2026-05-22 → 2026-05-25 confirmed zero traffic to
+-- /api/v1/auth/speaker-magic-login or /api/v1/speaker-portal/validate-token (429,018 records
+-- scanned, 0 matched). The clean swap is safe.
+--
+-- CASCADE rationale:
+--   The V43 migration created three supporting indexes (idx_invitation_tokens_hash,
+--   idx_invitation_tokens_speaker, idx_invitation_tokens_expires) that are implicitly
+--   dropped with the table. CASCADE is defensive — no FK constraint inside this schema
+--   points INTO `speaker_invitation_tokens` (verified at story authoring via
+--   `grep -rn "REFERENCES speaker_invitation_tokens" services/`), so the CASCADE only
+--   cleans up any view or index added since V43 without invalidating this migration.
+--
+-- Idempotency: IF EXISTS short-circuits the second apply, so re-running V104 against a
+--   database that already lacks `speaker_invitation_tokens` is a no-op. Flyway runs each
+--   file in its own transaction (do NOT add BEGIN/COMMIT — Flyway forbids them).
+
+DROP TABLE IF EXISTS speaker_invitation_tokens CASCADE;

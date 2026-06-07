@@ -124,7 +124,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
   };
 
   const bioCharCount = formData.bio.length;
-  const bioMaxLength = 2000;
+  const bioMaxLength = 5000;
 
   return (
     <Box data-testid="user-profile-tab">

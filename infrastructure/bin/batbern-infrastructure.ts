@@ -81,7 +81,7 @@ const stackPrefix = `BATbern-${config.envName}`;
 // - API certificates in eu-central-1 (for API Gateway)
 let dnsStack: DnsStack | undefined;
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
-  const domainName = config.envName === 'production' ? 'batbern.ch' : `${config.envName}.batbern.ch`;
+  const domainName = config.domain?.zoneName ?? `${config.envName}.batbern.ch`;
   dnsStack = new DnsStack(app, `${stackPrefix}-DNS`, {
     config,
     domainName,
@@ -173,6 +173,8 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   config,
   githubOwner,
   githubRepo,
+  // Story 10.29: DLQ name for bounce processing alarm
+  bounceProcessingDlqName: `batbern-${config.envName}-bounce-processing-dlq`,
   env,
   description: `BATbern Monitoring & Observability - ${config.envName}`,
   tags: config.tags,
@@ -197,12 +199,20 @@ const cognitoStack = new CognitoStack(app, `${stackPrefix}-Cognito`, {
   lambdaTriggersSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
   databaseSecret: databaseStack.databaseSecret,
   databaseEndpoint: databaseStack.databaseEndpoint,
+  // Story 12.9 DF-1: us-east-1 cert + hosted zone for the auth.<zone> hosted-UI custom
+  // domain (mirrors the StorageStack cdnCertificate/hostedZone wiring)
+  authCertificate: dnsStack?.authCertificate,
+  hostedZone: dnsStack?.hostedZone,
   env,
   description: `BATbern User Authentication - ${config.envName}`,
   tags: config.tags,
+  crossRegionReferences: true, // Required to reference the us-east-1 auth certificate
 });
 cognitoStack.addDependency(networkStack); // For VPC and security group
 cognitoStack.addDependency(databaseStack); // For database secret and endpoint
+if (dnsStack) {
+  cognitoStack.addDependency(dnsStack); // For the us-east-1 auth.<zone> certificate (DF-1)
+}
 
 // 9. SES Stack (Email templates for authentication workflows)
 const sesStack = new SesStack(app, `${stackPrefix}-SES`, {
@@ -242,8 +252,16 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     env,
     description: `BATbern Inbound Email Pipeline - ${config.envName}`,
     tags: config.tags,
+    hostedZone: dnsStack?.hostedZone,
+    vpc: networkStack.vpc,
+    lambdaSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
+    // ECS Service Connect DNS is not resolvable from Lambda; use the public API domain instead.
+    apiGatewayPublicUrl: config.domain?.apiDomain ? `https://${config.domain.apiDomain}` : undefined,
   });
   inboundEmailStack.addDependency(sesStack);
+  if (dnsStack) {
+    inboundEmailStack.addDependency(dnsStack);
+  }
 
   // 10a. Event Management Service
   eventManagementStack = new EventManagementStack(app, `${stackPrefix}-EventManagement`, {
@@ -260,9 +278,15 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     alarmTopic: monitoringStack.alarmTopic,
     // Story 10.16: Enable AI content generation; requires batbern/{env}/openai/api-key in Secrets Manager
     aiEnabled: config.envName === 'staging' || config.envName === 'production',
-    // Story 10.17: Inbound email SQS queue URL and S3 bucket name
+    // Story 10.29: Bounce/complaint processing SQS queue URL
+    bounceQueueUrl: sesStack.bounceQueue.queueUrl,
+    // Story 10.29: SES Configuration Set name — required for SES BOUNCE/COMPLAINT events
+    // to reach SNS → SQS → BounceProcessingService.
+    sesConfigurationSetName: sesStack.configurationSetName,
+    // Story 10.17: Inbound email SQS queue URL, S3 bucket name, and env-specific reply address
     inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
     inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,
+    inboundEmailReplyAddress: inboundEmailStack.replyAddress,
     watchJwtSecret: secretsStack.watchJwtSecret,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
@@ -275,7 +299,13 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   eventManagementStack.addDependency(storageStack);
   eventManagementStack.addDependency(monitoringStack);
   eventManagementStack.addDependency(inboundEmailStack);
+  eventManagementStack.addDependency(sesStack); // Story 10.29: bounce queue
   eventManagementStack.addDependency(secretsStack);
+
+  // Grant EMS task role permissions on bounce queue (Story 10.29)
+  sesStack.bounceQueue.grantConsumeMessages(
+    eventManagementStack.service.taskDefinition.taskRole,
+  );
 
   // Grant EMS task role permissions on inbound email resources (Story 10.17)
   inboundEmailStack.inboundQueue.grantConsumeMessages(
@@ -416,7 +446,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPoolClient: cognitoStack.userPoolClient,
     domainName: config.domain?.apiDomain,
     hostedZoneId: config.domain?.hostedZoneId,
-    certificateArn: networkStack.apiCertificate?.certificateArn || config.domain?.apiCertificateArn,
+    // Prefer pre-created cert ARN from config (avoids CloudFormation cross-stack export
+    // conflicts when domain changes). Falls back to Network stack cert for fresh deploys.
+    certificateArn: config.domain?.apiCertificateArn || networkStack.apiCertificate?.certificateArn,
     apiGatewayServiceUrl: apiGatewayServiceStack?.apiGatewayUrl, // Spring Boot API Gateway internal ALB
     env,
     description: `BATbern API Gateway - ${config.envName}`,
@@ -437,8 +469,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     config,
     logsBucket: storageStack.logsBucket,
     domainName: config.domain?.frontendDomain,
+    apexDomainName: config.domain?.zoneName, // batbern.ch → same CloudFront as www.batbern.ch
     hostedZoneId: config.domain?.hostedZoneId,
-    certificateArn: dnsStack?.certificate.certificateArn,
+    certificateArn: config.domain?.frontendCertificateArn ?? dnsStack?.certificate.certificateArn,
     env,
     description: `BATbern Frontend Application - ${config.envName}`,
     tags: config.tags,
@@ -447,6 +480,32 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   frontendStack.addDependency(storageStack);
   if (dnsStack) {
     frontendStack.addDependency(dnsStack); // Depends on DNS stack for certificate
+  }
+
+  // 12b. Beta Frontend canary (beta.batbern.ch) — a SECOND FrontendStack on the SAME prod
+  // backend, for previewing frontend-only changes before they reach the primary www site.
+  // Gated behind `--context betaFrontend=true` so it NEVER synthesizes/deploys by accident
+  // (e.g. a plain `deploy:staging --all` leaves it untouched). It is a separate CloudFormation
+  // stack — the primary `${stackPrefix}-Frontend` stack is never in its changeset. The cert is
+  // the pre-created, pinned beta cert (Phase 1). See docs/plans/beta-frontend-canary.md.
+  if (app.node.tryGetContext('betaFrontend') === 'true' && config.domain) {
+    const betaFrontendStack = new FrontendStack(app, `${stackPrefix}-FrontendBeta`, {
+      config,
+      logsBucket: storageStack.logsBucket,
+      variant: 'beta',
+      domainName: `beta.${config.domain.zoneName}`, // beta.batbern.ch
+      // no apexDomainName — beta is a single host
+      hostedZoneId: config.domain.hostedZoneId,
+      certificateArn: config.domain.betaFrontendCertificateArn,
+      env,
+      description: `BATbern Frontend Canary (beta) - ${config.envName}`,
+      tags: config.tags,
+      crossRegionReferences: true, // Required to reference us-east-1 certificate from eu-central-1 stack
+    });
+    betaFrontendStack.addDependency(storageStack);
+    if (dnsStack) {
+      betaFrontendStack.addDependency(dnsStack);
+    }
   }
 }
 

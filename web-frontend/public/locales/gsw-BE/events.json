@@ -30,7 +30,9 @@
       "selectedTopic": "Gwäuts Thema",
       "quickActions": "Schnällaktione",
       "selectTopic": "Thema uswähle",
-      "previewPublic": "Öffentligi Syte vorschau"
+      "previewPublic": "Öffentligi Syte vorschau",
+      "startPresentation": "Präsentation starte",
+      "liveControl": "Live Stüürig"
     },
     "participantsTab": {
       "title": "Veranstautigsteilnähmer",
@@ -62,7 +64,10 @@
       "empty": "No kei Teilnähmer amäldet",
       "actions": {
         "cancel": "Amäldig storniere",
-        "delete": "Amäldig lösche"
+        "delete": "Amäldig lösche",
+        "resendConfirmation": "Bestätigungsmail nochimol schicke",
+        "resendSuccess": "Bestätigungsmail isch erfolgrig verschickt worde",
+        "resendError": "Fehler bim Versende vo dr Bestätigungsmail"
       },
       "deleteDialog": {
         "title": "Amäldig lösche",
@@ -102,8 +107,37 @@
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator erfolgriich aktualisiert",
       "moderatorUpdateError": "Moderator chöne nid aktualisiert werde.",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "Aameldekapazität",
+      "capacityHelperText": "Leer löh für unbbegrenzte Aameldige. Darf d Veranstatigkapazität nid überschrite.",
+      "capacityUpdated": "Kapazität erfolgrich aktualisiert",
+      "capacityUpdateError": "Kapazität chönd nid aktualisiert wärde.",
+      "notifications": "Benachrichtigige",
+      "activeAutomations": "aktivi Automatisieriige",
+      "manageAll": "Alli Benachrichtigige verwalte",
+      "dangerZone": "Gefahrebereich",
+      "dangerWarning": "Die Aktione sind nid umkehrbar. Bitte mit Vorsicht vorgoh.",
+      "cancelEvent": "Veranstatig absäge",
+      "cancelEventDesc": "Sait d Veranstatig ab und benachrichtiget alli Aagemeldete",
+      "deleteEvent": "Veranstatig lösche",
+      "deleteEventDesc": "Löscht d Veranstatig duurhaft (nu ohni Aameldige)",
+      "cannotDelete": "Veranstatig mit Aameldige cha nid glöscht wärde. Stattdesse absäge.",
+      "confirmCancel": "Veranstatig absäge?",
+      "cancelConfirmText": "D Veranstatig wird abgsait und alli {{count}} aagemeldete Teilnähmer wärde benachrichtiget. Die Aktion cha nid umgkeert wärde.",
+      "confirmCancelBtn": "Jo, absäge",
+      "confirmDelete": "Veranstatig lösche?",
+      "deleteConfirmText": "D Veranstatig \"{{title}}\" wird duurhaft glöscht. Die Aktion cha nid umgkeert wärde.",
+      "confirmDeleteBtn": "Jo, lösche",
+      "deleteError": "Veranstatig chönd nid glöscht wärde. Bitte nomol versuche.",
+      "speakerReminders": "Referenten-Erinnirige",
+      "speakerRemindersDesc": "3 Tag vor Deadline",
+      "registrationEmails": "Aameldebstätigigs-E-Mails",
+      "registrationEmailsDesc": "Sofort bi dr Aamäldig",
+      "agendaDistribution": "Finali Programmverteilig",
+      "agendaDistributionDesc": "Gplant für Veranstatigstag -14",
+      "checkInReminders": "Check-in-Erinnirige am Veranstatigstag",
+      "checkInRemindersDesc": "Am Morge vom Veranstatigstag",
+      "startPresentation": "Präsentation starte",
+      "liveControl": "Live Stüürig"
     },
     "speakers": {
       "progress": "Fortschritt",
@@ -144,6 +178,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "A Lokau / Catering schicke",
+      "subtitle": "E Vorlag wähle, optional Notize zueggä, Vorschau aaluege u dr Mail a Lokau-Kontakt, Catering-Kontakt oder beidi schicke.",
+      "notConfigured": "Kontäkt für Lokau oder Catering si nid konfiguriert.",
+      "openAdmin": "Administration → Lokau & Catering ufmache",
+      "templateLabel": "Vorlag",
+      "noTemplates": "Kei Vorlage verfügbar",
+      "recipients": "Empfänger",
+      "venueRole": "Lokau",
+      "cateringRole": "Catering",
+      "notesLabel": "Notize (optional)",
+      "notesPlaceholder": "z. B. Bitte e Mittagstisch für 8 Persone um 12:30 im Säli reserviere.",
+      "previewButton": "Vorschau",
+      "previewFailed": "Vorschau het nid klappt:",
+      "to": "An",
+      "cc": "Cc",
+      "replyTo": "Antwort a",
+      "subject": "Betreff",
+      "sendButton": "Schicke",
+      "confirmTitle": "Mail schicke?",
+      "confirmBody": "Es wird e richtigi Mail a {{recipients}} gschickt. D Antwortadrässe isch di igstellti Lokau-Koordinatorin.",
+      "confirmSend": "Jo, schicke",
+      "sentSuccess": "A {{count}} Empfänger gschickt.",
+      "sentFailed": "S Schicke het nid klappt: {{message}}"
     }
   },
   "dashboard": {
@@ -434,11 +493,6 @@
       "alreadyPublished": "Scho veröffentlicht",
       "publishTopicFirst": "Bitte zerscht s'Thema veröffentliche",
       "publishSpeakersFirst": "Bitte zerscht d'Redneri veröffentliche",
-      "mode": "Modus",
-      "modeDraft": "Entwurf",
-      "modeProgressive": "Progressiv",
-      "modeComplete": "Vollständig",
-      "notifySubscribers": "Abonnente benarichtige",
       "validationErrors": "Validierigsfähler:",
       "phase": {
         "topic": "Thema",
@@ -446,8 +500,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "{{phase}} veröffentliche",
-        "notifySubscribers": "Abonnente bim Veröffentliche benarichtige"
+        "publishingPhase": "{{phase}} veröffentliche"
       }
     },
     "validation": {
@@ -490,10 +543,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
+      "topic": "Thema",
+      "speakers": "Referente",
       "agenda": "Agenda",
-      "updates": "Updates"
+      "updates": "Aktualisieriige"
     }
   },
   "notifications": {
@@ -527,7 +580,7 @@
       "date": "Datum",
       "time": "Zyt",
       "location": "Ort",
-      "capacity": "Kapazität"
+      "capacity": "Amäldige"
     },
     "errors": {
       "loadFailed": "Veranstatig chöne nid gglade werde",
@@ -765,7 +818,8 @@
       "confirmed": "[MISSING] Confirmed",
       "registered": "[MISSING] Registered",
       "waitlist": "[MISSING] Waitlist",
-      "cancelled": "[MISSING] Cancelled"
+      "cancelled": "[MISSING] Cancelled",
+      "attended": "Debi gsi"
     }
   },
   "capacity": {
@@ -786,6 +840,31 @@
     "deleteCancel": "Abbrechen",
     "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
     "uploading": "Wird hochgeladen...",
-    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "uploadErrorPartial": "{{failed}} vo {{total}} Uploads fehlgschlage. Bitte nomol versuche."
+  },
+  "teaserImage": {
+    "title": "Teaser-Bilder",
+    "description": "Bilder, wo uf dr Präsentationssite als Vollbild-Folie azeigt werde.",
+    "uploadButton": "Teaser-Bild hinzuefüege",
+    "uploading": "Wird hochglade...",
+    "uploadError": "Upload fehlgschlage. Bitte nomol versuche.",
+    "removeError": "Entferne fehlgschlage. Bitte nomol versuche.",
+    "positionError": "Folieposition chönd nid aktualisiert wärde. Bitte nomol versuche.",
+    "limitReached": "Maximum vo {{max}} Teaser-Bilder erreicht.",
+    "position": {
+      "label": "Azeige nach",
+      "afterWelcome": "Willkommens-Folie",
+      "afterCommittee": "Komitee-Folie",
+      "afterTopicReveal": "Themenbekanntgab-Folie",
+      "afterUpcomingEvents": "Chömmendi Events-Folie"
+    }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Namesschildli exportiere",
+      "exportNameBadgesDocx": "Namesschildli als Word",
+      "exportError": "Export het nid funktioniert"
+    }
   }
 }

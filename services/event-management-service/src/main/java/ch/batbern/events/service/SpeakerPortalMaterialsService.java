@@ -7,12 +7,10 @@ import ch.batbern.events.dto.SpeakerMaterialConfirmRequest;
 import ch.batbern.events.dto.SpeakerMaterialConfirmResponse;
 import ch.batbern.events.dto.SpeakerMaterialUploadRequest;
 import ch.batbern.events.dto.SpeakerMaterialUploadResponse;
-import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.exception.FileSizeExceededException;
 import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,19 +31,21 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Service for speaker self-service material uploads via magic link.
- * Story 6.3: Speaker Content Self-Submission Portal - AC7
+ * Service for speaker self-service material uploads.
+ * Story 6.3: Speaker Content Self-Submission Portal - AC7.
  *
- * Handles:
- * - Presigned URL generation for presentation files
- * - Upload confirmation and session association
- * - Token-based authentication (no JWT required)
+ * <p>Handles:
+ * <ul>
+ *   <li>Presigned URL generation for presentation files</li>
+ *   <li>Upload confirmation and session association</li>
+ * </ul>
  *
- * Supported file types (AC7):
- * - Presentations: PPTX, PPT, KEY, PDF
- * - Max size: 50MB
+ * <p>Supported file types (AC7): PPTX, PPT, KEY, PDF (max 50MB).
  *
- * Uses token-based authentication via MagicLinkService.
+ * <p>Story 11.E.3 (ADR-009 §Decision 3): magic-link token bridge removed. The controller
+ * now authenticates the request via Cognito Bearer + {@code @PreAuthorize("hasRole('SPEAKER')")},
+ * resolves the {@link SpeakerPool} via {@link SpeakerPortalAuthorizationService}, and hands
+ * it to the service methods directly.
  */
 @Slf4j
 @Service
@@ -68,12 +68,11 @@ public class SpeakerPortalMaterialsService {
         "application/pdf" // .pdf
     );
 
-    private final MagicLinkService magicLinkService;
-    private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     @Value("${aws.s3.bucket-name:batbern-development-company-logos}")
     private String bucketName;
@@ -83,20 +82,17 @@ public class SpeakerPortalMaterialsService {
 
     /**
      * Generate presigned URL for speaker material upload.
-     * Story 6.3 AC7: File upload with 50MB limit
+     * Story 6.3 AC7 + Story 11.E.3: caller has resolved {@code SpeakerPool} via Cognito auth.
      *
-     * @param request Upload request with token, fileName, fileSize, mimeType
-     * @return Presigned URL and upload metadata
-     * @throws IllegalArgumentException if token is invalid
-     * @throws FileSizeExceededException if file size exceeds 50MB
-     * @throws InvalidFileTypeException if file type is not allowed
+     * @param speaker  speaker_pool row (pre-resolved by the controller)
+     * @param request  upload request with fileName, fileSize, mimeType
+     * @return presigned URL + upload metadata
      */
     @Transactional(readOnly = true)
-    public SpeakerMaterialUploadResponse generatePresignedUrl(SpeakerMaterialUploadRequest request) {
-        // Validate token
-        TokenValidationResult validation = validateToken(request.token());
-
-        log.info("Generating presigned URL for speaker material upload: {}", request.fileName());
+    public SpeakerMaterialUploadResponse generatePresignedUrl(
+            SpeakerPool speaker, SpeakerMaterialUploadRequest request) {
+        log.info("Generating presigned URL for speaker material upload: {} (speakerPoolId={})",
+                request.fileName(), speaker.getId());
 
         // Validate file size (max 50MB - AC7)
         if (request.fileSize() > MAX_FILE_SIZE_BYTES) {
@@ -140,7 +136,7 @@ public class SpeakerPortalMaterialsService {
         String presignedUrl = presignedRequest.url().toString();
 
         log.info("Generated presigned URL for speaker {}, uploadId: {}",
-                validation.speakerName(), uploadId);
+                speaker.getSpeakerName(), uploadId);
 
         return new SpeakerMaterialUploadResponse(
                 presignedUrl,
@@ -154,23 +150,16 @@ public class SpeakerPortalMaterialsService {
 
     /**
      * Confirm material upload and associate with speaker's session.
-     * Story 6.3 AC7: Material association after upload
+     * Story 6.3 AC7 + Story 11.E.3: caller has resolved {@code SpeakerPool} via Cognito auth.
      *
-     * @param request Confirm request with token and upload details
-     * @return Confirm response with material metadata
-     * @throws IllegalArgumentException if token is invalid
-     * @throws IllegalStateException if no session assigned
+     * @param speaker  speaker_pool row (pre-resolved by the controller)
+     * @param request  confirm request with upload details
      */
     @Transactional
-    public SpeakerMaterialConfirmResponse confirmUpload(SpeakerMaterialConfirmRequest request) {
-        // Validate token
-        TokenValidationResult validation = validateToken(request.token());
-
-        log.info("Confirming speaker material upload: {}", request.uploadId());
-
-        // Get speaker pool
-        SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found"));
+    public SpeakerMaterialConfirmResponse confirmUpload(
+            SpeakerPool speaker, SpeakerMaterialConfirmRequest request) {
+        log.info("Confirming speaker material upload: {} (speakerPoolId={})",
+                request.uploadId(), speaker.getId());
 
         // Validate session assignment
         if (speaker.getSessionId() == null) {
@@ -205,7 +194,15 @@ public class SpeakerPortalMaterialsService {
                 .fileSize(request.fileSize())
                 .mimeType(request.mimeType())
                 .materialType(request.materialType() != null ? request.materialType() : "PRESENTATION")
-                .uploadedBy(validation.speakerName())
+                // Story 11.E.9: username comes from session_users via PrimarySpeakerResolver
+                // (the speaker_pool.username column is gone). Speakers reaching material upload
+                // are CONTENT_SUBMITTED+ and always have a primary session_users row; the
+                // resolver returning empty here would be a real provisioning bug.
+                .uploadedBy(primarySpeakerResolver.resolve(speaker)
+                        .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Speaker " + speaker.getId() + " has no resolvable username — "
+                                        + "missing PRIMARY_SPEAKER session_users row")))
                 .contentExtracted(false)
                 .extractionStatus("PENDING")
                 .build();
@@ -213,7 +210,7 @@ public class SpeakerPortalMaterialsService {
         material = sessionMaterialsRepository.save(material);
 
         log.info("Material confirmed for speaker {}, materialId: {}",
-                validation.speakerName(), material.getId());
+                speaker.getSpeakerName(), material.getId());
 
         return new SpeakerMaterialConfirmResponse(
                 material.getId(),
@@ -223,29 +220,6 @@ public class SpeakerPortalMaterialsService {
                 material.getMaterialType(),
                 material.getCreatedAt()
         );
-    }
-
-    /**
-     * Validate token and throw if invalid.
-     */
-    private TokenValidationResult validateToken(String token) {
-        if (token == null || token.isBlank()) {
-            throw new IllegalArgumentException("Token is required");
-        }
-
-        TokenValidationResult result = magicLinkService.validateToken(token);
-
-        if (!result.valid()) {
-            String message = switch (result.error()) {
-                case "NOT_FOUND" -> "Invalid token";
-                case "EXPIRED" -> "Token has expired";
-                case "ALREADY_USED" -> "Token has already been used";
-                default -> "Token validation failed";
-            };
-            throw new IllegalArgumentException(message);
-        }
-
-        return result;
     }
 
     /**

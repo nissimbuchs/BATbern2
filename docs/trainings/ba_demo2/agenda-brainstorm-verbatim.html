@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training &mdash; Complete Brainstorm Session (Active Partner Meeting Agenda)</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350;
+    --accent: #E23615; --accent2: #28AF8F; --accent3: #AF2322; --accent4: #FFCA4C;
+    --text: #e8eaf6; --text-muted: #8890b5;
+    --user-bg: #1e2a45; --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a; --agent-border: #28AF8F;
+    --artifact-bg: #2a1e45; --artifact-border: #E23615;
+    --note-bg: #2e2a1a; --note-border: #FFCA4C;
+    --radius: 12px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(15,17,23,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 32px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; z-index: 100; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 10px; border-radius: 20px; transition: all .2s; white-space: nowrap; }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  .hero { text-align: center; padding: 60px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 60px; }
+  .hero .badge { display: inline-block; background: var(--accent); color: white; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 14px; border-radius: 20px; margin-bottom: 20px; }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-bottom: 20px; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+  .hero .version-note { font-size: 0.85rem; color: var(--accent4); }
+
+  .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .phase-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; font-weight: 800; font-size: 1rem; flex-shrink: 0; }
+  .phase-1 { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-bridge { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  .turn { margin-bottom: 20px; }
+  .turn-user { background: var(--user-bg); border: 1px solid var(--user-border); border-left: 4px solid var(--user-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-agent { background: var(--agent-bg); border: 1px solid var(--agent-border); border-left: 4px solid var(--agent-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-artifact { background: var(--artifact-bg); border: 1px solid var(--artifact-border); border-left: 4px solid var(--artifact-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-note { background: var(--note-bg); border: 1px solid var(--note-border); border-left: 4px solid var(--note-border); border-radius: var(--radius); padding: 14px 18px; font-size: 0.88rem; }
+
+  .turn-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .turn-label .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .label-user { color: var(--user-border); } .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); } .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); } .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); } .label-note .dot { background: var(--accent4); }
+  .ts { font-weight: 400; opacity: 0.6; }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: #b0d0c8; font-style: italic; }
+  .turn-content code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content h2, .turn-content h3, .turn-content h4 { margin: 14px 0 8px; color: white; font-weight: 700; }
+  .turn-content h2 { font-size: 1.1rem; color: var(--accent2); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .turn-content h3 { font-size: 1rem; color: var(--accent4); }
+  .turn-content h4 { font-size: 0.95rem; color: var(--text); }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .turn-content pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; overflow-x: auto; font-size: 0.82rem; font-family: 'Cascadia Code', 'Fira Code', monospace; margin: 12px 0; white-space: pre; line-height: 1.5; }
+  .turn-content hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  .connector { display: flex; align-items: center; gap: 12px; padding: 8px 20px; color: var(--text-muted); font-size: 0.82rem; margin: 4px 0 4px; }
+  .connector::before, .connector::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  @media (max-width: 640px) { .hero h1 { font-size: 1.7rem; } nav a { font-size: 11px; padding: 3px 8px; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="master.html">Overview</a>
+  <a href="#setup">Agent Setup</a>
+  <a href="#topic">Topic</a>
+  <a href="#techniques">Techniques</a>
+  <a href="#morphological">Morphological</a>
+  <a href="#roleplaying">Role Playing</a>
+  <a href="#crosspollination">Cross-Pollination</a>
+  <a href="#organization">Organization</a>
+  <a href="#completion">Completion</a>
+</nav>
+
+<main>
+
+<div class="hero">
+  <div class="badge">BMAD Hands-On Training &mdash; Complete Session</div>
+  <h1>Active Partner Meeting Agenda<br><span>Every Word, As Typed</span></h1>
+  <p>Verbatim output + training annotations. The complete, unabridged conversation with the BMAD Analyst Agent (Mary) &mdash; exact terminal output with training notes inserted at key learning moments.</p>
+  <div class="hero-meta">
+    <div><div class="label">Project</div><div class="value">BATbern</div></div>
+    <div><div class="label">Agent</div><div class="value">Mary (Analyst)</div></div>
+    <div><div class="label">Session Date</div><div class="value">2026-04-04</div></div>
+    <div><div class="label">Ideas Generated</div><div class="value">35</div></div>
+    <div><div class="label">Techniques</div><div class="value">3</div></div>
+  </div>
+</div>
+
+<!-- SECTION 1: AGENT SETUP -->
+<section id="setup">
+  <div class="section-header">
+    <div class="phase-badge phase-1">1</div>
+    <div class="section-header-text"><h2>Agent Activation &amp; Session Start</h2><p>Loading Mary via <code>/bmad-agent-bmm-analyst</code>, then selecting Brainstorm Project (bp)</p></div>
+  </div>
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Nissim</div>
+    <div class="turn-content"><p><code>/bmad-agent-bmm-analyst</code></p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><hr class="divider">
+<p>📊 <strong>Hello, Nissim!</strong> I&#x27;m <strong>Mary</strong>, your Strategic Business Analyst. Think of me as a treasure hunter for insights — every business challenge has root causes and patterns waiting to be uncovered, and I&#x27;m <em>thrilled</em> to dig in with you!</p>
+<p>Here&#x27;s what we can explore together:</p>
+<table><tr><th>#</th><th>Command</th><th>Description</th></tr><tr><td>1</td><td><strong>[MH]</strong></td><td>Redisplay Menu Help</td></tr><tr><td>2</td><td><strong>[CH]</strong></td><td>Chat with the Agent about anything</td></tr><tr><td>3</td><td><strong>[BP]</strong></td><td>Brainstorm Project: Expert Guided Facilitation through a single or multiple techniques with a final report</td></tr><tr><td>4</td><td><strong>[MR]</strong></td><td>Market Research: Market analysis, competitive landscape, customer needs and trends</td></tr><tr><td>5</td><td><strong>[DR]</strong></td><td>Domain Research: Industry domain deep dive, subject matter expertise and terminology</td></tr><tr><td>6</td><td><strong>[TR]</strong></td><td>Technical Research: Technical feasibility, architecture options and implementation approaches</td></tr><tr><td>7</td><td><strong>[CB]</strong></td><td>Create Brief: A guided experience to nail down your product idea into an executive brief</td></tr><tr><td>8</td><td><strong>[DP]</strong></td><td>Document Project: Analyze an existing project to produce useful documentation for both human and LLM</td></tr><tr><td>9</td><td><strong>[PM]</strong></td><td>Start Party Mode</td></tr><tr><td>10</td><td><strong>[DA]</strong></td><td>Dismiss Agent</td></tr></table>
+<hr class="divider">
+<p>💡 At any point, type <code>/bmad-help</code> to get guidance on what to do next — you can even combine it with your question, e.g. <code>/bmad-help where should I start with an idea I have that does XYZ</code></p>
+<p>What shall we uncover today, Nissim?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>bp</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content"><p>You can use <code>bp</code>, <code>BP</code>, or fuzzy match like "brainstorm" to select menu items.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>No existing session for today — fresh start! Let me initialize the document.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><hr class="divider">
+<p>🎉 <strong>Welcome, Nissim!</strong> I&#x27;m <em>thrilled</em> to be your brainstorming facilitator today — there&#x27;s nothing quite like the rush of discovering ideas hiding just beneath the surface!</p>
+<p><strong>Context loaded:</strong> BATbern project context is active, so we can orient our exploration around:</p>
+<ul>
+<li>User problems &amp; pain points</li>
+<li>Feature ideas &amp; capabilities</li>
+<li>Technical approaches &amp; architecture</li>
+<li>UX patterns</li>
+<li>Business model &amp; value</li>
+<li>Market differentiation</li>
+<li>Technical risks</li>
+<li>Success metrics</li>
+</ul>
+<p>Results feed naturally into Product Briefs, PRDs, Technical Specs, or Research activities.</p>
+<hr class="divider">
+<p><strong>Let&#x27;s set up your session for maximum creativity:</strong></p>
+<p><strong>1. What are we brainstorming about?</strong></p>
+<p><em>(The central topic or challenge — be as specific or as open as you like)</em></p>
+<p><strong>2. What specific outcomes are you hoping for?</strong></p>
+<p><em>(Types of ideas, solutions, or insights you want to walk away with)</em></p></div>
+</div>
+</section>
+
+<!-- SECTION 2: TOPIC DEFINITION -->
+<section id="topic">
+  <div class="section-header">
+    <div class="phase-badge phase-1">2</div>
+    <div class="section-header-text"><h2>Defining the Brainstorming Topic</h2><p>Nissim describes the 6 active meeting agenda items &mdash; Mary performs session analysis</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>i want to brainstorm on additional features for the partner meeting functionality. as organizers we send an invite with an agenda in text format, the partners receive it, accept the invite, and thats it. I want to make the agenda items active.</p>
+<p>today we have the following agenda normally:</p>
+<ol>
+<li>greet all partners present (we know the partners are the users with role PARTNER)</li>
+<li>analytics on past years events and attendances and feedback from attendees (we have a toplevel analytics page we show)</li>
+<li>show the costs of past years events and the auditors revision pdf and get the sign of for the organizers from the partners, that books are well managed</li>
+<li>show last years costs and present years budget assumption, resulting in the new fee per partner. get sign off of this new fee</li>
+<li>discuss current years topics, the partners would be interested in (partners can login and add topics, and vote on other partners topics). we also have the topic selection blob game to help us find good topics</li>
+<li>discuss any other current hot architecture topic partners are interested in.</li>
+</ol>
+<p>help me brainstorm, how we could create such an active agenda, that is supported by the batbern event manaement system, and where we could add functionaloity, to make it even better</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Oh Nissim, what a <em>fantastic</em> challenge — this is like finding a treasure map with six clearly marked X&#x27;s! You already have the skeleton of something powerful, and now we&#x27;re going to breathe life into each bone. Let me make sure I&#x27;ve captured the full picture before we dive in.</p>
+<hr class="divider">
+<p><strong>Session Analysis:</strong></p>
+<p>Based on your description, I understand we&#x27;re focusing on <strong>transforming the static partner meeting agenda into an interactive, system-supported workflow</strong> where each agenda item becomes a live, actionable feature within BATbern.</p>
+<p><strong>Session Parameters:</strong></p>
+<ul>
+<li><strong>Topic Focus:</strong> Active/interactive partner meeting agendas — turning a text-based ICS invite into a living, feature-rich meeting experience</li>
+<li><strong>Primary Goals:</strong></li>
+</ul>
+<p>  - Make each of the 6 agenda items system-supported (not just text)</p>
+<p>  - Identify new functionality that enhances each agenda point</p>
+<p>  - Explore how partner engagement before, during, and after the meeting can be improved</p>
+<ul>
+<li><strong>Existing Foundation:</strong></li>
+</ul>
+<p>  - Partner roles &amp; auth (Epic 8 complete)</p>
+<p>  - Attendance analytics + XLSX export</p>
+<p>  - Topic voting system</p>
+<p>  - ICS meeting invites</p>
+<p>  - Partner portal with login</p>
+<p><strong>Context Clues I&#x27;m Already Excited About:</strong></p>
+<ul>
+<li>You have 6 distinct agenda items, each with different interaction patterns (viewing, voting, signing off, discussing)</li>
+<li>Some are <em>informational</em> (analytics, costs), some are <em>decisional</em> (sign-offs, fee approval), some are <em>collaborative</em> (topic discussion)</li>
+<li>This naturally maps to different UI components and workflows</li>
+</ul>
+<p><strong>Does this accurately capture what you want to achieve?</strong> Anything to add or adjust before we start generating ideas?</p>
+<p>And once confirmed, pick your technique approach:</p>
+<ol>
+<li><strong>User-Selected Techniques</strong> — Browse our complete technique library</li>
+<li><strong>AI-Recommended Techniques</strong> — Get customized suggestions based on your goals</li>
+<li><strong>Random Technique Selection</strong> — Discover unexpected creative methods</li>
+<li><strong>Progressive Technique Flow</strong> — Start broad, then systematically narrow focus</li>
+</ol>
+<p>Which approach appeals to you most? <em>(Enter 1-4)</em></p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content"><p><strong>Key learning:</strong> The agent classified the 6 agenda items into interaction types (informational, decisional, collaborative). This analysis is automatic &mdash; the agent recognizes that different types need different system support.</p></div>
+</div>
+</section>
+
+<!-- SECTION 3: TECHNIQUE SELECTION -->
+<section id="techniques">
+  <div class="section-header">
+    <div class="phase-badge phase-1">3</div>
+    <div class="section-header-text"><h2>Technique Selection: AI-Recommended</h2><p>Option 2 selected &mdash; agent analyzes goals and recommends 3 complementary techniques</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>2</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Excellent choice, Nissim! Let me analyze your session context against our library of 60+ techniques...</p>
+<hr class="divider">
+<p><strong>Analyzing Your Session Goals:</strong></p>
+<ul>
+<li><strong>Topic:</strong> Transforming 6 static partner meeting agenda items into interactive, system-supported features</li>
+<li><strong>Goals:</strong> Feature discovery for each agenda point + new functionality ideas</li>
+<li><strong>Session Type:</strong> Product enhancement on an existing, well-understood domain</li>
+<li><strong>Complexity:</strong> Medium-high — 6 distinct interaction patterns (informational, decisional, collaborative)</li>
+<li><strong>Your Energy:</strong> Practical, builder-minded, expert-level</li>
+</ul>
+<p><strong>AI Analysis Results:</strong></p>
+<p>Your challenge has a unique shape — you&#x27;re not starting from zero, you&#x27;re <em>activating</em> something that already exists. That means we need techniques that are great at systematically enhancing known structures while still pushing into novel territory.</p>
+<hr class="divider">
+<h4>Phase 1: Foundation — Morphological Analysis</h4>
+<p><em>Category: Deep | Energy: Medium | Duration: ~20 min</em></p>
+<ul>
+<li><strong>Why this fits:</strong> You have 6 concrete agenda items, each with different interaction types (view, vote, sign-off, discuss). Morphological Analysis creates a grid of agenda items × interaction dimensions (before meeting / during meeting / after meeting × view / vote / sign / discuss / export). This systematically maps every possible feature combination.</li>
+<li><strong>Expected outcome:</strong> A comprehensive matrix revealing hidden feature opportunities at every intersection — especially the ones you haven&#x27;t considered yet.</li>
+</ul>
+<h4>Phase 2: Idea Expansion — Role Playing</h4>
+<p><em>Category: Collaborative | Energy: High | Duration: ~20 min</em></p>
+<ul>
+<li><strong>Why this builds on Phase 1:</strong> Once we have the matrix, we&#x27;ll walk through it from <strong>four distinct perspectives</strong> — the Partner (investor/decision-maker), the Organizer (meeting runner), the Auditor (compliance/transparency), and the Absent Partner (couldn&#x27;t attend). Each persona will surface different priorities and pain points from the same grid.</li>
+<li><strong>Expected outcome:</strong> Ideas grounded in real stakeholder needs, not just technical possibilities.</li>
+</ul>
+<h4>Phase 3: Innovation Injection — Cross-Pollination</h4>
+<p><em>Category: Creative | Energy: High | Duration: ~15 min</em></p>
+<ul>
+<li><strong>Why this concludes effectively:</strong> After systematic analysis and stakeholder perspectives, we&#x27;ll look at how <em>other domains</em> handle interactive governance meetings — shareholder AGMs in fintech, board meetings in SaaS platforms, HOA management tools, parliamentary voting systems. This prevents us from only seeing BATbern-shaped solutions.</li>
+<li><strong>Expected outcome:</strong> Breakthrough feature ideas borrowed from domains that have solved similar problems in unexpected ways.</li>
+</ul>
+<hr class="divider">
+<p><strong>Total Estimated Time:</strong> ~55-60 minutes</p>
+<p><strong>Session Focus:</strong> Systematic feature discovery across all 6 agenda items, validated through multiple stakeholder lenses, enriched with cross-domain innovation</p>
+<hr class="divider">
+<p><strong>Does this approach sound right for your session?</strong></p>
+<ul>
+<li><strong>[C]</strong> Continue — Begin with Morphological Analysis</li>
+<li><strong>[Modify]</strong> — I&#x27;d like to adjust the technique selection</li>
+<li><strong>[Details]</strong> — Tell me more about any specific technique</li>
+<li><strong>[Back]</strong> — Return to approach selection</li>
+</ul></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>c</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Now let me update the session document and kick off the first technique.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><hr class="divider">
+<p>Let&#x27;s dive in, Nissim! 🔬</p>
+<h3>Phase 1: Morphological Analysis</h3>
+<p>I&#x27;m <em>thrilled</em> to start with this one — it&#x27;s like building an X-ray machine for your meeting. We&#x27;re going to create a grid that makes the invisible visible.</p>
+<p>Here&#x27;s how we&#x27;ll work: I&#x27;ll set up the matrix dimensions, and then we&#x27;ll walk through it together cell by cell, generating ideas at each intersection. Think of it as treasure hunting on a map with coordinates.</p>
+<p><strong>Our Matrix Axes:</strong></p>
+<p><strong>Rows</strong> — Your 6 Agenda Items:</p>
+<table><tr><th>#</th><th>Agenda Item</th><th>Current Mode</th></tr><tr><td>A1</td><td>Partner Greeting / Attendance</td><td>Passive (just say hello)</td></tr><tr><td>A2</td><td>Analytics Review</td><td>Informational (show a page)</td></tr><tr><td>A3</td><td>Financial Audit Sign-off</td><td>Decisional (show PDF, get verbal OK)</td></tr><tr><td>A4</td><td>Budget &amp; Fee Approval</td><td>Decisional (present numbers, verbal OK)</td></tr><tr><td>A5</td><td>Topic Discussion &amp; Voting</td><td>Collaborative (login + vote)</td></tr><tr><td>A6</td><td>Hot Architecture Topics</td><td>Collaborative (open discussion)</td></tr></table>
+<p><strong>Columns</strong> — Interaction Dimensions:</p>
+<table><tr><th>Dimension</th><th>What it means</th></tr><tr><td><strong>PRE</strong></td><td>What happens <em>before</em> the meeting?</td></tr><tr><td><strong>LIVE</strong></td><td>What happens <em>during</em> the meeting in real-time?</td></tr><tr><td><strong>POST</strong></td><td>What happens <em>after</em> the meeting?</td></tr><tr><td><strong>ARTIFACT</strong></td><td>What digital artifact does this produce?</td></tr><tr><td><strong>NOTIFICATION</strong></td><td>What triggers/alerts support this?</td></tr></table>
+<hr class="divider">
+<p>Let&#x27;s start at the top-left corner of our grid:</p>
+<h4>A1 × PRE: Partner Greeting — Before the Meeting</h4>
+<p>Right now, partners just show up and you greet whoever is there. But what if the system did something <em>before</em> the meeting to make this richer?</p>
+<p>A few seeds to get us started:</p>
+<ul>
+<li><strong>RSVP with presence confirmation</strong> — partners confirm attendance in the system, so organizers see a live attendance forecast</li>
+<li><strong>Partner profile cards</strong> — each confirmed partner&#x27;s photo, company, and role pre-loaded for a &quot;who&#x27;s in the room&quot; display</li>
+<li><strong>Proxy delegation</strong> — a partner who can&#x27;t attend designates a colleague with voting authority</li>
+</ul>
+<p>What sparks for you here, Nissim? What would make the &quot;who&#x27;s coming&quot; phase more useful <em>before</em> anyone walks through the door?</p></div>
+</div>
+</section>
+
+<!-- SECTION 4: MORPHOLOGICAL ANALYSIS A1-A2 -->
+<section id="morphological">
+  <div class="section-header">
+    <div class="phase-badge phase-1">4</div>
+    <div class="section-header-text"><h2>Phase 1: Morphological Analysis &mdash; A1 &amp; A2</h2><p>Agenda items: Partner Greeting &amp; Analytics Review (before/during/after matrix)</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>rsvp view and partner profile, so all know who is who (especially if we have new partners in the room)</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Love it! The &quot;new partner in the room&quot; angle is a <em>gem</em> — that&#x27;s exactly the kind of social friction point that a system can smooth out beautifully. Let me capture these:</p>
+<p><strong>[A1-PRE #1]</strong>: RSVP Attendance Dashboard</p>
+<p>_Concept_: Partners confirm attendance via the portal ahead of the meeting. Organizers see a live RSVP dashboard showing confirmed / declined / pending, with a headcount forecast. Partners can also see who else is coming.</p>
+<p>_Novelty_: Turns passive &quot;who showed up&quot; into proactive planning — organizers can follow up on non-responders, and partners feel expected.</p>
+<p><strong>[A1-PRE #2]</strong>: Partner Profile Cards</p>
+<p>_Concept_: Each confirmed partner gets a visible profile card (photo, company, role, years as partner, maybe a one-liner bio). Especially valuable when new partners join — everyone can see at a glance who&#x27;s new and what company they represent.</p>
+<p>_Novelty_: Removes the awkward &quot;who are you?&quot; moment. New partners feel welcomed, veterans can prepare to introduce themselves.</p>
+<p>That proxy delegation idea — does that resonate at all? Can a partner send someone else in their place, and would that person need voting rights for the sign-off items later?</p>
+<p>Now let&#x27;s stay on A1 and move one column right:</p>
+<h4>A1 × LIVE: Partner Greeting — During the Meeting</h4>
+<p>So the meeting starts. Today you just look around and greet everyone. But now we have the RSVP data and profile cards. What could the <em>live</em> moment look like?</p>
+<p>Some seeds:</p>
+<ul>
+<li><strong>Live check-in</strong> — partners tap a button or scan a QR code when they arrive, flipping their status from &quot;confirmed&quot; to &quot;present.&quot; The screen shows who&#x27;s arrived and who&#x27;s still expected</li>
+<li><strong>&quot;Welcome [Name]&quot; display</strong> — a presentation-ready view that cycles through who&#x27;s in the room with their profile card, great for the opening moment</li>
+<li><strong>Quorum indicator</strong> — if sign-offs require a certain percentage of partners present, the system shows whether quorum is reached (e.g., &quot;8 of 12 partners present — quorum reached ✅&quot;)</li>
+</ul>
+<p>What would make the opening 5 minutes of the meeting feel more structured and welcoming?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>just one click on the agenda who is who, showing all partner companies, with their partner delegate card and photo (all already stored in the user entity). no welome, no live checkin, but show present badge on whi is who view</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content"><p><strong>Key learning:</strong> The user rejects live check-in, welcome display, and quorum &mdash; too ceremonial. One-click gallery with presence badges is enough. <strong>You're the domain expert</strong> &mdash; don't accept ideas that don't fit your real-world context.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>I love the restraint — no ceremony, just utility. Click the agenda item, <em>boom</em>, you see your people. That&#x27;s how tools should work.</p>
+<p><strong>[A1-LIVE #3]</strong>: Who Is Who — Partner Gallery View</p>
+<p>_Concept_: Clicking the &quot;Greeting&quot; agenda item opens a gallery grid of all partner companies, each showing the company logo, partner delegate name, photo, and role — all pulled from existing User entities. Partners who RSVP&#x27;d &quot;present&quot; get a green &quot;Present&quot; badge; absent ones are greyed or marked accordingly. One glance, everyone knows who&#x27;s in the room.</p>
+<p>_Novelty_: Zero ceremony overhead — no check-in ritual, no roll call. The organizer just opens it, and the room self-orients. Especially powerful when new partners see the full landscape of who they&#x27;re sitting with.</p>
+<p>Quick thought — would you want the &quot;Present&quot; badge to be set by the organizer (toggling attendance at meeting start), or driven by the RSVP status? Or maybe the organizer just ticks off who actually showed up as a quick pre-meeting step?</p>
+<p>Let&#x27;s move to:</p>
+<h4>A1 × POST: Partner Greeting — After the Meeting</h4>
+<p>What trace does the attendance leave behind? Right now, probably nothing. But a few possibilities:</p>
+<ul>
+<li><strong>Attendance record persisted</strong> — the system logs who was present at this partner meeting, creating a historical attendance trail (useful for analytics over years — &quot;Partner X attended 8 of 10 meetings&quot;)</li>
+<li><strong>Meeting minutes auto-populated</strong> — the attendee list is automatically written into the meeting minutes header, no manual typing</li>
+</ul>
+<p>What feels useful here? Or is attendance tracking after the fact not something you&#x27;d need?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>yes, i think we should anyway have meeting notes of the meeting, with the info shown, the decisions taken, actions, ... where the attendance is one part of it</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; BREAKTHROUGH</div>
+  <div class="turn-content"><p><strong>This is the session's biggest discovery.</strong> A casual remark about meeting notes revealed a <strong>cross-cutting artifact</strong> spanning ALL 6 agenda items. The meeting minutes become the backbone of the entire system &mdash; each agenda item contributes a section automatically. This single insight transformed "6 separate features" into "one cohesive system."</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Oh, <em>now</em> we&#x27;re uncovering something structural! You just revealed a cross-cutting artifact that spans ALL six agenda items — <strong>meeting minutes as a living document that the system builds progressively as you move through the agenda</strong>. That&#x27;s not just a feature, that&#x27;s an <em>architecture decision</em>. Let me capture this big one first:</p>
+<p><strong>[CROSS-CUTTING #4]</strong>: Auto-Generated Meeting Minutes</p>
+<p>_Concept_: The system maintains a meeting minutes document (PartnerMeetingMinutes entity) that builds itself as the organizer walks through the active agenda. Each agenda item automatically contributes its section — attendance list from the Who Is Who view, analytics snapshots, decisions recorded from sign-offs, action items captured during discussion. The organizer can add free-text notes at each step. Final minutes are exportable as PDF.</p>
+<p>_Novelty_: Eliminates the &quot;someone takes notes&quot; problem entirely. The system already <em>knows</em> what was shown, who voted, what was decided — it just needs to assemble it. The organizer only adds the human context.</p>
+<p><strong>[A1-POST #5]</strong>: Attendance Section in Minutes</p>
+<p>_Concept_: The Who Is Who view&#x27;s presence data automatically populates the &quot;Attendees&quot; section of the meeting minutes — present partners listed by name and company, absent partners noted. No manual typing.</p>
+<p>_Novelty_: First section of minutes writes itself before the meeting even properly starts.</p>
+<p>This has me buzzing, Nissim. The minutes become a <em>byproduct</em> of using the active agenda — not extra work. Each agenda item we design from here on, we should ask: <strong>what does this item contribute to the minutes?</strong></p>
+<p>Now let&#x27;s carry that energy into the next row:</p>
+<h4>A2 × PRE: Analytics Review — Before the Meeting</h4>
+<p>Today you show a top-level analytics page during the meeting. But what could happen <em>before</em>?</p>
+<p>Some seeds:</p>
+<ul>
+<li><strong>Pre-meeting analytics digest</strong> — partners receive a summary email/notification a few days before with key numbers (attendance trends, feedback highlights), so they arrive already informed and the live discussion can go deeper</li>
+<li><strong>Partner-specific analytics view</strong> — each partner can see their own company&#x27;s attendance history vs. the group average before the meeting, so they come with questions ready</li>
+<li><strong>Year-over-year comparison auto-generated</strong> — system pre-builds the comparison charts so the organizer doesn&#x27;t have to prepare slides</li>
+</ul>
+<p>What would make the analytics portion more valuable? Do partners currently come in cold, or do they already have context on the numbers?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>i think a link to the analytics page in the meeting invite is already enough.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Perfect — no over-engineering. The data&#x27;s already there, just point to it.</p>
+<p><strong>[A2-PRE #6]</strong>: Analytics Deep-Link in Meeting Invite</p>
+<p>_Concept_: The ICS meeting invite includes a direct link to the analytics page. Partners can review numbers before the meeting if they choose. No new feature needed — just smarter invite content.</p>
+<p>_Novelty_: Zero development cost, maximum context. Turns the invite itself into a preparation tool.</p>
+<h4>A2 × LIVE: Analytics Review — During the Meeting</h4>
+<p>Today you show the analytics page on screen. Clicking this agenda item could do more:</p>
+<ul>
+<li><strong>Presenter mode for analytics</strong> — a streamlined, full-screen view of the analytics page optimized for projector/screen sharing, with larger fonts and guided navigation (next/previous chart)</li>
+<li><strong>Live annotation</strong> — organizer can highlight specific data points during presentation (&quot;look at this spike in Q3&quot;) and those annotations get captured in the minutes</li>
+<li><strong>Partner Q&amp;A capture</strong> — as partners ask questions about the data, the organizer can quickly log them as discussion points or action items attached to this agenda item</li>
+</ul>
+<p>The analytics page already exists and works. What&#x27;s missing when you actually <em>present</em> it in the meeting? Is the current page good enough on a projector, or does it need a different layout?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>nothing missing here. just be sure to historize the data and attach the graphs to the meeting notes</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>That&#x27;s a crucial insight — the analytics page is <em>live</em> data, but the minutes need to be a <strong>frozen snapshot</strong> of what was shown that day. Otherwise two years later you open the minutes and the graphs show current data, not what was discussed.</p>
+<p><strong>[A2-LIVE #7]</strong>: Analytics Snapshot for Minutes</p>
+<p>_Concept_: When the organizer presents the analytics agenda item, the system captures a snapshot of the current analytics data — key metrics, graphs as images or serialized data — and attaches it to the meeting minutes. This becomes an immutable historical record of &quot;this is what we showed on 2026-04-04.&quot;</p>
+<p>_Novelty_: The analytics page can keep evolving, but the minutes always reflect exactly what was presented. Creates a year-over-year paper trail of what the partnership reviewed.</p>
+<p><strong>[A2-POST #8]</strong>: Historized Analytics Archive</p>
+<p>_Concept_: Each partner meeting automatically creates a dated analytics snapshot stored as part of the meeting record. Over years, this builds a browsable archive: &quot;What did the numbers look like when we met in April 2024 vs April 2025 vs April 2026?&quot;</p>
+<p>_Novelty_: Turns routine presentations into institutional memory. New partners can look back and see the trajectory.</p>
+<p>Good — the minutes are really becoming the backbone of this whole system. Every agenda item deposits its artifact.</p>
+<p>Let&#x27;s move to the juicy one:</p>
+<h4>A3 × PRE: Financial Audit Sign-off — Before the Meeting</h4>
+<p>Today you show the auditor&#x27;s revision PDF and get a verbal OK from partners that the books are well managed. This is a <em>governance</em> action. Before the meeting:</p>
+<ul>
+<li><strong>Audit PDF pre-distributed</strong> — the revision PDF is uploaded to the system and linked in the invite, so partners can review the numbers before the meeting rather than seeing them cold on screen</li>
+<li><strong>Pre-meeting questions</strong> — partners can submit questions about the audit <em>before</em> the meeting, so the organizer (or auditor) can prepare answers</li>
+<li><strong>Document versioning</strong> — if the audit PDF gets revised, partners see the latest version and a change note</li>
+</ul>
+<p>Do partners currently get the audit PDF before the meeting, or is it a &quot;first time seeing it on screen&quot; situation?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>no, none of this. we are doing all this aside our real job, so no time for preparation. we create the report for that meeting day ;-)</p></div>
+</div>
+</section>
+
+<!-- SECTION 5: MORPHOLOGICAL ANALYSIS A3-A6 -->
+<section id="morphological-2">
+  <div class="section-header">
+    <div class="phase-badge phase-1">5</div>
+    <div class="section-header-text"><h2>Phase 1: Morphological Analysis &mdash; A3 through A6</h2><p>Audit sign-off, Budget/Fee approval, Topic voting, Open discussion &mdash; plus full wrap-up</p></div>
+  </div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content"><p><strong>Real-world constraints are design inputs!</strong> The agent suggested pre-distribution, but the report is created day-of. The agent skips PRE entirely and focuses on LIVE. Don't hide your limitations &mdash; they shape the system toward what's actually usable.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Ha! That&#x27;s the real world talking — I love it. Volunteer-run conference, day job comes first. The report lands hot off the press. No pre-meeting review, and that&#x27;s <em>fine</em>.</p>
+<p>So let&#x27;s skip A3-PRE and go straight where the action is:</p>
+<h4>A3 × LIVE: Financial Audit Sign-off — During the Meeting</h4>
+<p>This is a <strong>governance moment</strong> — you show the auditor&#x27;s PDF, walk through it, and need the partners to formally agree the books are in order. Today that&#x27;s a verbal &quot;everyone OK? Good.&quot; But this is exactly the kind of thing that benefits from a digital trail.</p>
+<p>Some seeds:</p>
+<ul>
+<li><strong>PDF viewer in the agenda</strong> — click the agenda item, the uploaded audit PDF opens in an embedded viewer right there. No fumbling with file shares or email attachments</li>
+<li><strong>Formal digital sign-off</strong> — after reviewing the PDF, each present partner clicks &quot;I approve the financial report for [year].&quot; The system records who approved, when, with a timestamp. Partners who are absent are marked as &quot;not present for vote&quot;</li>
+<li><strong>Discussion capture</strong> — before the vote, organizer can note any questions or concerns raised, which go into the minutes under this agenda item</li>
+<li><strong>Quorum check</strong> — system shows &quot;7 of 10 partners present — sufficient for approval&quot; before enabling the vote</li>
+</ul>
+<p>The digital sign-off is the big one here. Instead of a verbal nod that nobody can prove happened, you&#x27;d have a timestamped record: &quot;Partner X from Company Y approved on 2026-04-04 at 14:32.&quot;</p>
+<p>How formal does this need to be? Is a simple &quot;approve&quot; button per partner enough, or would you want something more structured?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>yes, pdf viewer (upload the report first). no formal digital approval. just a button to approve or decline the report. then the meeting notes log, that all present partners approved</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Clean and pragmatic. No bureaucracy, but still a record. That&#x27;s the sweet spot.</p>
+<p><strong>[A3-LIVE #9]</strong>: Audit Report Upload &amp; Viewer</p>
+<p>_Concept_: Organizer uploads the auditor&#x27;s revision PDF to the agenda item before or during the meeting. Clicking the agenda item opens an embedded PDF viewer. The document is stored as a permanent attachment to this meeting&#x27;s record.</p>
+<p>_Novelty_: No emailing PDFs around, no &quot;can you share your screen.&quot; The document lives in the system, attached to the meeting it belongs to.</p>
+<p><strong>[A3-LIVE #10]</strong>: Simple Approve/Decline Vote</p>
+<p>_Concept_: After reviewing the PDF, the organizer triggers a vote. Each present partner sees two buttons: Approve / Decline. No signature, no formality — just a click. The system tallies the result and logs it: &quot;Financial report 2025 approved — 8 of 8 present partners approved.&quot; If someone declines, that&#x27;s noted too with an optional comment field.</p>
+<p>_Novelty_: Replaces a verbal nod with a traceable record, but keeps the ceremony to an absolute minimum — one click per partner.</p>
+<p><strong>[A3-POST #11]</strong>: Audit Section in Meeting Minutes</p>
+<p>_Concept_: Meeting minutes automatically get: the uploaded PDF as an attachment, the vote result (&quot;approved by all present partners&quot; or &quot;declined by X&quot;), and any discussion notes the organizer added. The PDF itself is historized — it stays attached even if a new version is uploaded later.</p>
+<p>_Novelty_: Two years from now, anyone can open the 2026 partner meeting minutes and see exactly which report was reviewed and what the vote was.</p>
+<p>Now this voting pattern is interesting because it&#x27;s about to repeat — A4 has the <em>same</em> shape. Let&#x27;s see:</p>
+<h4>A4 × LIVE: Budget &amp; Fee Approval — During the Meeting</h4>
+<p>Same governance pattern: show numbers, get approval. But here you&#x27;re presenting last year&#x27;s costs, this year&#x27;s budget assumptions, and the resulting new fee per partner. Today this is probably a spreadsheet or slides?</p>
+<p>I&#x27;m seeing the same pattern as A3 but with richer data:</p>
+<ul>
+<li><strong>Budget presentation view</strong> — instead of a PDF, this could be a structured view: last year&#x27;s actuals vs. budget, this year&#x27;s proposed budget, and the calculated fee per partner — all rendered from data already in the system (you have invoice/billing entities from the invoice management spec)</li>
+<li><strong>Same approve/decline vote</strong> — reusable voting component, this time for &quot;I approve the new partner fee of CHF X for 2026&quot;</li>
+<li><strong>Fee breakdown transparency</strong> — each partner sees how the fee is calculated: total costs ÷ number of partners, or whatever the formula is</li>
+</ul>
+<p>Is the budget data something that could come from the system (you already have fee tables and billing info), or is this always a manually prepared document like the audit PDF?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>yes, this is a spreadsheet today. i have another feature, where we add invoicing to partner management service. so for now, this is showing the spreadsheet, and then record the new partner fee, same as before. but here it might be interesting to ask the partners if they would be ready tologin prior to it, and then see and approve the expected new budget, or better, we ask them to do this after the meeting and approve the new fee in the system.</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content"><p><strong>Key learning:</strong> The user split this into two phases &mdash; live presentation + async post-meeting approval. More realistic than forcing formal agreement in a room. The agent recognized this connects to the planned invoicing feature.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Oh, <em>now</em> we&#x27;re finding buried treasure! You just split this agenda item across two time phases — a <strong>live presentation</strong> and an <strong>async post-meeting approval</strong>. That&#x27;s actually more realistic than trying to get formal fee agreement in a room. People want to think about it, maybe check with their finance department. And it ties beautifully into the invoicing feature you&#x27;re planning.</p>
+<p><strong>[A4-LIVE #12]</strong>: Budget Spreadsheet Upload &amp; Viewer</p>
+<p>_Concept_: Same pattern as the audit PDF — organizer uploads the budget spreadsheet (or PDF export of it), clicks the agenda item, embedded viewer shows it. Walk through it live, answer questions. Document attached to the meeting record.</p>
+<p>_Novelty_: Reuses the same upload/view pattern from A3. Consistent UX.</p>
+<p><strong>[A4-LIVE #13]</strong>: Live Vote on Budget Direction</p>
+<p>_Concept_: During the meeting, a simple approve/decline vote — but this one is about &quot;Do we agree with the budget direction and the proposed new fee?&quot; This captures the room&#x27;s sentiment. The minutes record: &quot;Budget proposal presented, 7 of 8 partners approved the direction.&quot;</p>
+<p>_Novelty_: This is a softer vote — directional agreement in the room, not the binding commitment.</p>
+<p><strong>[A4-POST #14]</strong>: Async Fee Acceptance in Partner Portal</p>
+<p>_Concept_: After the meeting, the system sets the new partner fee (from the invoicing feature) and each partner gets a notification: &quot;The new annual fee of CHF X was proposed at the partner meeting on 2026-04-04. Please review and confirm.&quot; Partners log into their portal, see the budget summary, and click Accept/Decline with an optional comment. Deadline reminder sent if they haven&#x27;t responded.</p>
+<p>_Novelty_: This is where the invoicing feature and the meeting feature <em>converge</em>. The meeting creates the decision, the portal operationalizes it. Partners who were absent can still formally accept. You get 100% partner coverage, not just whoever was in the room.</p>
+<p><strong>[A4-POST #15]</strong>: Fee Acceptance Tracker</p>
+<p>_Concept_: Organizer sees a dashboard: which partners have accepted the new fee, who&#x27;s pending, who declined. This feeds into the invoicing pipeline — you can&#x27;t generate invoices until acceptance is recorded. Meeting minutes log the live vote result, and link to the async acceptance tracker for the final status.</p>
+<p>_Novelty_: Closes the loop. The meeting starts the process, the system finishes it.</p>
+<p>This is a great pattern, Nissim — the meeting becomes the <em>kickoff</em> for an async workflow, not the place where everything has to be decided on the spot. Very respectful of everyone&#x27;s time.</p>
+<p>Now let&#x27;s move to A5 — this one&#x27;s already the most active item you have:</p>
+<h4>A5 × PRE/LIVE: Topic Discussion &amp; Voting</h4>
+<p>You already have topic voting and the blob game. This is your richest agenda item. So the question becomes: <strong>what&#x27;s missing?</strong></p>
+<p>Today partners can log in and add topics and vote on other partners&#x27; topics. During the meeting you use the blob game for topic selection. Some angles:</p>
+<ul>
+<li><strong>Topic submission deadline</strong> — system enforces a cutoff (e.g., 1 week before meeting) so the list is stable before the blob game runs</li>
+<li><strong>Topic clustering</strong> — if 3 partners submit similar topics, the system suggests merging them before the meeting</li>
+<li><strong>Topic champion</strong> — each topic has a named proposer visible to everyone, so during the meeting you know who to turn to for context</li>
+<li><strong>Blob game results persisted</strong> — the outcome of the blob game (which topics won, with what scores) is recorded in the minutes</li>
+</ul>
+<p>What&#x27;s working well with the current topic voting, and where does it feel like it falls short?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>i think, all is here. just a link in the meeting invite, to the topic selection page for the partners</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Good — if it ain&#x27;t broke, just link to it!</p>
+<p><strong>[A5-PRE #16]</strong>: Topic Voting Deep-Link in Meeting Invite</p>
+<p>_Concept_: Same pattern as A2 — the ICS invite includes a direct link to the topic selection/voting page. Partners are reminded to submit and vote on topics before the meeting.</p>
+<p>_Novelty_: Zero new development. Smart invite content.</p>
+<p><strong>[A5-POST #17]</strong>: Topic Discussion Results in Minutes</p>
+<p>_Concept_: The meeting minutes capture which topics were discussed, the blob game results (winners, scores), and any decisions or action items that came out of the topic discussions. Organizer can add notes per topic.</p>
+<p>_Novelty_: The blob game results get historized — you can look back and see what the community cared about each year.</p>
+<p>Now the last row:</p>
+<h4>A6: Hot Architecture Topics — Open Discussion</h4>
+<p>This is the loosest agenda item — free-form discussion about current architecture topics partners are interested in. No existing tooling here, just conversation. Let&#x27;s explore all dimensions quickly:</p>
+<p><strong>PRE:</strong></p>
+<ul>
+<li>Could partners submit &quot;hot topics&quot; in advance, separate from the A5 voting topics? Or is this intentionally unstructured — things that come up spontaneously in the room?</li>
+</ul>
+<p><strong>LIVE:</strong></p>
+<ul>
+<li>Is this purely organic discussion, or would you want any structure — like a quick poll &quot;which of these 3 topics should we spend time on?&quot;</li>
+<li>Could the organizer capture key points/takeaways per topic discussed?</li>
+</ul>
+<p><strong>POST:</strong></p>
+<ul>
+<li>Discussion notes and any action items into the minutes</li>
+</ul>
+<p>What&#x27;s the <em>character</em> of this agenda item, Nissim? Is it meant to be the informal, open-ended &quot;anything else?&quot; moment, or something more structured?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>lets leave this as an open item (or we will just discuss on the topics they submited. might enhancve that later)</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Smart — keep it loose, enhance later if needed.</p>
+<p><strong>[A6 #18]</strong>: Open Discussion — Future Enhancement</p>
+<p>_Concept_: Left as free-form for now. May merge with A5 topic voting outcomes. Organizer can add free-text notes to the minutes under this section.</p>
+<p>_Novelty_: Intentionally unstructured. Not everything needs a feature.</p>
+<hr class="divider">
+<p>Good — we&#x27;ve walked through all 6 rows. Now let me quickly sweep the last two columns across the whole agenda, because I think some patterns emerged:</p>
+<h4>ARTIFACT Column — What Does Each Agenda Item Produce?</h4>
+<p>Pulling together what we&#x27;ve discovered:</p>
+<table><tr><th>Agenda Item</th><th>Artifact</th></tr><tr><td>A1 Greeting</td><td>Attendance list (auto in minutes)</td></tr><tr><td>A2 Analytics</td><td>Snapshot of graphs + key metrics (frozen in minutes)</td></tr><tr><td>A3 Audit Sign-off</td><td>Uploaded PDF + vote result</td></tr><tr><td>A4 Budget/Fee</td><td>Uploaded spreadsheet + live vote + async fee acceptance</td></tr><tr><td>A5 Topics</td><td>Blob game results + discussion notes</td></tr><tr><td>A6 Open</td><td>Free-text notes</td></tr><tr><td><strong>Cross-cutting</strong></td><td><strong>Complete meeting minutes document (PDF export)</strong></td></tr></table>
+<h4>NOTIFICATION Column — What Triggers/Alerts?</h4>
+<table><tr><th>When</th><th>What</th></tr><tr><td>Meeting created</td><td>ICS invite with deep-links to analytics + topic voting</td></tr><tr><td>RSVP deadline approaching</td><td>Reminder to partners who haven&#x27;t responded</td></tr><tr><td>After meeting</td><td>Meeting minutes published, notification to all partners</td></tr><tr><td>After meeting (A4)</td><td>Fee acceptance request sent to each partner</td></tr><tr><td>Fee acceptance pending</td><td>Reminder to partners who haven&#x27;t accepted/declined</td></tr></table>
+<hr class="divider">
+<p><strong>Morphological Analysis wrap-up!</strong> We&#x27;ve mapped 18 ideas across the grid. The big structural discoveries:</p>
+<ol>
+<li><strong>Meeting Minutes as living document</strong> — the backbone that every agenda item feeds into</li>
+<li><strong>Reusable vote component</strong> — same approve/decline pattern for A3 and A4</li>
+<li><strong>Upload + viewer pattern</strong> — same for audit PDF and budget spreadsheet</li>
+<li><strong>Smart ICS invite</strong> — deep-links turn the invite into a preparation tool</li>
+<li><strong>Async post-meeting workflow</strong> — fee acceptance extends the meeting beyond the room</li>
+</ol>
+<p>That&#x27;s a solid foundation. Ready to shift perspectives?</p>
+<h3>Phase 2: Role Playing</h3>
+<p>Let&#x27;s walk through this active agenda wearing different hats. I want to see what we <em>missed</em> by only thinking from the organizer&#x27;s chair.</p>
+<p><strong>First perspective: The New Partner</strong></p>
+<p>Imagine it&#x27;s your first partner meeting ever. You just joined as a partner company. You get the ICS invite. You log into the portal.</p>
+<ul>
+<li>What&#x27;s confusing?</li>
+<li>What do you wish the system told you?</li>
+<li>When the meeting starts and the Who Is Who view appears — you see everyone but nobody knows you yet</li>
+</ul>
+<p>What do you think a first-time partner needs from this system, Nissim? Any friction points you&#x27;ve observed when onboarding new partners?</p></div>
+</div>
+</section>
+
+<!-- SECTION 6: ROLE PLAYING -->
+<section id="roleplaying">
+  <div class="section-header">
+    <div class="phase-badge phase-2">6</div>
+    <div class="section-header-text"><h2>Phase 2: Role Playing</h2><p>New Partner, Absent Partner, Organizer, Auditor &mdash; each perspective reveals new features</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>as a first time partner, when loging in, a tour on the platform and the partner functionality and what will happen durung the meeting and what the current fees are, woud be great. also show him the analytics, tha organizers, the other partners. so he is already up to speed in the meeing start.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>That&#x27;s a <em>brilliant</em> discovery — you just found the &quot;day zero&quot; experience that nobody thinks about until they&#x27;re living it! A new partner walks in cold today, and they&#x27;re essentially catching up in real-time while everyone else is already in context. Let&#x27;s unpack this:</p>
+<p><strong>[ROLE-NEW #19]</strong>: New Partner Onboarding Tour</p>
+<p>_Concept_: When a user with role PARTNER logs in for the first time (or is flagged as a new partner), the system offers a guided tour: &quot;Welcome to BATbern! Here&#x27;s how the partner platform works.&quot; Step-by-step walkthrough of the key areas — analytics, topic voting, partner directory, meeting agenda, what to expect.</p>
+<p>_Novelty_: Turns a potentially overwhelming first login into a confident &quot;I know what&#x27;s going on.&quot; The partner arrives at the meeting already feeling like an insider, not an outsider.</p>
+<p><strong>[ROLE-NEW #20]</strong>: New Partner Context Package</p>
+<p>_Concept_: Beyond the UI tour, the system surfaces key context for new partners: current annual fee, last year&#x27;s analytics summary, list of organizers with photos, the other partner companies and their delegates, upcoming events. Essentially a &quot;partner briefing pack&quot; assembled automatically from existing data.</p>
+<p>_Novelty_: No organizer has to manually prepare a welcome packet. The system already has all this data — it just needs to curate it for the &quot;new eyes&quot; audience.</p>
+<p><strong>[ROLE-NEW #21]</strong>: &quot;New Partner&quot; Badge in Who Is Who</p>
+<p>_Concept_: In the Who Is Who gallery view, new partners (first year) get a subtle &quot;New&quot; badge on their card. Signals to everyone in the room to be welcoming and provide context. Disappears after their first meeting.</p>
+<p>_Novelty_: Tiny UI touch, huge social impact. Experienced partners know to introduce themselves, organizers know to check in.</p>
+<hr class="divider">
+<p><strong>Second perspective: The Absent Partner</strong></p>
+<p>A partner RSVPs &quot;no&quot; or simply can&#x27;t make it. Today they miss everything — maybe someone forwards them an email summary, maybe not. With our new system:</p>
+<ul>
+<li>They weren&#x27;t in the room for the analytics, the audit review, the budget discussion</li>
+<li>They didn&#x27;t vote on audit approval or budget direction</li>
+<li>They missed the topic discussions</li>
+</ul>
+<p>Some ideas:</p>
+<ul>
+<li><strong>Post-meeting minutes access</strong> — they get the full minutes with all attachments, snapshots, and vote results</li>
+<li><strong>Async catch-up flow</strong> — the system shows them what they missed, agenda item by agenda item, with the artifacts (PDF, analytics snapshot, vote results)</li>
+<li><strong>Async voting for absent partners</strong> — for A3 and A4, could absent partners still cast their approve/decline vote within a time window after the meeting?</li>
+</ul>
+<p>What&#x27;s your instinct here, Nissim? Should absent partners be able to vote after the fact, or is the rule &quot;you had to be there&quot;?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>yes, he would need meeting minutes access and vote on the fee A4. A3 is alreaedy approved. he could send in a standin, so we should be able to record that, even if he has no batbern partner access</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content"><p><strong>Role Playing found a governance edge case:</strong> stand-in delegation for someone with no system account. This would <em>never</em> surface from pure feature brainstorming. By <em>being</em> the absent partner, the user naturally thought about what that person needs.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Oh, the stand-in is a great real-world pattern! Someone shows up representing Partner X, but they&#x27;re not in the system. The organizer needs to record &quot;Company Y was represented by [name], delegated by [partner name].&quot; That&#x27;s a governance detail that the minutes <em>must</em> capture.</p>
+<p><strong>[ROLE-ABSENT #22]</strong>: Post-Meeting Minutes Access for Absent Partners</p>
+<p>_Concept_: After the meeting, all partners (present or not) receive a notification with a link to the published meeting minutes. Absent partners can review everything that happened — analytics snapshots, audit PDF, vote results, discussion notes — at their own pace.</p>
+<p>_Novelty_: No partner is ever out of the loop. The minutes are the equalizer.</p>
+<p><strong>[ROLE-ABSENT #23]</strong>: Async Fee Vote for Absent Partners</p>
+<p>_Concept_: Absent partners still receive the A4 fee acceptance request post-meeting (idea #14). They review the budget document in the minutes, then approve/decline the new fee in their portal. Same workflow, just without having been in the room.</p>
+<p>_Novelty_: Decouples the fee decision from physical presence. 100% partner coverage guaranteed.</p>
+<p><strong>[ROLE-ABSENT #24]</strong>: Stand-In Delegation Record</p>
+<p>_Concept_: Organizer can record a stand-in for an absent partner: &quot;Company Y represented by [free-text name], delegated by [partner name].&quot; The stand-in has no system login — this is purely a minutes record. In the Who Is Who view, Company Y shows a &quot;Represented by [stand-in name]&quot; badge instead of &quot;Absent.&quot; The stand-in can participate in live votes (organizer casts on their behalf or marks them as present-by-proxy).</p>
+<p>_Novelty_: Handles the real-world case where a non-system-user attends. No account creation needed. The governance trail is preserved — the minutes show who was actually in the room making decisions.</p>
+<p><strong>[ROLE-ABSENT #25]</strong>: Stand-In Vote Attribution</p>
+<p>_Concept_: When a stand-in is present, the organizer can cast votes on behalf of that partner company during A3/A4. The minutes log: &quot;Company Y — approved (represented by [stand-in name], delegated by [partner name]).&quot; Clear attribution chain.</p>
+<p>_Novelty_: Prevents the awkward &quot;well, Company Y&#x27;s person was here but technically couldn&#x27;t vote&quot; situation.</p>
+<hr class="divider">
+<p><strong>Third perspective: The Organizer (you!)</strong></p>
+<p>We&#x27;ve been thinking about partners. But you&#x27;re the one <em>running</em> this meeting. Let&#x27;s flip the lens — what does the organizer need to make this meeting smooth?</p>
+<ul>
+<li><strong>Agenda controller</strong> — you drive the meeting, clicking through agenda items one by one. The screen updates for everyone. You&#x27;re essentially the &quot;presenter&quot; advancing slides, but each slide is an interactive agenda item</li>
+<li><strong>Meeting prep checklist</strong> — before the meeting, the system shows: &quot;Audit PDF uploaded? ✅ Budget spreadsheet uploaded? ✅ RSVP count: 8/12. Topic voting closes in 2 days.&quot;</li>
+<li><strong>Quick note-taking</strong> — at any point during the meeting, you can add a free-text note to the current agenda item, which lands in the minutes</li>
+</ul>
+<p>What&#x27;s the most annoying part of <em>running</em> the partner meeting today, Nissim? Where do you lose time or feel friction as the organizer?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>yes, that are all great important ideas. we should also be able to select, which acrtive agenda items are relevant for that meeting, and maybe add additional passive agenda points manually to be discussed or presented</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content"><p><strong>Fundamental design insight:</strong> The agenda can't be hardcoded &mdash; some meetings skip the audit, some need extra items. <strong>Configurable agenda with active + passive items</strong> became the foundation of the entire system.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p><em>Yes!</em> That&#x27;s a fundamental design insight — the agenda is not fixed every year. Some meetings might skip the audit, some might need an extra item like &quot;discuss venue change&quot; or &quot;introduce new organizer.&quot; The system needs to be a <strong>configurable agenda builder</strong>, not a hardcoded sequence.</p>
+<p><strong>[ROLE-ORG #26]</strong>: Agenda Builder — Select Active Items</p>
+<p>_Concept_: When creating a partner meeting, the organizer sees a list of all available active agenda item types (Who Is Who, Analytics, Audit Sign-off, Budget/Fee, Topic Voting, Open Discussion) and toggles which ones are relevant for this meeting. Unchecked items don&#x27;t appear in the meeting flow. Items can be reordered via drag-and-drop.</p>
+<p>_Novelty_: Every meeting can be tailored. Annual audit meeting has all 6 items. A mid-year check-in might only have Analytics + Topics. The system adapts to the meeting, not the other way around.</p>
+<p><strong>[ROLE-ORG #27]</strong>: Custom Passive Agenda Items</p>
+<p>_Concept_: Organizer can add free-form agenda items — just a title and optional description. These appear in the agenda flow as &quot;passive&quot; items with no system interaction, just a placeholder for discussion. The organizer can add notes during the meeting that get captured in the minutes. Examples: &quot;Venue proposal for 2027&quot;, &quot;New sponsor introduction&quot;, &quot;Speaker feedback discussion.&quot;</p>
+<p>_Novelty_: Bridges the gap between system-powered items and real-world meeting needs. The agenda is never limited to what the system knows about.</p>
+<p><strong>[ROLE-ORG #28]</strong>: Meeting Prep Checklist</p>
+<p>_Concept_: Based on which active items are enabled, the system generates a preparation checklist: &quot;Upload audit PDF ⬜ / Upload budget spreadsheet ⬜ / RSVP count: 8/12 ✅ / Topic voting closes in 2 days ⚠️&quot;. Organizer sees at a glance what&#x27;s ready and what needs attention before the meeting.</p>
+<p>_Novelty_: No more mental tracking of &quot;did I remember to prepare everything.&quot; The system knows what each active item needs and tells you what&#x27;s missing.</p>
+<p><strong>[ROLE-ORG #29]</strong>: Agenda Controller / Presenter Mode</p>
+<p>_Concept_: During the meeting, the organizer has a controller view: the agenda as a sidebar with the current item highlighted. Click next item, the main view updates. Quick note button always visible. Each item shows its specific interaction (PDF viewer, vote trigger, gallery view) in the main area.</p>
+<p>_Novelty_: The organizer drives the meeting like a presentation, but each &quot;slide&quot; is interactive. No switching between tabs, apps, or screens.</p>
+<p><strong>[ROLE-ORG #30]</strong>: Per-Item Note Taking</p>
+<p>_Concept_: At any agenda item — active or passive — the organizer can type notes that attach to that item in the minutes. Free-text, quick capture. Discussion points, action items, decisions. All structured under the right agenda heading automatically.</p>
+<p>_Novelty_: Notes are always contextualized. No more &quot;what agenda item was this note about?&quot;</p>
+<hr class="divider">
+<p>Now let me check — we had one more perspective planned:</p>
+<p><strong>Fourth perspective: The Auditor</strong></p>
+<p>Actually — is the auditor even a system user, or is this purely an external person who provides the PDF? Does the auditor attend the meeting?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>let&#x27;s keep it simple, so the auditor email can be set on the admin page, then he also gets the partner meeting invite, if his agenda point ois on the agenda. he can then send the pdf to an organizer who uploads it</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Perfect — minimal system footprint for the auditor. No account, no login, just an email address.</p>
+<p><strong>[ROLE-AUDITOR #31]</strong>: Auditor Email Configuration</p>
+<p>_Concept_: Admin page has a field for the auditor&#x27;s email address. When a partner meeting is created with the Audit Sign-off agenda item enabled, the auditor automatically receives the ICS invite. If the audit item isn&#x27;t on the agenda, no invite. Auditor sends the revision PDF to an organizer who uploads it.</p>
+<p>_Novelty_: The auditor is &quot;in the loop&quot; with zero system overhead. One config field, conditional invite logic. Done.</p>
+<hr class="divider">
+<p><strong>Role Playing Phase wrap-up!</strong> We explored four perspectives and uncovered 13 ideas (#19-31). The big discoveries from wearing different hats:</p>
+<ol>
+<li><strong>New Partner onboarding tour</strong> — the &quot;day zero&quot; experience nobody planned for</li>
+<li><strong>Stand-in delegation</strong> — real-world governance that the system must accommodate</li>
+<li><strong>Configurable agenda builder</strong> — active + passive items, not a hardcoded list</li>
+<li><strong>Presenter/controller mode</strong> — the organizer&#x27;s cockpit for running the meeting</li>
+<li><strong>Auditor as lightweight external participant</strong> — just an email, conditionally invited</li>
+</ol>
+<hr class="divider">
+<p>Ready for Phase 3? Let&#x27;s shift gears completely.</p>
+<h3>Phase 3: Cross-Pollination</h3>
+<p>Time to look <em>outside</em> BATbern. Other domains have been solving &quot;interactive governance meetings&quot; for years. Let me pull patterns from different worlds and see what sparks:</p>
+<p><strong>Shareholder AGMs (fintech/corporate governance):</strong></p>
+<ul>
+<li><strong>Resolution voting with quorum tracking</strong> — you already have this pattern, but AGM platforms often show a live vote tally on screen as votes come in. Imagine during the A3 audit vote, the screen shows &quot;5 of 8... 6 of 8... 7 of 8... ✅ Approved&quot; updating in real-time as partners click</li>
+<li><strong>Proxy voting</strong> — exactly your stand-in pattern, but AGM tools formalize it as a &quot;proxy form&quot; that can be filed in advance</li>
+</ul>
+<p><strong>Board meeting platforms (e.g., BoardEffect, Diligent):</strong></p>
+<ul>
+<li><strong>Board book</strong> — a curated package of all documents for the meeting, assembled before the meeting and distributed as one bundle. Your meeting prep checklist is halfway there — what if the system generated a &quot;Partner Meeting Book&quot; with all uploaded documents + analytics snapshot + agenda, available as a single PDF or portal view?</li>
+<li><strong>Consent agenda</strong> — routine items that don&#x27;t need discussion are grouped and approved in one vote. Could your A3 audit sign-off be a &quot;consent item&quot; that passes unless someone objects?</li>
+</ul>
+<p><strong>HOA / Condo management platforms:</strong></p>
+<ul>
+<li><strong>Action item tracker with owners</strong> — every meeting produces action items assigned to specific people with deadlines. These carry over to the next meeting&#x27;s agenda as &quot;review open actions&quot;</li>
+</ul>
+<p>What jumps out at you, Nissim? Any of these patterns feel right for BATbern?</p></div>
+</div>
+</section>
+
+<!-- SECTION 7: CROSS-POLLINATION -->
+<section id="crosspollination">
+  <div class="section-header">
+    <div class="phase-badge phase-3">7</div>
+    <div class="section-header-text"><h2>Phase 3: Cross-Pollination</h2><p>Ideas borrowed from AGMs, board platforms, HOA tools &mdash; some rejected, some embraced</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>none of these.</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content"><p><strong>It's perfectly fine to reject a whole batch!</strong> Corporate governance was too formal for a community-run architecture meetup. The agent pivots immediately to lighter domains. Don't feel obligated to accept ideas that don't fit.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Fair! Those are too corporate/formal for what BATbern is — a community-run architecture meetup, not a Fortune 500 board. Let me try completely different domains:</p>
+<p><strong>Conference/meetup platforms (Meetup, Sessionize, Eventbrite):</strong></p>
+<ul>
+<li><strong>Post-meeting feedback pulse</strong> — after the partner meeting, a quick 3-question survey: &quot;Was the meeting productive? Any topics we missed? Suggestions for next time?&quot; Lightweight, takes 30 seconds, feeds into improving the next meeting</li>
+<li><strong>Meeting recording link</strong> — if the meeting was recorded (Teams/Zoom), the link gets attached to the meeting minutes alongside the artifacts</li>
+</ul>
+<p><strong>Collaborative workshop tools (Miro, Mentimeter):</strong></p>
+<ul>
+<li><strong>Live word cloud</strong> — during the A6 open discussion, partners type hot topics on their phone, a word cloud builds in real-time showing what&#x27;s on everyone&#x27;s mind. Lighter than formal topic voting, great for spontaneous discovery</li>
+</ul>
+<p><strong>Retrospective tools (EasyRetro, TeamRetro):</strong></p>
+<ul>
+<li><strong>Action items with carry-forward</strong> — decisions and action items from one meeting automatically appear as &quot;review&quot; items on the next meeting&#x27;s agenda. &quot;Last meeting we decided X — status update?&quot;</li>
+</ul>
+<p>Any of these resonate more with the BATbern vibe?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>yes, feedback pulse is great. also send out the meeting m,inutes after the meeting manually by the organizer to all invited.</p>
+<p>yes, action items should always be there. so the organizer can add notes on each presented item, but also add action items with an owner (one of the organizersor partners)</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Now we&#x27;re cooking! These two additions complete the meeting lifecycle beautifully — action items give the meeting <em>teeth</em> (decisions lead to tracked work), and the feedback pulse closes the loop (the meeting itself gets better over time).</p>
+<p><strong>[CROSS-POLL #32]</strong>: Post-Meeting Feedback Pulse</p>
+<p>_Concept_: After the organizer publishes the minutes, each invited partner receives a short survey (3-4 questions): &quot;Was the meeting productive? (1-5) / Topics we should have discussed? / Suggestions for next meeting? / Any other feedback?&quot; Quick, anonymous or named (organizer&#x27;s choice). Results visible to organizers, aggregated over time to spot trends.</p>
+<p>_Novelty_: The meeting improves itself. Over years you can see: &quot;Satisfaction went from 3.2 to 4.5 since we introduced active agendas.&quot;</p>
+<p><strong>[CROSS-POLL #33]</strong>: Manual Minutes Publication &amp; Distribution</p>
+<p>_Concept_: After the meeting, the organizer reviews the auto-assembled minutes (attendance, artifacts, vote results, notes, action items), edits if needed, then clicks &quot;Publish &amp; Send.&quot; All invited participants (partners, auditor, stand-ins if email provided) receive an email with the minutes PDF attached or a link to view them in the portal.</p>
+<p>_Novelty_: Organizer stays in control — minutes don&#x27;t go out until they&#x27;re reviewed. But the heavy lifting (assembly) is already done by the system.</p>
+<p><strong>[CROSS-POLL #34]</strong>: Action Items with Owner Assignment</p>
+<p>_Concept_: At any agenda item, the organizer can add action items: title, description, assigned owner (dropdown of all organizers + partners), optional deadline. Action items are a distinct section in the minutes, clearly listing who owes what by when.</p>
+<p>_Novelty_: Decisions don&#x27;t evaporate after the meeting. Every action has a name next to it.</p>
+<p><strong>[CROSS-POLL #35]</strong>: Action Item Carry-Forward</p>
+<p>_Concept_: When creating the next partner meeting&#x27;s agenda, the system automatically surfaces open action items from previous meetings as a &quot;Review Open Actions&quot; section. The organizer sees: &quot;3 open actions from last meeting&quot; and can add it as an agenda item. During the meeting, each action is reviewed — mark as done, update status, or carry forward again.</p>
+<p>_Novelty_: Nothing falls through the cracks between meetings. The system remembers what the humans might forget. Creates accountability across meetings.</p>
+<hr class="divider">
+<p><strong>Phase 3 complete!</strong> Cross-pollination gave us 4 solid ideas (#32-35) that complete the meeting lifecycle.</p>
+<hr class="divider">
+<h3>Morphological Analysis + Role Playing + Cross-Pollination — Full Harvest</h3>
+<p>Let me give you the complete picture of what we&#x27;ve uncovered across all three techniques, Nissim. <strong>35 ideas total:</strong></p>
+<h4>The Architecture That Emerged</h4>
+<p>What&#x27;s beautiful is that a clear <strong>system architecture</strong> has revealed itself through the brainstorming:</p>
+<pre><code>BEFORE MEETING          DURING MEETING           AFTER MEETING
+─────────────────       ──────────────────       ─────────────────
+Smart ICS invite        Agenda controller        Publish minutes
+  with deep-links       Presenter mode           Feedback pulse
+RSVP tracking           Per-item interactions:    Async fee vote
+Meeting prep              - Who Is Who gallery    Action item tracking
+  checklist               - PDF/doc viewer        Carry-forward to
+New partner tour          - Approve/Decline vote    next meeting
+Auditor auto-invite       - Topic voting/blob
+                          - Notes &amp; actions
+                        Stand-in recording
+
+         ┌──────────────────────────────────┐
+         │   MEETING MINUTES (living doc)   │
+         │   Built progressively as each    │
+         │   agenda item is presented       │
+         └──────────────────────────────────┘</code></pre>
+<h4>Key Feature Clusters</h4>
+<table><tr><th>Cluster</th><th>Ideas</th><th>Priority Feel</th></tr><tr><td><strong>Configurable Agenda Builder</strong></td><td>#26, #27, #28</td><td>Core — everything depends on this</td></tr><tr><td><strong>Meeting Minutes Engine</strong></td><td>#4, #5, #7, #8, #11, #33</td><td>Core — the backbone artifact</td></tr><tr><td><strong>Vote/Approval Component</strong></td><td>#10, #12, #13, #25</td><td>Core — reusable for A3 + A4</td></tr><tr><td><strong>Document Upload &amp; Viewer</strong></td><td>#9, #12</td><td>Core — reusable for PDF + spreadsheet</td></tr><tr><td><strong>Who Is Who Gallery</strong></td><td>#2, #3, #21</td><td>High — first thing partners see</td></tr><tr><td><strong>Presenter/Controller Mode</strong></td><td>#29, #30</td><td>High — organizer&#x27;s cockpit</td></tr><tr><td><strong>Action Items System</strong></td><td>#34, #35</td><td>High — gives meetings teeth</td></tr><tr><td><strong>Smart ICS Invite</strong></td><td>#6, #16, #31</td><td>Medium — just links, low effort</td></tr><tr><td><strong>Async Fee Acceptance</strong></td><td>#14, #15, #23</td><td>Medium — ties to invoicing feature</td></tr><tr><td><strong>New Partner Onboarding</strong></td><td>#19, #20, #21</td><td>Medium — great UX, can be phased</td></tr><tr><td><strong>Stand-In Delegation</strong></td><td>#24, #25</td><td>Medium — governance correctness</td></tr><tr><td><strong>Feedback Pulse</strong></td><td>#32</td><td>Nice-to-have — improves over time</td></tr></table>
+<hr class="divider">
+<p><strong>What would you like to do next, Nissim?</strong></p>
+<ul>
+<li><strong>[K]</strong> Keep exploring — there&#x27;s more territory to cover</li>
+<li><strong>[T]</strong> Try a different technique — fresh angle on the same topic</li>
+<li><strong>[A]</strong> Go deeper on a specific idea — develop a promising concept further</li>
+<li><strong>[C]</strong> Move to organization — structure these ideas into actionable output</li>
+</ul></div>
+</div>
+</section>
+
+<!-- SECTION 8: ORGANIZATION & PRIORITIZATION -->
+<section id="organization">
+  <div class="section-header">
+    <div class="phase-badge phase-bridge">8</div>
+    <div class="section-header-text"><h2>Organization &amp; Prioritization</h2><p>35 ideas themed, prioritized P1/P2/P3, 4-layer build sequence defined</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>c</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Let me organize our 35 ideas into a structured output.</p>
+<hr class="divider">
+<p><strong>Outstanding creative work, Nissim!</strong> We&#x27;ve generated 35 ideas across 3 techniques — Morphological Analysis, Role Playing, and Cross-Pollination — and a clear system architecture has emerged organically.</p>
+<h3>Organized by Theme</h3>
+<h4>Theme 1: Configurable Meeting Agenda Engine</h4>
+<p>_The backbone — everything else plugs into this_</p>
+<ul>
+<li><strong>#26 Agenda Builder</strong> — toggle active items on/off, drag to reorder</li>
+<li><strong>#27 Custom Passive Items</strong> — free-form agenda entries for anything</li>
+<li><strong>#28 Meeting Prep Checklist</strong> — auto-generated based on enabled items</li>
+<li><strong>#29 Presenter/Controller Mode</strong> — organizer drives the meeting item by item</li>
+<li><strong>#30 Per-Item Note Taking</strong> — contextual notes at every agenda point</li>
+</ul>
+<h4>Theme 2: Meeting Minutes as Living Document</h4>
+<p>_The artifact that builds itself_</p>
+<ul>
+<li><strong>#4 Auto-Generated Meeting Minutes</strong> — each agenda item contributes its section</li>
+<li><strong>#5 Attendance Section</strong> — auto-populated from Who Is Who</li>
+<li><strong>#7 Analytics Snapshot</strong> — frozen graphs attached to minutes</li>
+<li><strong>#8 Historized Analytics Archive</strong> — browsable year-over-year</li>
+<li><strong>#11 Audit Section</strong> — PDF + vote result logged</li>
+<li><strong>#33 Manual Publish &amp; Distribute</strong> — organizer reviews, then sends to all</li>
+</ul>
+<h4>Theme 3: Partner Interaction Components</h4>
+<p>_Reusable building blocks_</p>
+<ul>
+<li><strong>#1 RSVP Dashboard</strong> — confirm/decline/pending with headcount</li>
+<li><strong>#3 Who Is Who Gallery</strong> — partner cards with presence badges</li>
+<li><strong>#10 Approve/Decline Vote (Audit)</strong> — simple one-click, result logged</li>
+<li><strong>#13 Approve/Decline Vote (Budget)</strong> — same component, different context</li>
+<li><strong>#9 Document Upload &amp; Viewer</strong> — embedded PDF/doc viewer for audit</li>
+<li><strong>#12 Budget Document Upload &amp; Viewer</strong> — same pattern for spreadsheet</li>
+</ul>
+<h4>Theme 4: Post-Meeting Workflows</h4>
+<p>_The meeting extends beyond the room_</p>
+<ul>
+<li><strong>#14 Async Fee Acceptance</strong> — partners approve new fee in portal</li>
+<li><strong>#15 Fee Acceptance Tracker</strong> — organizer dashboard of who&#x27;s accepted</li>
+<li><strong>#23 Absent Partner Fee Vote</strong> — same flow for those not present</li>
+<li><strong>#32 Feedback Pulse</strong> — 3-question post-meeting survey</li>
+<li><strong>#34 Action Items with Owners</strong> — assigned to organizers or partners</li>
+<li><strong>#35 Action Item Carry-Forward</strong> — open items surface at next meeting</li>
+</ul>
+<h4>Theme 5: New Partner &amp; Stand-In Experience</h4>
+<p>_Edge cases that matter_</p>
+<ul>
+<li><strong>#19 New Partner Onboarding Tour</strong> — guided first-login experience</li>
+<li><strong>#20 New Partner Context Package</strong> — auto-assembled briefing</li>
+<li><strong>#21 New Partner Badge</strong> — subtle &quot;New&quot; marker in Who Is Who</li>
+<li><strong>#24 Stand-In Delegation Record</strong> — free-text, no account needed</li>
+<li><strong>#25 Stand-In Vote Attribution</strong> — organizer casts on behalf, logged</li>
+</ul>
+<h4>Theme 6: Smart Meeting Invite</h4>
+<p>_Zero-effort improvements_</p>
+<ul>
+<li><strong>#2 Partner Profile Cards</strong> — visible in RSVP/gallery views</li>
+<li><strong>#6 Analytics Deep-Link</strong> — link in ICS invite</li>
+<li><strong>#16 Topic Voting Deep-Link</strong> — link in ICS invite</li>
+<li><strong>#31 Auditor Auto-Invite</strong> — conditional on audit agenda item</li>
+<li><strong>#17 Topic Results in Minutes</strong> — blob game results historized</li>
+<li><strong>#18 Open Discussion</strong> — deferred, free-text notes only</li>
+</ul>
+<hr class="divider">
+<h3>Prioritization</h3>
+<p>Now let&#x27;s identify what to build and in what order. Based on our session, I see natural tiers:</p>
+<p><strong>What stands out to you, Nissim?</strong> Before I suggest implementation priority, I want to hear:</p>
+<ol>
+<li><strong>Top 3 must-haves</strong> — what can&#x27;t launch without?</li>
+<li><strong>Easiest quick wins</strong> — what&#x27;s almost free to implement?</li>
+<li><strong>What can wait</strong> — nice but not urgent?</li>
+</ol></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>1: theme 1, 2, 3</p>
+<p>2: 6, the deep links and the 3, voting, upload/download</p>
+<p>3: 5 new partners</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Crystal clear. And Theme 4 (post-meeting workflows — action items, feedback pulse, async fee acceptance)?</p>
+<p>I&#x27;d guess that falls between must-have and quick-win — action items (#34, #35) feel essential to the minutes engine, and async fee acceptance (#14, #15, #23) ties to invoicing. Where would you place Theme 4?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>yes, add it to must have</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><p>Here&#x27;s the full action plan:</p>
+<h3>Implementation Priority</h3>
+<h4>P1 — Must-Have (Core Active Agenda System)</h4>
+<p><strong>Theme 1: Configurable Meeting Agenda Engine</strong></p>
+<table><tr><th>#</th><th>Feature</th><th>Depends On</th></tr><tr><td>26</td><td>Agenda Builder (toggle active items, reorder)</td><td>—</td></tr><tr><td>27</td><td>Custom Passive Agenda Items</td><td>#26</td></tr><tr><td>28</td><td>Meeting Prep Checklist</td><td>#26</td></tr><tr><td>29</td><td>Presenter/Controller Mode</td><td>#26</td></tr><tr><td>30</td><td>Per-Item Note Taking</td><td>#29</td></tr></table>
+<p><strong>Theme 2: Meeting Minutes as Living Document</strong></p>
+<table><tr><th>#</th><th>Feature</th><th>Depends On</th></tr><tr><td>4</td><td>Auto-Generated Meeting Minutes entity</td><td>#26</td></tr><tr><td>5</td><td>Attendance Section (auto from Who Is Who)</td><td>#4, #3</td></tr><tr><td>7</td><td>Analytics Snapshot (frozen graphs)</td><td>#4</td></tr><tr><td>8</td><td>Historized Analytics Archive</td><td>#7</td></tr><tr><td>11</td><td>Audit Section (PDF + vote result)</td><td>#4, #9, #10</td></tr><tr><td>33</td><td>Manual Publish &amp; Distribute</td><td>#4</td></tr></table>
+<p><strong>Theme 3: Partner Interaction Components</strong></p>
+<table><tr><th>#</th><th>Feature</th><th>Depends On</th></tr><tr><td>1</td><td>RSVP Dashboard</td><td>—</td></tr><tr><td>3</td><td>Who Is Who Gallery with presence badges</td><td>#1</td></tr><tr><td>9</td><td>Document Upload &amp; Embedded Viewer</td><td>—</td></tr><tr><td>10</td><td>Approve/Decline Vote (reusable component)</td><td>—</td></tr><tr><td>12</td><td>Budget Document Upload &amp; Viewer</td><td>#9</td></tr><tr><td>13</td><td>Budget Direction Vote</td><td>#10</td></tr></table>
+<p><strong>Theme 4: Post-Meeting Workflows</strong></p>
+<table><tr><th>#</th><th>Feature</th><th>Depends On</th></tr><tr><td>34</td><td>Action Items with Owner Assignment</td><td>#4, #30</td></tr><tr><td>35</td><td>Action Item Carry-Forward</td><td>#34, #26</td></tr><tr><td>14</td><td>Async Fee Acceptance in Portal</td><td>invoicing feature</td></tr><tr><td>15</td><td>Fee Acceptance Tracker</td><td>#14</td></tr><tr><td>23</td><td>Absent Partner Fee Vote</td><td>#14</td></tr><tr><td>32</td><td>Feedback Pulse Survey</td><td>#33 (after minutes sent)</td></tr></table>
+<h4>P2 — Quick Wins (Low Effort, Immediate Value)</h4>
+<table><tr><th>#</th><th>Feature</th><th>Effort</th></tr><tr><td>6</td><td>Analytics deep-link in ICS invite</td><td>Trivial — just add URL to invite text</td></tr><tr><td>16</td><td>Topic voting deep-link in ICS invite</td><td>Trivial — same pattern</td></tr><tr><td>31</td><td>Auditor email config + conditional auto-invite</td><td>Small — admin field + invite logic</td></tr><tr><td>2</td><td>Partner profile cards in views</td><td>Small — data already exists on User entity</td></tr></table>
+<h4>P3 — Nice-to-Have (Phase Later)</h4>
+<table><tr><th>#</th><th>Feature</th><th>Notes</th></tr><tr><td>19</td><td>New Partner Onboarding Tour</td><td>Great UX, can build when partner count grows</td></tr><tr><td>20</td><td>New Partner Context Package</td><td>Auto-assembled from existing data</td></tr><tr><td>21</td><td>New Partner Badge in Who Is Who</td><td>Tiny UI addition, add with #19</td></tr><tr><td>24</td><td>Stand-In Delegation Record</td><td>Governance correctness, not day-one critical</td></tr><tr><td>25</td><td>Stand-In Vote Attribution</td><td>Depends on #24</td></tr></table>
+<hr class="divider">
+<h3>Suggested Build Order (P1)</h3>
+<p>Based on dependencies, the natural build sequence:</p>
+<pre><code>LAYER 1 — Foundation (build first, everything depends on these)
+├── #26  Agenda Builder (the core entity + UI)
+├── #9   Document Upload &amp; Viewer component
+├── #10  Approve/Decline Vote component
+└── #1   RSVP Dashboard
+
+LAYER 2 — Meeting Flow (plug into the agenda)
+├── #3   Who Is Who Gallery + presence badges
+├── #27  Custom Passive Agenda Items
+├── #29  Presenter/Controller Mode
+├── #30  Per-Item Note Taking
+└── #4   Meeting Minutes entity (auto-assembly engine)
+
+LAYER 3 — Agenda Item Interactions
+├── #5   Attendance → minutes
+├── #7   Analytics snapshot → minutes
+├── #11  Audit PDF + vote → minutes
+├── #12  Budget doc + vote → minutes
+├── #28  Meeting Prep Checklist
+└── #34  Action Items with Owners
+
+LAYER 4 — Post-Meeting &amp; Lifecycle
+├── #33  Publish &amp; Distribute minutes
+├── #35  Action Item Carry-Forward
+├── #32  Feedback Pulse
+├── #14  Async Fee Acceptance (ties to invoicing)
+├── #15  Fee Acceptance Tracker
+└── #23  Absent Partner Fee Vote</code></pre>
+<hr class="divider">
+<h3>Key Architectural Decisions Surfaced</h3>
+<ol>
+<li><strong>PartnerMeeting entity</strong> — needs an agenda definition (list of active + passive items, ordered), linked documents, vote results, and minutes</li>
+<li><strong>Reusable Vote component</strong> — same approve/decline pattern for audit, budget, and potentially future use</li>
+<li><strong>Reusable Document Viewer</strong> — upload + embedded view for PDF and spreadsheet</li>
+<li><strong>Meeting Minutes</strong> — assembled progressively from agenda item artifacts, editable, manually published</li>
+<li><strong>Action Item entity</strong> — title, owner, deadline, status, linked to meeting + agenda item, with carry-forward logic</li>
+</ol>
+<hr class="divider">
+<p><strong>Ready to finalize the session document?</strong></p>
+<p><strong>[C]</strong> Complete — save everything to the brainstorming session file</p></div>
+</div>
+</section>
+
+<!-- SECTION 9: COMPLETION -->
+<section id="completion">
+  <div class="section-header">
+    <div class="phase-badge phase-bridge">9</div>
+    <div class="section-header-text"><h2>Session Complete</h2><p>Document saved, next steps defined</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-04</span></div>
+  <div class="turn-content"><p>c</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Mary &mdash; Analyst Agent</div>
+  <div class="turn-content"><hr class="divider">
+<p><strong>Brainstorming session complete, Nissim!</strong> 🎉</p>
+<p><strong>What we accomplished:</strong></p>
+<ul>
+<li><strong>35 ideas</strong> generated across Morphological Analysis, Role Playing, and Cross-Pollination</li>
+<li><strong>6 themes</strong> identified with clear dependencies</li>
+<li><strong>4-layer build sequence</strong> from foundation to post-meeting lifecycle</li>
+<li><strong>4 reusable components</strong> discovered (agenda builder, vote, document viewer, minutes engine)</li>
+</ul>
+<p><strong>Your session document is saved at:</strong></p>
+<p><code>_bmad-output/brainstorming/brainstorming-session-2026-04-04.md</code></p>
+<p><strong>Suggested next steps:</strong></p>
+<ol>
+<li>Feed the P1 themes into a <strong>Product Brief</strong> or <strong>PRD</strong> (<code>/bmad-bmm-create-prd</code>)</li>
+<li>Implement the <strong>P2 quick wins</strong> (deep-links in ICS invite) — almost zero effort</li>
+<li>When ready to build, break Layer 1 into stories (<code>/bmad-bmm-create-epics-and-stories</code>)</li>
+</ol>
+<p>It was a pleasure treasure-hunting with you — the meeting minutes as a living document was the hidden gem of this session. That single insight turned &quot;active agenda&quot; from &quot;6 separate features&quot; into &quot;one cohesive system.&quot; 📊</p></div>
+</div>
+</section>
+
+<hr class="divider">
+<p style="text-align:center;color:var(--text-muted);font-size:0.82rem;padding-bottom:40px">
+  Verbatim output from BMAD Analyst Agent (Mary) &mdash; session 2026-04-04<br>
+  <a href="master.html" style="color:var(--accent2)">Training Hub</a>
+</p>
+
+</main>
+
+<script>
+const navLinks = document.querySelectorAll('nav a[href^="#"]');
+const sections = document.querySelectorAll('section[id], div[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.getAttribute('id');
+      navLinks.forEach(a => {
+        a.classList.remove('active');
+        if (a.getAttribute('href') === '#' + id) a.classList.add('active');
+      });
+    }
+  });
+}, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

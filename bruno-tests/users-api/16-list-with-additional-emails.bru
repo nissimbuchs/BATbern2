@@ -1,0 +1,41 @@
+meta {
+  name: List User With Additional Emails (10.32)
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/users/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.additionalEmails: isDefined
+}
+
+tests {
+  test("should expose additionalEmails as an array on /users/me", function() {
+    const body = res.getBody();
+    expect(body.additionalEmails).to.be.an('array');
+  });
+
+  test("should include the email created in test 15", function() {
+    const body = res.getBody();
+    const added = bru.getEnvVar("additionalEmail");
+    if (added) {
+      const found = body.additionalEmails.find(e => e.email === added);
+      expect(found).to.exist;
+    }
+  });
+}

@@ -142,7 +142,8 @@ public class UserServiceClientImpl implements UserServiceClient {
 
     /**
      * List all users for a company with the given role.
-     * Calls GET /users?company={companyName}&role={role}&limit=100.
+     * Calls GET /users/by-company — a VPC-internal service-to-service endpoint.
+     * Does NOT forward the caller's JWT; relies on VPC network trust (VpcInternalAuthorizationManager).
      */
     @Override
     @Cacheable(value = "usersByCompanyRoleCache", key = "#companyName + '-' + #role")
@@ -150,18 +151,18 @@ public class UserServiceClientImpl implements UserServiceClient {
         log.debug("Fetching users for company={}, role={}", companyName, role);
 
         String url = UriComponentsBuilder
-                .fromHttpUrl(userServiceBaseUrl + "/api/v1/users")
+                .fromHttpUrl(userServiceBaseUrl + "/api/v1/users/by-company")
                 .queryParam("company", companyName)
                 .queryParam("role", role)
                 .queryParam("limit", 100)
                 .toUriString();
 
-        return fetchUserList(url, "company=" + companyName + ", role=" + role);
+        return fetchUserListNoAuth(url, "company=" + companyName + ", role=" + role);
     }
 
     /**
      * List all users with the given role across all companies.
-     * Calls GET /users?role={role}&limit=100.
+     * Calls GET /users?role={role}&limit=100 with caller's JWT (ORGANIZER-only endpoint).
      */
     @Override
     @Cacheable(value = "usersByRoleCache", key = "#role")
@@ -177,10 +178,57 @@ public class UserServiceClientImpl implements UserServiceClient {
         return fetchUserList(url, "role=" + role);
     }
 
+    /**
+     * Fetch a user list forwarding the caller's JWT.
+     * Used for ORGANIZER-only endpoints (e.g. list all users by role).
+     */
     private List<UserResponse> fetchUserList(String url, String context) {
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    PaginatedUserResponse.class
+            );
+
+            PaginatedUserResponse body = response.getBody();
+            if (body == null || body.getData() == null) {
+                return Collections.emptyList();
+            }
+
+            log.debug("Fetched {} users for {}", body.getData().size(), context);
+            return body.getData();
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error fetching users ({}): {} - {}", context, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException("Client error fetching users: " + context, e.getStatusCode().value(), e);
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error fetching users ({}): {} - {}", context, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Service error fetching users: " + context, e.getStatusCode().value(), e);
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error fetching users ({}): {}", context, e.getMessage());
+            throw new UserServiceException("Failed to connect to User Service: " + context, e);
+
+        } catch (Exception e) {
+            log.error("Unexpected error fetching users ({}): {}", context, e.getMessage(), e);
+            throw new UserServiceException("Unexpected error fetching users: " + context, e);
+        }
+    }
+
+    /**
+     * Fetch a user list WITHOUT forwarding any JWT.
+     * Used for VPC-internal service-to-service calls (e.g. /api/v1/users/by-company).
+     * Authorization is handled by VpcInternalAuthorizationManager in company-user-management.
+     */
+    private List<UserResponse> fetchUserListNoAuth(String url, String context) {
+        try {
+            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
 
             ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
                     url,

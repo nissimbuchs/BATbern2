@@ -1,0 +1,52 @@
+meta {
+  name: Pretest cleanup — sweep leftover BRUNO-TEST-* events
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "events",
+    "prefix": "BRUNO-TEST-"
+  }
+}
+
+tests {
+  test("pretest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, deletion counts are reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.events).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Audit-pass addition (PR 2 split, plan §B3): unconditional pretest cleanup.
+  Runs BEFORE every other test in this collection to ensure a clean slate.
+  Cascade removes sessions, registrations, event_tasks, speaker_pool,
+  event_photos, event_teaser_images, session_users, session_materials,
+  speaker_status_history, speaker_reminder_log.
+
+  Status assertion is `oneOf([200, 204, 404])` so a missing cleanup endpoint
+  (e.g. against a pre-PR-1 environment) never fails the run.
+}

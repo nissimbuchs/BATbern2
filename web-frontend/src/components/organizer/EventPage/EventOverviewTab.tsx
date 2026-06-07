@@ -16,6 +16,8 @@ import {
   Chip,
   Divider,
   LinearProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -25,7 +27,9 @@ import {
   Visibility as PreviewIcon,
   Topic as TopicIcon,
   AutoAwesome,
+  GroupAdd as GroupAddIcon,
 } from '@mui/icons-material';
+import { enrollStakeholders } from '@/services/api/eventRegistrationService';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -62,6 +66,38 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   const [topic, setTopic] = useState<Topic | null>(null);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
+  // State for enroll-stakeholders action
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollSnackbar, setEnrollSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({ open: false, message: '', severity: 'success' });
+
+  const handleEnrollStakeholders = async () => {
+    setEnrolling(true);
+    try {
+      const result = await enrollStakeholders(eventCode);
+      setEnrollSnackbar({
+        open: true,
+        message: t(
+          'eventPage.overview.enrollStakeholdersSuccess',
+          'Enrolled {{enrolled}} organizers/partners ({{skipped}} already registered)',
+          { enrolled: result.enrolled, skipped: result.skipped }
+        ),
+        severity: 'success',
+      });
+    } catch {
+      setEnrollSnackbar({
+        open: true,
+        message: t('eventPage.overview.enrollStakeholdersError', 'Failed to enroll stakeholders'),
+        severity: 'error',
+      });
+    } finally {
+      setEnrolling(false);
+    }
+  };
+
   // Fetch topic details if topicCode is available
   useEffect(() => {
     const fetchTopic = async () => {
@@ -88,11 +124,15 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   // Use typicalStartTime from event type (not event.date hour)
   const formattedTime = event.typicalStartTime || '-';
 
+  // Use registrationCapacity (organizer-set limit) when available; fall back to venueCapacity.
+  // registrationCapacity is populated when include=registrations is requested (Story 10.11).
+  const registrationCapacity = (event as { registrationCapacity?: number | null })
+    .registrationCapacity;
+  const displayCapacity = registrationCapacity ?? event.venueCapacity ?? 0;
+
   // Calculate capacity percentage
   const capacityPercent =
-    event.venueCapacity && event.venueCapacity > 0
-      ? Math.round((event.currentAttendeeCount / event.venueCapacity) * 100)
-      : 0;
+    displayCapacity > 0 ? Math.round((event.currentAttendeeCount / displayCapacity) * 100) : 0;
 
   // Calculate speaker progress
   const confirmedSpeakers = eventUI.confirmedSpeakersCount || 0;
@@ -149,6 +189,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 color="primary"
                 size="small"
                 data-testid="workflow-status-badge"
+                // Locale-independent assertion hook: the visible `label` is translated, so the
+                // raw workflow state is exposed here for testid-only E2E assertions (slice 10).
+                data-workflow-state={event.workflowState || 'CREATED'}
               />
               <Typography variant="body2" color="text.secondary">
                 {t('eventPage.overview.step', 'Step')}{' '}
@@ -328,7 +371,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                   <Typography variant="subtitle2">{t('form.capacity', 'Capacity')}</Typography>
                 </Stack>
                 <Typography variant="body1" gutterBottom>
-                  {event.currentAttendeeCount || 0} / {event.venueCapacity || 0}{' '}
+                  {event.currentAttendeeCount || 0} / {displayCapacity || 0}{' '}
                   {t('eventPage.overview.registered', 'registered')}
                 </Typography>
                 <LinearProgress
@@ -416,6 +459,17 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           >
             {t('eventPage.overview.previewPublic', 'Preview Public Page')}
           </Button>
+          <Button
+            variant="outlined"
+            startIcon={<GroupAddIcon />}
+            onClick={handleEnrollStakeholders}
+            disabled={enrolling}
+            data-testid="enroll-stakeholders-button"
+          >
+            {enrolling
+              ? t('eventPage.overview.enrollStakeholdersLoading', 'Enrolling…')
+              : t('eventPage.overview.enrollStakeholders', 'Enroll Organizers & Partners')}
+          </Button>
         </Stack>
       </Paper>
 
@@ -431,6 +485,20 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           setAiDrawerOpen(false);
         }}
       />
+
+      <Snackbar
+        open={enrollSnackbar.open}
+        autoHideDuration={5000}
+        onClose={() => setEnrollSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={enrollSnackbar.severity}
+          onClose={() => setEnrollSnackbar((s) => ({ ...s, open: false }))}
+        >
+          {enrollSnackbar.message}
+        </Alert>
+      </Snackbar>
     </Stack>
   );
 };

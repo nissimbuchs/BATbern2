@@ -16,7 +16,7 @@ interface KpiCardProps {
 }
 
 const KpiCard = ({ label, value, icon: Icon, color = '#2C5F7C' }: KpiCardProps) => (
-  <Card variant="outlined" sx={{ flex: 1, minWidth: 160 }}>
+  <Card variant="outlined" sx={{ flex: 1, minWidth: { xs: 120, sm: 160 } }}>
     <CardContent>
       <Box display="flex" alignItems="center" gap={1.5}>
         <Icon sx={{ fontSize: 32, color }} />

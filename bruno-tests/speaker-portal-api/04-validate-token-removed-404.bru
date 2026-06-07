@@ -1,0 +1,29 @@
+meta {
+  name: Validate-token endpoint removed → 404 (Story 11.F.1 AC2 / AC7)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/speaker-portal/validate-token
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "any-value-should-not-reach-a-handler"
+  }
+}
+
+tests {
+  test("should reject (401 or 404) since handler was deleted by Story 11.F.1 AC1", function() {
+    // SpeakerPortalTokenController previously returned 410 Gone; with the controller class
+    // deleted by Phase F, Spring MVC has no RequestMapping for /speaker-portal/validate-token.
+    // The permitAll matcher in api-gateway SecurityConfig for this path was also removed in
+    // 11.F.1, so an unauthenticated POST hits Spring Security first (no token → 401) before
+    // ever reaching the dispatcher's NoHandlerFound branch (which would emit 404). Either
+    // status confirms the endpoint is no longer functional.
+    expect([401, 404]).to.include(res.getStatus());
+  });
+}

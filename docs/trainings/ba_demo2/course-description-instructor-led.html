@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course Description — ELCAi Agentic Engineering Basics for All Roles</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350;
+    --accent: #E23615; --accent2: #28AF8F; --accent4: #FFCA4C;
+    --text: #e8eaf6; --text-muted: #8890b5;
+    --radius: 12px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(15,17,23,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 32px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; z-index: 100; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 10px; border-radius: 20px; transition: all .2s; white-space: nowrap; }
+  nav a:hover { background: var(--accent); color: white; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 880px; margin: 0 auto; padding: 96px 24px 80px; }
+
+  .hero { text-align: center; padding: 48px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 48px; }
+  .hero .badge { display: inline-block; background: var(--accent); color: white; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 14px; border-radius: 20px; margin-bottom: 20px; }
+  .hero h1 { font-size: 2rem; font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1rem; max-width: 640px; margin: 0 auto; }
+
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 40px; }
+  @media (max-width: 600px) { .meta-grid { grid-template-columns: 1fr; } }
+  .meta-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; gap: 12px; align-items: flex-start; }
+  .meta-item .key { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); white-space: nowrap; min-width: 110px; padding-top: 2px; }
+  .meta-item .val { font-size: 0.92rem; color: var(--text); }
+  .meta-item.highlight { border-color: rgba(40,175,143,.3); }
+  .meta-item.highlight .val { color: var(--accent2); font-weight: 700; }
+
+  .content-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 20px; }
+  .content-section h2 { font-size: 1rem; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .content-section h2::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .content-section p { font-size: 0.92rem; color: var(--text-muted); margin-bottom: 10px; }
+  .content-section p:last-child { margin-bottom: 0; }
+  .content-section p strong { color: var(--text); }
+
+  .objectives-list { list-style: none; padding: 0; }
+  .objectives-list li { font-size: 0.92rem; color: var(--text-muted); padding: 7px 0 7px 24px; border-bottom: 1px solid var(--border); position: relative; }
+  .objectives-list li:last-child { border-bottom: none; }
+  .objectives-list li::before { content: '→'; color: var(--accent2); position: absolute; left: 0; font-weight: 700; }
+
+  .schedule { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .schedule { grid-template-columns: 1fr; } }
+  .schedule-block { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px; }
+  .schedule-block .block-title { font-size: 0.85rem; font-weight: 700; color: var(--accent4); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .schedule-block .block-title::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent4); }
+  .schedule-block ul { list-style: none; padding: 0; }
+  .schedule-block ul li { font-size: 0.87rem; color: var(--text-muted); padding: 5px 0 5px 16px; border-bottom: 1px solid rgba(46,51,80,.5); position: relative; }
+  .schedule-block ul li:last-child { border-bottom: none; }
+  .schedule-block ul li::before { content: '·'; color: var(--accent2); position: absolute; left: 4px; font-size: 1.2em; line-height: 1.4; }
+
+  .prereq-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 0.85rem; color: var(--text-muted); }
+  .chip strong { color: var(--text); }
+
+  .audience-roles { display: flex; flex-wrap: wrap; gap: 8px; }
+  .role { background: rgba(40,175,143,.1); border: 1px solid rgba(40,175,143,.25); border-radius: 20px; padding: 4px 14px; font-size: 0.85rem; color: var(--accent2); font-weight: 600; }
+
+  a { color: var(--accent2); }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+</nav>
+
+<main>
+
+<div class="hero">
+  <div class="badge">Internal Course &mdash; Instructor-Led</div>
+  <h1>ELCAi Agentic Engineering<br><span>Basics for All Roles</span></h1>
+  <p>Hands-on introduction to AI-assisted software engineering using Claude Code, the ELCAi Method, and the BMAD framework.</p>
+</div>
+
+<!-- Quick-reference metadata -->
+<div class="meta-grid">
+  <div class="meta-item highlight">
+    <div class="key">Duration</div>
+    <div class="val">1 day (with exercises)</div>
+  </div>
+  <div class="meta-item highlight">
+    <div class="key">Frequency</div>
+    <div class="val">Once per month</div>
+  </div>
+  <div class="meta-item">
+    <div class="key">Lecturer</div>
+    <div class="val">Nissim Buchs</div>
+  </div>
+  <div class="meta-item">
+    <div class="key">Language</div>
+    <div class="val">EN (Optional: DE)</div>
+  </div>
+  <div class="meta-item">
+    <div class="key">Delivery</div>
+    <div class="val">Instructor-Led Training</div>
+  </div>
+  <div class="meta-item">
+    <div class="key">Enrolment</div>
+    <div class="val">Internal self-subscribe</div>
+  </div>
+  <div class="meta-item">
+    <div class="key">Mandatory</div>
+    <div class="val">No</div>
+  </div>
+  <div class="meta-item">
+    <div class="key">Category</div>
+    <div class="val">Master Technics</div>
+  </div>
+</div>
+
+<!-- Short description -->
+<div class="content-section">
+  <h2>Course Description</h2>
+  <p>Hands-on instructor-led introduction to AI-assisted software engineering using Claude Code, the ELCAi Method, and the BMAD framework.</p>
+  <p>Morning: onboarding, installation, and tool orientation. Afternoon: live demonstration and guided exercises using real-world examples — from brainstorming through UX design to production-ready PRDs.</p>
+</div>
+
+<!-- Objectives -->
+<div class="content-section">
+  <h2>Objectives</h2>
+  <p>AI-assisted development is transforming how we work across all roles — from business analysis to architecture to implementation. This instructor-led course provides the foundational skills to get started immediately.</p>
+  <p><strong>Participants will learn:</strong></p>
+  <ul class="objectives-list">
+    <li>How to install and configure Claude Code with the ELCAi extensions (company-specific templates, workflows, MCP integrations)</li>
+    <li>How the BMAD Method structures AI-assisted development into 4 phases with specialized agents</li>
+    <li>How to interact with AI agents conversationally to produce real deliverables (brainstorming reports, UX specs, PRDs)</li>
+    <li>Practical techniques for steering agent output — when to guide step-by-step vs. when to let the agent drive autonomously</li>
+    <li>The difference between quick-flow (single session) and full-path (multi-agent) approaches</li>
+  </ul>
+  <p style="margin-top:12px">By the end of the day, participants will have hands-on experience running BMAD workflows and will be able to apply them in their own projects.</p>
+</div>
+
+<!-- Content / Schedule -->
+<div class="content-section">
+  <h2>Content</h2>
+  <div class="schedule">
+    <div class="schedule-block">
+      <div class="block-title">Morning — Onboarding &amp; Foundations (3.5h)</div>
+      <ul>
+        <li>Claude Code installation and setup (live, hands-on)</li>
+        <li>ELCAi Method overview: what it adds to BMAD (ELCA-specific templates, workflows, MCP servers)</li>
+        <li>BMAD Method fundamentals: 4 phases, 7 agents, artifact chain, workflow map</li>
+        <li>Live demo: activating an agent, running a workflow, reviewing output</li>
+        <li>Hands-on exercise: participants activate their first agent and run a basic workflow</li>
+      </ul>
+    </div>
+    <div class="schedule-block">
+      <div class="block-title">Afternoon — Guided Exercises (3.5h)</div>
+      <ul>
+        <li>Exercise 1 — Quick Flow: brainstorm partner enhancements and produce a PRD in a single session (Analyst Agent)</li>
+        <li>Exercise 2 — Full Path: multi-agent walkthrough of the Active Meeting Agenda example (Analyst → UX Designer → PM)</li>
+        <li>Review and discussion: comparing quick-flow vs. full-path output quality and when to use each</li>
+        <li>Q&amp;A and applying learnings to participants' own projects</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Prerequisites -->
+<div class="content-section">
+  <h2>Prerequisites</h2>
+  <div class="prereq-chips">
+    <div class="chip">ELCA laptop (Windows or Mac)</div>
+    <div class="chip">Basic understanding of software development lifecycle</div>
+    <div class="chip"><strong>No prior AI or BMAD experience required</strong></div>
+    <div class="chip">Bring a real or hypothetical project idea for afternoon exercises</div>
+  </div>
+</div>
+
+<!-- Target Audience -->
+<div class="content-section">
+  <h2>Target Audience</h2>
+  <p style="margin-bottom:12px">All interested in Agentic Engineering across all Delivery Business Lines:</p>
+  <div class="audience-roles">
+    <div class="role">Business Analysts</div>
+    <div class="role">Project Managers</div>
+    <div class="role">Testers</div>
+    <div class="role">Architects</div>
+    <div class="role">Developers</div>
+  </div>
+</div>
+
+<hr style="border:none;border-top:1px solid var(--border);margin:32px 0">
+<p style="text-align:center;color:var(--text-muted);font-size:0.82rem;padding-bottom:40px">
+  <a href="master.html">Training Hub</a>
+</p>
+
+</main>
+</body>
+</html>

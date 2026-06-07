@@ -1,0 +1,59 @@
+meta {
+  name: Promote Speaker - Already READY returns 409 (Story 11.D.1 AC3)
+  type: http
+  seq: 47
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{promoteTestSpeakerId}}/promote
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "bruno-test-promote-idempotent-{{$timestamp}}@e2e.batbern.invalid",
+    "firstName": "Bruno",
+    "lastName": "Test"
+  }
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("returns 409 when re-promoting an already-READY speaker (Story 11.D.1 AC3)", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("error body identifies the offending state", function() {
+    const body = res.getBody();
+    const serialized = JSON.stringify(body).toLowerCase();
+    expect(serialized).to.include('ready');
+  });
+}
+
+docs {
+  Contract test for Story 11.D.1 AC3 (re-promote rejection branch). Test 45 already
+  promoted this speaker to READY. The promote endpoint controller does a pre-check
+  before delegating to SpeakerWorkflowService.transition() — if current != CONTACTED,
+  it throws InvalidPromotionStateException → 409 (see SpeakerStatusController#promote).
+  Re-promoting an already-READY speaker is therefore rejected, not idempotent.
+
+  PR 11 audit: the pre-Epic-11 expectation (200 idempotent) was based on the workflow
+  service's same-state-skip branch (handleSameStateTransition writes a history row,
+  returns 200). The controller layer tightened the contract: "promote is only valid
+  from CONTACTED" — see SpeakerStatusController#buildInvalidPromotionMessage. The 200
+  idempotency path is no longer reachable through this endpoint. Test now asserts the
+  current contract.
+
+  Bean Validation note: @NotBlank on firstName + lastName runs BEFORE the controller's
+  state check. The pre-PR-11 body that sent only `email` returned 400 (Bean Validation
+  failure), masking the 409 the controller actually emits. Body now includes all three
+  fields so the 409 branch is the one actually exercised.
+}

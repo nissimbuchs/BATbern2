@@ -28,7 +28,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import EmailIcon from '@mui/icons-material/Email';
 import ReplyIcon from '@mui/icons-material/Reply';
-import { CapturedEmail, devEmailService } from '@/services/devEmailService';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import { CapturedEmailWithSource, devEmailService } from '@/services/devEmailService';
 
 function formatTime(isoString: string): string {
   return new Date(isoString).toLocaleTimeString('de-CH', {
@@ -49,8 +50,8 @@ function formatDateTime(isoString: string): string {
 }
 
 export default function DevEmailInboxPage() {
-  const [emails, setEmails] = useState<CapturedEmail[]>([]);
-  const [selected, setSelected] = useState<CapturedEmail | null>(null);
+  const [emails, setEmails] = useState<CapturedEmailWithSource[]>([]);
+  const [selected, setSelected] = useState<CapturedEmailWithSource | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [replyBody, setReplyBody] = useState('');
@@ -70,7 +71,7 @@ export default function DevEmailInboxPage() {
         setSelected(updated ?? null);
       }
     } catch (e) {
-      setError(`Could not reach EMS at localhost:8002 — is the service running? (${e})`);
+      setError(`Could not load emails — are the services running? (${e})`);
     } finally {
       setLoading(false);
     }
@@ -78,6 +79,7 @@ export default function DevEmailInboxPage() {
 
   useEffect(() => {
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClear = async () => {
@@ -135,20 +137,29 @@ export default function DevEmailInboxPage() {
             sx={{ mr: 2 }}
           />
           <Tooltip title="Refresh">
-            <IconButton onClick={() => void load()} disabled={loading} size="small" sx={{ mr: 1 }}>
-              <RefreshIcon />
-            </IconButton>
+            <span>
+              <IconButton
+                onClick={() => void load()}
+                disabled={loading}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                <RefreshIcon />
+              </IconButton>
+            </span>
           </Tooltip>
           <Tooltip title="Clear all emails">
-            <Button
-              onClick={() => void handleClear()}
-              color="error"
-              size="small"
-              startIcon={<DeleteSweepIcon />}
-              disabled={emails.length === 0}
-            >
-              Clear All
-            </Button>
+            <span>
+              <Button
+                onClick={() => void handleClear()}
+                color="error"
+                size="small"
+                startIcon={<DeleteSweepIcon />}
+                disabled={emails.length === 0}
+              >
+                Clear All
+              </Button>
+            </span>
           </Tooltip>
         </Toolbar>
       </AppBar>
@@ -235,6 +246,20 @@ export default function DevEmailInboxPage() {
                     To:
                   </Typography>
                   <Typography variant="body2">{selected.to}</Typography>
+                  {selected.cc && selected.cc.length > 0 && (
+                    <>
+                      <Typography variant="body2" color="text.secondary">
+                        Cc:
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ wordBreak: 'break-all' }}
+                        data-testid="captured-email-cc"
+                      >
+                        {selected.cc.join(', ')}
+                      </Typography>
+                    </>
+                  )}
                   <Typography variant="body2" color="text.secondary">
                     From:
                   </Typography>
@@ -246,6 +271,25 @@ export default function DevEmailInboxPage() {
                   </Typography>
                   <Typography variant="body2">{formatDateTime(selected.capturedAt)}</Typography>
                 </Box>
+                {selected.attachments.length > 0 && (
+                  <Box
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}
+                  >
+                    <AttachFileIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    {selected.attachments.map((att) => (
+                      <Chip
+                        key={att.filename}
+                        label={`${att.filename} (${(att.sizeBytes / 1024).toFixed(1)} KB)`}
+                        size="small"
+                        variant="outlined"
+                        component="a"
+                        href={devEmailService.attachmentDownloadUrl(selected, att.filename)}
+                        clickable
+                        sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}
+                      />
+                    ))}
+                  </Box>
+                )}
               </Box>
 
               {/* HTML preview */}

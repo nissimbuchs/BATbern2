@@ -127,6 +127,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
           <div className="relative">
             <Input
               ref={inputRef}
+              data-testid="registration-company-input"
               value={inputValue}
               onChange={handleInputChange}
               onFocus={handleInputFocus}

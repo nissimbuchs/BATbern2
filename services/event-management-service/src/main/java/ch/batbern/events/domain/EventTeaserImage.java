@@ -31,7 +31,7 @@ public class EventTeaserImage {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "event_code", nullable = false)
+    @Column(name = "event_code", nullable = true)
     private String eventCode;
 
     @Column(name = "s3_key", nullable = false, columnDefinition = "TEXT")

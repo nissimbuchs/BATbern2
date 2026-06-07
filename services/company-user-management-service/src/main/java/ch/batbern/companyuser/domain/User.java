@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.domain;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -13,9 +14,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.DynamicUpdate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,7 +27,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,6 +46,15 @@ import java.util.UUID;
     @Index(name = "idx_users_cognito_user_id", columnList = "cognito_user_id", unique = true),
     @Index(name = "idx_users_active", columnList = "is_active")
 })
+// Story 12.12 review (finding #2): UPDATE statements carry only the columns the writer
+// actually changed. User has multiple unsynchronised load-modify-save writers (profile
+// edit / onboarding PATCH on request threads, the federated avatar import on its async
+// executor); with Hibernate's default full-column UPDATE, whichever committed last wrote
+// ALL columns from its possibly-stale snapshot — silently erasing the other writer's
+// fields (e.g. the import clobbering a just-saved terms_accepted_at, or a profile edit
+// nulling a just-imported profile_picture_url). Dirty-column updates make concurrent
+// writers of DISJOINT fields safe; same-field races remain last-writer-wins.
+@DynamicUpdate
 @Getter
 @Setter
 @NoArgsConstructor
@@ -118,6 +133,19 @@ public class User {
     private String profilePictureS3Key;
 
     /**
+     * Story 12.12: when the one-time federated (Google) avatar import was claimed.
+     * {@code null} = never attempted. Claimed atomically via
+     * {@code UserRepository.claimPictureImportAttempt} (compare-and-set, review finding
+     * #5). A TERMINAL outcome (success, 3xx/4xx, non-image, oversize, invalid claim)
+     * keeps the claim forever — prevents clobbering uploads, re-import-after-delete
+     * loops, and repeated fetches of broken URLs. A TRANSIENT fetch failure (upstream
+     * 5xx/429, network/IO error, executor rejection) releases the claim so a later
+     * federated request retries (review finding #1).
+     */
+    @Column(name = "picture_import_attempted_at")
+    private Instant pictureImportAttemptedAt;
+
+    /**
      * User roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE)
      * Stored in separate role_assignments table
      *
@@ -128,8 +156,31 @@ public class User {
     @CollectionTable(name = "role_assignments", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
+    @BatchSize(size = 50)
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    /**
+     * Story 10.32: additional email addresses registered on this profile.
+     *
+     * <p>Used by the SES email forwarder Lambda (Story 10.26) so legacy /
+     * shared mailboxes (e.g. {@code info@berner-architekten-treffen.ch}) can be
+     * declared once and then count as the user's own address for both
+     * receiving forwarded copies and authorising as a sender.
+     *
+     * <p>Performance: LAZY fetch. Use {@code @BatchSize(50)} for batched
+     * loading across paginated user lists (matches the pattern used for
+     * {@link #roles}).
+     */
+    @OneToMany(
+        mappedBy = "user",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<UserAdditionalEmail> additionalEmails = new ArrayList<>();
 
     /**
      * Embedded user preferences (theme, language, notifications)
@@ -142,6 +193,17 @@ public class User {
      */
     @Embedded
     private UserSettings settings;
+
+    /**
+     * Story 12.11: moment the user accepted the Terms of Service + Privacy Policy.
+     * <p>
+     * {@code null} = consent not on record → the frontend onboarding gate blocks the
+     * user on {@code /profile?onboarding=1} until they accept. Write-once via
+     * {@code PUT /api/v1/users/me} (server clock — never client-supplied); NEVER
+     * cleared through the API. Backfilled for pre-SSO rows by migration V17.
+     */
+    @Column(name = "terms_accepted_at")
+    private Instant termsAcceptedAt;
 
     /**
      * Whether user account is active
@@ -255,5 +317,34 @@ public class User {
      */
     public boolean isAnonymous() {
         return this.cognitoUserId == null;
+    }
+
+    /**
+     * Story 10.32: attach an additional email to this user. Caller is
+     * responsible for uniqueness + cap checks at the service layer; this
+     * method exists so the bidirectional relationship is wired correctly
+     * before flush.
+     */
+    public void addAdditionalEmail(UserAdditionalEmail additionalEmail) {
+        if (this.additionalEmails == null) {
+            this.additionalEmails = new ArrayList<>();
+        }
+        additionalEmail.setUser(this);
+        this.additionalEmails.add(additionalEmail);
+        this.updatedAt = Instant.now();
+    }
+
+    /**
+     * Story 10.32: detach an additional email from this user. Relies on
+     * {@code orphanRemoval = true} to delete the row on flush.
+     */
+    public void removeAdditionalEmail(UserAdditionalEmail additionalEmail) {
+        if (this.additionalEmails == null) {
+            return;
+        }
+        if (this.additionalEmails.remove(additionalEmail)) {
+            additionalEmail.setUser(null);
+            this.updatedAt = Instant.now();
+        }
     }
 }

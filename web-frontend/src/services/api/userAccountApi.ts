@@ -96,20 +96,28 @@ const mapProfileVisibility = (visibility?: string): 'PUBLIC' | 'MEMBERS_ONLY' | 
 };
 
 /**
- * Update user profile (firstName, lastName, email, bio, companyId)
+ * Update user profile (firstName, lastName, email, bio, companyId, termsAccepted)
  * Only sends fields that the backend accepts per UpdateUserRequest schema
  * Note: Backend implements PUT, not PATCH
  */
-export const updateUserProfile = async (updates: Partial<User>): Promise<User> => {
-  // Backend only accepts: firstName, lastName, email, bio, companyId
+export const updateUserProfile = async (
+  updates: Partial<User> & {
+    /** Story 12.11: write-once ToS/Privacy consent — server stamps the timestamp. */
+    termsAccepted?: boolean;
+  }
+): Promise<User> => {
+  // Backend only accepts: firstName, lastName, email, bio, companyId, termsAccepted
   // Filter out any other fields to avoid 500 errors
-  const allowedFields: Partial<User> = {};
+  const allowedFields: Partial<User> & { termsAccepted?: boolean } = {};
 
   if (updates.firstName !== undefined) allowedFields.firstName = updates.firstName;
   if (updates.lastName !== undefined) allowedFields.lastName = updates.lastName;
   if (updates.email !== undefined) allowedFields.email = updates.email;
   if (updates.bio !== undefined) allowedFields.bio = updates.bio;
   if (updates.companyId !== undefined) allowedFields.companyId = updates.companyId;
+  // Story 12.11: consent flag — without this allowlist entry the field would be
+  // silently dropped and consent could never be recorded.
+  if (updates.termsAccepted !== undefined) allowedFields.termsAccepted = updates.termsAccepted;
 
   const response = await apiClient.put(`${USER_API_PATH}/me`, allowedFields);
 
@@ -338,6 +346,102 @@ export const uploadProfilePicture = async (
   });
 
   return confirmResponse.cloudFrontUrl;
+};
+
+// =====================================================================
+// Story 10.32 — Additional emails per user profile
+// =====================================================================
+
+export interface AdditionalEmail {
+  email: string;
+  label: string | null;
+  createdAt: string;
+  verifiedAt: string | null;
+}
+
+export interface AddAdditionalEmailPayload {
+  email: string;
+  label?: string;
+}
+
+export interface AdditionalEmailErrorResponse {
+  errorCode?: string;
+  message?: string;
+}
+
+/**
+ * Story 10.32 — register an additional email on the caller's profile.
+ * Throws on non-2xx; surface the error code via the Axios error shape.
+ */
+export const addAdditionalEmail = async (
+  payload: AddAdditionalEmailPayload
+): Promise<AdditionalEmail> => {
+  const response = await apiClient.post<AdditionalEmail>(
+    `${USER_API_PATH}/me/additional-emails`,
+    payload
+  );
+  return response.data;
+};
+
+/**
+ * Story 10.32 — remove an additional email from the caller's profile.
+ */
+export const deleteAdditionalEmail = async (email: string): Promise<void> => {
+  await apiClient.delete(`${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`);
+};
+
+// =====================================================================
+// Additional-email verification (v2)
+// =====================================================================
+
+export interface AdditionalEmailVerificationCheck {
+  /** Masked email (e.g. in***@example.com). */
+  email: string;
+  verified: boolean;
+}
+
+export interface AdditionalEmailVerificationConfirm {
+  email: string;
+  verified: boolean;
+  alreadyVerified: boolean;
+}
+
+/**
+ * Additional-email verification (v2) — GET-check a token (no mutation). Public:
+ * the token IS the credential. Throws on invalid/expired (surface errorCode via
+ * the Axios error shape).
+ */
+export const checkAdditionalEmailVerification = async (
+  token: string
+): Promise<AdditionalEmailVerificationCheck> => {
+  const response = await apiClient.get<AdditionalEmailVerificationCheck>(
+    `${USER_API_PATH}/additional-emails/verify`,
+    { params: { token } }
+  );
+  return response.data;
+};
+
+/**
+ * Additional-email verification (v2) — POST-confirm a token (mutates). Public.
+ */
+export const confirmAdditionalEmailVerification = async (
+  token: string
+): Promise<AdditionalEmailVerificationConfirm> => {
+  const response = await apiClient.post<AdditionalEmailVerificationConfirm>(
+    `${USER_API_PATH}/additional-emails/verify`,
+    { token }
+  );
+  return response.data;
+};
+
+/**
+ * Additional-email verification (v2) — resend the verification email for one of
+ * the caller's own (unverified) additional emails. 204 on success.
+ */
+export const resendAdditionalEmailVerification = async (email: string): Promise<void> => {
+  await apiClient.post(
+    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}/resend-verification`
+  );
 };
 
 // Admin endpoints for uploading profile pictures for other users

@@ -481,6 +481,17 @@ public class EventTaskService {
     }
 
     /**
+     * Delete an event task by ID.
+     */
+    @Transactional
+    public void deleteTask(UUID taskId) {
+        EventTask task = eventTaskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
+        eventTaskRepository.delete(task);
+        log.info("Task {} deleted", taskId);
+    }
+
+    /**
      * Create an ad-hoc task (not from template).
      *
      * @param eventId the event ID

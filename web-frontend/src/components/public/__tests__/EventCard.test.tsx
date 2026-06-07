@@ -115,9 +115,14 @@ describe('EventCard Component', () => {
     test('should_renderEventImage_when_themeImageUrlProvided', () => {
       renderWithRouter(<EventCard event={mockEvent} viewMode="grid" />);
 
-      const image = screen.getByRole('img', { name: /BATbern 2024/i });
+      const image = screen.getByTestId('event-card-image');
       expect(image).toBeInTheDocument();
-      expect(image).toHaveAttribute('src', mockEvent.themeImageUrl);
+      // Image is served resized via the CDN Lambda (buildCdnImageUrl) + lazy-loaded,
+      // so the src points at the same origin object with a width param appended.
+      const src = image.getAttribute('src') ?? '';
+      expect(src).toContain(mockEvent.themeImageUrl);
+      expect(src).toContain('w=768');
+      expect(image).toHaveAttribute('loading', 'lazy');
     });
 
     test('should_renderEventTitle_when_rendered', () => {
@@ -238,7 +243,7 @@ describe('EventCard Component', () => {
       renderWithRouter(<EventCard event={mockEvent} viewMode="list" />);
 
       // In list mode, image should be positioned differently
-      const image = screen.getByRole('img', { name: /BATbern 2024/i });
+      const image = screen.getByTestId('event-card-image');
       expect(image).toBeInTheDocument();
     });
   });

@@ -1,26 +1,21 @@
 package ch.batbern.speakers.config;
 
+import ch.batbern.shared.security.JwtRolesConverter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
+import javax.sql.DataSource;
 
 /**
  * Security configuration for the Speaker Coordination Service
@@ -29,8 +24,13 @@ import java.util.stream.Collectors;
  * Configures role-based access control for speaker status endpoints with JWT authentication
  *
  * Method Security Strategy:
- * - Production/Staging: @EnableMethodSecurity enforces @PreAuthorize annotations
- * - Local Development: Method security disabled (trusted localhost environment, mirrors AWS VPC security)
+ * - All profiles (local, test, staging, production): @EnableMethodSecurity enforces @PreAuthorize.
+ *   Pattern 3b (Epic 11.E.7) makes this safe locally even for CUMS-provisioned speakers whose
+ *   Cognito user lives in staging while their user_profiles row lives in the local DB — the
+ *   JwtRolesConverter DB fallback populates ROLE_<X> from the local row. Before Pattern 3b
+ *   existed, local profile relaxed method security to a "trusted localhost" model; that
+ *   shortcut is no longer needed and masked role-config drift between dev and staging.
+ *   Removed 2026-05-25 during Bruno F2 admin-cleanup-api hardening.
  */
 @Configuration
 @EnableWebSecurity
@@ -40,13 +40,12 @@ public class SecurityConfig {
     private String jwkSetUri;
 
     /**
-     * Enable method-level security for production, staging, and test environments
-     * Enforces @PreAuthorize annotations on controller methods
+     * Enable method-level security in every profile (local, test, staging, production).
+     * Enforces @PreAuthorize annotations on controller methods.
      */
     @Configuration
     @EnableMethodSecurity(prePostEnabled = true)
-    @Profile("!local")
-    static class ProductionMethodSecurityConfig {
+    static class MethodSecurityConfig {
     }
 
     /**
@@ -57,7 +56,9 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("!test")
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationConverter jwtAuthenticationConverter)
+            throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable for stateless API
             .sessionManagement(session ->
@@ -75,7 +76,7 @@ public class SecurityConfig {
             // Configure OAuth2 resource server to parse JWT tokens
             // Required even in local mode for SecurityContextHelper to extract user context
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
             );
 
         return http.build();
@@ -94,37 +95,18 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT Authentication Converter to extract roles from custom:role claim
-     * Maps custom:role claim (comma-separated string) to Spring Security ROLE_ authorities
+     * JWT Authentication Converter with database fallback when custom:role is empty.
+     * Epic 11.E.7: local-dev speakers have a Cognito user in staging but a user_profiles
+     * row only in the local DB, so the PreTokenGen Lambda can't populate custom:role.
+     * In staging the JWT always carries roles, so the fallback is dormant.
+     * See {@link JwtRolesConverter}.
      */
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    public JwtAuthenticationConverter jwtAuthenticationConverter(
+            ObjectProvider<DataSource> dataSourceProvider) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new CustomRolesToAuthoritiesConverter());
+        converter.setJwtGrantedAuthoritiesConverter(
+                new JwtRolesConverter(dataSourceProvider.getIfAvailable()));
         return converter;
-    }
-
-    /**
-     * Converter to extract custom:role claim and map to Spring Security authorities
-     *
-     * Roles are stored in PostgreSQL and synced to Cognito custom:role attribute
-     * Format: comma-separated string (e.g., "ORGANIZER,SPEAKER")
-     * Requires ROLE_ prefix for Spring Security @PreAuthorize annotations
-     */
-    private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
-        @Override
-        public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // Extract roles from custom:role claim (comma-separated string)
-            String rolesString = jwt.getClaimAsString("custom:role");
-
-            if (rolesString == null || rolesString.isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            // Split comma-separated roles and map to ROLE_ authorities
-            return Arrays.stream(rolesString.split(","))
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
-                .collect(Collectors.toList());
-        }
     }
 }

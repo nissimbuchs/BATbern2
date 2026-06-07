@@ -27,7 +27,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
@@ -147,7 +149,7 @@ public class RegistrationService {
         Integer waitlistPosition = null;
         if (capacity != null) {
             long activeCount = registrationRepository.countByEventIdAndStatusIn(
-                    event.getId(), List.of("registered", "confirmed"));
+                    event.getId(), Registration.CAPACITY_STATUSES);
             if (activeCount >= capacity) {
                 registrationStatus = "waitlist";
                 waitlistPosition = registrationRepository.getNextWaitlistPosition(event.getId());
@@ -185,12 +187,16 @@ public class RegistrationService {
         if (request.getCommunicationPreferences() != null
                 && Boolean.TRUE.equals(request.getCommunicationPreferences().getNewsletterSubscribed())) {
             try {
+                String displayName = (request.getFirstName() + " " + request.getLastName()).trim();
                 newsletterSubscriberService.subscribe(
-                        request.getEmail(), request.getFirstName(), "de", "registration", username);
+                        request.getEmail(), displayName, "de", "registration", username);
                 log.info("Auto-subscribed {} to newsletter via registration", request.getEmail());
             } catch (DuplicateSubscriberException e) {
                 // Already subscribed — silently ignore (AC6)
                 log.debug("Newsletter auto-subscribe: {} already active, skipping", request.getEmail());
+            } catch (ch.batbern.events.exception.ReservedEmailDomainException e) {
+                // Reserved/test domain (RFC 2606) — let registration succeed but skip subscribe
+                log.warn("Newsletter auto-subscribe skipped for reserved domain: {}", request.getEmail());
             }
         }
 
@@ -508,6 +514,211 @@ public class RegistrationService {
         log.info("Registration {} cancelled; waitlist promotion triggered for event {}",
                 registration.getRegistrationCode(), registration.getEventId());
     }
+
+    /**
+     * Create a system-managed confirmed registration for a known user (organizer or partner).
+     * <p>
+     * Skips email confirmation, capacity checks, and waitlist logic — these users always
+     * receive a confirmed spot.
+     *
+     * @param event the event entity
+     * @param user  the UserResponse for the user to auto-enroll
+     * @return true if a new registration was created, false if the user was already registered
+     */
+    @Transactional
+    public boolean createInternalRegistration(Event event, ch.batbern.events.dto.generated.users.UserResponse user) {
+        String username = user.getId();
+
+        if (registrationRepository.existsByEventIdAndAttendeeUsername(event.getId(), username)) {
+            log.debug("Auto-enrollment skipped: {} already registered for event {}", username, event.getEventCode());
+            return false;
+        }
+
+        String registrationCode = generateUniqueRegistrationCode(event.getEventCode());
+
+        // Mark this as a programmatic registration so it is NOT counted as a real attendee
+        // (organizers/partners are auto-enrolled on every event — they must never block the
+        // event from being deleted; see EventController.deleteEvent + realAttendeeCount).
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put(Registration.AUTO_REGISTERED_FROM_KEY, Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
+
+        Registration registration = Registration.builder()
+                .registrationCode(registrationCode)
+                .eventId(event.getId())
+                .attendeeUsername(username)
+                .attendeeFirstName(user.getFirstName())
+                .attendeeLastName(user.getLastName())
+                .attendeeEmail(user.getEmail())
+                .attendeeCompanyId(user.getCompanyId())
+                .status("confirmed")
+                .registrationDate(Instant.now())
+                .metadata(metadata)
+                .build();
+
+        registrationRepository.save(registration);
+        log.info("Auto-enrolled {} as confirmed (programmatic) participant for event {}",
+                username, event.getEventCode());
+        return true;
+    }
+
+    /**
+     * Create a registration for an already-authenticated attendee (quick registration flow).
+     * <p>
+     * Differs from {@link #createRegistration} in that:
+     * - The user profile is fetched by username (user already exists in the system)
+     * - Non-waitlist registrations start as "confirmed" (no email confirmation step)
+     * - No email is sent (user is already identified via their Cognito session)
+     * - Capacity/waitlist logic still applies
+     *
+     * @param eventCode event code (e.g., "BATbern42")
+     * @param username  the Cognito username from the JWT (custom:username claim)
+     * @return the created (or existing) registration
+     * @throws NoSuchElementException  if the event is not found
+     * @throws IllegalStateException   if the user is already actively registered
+     */
+    @Transactional
+    public Registration createRegistrationForAuthenticatedUser(
+            String eventCode, String username, String fallbackEmail) {
+        log.debug("Creating authenticated registration for event: {} by user: {}", eventCode, username);
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+
+        // User profile enriches the registration cache fields but may not exist for
+        // ATTENDEEs who were created directly in Cognito. Fall back gracefully.
+        ch.batbern.events.dto.generated.users.UserResponse userProfile = null;
+        try {
+            userProfile = userApiClient.getUserByUsername(username);
+        } catch (ch.batbern.events.exception.UserNotFoundException e) {
+            log.info("User profile not found for username: {} — using JWT email as fallback",
+                    username);
+        }
+
+        // The authenticated path used to trust whatever was on user_profile,
+        // even an empty first_name / last_name (2026-05-18 incident: 20
+        // BATbern59 registrations with blank attendee names from JIT-created
+        // user.X / firstname.lastname.2 accounts). Reject early with a clear
+        // 409 so the frontend can prompt the user to complete their profile
+        // and retry. Only enforced when we DO have a profile — anonymous-
+        // user fallback (userProfile == null) still goes through the
+        // public-form path elsewhere.
+        if (userProfile != null) {
+            boolean missingFirst = userProfile.getFirstName() == null
+                    || userProfile.getFirstName().isBlank();
+            boolean missingLast = userProfile.getLastName() == null
+                    || userProfile.getLastName().isBlank();
+            if (missingFirst || missingLast) {
+                throw new ch.batbern.events.exception.IncompleteProfileException(
+                        username, missingFirst, missingLast);
+            }
+        }
+
+        Optional<Registration> existing = registrationRepository
+                .findByEventIdAndAttendeeUsername(event.getId(), username);
+        if (existing.isPresent()) {
+            Registration reg = existing.get();
+            if ("cancelled".equalsIgnoreCase(reg.getStatus())) {
+                registrationRepository.delete(reg);
+                log.info("Deleted cancelled registration for event: {} by user: {}, allowing re-registration",
+                        eventCode, username);
+            } else {
+                log.warn("Duplicate authenticated registration attempt: event={} user={} status={}",
+                        eventCode, username, reg.getStatus());
+                throw new IllegalStateException(
+                        "User " + username + " is already registered for event " + eventCode);
+            }
+        }
+
+        String registrationCode = generateUniqueRegistrationCode(eventCode);
+
+        Integer capacity = event.getRegistrationCapacity();
+        String registrationStatus = "confirmed"; // authenticated users skip the email-confirmation step
+        Integer waitlistPosition = null;
+        if (capacity != null) {
+            long activeCount = registrationRepository.countByEventIdAndStatusIn(
+                    event.getId(), Registration.CAPACITY_STATUSES);
+            if (activeCount >= capacity) {
+                registrationStatus = "waitlist";
+                waitlistPosition = registrationRepository.getNextWaitlistPosition(event.getId());
+                log.info("Event {} is at capacity, placing authenticated user {} on waitlist at position {}",
+                        eventCode, username, waitlistPosition);
+            }
+        }
+
+        Registration registration = Registration.builder()
+                .registrationCode(registrationCode)
+                .eventId(event.getId())
+                .eventCode(eventCode)
+                .attendeeUsername(username)
+                .attendeeFirstName(userProfile != null ? userProfile.getFirstName() : null)
+                .attendeeLastName(userProfile != null ? userProfile.getLastName() : null)
+                .attendeeEmail(userProfile != null ? userProfile.getEmail() : fallbackEmail)
+                .attendeeCompanyId(userProfile != null ? userProfile.getCompanyId() : null)
+                .status(registrationStatus)
+                .waitlistPosition(waitlistPosition)
+                .deregistrationToken(UUID.randomUUID())
+                .registrationDate(Instant.now())
+                .build();
+
+        Registration saved = registrationRepository.save(registration);
+        log.info("Created authenticated registration: {} for user: {} at event: {} (status={})",
+                registrationCode, username, eventCode, registrationStatus);
+        return saved;
+    }
+
+    /**
+     * Enroll all organizers and partners as confirmed participants for the given event.
+     * <p>
+     * Fetches all users with ORGANIZER and PARTNER roles, then calls
+     * {@link #createInternalRegistration} for each. Already-registered users are skipped
+     * (idempotent). Per-user failures are logged but do not abort the batch.
+     *
+     * @param event the event to enroll stakeholders for
+     * @return summary of how many users were enrolled vs skipped
+     */
+    @Transactional
+    public EnrollmentSummary enrollStakeholders(Event event) {
+        List<String> usernames = new ArrayList<>();
+        try {
+            usernames.addAll(userApiClient.getOrganizerUsernames());
+        } catch (Exception e) {
+            log.warn("Could not fetch organizer list for event {}: {}", event.getEventCode(), e.getMessage());
+        }
+        try {
+            usernames.addAll(userApiClient.getPartnerUsernames());
+        } catch (Exception e) {
+            log.warn("Could not fetch partner list for event {}: {}", event.getEventCode(), e.getMessage());
+        }
+
+        int enrolled = 0;
+        int skipped = 0;
+        for (String username : usernames) {
+            try {
+                ch.batbern.events.dto.generated.users.UserResponse user = userApiClient.getUserByUsername(username);
+                if (createInternalRegistration(event, user)) {
+                    enrolled++;
+                } else {
+                    skipped++;
+                }
+            } catch (Exception e) {
+                log.warn("Stakeholder enrollment failed for user {} on event {}: {}",
+                        username, event.getEventCode(), e.getMessage());
+                skipped++;
+            }
+        }
+
+        log.info("Stakeholder enrollment for event {}: enrolled={}, skipped={}",
+                event.getEventCode(), enrolled, skipped);
+        return new EnrollmentSummary(enrolled, skipped);
+    }
+
+    /**
+     * Summary returned by {@link #enrollStakeholders}.
+     *
+     * @param enrolled number of users newly registered
+     * @param skipped  number of users already registered or that failed
+     */
+    public record EnrollmentSummary(int enrolled, int skipped) {}
 
     /**
      * Generate a unique registration code with format: {eventCode}-reg-{random}

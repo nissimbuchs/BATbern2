@@ -363,11 +363,13 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
-    @DisplayName("should_return403_when_nonAdminRequestsUserList")
-    void should_return403_when_nonAdminRequestsUserList() throws Exception {
+    @DisplayName("should_return200_when_nonAdminRequestsUserList")
+    void should_return200_when_nonAdminRequestsUserList() throws Exception {
+        // Story 10.26: GET /api/v1/users is permitAll so Lambda email forwarder can call it
+        // without a JWT (routes via NAT GW). Any authenticated or unauthenticated request succeeds.
         mockMvc.perform(get("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     // AC5: GET /api/v1/users/{username} returns user by username
@@ -1056,9 +1058,29 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assert updatedUser.getProfilePictureS3Key() == null;
     }
 
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("should_removeOwnProfilePicture_when_deleteMePicture")
+    void should_removeOwnProfilePicture_when_deleteMePicture() throws Exception {
+        // Regression: DELETE /users/me/picture must hit the self-service handler, NOT fall
+        // through to /{username}/picture with literal username="me" (which 404s and left the
+        // self-service "Remove Photo" button broken for every user). Found in slice 1 of the
+        // Playwright staging-hardening audit (docs/plans/playwright-staging-hardening.md).
+        testUser.setProfilePictureUrl("https://cdn.batbern.ch/profile-pictures/john.doe/test-file.png");
+        testUser.setProfilePictureS3Key("profile-pictures/john.doe/test-file.png");
+        userRepository.save(testUser);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(
+                        "/api/v1/users/me/picture")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        User updatedUser = userRepository.findByUsername("john.doe").orElseThrow();
+        assert updatedUser.getProfilePictureUrl() == null;
+        assert updatedUser.getProfilePictureS3Key() == null;
+    }
+
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
-
     @Test
     @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_return404_when_removeProfilePictureForNonExistentUser")
@@ -1068,5 +1090,53 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(containsString("nonexistent.user")));
+    }
+
+    // ---- /api/v1/users/by-company (service-to-service endpoint) ----
+
+    @Test
+    @WithMockUser(username = "service", roles = {"PARTNER"})
+    @DisplayName("should_returnUsersFilteredByCompanyAndRole_when_callingByCompanyEndpoint")
+    void should_returnUsersFilteredByCompanyAndRole_when_callingByCompanyEndpoint() throws Exception {
+        // Given - partner user in SBB
+        User partnerUser = User.builder()
+                .username("partner.sbb")
+                .email("partner@sbb.ch")
+                .firstName("Partner")
+                .lastName("Sbb")
+                .cognitoUserId("partner-sbb-cognito")
+                .companyId("sbb")
+                .roles(new HashSet<>(Set.of(Role.PARTNER)))
+                .build();
+        userRepository.save(partnerUser);
+
+        // When / Then - any authenticated call succeeds (VPC-internal in production, mock user in tests)
+        mockMvc.perform(get("/api/v1/users/by-company")
+                        .param("company", "sbb")
+                        .param("role", "PARTNER"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].email", is("partner@sbb.ch")));
+    }
+
+    @Test
+    @WithMockUser(username = "service", roles = {"PARTNER"})
+    @DisplayName("should_returnEmptyList_when_noUsersMatchCompanyAndRole")
+    void should_returnEmptyList_when_noUsersMatchCompanyAndRole() throws Exception {
+        mockMvc.perform(get("/api/v1/users/by-company")
+                        .param("company", "nonexistent-company")
+                        .param("role", "PARTNER"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)));
+    }
+
+    @Test
+    @DisplayName("should_return401_when_byCompanyCalledWithoutAuth")
+    void should_return401_when_byCompanyCalledWithoutAuth() throws Exception {
+        // In production this path is protected by VpcInternalAuthorizationManager;
+        // in the test profile it falls back to .anyRequest().authenticated()
+        mockMvc.perform(get("/api/v1/users/by-company")
+                        .param("company", "sbb"))
+                .andExpect(status().isUnauthorized());
     }
 }

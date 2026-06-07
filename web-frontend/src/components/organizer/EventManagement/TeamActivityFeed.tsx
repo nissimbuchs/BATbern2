@@ -322,7 +322,13 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
                 primaryTypographyProps={{ component: 'div' }}
                 secondaryTypographyProps={{ component: 'div' }}
                 primary={
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    useFlexGap
+                    sx={{ flexWrap: 'wrap', rowGap: 0.5 }}
+                  >
                     <Typography variant="body2" fontWeight={isUnread ? 'bold' : 'normal'}>
                       {notification.subject}
                     </Typography>

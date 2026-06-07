@@ -28,8 +28,15 @@ vi.mock('aws-amplify/auth', () => ({
   fetchAuthSession: vi.fn(),
 }));
 
+// Story 12.7 / G1: the response interceptor calls authService.signOut() on
+// ACCOUNT_DEACTIVATED — mock it so the forced-logout path is observable.
+vi.mock('@/services/auth/authService', () => ({
+  authService: { signOut: vi.fn().mockResolvedValue(undefined) },
+}));
+
 import { fetchAuthSession } from 'aws-amplify/auth';
 import type { AuthSession } from 'aws-amplify/auth';
+import { authService } from '@/services/auth/authService';
 
 interface I18nMock {
   language: string;
@@ -42,11 +49,26 @@ describe('API Client', () => {
     mockAxios = new MockAdapter(apiClient);
     // Clear mock calls
     vi.clearAllMocks();
+    // Default to an anonymous visitor: no Cognito tokens in storage. getIdToken() now
+    // short-circuits before touching Amplify unless a session exists (perf/public-homepage-
+    // followup #2). Tests that exercise the authenticated path seed a Cognito key explicitly.
+    localStorage.clear();
+    sessionStorage.clear();
   });
 
   afterEach(() => {
     mockAxios.restore();
+    localStorage.clear();
+    sessionStorage.clear();
   });
+
+  // Amplify v6 persists tokens under CognitoIdentityServiceProvider.* keys; getIdToken()
+  // gates on their presence before importing aws-amplify.
+  const seedCognitoSession = () =>
+    localStorage.setItem(
+      'CognitoIdentityServiceProvider.client123.user@example.com.idToken',
+      'stub'
+    );
 
   describe('Request Interceptor', () => {
     it('should_addAcceptLanguageHeader_when_requestMade', async () => {
@@ -74,6 +96,9 @@ describe('API Client', () => {
     });
 
     it('should_addAuthorizationHeader_when_amplifySessionHasToken', async () => {
+      // Authenticated path: a Cognito session exists in storage, so getIdToken() proceeds to
+      // query Amplify.
+      seedCognitoSession();
       // Mock AWS Amplify fetchAuthSession to return an ID token (not access token)
       // Implementation uses idToken to include custom Cognito attributes (custom:role)
       vi.mocked(fetchAuthSession).mockResolvedValue({
@@ -112,7 +137,8 @@ describe('API Client', () => {
     });
 
     it('should_notAddAuthorizationHeader_when_noToken', async () => {
-      // Mock AWS Amplify - no tokens available
+      // Authenticated path but Amplify reports no tokens (e.g. expired/cleared session).
+      seedCognitoSession();
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
       } as AuthSession);
@@ -123,6 +149,22 @@ describe('API Client', () => {
       });
 
       await apiClient.get('/test');
+    });
+
+    it('should_notLoadAmplify_when_anonymousVisitorHasNoCognitoSession', async () => {
+      // perf/public-homepage-followup #2: anonymous homepage visitors have no Cognito tokens
+      // in storage, so getIdToken() MUST short-circuit BEFORE querying Amplify — that is what
+      // keeps aws-amplify (~426 KB) off the eager bundle for them. Storage is empty by default
+      // (cleared in beforeEach), so fetchAuthSession must never be called and no Authorization
+      // header is added.
+      mockAxios.onGet('/public-events').reply((config) => {
+        expect(config.headers?.['Authorization']).toBeUndefined();
+        return [200, { events: [] }];
+      });
+
+      await apiClient.get('/public-events');
+
+      expect(fetchAuthSession).not.toHaveBeenCalled();
     });
   });
 
@@ -169,6 +211,47 @@ describe('API Client', () => {
       }
 
       consoleErrorSpy.mockRestore();
+    });
+
+    it('should_forceLogoutAndRedirect_when_403AccountDeactivated', async () => {
+      // Story 12.7 / G1
+      const { setNavigationCallback } = await import('./apiClient');
+      const mockNavigate = vi.fn();
+      setNavigationCallback(mockNavigate);
+
+      mockAxios.onGet('/protected').reply(403, {
+        error: 'ACCOUNT_DEACTIVATED',
+        message: 'Your account has been deactivated.',
+      });
+
+      await apiClient.get('/protected').catch(() => {
+        /* expected */
+      });
+
+      expect(authService.signOut).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith('/login?reason=account_deactivated');
+      // Story 12.8 F5: the reason must ALSO be persisted in sessionStorage so it survives
+      // Amplify's hosted-UI logout redirect (which clobbers the in-app navigation above
+      // for federated sessions).
+      expect(sessionStorage.getItem('batbern.logout-reason')).toBe('account_deactivated');
+      sessionStorage.removeItem('batbern.logout-reason');
+    });
+
+    it('should_notLogout_when_genericForbidden403', async () => {
+      // Regression guard: a non-deactivated 403 (e.g. authorization failure) must NOT
+      // force a logout (no false sign-out).
+      const { setNavigationCallback } = await import('./apiClient');
+      const mockNavigate = vi.fn();
+      setNavigationCallback(mockNavigate);
+
+      mockAxios.onGet('/admin').reply(403, { message: 'Forbidden' });
+
+      await apiClient.get('/admin').catch(() => {
+        /* expected */
+      });
+
+      expect(authService.signOut).not.toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalledWith('/login?reason=account_deactivated');
     });
 
     it('should_handleServerError_when_500Received', async () => {

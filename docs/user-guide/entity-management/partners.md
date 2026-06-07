@@ -168,7 +168,7 @@ BATbern Partners
 
 The partner directory is **publicly accessible** (no login required) at:
 - **Production**: https://www.batbern.ch/partners
-- **Staging**: https://staging.batbern.ch/partners
+- **Staging**: https://www.batbern.ch/partners
 - **Local**: http://localhost:3000/partners
 
 Partners are displayed in tier order with logos and descriptions.

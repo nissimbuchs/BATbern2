@@ -368,6 +368,55 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle Spring's {@link org.springframework.web.server.ResponseStatusException} explicitly so
+     * it isn't swallowed by the generic {@code @ExceptionHandler(Exception.class)} below (which
+     * would otherwise turn an intentional 400 into a 500). Same class of gotcha called out in
+     * {@code _bmad-output/project-context.md} for {@code MethodArgumentNotValidException}.
+     */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(
+            org.springframework.web.server.ResponseStatusException ex,
+            HttpServletRequest request) {
+        log.warn("Response status exception: {} - {}", ex.getStatusCode(), ex.getReason());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(ex.getStatusCode().value())
+                .error(HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase())
+                .message(ex.getReason() != null ? ex.getReason() : "Request rejected")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("WARNING")
+                .build();
+        return ResponseEntity.status(ex.getStatusCode()).body(error);
+    }
+
+    /**
+     * Returns 405 Method Not Allowed when a URI matches a registered route but the HTTP verb
+     * doesn't (e.g. POST against a GET-only endpoint). Without this explicit handler Spring
+     * raises {@code HttpRequestMethodNotSupportedException}, which falls through to the
+     * catch-all {@code @ExceptionHandler(Exception.class)} below and gets translated into a 500 —
+     * the same class of gotcha as the {@code MethodArgumentNotValidException} rule in
+     * {@code _bmad-output/project-context.md}. Cross-service hygiene fix bundled with PR 2a.
+     */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+        log.debug("Method not supported for {} {}: {}",
+                request.getMethod(), request.getRequestURI(), ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.METHOD_NOT_ALLOWED.value())
+                .error("Method Not Allowed")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+    }
+
+    /**
      * Handle generic exceptions
      * Returns HTTP 500 Internal Server Error
      */

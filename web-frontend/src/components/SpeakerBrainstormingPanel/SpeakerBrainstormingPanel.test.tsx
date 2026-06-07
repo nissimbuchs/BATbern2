@@ -10,8 +10,34 @@ import { SpeakerBrainstormingPanel } from './SpeakerBrainstormingPanel';
 import { useSpeakerPool } from '@/hooks/useSpeakerPool';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string, def?: string) => def || key }),
+  useTranslation: () => ({
+    t: (
+      key: string,
+      defOrOpts?: string | Record<string, unknown>,
+      opts?: Record<string, unknown>
+    ) => {
+      // Match real i18n behaviour for the {{currentState}} interpolation used by
+      // the promote dialog's error banner.
+      const params = (typeof defOrOpts === 'string' ? opts : defOrOpts) ?? {};
+      const fallback = typeof defOrOpts === 'string' ? defOrOpts : key;
+      return Object.entries(params as Record<string, unknown>).reduce(
+        (acc, [k, v]) => acc.replace(`{{${k}}}`, String(v)),
+        fallback
+      );
+    },
+  }),
 }));
+
+const promoteMutateMock = vi.fn();
+const promoteResetMock = vi.fn();
+const promoteMutationStub = {
+  mutate: promoteMutateMock,
+  reset: promoteResetMock,
+  isPending: false,
+  isError: false,
+  error: null,
+};
+const addMutationStub = { mutate: vi.fn(), isLoading: false };
 
 vi.mock('@/hooks/useSpeakerPool', () => ({
   useSpeakerPool: vi.fn(() => ({
@@ -35,7 +61,8 @@ vi.mock('@/hooks/useSpeakerPool', () => ({
     ],
     isLoading: false,
   })),
-  useAddSpeakerToPool: () => ({ mutate: vi.fn(), isLoading: false }),
+  useAddSpeakerToPool: () => addMutationStub,
+  usePromoteSpeakerToReady: () => promoteMutationStub,
 }));
 
 describe('SpeakerBrainstormingPanel', () => {
@@ -48,7 +75,7 @@ describe('SpeakerBrainstormingPanel', () => {
   const renderComponent = (props = {}) =>
     render(
       <QueryClientProvider client={queryClient}>
-        <SpeakerBrainstormingPanel eventId="event-123" {...props} />
+        <SpeakerBrainstormingPanel eventCode="BATbern56" {...props} />
       </QueryClientProvider>
     );
 
@@ -108,5 +135,54 @@ describe('SpeakerBrainstormingPanel', () => {
 
     renderComponent();
     expect(screen.getByText(/No speakers in pool yet/i)).toBeInTheDocument();
+  });
+
+  // ── Story 11.D.1: Promote-to-speaker UI (AC6, AC7) ─────────────────────────
+
+  it('should_not_renderEmailInput_when_inIdentifiedOrContactedMode (AC6)', () => {
+    renderComponent();
+    // The brainstorming form has no email input — promotion captures it instead.
+    expect(screen.queryByLabelText(/^Email$/i)).not.toBeInTheDocument();
+  });
+
+  it('should_renderPromoteButton_when_speakerIsContacted (AC7)', () => {
+    renderComponent();
+    // Bob Johnson is the CONTACTED speaker per the mock fixture.
+    expect(screen.getByTestId('promote-button-2')).toBeInTheDocument();
+  });
+
+  it('should_not_renderPromoteButton_when_speakerIsIdentified (AC7)', () => {
+    renderComponent();
+    expect(screen.queryByTestId('promote-button-1')).not.toBeInTheDocument();
+  });
+
+  it('should_openPromoteDialog_when_promoteButtonClicked (AC7)', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(screen.getByTestId('promote-button-2'));
+    // Title text comes from the i18n fallback ("Promote to speaker")
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('promote-email-field')).toBeInTheDocument();
+  });
+
+  it('should_callPromoteEndpoint_when_dialogSubmitted (AC7)', async () => {
+    const user = userEvent.setup();
+    promoteMutateMock.mockReset();
+    renderComponent();
+    await user.click(screen.getByTestId('promote-button-2'));
+
+    const emailInput = await screen.findByTestId('promote-email-field');
+    await user.type(emailInput, 'bob@example.com');
+
+    const submit = await screen.findByTestId('promote-submit-button');
+    await user.click(submit);
+
+    expect(promoteMutateMock).toHaveBeenCalledTimes(1);
+    const [args] = promoteMutateMock.mock.calls[0];
+    expect(args).toMatchObject({
+      eventCode: 'BATbern56',
+      speakerId: '2',
+      request: expect.objectContaining({ email: 'bob@example.com' }),
+    });
   });
 });

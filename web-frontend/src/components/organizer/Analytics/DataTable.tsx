@@ -60,7 +60,7 @@ const DataTable = <T extends Record<string, unknown>>({
   });
 
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300, overflowX: 'auto' }}>
       <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>

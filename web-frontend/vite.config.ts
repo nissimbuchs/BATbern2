@@ -5,6 +5,7 @@ import { resolve } from 'path';
 import viteCompression from 'vite-plugin-compression';
 import { VitePWA } from 'vite-plugin-pwa';
 import sitemap from 'vite-plugin-sitemap';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 /**
  * Vite Configuration - Environment-Agnostic Build
@@ -67,39 +68,42 @@ export default defineConfig({
       workbox: {
         // Service worker caching strategies
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // 2026-06-05 — index.html is deliberately NOT precached and navigations are
+        // served NetworkFirst (see runtimeCaching below). Precache-pinning index.html
+        // froze BOTH the app shell AND its response headers (CSP!) until the SW
+        // updated: after every deploy, each SW-controlled client ran the OLD bundle for
+        // one more full page-load cycle. Two prod incidents: the CSP connect-src fix
+        // never reaching SW clients (2026-06-04), and the 12.8-F8 federated-login fix
+        // failing one last time per client (2026-06-05, first registration of
+        // buchsjosefnissim@gmail.com). Hashed assets stay precached — they are
+        // immutable; only the HTML entry must always be fresh.
+        globIgnores: ['**/index.html'],
+        // Disable the precache-bound SPA navigation route (createHandlerBoundToURL
+        // requires index.html in the manifest). Navigations fall through to the
+        // runtimeCaching NetworkFirst route below; CloudFront handles 404→index.html.
+        navigateFallback: null,
         skipWaiting: true, // Activate new service worker immediately
         clientsClaim: true, // Take control of all pages immediately
         runtimeCaching: [
+          // Navigations (full page loads): network first so a fresh deploy reaches
+          // every client on their NEXT page load; cached copy only as offline fallback.
           {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            urlPattern: ({ request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'google-fonts-stylesheets',
-              networkTimeoutSeconds: 3, // Fallback to cache if network is slow
+              cacheName: 'html-cache',
+              networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 7, // offline fallback for up to 1 week
               },
               cacheableResponse: {
                 statuses: [0, 200],
               },
             },
           },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              networkTimeoutSeconds: 3, // Fallback to cache if network is slow
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
+          // Google Fonts caching removed — the app loads no web fonts (system
+          // font stack only). See index.html.
           {
             urlPattern: /^https:\/\/.*\.cloudfront\.net\/.*/i,
             handler: 'StaleWhileRevalidate',
@@ -135,6 +139,44 @@ export default defineConfig({
       devOptions: {
         enabled: false, // Disable PWA in development for faster builds
       },
+    }),
+    // Self-hosted TinyMCE assets (skins, icons, models, plugins)
+    // Required because TinyMCE Cloud restricts the 'code' plugin to paid tiers.
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'node_modules/tinymce/skins',
+          dest: 'tinymce',
+          rename: { stripBase: 2 },
+        },
+        {
+          src: 'node_modules/tinymce/icons',
+          dest: 'tinymce',
+          rename: { stripBase: 2 },
+        },
+        {
+          src: 'node_modules/tinymce/models',
+          dest: 'tinymce',
+          rename: { stripBase: 2 },
+        },
+        {
+          src: 'node_modules/tinymce/plugins',
+          dest: 'tinymce',
+          rename: { stripBase: 2 },
+        },
+        {
+          src: 'node_modules/tinymce/themes',
+          dest: 'tinymce',
+          rename: { stripBase: 2 },
+        },
+        // TinyMCE infers base_url from skin_url and tries to load tinymce.min.js
+        // from that location at runtime — it must exist even though TinyMCE is bundled.
+        {
+          src: 'node_modules/tinymce/tinymce.min.js',
+          dest: 'tinymce',
+          rename: { stripBase: 2 },
+        },
+      ],
     }),
     // Sitemap generation for SEO (Story 4.1.8)
     sitemap({
@@ -213,6 +255,102 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
+          // Tone.js + its audio deps run AudioContext capability tests at module
+          // init (standardized-audio-context's constant-source-node probe). Force
+          // -ing them into the eager `vendor` chunk made those probes run on every
+          // page (incl. the public homepage) → a "AudioContext was not allowed to
+          // start" autoplay-policy warning before any user gesture. Return
+          // undefined so Rollup leaves them in the chunk created by the dynamic
+          // import('tone') in useBlobSounds — loaded only on the organizer blob
+          // page, after a click. (Shared tslib/@babel-runtime stay in vendor.)
+          if (
+            // match both POSIX (/) and Windows (\) path separators
+            /[\\/]node_modules[\\/]tone[\\/]/.test(id) ||
+            id.includes('standardized-audio-context') ||
+            id.includes('automation-events')
+          )
+            return undefined;
+          // Admin-only heavy libraries — charts (recharts + its exclusive d3/victory/
+          // react-smooth tree), animation (framer-motion), and drag-and-drop (@dnd-kit) —
+          // are imported ONLY by lazy-loaded organizer/partner/presentation routes (zero
+          // imports in the public homepage graph, verified 2026-06-02). Forcing them into
+          // the eager `vendor` chunk shipped them to every public homepage visitor (most of
+          // the ~313 KB "unused JavaScript" Lighthouse flagged). Return undefined so Rollup
+          // co-locates them with the dynamic import() chunk of their route — identical to the
+          // `tone` carve-out above. The d3-*/victory-vendor/react-smooth packages are pulled
+          // ONLY transitively by recharts (no direct src imports), so splitting them with it
+          // is safe; without them the recharts split would be pointless (d3 would stay eager).
+          // Unlike @emotion/@mui, none of these have a React-core circular dependency, so the
+          // single-vendor TDZ concern documented above does not apply to them.
+          if (
+            /[\\/]node_modules[\\/](recharts|framer-motion|motion|motion-dom|react-smooth|victory-vendor|internmap)[\\/]/.test(
+              id
+            ) ||
+            /[\\/]node_modules[\\/]@dnd-kit[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]d3-[^\\/]+[\\/]/.test(id)
+          )
+            return undefined;
+          // More admin/authenticated-only libraries the public homepage never touches
+          // (verified 2026-06-02: 0 imports in the public homepage graph) but that the
+          // blanket `vendor` chunk shipped to every visitor:
+          //   - motion/motion-dom: framer-motion's actual v12 package — the regex above only
+          //     matched the `framer-motion` alias, so ~326 KB stayed eager. Presentation only.
+          //   - @stomp/stompjs + sockjs-client: notification WebSocket — authenticated only.
+          //   - react-dropzone + file-selector: file upload (profile picture / admin import).
+          //   - ics: calendar-invite generation (partner/organizer meetings).
+          // Returning undefined lets Rollup co-locate each with the lazy route chunk that
+          // imports it — same safe carve-out pattern as `tone`/recharts above.
+          if (
+            /[\\/]node_modules[\\/]@stomp[\\/]stompjs[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/](sockjs-client|react-dropzone|file-selector|ics)[\\/]/.test(id)
+          )
+            return undefined;
+          // AWS Amplify + its AWS SDK / Cognito / Smithy transitive tree (~426 KB) is the
+          // largest dependency the blanket `vendor` chunk shipped to every public-homepage
+          // visitor — yet anonymous visitors never authenticate. As of
+          // perf/public-homepage-followup #2 the code loads Amplify lazily (dynamic import in
+          // authService/apiClient/config + ensureAmplifyConfigured), but that is only effective
+          // if manualChunks ALSO declines to force it into the eager vendor chunk. Return
+          // undefined so Rollup co-locates it with the dynamic import() chunk that first needs
+          // it — same carve-out pattern as tone/recharts above. No direct @aws-sdk / @smithy /
+          // amazon-cognito imports exist in src (verified 2026-06-02): the whole tree is reached
+          // only through aws-amplify, so carving these package roots is safe. Like the other
+          // carve-outs (and unlike @emotion/@mui) none has a React-core circular dependency, so
+          // the single-vendor TDZ concern does not apply.
+          if (
+            /[\\/]node_modules[\\/](aws-amplify|@aws-amplify|@aws-sdk|@smithy|@aws-crypto|amazon-cognito-identity-js)[\\/]/.test(
+              id
+            )
+          )
+            return undefined;
+          // More form/editor libraries the public homepage never reaches eagerly (verified
+          // 2026-06-02) but the blanket `vendor` rule shipped to every visitor:
+          //   - @tinymce/tinymce-react: the React wrapper for the rich-text editor, imported
+          //     ONLY by the organizer EmailTemplateEditModal (admin). (The TinyMCE core itself
+          //     is already not bundled — see the note below.)
+          //   - react-hook-form (+ @hookform/resolvers): every consumer — public registration
+          //     wizard (lazy via HeroSection), the auth forms, and the admin forms — sits behind
+          //     a React.lazy boundary; HomePage's eager graph never imports it. Returning
+          //     undefined co-locates it with the lazy chunks that use it (same pattern as
+          //     recharts/amplify). None has a React-core circular dependency, so the @emotion/@mui
+          //     single-vendor TDZ concern does not apply.
+          //   - zod: the form-validation schema lib, used ONLY via @hookform/resolvers/zod in the
+          //     same 6 lazy form components (+ src/schemas/partnerSchema.ts, imported only by the
+          //     lazy PartnerCreateEditModal). No eager homepage importer. (yup is NOT here — it is
+          //     not a dependency and not bundled; we standardised on zod.)
+          // (Redux is intentionally absent here: @reduxjs/toolkit/react-redux are not direct deps
+          //  and are not bundled, so there is nothing to carve.)
+          if (
+            /[\\/]node_modules[\\/]@tinymce[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]react-hook-form[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]@hookform[\\/]/.test(id) ||
+            /[\\/]node_modules[\\/]zod[\\/]/.test(id)
+          )
+            return undefined;
+          // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
+          // <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" /> from vite-plugin-static-copy.
+          // Bundling its IIFE modules causes Vite/Rollup to reorder them so plugins
+          // execute before window.tinymce is set, breaking the editor.
           return 'vendor';
         },
         // Asset file naming for better caching
@@ -235,7 +373,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    testTimeout: 20000, // Increase timeout to 20s for complex component tests with async operations
+    // 30s testTimeout + 30s hookTimeout absorb CPU-contention spikes when the full
+    // 5000+-test suite runs in parallel; isolated runs of these files complete in <7s.
+    testTimeout: 30000,
+    hookTimeout: 30000,
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

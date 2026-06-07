@@ -57,7 +57,7 @@ export class BastionStack extends cdk.Stack {
 
     // Use latest Amazon Linux 2023 AMI (optimized for SSM)
     const ami = ec2.MachineImage.latestAmazonLinux2023({
-      cpuType: ec2.AmazonLinuxCpuType.ARM_64, // Graviton for cost savings
+      cpuType: ec2.AmazonLinuxCpuType.X86_64, // x86 (Graviton vCPU quota is 0 in this account)
     });
 
     // Create bastion instance in public subnet
@@ -67,7 +67,7 @@ export class BastionStack extends cdk.Stack {
         subnetType: ec2.SubnetType.PUBLIC, // Public subnet for SSM endpoint access
       },
       instanceType: ec2.InstanceType.of(
-        ec2.InstanceClass.T4G, // ARM-based Graviton
+        ec2.InstanceClass.T3, // x86 (Graviton quota is 0 in this account)
         ec2.InstanceSize.NANO // Smallest size for cost optimization
       ),
       machineImage: ami,

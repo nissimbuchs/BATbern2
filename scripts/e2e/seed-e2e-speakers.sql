@@ -249,15 +249,7 @@ BEGIN
 
     RAISE NOTICE '✅ Created/Updated user_profiles records';
 
-    -- Clean up any old tokens for these speakers (to ensure fresh tokens)
-    DELETE FROM speaker_invitation_tokens
-    WHERE speaker_pool_id IN (
-        'e2e00000-0000-0000-0000-000000000101',
-        'e2e00000-0000-0000-0000-000000000102',
-        'e2e00000-0000-0000-0000-000000000103'
-    );
-
-    RAISE NOTICE '✅ Cleaned up old tokens for E2E speakers';
+    -- Story 11.F.1: speaker_invitation_tokens table dropped by V104; no token cleanup needed.
 
     -- Clean up old history records for these speakers
     DELETE FROM speaker_outreach_history
@@ -388,7 +380,7 @@ BEGIN
     RAISE NOTICE '✅ Created status history records';
     RAISE NOTICE '';
     RAISE NOTICE '🎉 E2E speaker test data seeded successfully!';
-    RAISE NOTICE 'Run ./scripts/e2e/generate-speaker-tokens.sh to generate tokens';
+    RAISE NOTICE 'Story 11.F.1: speakers now authenticate via Cognito. Use ./scripts/auth/get-token.sh staging <email> <password> to obtain a SPEAKER_AUTH_TOKEN.';
 
 END $$;
 

@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organisator",
+      "speaker": "Spreker",
+      "partner": "Partner",
+      "attendee": "Deelnemer"
+    }
   },
   "public": {
     "login": "Inloggen",
@@ -74,13 +80,13 @@
     "close": "Sluiten",
     "sending": "Verzenden...",
     "loading": "Laden...",
-    "retry": "Retry",
-    "back": "Back",
-    "confirm": "Confirm",
-    "clearFilters": "Clear filters",
-    "previous": "Previous",
-    "next": "Next",
-    "deleting": "Deleting..."
+    "retry": "Opnieuw proberen",
+    "back": "Terug",
+    "confirm": "Bevestigen",
+    "clearFilters": "Filters wissen",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "deleting": "Verwijderen..."
   },
   "language": {
     "select": "Taal selecteren",
@@ -493,7 +499,7 @@
       "emailReadOnly": "E-mail (alleen-lezen)",
       "bio": "Bio",
       "bioPlaceholder": "Vertel ons over uzelf...",
-      "bioExceeds": "Bio mag niet meer dan 500 tekens bevatten",
+      "bioExceeds": "Bio mag niet meer dan 5000 tekens bevatten",
       "maxExpertiseAreas": "Maximaal 10 expertisegebieden toegestaan",
       "maxSpeakingTopics": "Maximaal 10 spreekonderwerpen toegestaan",
       "socialLinks": "Sociale media links",
@@ -509,12 +515,12 @@
       "saveFailed": "Profiel opslaan mislukt"
     },
     "photo": {
-      "invalidFileType": "Ongeldig bestandstype. Geaccepteerde formaten: JPEG, PNG, WebP",
+      "invalidFileType": "Ongeldig bestandstype. Geaccepteerde formaten: JPEG, PNG, SVG",
       "fileTooLarge": "Bestandsgrootte moet kleiner zijn dan 5 MB",
       "changePhoto": "Foto wijzigen",
       "dragDropHere": "Sleep een foto hier naartoe",
       "orClickBrowse": "of klik om te bladeren",
-      "supportedFormats": "JPEG, PNG, WebP (max. 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max. 5 MB)",
       "uploading": "Uploaden...",
       "cancel": "Annuleren",
       "uploadAria": "Profielfoto uploaden"
@@ -554,6 +560,11 @@
     "detail": {
       "backToArchive": "← Terug naar archief",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "Nieuwste eerst",
+      "oldest": "Oudste eerst",
+      "mostAttended": "Meest bezocht"
     }
   },
   "notifications": {
@@ -588,7 +599,8 @@
       "SPEAKER": "Sprekers",
       "REGISTRATION": "Registratie",
       "TASK_REMINDER": "Taakherinneringen",
-      "NEWSLETTER": "Nieuwsbrief"
+      "NEWSLETTER": "Nieuwsbrief",
+      "VENUE_COORDINATION": "Locatie & Catering"
     },
     "layoutKey": "Lay-out",
     "standalone": "Geen (zelfstandig)",
@@ -694,24 +706,24 @@
   },
   "labels": {
     "status": "Status",
-    "title": "Title",
-    "date": "Date",
-    "overview": "Overview",
-    "sortBy": "Sort by",
-    "actions": "Actions",
-    "company": "Company",
-    "email": "Email",
-    "dueDate": "Due Date",
-    "emailAddress": "Email Address",
-    "name": "Name",
-    "description": "Description",
-    "notes": "Notes",
-    "event": "Event",
-    "viewMode": "View mode",
-    "gridView": "Grid view",
-    "listView": "List view",
-    "sessions": "Sessions",
-    "topics": "Topics",
+    "title": "Titel",
+    "date": "Datum",
+    "overview": "Overzicht",
+    "sortBy": "Sorteren op",
+    "actions": "Acties",
+    "company": "Bedrijf",
+    "email": "E-mail",
+    "dueDate": "Vervaldatum",
+    "emailAddress": "E-mailadres",
+    "name": "Naam",
+    "description": "Beschrijving",
+    "notes": "Notities",
+    "event": "Evenement",
+    "viewMode": "Weergavemodus",
+    "gridView": "Rasterweergave",
+    "listView": "Lijstweergave",
+    "sessions": "Sessies",
+    "topics": "Onderwerpen",
     "firstName": "Voornaam",
     "lastName": "Achternaam"
   },
@@ -763,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Je profiel",
+    "pageSubtitle": "Beheer je persoonlijke gegevens, toestemming en nieuwsbrief",
+    "tabs": {
+      "profile": "Profiel",
+      "consent": "Toestemming & Nieuwsbrief"
+    },
+    "companyLabel": "Bedrijf",
+    "companyInvalid": "Het bedrijfs-ID moet uit 1-12 letters of cijfers bestaan",
+    "onboardingNotice": "Vervolledig je profiel om door te gaan: accepteer hieronder de gebruiksvoorwaarden en het privacybeleid.",
+    "consentTitle": "Gebruiksvoorwaarden & privacybeleid",
+    "consentLabelPrefix": "Ik ga akkoord met de",
+    "consentLabelAnd": "en het",
+    "termsOfService": "gebruiksvoorwaarden",
+    "privacyPolicy": "privacybeleid",
+    "consentAcceptedOn": "Geaccepteerd op {{date}}",
+    "consentSave": "Accepteren en opslaan",
+    "consentSaveError": "Het opslaan van je toestemming is mislukt. Probeer het opnieuw.",
+    "newsletterTitle": "Nieuwsbrief",
+    "newsletterDescription": "Ontvang uitnodigingen en updates over komende BATbern-evenementen.",
+    "newsletterLabel": "Abonneer je op de BATbern-nieuwsbrief"
   }
 }

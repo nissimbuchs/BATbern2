@@ -283,7 +283,7 @@ graph TD
 **User Goal**: Respond to speaking invitation, submit required materials efficiently, and track submission status
 
 **Entry Points**:
-- Email invitation link → Direct to invitation response page (magic link authentication)
+- Email invitation link → Direct to speaker portal login (Cognito session with forced password change on first login, per ADR-009)
 - Speaker Portal → "My Invitations" dashboard
 - Notification Center → "New Invitation" alert
 
@@ -293,7 +293,7 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Email Invitation with Magic Link] --> B[Review Event Details]
+    A[Email Invitation with Login Link + Temp Password] --> B[Review Event Details]
     B --> C{Decision Point}
 
     C -->|Accept| D[Confirm Availability & Slot Preferences]

@@ -66,7 +66,10 @@ class ConflictDetectionServiceTest {
         speaker = SpeakerPool.builder()
                 .id(speakerId)
                 .eventId(eventId)
-                .username("john.doe")
+                // Story 11.E.9: ConflictDetectionService now uses speakerName (no more
+                // username fallback after the column drop). Seed it so the conflict
+                // message asserts pass.
+                .speakerName("john.doe")
                 .build();
 
         sessionA = Session.builder()

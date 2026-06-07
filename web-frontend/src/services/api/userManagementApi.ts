@@ -36,12 +36,17 @@ const USER_API_PATH = '/users';
 export const listUsers = async (
   filters: UserFilters,
   pagination: UserPagination,
-  includes?: string[]
+  includes?: string[],
+  sortBy?: string,
+  sortDir?: 'asc' | 'desc'
 ): Promise<PaginatedUserResponse> => {
   const params: Record<string, string | number | boolean> = {
     page: pagination.page,
     limit: pagination.limit,
   };
+
+  if (sortBy) params.sortBy = sortBy;
+  if (sortDir) params.sortDir = sortDir;
 
   // Add includes parameter
   if (includes && includes.length > 0) {
@@ -111,6 +116,37 @@ export const getUserById = async (id: string, includes?: string[]): Promise<User
 
   const response = await apiClient.get<User>(`${USER_API_PATH}/${id}`, { params });
   return response.data;
+};
+
+/**
+ * Get a user by their meaningful username (ADR-003). The backend route at
+ * `/api/v1/users/{username}` accepts either UUID or username, so this is a
+ * thin alias that documents intent. Used by Content-tab speaker prefill
+ * (Epic 11 bug fix 2026-05-19) — `searchUsers` only matches name/email
+ * substrings and does NOT match by username, so the previous
+ * `searchUsers(speaker.username)` returned `[]` for promoted speakers.
+ *
+ * Returns null when the user does not exist (404 from the backend) so the
+ * caller can gracefully fall back to the legacy name-based search.
+ */
+export const getUserByUsername = async (
+  username: string,
+  includes?: string[]
+): Promise<User | null> => {
+  const params: Record<string, string> = {};
+  if (includes && includes.length > 0) {
+    params.include = includes.join(',');
+  }
+  try {
+    const response = await apiClient.get<User>(`${USER_API_PATH}/${username}`, { params });
+    return response.data;
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 404) {
+      return null;
+    }
+    throw err;
+  }
 };
 
 /**

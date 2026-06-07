@@ -13,8 +13,22 @@ export interface FrontendStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
   logsBucket: s3.IBucket;
   domainName?: string;
+  apexDomainName?: string;
   hostedZoneId?: string;
   certificateArn?: string;
+  /**
+   * Optional site variant discriminator (e.g. `'beta'`). Lets a SECOND FrontendStack
+   * instance coexist with the primary one in the same account without colliding on the
+   * physical resource names — which are all derived from `envName`. See
+   * docs/plans/beta-frontend-canary.md.
+   *
+   * When OMITTED, every name is produced exactly as before (the primary site is unchanged —
+   * `cdk diff` must show zero changes). When set, names are prefixed/suffixed with the variant
+   * (`beta-spa-router`, `batbern-frontend-beta-staging`, …), the rollback `stableBucket` is
+   * skipped (the canary IS the pre-prod check), the buckets are made destroyable, and the
+   * distribution uses the cheaper PRICE_CLASS_100.
+   */
+  variant?: string;
 }
 
 /**
@@ -27,24 +41,75 @@ export interface FrontendStackProps extends cdk.StackProps {
  */
 export class FrontendStack extends cdk.Stack {
   public readonly websiteBucket: s3.Bucket;
+  /**
+   * Known-good snapshot of the deployed frontend. The staging-deploy pipeline
+   * syncs `websiteBucket → stableBucket` on every green deploy (after Bruno AND
+   * Playwright @smoke pass) and restores `stableBucket → websiteBucket` (+ a
+   * CloudFront invalidation) when the gate trips. This is the frontend analogue
+   * of the ECR `staging-stable` tag the backend rollback uses: `websiteBucket`
+   * is unversioned and the deploy prunes it, so without a separate copy there is
+   * no previous frontend to roll back to. See
+   * docs/plans/playwright-staging-hardening.md §"Frontend rollback".
+   */
+  public readonly stableBucket?: s3.Bucket;
   public readonly distribution: cloudfront.Distribution;
   public readonly websiteUrl: string;
 
   constructor(scope: Construct, id: string, props: FrontendStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
     const envName = props.config.envName;
+    const variant = props.variant;
+
+    // Name discriminators. With no variant these reproduce the original strings byte-for-byte
+    // (primary site untouched — see docs/plans/beta-frontend-canary.md Phase 0):
+    //   - `prefix`  drives the ${envName}-... CloudFront function / cache / header-policy /
+    //     output names and the log path → 'staging' (default) or 'beta'.
+    //   - `bucketSuffix` keeps the trailing -${envName} so a beta bucket
+    //     (`batbern-frontend-beta-staging`) still matches the cicd-stack S3 grant `batbern-*-${envName}`
+    //     → 'staging' (default) or 'beta-staging'.
+    //   - `isPrimary` gates primary-only concerns (the rollback stableBucket, prod retention).
+    const isPrimary = !variant;
+    const prefix = variant ?? envName;
+    const bucketSuffix = variant ? `${variant}-${envName}` : envName;
+
+    // Whether buckets survive stack teardown. The PRIMARY prod site retains (it holds live
+    // content / the only rollback copy); a variant canary is disposable, so it is always
+    // destroyable even though isProd is true.
+    const retainBuckets = isProd && isPrimary;
+    const bucketRemoval = retainBuckets ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY;
+    const bucketAutoDelete = !retainBuckets;
 
     // S3 bucket for frontend static files
     this.websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
-      bucketName: `batbern-frontend-${envName}`,
+      bucketName: `batbern-frontend-${bucketSuffix}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       versioned: false,
-      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: !isProd,
+      removalPolicy: bucketRemoval,
+      autoDeleteObjects: bucketAutoDelete,
     });
+
+    // Stable snapshot bucket — holds the last known-good frontend so the deploy
+    // pipeline can roll the frontend back when the gate trips (see the field
+    // doc above). NOT a CloudFront origin and NOT a BucketDeployment target, so
+    // the live bucket's `prune: true` can never wipe it. Name matches the
+    // existing GitHub-Actions-role S3 grant pattern `batbern-*-${envName}`
+    // (cicd-stack.ts), so no IAM change is needed for the sync/restore CLI steps.
+    //
+    // PRIMARY site only: a variant canary is itself the pre-prod check, so it has no
+    // rollback gate and needs no stable snapshot.
+    if (isPrimary) {
+      this.stableBucket = new s3.Bucket(this, 'StableBucket', {
+        bucketName: `batbern-frontend-stable-${bucketSuffix}`,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+        versioned: false,
+        removalPolicy: bucketRemoval,
+        autoDeleteObjects: bucketAutoDelete,
+      });
+    }
 
     // CloudFront Origin Access Control for S3
     const oac = new cloudfront.S3OriginAccessControl(this, 'OAC', {
@@ -53,18 +118,37 @@ export class FrontendStack extends cdk.Stack {
 
     // CloudFront Functions for SPA routing
     const routerFunction = new cloudfront.Function(this, 'RouterFunction', {
-      functionName: `${envName}-spa-router`,
+      functionName: `${prefix}-spa-router`,
       code: cloudfront.FunctionCode.fromInline(`
 function handler(event) {
   var request = event.request;
   var uri = request.uri;
 
-  // Check if the URI is missing a file extension (likely a SPA route)
+  // Prerendered (SSG) public routes — serve the route-specific static HTML so the page
+  // shell paints before any JS runs. Keep this list in sync with
+  // web-frontend/scripts/prerender.mjs. The homepage is stored at /home/index.html (NOT
+  // /index.html) so the build's neutral /index.html stays the SPA fallback for every
+  // non-prerendered route. If a prerendered object is ever missing, S3 returns 404 and
+  // the distribution's 404->/index.html error response falls back to the CSR shell, so
+  // this is safe to deploy even before the prerendered files exist.
+  if (uri === '/' || uri === '/index.html') {
+    request.uri = '/home/index.html';
+    return request;
+  }
+  var prerendered = ['/privacy', '/about', '/support'];
+  for (var i = 0; i < prerendered.length; i++) {
+    if (uri === prerendered[i] || uri === prerendered[i] + '/') {
+      request.uri = prerendered[i] + '/index.html';
+      return request;
+    }
+  }
+
+  // Default SPA routing: extensionless routes serve the neutral /index.html shell.
   if (!uri.includes('.')) {
     request.uri = '/index.html';
   }
 
-  // Check if URI ends with '/'
+  // Directory-style URIs ('/foo/') serve their index.html.
   if (uri.endsWith('/')) {
     request.uri += 'index.html';
   }
@@ -72,7 +156,7 @@ function handler(event) {
   return request;
 }
       `),
-      comment: 'SPA routing handler for React application',
+      comment: 'SPA routing + prerendered public routes for React application',
     });
 
     // CloudFront Function to prevent browser caching of HTML responses.
@@ -81,7 +165,7 @@ function handler(event) {
     // Without this, browsers apply heuristic caching to index.html, causing
     // stale JS file references after deployments (MIME type errors).
     const htmlNoCacheFunction = new cloudfront.Function(this, 'HtmlNoCacheFunction', {
-      functionName: `${envName}-html-no-cache`,
+      functionName: `${prefix}-html-no-cache`,
       code: cloudfront.FunctionCode.fromInline(`
 function handler(event) {
   var response = event.response;
@@ -94,7 +178,7 @@ function handler(event) {
 
     // Cache policy for static assets
     const staticAssetsCachePolicy = new cloudfront.CachePolicy(this, 'StaticAssetsCache', {
-      cachePolicyName: `${envName}-static-assets`,
+      cachePolicyName: `${prefix}-static-assets`,
       comment: 'Cache policy for static assets (JS, CSS, images)',
       defaultTtl: cdk.Duration.days(30),
       maxTtl: cdk.Duration.days(365),
@@ -108,7 +192,7 @@ function handler(event) {
 
     // Cache policy for index.html (no caching for SPA)
     const htmlCachePolicy = new cloudfront.CachePolicy(this, 'HtmlCachePolicy', {
-      cachePolicyName: `${envName}-html-no-cache`,
+      cachePolicyName: `${prefix}-html-no-cache`,
       comment: 'No caching for HTML files',
       defaultTtl: cdk.Duration.seconds(0),
       maxTtl: cdk.Duration.seconds(0),
@@ -120,7 +204,7 @@ function handler(event) {
 
     // Cache policy for SEO files (robots.txt, sitemap.xml) - Story 4.1.8a
     const seoCachePolicy = new cloudfront.CachePolicy(this, 'SeoCachePolicy', {
-      cachePolicyName: `${envName}-seo-cache`,
+      cachePolicyName: `${prefix}-seo-cache`,
       comment: 'Cache policy for SEO files (robots.txt, sitemap.xml)',
       defaultTtl: cdk.Duration.hours(1),
       maxTtl: cdk.Duration.hours(24),
@@ -132,72 +216,112 @@ function handler(event) {
       enableAcceptEncodingBrotli: true,
     });
 
-    // Response headers policy for security
+    // Shared security headers behavior — reused by both the HTML policy and the
+    // static-assets policy so the CSP / HSTS / frame options never drift between them.
+    const securityHeadersBehavior: cloudfront.ResponseSecurityHeadersBehavior = {
+      contentTypeOptions: { override: true },
+      frameOptions: {
+        frameOption: cloudfront.HeadersFrameOption.SAMEORIGIN,
+        override: true,
+      },
+      referrerPolicy: {
+        referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+        override: true,
+      },
+      strictTransportSecurity: {
+        accessControlMaxAge: cdk.Duration.days(365),
+        includeSubdomains: true,
+        override: true,
+      },
+      xssProtection: {
+        protection: true,
+        modeBlock: true,
+        override: true,
+      },
+      contentSecurityPolicy: {
+        contentSecurityPolicy:
+          "default-src 'self'; " +
+          "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
+          "script-src-elem 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
+          "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
+          "img-src 'self' data: https:; " +
+          "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
+          // auth.batbern.ch: Cognito custom hosted-UI domain (#738). Amplify POSTs the
+          // OAuth code exchange to https://auth.batbern.ch/oauth2/token from
+          // /auth/callback — without this entry the browser CSP-blocks the fetch and
+          // every federated login silently fails (2026-06-04 outage).
+          "connect-src 'self' blob: https://auth.batbern.ch https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net https://challenges.cloudflare.com; " +
+          "frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com; " +
+          "object-src 'none'; " +
+          "base-uri 'self'; " +
+          "form-action 'self'; " +
+          "frame-ancestors 'self';",
+        override: true,
+      },
+    };
+
+    const baseCustomHeaders: cloudfront.ResponseCustomHeader[] = [
+      // Cross-Origin-Opener-Policy: isolates the browsing context from cross-origin openers
+      // SAME_ORIGIN_ALLOW_POPUPS allows OAuth popups (Cognito)
+      {
+        header: 'Cross-Origin-Opener-Policy',
+        value: 'same-origin-allow-popups',
+        override: true,
+      },
+      // Cross-Origin-Resource-Policy: cross-origin allows CDN assets and Google Maps embeds
+      {
+        header: 'Cross-Origin-Resource-Policy',
+        value: 'cross-origin',
+        override: true,
+      },
+      // Variant canary (e.g. beta.batbern.ch): keep it out of search indexes so it never
+      // competes with the primary www site. Spread is empty for the primary site, so its
+      // synthesized template is unchanged.
+      ...(variant
+        ? [
+            {
+              header: 'X-Robots-Tag',
+              value: 'noindex, nofollow',
+              override: true,
+            },
+          ]
+        : []),
+    ];
+
+    // Response headers policy for security (HTML + SEO — no Cache-Control here so
+    // the htmlCachePolicy/htmlNoCacheFunction keep index.html uncached).
     const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'SecurityHeaders', {
-      responseHeadersPolicyName: `${envName}-security-headers`,
+      responseHeadersPolicyName: `${prefix}-security-headers`,
       comment: 'Security headers for frontend',
-      securityHeadersBehavior: {
-        contentTypeOptions: { override: true },
-        frameOptions: {
-          frameOption: cloudfront.HeadersFrameOption.SAMEORIGIN,
-          override: true,
-        },
-        referrerPolicy: {
-          referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
-          override: true,
-        },
-        strictTransportSecurity: {
-          accessControlMaxAge: cdk.Duration.days(365),
-          includeSubdomains: true,
-          override: true,
-        },
-        xssProtection: {
-          protection: true,
-          modeBlock: true,
-          override: true,
-        },
-        contentSecurityPolicy: {
-          contentSecurityPolicy:
-            "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud; " +
-            "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
-            "img-src 'self' data: https:; " +
-            "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
-            "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.staging.batbern.ch https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
-            "frame-src 'self' https://maps.google.com https://www.google.com; " +
-            "object-src 'none'; " +
-            "base-uri 'self'; " +
-            "form-action 'self'; " +
-            "frame-ancestors 'self';",
-          override: true,
-        },
-      },
-      customHeadersBehavior: {
-        customHeaders: [
-          // Cross-Origin-Embedder-Policy: CREDENTIALLESS allows third-party iframes (Google Maps)
-          // while still providing Spectre isolation benefits
-          {
-            header: 'Cross-Origin-Embedder-Policy',
-            value: 'credentialless',
-            override: true,
-          },
-          // Cross-Origin-Opener-Policy: isolates the browsing context from cross-origin openers
-          // SAME_ORIGIN_ALLOW_POPUPS allows OAuth popups (Cognito)
-          {
-            header: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups',
-            override: true,
-          },
-          // Cross-Origin-Resource-Policy: prevents cross-origin reads of frontend assets
-          {
-            header: 'Cross-Origin-Resource-Policy',
-            value: 'same-site',
-            override: true,
-          },
-        ],
-      },
+      securityHeadersBehavior,
+      customHeadersBehavior: { customHeaders: baseCustomHeaders },
     });
+
+    // Same security headers PLUS a 1-year immutable Cache-Control for content-hashed
+    // assets (/assets/*, /*.js, /*.css, /static/*). CloudFront already edge-caches
+    // these via staticAssetsCachePolicy, but without a Cache-Control response header
+    // the *browser* never caches them — PageSpeed reported "Cache TTL: None" and
+    // ~5.6 MiB re-downloaded on repeat visits. Hashed filenames make immutable safe.
+    const staticAssetsResponseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
+      this,
+      'StaticAssetsHeaders',
+      {
+        responseHeadersPolicyName: `${prefix}-static-assets-headers`,
+        comment: 'Security headers + immutable Cache-Control for content-hashed assets',
+        securityHeadersBehavior,
+        customHeadersBehavior: {
+          customHeaders: [
+            ...baseCustomHeaders,
+            {
+              header: 'Cache-Control',
+              value: 'public, max-age=31536000, immutable',
+              override: true,
+            },
+          ],
+        },
+      }
+    );
 
     // Get certificate if domain provided
     let certificate: certificatemanager.ICertificate | undefined;
@@ -240,7 +364,7 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for static assets
           cachePolicy: staticAssetsCachePolicy,
-          responseHeadersPolicy,
+          responseHeadersPolicy: staticAssetsResponseHeadersPolicy,
         },
         '/assets/*': {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
@@ -249,7 +373,7 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for assets
           cachePolicy: staticAssetsCachePolicy,
-          responseHeadersPolicy,
+          responseHeadersPolicy: staticAssetsResponseHeadersPolicy,
         },
         '/*.js': {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
@@ -258,7 +382,7 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for JS files
           cachePolicy: staticAssetsCachePolicy,
-          responseHeadersPolicy,
+          responseHeadersPolicy: staticAssetsResponseHeadersPolicy,
         },
         '/*.css': {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
@@ -267,7 +391,7 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for CSS files
           cachePolicy: staticAssetsCachePolicy,
-          responseHeadersPolicy,
+          responseHeadersPolicy: staticAssetsResponseHeadersPolicy,
         },
         '/robots.txt': {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
@@ -305,15 +429,19 @@ function handler(event) {
       ],
       enableLogging: true,
       logBucket: props.logsBucket,
-      logFilePrefix: `frontend-cloudfront/${envName}/`,
-      // Priority 9: Optimize price class - use cheapest for non-prod (Europe/US only)
-      priceClass: isProd
-        ? cloudfront.PriceClass.PRICE_CLASS_ALL
-        : cloudfront.PriceClass.PRICE_CLASS_100, // Europe & US only - cheapest option
+      logFilePrefix: `frontend-cloudfront/${prefix}/`,
+      // Priority 9: Optimize price class — full edge coverage only for the PRIMARY prod site;
+      // non-prod and the beta canary use the cheapest class (Europe & US only).
+      priceClass:
+        isProd && isPrimary
+          ? cloudfront.PriceClass.PRICE_CLASS_ALL
+          : cloudfront.PriceClass.PRICE_CLASS_100,
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
-      comment: `BATbern Frontend Distribution - ${envName}`,
+      comment: `BATbern Frontend Distribution - ${prefix}`,
       certificate,
-      domainNames: props.domainName ? [props.domainName] : undefined,
+      domainNames: props.domainName
+        ? [props.domainName, ...(props.apexDomainName ? [props.apexDomainName] : [])]
+        : undefined,
     });
 
     // Create Route 53 record if hosted zone provided
@@ -337,6 +465,17 @@ function handler(event) {
           new route53targets.CloudFrontTarget(this.distribution)
         ),
       });
+
+      // Create A record for apex domain (e.g., batbern.ch → same CloudFront distribution)
+      if (props.apexDomainName) {
+        new route53.ARecord(this, 'ApexAliasRecord', {
+          zone: hostedZone,
+          recordName: props.apexDomainName,
+          target: route53.RecordTarget.fromAlias(
+            new route53targets.CloudFrontTarget(this.distribution)
+          ),
+        });
+      }
     }
 
     // Deploy frontend files to S3
@@ -363,30 +502,43 @@ function handler(event) {
     cdk.Tags.of(this).add('Environment', envName);
     cdk.Tags.of(this).add('Component', 'Frontend');
     cdk.Tags.of(this).add('Project', 'BATbern');
+    // Only tag variants — keeps the primary site's synthesized template byte-identical.
+    if (variant) {
+      cdk.Tags.of(this).add('Variant', variant);
+    }
 
     // Outputs
     new cdk.CfnOutput(this, 'WebsiteBucketName', {
       value: this.websiteBucket.bucketName,
       description: 'S3 bucket for frontend static files',
-      exportName: `${envName}-FrontendBucket`,
+      exportName: `${prefix}-FrontendBucket`,
     });
+
+    // PRIMARY site only — a variant canary has no stableBucket (see above).
+    if (this.stableBucket) {
+      new cdk.CfnOutput(this, 'StableBucketName', {
+        value: this.stableBucket.bucketName,
+        description: 'S3 bucket holding the last known-good frontend (rollback source)',
+        exportName: `${prefix}-FrontendStableBucket`,
+      });
+    }
 
     new cdk.CfnOutput(this, 'DistributionId', {
       value: this.distribution.distributionId,
       description: 'CloudFront distribution ID',
-      exportName: `${envName}-FrontendDistributionId`,
+      exportName: `${prefix}-FrontendDistributionId`,
     });
 
     new cdk.CfnOutput(this, 'DistributionDomainName', {
       value: this.distribution.distributionDomainName,
       description: 'CloudFront distribution domain name',
-      exportName: `${envName}-FrontendDistributionDomain`,
+      exportName: `${prefix}-FrontendDistributionDomain`,
     });
 
     new cdk.CfnOutput(this, 'WebsiteUrl', {
       value: this.websiteUrl,
       description: 'Frontend application URL',
-      exportName: `${envName}-FrontendUrl`,
+      exportName: `${prefix}-FrontendUrl`,
     });
   }
 }

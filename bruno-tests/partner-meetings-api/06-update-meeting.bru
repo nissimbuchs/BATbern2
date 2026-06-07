@@ -1,0 +1,48 @@
+meta {
+  name: Update partner meeting agenda + notes
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/partner-meetings/{{createdMeetingId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "agenda": "Updated agenda — partner-meetings-api test {{meetingTestTimestamp}}",
+    "notes": "Post-meeting notes added by the update test",
+    "location": "Updated Venue, Bern"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns 200 with the patched fields applied", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.agenda).to.include("Updated agenda");
+    expect(body.notes).to.include("Post-meeting notes");
+    expect(body.location).to.equal("Updated Venue, Bern");
+  });
+
+  test("id and eventCode are unchanged by the patch", function() {
+    const body = res.getBody();
+    expect(body.id).to.equal(bru.getVar("createdMeetingId"));
+    expect(body.eventCode).to.equal(bru.getVar("meetingEventCode"));
+  });
+}

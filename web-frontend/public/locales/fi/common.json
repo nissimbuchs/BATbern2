@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Järjestäjä",
+      "speaker": "Puhuja",
+      "partner": "Kumppani",
+      "attendee": "Osallistuja"
+    }
   },
   "public": {
     "login": "Kirjaudu sisään",
@@ -74,13 +80,13 @@
     "close": "Sulje",
     "sending": "Lähetetään...",
     "loading": "Ladataan...",
-    "retry": "Retry",
-    "back": "Back",
-    "confirm": "Confirm",
-    "clearFilters": "Clear filters",
-    "previous": "Previous",
-    "next": "Next",
-    "deleting": "Deleting..."
+    "retry": "Yritä uudelleen",
+    "back": "Takaisin",
+    "confirm": "Vahvista",
+    "clearFilters": "Tyhjennä suodattimet",
+    "previous": "Edellinen",
+    "next": "Seuraava",
+    "deleting": "Poistetaan..."
   },
   "language": {
     "select": "Valitse kieli",
@@ -493,7 +499,7 @@
       "emailReadOnly": "Sähköposti (vain luku)",
       "bio": "Bio",
       "bioPlaceholder": "Kerro meille itsestäsi...",
-      "bioExceeds": "Bio ei saa ylittää 500 merkkiä",
+      "bioExceeds": "Bio ei saa ylittää 5000 merkkiä",
       "maxExpertiseAreas": "Enintään 10 osaamis aluetta sallittu",
       "maxSpeakingTopics": "Enintään 10 puheenaihetta sallittu",
       "socialLinks": "Sosiaalisen median linkit",
@@ -509,12 +515,12 @@
       "saveFailed": "Profiilin tallentaminen epäonnistui"
     },
     "photo": {
-      "invalidFileType": "Virheellinen tiedostotyyppi. Hyväksytyt muodot: JPEG, PNG, WebP",
+      "invalidFileType": "Virheellinen tiedostotyyppi. Hyväksytyt muodot: JPEG, PNG, SVG",
       "fileTooLarge": "Tiedostokoko on oltava alle 5 Mt",
       "changePhoto": "Vaihda kuva",
       "dragDropHere": "Vedä ja pudota kuva tähän",
       "orClickBrowse": "tai napsauta selataksesi",
-      "supportedFormats": "JPEG, PNG, WebP (enintään 5 Mt)",
+      "supportedFormats": "JPEG, PNG, SVG (enintään 5 Mt)",
       "uploading": "Ladataan...",
       "cancel": "Peruuta",
       "uploadAria": "Lataa profiilikuva"
@@ -554,6 +560,11 @@
     "detail": {
       "backToArchive": "← Takaisin arkistoon",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "Uusimmat ensin",
+      "oldest": "Vanhimmat ensin",
+      "mostAttended": "Eniten osallistujia"
     }
   },
   "notifications": {
@@ -588,7 +599,8 @@
       "SPEAKER": "Puhujat",
       "REGISTRATION": "Ilmoittautuminen",
       "TASK_REMINDER": "Tehtävämuistutukset",
-      "NEWSLETTER": "Uutiskirje"
+      "NEWSLETTER": "Uutiskirje",
+      "VENUE_COORDINATION": "Tila & Catering"
     },
     "layoutKey": "Asettelu",
     "standalone": "Ei mitään (itsenäinen)",
@@ -693,25 +705,25 @@
     }
   },
   "labels": {
-    "status": "Status",
-    "title": "Title",
-    "date": "Date",
-    "overview": "Overview",
-    "sortBy": "Sort by",
-    "actions": "Actions",
-    "company": "Company",
-    "email": "Email",
-    "dueDate": "Due Date",
-    "emailAddress": "Email Address",
-    "name": "Name",
-    "description": "Description",
-    "notes": "Notes",
-    "event": "Event",
-    "viewMode": "View mode",
-    "gridView": "Grid view",
-    "listView": "List view",
-    "sessions": "Sessions",
-    "topics": "Topics",
+    "status": "Tila",
+    "title": "Otsikko",
+    "date": "Päivämäärä",
+    "overview": "Yleiskatsaus",
+    "sortBy": "Järjestä",
+    "actions": "Toiminnot",
+    "company": "Yritys",
+    "email": "Sähköposti",
+    "dueDate": "Eräpäivä",
+    "emailAddress": "Sähköpostiosoite",
+    "name": "Nimi",
+    "description": "Kuvaus",
+    "notes": "Muistiinpanot",
+    "event": "Tapahtuma",
+    "viewMode": "Näkymä",
+    "gridView": "Ruudukkonäkymä",
+    "listView": "Listanäkymä",
+    "sessions": "Istunnot",
+    "topics": "Aiheet",
     "firstName": "Etunimi",
     "lastName": "Sukunimi"
   },
@@ -763,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Profiilisi",
+    "pageSubtitle": "Hallinnoi henkilötietojasi, suostumustasi ja uutiskirjettä",
+    "tabs": {
+      "profile": "Profiili",
+      "consent": "Suostumus & Uutiskirje"
+    },
+    "companyLabel": "Yritys",
+    "companyInvalid": "Yritystunnuksen on oltava 1–12 kirjainta tai numeroa",
+    "onboardingNotice": "Täydennä profiilisi jatkaaksesi: hyväksy alla käyttöehdot ja tietosuojakäytäntö.",
+    "consentTitle": "Käyttöehdot & tietosuojakäytäntö",
+    "consentLabelPrefix": "Hyväksyn",
+    "consentLabelAnd": "ja",
+    "termsOfService": "käyttöehdot",
+    "privacyPolicy": "tietosuojakäytännön",
+    "consentAcceptedOn": "Hyväksytty {{date}}",
+    "consentSave": "Hyväksy ja tallenna",
+    "consentSaveError": "Suostumuksen tallentaminen epäonnistui. Yritä uudelleen.",
+    "newsletterTitle": "Uutiskirje",
+    "newsletterDescription": "Saat kutsuja ja uutisia tulevista BATbern-tapahtumista.",
+    "newsletterLabel": "Tilaa BATbern-uutiskirje"
   }
 }

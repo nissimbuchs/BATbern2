@@ -35,6 +35,7 @@ public class SpeakerReminderEmailService {
 
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -51,12 +52,15 @@ public class SpeakerReminderEmailService {
     /**
      * Send a reminder email to a speaker.
      *
+     * <p>Story 11.F.1: dropped the {@code portalToken} parameter — speakers now
+     * authenticate via Cognito; the dashboard link no longer carries a
+     * {@code ?token=} magic-link query parameter.
+     *
      * @param speaker the speaker pool entry
      * @param event the event
      * @param reminderType RESPONSE or CONTENT
      * @param tier TIER_1, TIER_2, or TIER_3
      * @param deadline the deadline date
-     * @param portalToken VIEW token for dashboard link
      * @param locale email language (defaults to German)
      */
     public void sendReminderEmail(
@@ -65,23 +69,45 @@ public class SpeakerReminderEmailService {
             String reminderType,
             String tier,
             LocalDate deadline,
-            String portalToken,
             Locale locale
     ) {
+        // Phase B of the post-Epic-11 cleanup: recipient routing now resolves through
+        // session_users + UserApiClient, not the stale speaker_pool.email column. When
+        // an organizer reassigns the session's PRIMARY_SPEAKER on the Sessions tab the
+        // next reminder goes to the new speaker — without this resolver it would still
+        // hit the pre-reassign address.
+        Optional<PrimarySpeakerResolver.PrimarySpeakerProfile> primary =
+                primarySpeakerResolver.resolve(speaker);
+        String recipientEmail = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::email)
+                .filter(e -> e != null && !e.isBlank())
+                .orElse(null);
+        if (recipientEmail == null) {
+            log.warn("Skipping reminder for speaker pool {} — no resolvable primary speaker email "
+                    + "(session unset, no PRIMARY_SPEAKER session_user, or CUMS degraded)",
+                    speaker.getId());
+            return;
+        }
+        String recipientName = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
+                .filter(n -> !n.isEmpty())
+                .orElse(speaker.getSpeakerName());
+
         try {
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
 
             EmailContent content = loadReminderTemplate(
-                    emailLocale, speaker, event, reminderType, tier, deadline, portalToken);
+                    emailLocale, recipientName, event, reminderType, tier, deadline);
 
-            emailService.sendHtmlEmail(speaker.getEmail(), content.subject(), content.html());
+            // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
+            java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
+                    .orElse(java.util.Collections.emptyList());
+            emailService.sendHtmlEmail(recipientEmail, cc, content.subject(), content.html());
 
-            log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}",
-                    reminderType, tier, LoggingUtils.maskEmail(speaker.getEmail()), event.getEventCode());
+            log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}, ccCount={}",
+                    reminderType, tier, LoggingUtils.maskEmail(recipientEmail), event.getEventCode(), cc.size());
 
         } catch (Exception e) {
             log.error("Failed to send reminder email: type={}, tier={}, speaker={}",
-                    reminderType, tier, LoggingUtils.maskEmail(speaker.getEmail()), e);
+                    reminderType, tier, LoggingUtils.maskEmail(recipientEmail), e);
             throw new RuntimeException("Failed to send reminder email", e);
         }
     }
@@ -118,12 +144,11 @@ public class SpeakerReminderEmailService {
 
     private EmailContent loadReminderTemplate(
             Locale locale,
-            SpeakerPool speaker,
+            String speakerName,
             Event event,
             String reminderType,
             String tier,
-            LocalDate deadline,
-            String portalToken
+            LocalDate deadline
     ) {
         String lang = locale.getLanguage().equals("de") ? "de" : "en";
         String type = reminderType.toLowerCase();
@@ -140,10 +165,11 @@ public class SpeakerReminderEmailService {
 
         ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
         long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
-        String portalLink = baseUrl + "/speaker-portal/dashboard?token=" + portalToken;
+        // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
+        String portalLink = baseUrl + "/speaker-portal/dashboard";
 
         Map<String, String> variables = Map.ofEntries(
-                Map.entry("speakerName", speaker.getSpeakerName()),
+                Map.entry("speakerName", speakerName != null ? speakerName : ""),
                 Map.entry("eventTitle", event.getTitle()),
                 Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
                 Map.entry("deadline", deadline.format(DATE_FORMATTER)),

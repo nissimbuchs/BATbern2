@@ -122,7 +122,8 @@ public class SlotAssignmentController {
                 // Add SessionUser fields
                 speakerMap.put("speakerRole", sessionUser.getSpeakerRole().name());
                 speakerMap.put("isConfirmed", sessionUser.isConfirmed());
-                speakerMap.put("presentationTitle", sessionUser.getPresentationTitle());
+                // Story 11.E.8: session_users.presentation_title dropped (V102).
+                speakerMap.put("presentationTitle", null);
 
                 speakers.add(speakerMap);
             } catch (Exception e) {

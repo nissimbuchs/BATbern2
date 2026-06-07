@@ -1,7 +1,7 @@
 meta {
   name: Request Presigned URL - File Size Exceeded
   type: http
-  seq: 7
+  seq: 8
 }
 
 post {
@@ -23,7 +23,7 @@ headers {
 
 body:json {
   {
-    "fileName": "huge-logo.png",
+    "fileName": "bruno-test-{{$timestamp}}.png",
     "fileSize": 10485760,
     "mimeType": "image/png"
   }

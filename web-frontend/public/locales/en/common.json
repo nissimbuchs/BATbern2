@@ -10,6 +10,7 @@
     "partners": "Partners",
     "companies": "Companies",
     "users": "Users",
+    "newsletterSubscribers": "Newsletter Subscribers",
     "myCompany": "My Company",
     "myAccount": "My Account",
     "analytics": "Analytics",
@@ -29,7 +30,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organizer",
+      "speaker": "Speaker",
+      "partner": "Partner",
+      "attendee": "Attendee"
+    }
   },
   "public": {
     "login": "Login",
@@ -529,7 +536,7 @@
       "emailReadOnly": "Email (read-only)",
       "bio": "Bio",
       "bioPlaceholder": "Tell us about yourself...",
-      "bioExceeds": "Bio must not exceed 500 characters",
+      "bioExceeds": "Bio must not exceed 5000 characters",
       "maxExpertiseAreas": "Maximum 10 expertise areas allowed",
       "maxSpeakingTopics": "Maximum 10 speaking topics allowed",
       "socialLinks": "Social Links",
@@ -545,12 +552,12 @@
       "saveFailed": "Failed to save profile"
     },
     "photo": {
-      "invalidFileType": "Invalid file type. Accepted formats: JPEG, PNG, WebP",
+      "invalidFileType": "Invalid file type. Accepted formats: JPEG, PNG, SVG",
       "fileTooLarge": "File size must be less than 5MB",
       "changePhoto": "Change photo",
       "dragDropHere": "Drag and drop a photo here",
       "orClickBrowse": "or click to browse",
-      "supportedFormats": "JPEG, PNG, WebP (max 5MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5MB)",
       "uploading": "Uploading...",
       "cancel": "Cancel",
       "uploadAria": "Upload profile photo"
@@ -590,6 +597,11 @@
     "detail": {
       "backToArchive": "← Back to Archive",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "mostAttended": "Most attended"
     }
   },
   "notifications": {
@@ -624,7 +636,8 @@
       "SPEAKER": "Speakers",
       "REGISTRATION": "Registration",
       "TASK_REMINDER": "Task Reminders",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Venue & Catering"
     },
     "layoutKey": "Layout",
     "standalone": "None (standalone)",
@@ -765,5 +778,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Your Profile",
+    "pageSubtitle": "Manage your personal information, consent and newsletter",
+    "tabs": {
+      "profile": "Profile",
+      "consent": "Consent & Newsletter"
+    },
+    "companyLabel": "Company",
+    "companyInvalid": "Company ID must be 1-12 letters or digits",
+    "onboardingNotice": "Please complete your profile to continue: accept the Terms of Service and Privacy Policy below.",
+    "consentTitle": "Terms of Service & Privacy Policy",
+    "consentLabelPrefix": "I agree to the",
+    "consentLabelAnd": "and the",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "consentAcceptedOn": "Accepted on {{date}}",
+    "consentSave": "Accept and save",
+    "consentSaveError": "Saving your consent failed. Please try again.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Receive invitations and updates about upcoming BATbern events.",
+    "newsletterLabel": "Subscribe to the BATbern newsletter"
   }
 }

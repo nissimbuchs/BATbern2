@@ -217,6 +217,34 @@ export class UserSyncAlarms extends Construct {
     );
     reconciliationFailuresAlarm.addAlarmAction(alarmAction);
 
+    // Alarm 7: PreSignUp Account-Linking Failures (Story 12.6 — SSO Phase 2)
+    // The PreSignUp federated path NEVER throws (a throw 503s the sign-in), so a failed
+    // AdminLinkProviderForUser is fail-open: the federated user is still auto-confirmed but
+    // ends up as an UNLINKED standalone identity (orphaned from the native sub) — visible ONLY
+    // as this metric. The alarm makes that silent orphan actionable. Emitted (un-dimensioned)
+    // by pre-signup.ts publishMetric('PreSignUpFailure'). threshold 0 → any failure pages.
+    const preSignUpFailuresAlarm = new cloudwatch.Alarm(
+      this,
+      'PreSignUpFailuresAlarm',
+      {
+        alarmName: `batbern-${props.environment}-PreSignUp-Linking-Failures`,
+        alarmDescription:
+          'PreSignUp federated account-linking failed (fail-open) — a federated user may be orphaned from its native sub',
+        metric: new cloudwatch.Metric({
+          namespace: 'BATbern/UserSync',
+          metricName: 'PreSignUpFailure',
+          statistic: 'Sum',
+          period: cdk.Duration.minutes(5),
+        }),
+        threshold: 0,
+        evaluationPeriods: 1,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }
+    );
+    preSignUpFailuresAlarm.addAlarmAction(alarmAction);
+
     // Output alarm topic ARN
     new cdk.CfnOutput(this, 'AlarmTopicArn', {
       value: this.alarmTopic.topicArn,
@@ -233,6 +261,7 @@ export class UserSyncAlarms extends Construct {
         jitProvisioningFailuresAlarm.alarmName,
         driftDetectionAlarm.alarmName,
         reconciliationFailuresAlarm.alarmName,
+        preSignUpFailuresAlarm.alarmName,
       ].join(','),
       description: 'CloudWatch alarm names for user sync monitoring',
     });

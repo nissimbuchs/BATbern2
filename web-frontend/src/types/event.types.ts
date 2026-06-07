@@ -41,7 +41,8 @@ export interface SpeakerUI extends Speaker {
   // Archive browsing fields (Story 4.2)
   speakerId?: string; // UUID identifier for speaker
   fullName?: string; // Computed full name (firstName + lastName)
-  companyName?: string; // Speaker's company name
+  companyName?: string; // Speaker's company name (legacy frontend-only field; prefer companyDisplayName)
+  companyDisplayName?: string; // Human-readable company name (displayName ?? name); prefer over `company` slug
   photoUrl?: string; // Speaker's photo URL (alias for profilePictureUrl)
 }
 
@@ -505,28 +506,14 @@ export interface ConflictAnalysisResponse {
 export type PublishingPhase = 'topic' | 'speakers' | 'agenda';
 
 /**
- * Publishing mode
- */
-export type PublishingMode = 'draft' | 'progressive' | 'complete';
-
-/**
  * CDN invalidation status
  */
 export type CDNInvalidationStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
 
 /**
- * Request options for publishing a phase
+ * Response from publishing a phase
  */
-export interface PublishRequest {
-  mode?: PublishingMode;
-  approvalOverride?: boolean;
-  notifySubscribers?: boolean;
-}
-
-/**
- * Publishing version entity (for rollback capability)
- */
-export interface PublishingVersion {
+export interface PublishPhaseResponse {
   id: string;
   eventCode: string;
   versionNumber: number;
@@ -535,16 +522,7 @@ export interface PublishingVersion {
   publishedBy: string;
   cdnInvalidationId?: string;
   cdnInvalidationStatus?: string; // UPPERCASE in API
-  contentSnapshot: Record<string, unknown>;
-  isCurrent: boolean;
-  rolledBackAt?: string | null;
-  rolledBackBy?: string | null;
 }
-
-/**
- * Response from publishing a phase
- */
-export type PublishPhaseResponse = PublishingVersion;
 
 /**
  * Response from unpublishing a phase
@@ -594,11 +572,6 @@ export interface PublishPreviewResponse {
 }
 
 /**
- * Version history response (array of versions)
- */
-export type VersionHistoryResponse = PublishingVersion[];
-
-/**
  * Validation status for a publishing phase
  */
 export interface ValidationStatus {
@@ -628,18 +601,6 @@ export interface PublishingStatusResponse {
 }
 
 /**
- * Rollback request
- */
-export interface RollbackRequest {
-  reason: string; // 10-500 chars required
-}
-
-/**
- * Response from rolling back to previous version
- */
-export type RollbackResponse = PublishingVersion;
-
-/**
  * Change log entry
  */
 export interface ChangeLogEntry {
@@ -663,7 +624,6 @@ export interface ChangeLogResponse {
  */
 export interface AutoPublishScheduleRequest {
   scheduledDate: string; // ISO 8601 date-time
-  notifySubscribers?: boolean;
 }
 
 /**

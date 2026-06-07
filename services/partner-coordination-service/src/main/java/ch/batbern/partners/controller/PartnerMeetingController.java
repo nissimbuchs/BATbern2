@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -97,6 +98,19 @@ public class PartnerMeetingController {
     public ResponseEntity<SendInviteResponse> sendInvite(@PathVariable UUID meetingId) {
         SendInviteResponse response = meetingService.sendInvite(meetingId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    /**
+     * DELETE /api/v1/partner-meetings/{meetingId}
+     * Delete a partner meeting. If a calendar invite was already sent, a METHOD:CANCEL ICS
+     * is dispatched asynchronously to all partners and organizers.
+     * RSVPs are cascade-deleted automatically (V9 migration ON DELETE CASCADE).
+     */
+    @DeleteMapping("/{meetingId}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Void> deleteMeeting(@PathVariable UUID meetingId) {
+        meetingService.deleteMeeting(meetingId);
+        return ResponseEntity.noContent().build();
     }
 
     private String extractUsername(Jwt jwt) {

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD — BATbern Partner Management Enhancements</title>
+<style>
+  :root { --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350; --accent: #6c63ff; --accent2: #00d4aa; --accent3: #ff6b6b; --accent4: #ffd166; --text: #e8eaf6; --text-muted: #8890b5; --radius: 12px; --radius-sm: 6px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(15,17,23,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; z-index: 100; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 12px; padding: 3px 8px; border-radius: 20px; transition: all .2s; white-space: nowrap; }
+  nav a:hover, nav a.active { background: var(--accent); color: white; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 80px 24px 80px; }
+  section { margin-bottom: 48px; scroll-margin-top: 60px; }
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 1.3rem; font-weight: 700; margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--accent2); }
+  h3 { font-size: 1.05rem; font-weight: 700; margin: 24px 0 10px; }
+  h4 { font-size: 0.92rem; font-weight: 700; margin: 16px 0 6px; }
+  p { margin-bottom: 10px; font-size: 0.92rem; }
+  strong { color: white; }
+  em { color: var(--text-muted); }
+  code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', monospace; font-size: 0.85em; }
+  ul, ol { margin: 8px 0 12px 24px; }
+  li { margin-bottom: 4px; font-size: 0.9rem; }
+  .meta { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 28px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.85rem; }
+  th, td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 14px; }
+  .card h3 { margin-top: 0; }
+  .card p { font-size: 0.88rem; color: var(--text-muted); }
+
+  .fr { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 6px; font-size: 0.88rem; }
+  .fr .id { display: inline-block; color: var(--accent2); font-weight: 700; font-size: 0.82rem; margin-right: 8px; min-width: 48px; }
+
+  .nfr { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent4); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 6px; font-size: 0.88rem; }
+  .nfr .id { display: inline-block; color: var(--accent4); font-weight: 700; font-size: 0.82rem; margin-right: 8px; min-width: 52px; }
+
+  .journey { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
+  .journey h4 { margin-top: 0; color: var(--accent2); }
+  .journey .persona { font-style: italic; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px; }
+  .journey p { font-size: 0.88rem; }
+
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; }
+  .badge-green { background: rgba(0,212,170,.12); color: var(--accent2); border: 1px solid rgba(0,212,170,.3); }
+  .badge-yellow { background: rgba(255,209,102,.12); color: var(--accent4); border: 1px solid rgba(255,209,102,.3); }
+  .badge-red { background: rgba(255,107,107,.12); color: var(--accent3); border: 1px solid rgba(255,107,107,.3); }
+  .badge-purple { background: rgba(108,99,255,.12); color: var(--accent); border: 1px solid rgba(108,99,255,.3); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+  .back-link { display: inline-block; color: var(--accent2); text-decoration: none; font-size: 0.85rem; margin-bottom: 24px; }
+  .back-link:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) { h1 { font-size: 1.5rem; } nav a { font-size: 11px; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#exec">Executive Summary</a>
+  <a href="#classification">Classification</a>
+  <a href="#success">Success Criteria</a>
+  <a href="#scoping">Scoping</a>
+  <a href="#journeys">User Journeys</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#functional">Functional Reqs</a>
+  <a href="#nonfunctional">Non-Functional</a>
+</nav>
+
+<main>
+
+<a href="bmad-analyst-training.html" class="back-link">&larr; Back to Training Session</a>
+
+<h1>PRD — <span>Partner Management Enhancements</span></h1>
+<div class="meta">
+  <strong>Author:</strong> Nissim &nbsp;|&nbsp;
+  <strong>Date:</strong> 2026-04-04 &nbsp;|&nbsp;
+  <span class="badge badge-purple">Complete</span>
+</div>
+
+<!-- EXECUTIVE SUMMARY -->
+<section id="exec">
+<h2>Executive Summary</h2>
+<p>BATbern Partner Management Enhancements extend the existing platform with two capability layers that eliminate the remaining analog gaps in the partner relationship lifecycle. Target users: BATbern organizers (managing 5&ndash;10 active sponsoring companies) and partner contacts.</p>
+<p><strong>Two problems solved:</strong></p>
+<ol>
+  <li><strong>Invoice lifecycle</strong> is entirely manual &mdash; organizers create invoices by hand, track payment without tooling, and have no structured view of receivables</li>
+  <li><strong>Partner communication artifacts</strong> (meeting notes, action items) exist only in email, leaving partners without self-service access</li>
+</ol>
+<p>BATbern becomes the single authoritative system for the full partner lifecycle &mdash; from first meeting invite through invoice settlement. The differentiator: partners open their portal and see meeting notes, action items, and invoices in one place; organizers see a real-time financial status board with zero manual tracking.</p>
+</section>
+
+<!-- CLASSIFICATION -->
+<section id="classification">
+<h2>Project Classification</h2>
+<table>
+  <tr><th>Dimension</th><th>Value</th></tr>
+  <tr><td>Project Type</td><td>SaaS B2B &mdash; multi-tenant, role-based (organizer / partner)</td></tr>
+  <tr><td>Domain</td><td>Event and association management</td></tr>
+  <tr><td>Complexity</td><td>Medium &mdash; invoice lifecycle state machine, PDF generation</td></tr>
+  <tr><td>Context</td><td>Brownfield &mdash; extending production platform (Epics 1&ndash;8)</td></tr>
+</table>
+</section>
+
+<!-- SUCCESS CRITERIA -->
+<section id="success">
+<h2>Success Criteria</h2>
+
+<h3>User Success</h3>
+<div class="card">
+  <h3>Organizer</h3>
+  <ul>
+    <li>Issue PDF invoice in under 2 minutes without external tool</li>
+    <li>Invoice status board: real-time view of all partners (DRAFT / SENT / PAID / OVERDUE)</li>
+    <li>Overdue invoices surface immediately; reminder in one click</li>
+    <li>Meeting notes published to partner in one click</li>
+  </ul>
+</div>
+<div class="card">
+  <h3>Partner</h3>
+  <ul>
+    <li>Find current and past invoices with download links &mdash; no contacting organizer</li>
+    <li>View published meeting notes and action items</li>
+    <li>Maintain own billing info without organizer involvement</li>
+    <li>RSVP status visible in portal</li>
+  </ul>
+</div>
+
+<h3>Measurable Outcomes</h3>
+<table>
+  <tr><th>Outcome</th><th>Target</th><th>Timeframe</th></tr>
+  <tr><td>Invoices issued via platform</td><td>100% of active partners</td><td>First billing cycle</td></tr>
+  <tr><td>Partner billing info completion</td><td>100% of active partners</td><td>4 weeks post-launch</td></tr>
+  <tr><td>Organizer invoice admin time</td><td>&lt; 5 min/year per partner</td><td>Ongoing</td></tr>
+  <tr><td>Overdue detection lag</td><td>0 days (same-day cron)</td><td>Ongoing</td></tr>
+</table>
+</section>
+
+<!-- SCOPING -->
+<section id="scoping">
+<h2>Project Scoping</h2>
+
+<h3><span class="badge badge-green">MVP</span> Must-Have Capabilities</h3>
+<ul>
+  <li><code>PartnerInvoice</code> entity + full lifecycle (DRAFT&rarr;SENT&rarr;PAID&rarr;OVERDUE&rarr;CANCELLED)</li>
+  <li>Annual fee table + inline editing + bulk "Create All Drafts" per billing year</li>
+  <li>Single invoice creation (mid-year additions)</li>
+  <li>PDF generation with BATbern branding (library TBD &mdash; ADR required)</li>
+  <li>Send invoice via SES email; manual overdue reminder with PDF re-attached</li>
+  <li>Auto-overdue detection via Spring <code>@Scheduled</code> cron (daily)</li>
+  <li>Mark-as-paid with payment date + optional reference</li>
+  <li><code>PartnerBillingInfo</code> self-service tab in partner portal</li>
+  <li>Partner invoice history + PDF download</li>
+  <li>Admin-configurable invoice settings</li>
+  <li>Publish/unpublish meeting notes + action items to partner</li>
+  <li>Partner view of published meeting notes + action items</li>
+  <li>RSVP status in partner portal</li>
+  <li>Attachment upload/download</li>
+</ul>
+
+<h3><span class="badge badge-yellow">Phase 2</span> Growth</h3>
+<ul>
+  <li>Automated overdue reminder emails</li>
+  <li>Bulk send all DRAFT invoices</li>
+  <li>Revenue dashboard</li>
+  <li>Invoice number format customization</li>
+</ul>
+
+<h3><span class="badge badge-red">Phase 3</span> Future</h3>
+<ul>
+  <li>Swiss QR-Rechnung (ISO 20022)</li>
+  <li>Payment link integration (Stripe / TWINT)</li>
+  <li>Automatic bank reconciliation</li>
+  <li>Partner health score</li>
+</ul>
+
+<h3>Risk Mitigation</h3>
+<table>
+  <tr><th>Risk</th><th>Mitigation</th></tr>
+  <tr><td>PDF library selection</td><td>Architect ADR before sprint 1; fallback: HTML &rarr; headless Chrome</td></tr>
+  <tr><td>Market validation</td><td>None needed &mdash; confirmed internal pain</td></tr>
+  <tr><td>Scope reduction</td><td>Attachments most deferrable; invoice + notes non-negotiable</td></tr>
+</table>
+</section>
+
+<!-- USER JOURNEYS -->
+<section id="journeys">
+<h2>User Journeys</h2>
+
+<div class="journey">
+  <h4>Journey 1: Organizer &mdash; Invoice Season (Happy Path)</h4>
+  <div class="persona">Lukas, BATbern organizer. Mid-January. Last year: afternoon hunting billing addresses in email, hand-crafting PDFs in InDesign.</div>
+  <p>Opens <strong>Partners &rarr; Fees &amp; Invoices</strong>. Fee table shows all 7 active partners. Clicks <strong>"Create All Drafts for 2026"</strong>. Seven DRAFT invoices appear. Updates two fees inline. Selects all, clicks <strong>Send Invoices</strong>. Seven branded PDFs land in each billing contact inbox.</p>
+  <p>Three weeks later: five PAID, one SENT, one OVERDUE. Clicks overdue partner, sends reminder. Following week: all seven PAID.</p>
+</div>
+
+<div class="journey">
+  <h4>Journey 2: Organizer &mdash; After Partner Meeting (Happy Path)</h4>
+  <div class="persona">Day after the spring partner meeting. Lukas has his notes.</div>
+  <p>Opens meeting detail, pastes minutes, adds structured <strong>Action Items</strong> (three items with owner + due date), clicks <strong>Publish to Partner</strong>. Uploads signed sponsorship contract via <strong>Attachments</strong> tab.</p>
+</div>
+
+<div class="journey">
+  <h4>Journey 3: Partner &mdash; First Login After Meeting (Happy Path)</h4>
+  <div class="persona">Sandra, head of community at Acme AG. Needs to brief her CMO.</div>
+  <p>Opens <strong>Meetings</strong> tab &mdash; green "Notes Published" indicator. Opens: full minutes, action items. Downloads PDF. Opens <strong>Billing Info</strong> &mdash; enters address and PO number. Two days later, invoice arrives pre-addressed.</p>
+</div>
+
+<div class="journey">
+  <h4>Journey 4: Partner &mdash; Invoice Confusion (Edge Case)</h4>
+  <div class="persona">Sandra's accounts payable paid with wrong reference.</div>
+  <p>Opens portal: invoice status <strong>SENT</strong>. Emails Lukas. Lukas clicks <strong>Mark as Paid</strong>, enters date and bank reference. Invoice flips to <strong>PAID</strong>. Sandra refreshes &mdash; green.</p>
+</div>
+
+<div class="journey">
+  <h4>Journey 5: Organizer &mdash; New Partner Onboarding (Admin Path)</h4>
+  <div class="persona">New GOLD-tier sponsor joins mid-year.</div>
+  <p>Creates partner record, sets pro-rated fee, creates one DRAFT invoice manually. Partner fills billing info; invoice sent within the week. Separately: association moves offices &mdash; updates address in <strong>Admin &rarr; Invoice Settings</strong>.</p>
+</div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+<h2>SaaS B2B Architecture Requirements</h2>
+
+<h3>Tenant Model</h3>
+<p>Company-scoped tenancy (ADR-003): <code>companyName</code> (String, 12-char max). New entities: <code>PartnerInvoice.companyName</code>, <code>PartnerBillingInfo.companyName</code> (PK), <code>PartnerAttachment.companyName</code>.</p>
+
+<h3>RBAC Matrix</h3>
+<table>
+  <tr><th>Feature</th><th>Organizer</th><th>Partner</th></tr>
+  <tr><td>View/edit fee table</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>Create/send/cancel invoice</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>Mark invoice as paid</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>View own invoices + download PDF</td><td>&#x2705;</td><td>&#x2705; Own only</td></tr>
+  <tr><td>Edit own billing info</td><td>&#x274C; (view only)</td><td>&#x2705; Own only</td></tr>
+  <tr><td>Upload attachments</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>Download attachments</td><td>&#x2705;</td><td>&#x2705; Own company</td></tr>
+  <tr><td>Publish meeting notes</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+  <tr><td>View published notes</td><td>&#x2705;</td><td>&#x2705; Own only</td></tr>
+  <tr><td>Configure invoice settings</td><td>&#x2705;</td><td>&#x274C;</td></tr>
+</table>
+
+<h3>Integration Contracts</h3>
+<table>
+  <tr><th>Integration</th><th>Pattern</th></tr>
+  <tr><td>PDF generation</td><td>Server-side Java library (ADR TBD)</td></tr>
+  <tr><td>Email delivery</td><td>AWS SES async (reused)</td></tr>
+  <tr><td>File storage</td><td>AWS S3 presigned URL (reused)</td></tr>
+  <tr><td>Overdue detection</td><td>Spring <code>@Scheduled</code> cron (reused)</td></tr>
+</table>
+
+<h3>Implementation Constraints</h3>
+<ul>
+  <li>Existing <code>@PreAuthorize</code> + <code>PartnerSecurityService</code> &mdash; no new security infrastructure</li>
+  <li>OpenAPI spec first; Spring Boot + TypeScript types generated</li>
+  <li><code>PartnerInvoice</code> state transitions server-side only &mdash; clients trigger named actions</li>
+  <li>Invoice number format: <code>BAT-{year}-{companyName}-{seq}</code></li>
+  <li><strong>Architect ADR required:</strong> PDF library selection (iText 7, Apache PDFBox, or OpenPDF)</li>
+</ul>
+</section>
+
+<!-- FUNCTIONAL REQUIREMENTS -->
+<section id="functional">
+<h2>Functional Requirements</h2>
+
+<h3>Invoice Management</h3>
+<div class="fr"><span class="id">FR1</span> Organizer can set and update the annual sponsorship fee for each active partner</div>
+<div class="fr"><span class="id">FR2</span> Organizer can create a single invoice for a specific partner for a given billing year</div>
+<div class="fr"><span class="id">FR3</span> Organizer can bulk-create draft invoices for all active partners with a fee set for a given billing year</div>
+<div class="fr"><span class="id">FR4</span> Organizer can review and edit a draft invoice (amount, due date, description) before sending</div>
+<div class="fr"><span class="id">FR5</span> Organizer can send an invoice, triggering PDF generation and email delivery</div>
+<div class="fr"><span class="id">FR6</span> Organizer can send a payment reminder for an overdue invoice, re-attaching the PDF</div>
+<div class="fr"><span class="id">FR7</span> Organizer can mark an invoice as paid, recording payment date and optional reference</div>
+<div class="fr"><span class="id">FR8</span> Organizer can cancel an invoice from any non-terminal status</div>
+<div class="fr"><span class="id">FR9</span> Organizer can view all invoices, filterable by billing year and status</div>
+<div class="fr"><span class="id">FR10</span> System transitions SENT to OVERDUE when due date passes without payment</div>
+<div class="fr"><span class="id">FR11</span> Partner can view their own invoice history including status</div>
+<div class="fr"><span class="id">FR12</span> Partner can download a PDF copy of any of their own invoices</div>
+
+<h3>Partner Billing Information</h3>
+<div class="fr"><span class="id">FR13</span> Partner can create and update billing information (contact, address, VAT, PO number)</div>
+<div class="fr"><span class="id">FR14</span> Organizer can view any partner's billing information</div>
+<div class="fr"><span class="id">FR15</span> System pre-populates invoice PDFs from partner billing info</div>
+<div class="fr"><span class="id">FR16</span> Organizer can configure association invoice settings from admin section</div>
+<div class="fr"><span class="id">FR17</span> System uses latest admin settings in all generated PDFs</div>
+
+<h3>Invoice PDF Generation</h3>
+<div class="fr"><span class="id">FR18</span> System generates a branded PDF invoice from billing info + invoice record + admin settings</div>
+<div class="fr"><span class="id">FR19</span> Generated PDFs stored and retrievable by time-limited link</div>
+
+<h3>Meeting Notes &amp; Action Items</h3>
+<div class="fr"><span class="id">FR20</span> Organizer can publish meeting notes and action items to a partner</div>
+<div class="fr"><span class="id">FR21</span> Organizer can unpublish previously shared meeting notes</div>
+<div class="fr"><span class="id">FR22</span> Partner can view published meeting notes and action items</div>
+<div class="fr"><span class="id">FR23</span> Organizer can structure action items with owner name and due date</div>
+
+<h3>Attachments</h3>
+<div class="fr"><span class="id">FR24</span> Organizer can upload files to a partner's record</div>
+<div class="fr"><span class="id">FR25</span> Organizer can delete attachments</div>
+<div class="fr"><span class="id">FR26</span> Partner can view and download files attached to their own company</div>
+
+<h3>Meeting RSVP &amp; Admin</h3>
+<div class="fr"><span class="id">FR27</span> Partner can view RSVP status for their meeting invites</div>
+<div class="fr"><span class="id">FR28</span> Organizer can view RSVP status per partner per meeting</div>
+<div class="fr"><span class="id">FR29</span> Organizer can manage invoice configuration settings</div>
+<div class="fr"><span class="id">FR30</span> System applies latest admin settings to newly generated PDFs</div>
+</section>
+
+<!-- NON-FUNCTIONAL REQUIREMENTS -->
+<section id="nonfunctional">
+<h2>Non-Functional Requirements</h2>
+
+<h3>Performance</h3>
+<div class="nfr"><span class="id">NFR1</span> Invoice PDF generation &lt; 3 seconds p95</div>
+<div class="nfr"><span class="id">NFR2</span> Invoice status board loads &lt; 2 seconds p95</div>
+<div class="nfr"><span class="id">NFR3</span> Partner billing tab loads &lt; 2 seconds p95</div>
+<div class="nfr"><span class="id">NFR4</span> Attachment presigned URL &lt; 1 second; upload direct to S3</div>
+
+<h3>Security</h3>
+<div class="nfr"><span class="id">NFR5</span> No cross-tenant leakage at any endpoint</div>
+<div class="nfr"><span class="id">NFR6</span> Invoice PDFs in S3 private; presigned URL max 15-min TTL</div>
+<div class="nfr"><span class="id">NFR7</span> Attachment presigned URLs expire within 15 minutes</div>
+<div class="nfr"><span class="id">NFR8</span> Existing <code>@PreAuthorize</code> + <code>PartnerSecurityService</code> &mdash; no new security patterns</div>
+<div class="nfr"><span class="id">NFR9</span> Billing contact data deletable on partnership end; invoices retained per Swiss 10-year obligation</div>
+
+<h3>Accessibility</h3>
+<div class="nfr"><span class="id">NFR10</span> WCAG 2.1 AA (consistent with Epic 6 baseline)</div>
+<div class="nfr"><span class="id">NFR11</span> Invoice status indicators use colour plus text label</div>
+
+<h3>Integration &amp; Reliability</h3>
+<div class="nfr"><span class="id">NFR12</span> SES async pattern; failure logged, organizer can resend</div>
+<div class="nfr"><span class="id">NFR13</span> Auto-overdue cron recovers on next run without duplicate transitions</div>
+<div class="nfr"><span class="id">NFR14</span> PDF generation idempotent &mdash; same invoice, same PDF</div>
+<div class="nfr"><span class="id">NFR15</span> Attachment upload via presigned URL &mdash; backend never proxies bytes</div>
+
+<h3>Internationalisation</h3>
+<div class="nfr"><span class="id">NFR16</span> All UI strings externalised in <code>public/locales/{de,en}/</code></div>
+<div class="nfr"><span class="id">NFR17</span> German primary; English fallback</div>
+<div class="nfr"><span class="id">NFR18</span> Invoice PDF language configurable per partner (DE / EN)</div>
+<div class="nfr"><span class="id">NFR19</span> All PDF text driven by locale strings &mdash; no hardcoded language</div>
+<div class="nfr"><span class="id">NFR20</span> Invoice email subjects/bodies in configured language</div>
+</section>
+
+<hr class="divider">
+<p style="text-align:center;color:var(--text-muted);font-size:0.82rem">
+  Generated from <code>prd.md</code><br>
+  <a href="bmad-analyst-training.html" style="color:var(--accent2)">Training Session</a> &nbsp;|&nbsp;
+  <a href="project_partner_enhancements.html" style="color:var(--accent2)">Selected Features</a>
+</p>
+
+</main>
+</body>
+</html>

@@ -8,18 +8,11 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
-        'publishing.controls.mode': 'Publishing Mode',
-        'publishing.controls.modeDraft': 'Draft',
-        'publishing.controls.modeProgressive': 'Progressive',
-        'publishing.controls.modeComplete': 'Complete',
-        'publishing.controls.notifySubscribers': 'Notify subscribers when publishing',
         'publishing.controls.publishPhases': 'Publish Phases',
         'publishing.controls.publishPhase': params?.phase ? `Publish ${params.phase}` : 'Publish',
         'publishing.controls.published': params?.phase ? `${params.phase} Published` : 'Published',
         'publishing.controls.publishing': 'Publishing',
         'publishing.controls.validationErrors': 'Validation Errors',
-        'publishing.controls.accessibility.publishingMode': 'Publishing Mode',
-        'publishing.controls.accessibility.notifySubscribers': 'Notify subscribers when publishing',
         'publishing.controls.accessibility.publishingPhase': `Publishing ${params?.phase || 'phase'}`,
         'publishing.controls.phase.topic': 'Topic',
         'publishing.controls.phase.speakers': 'Speakers',
@@ -67,34 +60,6 @@ describe('PublishingControls', () => {
     vi.mocked(usePublishingHook.usePublishing).mockReturnValue(mockUsePublishing);
   });
 
-  describe('Mode Selection', () => {
-    it('should render mode selection radio buttons', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
-
-      expect(screen.getByRole('radio', { name: /draft/i })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: /progressive/i })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: /complete/i })).toBeInTheDocument();
-    });
-
-    it('should select progressive mode by default', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
-
-      const progressiveRadio = screen.getByRole('radio', { name: /progressive/i });
-      expect(progressiveRadio).toBeChecked();
-    });
-
-    it('should update mode selection when radio button clicked', async () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
-
-      const draftRadio = screen.getByRole('radio', { name: /draft/i });
-      fireEvent.click(draftRadio);
-
-      await waitFor(() => {
-        expect(draftRadio).toBeChecked();
-      });
-    });
-  });
-
   describe('Publish Button', () => {
     it('should render publish button for topic phase', () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
@@ -121,10 +86,7 @@ describe('PublishingControls', () => {
       fireEvent.click(publishButton);
 
       await waitFor(() => {
-        expect(mockUsePublishing.publishPhase).toHaveBeenCalledWith('topic', {
-          mode: 'progressive',
-          notifySubscribers: true,
-        });
+        expect(mockUsePublishing.publishPhase).toHaveBeenCalledWith('topic');
       });
     });
 
@@ -175,39 +137,15 @@ describe('PublishingControls', () => {
     });
   });
 
-  describe('Newsletter Notification Toggle', () => {
-    it('should render newsletter notification checkbox', () => {
+  describe('Progressive Phase Ordering', () => {
+    it('should disable speakers publish when topic not yet published', () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
 
-      expect(
-        screen.getByRole('checkbox', { name: /notify subscribers when publishing/i })
-      ).toBeInTheDocument();
+      const speakersButton = screen.getByTestId('publish-speakers-button');
+      expect(speakersButton).toBeDisabled();
     });
 
-    it('should check newsletter notification by default', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      const checkbox = screen.getByRole('checkbox', {
-        name: /notify subscribers when publishing/i,
-      });
-      expect(checkbox).toBeChecked();
-    });
-
-    it('should toggle newsletter notification when checkbox clicked', async () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      const checkbox = screen.getByRole('checkbox', {
-        name: /notify subscribers when publishing/i,
-      });
-      fireEvent.click(checkbox);
-
-      await waitFor(() => {
-        expect(checkbox).not.toBeChecked();
-      });
-    });
-
-    it('should pass notifySubscribers=false when unchecked', async () => {
-      // Mock with topic already published so speakers can be published in progressive mode
+    it('should enable speakers publish when topic is published', () => {
       vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
         ...mockUsePublishing,
         publishingStatus: {
@@ -218,20 +156,23 @@ describe('PublishingControls', () => {
 
       render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
 
-      const checkbox = screen.getByRole('checkbox', {
-        name: /notify subscribers when publishing/i,
-      });
-      fireEvent.click(checkbox); // Uncheck
+      const speakersButton = screen.getByTestId('publish-speakers-button');
+      expect(speakersButton).not.toBeDisabled();
+    });
 
-      const publishButton = screen.getByTestId('publish-speakers-button');
-      fireEvent.click(publishButton);
-
-      await waitFor(() => {
-        expect(mockUsePublishing.publishPhase).toHaveBeenCalledWith('speakers', {
-          mode: 'progressive',
-          notifySubscribers: false,
-        });
+    it('should disable agenda publish when speakers not yet published', () => {
+      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
+        ...mockUsePublishing,
+        publishingStatus: {
+          ...mockUsePublishing.publishingStatus,
+          publishedPhases: ['topic'],
+        },
       });
+
+      render(<PublishingControls eventCode="BATbern142" currentPhase="agenda" />);
+
+      const agendaButton = screen.getByTestId('publish-agenda-button');
+      expect(agendaButton).toBeDisabled();
     });
   });
 
@@ -284,13 +225,6 @@ describe('PublishingControls', () => {
   });
 
   describe('Accessibility', () => {
-    it('should have accessible labels for all form controls', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
-
-      expect(screen.getByLabelText(/publishing mode/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/notify subscribers/i)).toBeInTheDocument();
-    });
-
     it('should announce publish success to screen readers', async () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
 

@@ -1,1 +1,49 @@
-{}
+{
+  "accessDenied": "Acces refuse",
+  "organizerOnly": "Cette page est reservee aux organisateurs.",
+  "tabs": {
+    "eventTypes": "Types d'evenements",
+    "importData": "Importer des donnees",
+    "taskTemplates": "Modeles de taches",
+    "emailTemplates": "Modeles d'e-mails",
+    "presentationSettings": "Presentation",
+    "exportImport": "Export / Import",
+    "aiPrompts": "Prompts IA",
+    "settings": "Parametres",
+    "globalImages": "Images globales",
+    "venueCoordination": "Lieu & Restauration"
+  },
+  "globalImages": {
+    "title": "Images teaser globales",
+    "description": "Images affichees en plein ecran sur TOUTES les presentations d'evenements. Des images specifiques a un evenement peuvent etre ajoutees par evenement dans l'onglet Parametres.",
+    "uploadButton": "Ajouter une image globale",
+    "uploading": "Telechargement en cours...",
+    "limitReached": "Maximum de {{max}} images teaser globales atteint.",
+    "uploadError": "Le telechargement a echoue. Veuillez reessayer.",
+    "removeError": "La suppression a echoue. Veuillez reessayer.",
+    "positionError": "La mise a jour de la position de la diapositive a echoue. Veuillez reessayer."
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "Transfert d'e-mails",
+      "subtitle": "Configurer les destinataires de transfert d'e-mails pour les adresses batbern.ch.",
+      "supportContacts": "Destinataires support@batbern.ch",
+      "supportContactsHelp": "Adresses e-mail separees par des virgules. Si vide, les e-mails a support@batbern.ch sont transferes a tous les organisateurs."
+    },
+    "save": "Enregistrer",
+    "saved": "Parametres enregistres.",
+    "saveFailed": "Echec de l'enregistrement. Veuillez reessayer.",
+    "venueCoordination": {
+      "title": "Contacts lieu & restauration",
+      "subtitle": "Ces contacts reçoivent les courriels d'offerte et de programme depuis l'onglet Lieu de la page Détails de l'événement. Ils sont identiques pour chaque événement — à définir une seule fois ici.",
+      "venueSection": "Contact lieu",
+      "cateringSection": "Contact restauration",
+      "coordinatorSection": "Coordinateur·trice du lieu",
+      "coordinatorHelp": "Le nom d'utilisateur de l'organisateur·trice (p. ex. nissim.buchs) dont l'adresse e-mail apparaîtra en Reply-To sur chaque message lieu/restauration. Les réponses arrivent directement chez cette personne.",
+      "coordinatorUsername": "Nom d'utilisateur du coordinateur·trice",
+      "salutation": "Civilité",
+      "name": "Nom",
+      "email": "E-mail"
+    }
+  }
+}

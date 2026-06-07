@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import UserAccountPage from './UserAccountPage';
 
 // Mock the child components
@@ -71,7 +71,7 @@ vi.mock('@/hooks/useUserAccount/useUserAccount', () => ({
   }),
 }));
 
-const createWrapper = () => {
+const createWrapper = (initialEntry = '/account') => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -79,11 +79,16 @@ const createWrapper = () => {
     },
   });
 
+  // Mount behind the real route shape so useParams-driven tab state works
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
-      <BrowserRouter>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </BrowserRouter>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <QueryClientProvider client={queryClient}>
+          <Routes>
+            <Route path="/account/:tab?" element={children} />
+          </Routes>
+        </QueryClientProvider>
+      </MemoryRouter>
     );
   };
 };
@@ -111,6 +116,19 @@ describe('UserAccountPage', () => {
 
     // Profile content should be visible
     expect(screen.getByTestId('user-profile-tab')).toBeInTheDocument();
+  });
+
+  it('should_openSettingsTab_when_deepLinkedToAccountSettings', async () => {
+    // Tab state is URL-driven: /account/settings selects the Settings tab directly
+    render(<UserAccountPage />, { wrapper: createWrapper('/account/settings') });
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /settings/i })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
+    });
+    expect(screen.getByTestId('user-settings-tab')).toBeInTheDocument();
   });
 
   it('should_switchToSettingsTab_when_settingsTabClicked', async () => {

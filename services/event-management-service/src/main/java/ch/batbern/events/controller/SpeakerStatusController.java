@@ -1,17 +1,31 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.dto.ContentSubmitResponse;
+import ch.batbern.events.dto.PromoteSpeakerRequest;
 import ch.batbern.events.dto.ReviewRequest;
 import ch.batbern.events.dto.SpeakerContentResponse;
+import ch.batbern.events.dto.SpeakerPoolResponse;
 import ch.batbern.events.dto.SpeakerStatusResponse;
 import ch.batbern.events.dto.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.SubmitContentRequest;
 import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.exception.InvalidPromotionStateException;
+import ch.batbern.events.exception.ReadyRequiresPromoteException;
+import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.service.ContentSubmissionService;
 import ch.batbern.events.service.QualityReviewService;
-import ch.batbern.events.service.SpeakerContentSubmissionService;
 import ch.batbern.events.service.SpeakerStatusService;
+import ch.batbern.events.service.SpeakerWorkflowService;
+import ch.batbern.events.service.content.ContentSubmissionPayload;
+import ch.batbern.events.service.workflow.TransitionPayload;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,9 +66,111 @@ import java.util.UUID;
 public class SpeakerStatusController {
 
     private final SpeakerStatusService speakerStatusService;
-    private final SpeakerContentSubmissionService contentSubmissionService;
+    private final ContentSubmissionService contentSubmissionService;
     private final QualityReviewService qualityReviewService;
+    private final SpeakerWorkflowService speakerWorkflowService;
+    private final SpeakerPoolRepository speakerPoolRepository;
+    private final EventRepository eventRepository;
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
+    private final ch.batbern.events.service.PrimarySpeakerResolver primarySpeakerResolver;
+
+    /**
+     * Promote a CONTACTED speaker to READY (Story 11.D.1).
+     *
+     * <p>Drives the workflow transition {@code CONTACTED → READY} via
+     * {@link SpeakerWorkflowService#transition} — the sole status writer per
+     * ADR-009 §0.1. The READY hook calls
+     * {@code UserApiClient.provisionUserWithRole(...)} to materialise the speaker
+     * as a User + SPEAKER role (idempotent at the user layer per Story 11.C.2's NFR3).
+     *
+     * <p>Pre-check returns HTTP 409 with {@code details.code = INVALID_PROMOTION_STATE}
+     * for any state other than {@code CONTACTED}. Re-promoting an already-READY speaker
+     * is also rejected as 409 — same-state would route through {@code handleSameStateTransition}
+     * which skips the side-effect hook, silently dropping the email payload; rejecting at
+     * the controller surface avoids that hidden-no-op contract trap.
+     *
+     * @param eventCode event code in path (e.g., {@code BATbern56})
+     * @param speakerId speaker pool ID in path
+     * @param request   email, firstName, lastName — all required and {@code @NotBlank}
+     *                  (Story 11.E.4 AC4). firstName / lastName populate Cognito's
+     *                  {@code given_name} / {@code family_name} attributes; blank values
+     *                  fail {@code GlobalExceptionHandler}'s 400 mapping.
+     * @return 200 OK with the updated {@link SpeakerPoolResponse}
+     */
+    @PostMapping("/{speakerId}/promote")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = CacheConfig.STATUS_SUMMARY_CACHE, key = "#eventCode"),
+        @CacheEvict(value = CacheConfig.STATUS_HISTORY_CACHE,
+                key = "#eventCode + ':' + #speakerId")
+    })
+    public ResponseEntity<SpeakerPoolResponse> promoteSpeakerToReady(
+            @PathVariable String eventCode,
+            @PathVariable UUID speakerId,
+            @Valid @RequestBody PromoteSpeakerRequest request) {
+
+        log.info("POST /api/v1/events/{}/speakers/{}/promote", eventCode, speakerId);
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
+        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
+                .orElseThrow(() -> new NotFoundException("Speaker pool entry not found: " + speakerId));
+
+        if (!event.getId().equals(speaker.getEventId())) {
+            throw new NotFoundException(
+                    "Speaker " + speakerId + " does not belong to event " + eventCode);
+        }
+
+        SpeakerWorkflowState current = speaker.getStatus();
+        if (current != SpeakerWorkflowState.CONTACTED) {
+            throw new InvalidPromotionStateException(current,
+                    buildInvalidPromotionMessage(current));
+        }
+
+        String username = securityContextHelper.getCurrentUsername();
+        String trimmedEmail = request.email() != null ? request.email().trim() : null;
+        TransitionPayload payload = TransitionPayload.builder()
+                .email(trimmedEmail)
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .build();
+
+        SpeakerPool promoted;
+        try {
+            promoted = speakerWorkflowService
+                    .transition(speakerId, SpeakerWorkflowState.READY, username, payload)
+                    .speakerPool();
+        } catch (InvalidStateTransitionException ex) {
+            // TOCTOU: state changed between the pre-check and the transition reload. Re-classify
+            // the generic 422 as the tailored 409 the dialog renders, using the latest known state.
+            SpeakerWorkflowState latest = speakerPoolRepository.findById(speakerId)
+                    .map(SpeakerPool::getStatus)
+                    .orElse(current);
+            throw new InvalidPromotionStateException(latest,
+                    buildInvalidPromotionMessage(latest));
+        }
+
+        // Story 11.E.9: PROMOTE_TO_READY just provisioned the session_users primary
+        // speaker row inside the workflow transition; apply the overlay so the response
+        // carries the live username/email instead of nulls from the now-dropped columns.
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(promoted);
+        primarySpeakerResolver.applyOverlay(response, promoted);
+        return ResponseEntity.ok(response);
+    }
+
+    private static String buildInvalidPromotionMessage(SpeakerWorkflowState state) {
+        return switch (state) {
+            case IDENTIFIED ->
+                    "speaker must be in CONTACTED before promoting; log outreach first";
+            case DECLINED ->
+                    "speaker is DECLINED; cannot be promoted; create a new pool entry instead";
+            case READY ->
+                    "speaker is already READY; promote is only valid from CONTACTED";
+            default ->
+                    String.format("speaker is already in %s; promote is only valid from CONTACTED",
+                            state.name());
+        };
+    }
 
     /**
      * Update speaker status
@@ -71,6 +187,15 @@ public class SpeakerStatusController {
             @PathVariable String eventCode,
             @PathVariable UUID speakerId,
             @Valid @RequestBody UpdateStatusRequest request) {
+
+        // Story 11.B.3 AC5: READY requires an email payload for User provisioning and is
+        // reachable only via POST /promote (Story 11.D.1). Jackson accepts READY as a valid
+        // SpeakerWorkflowState enum value, so the rejection happens here (not at the
+        // deserialization layer where the 5 removed legacy values are rejected — see
+        // GlobalExceptionHandler.handleHttpMessageNotReadableException).
+        if (request.getNewStatus() == SpeakerWorkflowState.READY) {
+            throw new ReadyRequiresPromoteException(eventCode);
+        }
 
         log.info("PUT /api/v1/events/{}/speakers/{}/status - newStatus: {}",
                 eventCode, speakerId, request.getNewStatus());
@@ -144,7 +269,7 @@ public class SpeakerStatusController {
     @PostMapping("/{speakerId}/content")
     @PreAuthorize("hasRole('ORGANIZER')")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<SpeakerContentResponse> submitContent(
+    public ResponseEntity<ContentSubmitResponse> submitContent(
             @PathVariable String eventCode,
             @PathVariable UUID speakerId,
             @Valid @RequestBody SubmitContentRequest request) {
@@ -152,16 +277,20 @@ public class SpeakerStatusController {
         log.info("POST /api/v1/events/{}/speakers/{}/content - title: {}",
                 eventCode, speakerId, request.getPresentationTitle());
 
-        SpeakerContentResponse response = contentSubmissionService.submitContent(
-                speakerId.toString(),
-                eventCode,
+        // Story 11.C.2 — both content-submission endpoints share ContentSubmissionService.submit().
+        // The organizer username is read from SecurityContext; the consolidated service handles
+        // session/content/profile-patch/workflow-transition in a single transaction.
+        String username = securityContextHelper.getCurrentUsername();
+        ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 request.getPresentationTitle(),
                 request.getPresentationAbstract(),
-                request.getUsername(),
-                request.getSpeakerName(),
-                request.getEmail(),
-                request.getCompany()
+                request.getBio(),
+                request.getProfilePictureUrl(),
+                request.getPresentationUploadId()
         );
+
+        ContentSubmitResponse response = contentSubmissionService.submit(
+                speakerId, eventCode, payload, username);
 
         return ResponseEntity.status(201).body(response);
     }

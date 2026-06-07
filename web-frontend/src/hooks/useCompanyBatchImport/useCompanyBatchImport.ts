@@ -33,7 +33,7 @@ async function uploadLogo(logoUrl: string, companyName: string): Promise<string>
   } catch (error) {
     // Re-throw with more context
     if (error instanceof Error) {
-      throw new Error(`Logo upload failed for ${companyName}: ${error.message}`);
+      throw new Error(`Logo upload failed for ${companyName}: ${error.message}`, { cause: error });
     }
     throw error;
   }

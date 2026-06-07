@@ -4,14 +4,23 @@
  * Full-screen hero with Unicorn.studio interactive background
  */
 
-import { useEffect, useState, ReactNode } from 'react';
+import { useEffect, useState, lazy, Suspense, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/public/ui/button';
 import { useTranslation } from 'react-i18next';
-import { RegistrationWizard } from '@/components/public/Registration/RegistrationWizard';
+// Lazy: the registration wizard is a heavy MUI form rendered only after the user expands
+// the inline "Register" panel. Lazy-loading it keeps @mui/material out of the eager public
+// homepage bundle — it arrives only when someone actually starts registering.
+const RegistrationWizard = lazy(() =>
+  import('@/components/public/Registration/RegistrationWizard').then((m) => ({
+    default: m.RegistrationWizard,
+  }))
+);
+import { AttendeeUnregisterPanel } from '@/components/public/Registration/AttendeeUnregisterPanel';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { CheckCircle2, Mail } from 'lucide-react';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
+import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
 
 interface HeroSectionProps {
   title: string;
@@ -27,6 +36,8 @@ interface HeroSectionProps {
   countdownTimer?: ReactNode;
   /** AC8 (Story 10.11): Remaining spots — passed through to RegistrationWizard */
   spotsRemaining?: number | null;
+  /** Hide the register CTA entirely (POST_EVENT, ARCHIVE, COMING_SOON) */
+  hideRegisterCta?: boolean;
 }
 
 export const HeroSection = ({
@@ -40,9 +51,11 @@ export const HeroSection = ({
   unicornProjectId = 'jfzsiwProJi81qvb7uKX',
   countdownTimer,
   spotsRemaining,
+  hideRegisterCta = false,
 }: HeroSectionProps) => {
   const { t } = useTranslation(['common', 'registration']);
   const [isRegistrationExpanded, setIsRegistrationExpanded] = useState(false);
+  const [isUnregisterExpanded, setIsUnregisterExpanded] = useState(false);
   const [pendingRegistration, setPendingRegistration] = useState<{
     email: string;
     eventCode: string;
@@ -110,6 +123,34 @@ export const HeroSection = ({
     }
   }, [themeImageUrl]);
 
+  // Scroll-tracking for the unregister drawer (mirrors registration)
+  useEffect(() => {
+    if (!isUnregisterExpanded) return;
+
+    let animationFrame: number;
+    let startTime: number | null = null;
+    const animationDuration = 1500;
+
+    const trackBottom = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const section = document.getElementById('registration-wizard-section');
+      if (section && elapsed < animationDuration) {
+        const rect = section.getBoundingClientRect();
+        window.scrollTo({
+          top: window.pageYOffset + rect.bottom - window.innerHeight,
+          behavior: 'instant',
+        });
+        animationFrame = requestAnimationFrame(trackBottom);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(trackBottom);
+    return () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [isUnregisterExpanded]);
+
   // Continuously track wizard bottom during animation
   useEffect(() => {
     if (!isRegistrationExpanded) return;
@@ -151,7 +192,9 @@ export const HeroSection = ({
         <div className="absolute inset-0 z-0 w-full h-full" aria-hidden="true">
           {themeImageUrl ? (
             <img
-              src={themeImageUrl}
+              src={buildCdnImageUrl(themeImageUrl, { w: 1920, fit: 'cover' }) ?? themeImageUrl}
+              srcSet={buildCdnImageSrcSet(themeImageUrl, [768, 1280, 1920], { fit: 'cover' })}
+              sizes="100vw"
               alt=""
               className="w-full h-full object-cover"
               width={1920}
@@ -170,7 +213,10 @@ export const HeroSection = ({
             <div className="max-w-4xl">
               <BATbernLoader size={288} speed="slow" className="mb-6" />
 
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight mb-6">
+              <h1
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight mb-6"
+                data-testid="event-hero-title"
+              >
                 {title}
               </h1>
 
@@ -229,69 +275,72 @@ export const HeroSection = ({
               )}
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                {pendingRegistration ? (
-                  // Show "already registered" message (sessionStorage — just registered this session)
-                  <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-green-400 font-medium mb-1">
-                          {t('registration.alreadyRegistered.title')}
-                        </p>
-                        <p className="text-sm text-zinc-300 mb-2">
-                          {t('registration.alreadyRegistered.pending')}{' '}
-                          <span className="font-mono text-green-400">
-                            {pendingRegistration.email}
-                          </span>
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-zinc-400">
-                          <Mail className="h-3 w-3" />
-                          <span>{t('registration.alreadyRegistered.checkEmail')}</span>
+                {!hideRegisterCta &&
+                  (pendingRegistration ? (
+                    // Show "already registered" message (sessionStorage — just registered this session)
+                    <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-green-400 font-medium mb-1">
+                            {t('registration.alreadyRegistered.title')}
+                          </p>
+                          <p className="text-sm text-zinc-300 mb-2">
+                            {t('registration.alreadyRegistered.pending')}{' '}
+                            <span className="font-mono text-green-400">
+                              {pendingRegistration.email}
+                            </span>
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-zinc-400">
+                            <Mail className="h-3 w-3" />
+                            <span>{t('registration.alreadyRegistered.checkEmail')}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ) : isAlreadyRegistered ? (
-                  // Show "already registered" for authenticated users with an active registration
-                  <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-green-400 font-medium mb-1">
-                          {t('registration.alreadyRegistered.title')}
-                        </p>
-                        <p className="text-sm text-zinc-300 mb-2">
-                          {t(
-                            `registration:registrationStatusBanner.${(myRegistration!.status ?? 'REGISTERED').toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
-                          )}
-                        </p>
-                        {eventCode && (
-                          <Link
-                            to={`/register/${eventCode}`}
-                            className="text-xs text-green-400 underline"
+                  ) : isAlreadyRegistered ? (
+                    // Show "already registered" for authenticated users with an active registration
+                    <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-green-400 font-medium mb-1">
+                            {t('registration.alreadyRegistered.title')}
+                          </p>
+                          <p className="text-sm text-zinc-300 mb-2">
+                            {t(
+                              `registration:registrationStatusBanner.${(myRegistration!.status ?? 'REGISTERED').toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
+                            )}
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsUnregisterExpanded(true)}
+                            disabled={isUnregisterExpanded}
+                            className="text-xs text-red-400 hover:text-red-300 px-0 h-auto"
+                            data-testid="hero-unregister-btn"
                           >
-                            {t('registration:registrationStatusBanner.manageLink')}
-                          </Link>
-                        )}
+                            {t('registration:unregister.button')}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : eventCode ? (
-                  // Inline registration mode: expand wizard below
-                  <Button
-                    size="lg"
-                    className="text-base md:text-lg"
-                    onClick={() => setIsRegistrationExpanded(true)}
-                    disabled={isRegistrationExpanded}
-                  >
-                    {ctaText || t('public.register')}
-                  </Button>
-                ) : (
-                  // Fallback to link mode (when eventCode not provided)
-                  <Button size="lg" className="text-base md:text-lg" asChild>
-                    <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
-                  </Button>
-                )}
+                  ) : eventCode ? (
+                    // Inline registration mode: expand wizard below
+                    <Button
+                      size="lg"
+                      className="text-base md:text-lg"
+                      onClick={() => setIsRegistrationExpanded(true)}
+                      disabled={isRegistrationExpanded}
+                    >
+                      {ctaText || t('public.register')}
+                    </Button>
+                  ) : (
+                    // Fallback to link mode (when eventCode not provided)
+                    <Button size="lg" className="text-base md:text-lg" asChild>
+                      <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
+                    </Button>
+                  ))}
                 {countdownTimer && <div className="ml-0 sm:ml-4">{countdownTimer}</div>}
               </div>
             </div>
@@ -309,11 +358,33 @@ export const HeroSection = ({
           }}
         >
           <div className="container mx-auto px-4 py-16">
-            <RegistrationWizard
+            <Suspense fallback={<BATbernLoader size={64} />}>
+              <RegistrationWizard
+                eventCode={eventCode}
+                inline={true}
+                onCancel={() => setIsRegistrationExpanded(false)}
+                spotsRemaining={spotsRemaining}
+              />
+            </Suspense>
+          </div>
+        </section>
+      )}
+
+      {/* Inline Unregister Drawer - same slide-up pattern */}
+      {isUnregisterExpanded && eventCode && myRegistration && (
+        <section
+          id="registration-wizard-section"
+          className="relative z-20 overflow-hidden"
+          style={{
+            animation: 'slideUp 1.5s ease-out forwards',
+          }}
+        >
+          <div className="container mx-auto px-4 py-16">
+            <AttendeeUnregisterPanel
               eventCode={eventCode}
+              registration={myRegistration}
+              onCancel={() => setIsUnregisterExpanded(false)}
               inline={true}
-              onCancel={() => setIsRegistrationExpanded(false)}
-              spotsRemaining={spotsRemaining}
             />
           </div>
         </section>

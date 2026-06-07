@@ -1,0 +1,56 @@
+meta {
+  name: Speaker Workflow - Invalid Transition
+  type: http
+  seq: 51
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "QUALITY_REVIEWED",
+    "reason": "Attempting invalid skip-ahead transition — should fail"
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.body.error: eq InvalidStateTransitionException
+}
+
+tests {
+  test("should return 422 Unprocessable Entity for invalid transition (Story 6.0a AC2)", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+
+  test("should bind to InvalidStateTransitionException error code", function() {
+    const body = res.getBody();
+    expect(body.error).to.equal('InvalidStateTransitionException');
+    expect(body.message).to.be.a('string').that.is.not.empty;
+  });
+
+  test("should not allow skipping workflow steps", function() {
+    expect(res.getStatus()).to.not.equal(200);
+  });
+}
+
+docs {
+  PR 11 audit (Epic 11 / ADR-009 §0.1): the pre-Epic-11 version sent `newStatus: CONFIRMED`,
+  which is no longer in the SpeakerWorkflowState enum (Story 11.B.1 removed it). Jackson
+  rejects unknown enum values with a deserialisation error → 400, not 422 — masking the
+  test's intent (verify the workflow service rejects invalid transitions, not that Jackson
+  rejects bogus enum strings).
+
+  PR 11 swaps to `QUALITY_REVIEWED`, a VALID enum value but an INVALID transition from the
+  speaker's current state (IDENTIFIED — set by test 49). The workflow service's allow-list
+  rejects it as InvalidStateTransitionException → 422. Now the test exercises what the
+  comment always claimed it did.
+}

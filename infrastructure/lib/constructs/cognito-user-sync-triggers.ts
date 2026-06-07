@@ -16,6 +16,7 @@ export interface CognitoUserSyncTriggersProps {
   databaseSecret: secretsmanager.ISecret;
   databaseEndpoint: string;
   envName: string;
+  isProduction?: boolean;
 }
 
 /**
@@ -36,11 +37,12 @@ export class CognitoUserSyncTriggers extends Construct {
   public readonly preTokenGenerationTrigger: lambda.Function;
   public readonly preAuthenticationTrigger: lambda.Function;
   public readonly postAuthenticationTrigger: lambda.Function;
+  public readonly preSignUpTrigger: lambda.Function; // Story 12.6: native validation + federated account-linking
 
   constructor(scope: Construct, id: string, props: CognitoUserSyncTriggersProps) {
     super(scope, id);
 
-    const isProd = props.envName === 'production';
+    const isProd = props.isProduction ?? (props.envName === 'production');
 
     // Common Lambda environment variables
     // Secrets are read dynamically at runtime, not at CDK synth time
@@ -132,11 +134,40 @@ export class CognitoUserSyncTriggers extends Construct {
       logGroup: postAuthenticationLogGroup,
     });
 
+    // PreSignUp Lambda Trigger (Story 12.6: SSO Phase 2)
+    // Native sign-up: verbatim company-UUID validation (no DB). Federated sign-in
+    // (PreSignUp_ExternalProvider): AdminLinkProviderForUser email-keyed merge into the
+    // existing native user (sub preserved). Replaces the former inline preSignUp Lambda
+    // in cognito-stack.ts — moved here to gain the VPC + DB-secret wiring for the lookup.
+    // NOTE: physical names are `pre-signup-trigger`, NOT the legacy `presignup-trigger`.
+    // Story 12.6 MOVES this trigger out of CognitoStack's inline `lambda.Code.fromInline`
+    // (logical id PreSignupTrigger / log group PreSignupLogGroup, both named `presignup-trigger`)
+    // into this construct under a NEW logical id. CloudFormation creates new resources before
+    // deleting the removed ones, so reusing the SAME physical name would collide on deploy
+    // ("Resource ... already exists" — ChangeSet early-validation failure, observed on PR #735).
+    // The rename (also matching the source file pre-signup.ts) lets the new resources create
+    // cleanly while the old inline ones are deleted. Do NOT revert to `presignup-trigger`.
+    const preSignUpLogGroup = new logs.LogGroup(this, 'PreSignUpLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${props.envName}/pre-signup-trigger`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.preSignUpTrigger = new NodejsFunction(this, 'PreSignUpTrigger', {
+      ...commonLambdaProps,
+      functionName: `batbern-${props.envName}-pre-signup-trigger`,
+      entry: path.join(__dirname, '../lambda/triggers/pre-signup.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(15), // VPC cold start + DB email lookup (matches pre-auth/pre-token)
+      logGroup: preSignUpLogGroup,
+    });
+
     // Grant secret read permissions
     props.databaseSecret.grantRead(this.postConfirmationTrigger);
     props.databaseSecret.grantRead(this.preTokenGenerationTrigger);
     props.databaseSecret.grantRead(this.preAuthenticationTrigger);
     props.databaseSecret.grantRead(this.postAuthenticationTrigger);
+    props.databaseSecret.grantRead(this.preSignUpTrigger);
 
     // Grant CloudWatch permissions
     const cloudWatchPolicy = new iam.PolicyStatement({
@@ -149,6 +180,54 @@ export class CognitoUserSyncTriggers extends Construct {
     this.preTokenGenerationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.preAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.postAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
+    this.preSignUpTrigger.addToRolePolicy(cloudWatchPolicy);
+
+    // Story 12.1 AC6: the post-confirmation trigger writes the custom:role='UNUSED'
+    // sentinel via AdminUpdateUserAttributes after the user_profiles INSERT. The write
+    // is deliberately non-blocking (it must never fail Cognito confirmation), so a
+    // missing IAM grant would surface only as a swallowed AccessDeniedException — the
+    // self-registered chokepoint would silently never stamp the sentinel. Grant the
+    // permission explicitly. A wildcard userpool resource is used on purpose: scoping to
+    // props.userPool.userPoolArn would create a CloudFormation circular dependency
+    // (the pool already depends on this Lambda via addTrigger below).
+    const region = cdk.Stack.of(this).region;
+    const account = cdk.Stack.of(this).account;
+    this.postConfirmationTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cognito-idp:AdminUpdateUserAttributes'],
+        resources: [`arn:aws:cognito-idp:${region}:${account}:userpool/*`],
+      })
+    );
+
+    // Story 12.6: the PreSignUp trigger links a federated (Google) identity into the
+    // existing native user via AdminLinkProviderForUser on PreSignUp_ExternalProvider.
+    // ListUsers is granted for destination-user resolution by email (the DB row is the
+    // primary source of truth; ListUsers is the documented fallback per AC). As with the
+    // post-confirmation grant above, a wildcard userpool resource is used on purpose:
+    // scoping to props.userPool.userPoolArn would create a CloudFormation circular
+    // dependency (the pool already depends on this Lambda via addTrigger below).
+    this.preSignUpTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cognito-idp:AdminLinkProviderForUser', 'cognito-idp:ListUsers'],
+        resources: [`arn:aws:cognito-idp:${region}:${account}:userpool/*`],
+      })
+    );
+
+    // PR #745: the PostAuthentication trigger restores the canonical primary email
+    // after a federated sign-in of a linked user — Cognito re-syncs mapped IdP
+    // attributes (incl. email) into the destination user on every sign-in, which
+    // for additional-email-linked accounts overwrites the native email and breaks
+    // the email sign-in alias. Same wildcard-resource rationale as the grant above
+    // (scoping to the pool ARN would be a circular dependency).
+    this.postAuthenticationTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cognito-idp:AdminUpdateUserAttributes'],
+        resources: [`arn:aws:cognito-idp:${region}:${account}:userpool/*`],
+      })
+    );
 
     // Note: Database security group ingress rule is configured in VpcConstruct
     // to avoid cyclic dependency (Network -> CompanyManagement -> Network)
@@ -169,6 +248,10 @@ export class CognitoUserSyncTriggers extends Construct {
     props.userPool.addTrigger(
       cognito.UserPoolOperation.POST_AUTHENTICATION,
       this.postAuthenticationTrigger
+    );
+    props.userPool.addTrigger(
+      cognito.UserPoolOperation.PRE_SIGN_UP,
+      this.preSignUpTrigger
     );
   }
 }

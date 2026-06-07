@@ -75,7 +75,7 @@
 - **AWS ECS Fargate**: Serverless container orchestration
 - **AWS Cognito**: User authentication and authorization
 - **AWS S3**: Object storage with CDN integration
-- **AWS CloudFront**: Global content delivery network (cdn.batbern.ch, cdn.staging.batbern.ch)
+- **AWS CloudFront**: Global content delivery network (cdn.batbern.ch)
 - **AWS RDS (Single-AZ, db.t4g.micro)**: Managed PostgreSQL database service (cost-optimized)
 - **AWS VPC (Single AZ, 1 NAT Gateway)**: Cost-optimized networking infrastructure
 - **Note**: ElastiCache Redis removed; using application-level Caffeine caching for 83% cost reduction

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -57,18 +58,32 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("event-management-service");
     }
 
-    // Test 5.2: should_routeToSpeakerService_when_speakersEndpointCalled
+    // Regression: /api/v1/event-types must route to EMS. There was NO route for it
+    // (it doesn't match the /api/v1/events prefix — the hyphen breaks it), so the
+    // gateway threw RoutingException → 500. The event-types-api Bruno suite had been
+    // failing on staging since PR 2a, masked by the warning-only continue-on-error gate
+    // until PR 14 flipped it. EventTypeController lives in event-management-service.
     @Test
-    @DisplayName("should_routeToSpeakerService_when_speakersEndpointCalled")
-    void should_routeToSpeakerService_when_speakersEndpointCalled() {
-        // Given
-        String requestPath = "/api/v1/speakers/invite";
+    @DisplayName("should_routeToEventService_when_eventTypesEndpointCalled")
+    void should_routeToEventService_when_eventTypesEndpointCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/event-types"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/event-types/EVENING"))
+                .isEqualTo("event-management-service");
+    }
 
-        // When
-        String targetService = domainRouter.determineTargetService(requestPath);
-
-        // Then
-        assertThat(targetService).isEqualTo("event-management-service");
+    // Test 5.2: standalone /api/v1/speakers/* routes no longer exist.
+    // Speaker-coordination became a thin shell in Story 11.C.1 (ADR-009 §6.2); all
+    // speaker actions are now scoped under the owning event:
+    // /api/v1/events/{code}/speakers/{id}/{action}. The event-scoped form is
+    // covered by `should_routeToEventService_when_speakerStatusUpdateEndpointCalled`
+    // and `should_routeToEventService_when_speakerStatusHistoryEndpointCalled` above.
+    @Test
+    @DisplayName("should_throwRoutingException_when_bareSpeakersPathCalled")
+    void should_throwRoutingException_when_bareSpeakersPathCalled() {
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/speakers/invite"))
+                .isInstanceOf(ch.batbern.gateway.routing.exception.RoutingException.class)
+                .hasMessageContaining("/api/v1/speakers/invite");
     }
 
     // Test 5.3: should_routeToPartnerService_when_partnersEndpointCalled
@@ -209,6 +224,35 @@ class DomainRouterTest {
     }
 
     @Test
+    @DisplayName("should_routeToCums_when_cleanupCumsPathCalled")
+    void should_routeToCums_when_cleanupCumsPathCalled() {
+        // Bruno test-fixture cleanup paths (PR 1 staging-hardening) — per-service routing
+        // must take precedence over the generic /api/v1/admin → EMS fallback below.
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/cums/cleanup");
+
+        assertThat(targetService).isEqualTo("company-user-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEms_when_cleanupEmsPathCalled")
+    void should_routeToEms_when_cleanupEmsPathCalled() {
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/ems/cleanup");
+
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToPcs_when_cleanupPcsPathCalled")
+    void should_routeToPcs_when_cleanupPcsPathCalled() {
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/pcs/cleanup");
+
+        assertThat(targetService).isEqualTo("partner-coordination-service");
+    }
+
+    @Test
     @DisplayName("should_throwRoutingException_when_unknownPathProvided")
     void should_throwRoutingException_when_unknownPathProvided() {
         // Given
@@ -261,6 +305,29 @@ class DomainRouterTest {
 
     // Story 5.4: Speaker Status Management Routing Tests
     // Epic 5: Organizer manages speakers on their behalf, routes to event-management-service
+    // Regression: gateway must route AiAssistController's /speakers/{id}/ai/* paths to EMS.
+    // Before the fix it threw RoutingException → frontend got 503 in production.
+    @Test
+    @DisplayName("should_routeToEventService_when_speakerAiAnalyzeAbstractEndpointCalled")
+    void should_routeToEventService_when_speakerAiAnalyzeAbstractEndpointCalled() {
+        String requestPath = "/api/v1/speakers/77960867-e5c6-4134-b142-db96c50d3ba6/ai/analyze-abstract";
+
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEventService_when_speakerAiNestedSubpathCalled")
+    void should_routeToEventService_when_speakerAiNestedSubpathCalled() {
+        // Catches any future AI subpath we add under /speakers/{id}/ai/* (e.g. /ai/expand-bio).
+        String requestPath = "/api/v1/speakers/550e8400-e29b-41d4-a716-446655440000/ai/some-future-op/apply";
+
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
     @Test
     @DisplayName("should_routeToEventService_when_speakerStatusUpdateEndpointCalled")
     void should_routeToEventService_when_speakerStatusUpdateEndpointCalled() {
@@ -303,8 +370,9 @@ class DomainRouterTest {
     @Test
     @DisplayName("should_handleQueryParameters_when_pathWithQueryProvided")
     void should_handleQueryParameters_when_pathWithQueryProvided() {
-        // Given
-        String pathWithQuery = "/api/v1/speakers/search?name=John&role=keynote";
+        // Given — using an event-scoped path that survives the Phase B/C refactor.
+        // Verifies the query-string is stripped before matching.
+        String pathWithQuery = "/api/v1/events/BATbern56/speakers/search?name=John&role=keynote";
 
         // When
         String targetService = domainRouter.determineTargetService(pathWithQuery);
@@ -451,5 +519,71 @@ class DomainRouterTest {
 
         // Then: root path "/" is preserved as-is (length == 1, not stripped)
         assertThat(uriCaptor.getValue().getPath()).isEqualTo("/");
+    }
+
+    // Regression test for the double-encoding bug caught by Bruno
+    // users-api/17-delete-additional-email. The DELETE path embeds a URL-encoded
+    // email (`bruno-test-<ts>%40e2e.batbern.invalid`); a previous build() default
+    // re-encoded the `%` as `%25`, producing `%2540` upstream which Spring
+    // Security's StrictHttpFirewall rejects ("potentially malicious String '%25'").
+    @Test
+    @DisplayName("should_preservePathEncoding_when_pathContainsPercentEncodedAtSign")
+    void should_preservePathEncoding_when_pathContainsPercentEncodedAtSign() {
+        // Given
+        String targetService = "company-user-management-service";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/users/me/additional-emails/bruno-test-1234%40e2e.batbern.invalid");
+        request.setMethod("DELETE");
+
+        ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
+        when(restTemplate.exchange(
+            uriCaptor.capture(),
+            any(),
+            any(),
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.noContent().build());
+
+        // When
+        domainRouter.routeRequest(targetService, request).join();
+
+        // Then: the gateway must forward `%40` verbatim, not double-encode to `%2540`
+        String rawPath = uriCaptor.getValue().getRawPath();
+        assertThat(rawPath).contains("%40");
+        assertThat(rawPath).doesNotContain("%2540");
+        assertThat(uriCaptor.getValue().toString())
+                .isEqualTo("http://localhost:8085/api/v1/users/me/additional-emails/bruno-test-1234%40e2e.batbern.invalid");
+    }
+
+    // Regression test for the Cache-Control stripping bug caught by Bruno
+    // users-api/20-public-user-by-username. The gateway previously stripped
+    // upstream Cache-Control headers referencing a `SecurityHeadersFilter` that
+    // doesn't exist; PublicUserController's `cachePublic + 24h` directive was
+    // dropped and replaced by Spring Security's `no-cache, no-store, ...` default.
+    @Test
+    @DisplayName("should_preserveUpstreamCacheControl_when_responseCarriesPublicCachingHeader")
+    void should_preserveUpstreamCacheControl_when_responseCarriesPublicCachingHeader() {
+        // Given
+        String targetService = "company-user-management-service";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/public/users/jane.smith");
+        request.setMethod("GET");
+
+        HttpHeaders upstreamHeaders = new HttpHeaders();
+        upstreamHeaders.set("Cache-Control", "public, max-age=86400");
+        when(restTemplate.exchange(
+            any(URI.class),
+            any(),
+            any(),
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok()
+                .headers(upstreamHeaders)
+                .body("{\"username\":\"jane.smith\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        // When
+        ResponseEntity<byte[]> response = domainRouter.routeRequest(targetService, request).join();
+
+        // Then: gateway must forward the upstream Cache-Control unchanged.
+        assertThat(response.getHeaders().getFirst("Cache-Control"))
+                .isEqualTo("public, max-age=86400");
     }
 }

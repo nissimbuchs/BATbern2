@@ -1,10 +1,10 @@
 ---
 project_name: BATbern
 user_name: Nissim
-date: 2026-02-24
+date: 2026-06-06
 sections_completed: [technology_stack, language_rules, framework_rules, testing_rules, code_quality, workflow_rules, critical_rules]
 status: complete
-rule_count: 65
+rule_count: 84
 optimized_for_llm: true
 ---
 
@@ -25,7 +25,7 @@ Focus on unobvious details that agents otherwise miss._
 - Zustand 5.x — client state
 - React Router 7.x
 - react-hook-form 7.x + zod 4.x — forms & validation
-- i18next 25.x + react-i18next 16.x — i18n (en + de)
+- i18next 25.x + react-i18next 16.x — i18n (10 locales: de, en, fr, it, rm, es, fi, nl, ja, gsw-BE)
 - Tailwind CSS 4.x + Vite 7.x
 - aws-amplify 6.x — Cognito auth
 
@@ -108,6 +108,18 @@ Focus on unobvious details that agents otherwise miss._
 - Shared-kernel types (`ErrorResponse`, `PaginationMetadata`) are imported via
   `importMappings` in Gradle — never re-generated.
 
+### Architecture: Unified Speaker Workflow (ADR-009 — Epic 11)
+- `SpeakerWorkflowState` has exactly **8 states**: `IDENTIFIED → CONTACTED → READY → INVITED
+  → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED` (+ `DECLINED`, reachable from any state).
+- **Sole status writer**: `SpeakerWorkflowService.transition(...)`. NEVER set
+  `speaker_pool.status` directly (no `setStatus(...)` outside the service, no raw UPDATE).
+- `READY` is the **provisioning gate**: User lookup-or-create + Cognito provisioning + SPEAKER
+  role + `PRIMARY_SPEAKER` `session_users` row happen at the transition INTO ready, only via
+  `POST /api/v1/events/{code}/speakers/{speakerId}/promote`.
+- `speaker_pool.username`/`email` columns are GONE (V103). Canonical speaker identity =
+  `PrimarySpeakerResolver.resolve(pool)` (primary `session_users` row + CUMS-backed email).
+- Magic-link auth was torn down (Story 11.F.1) — speakers authenticate via Cognito only.
+
 ### Backend Layered Architecture
 ```
 Controller  →  implements generated *Api interface, delegates to Service
@@ -118,6 +130,24 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 ```
 - `GlobalExceptionHandler` MUST have an explicit `@ExceptionHandler(MethodArgumentNotValidException.class)` —
   the catch-all `@ExceptionHandler(Exception.class)` silently shadows Spring's default 400 handler.
+
+### Bundle Boundary: NO MUI on Public Pages (perf-critical)
+- Public routes (homepage, `/archive`, `/about`, `/privacy`, `/unsubscribe`, `/verify-email`, …)
+  are **Tailwind-only** — they must NEVER import MUI. MUI (~158 KB vendor chunk) lives behind
+  the lazy `<MuiLayout>` ThemeProvider boundary in `App.tsx` (auth/organizer/speaker/partner
+  routes). Public routes are declared as SIBLINGS after that boundary (React Router ranks by
+  path specificity, not source order).
+- Adding a new public page: build it with Tailwind + plain elements, register it as a sibling
+  of the boundary. Adding one MUI import to an eagerly-loaded public component drags the whole
+  MUI vendor chunk into the homepage bundle.
+
+### i18n / Localization (narrowed rule, 2026-05-17)
+- **Frontend UI keys: ALL 10 locales required** (`de, en, fr, it, rm, es, fi, nl, ja, gsw-BE`)
+  in `web-frontend/public/locales/{locale}/*.json`. EN + DE first-class copy; other 8 may be
+  straight translations.
+- **Backend email templates: DE + EN ONLY** (`services/*/src/main/resources/email-templates/
+  {key}-{de|en}.html`). Other locales fall back to EN at render time. Do NOT create 10-locale
+  email templates. Locale matching: treat any `de*` language pref as German.
 
 ### React Patterns
 - Roles determine which component tree renders — check role before rendering, not inside.
@@ -161,6 +191,13 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - Auth state stored per role: `.playwright-auth-{role}.json` (written by `global-setup.ts`).
 - Partner tests live in `e2e/partner/`, speaker tests in `e2e/speaker/`.
 - Run Bruno API contract tests first: `./scripts/ci/run-bruno-tests.sh`.
+
+### Bruno `.bru` Files
+- **NO free-floating `#` comments** between blocks — the parser silently SKIPS the whole file
+  (`Warning: Skipping invalid file`) while `bru run` still exits 0. Prose goes in a `docs { }`
+  block at the end of the file. After any Bruno run, grep output for `Skipping invalid file`.
+- Staging IS production: no Bruno/E2E test may trigger real outbound communications
+  (invites, cancellations, reminders) or leave test data behind — always add cleanup steps.
 
 ### Coverage Requirements
 - Unit tests (business logic): ≥ 90%
@@ -268,8 +305,50 @@ type(scope): description
 - Role updates take effect on the user's NEXT login (JWT is issued at login time).
 - JWT claim for roles is `custom:role` (Cognito) or `role` (Watch JWT) — `extractAuthorities`
   must check both.
+- **Empty `custom:role` → fall back to the DB** (Pattern 3b, Epic 11.E.7): every service's
+  `JwtAuthenticationConverter` uses `shared-kernel/.../security/JwtRolesConverter`, which
+  queries `user_profiles` ⨝ `role_assignments` by `cognito_user_id = jwt.sub` whenever the
+  claim is empty. The frontend mirrors this in `AuthContext.hydrateRolesIfMissing` via
+  `GET /users/me?include=roles`. Dormant in staging (the JWT always carries roles there) —
+  this exists for local-dev where CUMS-provisioned speakers have their Cognito user in
+  staging but their `user_profiles` row only in the local DB, so PreTokenGen finds nothing.
+  Do NOT remove either fallback when refactoring auth — it is the only thing that makes
+  the local kanban → speaker-portal flow testable end-to-end.
 - Never call `refreshJWT()` on 401 inside a sync/service loop — triggers infinite auth retry
   (401 → refresh → onChange → sync → 401 → …). JWT refresh is handled only by AuthManager timer.
+
+### Federated Identity / Google SSO (ADR-010 — Epic 12)
+- **Cognito Lambda triggers (pre-signup, pre-token-generation, post-authentication) must NEVER
+  throw** — a throw 503s EVERY sign-in. Wrap everything in try/catch, emit a CloudWatch metric,
+  return the event. Test this fail-open behavior explicitly.
+- PreSignUp (`PreSignUp_ExternalProvider`) links a federated identity to an existing account by
+  **case-insensitive email match** via `AdminLinkProviderForUser` (destination = native user,
+  `sub` preserved). Fallback (2026-06-06 amendment): verified additional emails
+  (`user_additional_emails.verified_at IS NOT NULL` AND IdP attribute `email_verified='true'`
+  — Cognito attributes are STRINGS). Never link on unverified emails.
+- JIT provisioning (`JITUserProvisioningInterceptor`, CUMS) creates the `user_profiles` row on
+  first authenticated API call (default role ATTENDEE); it must NEVER overwrite an existing
+  `cognito_user_id`, and it skips creation when the JWT email is someone's verified additional
+  email (duplicate guard).
+- Runtime kill-switch: `FEATURES_SSO_ENABLED` — SSO code paths must tolerate being disabled.
+- Lambda triggers need handler-level unit tests that import and RUN the handler — CDK
+  `Template.fromStack()` assertions do NOT count (they miss `Runtime.ImportModuleError`).
+- Lambda bundling: native deps (sharp, pg-native) require Docker bundling — the local
+  `tryBundle` must return `false` outside Jest so Linux x64 binaries are installed.
+
+### Additional Emails (Story 10.32 + verification flow 2026-06-06)
+- `user_additional_emails`: max 5/user, **globally unique case-insensitively across primary +
+  additional emails** — DB triggers reject collisions in both directions. Never assume an email
+  can belong to two users.
+- `verified_at` is set ONLY by the verification flow (signed stateless HMAC JWT link, 48h TTL,
+  claims bound to the row UUID so delete/re-add invalidates). SSO linking and the JIT guard gate
+  on `verified_at IS NOT NULL`. Do not gate email fan-out/CC on it (deliberate).
+- Token-credentialed public endpoints (verification, unsubscribe, registration confirm): the
+  token IS the credential → `permitAll` required in **BOTH** the api-gateway SecurityConfig AND
+  the owning service's SecurityConfig — and the service config has MULTIPLE profile chains
+  (local + prod + test): add to ALL of them.
+- Email-link confirm endpoints are **POST-only** — mail scanners prefetch GET links, so a GET
+  must never mutate state (GET = read-only check, POST = confirm).
 
 ### Backend Gotchas
 - `GlobalExceptionHandler`: ALWAYS add explicit `@ExceptionHandler(MethodArgumentNotValidException.class)`.
@@ -278,6 +357,10 @@ type(scope): description
 - Never use `findAll()` then filter/paginate in memory — always paginate at the DB level.
 - Flyway migration filenames must be strictly sequential: `V{n}__{description}.sql`.
   Out-of-order versions cause `flywayMigrate` to fail — run `flywayRepair` first.
+- **NEVER edit an already-applied migration** (staging = production). A changed checksum makes
+  Flyway validation fail on boot → service crash-loops → ECS rolls back to a stale image and
+  deploys silently stop advancing. Fix data/schema with a NEW higher-numbered migration. Always
+  exclude `**/db/migration/**` from repo-wide find-and-replace sweeps (the #669 incident).
 - Cross-service HTTP clients must propagate the JWT from `SecurityContext` — do not make
   unauthenticated service-to-service calls.
 
@@ -286,8 +369,8 @@ type(scope): description
   async Task/Promise — otherwise multiple tab swipes all see the old timestamp and all fire.
 - MUI `<Collapse unmountOnExit>` removes DOM nodes asynchronously — always `waitFor()` on
   `.not.toBeInTheDocument()` assertions.
-- i18n: ALL user-visible strings go through `useTranslation()`. Add keys to both `en` and `de`
-  translation files. Missing keys silently fall back to the key string.
+- i18n: ALL user-visible strings go through `useTranslation()`. Add keys to ALL 10 locale
+  files (see i18n/Localization rule). Missing keys silently fall back to the key string.
 - Never import directly from `src/types/generated/` in test files when testing with MSW —
   mock the service layer instead.
 
@@ -320,4 +403,7 @@ type(scope): description
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-_Last Updated: 2026-02-24_
+_Last Updated: 2026-06-06 (folded in: ADR-009, ADR-010 + verified-additional-email amendment,
+Epics 11/12 outcomes, narrowed email-localization rule, additional-emails + verification flow,
+no-MUI-on-public-pages bundle boundary, Bruno docs{} rule, Flyway never-edit-applied rule,
+Lambda handler-test + Docker-bundling rules)_

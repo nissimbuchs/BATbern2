@@ -1,0 +1,25 @@
+meta {
+  name: Dashboard 403 with ORGANIZER-only token (Story 11.E.3 AC5)
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/dashboard
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("should return 403 for ORGANIZER-only token (Story 11.E.3 AC5 #2)", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

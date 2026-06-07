@@ -17,6 +17,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { ArrowBack } from '@mui/icons-material';
@@ -30,6 +32,8 @@ const BlobTopicSelectorPage: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('organizer');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [showBackDialog, setShowBackDialog] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY));
@@ -141,7 +145,13 @@ const BlobTopicSelectorPage: React.FC = () => {
       {showOnboarding && sessionData && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
 
       {/* Unsaved changes warning dialog (AC: 4) */}
-      <Dialog open={showBackDialog} onClose={handleBackCancel} maxWidth="xs">
+      <Dialog
+        open={showBackDialog}
+        onClose={handleBackCancel}
+        maxWidth="xs"
+        fullScreen={isMobile}
+        data-testid="blob-unsaved-dialog"
+      >
         <DialogTitle>
           {t('blobSelector.unsavedWarning', {
             defaultValue: 'Unsaved session — all changes will be lost. Go back?',
@@ -149,10 +159,15 @@ const BlobTopicSelectorPage: React.FC = () => {
         </DialogTitle>
         <DialogContent />
         <DialogActions>
-          <Button onClick={handleBackCancel}>
+          <Button onClick={handleBackCancel} data-testid="blob-back-cancel">
             {t('common.cancel', { defaultValue: 'Cancel', ns: 'events' })}
           </Button>
-          <Button onClick={handleBackConfirm} variant="contained" color="primary">
+          <Button
+            onClick={handleBackConfirm}
+            variant="contained"
+            color="primary"
+            data-testid="blob-back-confirm"
+          >
             {t('common.confirm', { defaultValue: 'Go back', ns: 'events' })}
           </Button>
         </DialogActions>

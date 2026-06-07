@@ -4,7 +4,11 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.dto.generated.users.PaginatedUserResponse;
+import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -13,6 +17,9 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -45,6 +52,7 @@ public class UserApiClientImpl implements UserApiClient {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final CacheManager cacheManager;
 
     @Value("${user-service.base-url}")
     private String userServiceBaseUrl;
@@ -62,6 +70,17 @@ public class UserApiClientImpl implements UserApiClient {
     @Override
     @Cacheable(value = "userApiCache", key = "#username")
     public UserResponse getUserByUsername(String username) {
+        // Early guard: an empty/null username yields the URL "/api/v1/users/" which
+        // returns a 500 from User Management (route mismatch). This caused the
+        // 2026-05-18 attendee-registration outage when pre-token-generation Lambda
+        // fell back to an empty `custom:username` claim and the JWT carried that
+        // through to event-management. Fail fast with a clear UserNotFoundException
+        // so callers and metrics see the real reason.
+        if (username == null || username.isEmpty()) {
+            log.warn("Refusing getUserByUsername call with empty username "
+                    + "(likely missing custom:username JWT claim from pre-token-generation)");
+            throw new UserNotFoundException("");
+        }
         log.debug("Fetching user profile for username: {}", username);
 
         String url = userServiceBaseUrl + "/api/v1/users/" + username;
@@ -460,129 +479,218 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
-     * Update user profile fields.
-     * Story 6.2b: Speaker Profile Update Portal (AC10)
+     * Provision a User with a role (idempotent).
+     * Story 11.C.2 (AR13). See {@link UserApiClient#provisionUserWithRole(ProvisionUserRequest)}.
      *
-     * @param username User's username
-     * @param updateDto fields to update
-     * @return Updated user profile
+     * <p>Not cached: this is a write operation. Successful calls evict any cached
+     * lookup for the target username because the role set has changed.
      */
     @Override
-    public UserResponse updateUser(String username, ch.batbern.events.dto.UserUpdateDto updateDto) {
-        log.debug("Updating user profile for username: {}", username);
+    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request) {
+        log.debug("Provisioning user (Story 11.C.2): email={}, role={}",
+                request.getEmail(), request.getRole());
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username;
+        String url = userServiceBaseUrl + "/api/v1/users/provision";
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
             headers.set("Content-Type", "application/json");
-            HttpEntity<ch.batbern.events.dto.UserUpdateDto> request = new HttpEntity<>(updateDto, headers);
+            HttpEntity<ProvisionUserRequest> httpRequest = new HttpEntity<>(request, headers);
+
+            ResponseEntity<ProvisionUserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    httpRequest,
+                    ProvisionUserResponse.class
+            );
+
+            ProvisionUserResponse result = response.getBody();
+            log.info("Provisioned user: email={}, username={}, created={}",
+                    request.getEmail(),
+                    result != null ? result.getUsername() : "null",
+                    result != null ? result.getCreated() : "null");
+            // P1 (review patch): use CacheManager directly. Self-invoking `this.evictUserCache(...)`
+            // bypasses Spring's AOP proxy → @CacheEvict never fires. Programmatic eviction is the
+            // only reliable way to evict from within the same bean.
+            if (result != null && result.getUsername() != null) {
+                evictUserCacheEntry(result.getUsername());
+            }
+            return result;
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error provisioning user {}: {} - {}",
+                    request.getEmail(), e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error provisioning user: " + request.getEmail(),
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for provision {}: {} - {}",
+                    request.getEmail(), e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error provisioning user: " + request.getEmail(),
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for provision {}: {}",
+                    request.getEmail(), e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for user: " + request.getEmail(),
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error provisioning user {}: {}", request.getEmail(), e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error provisioning user: " + request.getEmail(),
+                    e
+            );
+        }
+    }
+
+    /**
+     * Patch user profile fields (bio, profilePictureUrl).
+     * Story 11.C.2 (AR14). See {@link UserApiClient#patchUserProfile(String, PatchUserProfileRequest)}.
+     *
+     * <p>Successful calls evict the {@code userApiCache} entry for the target username
+     * because the underlying User profile has changed.
+     */
+    @Override
+    @CacheEvict(value = "userApiCache", key = "#username")
+    public UserResponse patchUserProfile(String username, PatchUserProfileRequest request) {
+        log.debug("Patching user profile (Story 11.C.2) for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/profile";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            headers.set("Content-Type", "application/json");
+            HttpEntity<PatchUserProfileRequest> httpRequest = new HttpEntity<>(request, headers);
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.PATCH,
-                    request,
+                    httpRequest,
                     UserResponse.class
             );
 
             UserResponse user = response.getBody();
-            log.info("Successfully updated user profile for username: {}", username);
+            log.info("Successfully patched user profile for username: {}", username);
             return user;
 
         } catch (HttpClientErrorException.NotFound e) {
-            log.warn("User not found for update: {}", username);
+            log.warn("User not found for profile patch: {}", username);
             throw new UserNotFoundException(username, e);
 
         } catch (HttpClientErrorException e) {
-            log.error("Client error updating user {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            log.error("Client error patching user profile {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "Client error updating user: " + username,
+                    "Client error patching user profile: " + username,
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for user {}: {} - {}",
+            log.error("Server error patching user profile {}: {} - {}",
                     username, e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "User Management Service error for user: " + username,
+                    "User Management Service error patching profile for user: " + username,
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for user {}: {}",
-                    username, e.getMessage());
+            log.error("Network error patching user profile {}: {}", username, e.getMessage());
             throw new UserServiceException(
                     "Failed to connect to User Management Service for user: " + username,
                     e
             );
 
         } catch (Exception e) {
-            log.error("Unexpected error updating user {}: {}", username, e.getMessage(), e);
+            log.error("Unexpected error patching user profile {}: {}", username, e.getMessage(), e);
             throw new UserServiceException(
-                    "Unexpected error updating user: " + username,
+                    "Unexpected error patching user profile: " + username,
                     e
             );
         }
     }
 
     /**
-     * Update user profile picture URL.
-     * Story 6.2b: Speaker Profile Update Portal - AC7 (Profile Photo Upload)
+     * Issue (or skip) Cognito temp credentials at READY → INVITED.
+     * Story 11.E.2 (AR15, FR9). See {@link UserApiClient#issueInvitationCredentials(String)}.
      *
-     * Uses PATCH to update only the profilePictureUrl field.
-     *
-     * @param username User's username
-     * @param profilePictureUrl CloudFront URL of the uploaded photo
+     * <p>Not cached: this is a write operation on the Cognito side. The temp password in
+     * the response is never persisted client-side — the caller embeds it in the invitation
+     * email and discards from memory.
      */
     @Override
-    public void updateUserProfilePicture(String username, String profilePictureUrl) {
-        log.debug("Updating profile picture for username: {}", username);
+    public InvitationCredentialsResponse issueInvitationCredentials(String username) {
+        log.debug("Issuing invitation credentials (Story 11.E.2) for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/profile-picture";
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/issue-invitation-credentials";
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
             headers.set("Content-Type", "application/json");
+            HttpEntity<Void> httpRequest = new HttpEntity<>(headers);
 
-            // Simple DTO with just the URL
-            java.util.Map<String, String> body = java.util.Map.of("profilePictureUrl", profilePictureUrl);
-            HttpEntity<java.util.Map<String, String>> request = new HttpEntity<>(body, headers);
-
-            restTemplate.exchange(
+            ResponseEntity<InvitationCredentialsResponse> response = restTemplate.exchange(
                     url,
-                    HttpMethod.PATCH,
-                    request,
-                    Void.class
+                    HttpMethod.POST,
+                    httpRequest,
+                    InvitationCredentialsResponse.class
             );
 
-            log.info("Successfully updated profile picture for username: {}", username);
+            InvitationCredentialsResponse result = response.getBody();
+            // Story 11.E.2 review patch (P9 / B12): enforce the FRESH_TEMP_PASSWORD invariant
+            // that the OpenAPI schema cannot express (nullable + required: [action] only).
+            // If CUMS ever regresses and returns action=FRESH_TEMP_PASSWORD with a null
+            // temporaryPassword, the invitation email would render with an empty password
+            // block and the speaker would be locked out silently. Fail fast at the boundary.
+            if (result == null) {
+                throw new UserServiceException(
+                        "issueInvitationCredentials returned an empty body for: " + username);
+            }
+            if (result.getAction() == InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD
+                    && (result.getTemporaryPassword() == null || result.getTemporaryPassword().isBlank())) {
+                throw new UserServiceException(
+                        "CUMS returned action=FRESH_TEMP_PASSWORD with no temporaryPassword for: "
+                                + username);
+            }
+            log.info("Issued invitation credentials for username={} (action={})",
+                    username,
+                    result.getAction());
+            return result;
 
         } catch (HttpClientErrorException.NotFound e) {
-            log.warn("User not found for profile picture update: {}", username);
+            log.warn("User not found for invitation credentials: {}", username);
             throw new UserNotFoundException(username, e);
 
         } catch (HttpClientErrorException e) {
-            log.error("Client error updating profile picture for {}: {} - {}",
+            log.error("Client error issuing invitation credentials for {}: {} - {}",
                     username, e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "Client error updating profile picture for user: " + username,
+                    "Client error issuing invitation credentials for user: " + username,
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for profile picture {}: {} - {}",
+            log.error("Server error issuing invitation credentials for {}: {} - {}",
                     username, e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "User Management Service error updating profile picture for user: " + username,
+                    "User Management Service error issuing invitation credentials: " + username,
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for profile picture {}: {}",
+            log.error("Network error issuing invitation credentials for {}: {}",
                     username, e.getMessage());
             throw new UserServiceException(
                     "Failed to connect to User Management Service for user: " + username,
@@ -590,23 +698,41 @@ public class UserApiClientImpl implements UserApiClient {
             );
 
         } catch (Exception e) {
-            log.error("Unexpected error updating profile picture for {}: {}", username, e.getMessage(), e);
+            log.error("Unexpected error issuing invitation credentials for {}: {}",
+                    username, e.getMessage(), e);
             throw new UserServiceException(
-                    "Unexpected error updating profile picture for user: " + username,
+                    "Unexpected error issuing invitation credentials: " + username,
                     e
             );
         }
     }
 
     /**
-     * Get all speaker usernames.
-     * Story 10.20: AC1 — used for legacy export speaker metadata enrichment.
+     * Programmatically evict the cached User entry for a username after a write operation
+     * (Story 11.C.2). Uses {@link CacheManager} directly so eviction works correctly from
+     * within the same bean — the previous helper used `@CacheEvict` on a method that was
+     * self-invoked, which bypasses Spring's AOP proxy and silently did nothing.
+     */
+    private void evictUserCacheEntry(String username) {
+        if (username == null) {
+            return;
+        }
+        Cache cache = cacheManager.getCache("userApiCache");
+        if (cache != null) {
+            cache.evict(username);
+            log.trace("Evicted userApiCache entry for username: {}", username);
+        }
+    }
+
+    /**
+     * Get all partner usernames.
+     * Used for auto-enrolling all PARTNER-role users when a new event is created.
      */
     @Override
-    public java.util.List<String> getSpeakerUsernames() {
-        log.debug("Fetching speaker usernames");
+    public java.util.List<String> getPartnerUsernames() {
+        log.debug("Fetching partner usernames");
 
-        String url = userServiceBaseUrl + "/api/v1/users?role=SPEAKER&limit=1000";
+        String url = userServiceBaseUrl + "/api/v1/users?role=PARTNER&limit=1000";
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
@@ -621,7 +747,7 @@ public class UserApiClientImpl implements UserApiClient {
 
             PaginatedUserResponse body = response.getBody();
             if (body == null || body.getData() == null) {
-                log.debug("No speakers found");
+                log.debug("No partners found");
                 return java.util.List.of();
             }
 
@@ -629,38 +755,38 @@ public class UserApiClientImpl implements UserApiClient {
                     .map(UserResponse::getId)
                     .collect(java.util.stream.Collectors.toList());
 
-            log.debug("Successfully fetched {} speaker usernames", usernames.size());
+            log.debug("Successfully fetched {} partner usernames", usernames.size());
             return usernames;
 
         } catch (HttpClientErrorException e) {
-            log.error("Client error fetching speaker list: {} - {}", e.getStatusCode(), e.getMessage());
+            log.error("Client error fetching partner list: {} - {}", e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "Client error fetching speaker list",
+                    "Client error fetching partner list",
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for speaker list: {} - {}",
+            log.error("Server error from User Management Service for partner list: {} - {}",
                     e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "User Management Service error fetching speaker list",
+                    "User Management Service error fetching partner list",
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for speaker list: {}",
+            log.error("Network error connecting to User Management Service for partner list: {}",
                     e.getMessage());
             throw new UserServiceException(
-                    "Failed to connect to User Management Service for speaker list",
+                    "Failed to connect to User Management Service for partner list",
                     e
             );
 
         } catch (Exception e) {
-            log.error("Unexpected error fetching speaker list: {}", e.getMessage(), e);
+            log.error("Unexpected error fetching partner list: {}", e.getMessage(), e);
             throw new UserServiceException(
-                    "Unexpected error fetching speaker list",
+                    "Unexpected error fetching partner list",
                     e
             );
         }
@@ -726,6 +852,60 @@ public class UserApiClientImpl implements UserApiClient {
         } catch (Exception e) {
             log.warn("Unexpected error fetching companies (non-fatal for export): {}", e.getMessage());
             return java.util.List.of();
+        }
+    }
+
+    /**
+     * Resolve a single company slug to its display name via {@code GET /companies/{slug}}.
+     * Cached per slug for 15 min in {@code userApiCache}.
+     *
+     * <p>Returns the company's {@code displayName} when set, falling back to {@code name}.
+     * Returns {@code null} when the slug is null/blank, the company is not found (404),
+     * or CUMS is degraded — the caller's responsibility to fall back to the slug for
+     * display.
+     *
+     * <p>Returns nullable {@link String} (not {@link java.util.Optional}) because Spring's
+     * {@code @Cacheable} unwraps Optional results before evaluating the {@code unless}
+     * SpEL — an empty Optional would cause {@code #result.isEmpty()} to NPE.
+     */
+    @Override
+    @Cacheable(value = "userApiCache",
+            key = "'company:' + #companySlug",
+            unless = "#result == null")
+    public String getCompanyDisplayName(String companySlug) {
+        if (companySlug == null || companySlug.isBlank()) {
+            return null;
+        }
+        String url = userServiceBaseUrl + "/api/v1/companies/" + companySlug;
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            ResponseEntity<CompanyBasicDto> response = restTemplate.exchange(
+                    url, HttpMethod.GET, request, CompanyBasicDto.class);
+            CompanyBasicDto company = response.getBody();
+            if (company == null || company.getName() == null) {
+                return null;
+            }
+            return (company.getDisplayName() != null && !company.getDisplayName().isBlank())
+                    ? company.getDisplayName()
+                    : company.getName();
+        } catch (HttpClientErrorException.NotFound e) {
+            log.debug("Company not found in CUMS: {}", companySlug);
+            return null;
+        } catch (HttpClientErrorException e) {
+            log.warn("Client error fetching company {}: {} - {}",
+                    companySlug, e.getStatusCode(), e.getMessage());
+            return null;
+        } catch (HttpServerErrorException e) {
+            log.warn("Server error fetching company {}: {} - {}",
+                    companySlug, e.getStatusCode(), e.getMessage());
+            return null;
+        } catch (ResourceAccessException e) {
+            log.warn("Network error fetching company {}: {}", companySlug, e.getMessage());
+            return null;
+        } catch (Exception e) {
+            log.warn("Unexpected error fetching company {}: {}", companySlug, e.getMessage());
+            return null;
         }
     }
 

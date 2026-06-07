@@ -1,0 +1,66 @@
+meta {
+  name: Delete Test User (GDPR)
+  type: http
+  seq: 95
+}
+
+delete {
+  url: {{baseUrl}}/users/{{disposableUsername}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+script:pre-request {
+  // Plan §F2 fix: forbid this test from ever deleting the auth user.
+  // `disposableUsername` is set ONLY by `04-create-user` post-response —
+  // if test 04 failed (e.g. 403 on non-organizer envs), bail out here
+  // instead of fall-back-deleting whatever shape `testUsername` has.
+  const disposable = bru.getEnvVar("disposableUsername");
+  if (!disposable) {
+    throw new Error("Precondition: env var `disposableUsername` is unset — test 04 (create-user) must succeed first. Refusing to issue DELETE against fallback username (which would target the auth user).");
+  }
+  // Accept `bruno.test` (first run, no collision) AND `bruno.test.N` (subsequent
+  // runs, where the username service appends a numeric suffix). REJECT
+  // `bruno.testuser`, `bruno.testing`, etc. — and crucially the auth user
+  // `batbern.organizer`.
+  if (!disposable.match(/^bruno\.test(\.[0-9]+)?$/)) {
+    throw new Error("Sanity: `disposableUsername`='" + disposable + "' does not match `bruno.test` or `bruno.test.N`. Refusing to delete.");
+  }
+}
+
+assert {
+  res.status: in [204, 403, 404]
+}
+
+tests {
+  test("should delete user if admin (AC11)", function() {
+    const status = res.getStatus();
+    // 204 = success, 403 = not admin, 404 = user not found
+    expect([204, 403, 404]).to.include(status);
+  });
+
+  test("should require admin role for deletion", function() {
+    const status = res.getStatus();
+    if (status === 403) {
+      console.log("Correctly denied deletion for non-admin");
+    } else if (status === 204) {
+      console.log("Successfully deleted test user (GDPR compliance)");
+    }
+  });
+
+  test("should return 404 if user not found", function() {
+    const status = res.getStatus();
+    if (status === 404) {
+      console.log("User not found (may have been deleted already)");
+    }
+  });
+}

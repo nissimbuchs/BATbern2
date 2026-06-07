@@ -120,7 +120,6 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
         // Create speakers in pool with ACCEPTED status
         speaker1 = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username("john.doe")
                 .speakerName("John Doe")
                 .status(SpeakerWorkflowState.ACCEPTED) // Confirmed speaker
                 .build();
@@ -128,7 +127,6 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
 
         speaker2 = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username("jane.smith")
                 .speakerName("Jane Smith")
                 .status(SpeakerWorkflowState.ACCEPTED)
                 .build();

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,6 +46,7 @@ public class UserSearchServiceImpl implements UserSearchService {
      * @param role Optional role filter
      * @return List of matching users (max 20 for autocomplete)
      */
+    @Transactional(readOnly = true)
     @Cacheable(value = "userSearch", key = "#query + '_' + (#role != null ? #role.name() : 'ALL')")
     public List<UserResponse> searchUsers(String query, Role role) {
         log.debug("Searching users with query: {} and role: {}", query, role);

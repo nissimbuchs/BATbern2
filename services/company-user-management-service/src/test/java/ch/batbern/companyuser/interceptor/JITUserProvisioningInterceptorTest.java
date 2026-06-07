@@ -2,6 +2,7 @@ package ch.batbern.companyuser.interceptor;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.event.UserCreatedEvent;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,6 +55,9 @@ class JITUserProvisioningInterceptorTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock(lenient = true)
+    private UserAdditionalEmailRepository userAdditionalEmailRepository;
+
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
@@ -73,6 +77,11 @@ class JITUserProvisioningInterceptorTest {
     void setUp() {
         // Setup security context
         SecurityContextHolder.setContext(securityContext);
+        // Default: the JIT-create path's verified-additional-email duplicate guard finds nothing,
+        // so existing create/link tests are unaffected. Lenient so tests that never reach the
+        // guard (e.g. already-exists-by-cognito-id) do not trip unnecessary-stubbing strictness.
+        when(userAdditionalEmailRepository.findVerifiedByEmailIgnoreCase(anyString()))
+                .thenReturn(Optional.empty());
     }
 
     /**
@@ -80,6 +89,10 @@ class JITUserProvisioningInterceptorTest {
      */
 
     private Jwt createJwt(String subject, String email, String givenName, String familyName) {
+        return createJwt(subject, email, givenName, familyName, null);
+    }
+
+    private Jwt createJwt(String subject, String email, String givenName, String familyName, String preferencesJson) {
         Map<String, Object> headers = new HashMap<>();
         headers.put("alg", "RS256");
         headers.put("typ", "JWT");
@@ -94,6 +107,9 @@ class JITUserProvisioningInterceptorTest {
         }
         if  (familyName != null) {
             claims.put("family_name", familyName);
+        }
+        if  (preferencesJson != null) {
+            claims.put("custom:preferences", preferencesJson);
         }
         claims.put("iat", Instant.now().getEpochSecond());
         claims.put("exp", Instant.now().plusSeconds(3600).getEpochSecond());
@@ -248,7 +264,7 @@ class JITUserProvisioningInterceptorTest {
         User preExistingUser = createUser(null, "partner.user", email, Set.of(Role.PARTNER));
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(preExistingUser));
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(preExistingUser));
         when(userRepository.save(preExistingUser)).thenReturn(preExistingUser);
 
         // When
@@ -278,7 +294,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         User savedUser = createUser(cognitoUserId, "jane.smith", email, Set.of(Role.ATTENDEE));
@@ -307,6 +323,340 @@ class JITUserProvisioningInterceptorTest {
         verify(eventPublisher).publishEvent(any(UserCreatedEvent.class));
     }
 
+    // ============================================================================
+    // Epic 12 follow-up — verified-additional-email duplicate guard.
+    // Before JIT-creating a brand-new user, the interceptor checks whether the email is a
+    // VERIFIED additional email of an existing user (PreSignUp should have linked it). If so,
+    // it skips creation — without resolving the request to the owner or touching the owner's
+    // cognito_user_id. Unverified additional emails are transparent to the guard.
+    // ============================================================================
+
+    @Test
+    void should_skipUserCreation_when_emailIsVerifiedAdditionalEmailOfExistingUser() throws Exception {
+        String cognitoUserId = "unlinked-federated-sub-222";
+        String email = "private.gmail@gmail.com";
+        Jwt jwt = createJwt(cognitoUserId, email, "Anon", "Federated");
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt,
+                List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))
+        );
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        // The duplicate guard fires: this email is a verified additional email of an owner.
+        ch.batbern.companyuser.domain.UserAdditionalEmail verifiedRow =
+                ch.batbern.companyuser.domain.UserAdditionalEmail.builder()
+                        .email(email)
+                        .verifiedAt(Instant.now())
+                        .build();
+        when(userAdditionalEmailRepository.findVerifiedByEmailIgnoreCase(email))
+                .thenReturn(Optional.of(verifiedRow));
+
+        boolean result = interceptor.preHandle(request, response, new Object());
+
+        // Request continues, but NO new user is created and NO event is published.
+        assertThat(result).isTrue();
+        verify(userRepository, never()).save(any(User.class));
+        verify(eventPublisher, never()).publishEvent(any(UserCreatedEvent.class));
+    }
+
+    @Test
+    void should_createUser_when_emailIsUnverifiedAdditionalEmail() throws Exception {
+        String cognitoUserId = "fresh-federated-sub-444";
+        String email = "unverified.box@gmail.com";
+        Jwt jwt = createJwt(cognitoUserId, email, "Fresh", "User");
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt,
+                List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))
+        );
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        // Unverified → the verified-only finder returns empty → guard is transparent.
+        when(userAdditionalEmailRepository.findVerifiedByEmailIgnoreCase(email))
+                .thenReturn(Optional.empty());
+        User savedUser = createUser(cognitoUserId, "fresh.user", email, Set.of(Role.ATTENDEE));
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        boolean result = interceptor.preHandle(request, response, new Object());
+
+        // Existing behaviour preserved: a new user IS JIT-created.
+        assertThat(result).isTrue();
+        verify(userRepository).save(any(User.class));
+        verify(eventPublisher).publishEvent(any(UserCreatedEvent.class));
+    }
+
+    // ============================================================================
+    // 2026-05-18 regression — JIT used to read first/last name only from JWT
+    // given_name / family_name. The signup form actually packs those into a
+    // single `custom:preferences` JSON attribute (per ADR-001), so JIT ended
+    // up creating users with empty first/last name (nikolay.borissov.2 +
+    // elmar.boschung.2 are the recorded victims). Read both sources now.
+    // ============================================================================
+
+    @Test
+    void should_useCustomPreferences_when_givenAndFamilyNameClaimsAreMissing() throws Exception {
+        String cognitoUserId = "auth-signup-cognito-id";
+        String email = "nikolay.borissov@gmail.com";
+        String preferences = "{\"firstName\":\"Nikolay\",\"lastName\":\"Borissov\",\"language\":\"de\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        User created = userCaptor.getValue();
+        assertThat(created.getFirstName()).isEqualTo("Nikolay");
+        assertThat(created.getLastName()).isEqualTo("Borissov");
+        assertThat(created.getUsername()).isEqualTo("nikolay.borissov");
+    }
+
+    @Test
+    void should_preferStandardClaim_when_bothStandardAndPreferencesPresent() throws Exception {
+        String cognitoUserId = "mixed-claims-cognito-id";
+        String email = "user@example.com";
+        // Standard claims wins (firstName='Jane'), even though preferences has firstName='Other'
+        String preferences = "{\"firstName\":\"Other\",\"lastName\":\"Person\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, "Jane", "Smith", preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getFirstName()).isEqualTo("Jane");
+        assertThat(userCaptor.getValue().getLastName()).isEqualTo("Smith");
+    }
+
+    @Test
+    void should_failGracefully_when_preferencesJsonMalformed() throws Exception {
+        String cognitoUserId = "malformed-prefs-cognito-id";
+        String email = "noprefs@example.com";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, "this is not JSON {{");
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        boolean result = interceptor.preHandle(request, response, new Object());
+
+        // The interceptor must not block the request (non-blocking contract).
+        assertThat(result).isTrue();
+    }
+
+    // ============================================================================
+    // Story 12.3 (SSO PR 1 — Part B): JIT must also carry `language` from the
+    // `custom:preferences` JSON onto the created row, mirroring post-confirmation.ts
+    // (`const language = preferences.language || 'de'`). Without this, a Swiss-French /
+    // EN signup that reaches JIT (PostConfirmation failure, or EVERY federated user once
+    // SSO ships) silently loses its chosen language to the @PrePersist "de" default.
+    // ============================================================================
+
+    @Test
+    void should_setPrefLanguageFromCustomPreferences_when_jitProvisioningUser() throws Exception {
+        String cognitoUserId = "fr-signup-cognito-id";
+        String email = "marie.favre@example.ch";
+        String preferences = "{\"firstName\":\"Marie\",\"lastName\":\"Favre\",\"language\":\"fr\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        User created = userCaptor.getValue();
+        assertThat(created.getPreferences()).isNotNull();
+        assertThat(created.getPreferences().getLanguage()).isEqualTo("fr");
+        // Name-extraction contract preserved.
+        assertThat(created.getFirstName()).isEqualTo("Marie");
+        assertThat(created.getLastName()).isEqualTo("Favre");
+    }
+
+    @Test
+    void should_defaultPrefLanguageToDe_when_preferencesHasNoLanguage() throws Exception {
+        String cognitoUserId = "no-lang-cognito-id";
+        String email = "no.lang@example.com";
+        // Names present, but no `language` key — today's typical name-only signup.
+        String preferences = "{\"firstName\":\"No\",\"lastName\":\"Lang\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        // No language parsed -> interceptor leaves preferences unset so the @PrePersist
+        // default ("de", UserPreferences.java:32) applies at persist time. At capture
+        // time (pre-persist) it is therefore null — behaviour unchanged for name-only JWTs.
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
+    @Test
+    void should_failGracefully_when_languageReadFromMalformedPreferences() throws Exception {
+        String cognitoUserId = "malformed-lang-cognito-id";
+        String email = "malformed.lang@example.com";
+        // Standard name claims present (so the row still creates); preferences blob malformed.
+        Jwt jwt = createJwt(cognitoUserId, email, "Mal", "Formed", "not json {{ language");
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        boolean result = interceptor.preHandle(request, response, new Object());
+
+        // Non-blocking contract: malformed JSON must never throw out of preHandle.
+        assertThat(result).isTrue();
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        // Unreadable language -> preferences left unset (default applies at persist).
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
+    // Story 12.3 review: pref_language is VARCHAR(2). A raw BCP-47 tag (gsw-BE, fr-CH —
+    // the frontend sends i18n.language verbatim and federated SSO delivers region-tagged
+    // codes) would overflow the column and abort the JIT INSERT, silently dropping
+    // provisioning for that identity. normalizeLanguage takes the primary subtag, lowercases
+    // it, and accepts only supported 2-char codes; anything else falls back to default "de".
+
+    @Test
+    void should_fallBackToDefault_when_languageIsUnsupportedRegionTag() throws Exception {
+        String cognitoUserId = "gsw-cognito-id";
+        String email = "swiss.german@example.ch";
+        // gsw-BE is a supported UI locale but its primary subtag "gsw" has no 2-char form
+        // and would overflow VARCHAR(2) -> must fall back to the @PrePersist default "de".
+        String preferences = "{\"firstName\":\"Hans\",\"lastName\":\"Muster\",\"language\":\"gsw-BE\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        // No supported 2-char code -> preferences unset -> default "de" at persist.
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
+    @Test
+    void should_stripRegionSubtag_when_languageIsSupportedRegionTag() throws Exception {
+        String cognitoUserId = "fr-ch-cognito-id";
+        String email = "romand@example.ch";
+        // fr-CH -> primary subtag "fr" (supported) -> stored as "fr", fits VARCHAR(2).
+        String preferences = "{\"firstName\":\"Jean\",\"lastName\":\"Dupont\",\"language\":\"fr-CH\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getPreferences()).isNotNull();
+        assertThat(userCaptor.getValue().getPreferences().getLanguage()).isEqualTo("fr");
+    }
+
+    @Test
+    void should_fallBackToDefault_when_languageIsNonStringValue() throws Exception {
+        String cognitoUserId = "num-lang-cognito-id";
+        String email = "num.lang@example.com";
+        // Non-string JSON value -> asText coerces to "123" -> not a supported code -> default.
+        String preferences = "{\"firstName\":\"Num\",\"lastName\":\"Lang\",\"language\":123}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getPreferences()).isNull();
+    }
+
+    @Test
+    void should_normalizeCasing_when_languageIsUppercase() throws Exception {
+        String cognitoUserId = "upper-lang-cognito-id";
+        String email = "upper.lang@example.com";
+        String preferences = "{\"firstName\":\"Up\",\"lastName\":\"Per\",\"language\":\"FR\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getPreferences()).isNotNull();
+        assertThat(userCaptor.getValue().getPreferences().getLanguage()).isEqualTo("fr");
+    }
+
     @Test
     void should_assignRoleFromJWT_when_jitProvisioningUser() throws Exception {
         // Given: User does not exist with ORGANIZER role in JWT
@@ -319,7 +669,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("organizer@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("organizer@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         // When: Interceptor pre-handle is called
@@ -348,7 +698,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("multi@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("multi@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         // When: Interceptor pre-handle is called
@@ -371,7 +721,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("norole@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("norole@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         // When: Interceptor pre-handle is called
@@ -402,7 +752,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername("john.doe")).thenReturn(false);
 
         // When: Interceptor pre-handle is called
@@ -429,7 +779,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername("duplicate.user")).thenReturn(true);
         when(userRepository.existsByUsername("duplicate.user.2")).thenReturn(false);
 
@@ -500,7 +850,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         User savedUser = createUser(cognitoUserId, "event", email, Set.of(Role.ATTENDEE));
@@ -561,7 +911,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("saveerror@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("saveerror@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(User.class)))
                 .thenThrow(new RuntimeException("Database constraint violation"));
@@ -585,7 +935,7 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("eventerror@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("eventerror@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
         User savedUser = createUser(cognitoUserId, "eventerror", "eventerror@example.com", Set.of(Role.ATTENDEE));
@@ -635,7 +985,7 @@ class JITUserProvisioningInterceptorTest {
         );
         when(securityContext.getAuthentication()).thenReturn(newAuthentication);
         when(userRepository.findByCognitoUserId(newCognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("new@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         assertThat(interceptor.preHandle(request, response, new Object())).isTrue();
 

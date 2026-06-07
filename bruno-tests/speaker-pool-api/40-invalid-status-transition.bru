@@ -1,0 +1,58 @@
+meta {
+  name: Invalid Status Transition (ACCEPTED → IDENTIFIED backwards)
+  type: http
+  seq: 40
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "IDENTIFIED",
+    "reason": "Attempting invalid backwards transition for testing"
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.body.error: isDefined
+}
+
+tests {
+  test("should return 422 status for invalid transition - Story 5.4 AC12", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+
+  test("should return InvalidStateTransitionException error code", function() {
+    const error = res.getBody();
+    // PR 11 audit: assertion moved from message-text matching (brittle — exception
+    // message wording drifted across Stories 11.B.1/11.B.2/11.E.4) to error-code
+    // matching (machine-stable). The `error` field is the exception class name set
+    // by GlobalExceptionHandler.handleInvalidStateTransitionException.
+    expect(error.error).to.equal('InvalidStateTransitionException');
+  });
+
+  test("should prevent ACCEPTED → IDENTIFIED backwards transition - Story 5.4 AC12", function() {
+    const error = res.getBody();
+    // ACCEPTED → IDENTIFIED is not in the ADR-009 allow-list (ACCEPTED transitions
+    // only to CONTENT_SUBMITTED or DECLINED).
+    expect(error.message).to.be.a('string').that.is.not.empty;
+  });
+}
+
+docs {
+  PR 11 audit (Epic 11 / ADR-009 §0.1): the prior version asserted the exception
+  message text included literal substrings 'ACCEPTED' + 'IDENTIFIED' + 'transition'.
+  The message format changed across Stories 11.B.1/11.B.2/11.E.4 ("Invalid state
+  transition for speaker <uuid>: …") and tying tests to it is fragile. Assertions
+  now bind to the machine-readable `error` field (exception class name) and just
+  spot-check that some human message exists.
+}

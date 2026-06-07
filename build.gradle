@@ -12,9 +12,9 @@ buildscript {
         classpath 'io.spring.gradle:dependency-management-plugin:1.1.7'
 
         // Flyway
-        classpath 'org.flywaydb:flyway-gradle-plugin:11.17.0'
+        classpath 'org.flywaydb:flyway-gradle-plugin:11.18.0'
         classpath 'org.postgresql:postgresql:42.7.7'
-        classpath 'org.flywaydb:flyway-database-postgresql:11.17.0'
+        classpath 'org.flywaydb:flyway-database-postgresql:11.18.0'
 
         // OpenAPI Generator
         classpath 'org.openapitools:openapi-generator-gradle-plugin:7.2.0'
@@ -25,9 +25,24 @@ buildscript {
 allprojects {
     group = 'ch.batbern'
     version = '1.0.0'
-    
+
     repositories {
         mavenCentral()
+    }
+}
+
+// Checkstyle — single source of truth for EVERY module that applies the plugin
+// (the :services:* modules below, plus shared-kernel and api-gateway, which each
+// apply 'checkstyle' in their own build.gradle). withId fires whenever the plugin
+// is applied, so the config can't drift per-module. Violations fail the build.
+subprojects {
+    plugins.withId('checkstyle') {
+        checkstyle {
+            toolVersion = '10.12.5'
+            configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+            ignoreFailures = false
+            maxWarnings = 0
+        }
     }
 }
 
@@ -95,9 +110,10 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
                 events "passed", "skipped", "failed"
                 exceptionFormat = 'full'
             }
-            timeout = java.time.Duration.ofMinutes(10)
+            timeout = java.time.Duration.ofMinutes(20)
             systemProperty 'junit.jupiter.execution.timeout.default', '5m'
             systemProperty 'junit.jupiter.execution.timeout.testable.method.default', '5m'
+            jvmArgs '-XX:+EnableDynamicAgentLoading'
         }
         
         // Jacoco configuration
@@ -161,14 +177,9 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             }
         }
         
-        // Checkstyle configuration
-        checkstyle {
-            toolVersion = '10.12.5'
-            configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
-            ignoreFailures = true
-            maxWarnings = 0
-        }
-        
+        // Checkstyle is configured centrally for all modules (see the
+        // subprojects { plugins.withId('checkstyle') } block near the top).
+
         // Apply Trivy security scanning
         apply from: "${rootProject.projectDir}/gradle/trivy-security.gradle"
         

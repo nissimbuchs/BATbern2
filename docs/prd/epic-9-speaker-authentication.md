@@ -1,510 +1,124 @@
 # Epic 9: Speaker Authentication & Account Integration
 
-**Status:** 🔨 **IN PROGRESS** — Story 9.1 complete; Stories 9.2–9.5 planned
+> **Supersedes prior Epic 9 plan per ADR-009.**
+>
+> The original Epic 9 plan (Stories 9.1–9.5) layered JWT magic-link authentication and a "dual-auth" migration on top of the existing token-based speaker portal. That direction was reversed by ADR-009 (Unified Speaker Workflow) which adopts standard AWS Cognito with `FORCE_CHANGE_PASSWORD` on first login as the sole speaker authentication mechanism. The implementation work for unified speaker identity is now tracked in **Epic 11** (`docs/prd/epic-11-speaker-workflow-refactor.md`) — specifically Stories 11.E.1, 11.E.2, 11.E.3, and 11.F.1. This document is retained because the Epic Goal (one Cognito identity per person, zero duplicate accounts for multi-role users) remains valid; only the implementation is moved.
 
-**Epic Goal**: Unify authentication architecture so speakers who are also attendees can access both portals with a single JWT-based session, eliminating dual login patterns and preventing duplicate accounts.
+**Status:** 📦 **SUPERSEDED BY EPIC 11** — implementation now tracked in Epic 11 Phases E and F (Stories 11.E.1, 11.E.2, 11.E.3, 11.F.1). This document is retained for the Epic Goal narrative; do not plan new work against it.
 
-**Deliverable**: JWT-based speaker portal authentication with automatic account creation/role extension, seamless multi-portal access, and zero duplicate accounts for multi-role users.
+**Epic Goal**: Unify authentication architecture so that a person who is both a speaker and an attendee has a single Cognito identity. A speaker is a User with the SPEAKER role (per ADR-004 / ADR-009); there are no separate speaker accounts, no parallel auth stack, and no duplicate identities for multi-role users.
 
-**Architecture Context**:
-- **Core Services**: Company User Management Service + API Gateway (JWT authentication)
-- **Integration**: Refactors Epic 6 token-based auth to JWT-based auth
-- **Storage**: AWS Cognito for user accounts and JWT token management
-- **Migration**: One-time migration of Epic 6 staging users to new JWT system
-- **Frontend**: Unified navigation for multi-role users (speaker + attendee)
+**Deliverable**: A speaker portal that authenticates the same way every other portal authenticates — a standard AWS Cognito session. The login link in the invitation email lands on the standard Cognito login page; the temporary password from that email satisfies the first-login `FORCE_CHANGE_PASSWORD` challenge; subsequent logins are normal Cognito sessions. Multi-role users see all their roles' navigation entries from a single session.
 
-**Duration**: Estimated 6-8 weeks (Stories 9.1-9.5)
+**Architecture Context** (per ADR-009):
+- **Identity store**: AWS Cognito (sole authentication system).
+- **Role grant**: SPEAKER role is granted in `role_assignments` (database) at the `CONTACTED → READY` workflow transition, by the same `UserApiClient.provisionUserWithRole(...)` flow used elsewhere. There is no Cognito group sync (per `docs/architecture/06b-user-lifecycle-sync.md` — roles live exclusively in `role_assignments` and are added to the JWT via the PreTokenGeneration Lambda at login).
+- **Provisioning point**: Cognito user creation happens at `SpeakerWorkflowService.transition(CONTACTED → READY)` — before the invitation email is sent — via `AdminCreateUser` with `MessageAction=SUPPRESS` and `FORCE_CHANGE_PASSWORD` status.
+- **Invitation email**: Delivered on the `READY → INVITED` transition; contains the login URL + the temporary password generated at provisioning time. The temporary password is never persisted on the BATbern side after the email is dispatched.
+- **Portal protection**: All `/api/v1/speaker-portal/**` endpoints are `@PreAuthorize("hasRole('SPEAKER')")`. The previous `permitAll()` policy and the `?token=` query auth path are removed.
+- **Magic-link teardown**: `MagicLinkService`, `SpeakerPortalTokenController`, `SpeakerMagicLoginController`, the speaker-side `JwtConfig`, the `magic_link_tokens` table, and the `speaker_jwt` cookie are deleted. There is no grace period (per ADR-009 / refactor plan §6 decision 4 — no in-flight magic-link sessions need to be preserved).
+
+**Duration**: Tracked under Epic 11 Phases E + F (no separate Epic 9 timeline).
 
 **Dependencies**:
-- Epic 6 Stories 6.0-6.3 (speaker portal foundation)
-- AWS Cognito configuration for JWT tokens
-- Backend: company-user-management-service modifications
-- Frontend: speaker portal auth flow updates
+- ADR-009 (Unified Speaker Workflow) — accepted; this Epic implements its Decision 3 (Cognito-only auth).
+- Epic 11 Phase B (state machine consolidation) — required because Cognito provisioning is wired into `SpeakerWorkflowService.transition(..., READY, ...)`.
+- Epic 11 Phase C (entity simplification) — required because the SPEAKER role grant + `username` persistence depend on the unified `provisionUserWithRole` flow.
 
 ---
 
-## Why Epic 9 is Needed
+## Why this Epic was re-scoped
 
-### Current State (Epic 6 Token-Based Auth)
+The original Epic 9 plan inherited the magic-link mental model from Epic 6 and tried to upgrade it to a JWT-based magic-link plus a parallel password-login path. ADR-009 reviewed the costs of that direction and rejected it:
 
-**Problems:**
-- Speaker portal uses magic link tokens (anonymous access, no user account)
-- Attendee portal uses Cognito JWT authentication (user accounts)
-- Speakers who are also attendees → two separate auth methods → confusing UX
-- No way to track "former speakers who attend events" metric
-- Duplicate identity management (speaker tokens vs attendee accounts)
+- **Two identity systems to maintain forever.** The previous plan kept opaque RESPOND/VIEW tokens + JWT magic-link + the standard Cognito session running side-by-side, with `permitAll()` exposure on half of `/api/v1/speaker-portal/**`. This is twice the security review surface, twice the key-rotation work, and twice the audit complexity, for no operational benefit.
+- **Indeterminate state machine.** The previous plan layered Cognito on top of three coexisting state-machine validators (`StatusTransitionValidator`, `SpeakerWorkflowService.isValidTransition`, the direct-mutation paths in `SpeakerResponseService`) that disagreed on which transitions were legal. Bolting more auth on top of that did not address the root problem.
+- **Asymmetric data invariants.** The previous plan tolerated speaker-led `ACCEPTED` producing a `User` row while organizer-led `ACCEPTED` did not. Downstream code (reporting, agenda publishing, notifications) had to defensively check for both shapes.
 
-**Epic 6 Implementation:**
-- `MagicLinkService` generates 30-day reusable tokens
-- Tokens stored in `speaker_tokens` table
-- GET endpoints use `?token=xxx` query param
-- POST endpoints use token in request body
-- No user account creation
-- No role-based access control
-
-### Desired State (Epic 9 JWT-Based Auth)
-
-**Solutions:**
-- ONE authentication system (JWT-based via Cognito)
-- Speaker clicks magic link → auto-login with JWT
-- If speaker is also attendee → same session, sees both portals
-- ONE user account with multiple roles (ATTENDEE, SPEAKER)
-- Seamless portal switching with role-based navigation
-
-**Epic 9 Implementation:**
-- JWT tokens embedded in magic links
-- Auto-create user accounts on invitation acceptance
-- Add SPEAKER role to existing attendee accounts (email match)
-- Single session accessing both speaker and attendee portals
-- Dual authentication: magic link (JWT) + email/password
+ADR-009's Decision 3 deletes the magic-link stack entirely. The Epic Goal — single identity per person, zero duplicate accounts — is preserved; the path to it is standard Cognito invitation, not a layered JWT scheme.
 
 ---
 
-## User Value Proposition
+## Scope (under Epic 11)
 
-### For Speakers Who Are Also Attendees
+The work originally planned as Stories 9.1–9.5 is consolidated into four work blocks owned by Epic 11, one block per Epic 11 story. The cross-references below are the authoritative source; this section is a roll-up for readers landing here from prior Epic 9 references.
 
-**Before Epic 9:**
-1. Click speaker magic link → access speaker portal (token-based)
-2. Want to register for event → must create separate attendee account
-3. Two logins, two sessions, no unified experience
-4. Confusion: "Why do I need two accounts?"
+### Block 0 — Infrastructure prerequisite: CDK App Client + Cognito admin IAM
+**Epic 11 reference**: Story **11.E.1** (`docs/prd/epic-11-speaker-workflow-refactor.md`, Phase E).
 
-**After Epic 9:**
-1. Click speaker magic link → JWT auto-login
-2. System recognizes existing attendee account → adds SPEAKER role
-3. Navigation shows both "Speaker Portal" and "Attendee Portal"
-4. Single session → seamless switching between portals
-5. Can register for events, view speaker dashboard, all in one place
+What this block delivers (must land before Block 1):
+- CDK changes to the Cognito User Pool App Client to enable the auth flow required for `AdminCreateUser` + `FORCE_CHANGE_PASSWORD` first-login.
+- IAM policy on the `company-user-management-service` task role granting the four Cognito admin permissions actually called by the provisioning hook: `AdminCreateUser`, `AdminSetUserPassword`, `AdminInitiateAuth`, `AdminGetUser`. `AdminAddUserToGroup` is intentionally NOT granted — roles live in PostgreSQL `user_roles` per ADR-001; no Cognito groups exist on the user pool (Story 11.E.1 Resolved Q#1, PM 2026-05-17).
+- User Pool policy alignment (password complexity, MFA stance) consistent with the rest of the BATbern Cognito setup.
 
-### For Organizers
+This is pure infrastructure — no application code changes. Blocks 1, 2, 3 depend on it.
 
-**Before Epic 9:**
-- No visibility into speaker-attendee overlap
-- Manual tracking of "former speakers who attend" metric
-- Duplicate records for same person (speaker token + attendee account)
+### Block 1 — Speaker Cognito provisioning at `CONTACTED → READY`
+**Epic 11 reference**: Story **11.E.2** (`docs/prd/epic-11-speaker-workflow-refactor.md`, Phase E).
 
-**After Epic 9:**
-- Automatic tracking of multi-role users
-- Single source of truth for each person
-- Metrics: "% of speakers with attendee accounts"
-- Better understanding of community engagement
+What this block delivers:
+- `UserApiClient.provisionUserWithRole(username, email, firstName, lastName, SPEAKER)` invoked from `SpeakerWorkflowService.transition()`'s `CONTACTED → READY` hook.
+- `company-user-management-service` performs `AdminCreateUser` with `MessageAction=SUPPRESS` and a strong random temporary password, grants the SPEAKER role in `role_assignments`, and returns `{ username, temporaryPassword }` to the caller. Re-calling for an already-provisioned user is idempotent and returns `temporaryPassword: null`.
+- Invitation email (`READY → INVITED` hook) embeds the login URL + the temporary password in all 10 supported locales (incl. gsw-BE).
+- The temporary password is discarded from memory immediately after email dispatch; never persisted.
 
----
+### Block 2 — Cognito-secured speaker portal + multi-role navigation
+**Epic 11 reference**: Story **11.E.3** (`docs/prd/epic-11-speaker-workflow-refactor.md`, Phase E).
 
-## Epic 9 Stories
+What this block delivers (Story 11.E.3 spans three work streams; collected here for narrative clarity):
 
-### Story 9.1: JWT-Based Magic Link Authentication for Speaker Portal ✅
+**Backend — portal Cognito auth:**
+- `@PreAuthorize("hasRole('SPEAKER')")` on every `/api/v1/speaker-portal/**` endpoint; removal of `permitAll()` from the speaker-portal `SecurityFilterChain` config.
 
-**Status:** ✅ Complete (2026-02-21)
+**Frontend — session refactor:**
+- `web-frontend/src/pages/speaker/**` consumes the standard Cognito session via `useAuth()` (same pattern as organizer/partner portals); no `?token=` URL parsing, no `?jwt=` URL parsing, no second cookie.
+- Cherry-pick commits `73d94688` + `396a9045` (the multi-role nav components) from `feature/speaker-account-creation`, but **skip** that branch's `SpeakerLoginPage` and the `ProtectedRoute` speaker-JWT branch — those are magic-link-era artifacts.
 
-**Implemented in:**
-- `services/event-management-service/.../MagicLinkService.java` — `generateJwtToken()` RS256 signed, 30-day expiry
-- `services/event-management-service/.../JwtConfig.java` — RSA key pair, auto-generated for dev/test
-- `services/event-management-service/.../SpeakerMagicLoginController.java` — `POST /api/v1/auth/speaker-magic-login`, HTTP-only cookie, session bridge to existing dashboard
-- `services/event-management-service/.../SpeakerInvitationEmailService.java` — embeds JWT in magic link URL (`?jwt=<token>`)
-- `web-frontend/src/pages/speaker-portal/SpeakerMagicLoginPage.tsx` — extracts `?jwt=` param, calls login endpoint, redirects to dashboard
-- Both token-based (Epic 6) and JWT-based (Epic 9) magic links work in parallel (backward compatible)
+**Frontend — multi-role nav (the surviving portion of the original Story 9.5):**
+- Navigation reads `roles` from the Cognito ID token (already populated by the PreTokenGeneration Lambda).
+- Users with multiple roles see one navigation entry per role (e.g., a person with `ATTENDEE + SPEAKER` sees both "Attendee Portal" and "Speaker Portal").
+- Active portal is visually distinguished.
 
-**User Story:**
-As a **speaker**, I want to click a magic link that logs me in automatically with a JWT token, so that I can access the speaker portal without creating a separate password.
+### Block 3 — Magic-link teardown
+**Epic 11 reference**: Story **11.F.1** (`docs/prd/epic-11-speaker-workflow-refactor.md`, Phase F).
 
-**Acceptance Criteria:**
-1. Magic link emails contain JWT tokens (30-day expiry, reusable)
-2. Clicking magic link extracts JWT from URL, stores in HTTP-only cookie
-3. Frontend redirects to speaker dashboard after successful JWT validation
-4. JWT tokens support same 30-day reusability as Epic 6 tokens
-5. Invalid/expired JWT tokens show clear error message with contact info
-6. JWT tokens include user_id, email, roles (SPEAKER), expiration timestamp
+What this block delivers:
+- Delete: `MagicLinkService`, `JwtConfig` (speaker-side), `SpeakerMagicLoginController`, `SpeakerPortalTokenController`, the `magic_link_tokens` Flyway table, the `speaker_jwt` HTTP-only cookie + its server-side handling, `?token=` and `?jwt=` URL handling in `pages/speaker/**`, `SpeakerMagicLoginPage`, the "Mark as tentative" UI.
+- Remove magic-link secrets from AWS Secrets Manager.
+- Delete the feature branches `feature/speaker-account-creation` and `feature/epic-6` once Phase E has been stable in production for ≥1 week (verified by CloudWatch showing zero magic-link traffic).
 
-**Technical Implementation:**
-- `MagicLinkService.generateJwtToken(speakerPoolId)` - creates JWT with embedded claims
-- API Gateway validates JWT on all `/api/v1/speaker-portal/**` endpoints
-- Frontend stores JWT in secure HTTP-only cookie (not localStorage)
-- Backend verifies JWT signature, expiration, and SPEAKER role claim
-
-**Testing:**
-- Integration tests location: `services/event-management-service/src/test/java` (Story 9.1 is implemented in `event-management-service`, not `speaker-coordination-service`)
-- Integration tests: JWT generation, validation, expiration handling
-- E2E tests: Magic link click-through flow, token refresh
-- Security tests: Invalid signature, expired token, tampered claims
+**No grace period is implemented** — per refactor plan §6 decision 4, there are no in-flight magic-link sessions that need to be preserved across the cutover.
 
 ---
 
-### Story 9.2: Automatic Account Creation & Role Extension on Invitation Acceptance
+## What is intentionally NOT in scope (compared to the original Epic 9 plan)
 
-**User Story:**
-As a **system**, I want to automatically create or update user accounts when speakers accept invitations, so that speakers have unified access without duplicate accounts.
+Several items from the prior Epic 9 plan are explicitly rejected by ADR-009 and are not delivered by this Epic:
 
-**Acceptance Criteria:**
-1. When speaker accepts invitation:
-   - Email doesn't exist in Cognito → create new user with SPEAKER role + temp password
-   - Email exists (attendee account) → add SPEAKER role to existing account (no duplicate)
-2. Cognito user attributes include: email, name, company_id, roles (SPEAKER, ATTENDEE)
-3. Temporary password sent via email (for non-magic-link login)
-4. Account creation/update logged in audit trail
-5. Zero duplicate accounts created (email uniqueness enforced)
-6. Existing attendee sessions remain valid after SPEAKER role added
-
-**Technical Implementation:**
-- `SpeakerInvitationService.processAcceptance()` - checks Cognito for existing user
-- Cognito Admin SDK: `adminCreateUser()` or `adminUpdateUserAttributes()`
-- Role management: Custom attribute `custom:roles` stores comma-separated roles
-- Email service sends welcome email with credentials (magic link + temp password)
-
-**Testing:**
-- Integration tests: New user creation, existing user role extension, duplicate prevention
-- E2E tests: Full invitation acceptance flow (new user + existing user scenarios)
-- Security tests: Role addition audit, unauthorized role assignment prevention
+- **Dual authentication path (magic link OR email/password).** ADR-009 §3 / refactor plan §6 decision 4 — there is one auth path: standard Cognito with `FORCE_CHANGE_PASSWORD` on first login. The temporary password from the invitation email satisfies the first-login challenge; from that point on the speaker uses their own password.
+- **Migration script for Epic 6 staging users (original Story 9.4).** No in-flight magic-link sessions exist that require migration — the existing staging users will receive a new Cognito invitation email when the new system goes live. This is operational, not a story-level deliverable.
+- **JWT-based magic-link (original Story 9.1, implemented but now deprecated).** The work that landed under Story 9.1 (`MagicLinkService.generateJwtToken`, `SpeakerMagicLoginController`, the RSA key pair in `JwtConfig`, the embedded JWT in invitation emails, `SpeakerMagicLoginPage`) is reverted by Epic 11 Story 11.F.1. The historical implementation remains in git history if it is ever needed for reference, but it is not on the production path after Phase F lands.
+- **Cognito custom-auth Lambdas / email OTPs.** Considered (ADR-009 Alternative 5) and rejected — standard Cognito invitation flow is sufficient and requires no Lambda triggers.
 
 ---
 
-### Story 9.3: Dual Authentication Support (Magic Link + Email/Password)
+## Success Criteria (Epic level)
 
-**User Story:**
-As a **speaker**, I want to access the speaker portal via magic link OR email/password, so that I have flexibility in how I authenticate.
+Inherited from the original Epic Goal, unchanged:
+- **Single identity per person.** A person who is both a speaker and an attendee has exactly one Cognito user and one `users` row. Verified by `users.cognito_sub` uniqueness + the unique constraint on `users.email`.
+- **Zero duplicate accounts.** Idempotency of `UserApiClient.provisionUserWithRole` ensures re-running the `CONTACTED → READY` transition for an existing user does not create a second Cognito user.
+- **Single session covers all roles.** A multi-role user logs in once and sees the navigation entries for every role granted in their `role_assignments`.
 
-**Acceptance Criteria:**
-1. Invitation email contains:
-   - Magic link (primary: reusable JWT for 30 days)
-   - Email + temporary password (secondary: traditional login)
-2. Login page supports both authentication methods:
-   - "Use Magic Link" button (sends new magic link email)
-   - Email + password form (traditional Cognito login)
-3. Both methods result in same JWT token (same claims, same session)
-4. Password reset flow available for speakers who forget password
-5. Magic link login doesn't invalidate password-based sessions (and vice versa)
-
-**Technical Implementation:**
-- Frontend `/speaker-portal/login` page with dual auth options
-- Magic link path: Email → JWT URL → auto-login
-- Password path: Email + password → Cognito authentication → JWT issued
-- Shared JWT generation logic ensures consistent session state
-
-**Testing:**
-- Integration tests: Both auth paths produce equivalent JWTs
-- E2E tests: Magic link flow, password flow, password reset flow
-- UX tests: Clear instructions for both methods, error messaging
+New criteria added by ADR-009:
+- **No `permitAll()` on speaker-portal endpoints.** Every `/api/v1/speaker-portal/**` endpoint requires a Cognito Bearer token AND the SPEAKER role.
+- **No parallel auth surface.** `MagicLinkService`, `magic_link_tokens`, `speaker_jwt` cookie, `?token=` / `?jwt=` URL params — all deleted post-Phase F.
 
 ---
 
-### Story 9.4: Migration Script for Epic 6 Staging Users
-
-**User Story:**
-As a **system administrator**, I want to migrate existing Epic 6 token-based speakers to JWT-based authentication, so that we can deploy Epic 9 without data loss.
-
-**Acceptance Criteria:**
-1. Migration script identifies all speakers with active tokens in `speaker_tokens` table
-2. For each speaker:
-   - Create Cognito user account (if not exists)
-   - Add SPEAKER role
-   - Send new invitation email with JWT magic link + credentials
-3. Old token-based magic links marked as deprecated (still work for 7-day grace period)
-4. Migration runs successfully on staging environment
-5. Rollback script available in case of migration failure
-6. Migration report shows: users created, users updated, errors (if any)
-
-**Technical Implementation:**
-- `scripts/migration/epic9-jwt-migration.sh` - Bash script orchestrating migration
-- Java batch job: `Epic9MigrationService` - queries speaker_tokens, creates Cognito users
-- Email batch: Send new magic links to all migrated speakers
-- Grace period: Old tokens still validated for 7 days post-migration
-
-**Testing:**
-- Integration tests: Migration logic (create user, update user, send email)
-- Dry-run tests: Migration script with `--dry-run` flag (no actual changes)
-- Rollback tests: Reverting migration if issues detected
-
----
-
-### Story 9.5: Frontend Unified Navigation for Multi-Role Users
-
-**User Story:**
-As a **speaker who is also an attendee**, I want to see navigation options for both speaker and attendee portals, so that I can easily switch between my roles.
-
-**Acceptance Criteria:**
-1. JWT token includes roles claim (e.g., `roles: ['SPEAKER', 'ATTENDEE']`)
-2. Frontend navigation bar shows role-based links:
-   - If SPEAKER role → "Speaker Portal" link visible
-   - If ATTENDEE role → "Attendee Portal" link visible
-   - If ORGANIZER role → "Organizer Dashboard" link visible
-3. Clicking portal link switches context without re-authentication
-4. Current portal highlighted in navigation (visual indication)
-5. Mobile-responsive navigation supports multi-role users
-6. User profile dropdown shows all assigned roles
-
-**Technical Implementation:**
-- `AuthContext` extracts roles from JWT token
-- React components: `<RoleBasedNav roles={user.roles} />`
-- CSS styling: Active portal highlighted with blue underline
-- Role-based routing guards prevent unauthorized access
-
-**Testing:**
-- Unit tests: Role extraction from JWT, conditional rendering
-- E2E tests: Multi-role user navigation, single-role user navigation
-- Accessibility tests: Keyboard navigation, screen reader support
-
----
-
-## Success Criteria
-
-**Epic 9 Success Criteria (from PRD):**
-- ✅ Zero duplicate accounts for speakers who are also attendees
-- ✅ Single JWT session enables seamless portal switching
-- ✅ Magic link tokens remain 30-day reusable
-- ✅ Account creation automated on first magic link use
-- ✅ Migration complete without data loss
-
-**Metrics to Track:**
-1. **% of invited speakers with existing attendee accounts** - Validates ROI of Epic 9
-2. **Duplicate account prevention rate** - Should be 100% (zero duplicates created)
-3. **Magic link success rate** - % of magic link clicks resulting in successful login
-4. **Multi-portal usage rate** - % of multi-role users who access both portals
-5. **Migration success rate** - % of Epic 6 users successfully migrated to Epic 9
-
-**Definition of Done (Epic Level):**
-- [ ] All 5 stories (9.1-9.5) implemented and tested
-- [ ] Migration script tested on staging with 100% success rate
-- [ ] Zero duplicate accounts created post-Epic 9 deployment
-- [ ] Frontend navigation supports multi-role users seamlessly
-- [ ] All Epic 6 magic link URLs replaced with JWT-based URLs
-- [ ] Rollback plan documented and tested
-- [ ] Epic 9 deployed to staging and validated by organizers
-
----
-
-## Technical Architecture
-
-### Authentication Flow Diagram
-
-**Epic 6 (Token-Based):**
-```
-Organizer → Sends Invitation
-            ↓
-SpeakerPool → MagicLinkService.generateToken(speakerPoolId, VIEW)
-            ↓
-Email → Speaker clicks link (?token=abc123)
-            ↓
-Frontend → Validates token via API call
-            ↓
-Backend → Checks speaker_tokens table
-            ↓
-Access Granted (anonymous, no user account)
-```
-
-**Epic 9 (JWT-Based):**
-```
-Organizer → Sends Invitation
-            ↓
-SpeakerPool → Check Cognito for existing user (email match)
-            ↓
-            ├─→ User exists → Add SPEAKER role
-            └─→ User not exists → Create Cognito user + SPEAKER role
-            ↓
-MagicLinkService.generateJwtToken(userId, roles)
-            ↓
-Email → Speaker clicks link (embedded JWT in URL)
-            ↓
-Frontend → Extracts JWT, stores in HTTP-only cookie
-            ↓
-API Gateway → Validates JWT signature + expiration + roles
-            ↓
-Access Granted (authenticated, user account, role-based)
-```
-
-### Database Changes
-
-**New Tables:**
-- None (uses existing Cognito for user accounts)
-
-**Modified Tables:**
-- `speaker_tokens` table → deprecated post-migration (kept for historical reference)
-
-**Cognito User Attributes:**
-- `email` (unique identifier)
-- `name` (speaker full name)
-- `custom:company_id` (optional company association)
-- `custom:roles` (comma-separated: SPEAKER, ATTENDEE, ORGANIZER, PARTNER)
-
-### API Changes
-
-**New Endpoints:**
-- `POST /api/v1/auth/speaker-magic-login` - Validates JWT from magic link, returns session
-- `POST /api/v1/auth/speaker-password-login` - Email + password login for speakers
-- `POST /api/v1/auth/password-reset` - Initiates password reset for speakers
-
-**Modified Endpoints:**
-- All `/api/v1/speaker-portal/**` endpoints now validate JWT (not token query param)
-- `POST /api/v1/speaker-portal/invitations/{id}/accept` - Creates/updates Cognito user
-
-**Deprecated Endpoints:**
-- Token-based authentication kept for 7-day grace period post-migration
-
-### Security Considerations
-
-**JWT Security:**
-- Tokens signed with RS256 (asymmetric encryption)
-- HTTP-only cookies prevent XSS attacks
-- Short-lived access tokens (30 days) with refresh capability
-- Secure flag ensures HTTPS-only transmission
-
-**Migration Security:**
-- Old tokens invalidated after grace period
-- New passwords generated with high entropy (20+ characters)
-- Audit trail logs all account creations/updates
-- Rollback plan in case of security issues
-
----
-
-## Implementation Sequence
-
-**Recommended Order:**
-1. **Story 9.1** - JWT magic link authentication (foundation)
-2. **Story 9.2** - Account creation/role extension (core logic)
-3. **Story 9.3** - Dual authentication support (UX enhancement)
-4. **Story 9.5** - Frontend unified navigation (UX completion)
-5. **Story 9.4** - Migration script (deployment enabler)
-
-**Why This Order:**
-- Foundation first (JWT auth must work before account creation)
-- Core logic next (account creation enables multi-role scenarios)
-- UX enhancements after core logic validated
-- Migration last (requires all Epic 9 features operational)
-
----
-
-## Testing Strategy
-
-### Integration Tests
-
-**Test location by story:**
-- Story 9.1 (JWT magic link): `services/event-management-service/src/test/java` — `MagicLinkService`, `SpeakerMagicLoginController` live in `event-management-service`
-- Stories 9.2–9.5 (account creation, dual auth, migration, navigation): location TBD per story implementation
-
-**Scenarios:**
-- JWT generation and validation
-- Cognito user creation/update
-- Role management (add/remove roles)
-- Email delivery (magic link + credentials)
-- Token expiration handling
-
-### E2E Tests (Bruno API)
-- Magic link flow (valid JWT, invalid JWT, expired JWT)
-- Account creation flow (new user, existing user)
-- Dual authentication flow (magic link vs password)
-- Multi-role user flow (speaker + attendee portal access)
-
-### E2E Tests (Playwright UI)
-- Full invitation acceptance flow
-- Portal switching for multi-role users
-- Password reset flow
-- Migration validation (old token vs new JWT)
-
-### Security Tests
-- JWT signature validation
-- Role claim tampering prevention
-- Cookie security attributes (HTTP-only, Secure, SameSite)
-- Password complexity enforcement
-
-### Operational Readiness
-
-The `speaker-coordination-service` exposes standard Spring Boot Actuator endpoints verified by existing integration tests (`HealthControllerIntegrationTest`):
-
-- `GET /actuator/health` → HTTP 200, `$.status == "UP"`
-- `GET /actuator/info` → HTTP 200
-
-These are not Epic 9 business-rule tests; they confirm basic service liveness and are inherited from the service foundation (Story 5.4).
-
----
-
-## Risks & Mitigations
-
-### Risk 1: Migration Breaks Existing Speaker Access
-
-**Impact:** High (speakers locked out during migration)
-
-**Mitigation:**
-- 7-day grace period where both old tokens and new JWTs work
-- Email all speakers before migration with new magic links
-- Rollback script tested and ready
-- Migration performed during low-traffic window
-
-### Risk 2: Duplicate Accounts Still Created
-
-**Impact:** Medium (defeats purpose of Epic 9)
-
-**Mitigation:**
-- Email uniqueness enforced at Cognito level
-- Integration tests validate duplicate prevention
-- Code review focuses on account creation logic
-- Post-deployment audit to catch any duplicates
-
-### Risk 3: JWT Token Security Vulnerabilities
-
-**Impact:** High (unauthorized access to speaker portal)
-
-**Mitigation:**
-- RS256 asymmetric encryption (not HS256 symmetric)
-- HTTP-only cookies (not localStorage)
-- Short token expiration with refresh capability
-- Security audit before production deployment
-
-### Risk 4: Frontend Navigation Confusing for Multi-Role Users
-
-**Impact:** Low (UX issue, not functional)
-
-**Mitigation:**
-- User testing with multi-role personas
-- Clear visual indicators of current portal
-- Tooltips explaining role-based navigation
-- Feedback mechanism for UX improvements
-
----
-
-## Open Questions
-
-1. **Password Policy:** What password complexity requirements for temporary passwords?
-   - **Recommendation:** 12+ characters, mix of upper/lower/numbers/symbols (Cognito default)
-
-2. **Token Refresh:** Should JWT tokens be refreshable beyond 30 days?
-   - **Recommendation:** No, keep 30-day expiration consistent with Epic 6. Speakers can click magic link again.
-
-3. **Role Removal:** If speaker declines future invitations, should SPEAKER role be removed?
-   - **Recommendation:** Keep role (historical record). Add `active_speaker` flag instead.
-
-4. **Multi-Company Speakers:** Speaker works at Company A, later moves to Company B. How to handle?
-   - **Recommendation:** User account email remains constant, company_id updates on new invitation.
-
----
-
-## Definition of Done (Epic 9)
-
-**Code Complete:**
-- [ ] All 5 stories implemented with passing tests
-- [ ] Integration tests: 95%+ coverage on account creation/JWT logic
-- [ ] E2E tests: Full user journeys covered (Bruno + Playwright)
-- [ ] Code review completed by 2+ developers
-- [ ] Security review completed (JWT implementation, Cognito config)
-
-**Documentation Complete:**
-- [ ] API documentation updated (new endpoints, deprecated endpoints)
-- [ ] Migration runbook created (step-by-step instructions)
-- [ ] Rollback procedure documented and tested
-- [ ] User-facing documentation (speaker portal login guide)
-
-**Deployment Ready:**
-- [ ] Migration script tested on staging with real data
-- [ ] Zero duplicate accounts detected in staging
-- [ ] Multi-role user navigation validated by QA
-- [ ] Performance benchmarks met (<200ms JWT validation)
-- [ ] Security scan passed (no critical vulnerabilities)
-
-**Production Criteria:**
-- [ ] Epic 9 running on staging for 2+ weeks without issues
-- [ ] Organizer sign-off after staging validation
-- [ ] Migration plan approved by stakeholders
-- [ ] Monitoring and alerts configured for production
-
----
-
-**END OF EPIC 9**
+## Related Documents
+
+- **ADR-009 (Unified Speaker Workflow)**: `docs/architecture/ADR-009-unified-speaker-workflow.md` — Decision 3 is the authoritative spec for the auth model.
+- **Epic 11 (Unified Speaker Workflow Refactor)**: `docs/prd/epic-11-speaker-workflow-refactor.md` — owns Stories 11.E.1, 11.E.2, 11.E.3, 11.F.1 that implement this Epic's scope.
+- **Refactor plan**: `docs/plans/speaker-workflow-refactor.md` §0.5 (auth model), §6 (decisions), and §9.3 (Epic 9 rewrite scope).
+- **ADR-004 (Factor User Fields from Domain Entities)** + **ADR-007 (Unified User Profile)**: User-as-identity model that this Epic relies on.
+- **`docs/architecture/06b-user-lifecycle-sync.md`**: canonical specification for role storage — database-only role assignments; SPEAKER role lives in `role_assignments`, not Cognito groups; JWT claim populated at login by the PreTokenGeneration Lambda.

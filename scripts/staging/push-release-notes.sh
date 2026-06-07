@@ -106,4 +106,4 @@ fi
 
 echo ""
 echo -e "${GREEN}=== Done! ===${NC}"
-echo "The release notes should now be visible at: https://staging.batbern.ch"
+echo "The release notes should now be visible at: https://www.batbern.ch"

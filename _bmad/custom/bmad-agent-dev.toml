@@ -1,0 +1,19 @@
+# Team override for bmad-agent-dev (Amelia).
+# Loaded after the base customize.toml, before the user override.
+# Arrays append, scalars override, tables deep-merge.
+
+[agent]
+
+# Restore the classic BMad-v5 behavior of pre-loading the three foundational
+# architecture documents on activation so Amelia has tech stack, coding
+# standards, and source-tree layout in context before touching code.
+#
+# These append to the base `persistent_facts` (which already loads
+# project-context.md). Keep this list tight — every entry is paid for on
+# every activation. Story-specific docs (ADRs, plans, epics) load on demand.
+
+persistent_facts = [
+  "file:{project-root}/docs/architecture/tech-stack.md",
+  "file:{project-root}/docs/architecture/coding-standards.md",
+  "file:{project-root}/docs/architecture/source-tree.md",
+]

@@ -1,0 +1,52 @@
+meta {
+  name: Posttest cleanup — final sweep of BRUNOTESTCO* companies
+  type: http
+  seq: 99
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "companies",
+    "prefix": "BRUNOTESTCO"
+  }
+}
+
+tests {
+  test("posttest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, deletion counts are reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.companies).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Audit-pass addition (PR 4, plan §B3): unconditional posttest cleanup.
+  Runs AFTER every other test in this collection regardless of pass/fail —
+  the 12-delete-company test should already have removed the one row created
+  in this run, but if any test between 01 and 12 crashed without cleanup,
+  this sweep catches the leftover.
+
+  Status assertion is `oneOf([200, 204, 404])` so a missing cleanup endpoint
+  never fails the collection.
+}

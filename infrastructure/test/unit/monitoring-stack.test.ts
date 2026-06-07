@@ -38,8 +38,8 @@ describe('MonitoringStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify alarms are created (availability, errors, client errors, latency, CPU, memory, disk, database, budget)
-      template.resourceCountIs('AWS::CloudWatch::Alarm', 9);
+      // Verify alarms are created (availability, errors, client errors, latency, CPU, memory, disk, database, budget + 3 SES bounce/complaint alarms from Story 10.29)
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 12);
     });
 
     test('should_configureAlarmActions_when_productionEnvironment', () => {
@@ -316,6 +316,111 @@ describe('MonitoringStack', () => {
 
       // Verify log groups are created with proper naming for exports
       template.resourceCountIs('AWS::Logs::LogGroup', 2);
+    });
+  });
+
+  // Story 12.6 (SSO Phase 2): PreSignUp account-linking failure alarm
+  describe('User Sync — PreSignUp Linking Failure Alarm', () => {
+    test('should_createPreSignUpFailureAlarm_when_nonDevelopmentEnvironment', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      // The federated PreSignUp path is fail-open (never throws → never 503s the sign-in), so a
+      // failed AdminLinkProviderForUser leaves an orphaned identity visible only via this metric.
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*PreSignUp-Linking-Failures'),
+        MetricName: 'PreSignUpFailure',
+        Namespace: 'BATbern/UserSync',
+        Statistic: 'Sum',
+        Threshold: 0,
+        EvaluationPeriods: 1,
+        ComparisonOperator: 'GreaterThanThreshold',
+        TreatMissingData: 'notBreaching',
+        Period: 300,
+      });
+    });
+  });
+
+  // Story 10.29 AC9: SES Bounce/Complaint Rate Alarms
+  describe('SES Bounce Monitoring Alarms', () => {
+    test('should_createBounceRateWarningAlarm_when_monitoringStackDeployed', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*bounce-rate-warning'),
+        MetricName: 'Reputation.BounceRate',
+        Namespace: 'AWS/SES',
+        Threshold: 0.03,
+        EvaluationPeriods: 3,
+        DatapointsToAlarm: 2,
+        TreatMissingData: 'notBreaching',
+        Period: 300,
+      });
+    });
+
+    test('should_createBounceRateCriticalAlarm_when_monitoringStackDeployed', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*bounce-rate-critical'),
+        MetricName: 'Reputation.BounceRate',
+        Namespace: 'AWS/SES',
+        Threshold: 0.05,
+        EvaluationPeriods: 1,
+        TreatMissingData: 'notBreaching',
+        Period: 300,
+      });
+    });
+
+    test('should_createComplaintRateCriticalAlarm_when_monitoringStackDeployed', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*complaint-rate-critical'),
+        MetricName: 'Reputation.ComplaintRate',
+        Namespace: 'AWS/SES',
+        Threshold: 0.0005,
+        EvaluationPeriods: 1,
+        Period: 300,
+      });
+    });
+
+    test('should_createBounceProcessingDlqAlarm_when_dlqArnProvided', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        bounceProcessingDlqName: 'batbern-staging-bounce-processing-dlq',
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*bounce-processing-dlq'),
+        MetricName: 'ApproximateNumberOfMessagesVisible',
+        Namespace: 'AWS/SQS',
+        Threshold: 0,
+        EvaluationPeriods: 1,
+        Period: 60,
+      });
     });
   });
 

@@ -10,6 +10,7 @@ import ch.batbern.partners.dto.generated.UpdatePartnerRequest;
 import ch.batbern.partners.exception.CompanyNotFoundException;
 import ch.batbern.partners.exception.PartnerAlreadyExistsException;
 import ch.batbern.partners.exception.PartnerNotFoundException;
+import ch.batbern.partners.exception.UserServiceException;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.partners.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
@@ -56,6 +57,9 @@ class PartnerServiceTest {
 
     @Mock
     private SecurityContextHelper securityContextHelper;
+
+    @Mock
+    private PartnerContactService partnerContactService;
 
     @InjectMocks
     private PartnerService partnerService;
@@ -246,5 +250,37 @@ class PartnerServiceTest {
         // Then
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).getIsActive()).isTrue();
+    }
+
+    @Test
+    void should_returnResponseWithoutContacts_when_contactEnrichmentFails() {
+        // Given - partner exists but user service is unavailable
+        when(partnerRepository.findByCompanyName("GoogleZH")).thenReturn(Optional.of(partner));
+        when(partnerContactService.getPartnerContacts("GoogleZH"))
+                .thenThrow(new UserServiceException("User service unavailable", 503, new RuntimeException()));
+
+        // When - should NOT throw; enrichWithContacts catches and logs the exception
+        PartnerResponse response = partnerService.getPartnerByCompanyName("GoogleZH", Set.of("contacts"));
+
+        // Then - response is returned without contacts (graceful degradation)
+        assertThat(response).isNotNull();
+        assertThat(response.getCompanyName()).isEqualTo("GoogleZH");
+        assertThat(response.getContacts()).isNull();
+    }
+
+    @Test
+    void should_returnResponseWithoutContacts_when_userServiceReturns403() {
+        // Given - partner exists, user service returns 403 (e.g. partner calling ORGANIZER-only endpoint)
+        when(partnerRepository.findByCompanyName("GoogleZH")).thenReturn(Optional.of(partner));
+        when(partnerContactService.getPartnerContacts("GoogleZH"))
+                .thenThrow(new UserServiceException("Client error fetching users: company=GoogleZH, role=PARTNER", 403, new RuntimeException()));
+
+        // When
+        PartnerResponse response = partnerService.getPartnerByCompanyName("GoogleZH", Set.of("contacts"));
+
+        // Then - graceful degradation: 403 doesn't cause a 500
+        assertThat(response).isNotNull();
+        assertThat(response.getCompanyName()).isEqualTo("GoogleZH");
+        assertThat(response.getContacts()).isNull();
     }
 }

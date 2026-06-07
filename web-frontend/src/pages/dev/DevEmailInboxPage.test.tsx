@@ -19,6 +19,7 @@ vi.mock('@/services/devEmailService', () => ({
 const MOCK_EMAIL: CapturedEmail = {
   id: 'abc-123',
   to: 'attendee@example.com',
+  cc: [],
   subject: 'BATbern42 Registration Confirmation',
   htmlBody: '<p>You are registered</p>',
   fromEmail: 'noreply@batbern.ch',
@@ -100,5 +101,32 @@ describe('DevEmailInboxPage — Simulate Reply panel', () => {
 
     const sendButton = screen.getByRole('button', { name: 'Send Reply' });
     expect(sendButton).toBeDisabled();
+  });
+
+  // ─── Story 10.32 — Cc row visibility ────────────────────────────────────
+
+  it('hides the Cc row when the email has no additional recipients', async () => {
+    render(<DevEmailInboxPage />);
+    await waitFor(() => screen.getByText('BATbern42 Registration Confirmation'));
+    fireEvent.click(screen.getByText('BATbern42 Registration Confirmation'));
+
+    expect(screen.queryByTestId('captured-email-cc')).not.toBeInTheDocument();
+  });
+
+  it('renders a comma-separated Cc row when the email has additional recipients', async () => {
+    const emailWithCc: CapturedEmail = {
+      ...MOCK_EMAIL,
+      id: 'cc-1',
+      subject: 'Invitation with CC',
+      cc: ['work@example.com', 'private@example.com'],
+    };
+    vi.mocked(devEmailServiceModule.devEmailService.fetchAll).mockResolvedValue([emailWithCc]);
+
+    render(<DevEmailInboxPage />);
+    await waitFor(() => screen.getByText('Invitation with CC'));
+    fireEvent.click(screen.getByText('Invitation with CC'));
+
+    const ccRow = await screen.findByTestId('captured-email-cc');
+    expect(ccRow).toHaveTextContent('work@example.com, private@example.com');
   });
 });

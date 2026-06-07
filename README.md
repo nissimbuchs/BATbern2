@@ -81,9 +81,9 @@ make dev-native-down
 - ✅ All microservices (ports 8081-8085) - native Java processes
 - ✅ Web Frontend (http://localhost:3000) - Vite dev server
 
-**What uses AWS (staging environment):**
-- ✅ Cognito User Pool (staging authentication)
-- ✅ S3 for file uploads (staging buckets)
+**What uses AWS (production account):**
+- ✅ Cognito User Pool (production authentication)
+- ✅ S3 for file uploads (production buckets)
 
 ### First-Time Setup: Sync Users and Configure Test Auth
 
@@ -308,21 +308,43 @@ The platform uses GitHub Actions for automated building, testing, and deployment
 
 ### Deployment Environments
 
-- **Staging:** https://staging.batbern.ch (auto-deploy from `develop`)
-- **Production:** https://www.batbern.ch (manual, requires `develop → main` PR)
+> **Note:** BATbern uses a single AWS account (188701360969) for production, with `envName: 'staging'` in CDK config to preserve CloudFormation stack names. The `isProduction: true` flag controls production behavior.
+
+- **Production:** https://www.batbern.ch (auto-deploy from `develop` to staging account serving production traffic)
+- **Beta frontend canary:** https://beta.batbern.ch (a second frontend on the **same production backend** — for previewing frontend-only changes before they reach www; see below)
+
+### Beta Frontend Canary (de-risking frontend changes)
+
+`beta.batbern.ch` is a **second frontend** (its own S3 bucket + CloudFront distribution,
+`BATbern-staging-FrontendBeta`) that serves the same `build-once` SPA artifact against the
+**same production API, Cognito pool, and database** as www. Use it to preview a risky
+**frontend-only** change on real infrastructure (real CDN, real data, real image-resize
+Lambda) before flipping production — e.g. bundle/loading refactors, layout/CSS, client
+routing, perf work.
+
+```bash
+# Publish the current web-frontend build to beta (build + S3 sync + CloudFront invalidation)
+scripts/deploy/publish-beta-frontend.sh            # builds first
+SKIP_BUILD=1 scripts/deploy/publish-beta-frontend.sh   # publish existing web-frontend/dist as-is
+```
+
+**⚠️ Beta is a UI canary, NOT a sandbox.** It shares the production backend/Cognito/DB, so
+every action on beta hits **live production data** with real accounts. Use it only for
+frontend-only changes; never for backend, migration, or destructive testing. It is public +
+`noindex` — do not advertise the URL. See [`docs/plans/beta-frontend-canary.md`](docs/plans/beta-frontend-canary.md).
 
 ### Quick Deploy
 
-**To Staging** (automatic):
+**To Production** (automatic via develop branch):
 ```bash
 git push origin develop
-# Deploy to staging runs automatically after build passes
+# Deploy runs automatically after build passes — deploys to production (staging account)
 ```
 
-**To Production** (manual — 3 steps):
+**Tagged Releases** (manual — 3 steps):
 ```bash
 # Step 1: Open a PR on GitHub: develop → main and merge it.
-#         The build pipeline runs on main and pushes images to the production ECR
+#         The build pipeline runs on main and pushes images to ECR
 #         with the merge commit SHA as the image tag.
 
 # Step 2: Note the 7-char SHA of the merge commit

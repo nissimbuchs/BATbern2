@@ -8,6 +8,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRegistration } from './useRegistration';
 import { authService } from '@/services/auth/authService';
+import { subscribe as subscribeToNewsletter } from '@/services/newsletterService';
 import React from 'react';
 
 // Mock authService
@@ -15,6 +16,11 @@ vi.mock('@/services/auth/authService', () => ({
   authService: {
     signUp: vi.fn(),
   },
+}));
+
+// Story 12.11: newsletter opt-in subscribes via the public newsletter endpoint
+vi.mock('@/services/newsletterService', () => ({
+  subscribe: vi.fn(),
 }));
 
 // Mock i18next
@@ -56,7 +62,8 @@ describe('useRegistration', () => {
     });
 
     const testData = {
-      fullName: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       email: 'john.doe@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
@@ -82,8 +89,11 @@ describe('useRegistration', () => {
     });
   });
 
-  // Test 2: should_splitFullName_when_nameHasMultipleWords
-  it('should_splitFullName_when_nameHasMultipleWords', async () => {
+  // Test 2 (Story 12.6a AC6): multi-word given name is NO LONGER mis-split.
+  // The old fullName.split(/\s+/) heuristic would have produced
+  // firstName: 'Anna', lastName: 'Maria Schmidt'. Two-field capture keeps the
+  // boundary the user intended.
+  it('should_notMisSplit_when_givenNameHasMultipleWords', async () => {
     const mockSignUp = vi.mocked(authService.signUp);
     mockSignUp.mockResolvedValue({
       success: true,
@@ -95,8 +105,9 @@ describe('useRegistration', () => {
     });
 
     const testData = {
-      fullName: 'John Michael Doe',
-      email: 'john.doe@example.com',
+      firstName: 'Anna Maria',
+      lastName: 'Schmidt',
+      email: 'anna.maria@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
       agreedToTerms: true,
@@ -108,8 +119,8 @@ describe('useRegistration', () => {
     await waitFor(() => {
       expect(mockSignUp).toHaveBeenCalledWith(
         expect.objectContaining({
-          firstName: 'John',
-          lastName: 'Michael Doe',
+          firstName: 'Anna Maria',
+          lastName: 'Schmidt',
         })
       );
     });
@@ -128,7 +139,8 @@ describe('useRegistration', () => {
     });
 
     const testData = {
-      fullName: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
       email: 'jane@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
@@ -160,7 +172,8 @@ describe('useRegistration', () => {
     });
 
     const testData = {
-      fullName: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
       email: 'test@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
@@ -192,7 +205,8 @@ describe('useRegistration', () => {
     });
 
     const testData = {
-      fullName: 'Newsletter User',
+      firstName: 'Newsletter',
+      lastName: 'User',
       email: 'newsletter@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
@@ -228,7 +242,8 @@ describe('useRegistration', () => {
     });
 
     const testData = {
-      fullName: 'Existing User',
+      firstName: 'Existing',
+      lastName: 'User',
       email: 'existing@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
@@ -257,7 +272,8 @@ describe('useRegistration', () => {
     });
 
     const testData = {
-      fullName: 'Success User',
+      firstName: 'Success',
+      lastName: 'User',
       email: 'success@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
@@ -280,8 +296,90 @@ describe('useRegistration', () => {
     });
   });
 
-  // Test 8: should_handleSingleWordName_when_providedwhen_providedwhen_provided
-  it('should_handleSingleWordName_when_provided', async () => {
+  // Test 7b (Story 12.11): newsletter opt-in subscribes via the EXISTING public
+  // newsletter endpoint (EMS newsletter_subscribers is the single source of truth).
+  it('should_subscribeToNewsletter_when_optInChecked', async () => {
+    vi.mocked(authService.signUp).mockResolvedValue({
+      success: true,
+      requiresConfirmation: true,
+    });
+    vi.mocked(subscribeToNewsletter).mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useRegistration(), { wrapper: createWrapper() });
+
+    result.current.mutate({
+      firstName: 'News',
+      lastName: 'Letter',
+      email: 'news.letter@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
+      agreedToTerms: true,
+      newsletterOptIn: true,
+    });
+
+    await waitFor(() => {
+      expect(subscribeToNewsletter).toHaveBeenCalledWith({
+        email: 'news.letter@example.com',
+        firstName: 'News',
+        language: 'en',
+      });
+    });
+  });
+
+  // Test 7c (Story 12.11): no opt-in → no subscribe call.
+  it('should_notSubscribeToNewsletter_when_optInUnchecked', async () => {
+    vi.mocked(authService.signUp).mockResolvedValue({
+      success: true,
+      requiresConfirmation: true,
+    });
+
+    const { result } = renderHook(() => useRegistration(), { wrapper: createWrapper() });
+
+    result.current.mutate({
+      firstName: 'No',
+      lastName: 'News',
+      email: 'no.news@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
+      agreedToTerms: true,
+      newsletterOptIn: false,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(subscribeToNewsletter).not.toHaveBeenCalled();
+  });
+
+  // Test 7d (Story 12.11): subscribe failure (e.g. 409 already subscribed, network)
+  // is best-effort and must NEVER fail the registration.
+  it('should_stillSucceed_when_newsletterSubscribeFails', async () => {
+    vi.mocked(authService.signUp).mockResolvedValue({
+      success: true,
+      requiresConfirmation: true,
+    });
+    vi.mocked(subscribeToNewsletter).mockRejectedValue(new Error('409 Conflict'));
+
+    const { result } = renderHook(() => useRegistration(), { wrapper: createWrapper() });
+
+    result.current.mutate({
+      firstName: 'Conflict',
+      lastName: 'User',
+      email: 'conflict.user@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
+      agreedToTerms: true,
+      newsletterOptIn: true,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(subscribeToNewsletter).toHaveBeenCalled();
+  });
+
+  // Test 8 (Story 12.6a): surrounding whitespace on each field is trimmed.
+  it('should_trimWhitespace_when_namesHavePadding', async () => {
     const mockSignUp = vi.mocked(authService.signUp);
     mockSignUp.mockResolvedValue({
       success: true,
@@ -293,8 +391,9 @@ describe('useRegistration', () => {
     });
 
     const testData = {
-      fullName: 'Madonna',
-      email: 'madonna@example.com',
+      firstName: '  Anna  ',
+      lastName: '  Maria Schmidt  ',
+      email: 'anna@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
       agreedToTerms: true,
@@ -306,8 +405,8 @@ describe('useRegistration', () => {
     await waitFor(() => {
       expect(mockSignUp).toHaveBeenCalledWith(
         expect.objectContaining({
-          firstName: 'Madonna',
-          lastName: 'Madonna', // Falls back to first name if no last name
+          firstName: 'Anna',
+          lastName: 'Maria Schmidt',
         })
       );
     });

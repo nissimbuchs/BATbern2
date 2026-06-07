@@ -1,0 +1,30 @@
+meta {
+  name: Cleanup — delete invalid-transition holdout event
+  type: http
+  seq: 97.2
+}
+
+delete {
+  url: {{baseUrl}}/events/{{invalidTransitionEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("invalid-transition holdout event deleted", function() {
+    expect([204, 404]).to.include(res.getStatus());
+  });
+
+  test("clear invalidTransitionEventCode for next run", function() {
+    bru.setVar("invalidTransitionEventCode", null);
+  });
+}
+
+docs {
+  PR 2b: cleanup for the 00d holdout event. Never advanced past CREATED,
+  so DELETE is always allowed (204 or 404 if a parallel run cleaned up).
+}

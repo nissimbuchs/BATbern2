@@ -219,7 +219,11 @@ export const EventPage: React.FC = () => {
               {event.title}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
             <Button
               variant="outlined"
               startIcon={<SlideshowIcon />}
@@ -227,7 +231,7 @@ export const EventPage: React.FC = () => {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Präsentation starten
+              {t('eventPage.overview.startPresentation', 'Start Presentation')}
             </Button>
             <Button
               variant="outlined"
@@ -235,7 +239,7 @@ export const EventPage: React.FC = () => {
               startIcon={<LiveTvIcon />}
               onClick={() => navigate(`/organizer/events/${eventCode}/live-control`)}
             >
-              Live Steuerung
+              {t('eventPage.overview.liveControl', 'Live Control')}
             </Button>
           </Stack>
         </Stack>

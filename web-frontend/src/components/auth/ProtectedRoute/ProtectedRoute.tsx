@@ -5,7 +5,8 @@
 
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Box, Typography, Alert } from '@mui/material';
+// Tailwind, not MUI: ProtectedRoute is imported eagerly by App.tsx (it guards ~20 routes),
+// so keeping it MUI-free is what stops @mui/material from leaking into the public entry chunk.
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useAuth } from '@hooks/useAuth';
 import type { ProtectedRouteProps } from './types';
@@ -23,24 +24,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          gap: 2,
-        }}
-      >
-        <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
-          Loading
-        </Typography>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <h1 className="mb-1 text-3xl font-light">Loading</h1>
         <BATbernLoader size={80} />
-        <Typography variant="body2" color="text.primary">
-          Checking authentication...
-        </Typography>
-      </Box>
+        <p className="text-sm">Checking authentication...</p>
+      </div>
     );
   }
 
@@ -51,8 +39,24 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check if user exists and has required role
   if (requiresAuth && user) {
-    // Check if user's role is in allowed roles
-    if (!allowedRoles.includes(user.role)) {
+    // Story 12.11 (AC6): blocking onboarding gate. termsAcceptedAt === null means the
+    // hydrated /users/me response confirmed NO ToS/Privacy consent on record (fresh
+    // federated sign-ups, retro-gated federated rows) → force the user onto
+    // /profile?onboarding=1 until they consent. `undefined` (hydration failed /
+    // not yet hydrated) deliberately passes — fail-open, never lock users out on a
+    // transient /users/me failure. /profile itself (and /logout) stay reachable so
+    // the gate cannot loop.
+    if (
+      user.termsAcceptedAt === null &&
+      !location.pathname.startsWith('/profile') &&
+      !location.pathname.startsWith('/logout')
+    ) {
+      return <Navigate to="/profile?onboarding=1" replace />;
+    }
+
+    // Story 11.E.3 (cherry-pick 73d94688): multi-role support — check if ANY of user's roles is allowed
+    const userRoles = user.roles ?? (user.role ? [user.role] : []);
+    if (!userRoles.some((r) => allowedRoles.includes(r))) {
       // Redirect to dashboard instead of showing error
       return <Navigate to="/dashboard" replace />;
     }
@@ -60,14 +64,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Check email verification if required
     if (requiresVerification && !user.emailVerified) {
       return (
-        <Box sx={{ p: 3 }}>
-          <Alert severity="warning">
-            <Typography variant="h6">Email Verification Required</Typography>
-            <Typography variant="body2">
-              Please verify your email address to access this content.
-            </Typography>
-          </Alert>
-        </Box>
+        <div className="p-6">
+          <div
+            role="alert"
+            className="rounded-md border border-amber-400/30 bg-amber-400/15 p-4 text-amber-200"
+          >
+            <h6 className="text-lg font-medium">Email Verification Required</h6>
+            <p className="text-sm">Please verify your email address to access this content.</p>
+          </div>
+        </div>
       );
     }
 
@@ -91,8 +96,12 @@ export const OrganizerRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   <ProtectedRoute allowedRoles={['organizer']}>{children}</ProtectedRoute>
 );
 
+// Code review 2026-05-18 (D3): tightened to SPEAKER only. The backend's
+// @PreAuthorize("hasRole('SPEAKER')") on /api/v1/speaker-portal/** strict-rejects organizer-
+// only tokens; admitting ORGANIZER at the frontend just mounts the page then errors with
+// 403. Mirrors the backend contract; users with both ORGANIZER + SPEAKER roles still pass.
 export const SpeakerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['organizer', 'speaker']}>{children}</ProtectedRoute>
+  <ProtectedRoute allowedRoles={['speaker']}>{children}</ProtectedRoute>
 );
 
 export const PartnerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (

@@ -2,10 +2,12 @@ import * as cdk from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
+import * as path from 'path';
 import { EnvironmentConfig } from '../config/environment-config';
 
 export interface StorageStackProps extends cdk.StackProps {
@@ -31,7 +33,7 @@ export class StorageStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: StorageStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
 
     // Logs bucket for CloudFront and application logs
     this.logsBucket = new s3.Bucket(this, 'LogsBucket', {
@@ -84,7 +86,7 @@ export class StorageStack extends cdk.Stack {
           // CORS for direct uploads (presigned URLs)
           allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
           allowedOrigins: [
-            'https://staging.batbern.ch',
+            'https://www.batbern.ch',
             'https://batbern.ch',
             'http://localhost:3000', // For local development
           ],
@@ -147,6 +149,113 @@ export class StorageStack extends cdk.Stack {
       autoDeleteObjects: false,
     });
 
+    // Lambda@Edge for on-the-fly image resizing (?w=256&h=192&fit=cover → WebP)
+    const contentBucketName = `batbern-content-${props.config.envName}`;
+    const contentBucketRegion = 'eu-central-1';
+    const lambdaSrcDir = path.join(__dirname, '../lambda/image-resize');
+
+    const imageResizeFn = new cloudfront.experimental.EdgeFunction(this, 'ImageResizeFn', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      memorySize: 512,
+      description: `BATbern image resize Lambda@Edge - ${props.config.envName}`,
+      code: lambda.Code.fromAsset(lambdaSrcDir, {
+        bundling: {
+          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
+          command: [
+            'bash', '-c',
+            [
+              'npm ci --cache /tmp/.npm --platform=linux --arch=x64 --libc=glibc',
+              [
+                './node_modules/.bin/esbuild index.ts',
+                '--bundle --platform=node --target=node20 --external:sharp',
+                `--define:CONTENT_BUCKET_NAME='"${contentBucketName}"'`,
+                `--define:CONTENT_BUCKET_REGION='"${contentBucketRegion}"'`,
+                '--outfile=/asset-output/index.js',
+              ].join(' '),
+              // Sharp can't be bundled by esbuild (native .node binary), so it stays external and
+              // is loaded from node_modules at runtime. Sharp's JS wrapper also requires several
+              // transitive deps (detect-libc, color, semver, …) which must be present at runtime.
+              // Prune dev deps then copy the entire production node_modules to /asset-output.
+              'npm prune --omit=dev --cache /tmp/.npm',
+              'cp -r node_modules /asset-output/node_modules',
+            ].join(' && '),
+          ],
+          local: {
+            // Jest unit tests get a lightweight stub (no Docker required).
+            // Real CDK deploys always use the Docker bundler so that npm ci installs the
+            // correct Linux x64 sharp binary — the local esbuild path never copies node_modules/sharp.
+            tryBundle(outputDir: string): boolean {
+              if (process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test') {
+                require('fs').writeFileSync(
+                  require('path').join(outputDir, 'index.js'),
+                  'exports.handler = async () => ({});',
+                );
+                return true;
+              }
+              return false; // fall back to Docker for all real deployments
+            },
+          },
+        },
+      }),
+    });
+    this.contentBucket.grantRead(imageResizeFn);
+
+    // Cache policy that keys on resize params so different sizes cache independently
+    const imageResizeCachePolicy = new cloudfront.CachePolicy(this, 'ImageResizeCachePolicy', {
+      cachePolicyName: `batbern-image-resize-${props.config.envName}`,
+      comment: 'Cache key includes w/h/fit query params for image resizing',
+      defaultTtl: cdk.Duration.days(365),
+      maxTtl: cdk.Duration.days(365),
+      minTtl: cdk.Duration.seconds(0),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.allowList('w', 'h', 'fit'),
+      enableAcceptEncodingGzip: true,
+      enableAcceptEncodingBrotli: true,
+    });
+
+    // Add an immutable Cache-Control so browsers cache media (logos, profile
+    // pictures, event theme images) on repeat visits. Media keys are
+    // content-addressed (UUID filenames) so they are effectively immutable.
+    // override:false — the image-resize Lambda already emits this exact header
+    // on resized (WebP) responses, so let its value stand; the policy only fills
+    // it in for pass-through originals/SVGs that reached the browser with no
+    // Cache-Control ("Cache TTL: None" in the PageSpeed report).
+    //
+    // Story 12.12 review (finding #3): users can upload SVGs (profile pictures,
+    // logos) which CloudFront serves with Content-Type image/svg+xml. An SVG can
+    // carry <script>, which executes when the object URL is opened top-level —
+    // stored XSS on the cdn origin. Neutralize without breaking <img> embedding:
+    //  - CSP `sandbox` blocks script execution in top-level SVG documents (a
+    //    resource's CSP only applies when it IS the document; <img> rendering of
+    //    PNG/JPEG/WebP/SVG is unaffected).
+    //  - X-Content-Type-Options: nosniff stops MIME-sniffing surprises.
+    const contentCacheHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
+      this,
+      'ContentCacheHeaders',
+      {
+        responseHeadersPolicyName: `batbern-content-cache-${props.config.envName}`,
+        comment: 'Immutable Cache-Control + SVG-safe security headers for content-addressed media',
+        customHeadersBehavior: {
+          customHeaders: [
+            {
+              header: 'Cache-Control',
+              value: 'public, max-age=31536000, immutable',
+              override: false,
+            },
+          ],
+        },
+        securityHeadersBehavior: {
+          contentSecurityPolicy: {
+            contentSecurityPolicy: 'sandbox',
+            override: true,
+          },
+          contentTypeOptions: {
+            override: true,
+          },
+        },
+      }
+    );
+
     // CloudFront distribution for content delivery
     this.distribution = new cloudfront.Distribution(this, 'ContentDistribution', {
       defaultBehavior: {
@@ -155,7 +264,14 @@ export class StorageStack extends cdk.Stack {
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
         compress: true,
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        cachePolicy: imageResizeCachePolicy,
+        responseHeadersPolicy: contentCacheHeadersPolicy,
+        edgeLambdas: [
+          {
+            functionVersion: imageResizeFn.currentVersion,
+            eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
+          },
+        ],
       },
       // Custom domain name for branded CDN URLs (e.g., cdn.staging.batbern.ch)
       domainNames: props.config.domain?.cdnDomain ? [props.config.domain.cdnDomain] : undefined,

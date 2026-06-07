@@ -353,6 +353,10 @@ class TaskService {
     return response.data;
   }
 
+  async deleteTask(taskId: string): Promise<void> {
+    await apiClient.delete(`${TASKS_API_PATH}/${taskId}`);
+  }
+
   /**
    * Update task status (drag-and-drop)
    *

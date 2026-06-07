@@ -4,7 +4,7 @@
  * Renders a live vertical timeline from event type configuration values.
  * Updates in real-time as form fields change.
  *
- * Used in EventTypeConfigurationAdmin edit modal (right column).
+ * Used in the EventTypesTab edit modal (right column).
  */
 
 import React from 'react';

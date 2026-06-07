@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -107,6 +108,61 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists());
+    }
+
+    // ==================== Story 11.D.1 (AR23) Tests: email rejected on /pool ====================
+
+    /**
+     * Story 11.D.1 (AR23): {@code POST /speakers/pool} rejects {@code email} field.
+     * Speakers added via this endpoint stay in IDENTIFIED/CONTACTED per ADR-009 §0.2;
+     * email is captured via {@code POST /speakers/{speakerId}/promote} only.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_return400_when_addSpeakerToPoolWithEmailField() throws Exception {
+        Event event = createTestEvent("BATbern56", EventWorkflowState.TOPIC_SELECTION);
+        Map<String, Object> request = new HashMap<>();
+        request.put("speakerName", "Jane Smith");
+        request.put("email", "jane@example.com");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * Story 11.D.1 (AR23): {@code PATCH /speakers/pool/{speakerId}} rejects {@code email}.
+     * Email belongs to the User aggregate (CUMS), not the pool entry; the {@code /promote}
+     * endpoint is the only path that may carry an email payload. Regression guard for
+     * {@code @JsonIgnoreProperties(ignoreUnknown = false)} on {@code PatchSpeakerPoolRequest}.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_return400_when_patchSpeakerPoolWithEmailField() throws Exception {
+        Event event = createTestEvent("BATbern56", EventWorkflowState.TOPIC_SELECTION);
+
+        Map<String, Object> create = new HashMap<>();
+        create.put("speakerName", "Jane Smith");
+        create.put("company", "Tech Corp");
+        create.put("expertise", "Cloud Architecture");
+        String createdJson = mockMvc.perform(
+                        post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(create)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String speakerId = objectMapper.readTree(createdJson).get("id").asText();
+
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("notes", "follow up");
+        patch.put("email", "jane@example.com");
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/pool/{speakerId}",
+                        event.getEventCode(), speakerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(patch)))
+                .andExpect(status().isBadRequest());
     }
 
     // ==================== AC10 Tests: Speaker Notes ====================

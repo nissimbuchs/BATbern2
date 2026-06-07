@@ -113,4 +113,18 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().getMessage()).contains("unexpected error");
         assertThat(response.getBody().getCorrelationId()).isNotNull();
     }
+
+    @Test
+    void should_return405_when_methodNotSupportedExceptionThrown() {
+        org.springframework.web.HttpRequestMethodNotSupportedException exception =
+                new org.springframework.web.HttpRequestMethodNotSupportedException("POST");
+
+        ResponseEntity<ErrorResponse> response =
+                exceptionHandler.handleMethodNotSupported(exception, servletRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getError()).isEqualTo("Method Not Allowed");
+        assertThat(response.getBody().getCorrelationId()).isNotNull();
+    }
 }

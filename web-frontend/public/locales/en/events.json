@@ -30,7 +30,13 @@
       "selectedTopic": "Selected Topic",
       "quickActions": "Quick Actions",
       "selectTopic": "Select Topic",
-      "previewPublic": "Preview Public Page"
+      "previewPublic": "Preview Public Page",
+      "enrollStakeholders": "Enroll Organizers & Partners",
+      "enrollStakeholdersLoading": "Enrolling…",
+      "enrollStakeholdersSuccess": "Enrolled {{enrolled}} organizers/partners ({{skipped}} already registered)",
+      "enrollStakeholdersError": "Failed to enroll stakeholders",
+      "startPresentation": "Start Presentation",
+      "liveControl": "Live Control"
     },
     "participantsTab": {
       "title": "Event Participants",
@@ -55,7 +61,38 @@
       "moderatorDesc": "The organizer responsible for moderating this event.",
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator updated successfully",
-      "moderatorUpdateError": "Failed to update moderator."
+      "moderatorUpdateError": "Failed to update moderator.",
+      "capacityLabel": "Registration Capacity",
+      "capacityHelperText": "Leave blank for unlimited registrations. Cannot exceed venue capacity.",
+      "capacityUpdated": "Capacity updated successfully",
+      "capacityUpdateError": "Failed to update capacity.",
+      "notifications": "Notifications",
+      "activeAutomations": "active automations",
+      "manageAll": "Manage All Notifications",
+      "dangerZone": "Danger Zone",
+      "dangerWarning": "These actions are irreversible. Please proceed with caution.",
+      "cancelEvent": "Cancel Event",
+      "cancelEventDesc": "Cancels the event and notifies all registrants",
+      "deleteEvent": "Delete Event",
+      "deleteEventDesc": "Permanently removes event (only if no attendee registrations)",
+      "cannotDelete": "Cannot delete event with attendee registrations. Cancel the event instead.",
+      "confirmCancel": "Cancel Event?",
+      "cancelConfirmText": "This will cancel the event and notify all {{count}} registered attendees. This action cannot be undone.",
+      "confirmCancelBtn": "Yes, Cancel Event",
+      "confirmDelete": "Delete Event?",
+      "deleteConfirmText": "This will permanently delete the event \"{{title}}\". This action cannot be undone.",
+      "confirmDeleteBtn": "Yes, Delete Event",
+      "deleteError": "Failed to delete event. Please try again.",
+      "speakerReminders": "Speaker deadline reminders",
+      "speakerRemindersDesc": "3 days before deadline",
+      "registrationEmails": "Registration confirmation emails",
+      "registrationEmailsDesc": "Immediate on registration",
+      "agendaDistribution": "Final agenda distribution",
+      "agendaDistributionDesc": "Scheduled for event day -14",
+      "checkInReminders": "Event day check-in reminders",
+      "checkInRemindersDesc": "Morning of event",
+      "startPresentation": "Start Presentation",
+      "liveControl": "Live Control"
     },
     "participantTable": {
       "headers": {
@@ -64,7 +101,10 @@
       "empty": "No participants registered yet",
       "actions": {
         "cancel": "Cancel Registration",
-        "delete": "Delete Registration"
+        "delete": "Delete Registration",
+        "resendConfirmation": "Resend Confirmation Email",
+        "resendSuccess": "Confirmation email resent successfully",
+        "resendError": "Failed to resend confirmation email"
       },
       "deleteDialog": {
         "title": "Delete Registration",
@@ -128,14 +168,49 @@
       "historyDate": "Date",
       "historyType": "Type",
       "historyRecipients": "Recipients",
+      "historyStatus": "Status",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Reminder",
-      "previewTitle": "Email Preview"
+      "previewTitle": "Email Preview",
+      "sendInProgress": "Sending newsletter...",
+      "sendCompleted": "Newsletter sent to {{count}} recipients.",
+      "sendPartial": "Sent to {{sent}} recipients. {{failed}} failed — use Retry to resend.",
+      "sendFailed": "Send failed. Use Retry on the send history row.",
+      "retryButton": "Retry",
+      "retryTooltip": "Retry failed recipients",
+      "testMode": "Test Mode (organizers only)",
+      "testModeWarning": "Test mode enabled — newsletter will only be sent to organizer subscribers.",
+      "confirmSendBodyTestMode": "Send {{type}} using '{{templateKey}}' to organizer subscribers only (test mode) for event «{{eventTitle}}»?"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Send to Venue / Catering",
+      "subtitle": "Pick a template, optionally add notes, preview, then send to the venue contact, the catering contact, or both.",
+      "notConfigured": "Venue or catering contacts are not configured.",
+      "openAdmin": "Open Administration → Venue & Catering",
+      "templateLabel": "Template",
+      "noTemplates": "No templates available",
+      "recipients": "Recipients",
+      "venueRole": "Venue",
+      "cateringRole": "Catering",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "e.g. Reserve a lunch table for 8 at 12:30 in the back room.",
+      "previewButton": "Preview",
+      "previewFailed": "Preview failed:",
+      "to": "To",
+      "cc": "Cc",
+      "replyTo": "Reply-To",
+      "subject": "Subject",
+      "sendButton": "Send",
+      "confirmTitle": "Send email?",
+      "confirmBody": "This will send a real email to {{recipients}}. Reply-To is the configured venue coordinator.",
+      "confirmSend": "Yes, send",
+      "sentSuccess": "Sent to {{count}} recipient(s).",
+      "sentFailed": "Send failed: {{message}}"
     }
   },
   "dashboard": {
@@ -429,11 +504,6 @@
       "alreadyPublished": "Already published",
       "publishTopicFirst": "Please publish the topic first",
       "publishSpeakersFirst": "Please publish the speakers first",
-      "mode": "Mode",
-      "modeDraft": "Draft",
-      "modeProgressive": "Progressive",
-      "modeComplete": "Complete",
-      "notifySubscribers": "Notify subscribers",
       "validationErrors": "Validation Errors:",
       "phase": {
         "topic": "Topic",
@@ -441,8 +511,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "Publishing {{phase}}",
-        "notifySubscribers": "Notify subscribers when publishing"
+        "publishingPhase": "Publishing {{phase}}"
       }
     },
     "validation": {
@@ -479,6 +548,14 @@
       "cdnFailed": "CDN Failed",
       "cdnUnknown": "Unknown",
       "noVersions": "No version history available"
+    },
+    "timeline": {
+      "progress": "{{completed}} of {{total}} phases published ({{percent}}%)",
+      "now": "Now",
+      "inDays_one": "{{count}} day",
+      "inDays_other": "{{count}} days",
+      "publishedOn": "Published on {{date}}",
+      "scheduled": "Scheduled: {{date}}"
     },
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
@@ -526,7 +603,7 @@
       "date": "Date",
       "time": "Time",
       "location": "Location",
-      "capacity": "Capacity"
+      "capacity": "Registrations"
     },
     "errors": {
       "loadFailed": "Failed to load event",
@@ -602,7 +679,9 @@
       "uploadTitle": "Upload Session Materials",
       "uploadDescription": "Upload presentations, documents, or videos (max 100MB per file, up to 10 files)",
       "existingTitle": "Existing Materials",
-      "downloadError": "Failed to download material"
+      "downloadError": "Failed to download material",
+      "delete": "Delete material",
+      "deleteError": "Failed to delete material"
     },
     "errors": {
       "titleRequired": "Title is required",
@@ -761,7 +840,8 @@
       "confirmed": "Confirmed",
       "registered": "Registered",
       "waitlist": "Waitlist",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "attended": "Attended"
     }
   },
   "capacity": {
@@ -782,7 +862,8 @@
     "deleteCancel": "Cancel",
     "emptyState": "No photos yet. Upload the first one!",
     "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "uploadError": "Upload failed. Please try again.",
+    "uploadErrorPartial": "{{failed}} of {{total}} uploads failed. Please retry."
   },
   "teaserImage": {
     "title": "Teaser Images",
@@ -799,6 +880,13 @@
       "afterCommittee": "Committee slide",
       "afterTopicReveal": "Topic Reveal slide",
       "afterUpcomingEvents": "Upcoming Events slide"
+    }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Export name badges",
+      "exportNameBadgesDocx": "Name badges as Word",
+      "exportError": "Export failed"
     }
   }
 }

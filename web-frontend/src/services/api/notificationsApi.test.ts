@@ -189,5 +189,88 @@ describe('Notifications API', () => {
 
       await expect(deleteNotification('notif-1')).rejects.toThrow();
     });
+
+    it('should_encodeNotificationId_when_specialCharactersPresent', async () => {
+      const mockResponse = { success: true };
+      const notificationId = 'notif-abc-123';
+
+      mockAxios.onDelete(`/notifications/${notificationId}`).reply(200, mockResponse);
+
+      const result = await deleteNotification(notificationId);
+
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should_throwError_when_serverError', async () => {
+      mockAxios.onDelete('/notifications/notif-1').reply(500, {
+        message: 'Internal Server Error',
+      });
+
+      await expect(deleteNotification('notif-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getNotifications - edge cases', () => {
+    it('should_useDefaultStatus_when_onlyLimitProvided', async () => {
+      const mockResponse: NotificationsResponse = {
+        notifications: [],
+        unreadCount: 0,
+        totalCount: 0,
+        hasMore: false,
+      };
+
+      mockAxios.onGet('/notifications').reply((config) => {
+        expect(config.params?.status).toBe('unread');
+        expect(config.params?.limit).toBe(5);
+        return [200, mockResponse];
+      });
+
+      const result = await getNotifications('unread', 5);
+
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should_throwError_when_networkError', async () => {
+      mockAxios.onGet('/notifications').networkError();
+
+      await expect(getNotifications()).rejects.toThrow();
+    });
+
+    it('should_throwError_when_timeout', async () => {
+      mockAxios.onGet('/notifications').timeout();
+
+      await expect(getNotifications()).rejects.toThrow();
+    });
+  });
+
+  describe('markNotificationsAsRead - edge cases', () => {
+    it('should_handleEmptyNotificationIds_when_emptyArrayProvided', async () => {
+      const mockResponse: MarkAsReadResponse = {
+        success: true,
+        markedCount: 0,
+        updatedAt: '2024-03-15T14:35:00Z',
+      };
+
+      mockAxios.onPut('/notifications/read').reply(200, mockResponse);
+
+      const result = await markNotificationsAsRead({ notificationIds: [] });
+
+      expect(result.markedCount).toBe(0);
+      expect(result.success).toBe(true);
+    });
+
+    it('should_throwError_when_serverError', async () => {
+      mockAxios.onPut('/notifications/read').reply(500, {
+        message: 'Internal Server Error',
+      });
+
+      await expect(markNotificationsAsRead({ markAll: true })).rejects.toThrow();
+    });
+
+    it('should_throwError_when_networkError', async () => {
+      mockAxios.onPut('/notifications/read').networkError();
+
+      await expect(markNotificationsAsRead({ notificationIds: ['notif-1'] })).rejects.toThrow();
+    });
   });
 });

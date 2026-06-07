@@ -12,7 +12,7 @@
  * - AC6: Search users with autocomplete
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 import apiClient from './apiClient';
 import {
@@ -20,8 +20,11 @@ import {
   searchUsers,
   getUserById,
   createUser,
+  updateUser,
   updateUserRoles,
   deleteUser,
+  checkSyncStatus,
+  reconcileUsers,
 } from './userManagementApi';
 import type { UserFilters, UserPagination, Role } from '@/types/user.types';
 
@@ -444,6 +447,156 @@ describe('UserManagementApi', () => {
       });
 
       await expect(deleteUser(userId)).rejects.toThrow();
+    });
+  });
+
+  describe('updateUser', () => {
+    it('should_updateUser_when_validDataProvided', async () => {
+      const username = 'john.doe';
+      const updateData = {
+        firstName: 'Johnny',
+        lastName: 'Doe',
+        bio: 'Updated bio',
+      };
+
+      const mockResponse = {
+        id: 'john.doe',
+        email: 'john.doe@example.com',
+        firstName: 'Johnny',
+        lastName: 'Doe',
+        bio: 'Updated bio',
+        roles: ['ATTENDEE'],
+        isActive: true,
+        createdAt: '2025-01-15T10:00:00Z',
+        updatedAt: '2025-01-20T10:00:00Z',
+      };
+
+      mock.onPut(`/users/${username}`, updateData).reply(200, mockResponse);
+
+      const result = await updateUser(username, updateData);
+
+      expect(result.firstName).toBe('Johnny');
+      expect(result.bio).toBe('Updated bio');
+    });
+
+    it('should_updatePartialFields_when_onlyCompanyIdProvided', async () => {
+      const username = 'jane.smith';
+      const updateData = {
+        companyId: 'NewCompany AG',
+      };
+
+      const mockResponse = {
+        id: 'jane.smith',
+        email: 'jane.smith@example.com',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        companyId: 'NewCompany AG',
+        roles: ['SPEAKER'],
+        isActive: true,
+        createdAt: '2025-01-15T10:00:00Z',
+        updatedAt: '2025-01-20T10:00:00Z',
+      };
+
+      mock.onPut(`/users/${username}`, updateData).reply(200, mockResponse);
+
+      const result = await updateUser(username, updateData);
+
+      expect(result.companyId).toBe('NewCompany AG');
+    });
+
+    it('should_throwError_when_userNotFound', async () => {
+      const username = 'nonexistent.user';
+      const updateData = { firstName: 'Ghost' };
+
+      mock.onPut(`/users/${username}`).reply(404, {
+        code: 'USER_NOT_FOUND',
+        message: 'User not found',
+      });
+
+      await expect(updateUser(username, updateData)).rejects.toThrow();
+    });
+  });
+
+  describe('checkSyncStatus', () => {
+    it('should_returnSyncStatus_when_called', async () => {
+      const mockResponse = {
+        cognitoUserCount: 50,
+        databaseUserCount: 48,
+        missingInDatabase: 2,
+        orphanedInDatabase: 0,
+        missingCognitoIds: ['user-1', 'user-2'],
+        inSync: false,
+        message: '2 users missing in database',
+      };
+
+      mock.onGet('/users/admin/sync-status').reply(200, mockResponse);
+
+      const result = await checkSyncStatus();
+
+      expect(result.cognitoUserCount).toBe(50);
+      expect(result.databaseUserCount).toBe(48);
+      expect(result.missingInDatabase).toBe(2);
+      expect(result.inSync).toBe(false);
+      expect(result.missingCognitoIds).toHaveLength(2);
+    });
+
+    it('should_returnInSync_when_allUsersMatch', async () => {
+      const mockResponse = {
+        cognitoUserCount: 50,
+        databaseUserCount: 50,
+        missingInDatabase: 0,
+        orphanedInDatabase: 0,
+        missingCognitoIds: [],
+        inSync: true,
+        message: 'All users in sync',
+      };
+
+      mock.onGet('/users/admin/sync-status').reply(200, mockResponse);
+
+      const result = await checkSyncStatus();
+
+      expect(result.inSync).toBe(true);
+      expect(result.missingCognitoIds).toHaveLength(0);
+    });
+  });
+
+  describe('reconcileUsers', () => {
+    it('should_returnReconciliationReport_when_called', async () => {
+      const mockResponse = {
+        orphanedUsersDeactivated: 1,
+        missingUsersCreated: 3,
+        durationMs: 1250,
+        errors: [],
+        success: true,
+        message: 'Reconciliation completed successfully',
+      };
+
+      mock.onPost('/users/admin/reconcile').reply(200, mockResponse);
+
+      const result = await reconcileUsers();
+
+      expect(result.success).toBe(true);
+      expect(result.missingUsersCreated).toBe(3);
+      expect(result.orphanedUsersDeactivated).toBe(1);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should_reportErrors_when_reconciliationPartiallyFails', async () => {
+      const mockResponse = {
+        orphanedUsersDeactivated: 0,
+        missingUsersCreated: 1,
+        durationMs: 800,
+        errors: ['Failed to create user: duplicate email'],
+        success: false,
+        message: 'Reconciliation completed with errors',
+      };
+
+      mock.onPost('/users/admin/reconcile').reply(200, mockResponse);
+
+      const result = await reconcileUsers();
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toHaveLength(1);
     });
   });
 });

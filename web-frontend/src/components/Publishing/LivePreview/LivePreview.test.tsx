@@ -34,7 +34,7 @@ describe('LivePreview', () => {
 
   describe('Device Toggle', () => {
     it('should render device toggle buttons', () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       expect(screen.getByRole('button', { name: /desktop/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /mobile/i })).toBeInTheDocument();
@@ -42,14 +42,14 @@ describe('LivePreview', () => {
     });
 
     it('should select desktop device by default', () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const desktopButton = screen.getByRole('button', { name: /desktop/i });
       expect(desktopButton).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('should switch to mobile view when mobile button clicked', async () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const mobileButton = screen.getByRole('button', { name: /mobile/i });
       fireEvent.click(mobileButton);
@@ -62,7 +62,7 @@ describe('LivePreview', () => {
     });
 
     it('should switch to print view when print button clicked', async () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const printButton = screen.getByRole('button', { name: /print/i });
       fireEvent.click(printButton);
@@ -73,11 +73,35 @@ describe('LivePreview', () => {
         expect(iframe).toHaveClass(/print/i);
       });
     });
+
+    it('should_hideDeviceToggleLabelText_atXs', () => {
+      // The textual label inside each device ToggleButton is icon-only on phones:
+      // display { xs: 'none', md: 'inline' } -> compiled to @media (min-width:0px)
+      // { display:none } and @media (min-width:900px) { display:inline }. jsdom does
+      // not evaluate media queries, so inspect the injected emotion stylesheet.
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
+
+      const labelSpan = screen.getByText('Desktop');
+      const cssClass = Array.from(labelSpan.classList).find((c) => c.startsWith('css-'));
+      expect(cssClass).toBeTruthy();
+
+      let css = '';
+      document.querySelectorAll('style').forEach((styleEl) => {
+        const text = styleEl.textContent ?? '';
+        if (cssClass && text.includes(`.${cssClass}`)) css += text + '\n';
+      });
+
+      expect(
+        new RegExp(`@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*display:\\s*none[^}]*\\}`).test(
+          css
+        )
+      ).toBe(true);
+    });
   });
 
   describe('Preview Iframe', () => {
     it('should render iframe with preview URL', () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const iframe = screen.getByTestId('preview-iframe');
       expect(iframe).toHaveAttribute(
@@ -87,9 +111,7 @@ describe('LivePreview', () => {
     });
 
     it('should update iframe src when phase changes', async () => {
-      const { rerender } = render(
-        <LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />
-      );
+      const { rerender } = render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const iframe = screen.getByTestId('preview-iframe');
       expect(iframe).toHaveAttribute(
@@ -107,7 +129,7 @@ describe('LivePreview', () => {
         },
       });
 
-      rerender(<LivePreview eventCode="BATbern142" phase="agenda" mode="progressive" />);
+      rerender(<LivePreview eventCode="BATbern142" phase="agenda" />);
 
       await waitFor(() => {
         expect(iframe).toHaveAttribute(
@@ -118,14 +140,14 @@ describe('LivePreview', () => {
     });
 
     it('should apply desktop dimensions to iframe by default', () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const iframe = screen.getByTestId('preview-iframe');
       expect(iframe).toHaveStyle({ width: '100%', height: '800px' });
     });
 
     it('should apply mobile dimensions when mobile device selected', async () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const mobileButton = screen.getByRole('button', { name: /mobile/i });
       fireEvent.click(mobileButton);
@@ -137,7 +159,7 @@ describe('LivePreview', () => {
     });
 
     it('should apply print dimensions when print device selected', async () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const printButton = screen.getByRole('button', { name: /print/i });
       fireEvent.click(printButton);
@@ -151,13 +173,13 @@ describe('LivePreview', () => {
 
   describe('Refresh Button', () => {
     it('should render refresh button', () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       expect(screen.getByRole('button', { name: /refresh preview/i })).toBeInTheDocument();
     });
 
     it('should reload iframe when refresh button clicked', async () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const refreshButton = screen.getByRole('button', { name: /refresh preview/i });
       const iframe = screen.getByTestId('preview-iframe') as HTMLIFrameElement;
@@ -182,7 +204,7 @@ describe('LivePreview', () => {
         isLoadingPreview: true,
       });
 
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       expect(screen.getByText(/refreshing preview/i)).toBeInTheDocument();
     });
@@ -190,9 +212,7 @@ describe('LivePreview', () => {
 
   describe('Auto-refresh on Content Changes', () => {
     it('should auto-refresh when preview content changes', async () => {
-      const { rerender } = render(
-        <LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />
-      );
+      const { rerender } = render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const iframe = screen.getByTestId('preview-iframe') as HTMLIFrameElement;
       const initialSrc = iframe.src;
@@ -213,7 +233,7 @@ describe('LivePreview', () => {
         },
       });
 
-      rerender(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      rerender(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       await waitFor(() => {
         const updatedIframe = screen.getByTestId('preview-iframe') as HTMLIFrameElement;
@@ -231,7 +251,7 @@ describe('LivePreview', () => {
         isLoadingPreview: true,
       });
 
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       expect(screen.getByTestId('preview-loading-spinner')).toBeInTheDocument();
     });
@@ -243,7 +263,7 @@ describe('LivePreview', () => {
         isLoadingPreview: true,
       });
 
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       expect(screen.queryByTestId('preview-iframe')).not.toBeInTheDocument();
     });
@@ -257,7 +277,7 @@ describe('LivePreview', () => {
         previewError: new Error('Failed to load preview'),
       });
 
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       expect(screen.getByText(/failed to load preview/i)).toBeInTheDocument();
     });
@@ -269,7 +289,7 @@ describe('LivePreview', () => {
         previewError: new Error('Failed to load preview'),
       });
 
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
     });
@@ -281,52 +301,27 @@ describe('LivePreview', () => {
         previewError: new Error('Failed to load preview'),
       });
 
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const retryButton = screen.getByRole('button', { name: /retry/i });
       fireEvent.click(retryButton);
 
       await waitFor(() => {
-        expect(mockUsePublishing.fetchPreview).toHaveBeenCalledWith('speakers', 'progressive');
+        expect(mockUsePublishing.fetchPreview).toHaveBeenCalledWith('speakers');
       });
-    });
-  });
-
-  describe('Preview URL Generation', () => {
-    it('should include mode parameter in preview URL', () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
-
-      const iframe = screen.getByTestId('preview-iframe');
-      expect(iframe).toHaveAttribute('src', expect.stringContaining('mode=preview'));
-    });
-
-    it('should use draft mode in preview URL when mode is draft', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        preview: {
-          ...mockUsePublishing.preview,
-          mode: 'DRAFT',
-          previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=draft',
-        },
-      });
-
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="draft" />);
-
-      const iframe = screen.getByTestId('preview-iframe');
-      expect(iframe).toHaveAttribute('src', expect.stringContaining('mode=draft'));
     });
   });
 
   describe('Accessibility', () => {
     it('should have accessible label for iframe', () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const iframe = screen.getByTestId('preview-iframe');
       expect(iframe).toHaveAttribute('title', 'Event preview');
     });
 
     it('should have accessible labels for device toggle buttons', () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       expect(screen.getByLabelText(/desktop preview/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/mobile preview/i)).toBeInTheDocument();
@@ -334,7 +329,7 @@ describe('LivePreview', () => {
     });
 
     it('should announce device changes to screen readers', async () => {
-      render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const mobileButton = screen.getByRole('button', { name: /mobile/i });
       fireEvent.click(mobileButton);

@@ -45,7 +45,7 @@ export function parseSessionsJson(jsonContent: string): LegacySession[] {
     return sessions as LegacySession[];
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new Error(`Invalid JSON format: ${error.message}`);
+      throw new Error(`Invalid JSON format: ${error.message}`, { cause: error });
     }
     throw error;
   }

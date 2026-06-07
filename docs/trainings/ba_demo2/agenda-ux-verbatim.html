@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training &mdash; Verbatim UX Design Session (Active Partner Meeting Agenda)</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350;
+    --accent: #E23615; --accent2: #28AF8F; --accent3: #AF2322; --accent4: #FFCA4C;
+    --text: #e8eaf6; --text-muted: #8890b5;
+    --user-bg: #1e2a45; --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a; --agent-border: #28AF8F;
+    --artifact-bg: #2a1e45; --artifact-border: #E23615;
+    --note-bg: #2e2a1a; --note-border: #FFCA4C;
+    --radius: 12px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(15,17,23,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 32px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; z-index: 100; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 10px; border-radius: 20px; transition: all .2s; white-space: nowrap; }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  .hero { text-align: center; padding: 60px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 60px; }
+  .hero .badge { display: inline-block; background: var(--accent); color: white; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 14px; border-radius: 20px; margin-bottom: 20px; }
+  .hero .badge-secondary { display: inline-block; background: rgba(40,175,143,.2); color: var(--accent2); border: 1px solid var(--accent2); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 12px; border-radius: 20px; margin-left: 8px; margin-bottom: 20px; vertical-align: middle; }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-bottom: 20px; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+  .hero .version-note { font-size: 0.85rem; color: var(--accent4); }
+
+  .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .phase-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; font-weight: 800; font-size: 1rem; flex-shrink: 0; }
+  .phase-1 { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-bridge { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  .turn { margin-bottom: 20px; }
+  .turn-user { background: var(--user-bg); border: 1px solid var(--user-border); border-left: 4px solid var(--user-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-agent { background: var(--agent-bg); border: 1px solid var(--agent-border); border-left: 4px solid var(--agent-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-artifact { background: var(--artifact-bg); border: 1px solid var(--artifact-border); border-left: 4px solid var(--artifact-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-note { background: var(--note-bg); border: 1px solid var(--note-border); border-left: 4px solid var(--note-border); border-radius: var(--radius); padding: 14px 18px; font-size: 0.88rem; }
+
+  .turn-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .turn-label .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .label-user { color: var(--user-border); } .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); } .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); } .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); } .label-note .dot { background: var(--accent4); }
+  .ts { font-weight: 400; opacity: 0.6; }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: #b0d0c8; font-style: italic; }
+  .turn-content code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content h2, .turn-content h3, .turn-content h4 { margin: 14px 0 8px; color: white; font-weight: 700; }
+  .turn-content h2 { font-size: 1.1rem; color: var(--accent2); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .turn-content h3 { font-size: 1rem; color: var(--accent4); }
+  .turn-content h4 { font-size: 0.95rem; color: var(--text); }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .turn-content pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; overflow-x: auto; font-size: 0.82rem; font-family: 'Cascadia Code', 'Fira Code', monospace; margin: 12px 0; white-space: pre; line-height: 1.5; }
+  .turn-content hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  .connector { display: flex; align-items: center; gap: 12px; padding: 8px 20px; color: var(--text-muted); font-size: 0.82rem; margin: 4px 0 4px; }
+  .connector::before, .connector::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  @media (max-width: 640px) { .hero h1 { font-size: 1.7rem; } nav a { font-size: 11px; padding: 3px 8px; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#welcome">Agent Setup</a>
+  <a href="#discovery">UX Discovery</a>
+  <a href="#core-experience">Core Experience</a>
+  <a href="#inspiration">Inspiration</a>
+  <a href="#design-system">Design System</a>
+  <a href="#directions">Directions</a>
+  <a href="#journeys">Journeys</a>
+  <a href="#patterns">Patterns</a>
+  <a href="#post-session">Post-Session</a>
+  <a href="#diagrams">SVG Diagrams</a>
+</nav>
+
+<main>
+
+<div class="hero">
+  <div class="badge">BMAD Hands-On Training &mdash; Complete Session</div>
+  <h1>Active Partner Meeting Agenda<br><span>UX Design Session</span></h1>
+  <p>Complete session with Sally &mdash; verbatim output plus training annotations explaining key moments. Every prompt, every response, every design decision exactly as it appeared on screen.</p>
+  <div class="hero-meta">
+    <div><div class="label">Project</div><div class="value">BATbern</div></div>
+    <div><div class="label">Agent</div><div class="value">Sally (UX Designer)</div></div>
+    <div><div class="label">Session Date</div><div class="value">2026-04-16</div></div>
+    <div><div class="label">Steps Completed</div><div class="value">13</div></div>
+    <div><div class="label">Sections</div><div class="value">10</div></div>
+  </div>
+  <div class="version-note">See also: <a href="ux-design-specification.html" style="color:var(--accent2)">UX spec</a> &mdash; <a href="ux-design-directions.html" style="color:var(--accent2)">design directions</a></div>
+</div>
+
+<section id="welcome">
+  <div class="section-header">
+    <div class="phase-badge phase-1">1</div>
+    <div class="section-header-text"><h2>Agent Activation &amp; Session Start</h2><p>Loading Sally via <code>/bmad-agent-bmm-ux-designer</code> &mdash; presenting UX Designer menu</p></div>
+  </div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content">
+    <p>After completing Phase 1 (Brainstorming) with the Analyst Agent, the next step is <strong>Phase 2: UX Design</strong>. The UX Designer Agent (Sally) transforms raw ideas into interaction patterns, component specifications, and user flows. Activate her with <code>/bmad-agent-bmm-ux-designer</code>.</p>
+  </div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Hey Nissim! 🎨</p>
+<p>I'm <strong>Sally</strong>, your UX Designer. I live and breathe user experiences — the kind where someone opens your app and just <em>knows</em> what to do, like the interface is reading their mind. I've spent years crafting interactions that feel effortless, and I'm here to help you design experiences that your users will genuinely love.</p>
+<p>Whether we're mapping out user journeys, defining interaction patterns, or dreaming up something entirely new — I'm all about making the complex feel simple and the simple feel delightful.</p>
+<p>Here's what we can do together:</p>
+<hr class="divider">
+<ol>
+<li><strong>[MH] Redisplay Menu Help</strong> — Show this menu again anytime</li>
+<li><strong>[CH] Chat with the Agent</strong> — Ask me anything about UX, design patterns, user flows, or just bounce ideas</li>
+<li><strong>[CU] Create UX Design</strong> — Walk through a guided process to plan your UX strategy, define user flows, and create specs that inform architecture and implementation</li>
+<li><strong>[PM] Start Party Mode</strong> — Bring all the BMAD agents together for a group discussion</li>
+<li><strong>[DA] Dismiss Agent</strong> — Say goodbye (for now!)</li>
+</ol>
+<hr class="divider">
+<p>You can also type <code>/bmad-help</code> at any time to get advice on what to do next. For example: <code>/bmad-help where should I start with an idea I have that does XYZ</code></p>
+<p>What would you like to explore, Nissim?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>help me create wirframes for '/Users/nissim/dev/bat/BATbern-develop/_bmad-output/brainstorming/brainstorming-session-2026-04-04.md' using the ux styleguide of this project: '/Users/nissim/dev/bat/BATbern-develop/docs/front-end-spec.md'</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Let me read the front-end spec in sections — it's a large file.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now let me check the existing wireframes to understand the format used.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Great question, Nissim! Yes, absolutely — the <strong>[CU] Create UX Design</strong> workflow would be <em>very</em> applicable here.</p>
+<p>Here's why I'd recommend it:</p>
+<p>The brainstorming session produced <strong>35 ideas across 6 themes</strong> with a clear 4-layer build order. Before jumping straight to wireframes, the CU workflow would help us:</p>
+<ol>
+<li><strong>Map complete user flows</strong> — The brainstorming identified multiple perspectives (new partner, absent partner, organizer, auditor) that each need their own journey mapped through the active meeting agenda</li>
+<li><strong>Define interaction patterns</strong> — The agenda controller/presenter mode (#29), live voting (#10, #13), document viewer (#9), and auto-assembling minutes (#4) are all new interaction paradigms that need UX decisions before wireframing</li>
+<li><strong>Establish component reuse strategy</strong> — 4 reusable components were identified (agenda builder, vote, document viewer, minutes engine) — the UX design process will spec these as a cohesive system</li>
+<li><strong>Prioritize screens</strong> — With 28 must-have ideas, we need to define which screens/views are needed and how they connect</li>
+</ol>
+<p>The wireframes would then come <em>out of</em> the UX design as concrete deliverables — grounded in the user flows and interaction decisions.</p>
+<p><strong>My recommendation:</strong> Run <strong>[CU] Create UX Design</strong> first using the brainstorming doc as input, then the wireframes will practically draw themselves from the output.</p>
+<p>Want me to kick off the CU workflow? I'll feed in both the brainstorming results and the existing front-end spec as style constraints.</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content">
+    <p><strong>Key learning:</strong> The agent redirected the user away from jumping straight to wireframes. This is a real coaching moment &mdash; experienced UX designers know that wireframing without understanding user flows leads to rework. The BMAD workflow enforces the right order.</p>
+  </div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>yes</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>No existing UX design spec found — this is a fresh workflow. Let me discover the input documents now.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Alright Nissim! Here's what I've found for your UX design workspace:</p>
+<hr class="divider">
+<p>Welcome Nissim! I'm setting up your UX design workspace for <strong>BATbern — Active Partner Meeting Agenda</strong>.</p>
+<p><strong>Documents Found:</strong></p>
+<ul>
+<li><strong>PRD:</strong> 1 file — <code>docs/prd-enhanced.md</code></li>
+<li><strong>Product Brief:</strong> None found</li>
+<li><strong>Brainstorming Input:</strong> <code>_bmad-output/brainstorming/brainstorming-session-2026-04-04.md</code> (already loaded — 35 ideas, 6 themes, 4-layer build order)</li>
+<li><strong>Existing UX Style Guide:</strong> <code>docs/front-end-spec.md</code> (already loaded — full design system, color palette, typography, components, accessibility standards)</li>
+<li><strong>Existing Wireframes:</strong> 4 partner-related wireframes in <code>docs/wireframes/story-6.*</code> (topic voting, all topics browser, partner directory, employee analytics)</li>
+</ul>
+<p><strong>Key Context Already In Memory:</strong></p>
+<ul>
+<li>The brainstorming session defined 6 agenda items to make interactive, with 28 P1 must-have ideas</li>
+<li>The front-end spec defines the complete BATbern design system (MUI + Tailwind, light theme for portals, dark for public, Inter font, 8px grid, WCAG 2.1 AA)</li>
+<li>Existing partner portal navigation: Topic Voting | Meetings | Settings | Help</li>
+<li>Partner role color: Accent Orange (#E67E22)</li>
+</ul>
+<p><strong>What I recommend loading additionally:</strong></p>
+<ul>
+<li>The PRD (<code>docs/prd-enhanced.md</code>) — for full requirements context</li>
+</ul>
+<p>Do you want me to:</p>
+<ol>
+<li>Load the PRD as well for full context?</li>
+<li>Add any other documents you'd like me to consider?</li>
+<li>Or shall we proceed with what we have?</li>
+</ol>
+<p><strong>[C] Continue to UX Discovery</strong> (I'll load the PRD and proceed)</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content">
+    <p><strong>Key learning:</strong> The agent presented numbered options for efficient selection. The workflow tracks which documents are loaded so subsequent steps can reference them. Rather than asking open-ended questions, the agent presents clear choices &mdash; this keeps the session moving and reduces cognitive load on the BA.</p>
+  </div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Good — PRD loaded. Now let me create the initial document and proceed to the discovery phase.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Document created. Now loading Step 2 — UX Discovery.</p></div>
+</div>
+</section>
+
+<section id="discovery">
+  <div class="section-header">
+    <div class="phase-badge phase-1">2</div>
+    <div class="section-header-text"><h2>UX Discovery &amp; Project Understanding</h2><p>Sally reviews project context, asks clarifying questions &mdash; Nissim confirms understanding and answers</p></div>
+  </div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content">
+    <p>Sally automatically scans the project for input documents. She looks for brainstorming sessions, PRDs, style guides, and existing wireframes &mdash; building on whatever the previous BMAD phases produced.</p>
+  </div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Alright Nissim, let me share what I'm understanding from all the documents we've loaded, and then let's fill in any gaps together.</p>
+<hr class="divider">
+<h2>Project Understanding — Active Partner Meeting Agenda</h2>
+<h3>From the Documents:</h3>
+<p>The brainstorming session identified a clear opportunity: <strong>BATbern's partner meetings currently run on 6 static agenda items</strong> (greeting, analytics review, audit sign-off, budget approval, topic discussion, hot topics) — all of which happen as verbal/manual processes with no system support beyond an ICS invite.</p>
+<p>The vision is to transform these into an <strong>interactive, system-driven meeting experience</strong> where each agenda item becomes a living feature — with pre-meeting preparation, live interaction during the meeting, and post-meeting follow-up workflows.</p>
+<p><strong>35 ideas</strong> were generated, organized into <strong>6 themes</strong>:</p>
+<ol>
+<li><strong>Configurable Meeting Agenda Engine</strong> — agenda builder, presenter mode, notes (#26-30)</li>
+<li><strong>Meeting Minutes as Living Document</strong> — auto-assembled from agenda interactions (#4, 5, 7, 8, 11, 33)</li>
+<li><strong>Partner Interaction Components</strong> — RSVP, gallery, voting, document viewer (#1-3, 9, 10, 12, 13)</li>
+<li><strong>Post-Meeting Workflows</strong> — async fee acceptance, feedback, action items (#14, 15, 23, 32, 34, 35)</li>
+<li><strong>New Partner & Stand-In Experience</strong> — onboarding, context package, delegation (#19-21, 24, 25)</li>
+<li><strong>Smart Meeting Invite</strong> — deep-links, conditional auditor invite (#6, 16, 31)</li>
+</ol>
+<h3>Target Users:</h3>
+<p>From the PRD and brainstorming, I see <strong>5 distinct user perspectives</strong> for this feature set:</p>
+<table>
+<tr><th>User</th><th>Context</th><th>Tech Savvy</th><th>Primary Goal</th></tr>
+<tr><td><strong>Organizer</strong></td><td>Runs the meeting, manages agenda</td><td>High</td><td>Efficient meeting execution, automated minutes</td></tr>
+<tr><td><strong>Present Partner</strong></td><td>Corporate decision-maker attending live</td><td>Medium</td><td>Vote on decisions, provide input, stay informed</td></tr>
+<tr><td><strong>Absent Partner</strong></td><td>Couldn't attend but needs to participate</td><td>Medium</td><td>Catch up on decisions, vote async on fees</td></tr>
+<tr><td><strong>New Partner</strong></td><td>First-year partner, unfamiliar with process</td><td>Low-Medium</td><td>Understand the community, feel welcomed</td></tr>
+<tr><td><strong>Stand-In</strong></td><td>Non-system delegate attending for a partner</td><td>Low</td><td>Participate without needing an account</td></tr>
+</table>
+<p><strong>Devices:</strong> Primarily <strong>desktop/laptop</strong> during the meeting (projector for presenter mode), but <strong>mobile</strong> for pre-meeting RSVP and post-meeting async actions.</p>
+<h3>Key Design Challenges:</h3>
+<ol>
+<li><strong>Dual-mode interface</strong> — The organizer needs a "presenter/controller" view that drives the meeting, while partners see a participant view. Same data, different interaction models running simultaneously? Or is this projector-only with organizer laptop as controller?</li>
+</ol>
+<ol>
+<li><strong>Progressive complexity</strong> — The agenda engine has active items (with live voting, document viewing) AND passive items (free-text discussion). The UX must make both feel natural without overloading the interface.</li>
+</ol>
+<ol>
+<li><strong>Meeting minutes as byproduct</strong> — The most ambitious pattern: minutes auto-assemble from what happens during the meeting. This means every interaction (vote, attendance toggle, note, document upload) must quietly contribute to a growing document. The UX challenge is making this invisible to users while being reliable.</li>
+</ol>
+<ol>
+<li><strong>Async continuity</strong> — Post-meeting workflows (fee acceptance, feedback pulse, action items) need to feel like a continuation of the meeting, not a separate system. Partners who were absent need the same context as those present.</li>
+</ol>
+<ol>
+<li><strong>Stand-in governance</strong> — Stand-ins are non-system-users who need to be represented without accounts. The organizer proxies their actions. This is a governance UX challenge — clear attribution without complexity.</li>
+</ol>
+<h3>Design Opportunities:</h3>
+<ol>
+<li><strong>"The meeting runs itself" feeling</strong> — If we nail the presenter mode + auto-minutes, the organizer experience becomes: walk through the agenda, and the system captures everything. This is genuinely novel for small-org meeting management.</li>
+</ol>
+<ol>
+<li><strong>Reusable component ecosystem</strong> — The vote component, document viewer, and note-taking pattern will be used across 4+ agenda item types. Getting these right creates a consistent, learnable interaction vocabulary.</li>
+</ol>
+<ol>
+<li><strong>Year-over-year institutional memory</strong> — Meeting minutes + analytics snapshots + action item carry-forward builds a browsable history. Partners can see "what did we decide 3 years ago about fees?" — powerful for governance.</li>
+</ol>
+<hr class="divider">
+<p><strong>Does this match your understanding, Nissim?</strong> A few clarifying questions before I finalize:</p>
+<ol>
+<li><strong>Presenter mode</strong> — Is the organizer projecting their screen for all to see, while controlling from their laptop? Or do partners each have their own view on their devices during the meeting?</li>
+<li><strong>Meeting frequency</strong> — How often do partner meetings happen? (Annual? Bi-annual?) This affects how much "learning curve" is acceptable.</li>
+<li><strong>Scope for this UX spec</strong> — Are we designing for all 4 layers from the brainstorming build order, or focusing on Layers 1-2 (foundation + meeting flow) first?</li>
+</ol></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>yes, well captured. on your questions:</p>
+<ol>
+<li>yes. presenters screen for all to see. no dedicated view for partners during the meeting</li>
+<li>2 times a year</li>
+<li>all layers</li>
+</ol></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content">
+    <p><strong>Key learning:</strong> The clarifying questions reveal critical design constraints. "Projector-first with no partner devices" completely changes the interaction model &mdash; everything must be readable from a distance, and only the organizer controls the flow. "2x/year" means the UI must be instantly obvious with zero training. Your domain answers shape every design decision that follows.</p>
+  </div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Perfect. Those answers sharpen the design significantly — especially the projector-only model (no partner devices during the meeting) and bi-annual frequency (low learning curve tolerance means the UI must be instantly obvious).</p>
+<p>Here's what I'll add to the document:</p>
+<hr class="divider">
+<h2>Executive Summary</h2>
+<h3>Project Vision</h3>
+<p>Transform BATbern's bi-annual partner meetings from manual, verbal processes into an interactive, system-driven experience. Six static agenda items become live features with pre-meeting preparation, real-time meeting execution via a projector-driven presenter mode, and post-meeting async workflows. The system captures meeting minutes as a natural byproduct of use — no one "takes notes," the meeting documents itself.</p>
+<h3>Target Users</h3>
+<p><strong>Primary: Organizer (Meeting Driver)</strong></p>
+<ul>
+<li>Runs the meeting from their laptop, projected for all partners to see</li>
+<li>Needs a streamlined controller interface: advance agenda items, trigger votes, upload documents, take notes</li>
+<li>Tech-savvy, but uses this only twice a year — interface must be self-explanatory</li>
+<li>Success = running the meeting without ever leaving the system</li>
+</ul>
+<p><strong>Secondary: Present Partner (In-Room Participant)</strong></p>
+<ul>
+<li>Views the projected screen — no personal device interaction during the meeting</li>
+<li>Participates verbally; organizer captures their input (votes, attendance)</li>
+<li>Needs to see clear, readable content on the projector (large text, high contrast)</li>
+</ul>
+<p><strong>Secondary: Absent Partner (Async Participant)</strong></p>
+<ul>
+<li>Receives meeting minutes and participates in post-meeting workflows via the partner portal</li>
+<li>Needs complete context: what was presented, what was decided, what requires their action</li>
+<li>Interacts via desktop or mobile for fee acceptance, feedback pulse</li>
+</ul>
+<p><strong>Tertiary: New Partner (First-Year Onboarding)</strong></p>
+<ul>
+<li>First exposure to the BATbern partner meeting system</li>
+<li>Needs to understand the community and process quickly — onboarding tour, context package</li>
+<li>Visible "New" badge in the Who Is Who gallery signals veterans to be welcoming</li>
+</ul>
+<p><strong>Tertiary: Stand-In (Non-System Delegate)</strong></p>
+<ul>
+<li>Attends on behalf of a partner company without a system account</li>
+<li>Organizer records their presence and proxies their votes with clear attribution</li>
+<li>No login required — represented via free-text name in the system</li>
+</ul>
+<h3>Key Design Challenges</h3>
+<ol>
+<li><strong>Projector-First Design</strong> — The primary consumption mode during the meeting is a projector. This means large typography, high contrast, minimal clutter, and no interactions that require individual partner devices. The organizer's laptop is the sole input device.</li>
+</ol>
+<ol>
+<li><strong>Bi-Annual Usage = Zero Learning Curve</strong> — Partners see this system twice a year. The organizer uses it twice a year. Every screen must be immediately understandable without training or memory of last time. Strong visual affordances, obvious next actions, no hidden features.</li>
+</ol>
+<ol>
+<li><strong>Minutes as Byproduct</strong> — Every organizer action (toggling attendance, triggering a vote, uploading a document, typing a note) must silently contribute to auto-assembling meeting minutes. The UX challenge: make this invisible during the meeting, reviewable after.</li>
+</ol>
+<ol>
+<li><strong>Async Continuity</strong> — Post-meeting workflows (fee acceptance, feedback, action item review) must feel like a natural extension of the meeting, not a disconnected system. Absent partners need enough context to participate meaningfully.</li>
+</ol>
+<ol>
+<li><strong>Stand-In Governance</strong> — Proxy voting and delegation must have clear attribution chains without adding complexity. The organizer is the sole operator — stand-in representation must be quick and unambiguous.</li>
+</ol>
+<h3>Design Opportunities</h3>
+<ol>
+<li><strong>"The Meeting Runs Itself"</strong> — A well-designed presenter mode where the organizer walks through the agenda and the system captures everything creates an experience that feels magical. No note-taker, no separate spreadsheet, no "can someone email the PDF" — it just works.</li>
+</ol>
+<ol>
+<li><strong>Reusable Interaction Vocabulary</strong> — Four components (vote, document viewer, note-taker, attendance gallery) recur across all agenda items. Consistent patterns mean partners instantly recognize "oh, this is a vote" regardless of whether it's audit sign-off or budget approval.</li>
+</ol>
+<ol>
+<li><strong>Institutional Memory</strong> — Year-over-year meeting archives with analytics snapshots, decision records, and action item history build a governance asset. "What did we decide about fees in 2024?" becomes a 10-second lookup.</li>
+</ol>
+<ol>
+<li><strong>Projector-Optimized Dark Mode</strong> — The existing BATbern dark theme (zinc-950 + blue-400) is perfect for projector readability. This becomes a distinctive visual identity for partner meetings — professional, high-contrast, unmistakably "meeting mode."</li>
+</ol>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — dig deeper into any of these areas</li>
+<li><strong>[P]</strong> Party Mode — get multi-agent perspectives on the project understanding</li>
+<li><strong>[C]</strong> Continue — save this to the document and move to core experience definition</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Now loading Step 3 — Core Experience Definition.</p></div>
+</div>
+</section>
+
+<section id="core-experience">
+  <div class="section-header">
+    <div class="phase-badge phase-1">3</div>
+    <div class="section-header-text"><h2>Core Experience &amp; Emotional Design</h2><p>Steps 3–4: Defining the central interaction model and emotional design targets</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now let's dig into the heart of the experience, Nissim. Given everything we've established, let me paint the picture and then get your input on the nuances.</p>
+<hr class="divider">
+<h3>Core Experience — My Analysis</h3>
+<p>Based on the brainstorming and our project understanding, here's what I believe the core experience looks like. Let me check this with you:</p>
+<p><strong>The ONE thing the organizer will do most:</strong> Walk through the meeting agenda item by item, with each item presenting its specific interaction (gallery, vote, document, notes) — and the system silently building the minutes behind the scenes.</p>
+<p><strong>The critical interaction to get right:</strong> The <strong>Presenter/Controller Mode</strong> (#29). This is the entire meeting experience. If the organizer can smoothly advance through agenda items, trigger votes, toggle attendance, upload documents, and take notes — all from one continuous flow — everything works. If this feels clunky, nothing else matters.</p>
+<p><strong>What should be completely effortless:</strong></p>
+<ul>
+<li>Advancing to the next agenda item (one click)</li>
+<li>Casting a vote on behalf of a partner (one click per partner)</li>
+<li>Toggling partner presence in the Who Is Who gallery (one click)</li>
+<li>Adding a note to the current agenda item (always-visible text input)</li>
+<li>The minutes assembling themselves (zero clicks — it just happens)</li>
+</ul>
+<p><strong>What should happen automatically:</strong></p>
+<ul>
+<li>Attendance list populates the minutes when the organizer marks who's present</li>
+<li>Vote results get recorded in the minutes when voting closes</li>
+<li>Uploaded documents get attached to the minutes</li>
+<li>Analytics snapshots get captured when the analytics item is presented</li>
+<li>Action items from previous meetings surface when creating the next meeting</li>
+</ul>
+<p><strong>Platform context:</strong></p>
+<ul>
+<li><strong>Web only</strong> — runs in the browser on the organizer's laptop, projected to room</li>
+<li><strong>Mouse/keyboard primary</strong> — organizer operates from their desk</li>
+<li><strong>No offline needed</strong> — meetings happen in venues with connectivity</li>
+<li><strong>Projector-optimized</strong> — dark theme, large type, high contrast, minimal UI chrome</li>
+</ul>
+<p><strong>Critical success moments:</strong></p>
+<ol>
+<li><strong>"It just captured everything"</strong> — After the meeting, organizer clicks "Review Minutes" and sees a complete, well-structured document they barely need to edit</li>
+<li><strong>"That was smooth"</strong> — Moving from greeting → analytics → audit → budget → topics feels like walking through a presentation, not operating software</li>
+<li><strong>"Everyone got the minutes"</strong> — One click to publish, all partners (present + absent) receive the complete record</li>
+<li><strong>"Nothing fell through the cracks"</strong> — Opening next meeting's prep and seeing carried-forward action items from last time</li>
+</ol>
+<p><strong>Where current solutions fail:</strong></p>
+<ul>
+<li>Someone has to manually take notes and email them</li>
+<li>PDFs get emailed around separately from any meeting context</li>
+<li>Vote results are verbal agreements with no traceable record</li>
+<li>Action items live in someone's head or a separate spreadsheet</li>
+<li>Absent partners get a phone call summary at best</li>
+</ul>
+<hr class="divider">
+<p>From all this, here are the <strong>Experience Principles</strong> I'd propose for this feature set:</p>
+<table>
+<tr><th>#</th><th>Principle</th><th>What It Means in Practice</th></tr>
+<tr><td>1</td><td><strong>One Flow, One Screen</strong></td><td>The organizer never leaves the presenter mode during the meeting. Every agenda item renders in the same main area. Navigation is linear: back/next.</td></tr>
+<tr><td>2</td><td><strong>Capture by Using</strong></td><td>Minutes build themselves from the organizer's natural actions. No "save to minutes" button — toggling attendance IS recording attendance. Voting IS recording the vote.</td></tr>
+<tr><td>3</td><td><strong>Projector-Readable Always</strong></td><td>Every screen must be legible from 5 meters on a projector. Large type (min 24px body), high contrast (dark theme), generous whitespace, no dense tables.</td></tr>
+<tr><td>4</td><td><strong>Twice-a-Year Obvious</strong></td><td>No feature should require remembering how it worked last time. Labels > icons. Explicit buttons > gestures. Guided flow > open dashboard.</td></tr>
+<tr><td>5</td><td><strong>The Meeting Extends Beyond the Room</strong></td><td>Absent partners, async fee votes, feedback pulses, and published minutes ensure the meeting's value isn't limited to the 90 minutes in the room.</td></tr>
+</table>
+<hr class="divider">
+<p><strong>Do these principles resonate, Nissim?</strong> Anything you'd adjust, add, or push back on?</p>
+<p>Once you're happy, here's what I'll save to the document:</p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — refine the core experience definition</li>
+<li><strong>[P]</strong> Party Mode — get multi-perspective input</li>
+<li><strong>[C]</strong> Continue — save and move to emotional response definition</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 4 — Emotional Response Definition.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now let's talk about feelings, Nissim. This matters more than people think — emotional design is what separates "functional software" from "software people actually want to use."</p>
+<p>Let me paint the emotional picture I'm seeing for the Active Partner Meeting Agenda, based on everything we've established. Then tell me what resonates and what's off.</p>
+<hr class="divider">
+<h3>The Emotional Story Across the Meeting Lifecycle</h3>
+<p><strong>Before the meeting — the Organizer preparing:</strong></p>
+<p>The organizer should feel <strong>confident and in control</strong>. The prep checklist shows green checkmarks: audit PDF uploaded, budget doc ready, RSVP at 10/12, topic voting closed. The feeling is: "I'm ready. The system has my back." Not anxious, not overwhelmed. Like a pilot going through a pre-flight checklist — methodical, thorough, calm.</p>
+<p><strong>Starting the meeting — Presenter Mode activates:</strong></p>
+<p>The moment the organizer clicks into presenter mode, there should be a subtle shift — like stepping onto a stage. The dark theme fills the screen. The agenda sidebar appears. The Who Is Who gallery loads. The feeling: <strong>"This is professional. This is BATbern."</strong> Pride in the tool. The partners in the room see something polished projected — not a spreadsheet, not a PowerPoint.</p>
+<p><strong>During the meeting — flowing through agenda items:</strong></p>
+<p>Each item transition should feel <strong>effortless and rhythmic</strong>. Click next → new interaction appears → handle it → click next. The organizer should feel like a conductor, not a data entry clerk. No confusion about what's next. No "wait, how do I do this?" moments. The dominant emotion: <strong>flow state efficiency</strong>. The partners watching should feel <strong>trust</strong> — this organization runs things properly.</p>
+<p><strong>After a vote — the "it just worked" moment:</strong></p>
+<p>When the organizer triggers a vote and 8/8 partners approve the audit report, the result appears instantly: "Financial Report 2025 — Approved (8/8)." The feeling: <strong>satisfaction and accomplishment</strong>. A decision was made, recorded, and historized in 10 seconds. No ambiguity, no "did everyone agree?"</p>
+<p><strong>After the meeting — reviewing minutes:</strong></p>
+<p>The organizer clicks "Review Minutes" and sees a complete document: attendees listed, analytics snapshot attached, audit PDF + vote result, budget doc + vote result, topic discussion notes, action items. The feeling: <strong>genuine delight</strong> — "This actually wrote itself." The aha moment that justifies the entire system.</p>
+<p><strong>For the absent partner — receiving the minutes:</strong></p>
+<p>Opening the email notification and seeing the complete meeting record with everything that happened. The feeling: <strong>included, not excluded</strong>. Then seeing the async fee acceptance request — they can participate even though they weren't there. <strong>Respected</strong> — their input still matters.</p>
+<p><strong>For the new partner — first meeting:</strong></p>
+<p>Seeing their company in the Who Is Who gallery with a "New" badge. Veterans glancing at the screen and making a point to welcome them. The feeling: <strong>belonging</strong>. "I'm part of this community now."</p>
+<hr class="divider">
+<h3>Emotion-to-Design Connections</h3>
+<table>
+<tr><th>Desired Emotion</th><th>UX Design Approach</th></tr>
+<tr><td><strong>Confidence</strong> (organizer prep)</td><td>Meeting prep checklist with clear green/yellow/red status indicators. Nothing ambiguous.</td></tr>
+<tr><td><strong>Pride</strong> (presenter mode)</td><td>Dark theme, polished transitions, professional typography. The projected screen looks like it belongs at a Swiss tech conference.</td></tr>
+<tr><td><strong>Flow</strong> (during meeting)</td><td>Linear navigation, consistent layout, no modal interruptions, no page loads between items.</td></tr>
+<tr><td><strong>Trust</strong> (partners watching)</td><td>Clean, readable projector display. Vote tallies shown transparently. Document viewer works instantly.</td></tr>
+<tr><td><strong>Delight</strong> (auto-minutes)</td><td>The "Review Minutes" screen should have a subtle moment of satisfaction — complete, formatted, ready.</td></tr>
+<tr><td><strong>Inclusion</strong> (absent partner)</td><td>Same information, same context, same ability to act — just async.</td></tr>
+<tr><td><strong>Belonging</strong> (new partner)</td><td>Subtle "New" badge, partner profile cards showing company + role + photo.</td></tr>
+</table>
+<h3>Emotions to Avoid</h3>
+<table>
+<tr><th>Avoid</th><th>How We Prevent It</th></tr>
+<tr><td><strong>Anxiety</strong> ("did it save?")</td><td>Auto-save with visible indicators. Minutes build progressively — never a big-bang at the end.</td></tr>
+<tr><td><strong>Confusion</strong> ("what do I click?")</td><td>Large, labeled buttons. Linear flow. No hidden menus. Twice-a-year obvious.</td></tr>
+<tr><td><strong>Embarrassment</strong> (projector shows something wrong)</td><td>Preview mode before meeting. Prep checklist catches missing uploads.</td></tr>
+<tr><td><strong>Frustration</strong> (technical failure mid-meeting)</td><td>Graceful degradation. If document viewer fails, show download link. If vote fails, allow manual note.</td></tr>
+<tr><td><strong>Exclusion</strong> (absent partner)</td><td>Full minutes + async workflows ensure absent = delayed, never absent = excluded.</td></tr>
+</table>
+<hr class="divider">
+<p><strong>Here's what I'll add to the document:</strong></p>
+<p>The full emotional response section above — primary goals, journey mapping, emotion-to-design connections, and emotions to avoid.</p>
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — dig deeper into any emotional dimension</li>
+<li><strong>[P]</strong> Party Mode — multi-agent perspectives on emotional design</li>
+<li><strong>[C]</strong> Continue — save and move to inspiration analysis</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now let me find the end of the document to append.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 5 — Inspiration Analysis.</p></div>
+</div>
+</section>
+
+<section id="inspiration">
+  <div class="section-header">
+    <div class="phase-badge phase-1">4</div>
+    <div class="section-header-text"><h2>Inspiration Analysis</h2><p>Step 5: Sally asks about reference tools &mdash; Nissim lists OneNote, Miro, PowerPoint, Mentimeter</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now let's learn from products that solve similar problems, Nissim. Let me ask you:</p>
+<p><strong>What apps or tools do your target users already love and use?</strong> Think about:</p>
+<ul>
+<li>Tools your organizers or partners use for meetings, voting, or document management</li>
+<li>Presentation/meeting tools you've seen that feel polished</li>
+<li>Any app (even unrelated) where you thought "I wish our meetings worked like that"</li>
+</ul>
+<p>Some prompts to jog your thinking:</p>
+<ul>
+<li>Do you use tools like Mentimeter, Slido, or Miro for interactive sessions?</li>
+<li>Any board meeting tools like Boardable, Diligent, or even simple tools like Google Meet with Jamboard?</li>
+<li>Retrospective tools like Retrium, EasyRetro, or FunRetro?</li>
+<li>Presentation tools like Keynote, Prezi, or Pitch that feel great to drive?</li>
+</ul>
+<p>What 2-3 apps come to mind as inspirations for how this should <em>feel</em>?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>oneNote for meeting minutes. miro for pi days in SAFE, ms powerpoint, mentimeter</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content">
+    <p><strong>Key learning:</strong> This question is deceptively important. By naming tools your users actually use, the agent can borrow familiar interaction patterns. "PowerPoint" tells the agent that the organizer already thinks in terms of slides and presenter mode. "Mentimeter" tells the agent that projector-first voting is a known pattern. Your answers here directly influence the UI metaphors the agent chooses.</p>
+  </div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Excellent picks, Nissim — each one maps perfectly to a specific aspect of your meeting system. Let me break down what each does brilliantly and what we should steal, adapt, or avoid.</p>
+<hr class="divider">
+<h3>Inspiring Products Analysis</h3>
+<h4>1. OneNote — Meeting Minutes</h4>
+<p><strong>What it does well:</strong></p>
+<ul>
+<li><strong>Freeform note-taking with structure</strong> — You can type anywhere, but sections and pages give it organization. Notes feel effortless because there's no rigid template forcing you into a format.</li>
+<li><strong>Auto-save is invisible</strong> — You never think about saving. It just happens. This is exactly the "Capture by Using" principle.</li>
+<li><strong>Sections as agenda items</strong> — Each section tab maps naturally to a meeting topic. You click the tab, you're in that topic's notes.</li>
+<li><strong>Rich content embedding</strong> — Paste images, attach files, embed tables — all inline. The document becomes a living artifact.</li>
+</ul>
+<p><strong>What we should take:</strong></p>
+<ul>
+<li>The mental model of "sections = agenda items" maps directly to our agenda sidebar</li>
+<li>Invisible auto-save — no save button, no "saving..." spinner, just a subtle checkmark</li>
+<li>The ability to mix structured content (vote results, attendance) with free-form notes in the same space</li>
+</ul>
+<p><strong>What to avoid:</strong></p>
+<ul>
+<li>OneNote's freeform canvas can be messy — our minutes need more structure since they auto-assemble</li>
+<li>The navigation can get lost in deep hierarchies — we need flat, linear agenda progression</li>
+</ul>
+<hr class="divider">
+<h4>2. Miro — PI Planning Days (SAFe)</h4>
+<p><strong>What it does well:</strong></p>
+<ul>
+<li><strong>The "infinite board" feeling</strong> — Everything is visible at once, spatially organized. For PI planning, teams see all their work laid out.</li>
+<li><strong>Facilitated sessions</strong> — Miro has a facilitator mode where one person drives what everyone sees. This is <em>exactly</em> our presenter mode concept.</li>
+<li><strong>Voting/dot voting</strong> — Built-in voting mechanics where people place dots on items. Simple, visual, instant results.</li>
+<li><strong>Timer + facilitation tools</strong> — Countdown timers, spotlight features, "bring everyone to me" — tools for the person running the session.</li>
+</ul>
+<p><strong>What we should take:</strong></p>
+<ul>
+<li><strong>Facilitator/presenter mode pattern</strong> — The organizer controls the view; everyone follows. Miro proved this works for group sessions.</li>
+<li><strong>Built-in voting</strong> — Miro's dot voting is instantly understood. Our approve/decline is even simpler, but the visual clarity of "8 green dots = approved" is the right pattern.</li>
+<li><strong>Agenda as a spatial journey</strong> — In Miro PI planning, you move from board to board. Our agenda items are the same concept: move from item to item.</li>
+</ul>
+<p><strong>What to avoid:</strong></p>
+<ul>
+<li>Miro's complexity — it's a general-purpose tool with a massive learning curve. We need purpose-built simplicity.</li>
+<li>The "too much on screen" problem — Miro can overwhelm. Our projector-first design demands focus on one thing at a time.</li>
+</ul>
+<hr class="divider">
+<h4>3. Microsoft PowerPoint — Presenter Mode</h4>
+<p><strong>What it does well:</strong></p>
+<ul>
+<li><strong>Presenter view vs. audience view</strong> — The presenter sees notes, next slide, timer. The audience sees only the slide. This dual-view model is exactly our organizer laptop vs. projector concept.</li>
+<li><strong>Linear slide progression</strong> — Click to advance. Everyone knows how it works. Zero learning curve.</li>
+<li><strong>Slide transitions feel smooth</strong> — Moving between slides has visual continuity. No page reloads, no jarring state changes.</li>
+<li><strong>Confidence monitor</strong> — The presenter always knows what's next. The "upcoming slide" preview reduces anxiety.</li>
+</ul>
+<p><strong>What we should take:</strong></p>
+<ul>
+<li><strong>The presenter view mental model</strong> — Organizer sees: current agenda item + sidebar with full agenda + notes panel. Projector shows: clean, focused content.</li>
+<li><strong>Click-to-advance simplicity</strong> — Our "Next" button should feel exactly like clicking to the next slide. Universally understood.</li>
+<li><strong>"What's next" preview</strong> — Show the next agenda item title in the sidebar so the organizer always knows what's coming.</li>
+<li><strong>Slide-like transitions</strong> — Smooth, fast transitions between agenda items. No full page reloads.</li>
+</ul>
+<p><strong>What to avoid:</strong></p>
+<ul>
+<li>PowerPoint is passive — slides don't have interactive elements. We need to enhance the "slide" with votes, galleries, document viewers.</li>
+<li>The "blank slide" anxiety — if an agenda item has no content yet (e.g., no document uploaded), we need graceful handling, not an empty screen.</li>
+</ul>
+<hr class="divider">
+<h4>4. Mentimeter — Live Audience Interaction</h4>
+<p><strong>What it does well:</strong></p>
+<ul>
+<li><strong>Instant voting with live results</strong> — Ask a question, audience votes, results animate in real-time on the projector. The visual feedback is powerful.</li>
+<li><strong>Projector-first design</strong> — Every Mentimeter screen is designed to look great projected. Large fonts, high contrast, animated charts.</li>
+<li><strong>Zero friction voting</strong> — Participants go to menti.com, enter a code, vote. No account needed.</li>
+<li><strong>Results are the content</strong> — The vote visualization IS the presentation. Results appear as beautiful bar charts or word clouds.</li>
+</ul>
+<p><strong>What we should take:</strong></p>
+<ul>
+<li><strong>Projector-optimized result display</strong> — When a vote completes, show the result large and clear: "Approved — 8/8 partners" with a visual bar or checkmarks. Make the result the hero of the screen.</li>
+<li><strong>Animation on result reveal</strong> — Mentimeter's animated bar charts building up create a moment of anticipation. A subtle animation when vote results appear adds delight.</li>
+<li><strong>The "no account needed" philosophy for stand-ins</strong> — Stand-ins don't need accounts. The organizer proxies. Same zero-friction spirit.</li>
+</ul>
+<p><strong>What to avoid:</strong></p>
+<ul>
+<li>Mentimeter requires individual devices — our partners don't interact on their own devices. The organizer is the sole operator.</li>
+<li>Mentimeter's results can be noisy with large audiences — our 8-12 partners means results are simple and should stay simple (no word clouds, no scatter plots).</li>
+</ul>
+<hr class="divider">
+<h3>Transferable UX Patterns</h3>
+<table>
+<tr><th>Pattern</th><th>Source</th><th>How We Apply It</th></tr>
+<tr><td><strong>Sections as agenda items</strong></td><td>OneNote</td><td>Agenda sidebar with tabs/items, click to navigate</td></tr>
+<tr><td><strong>Invisible auto-save</strong></td><td>OneNote</td><td>All organizer actions auto-save. Subtle indicator only.</td></tr>
+<tr><td><strong>Facilitator controls the view</strong></td><td>Miro</td><td>Organizer's presenter mode drives what the projector shows</td></tr>
+<tr><td><strong>Built-in voting with visual results</strong></td><td>Miro + Mentimeter</td><td>Approve/decline per partner with instant visual tally</td></tr>
+<tr><td><strong>Presenter view vs. audience view</strong></td><td>PowerPoint</td><td>Organizer laptop shows controls + notes; projector shows clean content</td></tr>
+<tr><td><strong>Click-to-advance linear flow</strong></td><td>PowerPoint</td><td>Next/back buttons advance through agenda items like slides</td></tr>
+<tr><td><strong>"What's next" preview</strong></td><td>PowerPoint</td><td>Sidebar shows upcoming agenda item title</td></tr>
+<tr><td><strong>Projector-optimized display</strong></td><td>Mentimeter</td><td>Large fonts, high contrast, results as visual heroes</td></tr>
+<tr><td><strong>Animated result reveal</strong></td><td>Mentimeter</td><td>Subtle animation when vote results appear — moment of delight</td></tr>
+<tr><td><strong>Rich inline content</strong></td><td>OneNote</td><td>Notes, documents, vote results, attendance — all in one flowing view</td></tr>
+</table>
+<h3>Anti-Patterns to Avoid</h3>
+<table>
+<tr><th>Anti-Pattern</th><th>Source</th><th>Why We Avoid It</th></tr>
+<tr><td><strong>Freeform canvas without structure</strong></td><td>OneNote/Miro</td><td>Our minutes need predictable structure for auto-assembly</td></tr>
+<tr><td><strong>General-purpose complexity</strong></td><td>Miro</td><td>Purpose-built simplicity beats flexible power tools for bi-annual use</td></tr>
+<tr><td><strong>Individual device requirement</strong></td><td>Mentimeter</td><td>Partners don't use devices during the meeting — organizer is sole operator</td></tr>
+<tr><td><strong>Passive content only</strong></td><td>PowerPoint</td><td>Each "slide" must support interaction (votes, galleries, document viewers)</td></tr>
+<tr><td><strong>Empty states without guidance</strong></td><td>PowerPoint</td><td>If an agenda item has no content, show clear "Upload document" or "No items" state</td></tr>
+<tr><td><strong>Dense data tables on projector</strong></td><td>Excel/Miro</td><td>Projector-readable means max 8-12 items visible, large text, no scrolling</td></tr>
+</table>
+<h3>Design Inspiration Strategy</h3>
+<p><strong>Adopt directly:</strong></p>
+<ul>
+<li>PowerPoint's presenter vs. audience dual-view model (organizer laptop vs. projector)</li>
+<li>PowerPoint's click-to-advance linear flow for agenda navigation</li>
+<li>OneNote's invisible auto-save pattern</li>
+<li>Mentimeter's projector-optimized result display with large, high-contrast visuals</li>
+</ul>
+<p><strong>Adapt for our context:</strong></p>
+<ul>
+<li>Miro's facilitator mode → simplified to linear agenda progression (no infinite canvas)</li>
+<li>Mentimeter's audience voting → organizer-proxied voting (one person clicks for all)</li>
+<li>OneNote's freeform sections → structured agenda items with specific interaction types per item</li>
+<li>Miro's dot voting → simple approve/decline with clear visual tally</li>
+</ul>
+<p><strong>Avoid entirely:</strong></p>
+<ul>
+<li>Multi-device interaction patterns (partners don't use devices during meetings)</li>
+<li>General-purpose tool complexity (purpose-built for bi-annual partner meetings)</li>
+<li>Dense data visualizations on projector (keep it large, simple, readable at 5 meters)</li>
+<li>Free-form canvas layouts (structured, predictable auto-assembly for minutes)</li>
+</ul>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — dig deeper into any pattern</li>
+<li><strong>[P]</strong> Party Mode — multi-perspective pattern analysis</li>
+<li><strong>[C]</strong> Continue — save and move to design system choice</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 6 — Design System Choice.</p></div>
+</div>
+</section>
+
+<section id="design-system">
+  <div class="section-header">
+    <div class="phase-badge phase-1">5</div>
+    <div class="section-header-text"><h2>Design System, Experience Mechanics &amp; Visual Foundation</h2><p>Steps 6–8: Applying existing BATbern design system, defining the signature interaction, visual spec</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Nissim, this step is straightforward because BATbern already has an established design system. Let me confirm what we're working with and identify what's new for the partner meeting features.</p>
+<hr class="divider">
+<h3>Design System — Already Decided</h3>
+<p>BATbern uses <strong>Option 3: Themeable System</strong> — specifically:</p>
+<ul>
+<li><strong>MUI (Material-UI) v5+</strong> as the React component foundation (80% standard components)</li>
+<li><strong>Tailwind CSS</strong> for the dark-themed public pages</li>
+<li><strong>Custom BATbern components</strong> (20%) for domain-specific features</li>
+<li><strong>Atomic Design Structure</strong>: Atoms → Molecules → Organisms → Templates</li>
+</ul>
+<p>This is already documented in your <code>front-end-spec.md</code> with:</p>
+<ul>
+<li>Full color palette (light theme for portals, dark theme for public pages)</li>
+<li>Typography (Inter primary, JetBrains Mono for code)</li>
+<li>8px spacing grid, 12-column layout</li>
+<li>Component library with 9+ defined components</li>
+<li>WCAG 2.1 AA accessibility compliance</li>
+</ul>
+<h3>What's New for Partner Meeting Features</h3>
+<p>The question isn't <em>which</em> design system — it's <strong>how do we extend the existing system</strong> for the meeting presenter mode and its unique requirements.</p>
+<p><strong>Key design system decisions for this feature:</strong></p>
+<p><strong>1. Presenter Mode = Dark Theme (Tailwind)</strong></p>
+<p>The projector-optimized meeting experience should use the <strong>dark theme</strong> (zinc-950 + blue-400), not the light portal theme. Rationale:</p>
+<ul>
+<li>Better projector readability (high contrast on dark background)</li>
+<li>Visually distinct from regular portal usage — partners see "meeting mode"</li>
+<li>Already exists in the design system for the public landing page</li>
+<li>Aligns with the "pride" emotional goal — looks polished and professional</li>
+</ul>
+<p><strong>2. New Reusable Components Needed</strong></p>
+<table>
+<tr><th>Component</th><th>Base</th><th>Extends</th></tr>
+<tr><td><strong>Agenda Sidebar</strong></td><td>MUI Stepper (vertical)</td><td>Custom dark theme, active/completed/upcoming states, click to navigate</td></tr>
+<tr><td><strong>Vote Panel</strong></td><td>MUI ButtonGroup + Card</td><td>Approve/decline per partner, result tally, animated reveal</td></tr>
+<tr><td><strong>Document Viewer</strong></td><td>Embedded PDF viewer + MUI Card</td><td>Upload zone, inline viewer, dark-themed chrome</td></tr>
+<tr><td><strong>Note Panel</strong></td><td>MUI TextField (multiline)</td><td>Always-visible, auto-save, attaches to current agenda item</td></tr>
+<tr><td><strong>Partner Gallery</strong></td><td>MUI Grid + Avatar</td><td>Company logo, partner name, photo, presence badge, "New" badge</td></tr>
+<tr><td><strong>Meeting Prep Checklist</strong></td><td>MUI List + Chip</td><td>Green/yellow/red status per item, linked to agenda readiness</td></tr>
+<tr><td><strong>Action Item Card</strong></td><td>MUI Card + Chip</td><td>Title, owner, deadline, status badge, carry-forward indicator</td></tr>
+<tr><td><strong>Minutes Preview</strong></td><td>MUI Paper + Typography</td><td>Auto-assembled document view, section per agenda item, editable</td></tr>
+</table>
+<p><strong>3. Projector Typography Scale</strong></p>
+<p>The existing type scale needs a <strong>projector variant</strong> for presenter mode:</p>
+<table>
+<tr><th>Element</th><th>Standard (Portal)</th><th>Projector (Presenter Mode)</th><th>Rationale</th></tr>
+<tr><td>H1</td><td>40px</td><td>56px</td><td>Readable at 5+ meters</td></tr>
+<tr><td>H2</td><td>32px</td><td>44px</td><td>Section headings clear on projection</td></tr>
+<tr><td>H3</td><td>24px</td><td>32px</td><td>Subsection titles</td></tr>
+<tr><td>Body</td><td>16px</td><td>24px</td><td>Minimum readable body text on projector</td></tr>
+<tr><td>Caption</td><td>12px</td><td>18px</td><td>Metadata still legible</td></tr>
+</table>
+<p><strong>4. Partner Role Color in Dark Theme</strong></p>
+<p>Partner's accent orange (#E67E22) needs dark-theme variants:</p>
+<ul>
+<li>On zinc-950 background: <code>text-orange-400</code> (#FB923C) for AA contrast</li>
+<li>Badge backgrounds: <code>bg-orange-400/10</code> with <code>text-orange-400</code> text</li>
+<li>Vote approved: <code>text-green-400</code> (#4ADE80), declined: <code>text-red-400</code> (#F87171)</li>
+</ul>
+<h3>Implementation Approach</h3>
+<ul>
+<li>All new components built as <strong>Organisms</strong> in the atomic design hierarchy</li>
+<li>Reuse existing MUI atoms (Button, TextField, Avatar, Chip, Card)</li>
+<li>Presenter mode is a dedicated <strong>Layout Template</strong> (<code>PresenterLayout</code>) separate from <code>OrganizerLayout</code></li>
+<li>Dark theme tokens extracted as a <code>presenterTheme</code> MUI theme override</li>
+<li>Components designed once, rendered in both organizer control view and projector view with different detail levels</li>
+</ul>
+<h3>Customization Strategy</h3>
+<ul>
+<li><strong>No new design system</strong> — extend the existing BATbern system</li>
+<li><strong>New theme variant</strong>: <code>presenterTheme</code> (dark, large typography, projector-optimized)</li>
+<li><strong>New component category</strong>: <code>meeting/</code> folder alongside existing component folders</li>
+<li><strong>Shared interaction patterns</strong>: Vote and Document Viewer components reusable for future non-meeting features</li>
+</ul>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — explore specific component design decisions</li>
+<li><strong>[P]</strong> Party Mode — get architect/dev perspectives on design system extension</li>
+<li><strong>[C]</strong> Continue — save and move to defining the experience flow</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 7 — Defining Experience.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now we're getting to the heart of it, Nissim. This is where we define THE interaction — the one that, if a partner told a colleague about BATbern's meeting system, they'd describe <em>this</em>.</p>
+<hr class="divider">
+<h3>The Defining Experience</h3>
+<p>If Tinder is "swipe to match" and Instagram is "share perfect moments with filters," then BATbern's partner meeting system is:</p>
+<p><strong>"Walk through the agenda, and the meeting documents itself."</strong></p>
+<p>That's what the organizer describes to other community organizers. That's what makes partners think "these people run things properly." The defining experience is the <strong>Presenter Mode flow</strong> — advancing through agenda items while the system silently captures everything into minutes.</p>
+<h3>User Mental Model</h3>
+<p><strong>How organizers currently solve this:</strong></p>
+<ul>
+<li>Open PowerPoint with the agenda points</li>
+<li>Have someone take notes in a Word doc or OneNote</li>
+<li>Show PDFs by opening them in a separate app</li>
+<li>Ask "all in favor?" verbally, note "approved" by hand</li>
+<li>After the meeting: compile notes, attach PDFs, email to everyone</li>
+<li>Action items: write in an email, hope people remember</li>
+</ul>
+<p><strong>The mental model they bring:</strong></p>
+<p>The organizer already thinks of a meeting as "a sequence of agenda items we walk through." They're used to PowerPoint's linear slide model. The mental model we're building on is: <strong>the meeting IS a presentation, but each slide does something.</strong></p>
+<p><strong>Where confusion could happen:</strong></p>
+<ul>
+<li>"Where did my notes go?" → Must be visible that notes are attached to the current item</li>
+<li>"Did the vote save?" → Instant visual confirmation needed</li>
+<li>"How do I go back to change something?" → Back button must work, non-destructively</li>
+</ul>
+<h3>Success Criteria</h3>
+<table>
+<tr><th>Criteria</th><th>Measurable Target</th></tr>
+<tr><td><strong>Meeting execution time</strong></td><td>Full 6-item agenda completed in presenter mode without leaving the system</td></tr>
+<tr><td><strong>Minutes completeness</strong></td><td>Auto-assembled minutes contain 90%+ of meeting content with minimal manual editing</td></tr>
+<tr><td><strong>Zero training needed</strong></td><td>New organizer can run a meeting after a 2-minute orientation (or cold, with just the prep checklist)</td></tr>
+<tr><td><strong>Vote recording</strong></td><td>Every vote captured with exact partner-level attribution in under 30 seconds</td></tr>
+<tr><td><strong>Post-meeting distribution</strong></td><td>Minutes published and sent to all partners within 5 minutes of meeting end</td></tr>
+<tr><td><strong>Action item persistence</strong></td><td>100% of action items carry forward to next meeting — nothing lost</td></tr>
+</table>
+<h3>Novel vs. Established Patterns</h3>
+<p>This is a <strong>combination of familiar patterns used in an innovative way:</strong></p>
+<table>
+<tr><th>Aspect</th><th>Pattern Type</th><th>What We Use</th></tr>
+<tr><td><strong>Linear agenda flow</strong></td><td>Established (PowerPoint)</td><td>Click-to-advance through items</td></tr>
+<tr><td><strong>Auto-assembling minutes</strong></td><td><strong>Novel</strong></td><td>System captures outputs of each interaction silently</td></tr>
+<tr><td><strong>Proxied voting</strong></td><td>Novel-ish</td><td>Organizer clicks on behalf of partners (like a teller in parliament)</td></tr>
+<tr><td><strong>Embedded document viewer</strong></td><td>Established</td><td>PDF viewer inline in the agenda item</td></tr>
+<tr><td><strong>Presence gallery</strong></td><td>Established (video call participant grids)</td><td>Who Is Who with presence badges</td></tr>
+<tr><td><strong>Action item carry-forward</strong></td><td>Novel</td><td>System surfaces open items from previous meetings automatically</td></tr>
+</table>
+<p>The <strong>novel patterns</strong> are:</p>
+<ol>
+<li><strong>Minutes as byproduct</strong> — no existing meeting tool does this well. We're pioneering the "capture by using" pattern where every organizer action contributes to a document they never explicitly create.</li>
+<li><strong>Proxied group voting</strong> — the organizer casting votes for each partner in turn is unusual but fits our single-device constraint perfectly. Visual: partner name → approve/decline button → instant tally.</li>
+</ol>
+<h3>Experience Mechanics</h3>
+<p><strong>1. Initiation — Starting the Meeting</strong></p>
+<pre>
+Organizer navigates to: Partner Portal → Meetings → [Meeting Name]
+Clicks: &quot;Start Presenter Mode&quot;
+→ Screen transitions to dark theme
+→ Agenda sidebar appears on the left
+→ First item (Greeting / Who Is Who) loads in the main area
+→ System creates a new PartnerMeetingMinutes entity in DRAFT status
+</pre>
+<p><strong>2. Interaction — Walking Through Items</strong></p>
+<p>Each agenda item type renders its specific interaction in the main content area:</p>
+<table>
+<tr><th>Agenda Item</th><th>Main Area Content</th><th>Organizer Controls</th></tr>
+<tr><td><strong>Greeting / Who Is Who</strong></td><td>Partner gallery grid (logo, name, photo, badges)</td><td>Click partner → toggle Present/Absent</td></tr>
+<tr><td><strong>Analytics Review</strong></td><td>Analytics dashboard embed (existing page)</td><td>"Capture Snapshot" button → freezes current data into minutes</td></tr>
+<tr><td><strong>Audit Sign-off</strong></td><td>PDF viewer with uploaded audit report</td><td>"Start Vote" → per-partner approve/decline buttons appear</td></tr>
+<tr><td><strong>Budget Approval</strong></td><td>PDF/spreadsheet viewer with budget document</td><td>"Start Vote" → per-partner approve/decline buttons appear</td></tr>
+<tr><td><strong>Topic Discussion</strong></td><td>Topic voting results + blob game results</td><td>Note panel for discussion points</td></tr>
+<tr><td><strong>Hot Topics</strong></td><td>Free-form note area</td><td>Note panel only (unstructured)</td></tr>
+<tr><td><strong>Custom Items</strong></td><td>Title + description + note panel</td><td>Note panel for discussion points</td></tr>
+</table>
+<p><strong>For every item</strong>, the following are always visible:</p>
+<ul>
+<li><strong>Note panel</strong> (bottom or right) — organizer types notes at any time</li>
+<li><strong>Agenda sidebar</strong> (left) — shows all items, current highlighted, click to jump</li>
+<li><strong>"Next Item" button</strong> (prominent, bottom-right) — advances the flow</li>
+<li><strong>Auto-save indicator</strong> (subtle, top-right) — "Saved ✓"</li>
+</ul>
+<p><strong>3. Feedback — Knowing It's Working</strong></p>
+<table>
+<tr><th>Action</th><th>Immediate Feedback</th></tr>
+<tr><td>Toggle partner present</td><td>Green "Present" badge appears, checkmark animation</td></tr>
+<tr><td>Toggle partner absent</td><td>Badge goes gray, subtle fade</td></tr>
+<tr><td>Upload document</td><td>Upload progress bar → "Uploaded ✓" with thumbnail</td></tr>
+<tr><td>Start vote</td><td>Vote panel expands with partner list + approve/decline buttons</td></tr>
+<tr><td>Cast vote for a partner</td><td>Button fills with color (green/red), partner row marked</td></tr>
+<tr><td>Complete vote</td><td>Result banner: "Approved — 8/8" with subtle animation</td></tr>
+<tr><td>Type a note</td><td>Auto-save indicator pulses briefly</td></tr>
+<tr><td>Advance to next item</td><td>Smooth slide transition, sidebar updates current position</td></tr>
+</table>
+<p><strong>4. Completion — Ending the Meeting</strong></p>
+<pre>
+After last agenda item, &quot;Next&quot; button changes to &quot;End Meeting&quot;
+→ Click &quot;End Meeting&quot;
+→ Transition to Minutes Review screen
+→ Auto-assembled minutes shown: attendance, snapshots, documents, votes, notes, action items
+→ Organizer reviews, edits if needed
+→ Clicks &quot;Publish &amp; Send&quot;
+→ All partners (present + absent) receive email with minutes link/PDF
+→ Meeting status changes to COMPLETED
+</pre>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — refine the experience mechanics</li>
+<li><strong>[P]</strong> Party Mode — get multi-agent perspectives on the defining interaction</li>
+<li><strong>[C]</strong> Continue — save and move to visual foundation</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 8 — Visual Foundation.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Good news, Nissim — BATbern already has comprehensive brand guidelines, so this step is about applying them specifically to the meeting presenter mode. Let me lay out the visual foundation for the new feature set.</p>
+<hr class="divider">
+<h3>Visual Foundation — Presenter Mode</h3>
+<p>Since BATbern's design system is fully documented in <code>front-end-spec.md</code>, I'll focus on what's <strong>specific to the meeting presenter mode</strong> — the projector-optimized dark theme extension.</p>
+<h3>Color System</h3>
+<p><strong>Base: BATbern Dark Theme (already defined)</strong></p>
+<p>The presenter mode uses the existing dark theme from the public landing page, with meeting-specific semantic extensions:</p>
+<table>
+<tr><th>Purpose</th><th>Token</th><th>Value</th><th>Contrast on zinc-950</th></tr>
+<tr><td><strong>Background</strong></td><td><code>bg-zinc-950</code></td><td>#09090B</td><td>—</td></tr>
+<tr><td><strong>Surface (cards)</strong></td><td><code>bg-zinc-900</code></td><td>#18181B</td><td>—</td></tr>
+<tr><td><strong>Surface hover</strong></td><td><code>bg-zinc-800</code></td><td>#27272A</td><td>—</td></tr>
+<tr><td><strong>Primary text</strong></td><td><code>text-zinc-100</code></td><td>#F4F4F5</td><td>15.8:1 AAA</td></tr>
+<tr><td><strong>Secondary text</strong></td><td><code>text-zinc-300</code></td><td>#D4D4D8</td><td>12.2:1 AAA</td></tr>
+<tr><td><strong>Muted text</strong></td><td><code>text-zinc-500</code></td><td>#71717A</td><td>5.9:1 AA</td></tr>
+<tr><td><strong>Accent (links, CTAs)</strong></td><td><code>text-blue-400</code></td><td>#60A5FA</td><td>7.8:1 AA+</td></tr>
+<tr><td><strong>Border</strong></td><td><code>border-zinc-800</code></td><td>#27272A</td><td>—</td></tr>
+</table>
+<p><strong>Meeting-Specific Semantic Colors:</strong></p>
+<table>
+<tr><th>Purpose</th><th>Token</th><th>Value</th><th>Usage</th></tr>
+<tr><td><strong>Partner accent</strong></td><td><code>text-orange-400</code></td><td>#FB923C</td><td>Partner names, role badges</td></tr>
+<tr><td><strong>Present (approved)</strong></td><td><code>text-green-400</code></td><td>#4ADE80</td><td>Present badge, approved vote</td></tr>
+<tr><td><strong>Absent (declined)</strong></td><td><code>text-red-400</code></td><td>#F87171</td><td>Absent badge, declined vote</td></tr>
+<tr><td><strong>Pending</strong></td><td><code>text-yellow-400</code></td><td>#FACC15</td><td>Pending vote, incomplete items</td></tr>
+<tr><td><strong>Active item</strong></td><td><code>bg-blue-400/10</code></td><td>blue-400 @ 10%</td><td>Current agenda item highlight in sidebar</td></tr>
+<tr><td><strong>Completed item</strong></td><td><code>text-zinc-500</code></td><td>#71717A</td><td>Completed agenda items in sidebar</td></tr>
+<tr><td><strong>New partner badge</strong></td><td><code>bg-purple-400/10 text-purple-400</code></td><td>#C084FC</td><td>"New" badge for first-year partners</td></tr>
+</table>
+<p><strong>Vote Result Visualization:</strong></p>
+<ul>
+<li>Approved: <code>bg-green-400/10</code> background + <code>text-green-400</code> text + checkmark icon</li>
+<li>Declined: <code>bg-red-400/10</code> background + <code>text-red-400</code> text + X icon</li>
+<li>Result banner: <code>bg-zinc-900</code> card with large result text (44px) centered</li>
+</ul>
+<h3>Typography System</h3>
+<p><strong>Presenter Mode uses Inter</strong> (same as platform) but at projector scale:</p>
+<table>
+<tr><th>Element</th><th>Size</th><th>Weight</th><th>Usage in Presenter Mode</th></tr>
+<tr><td><strong>Meeting Title</strong></td><td>56px</td><td>700 Bold</td><td>Top of screen, meeting name</td></tr>
+<tr><td><strong>Agenda Item Title</strong></td><td>44px</td><td>600 SemiBold</td><td>Current item heading in main area</td></tr>
+<tr><td><strong>Section Label</strong></td><td>32px</td><td>600 SemiBold</td><td>Subsections within an item (e.g., "Vote Results")</td></tr>
+<tr><td><strong>Body / Partner Name</strong></td><td>24px</td><td>400 Regular</td><td>Partner names in gallery, note text, descriptions</td></tr>
+<tr><td><strong>Button Label</strong></td><td>24px</td><td>500 Medium</td><td>"Next Item", "Start Vote", "Approve"</td></tr>
+<tr><td><strong>Badge Text</strong></td><td>18px</td><td>600 SemiBold</td><td>"Present", "New", "Approved" badges</td></tr>
+<tr><td><strong>Metadata</strong></td><td>18px</td><td>400 Regular</td><td>Timestamps, auto-save indicator, vote counts</td></tr>
+<tr><td><strong>Sidebar Item</strong></td><td>20px</td><td>400/600</td><td>Agenda item titles in sidebar (600 for active)</td></tr>
+</table>
+<p><strong>Rationale:</strong> All sizes increased ~50% from standard portal scale. Minimum readable text on projector at 5 meters: 18px. Body text at 24px ensures comfort.</p>
+<p><strong>Font rendering:</strong> <code>font-smoothing: antialiased</code> for crisp rendering on projected displays.</p>
+<h3>Spacing & Layout Foundation</h3>
+<p><strong>Presenter Mode Layout — Three Zones:</strong></p>
+<pre>
+┌──────────────────────────────────────────────────────────────┐
+│  Meeting Title                              Auto-save ✓      │  ← Header (64px)
+├────────────┬─────────────────────────────────────────────────┤
+│            │                                                 │
+│  AGENDA    │            MAIN CONTENT AREA                    │
+│  SIDEBAR   │                                                 │
+│            │    (Gallery / Vote / Document / Notes)           │
+│  1. ✓ Greet│                                                 │
+│  2. → Analy│                                                 │
+│  3.  Audit │                                                 │
+│  4.  Budget│                                                 │
+│  5.  Topics│─────────────────────────────────────────────────│
+│  6.  Other │         NOTE PANEL (always visible)             │
+│            │    ┌─────────────────────────────────────┐      │
+│            │    │ Type notes here...            Saved ✓│      │
+│            │    └─────────────────────────────────────┘      │
+├────────────┴─────────────────────────────────────────────────┤
+│  ← Previous Item                              Next Item →    │  ← Footer (64px)
+└──────────────────────────────────────────────────────────────┘
+</pre>
+<p><strong>Zone Specifications:</strong></p>
+<table>
+<tr><th>Zone</th><th>Width</th><th>Height</th><th>Spacing</th></tr>
+<tr><td><strong>Header</strong></td><td>Full width</td><td>64px fixed</td><td>24px padding horizontal</td></tr>
+<tr><td><strong>Sidebar</strong></td><td>280px fixed</td><td>Viewport - header - footer</td><td>16px padding, 12px between items</td></tr>
+<tr><td><strong>Main Content</strong></td><td>Remaining width</td><td>70% of available</td><td>32px padding</td></tr>
+<tr><td><strong>Note Panel</strong></td><td>Same as main content</td><td>30% of available (min 200px)</td><td>24px padding</td></tr>
+<tr><td><strong>Footer</strong></td><td>Full width</td><td>64px fixed</td><td>24px padding horizontal</td></tr>
+</table>
+<p><strong>Spacing Scale (Presenter Mode — 1.5x standard):</strong></p>
+<ul>
+<li>Compact: 12px (between related elements)</li>
+<li>Standard: 24px (between components)</li>
+<li>Comfortable: 36px (between sections)</li>
+<li>Spacious: 48px (between major zones)</li>
+</ul>
+<p><strong>Grid:</strong> Single-column main content (no multi-column layouts on projector — too small to read).</p>
+<h3>Accessibility Considerations</h3>
+<p><strong>Projector-Specific:</strong></p>
+<ul>
+<li>All text meets WCAG AAA (7:1) on dark backgrounds — already verified in the dark theme palette</li>
+<li>No color-only information: "Present" badge uses green + text label + checkmark icon</li>
+<li>Vote results: color + icon + text label (never color alone)</li>
+<li>High-contrast mode: all zinc-950/zinc-100 combinations exceed 15:1</li>
+</ul>
+<p><strong>Keyboard Navigation (Organizer Laptop):</strong></p>
+<ul>
+<li><code>→</code> / <code>Space</code>: Advance to next agenda item</li>
+<li><code>←</code>: Go back to previous item</li>
+<li><code>1-9</code>: Jump to agenda item by number</li>
+<li><code>N</code>: Focus note panel</li>
+<li><code>V</code>: Start vote (when available)</li>
+<li><code>Escape</code>: Exit presenter mode (with confirmation)</li>
+</ul>
+<p><strong>Screen Reader (not projected, organizer's laptop):</strong></p>
+<ul>
+<li><code>aria-live="polite"</code> on vote results and auto-save indicators</li>
+<li>Agenda sidebar has <code>role="navigation"</code> with <code>aria-current="step"</code> on active item</li>
+<li>Partner gallery has <code>role="list"</code> with presence state in <code>aria-label</code></li>
+</ul>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — refine visual choices</li>
+<li><strong>[P]</strong> Party Mode — get design perspectives</li>
+<li><strong>[C]</strong> Continue — save and move to design directions</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 9 — Design Directions.</p></div>
+</div>
+</section>
+
+<section id="directions">
+  <div class="section-header">
+    <div class="phase-badge phase-1">6</div>
+    <div class="section-header-text"><h2>Design Directions &amp; Direction Selection</h2><p>Step 9: Sally generates 6 interactive HTML mockup directions &mdash; Nissim selects A+E+F composite</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now the fun part, Nissim! I'm going to create an interactive HTML showcase with design direction mockups for the key screens. Since we have a very specific design foundation (dark theme, projector-optimized, three-zone layout), I'll explore variations in <strong>layout density, interaction style, and visual emphasis</strong>.</p>
+<p>Let me build this out.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now for the fun part, Nissim! I'm going to generate an interactive HTML mockup that shows different design directions for the presenter mode. Let me create this so you can see and compare real visual approaches.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>I've created an interactive HTML mockup at <strong><code>docs/ux-design-directions.html</code></strong> — open it in your browser to explore!</p>
+<p>Here's what each direction shows:</p>
+<h3>6 Design Directions</h3>
+<table>
+<tr><th>Direction</th><th>Layout</th><th>Best For</th><th>Key Feature</th></tr>
+<tr><td><strong>A: Sidebar</strong></td><td>Classic sidebar + main area + note panel</td><td>The full presenter mode experience</td><td>Persistent agenda navigation, always-visible notes</td></tr>
+<tr><td><strong>B: Progress Bar</strong></td><td>Top progress bar + full-width content</td><td>Clean, focused content per item</td><td>Minimal chrome, maximum content space</td></tr>
+<tr><td><strong>C: Split Vote</strong></td><td>Left: document / Right: vote panel</td><td>Audit & budget items with voting</td><td>Document + vote side by side</td></tr>
+<tr><td><strong>D: Minimal Zen</strong></td><td>Centered content, dot navigation</td><td>Maximum projector impact</td><td>Ultra-clean, largest typography, zero distraction</td></tr>
+<tr><td><strong>E: Doc Viewer</strong></td><td>Full document viewer + side panel</td><td>Document-heavy items (audit, budget)</td><td>PDF takes center stage, vote + notes in panel</td></tr>
+<tr><td><strong>F: Minutes</strong></td><td>Document-style minutes preview</td><td>Post-meeting review & publish</td><td>Auto-assembled minutes with section-by-section content</td></tr>
+</table>
+<h3>My Recommendation</h3>
+<p>These aren't competing — they're <strong>complementary views within the same system:</strong></p>
+<ul>
+<li><strong>Direction A</strong> = the default presenter mode layout (sidebar + content + notes)</li>
+<li><strong>Direction C or E</strong> = how audit/budget items render within Direction A's main area</li>
+<li><strong>Direction D</strong> = an alternative "presentation mode" for projector impact (could be a toggle)</li>
+<li><strong>Direction F</strong> = the post-meeting "Review Minutes" screen</li>
+</ul>
+<p><strong>Take a look at the mockups and tell me:</strong></p>
+<ol>
+<li>Which layout feels right as the primary presenter mode? (A vs B vs D)</li>
+<li>For vote items, do you prefer split view (C) or side panel (E)?</li>
+<li>Does the minutes preview (F) feel like the right "end of meeting" screen?</li>
+<li>Any elements you want to combine or change?</li>
+</ol>
+<hr class="divider">
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — explore more variations</li>
+<li><strong>[P]</strong> Party Mode — multi-perspective design review</li>
+<li><strong>[C]</strong> Continue — lock in direction and move to user journeys</li>
+</ul></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>i lika a for the presenter, e for the doc viewer , but takeing notes should always be at the same place (bottom, like in a). adn i like your f for the post meeting notes.</p></div>
+</div>
+<div class="turn turn-note">
+  <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+  <div class="turn-content">
+    <p><strong>Key learning:</strong> The user didn't pick a single direction &mdash; they composed their own from parts of three directions. This is exactly what the design directions HTML is for. Direction A's sidebar for navigation, Direction E's document viewer layout (modified with always-visible bottom notes), and Direction F's minutes preview for the post-meeting review screen. The agent documents this composite decision with layout specifications for each context.</p>
+  </div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>continue</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Excellent choices, Nissim. Let me lock this in. Here's the composite design direction:</p>
+<p><strong>The BATbern Meeting Design System = A + E + F:</strong></p>
+<ul>
+<li><strong>Direction A</strong> = primary presenter mode layout (sidebar + content + bottom notes)</li>
+<li><strong>Direction E</strong> = document viewer items (audit, budget) — BUT with note panel moved to the bottom (consistent with A), vote panel stays on the right side panel</li>
+<li><strong>Direction F</strong> = post-meeting minutes review & publish screen</li>
+</ul>
+<p><strong>Key rule: Notes always at the bottom</strong> — same position regardless of agenda item type. This means for document+vote items (E), the layout becomes:</p>
+<pre>
+┌────────────┬────────────────────────┬──────────────┐
+│  SIDEBAR   │   DOCUMENT VIEWER      │  VOTE PANEL  │
+│            │   (PDF / Spreadsheet)  │  (right)     │
+│            ├────────────────────────┴──────────────┤
+│            │   NOTE PANEL (bottom, always here)     │
+├────────────┴───────────────────────────────────────┤
+│  ← Previous                          Next Item →   │
+└────────────────────────────────────────────────────┘
+</pre>
+<p>Here's what I'll save to the document:</p>
+<hr class="divider">
+<h2>Design Direction Decision</h2>
+<h3>Design Directions Explored</h3>
+<p>Six design directions were created as interactive HTML mockups (<code>docs/ux-design-directions.html</code>):</p>
+<table>
+<tr><th>Direction</th><th>Layout</th><th>Screens Shown</th></tr>
+<tr><td>A: Classic Sidebar</td><td>Sidebar + main area + bottom note panel</td><td>Who Is Who gallery</td></tr>
+<tr><td>B: Top Progress Bar</td><td>Progress bar + full-width content</td><td>Who Is Who gallery</td></tr>
+<tr><td>C: Split Vote</td><td>Left document + right vote panel</td><td>Audit sign-off</td></tr>
+<tr><td>D: Minimal Zen</td><td>Centered content, dot navigation</td><td>Who Is Who gallery</td></tr>
+<tr><td>E: Document Viewer</td><td>Full document + side panel</td><td>Audit with vote panel</td></tr>
+<tr><td>F: Minutes Preview</td><td>Document-style review</td><td>Auto-assembled minutes</td></tr>
+</table>
+<h3>Chosen Direction</h3>
+<p><strong>Composite: A + E (modified) + F</strong></p>
+<ul>
+<li><strong>Direction A</strong> as the primary presenter mode layout for all agenda items</li>
+<li><strong>Direction E</strong> for document-heavy items (audit sign-off, budget approval) — modified so the note panel is always at the bottom (consistent with A), with the vote panel on the right</li>
+<li><strong>Direction F</strong> as the post-meeting minutes review and publish screen</li>
+</ul>
+<h3>Design Rationale</h3>
+<ol>
+<li><strong>Consistency wins</strong> — Direction A's sidebar + content + bottom notes creates a predictable layout the organizer learns once. The note panel never moves.</li>
+<li><strong>Document items need the vote panel</strong> — Direction E's right-side vote panel is the natural place for per-partner approve/decline when viewing a document. But notes stay at the bottom, not in the side panel.</li>
+<li><strong>Minutes are the payoff</strong> — Direction F as the end-of-meeting screen delivers the "it captured everything" delight moment. Clean, document-like, publishable.</li>
+<li><strong>Projector clarity</strong> — All three directions use the dark theme with large typography, avoiding dense layouts.</li>
+</ol>
+<h3>Composite Layout Specification</h3>
+<p><strong>Standard Agenda Items</strong> (greeting, analytics, topics, hot topics):</p>
+<pre>
+┌────────────┬─────────────────────────────────────┐
+│  SIDEBAR   │        MAIN CONTENT AREA             │
+│  (280px)   │  (gallery / analytics / discussion)  │
+│            ├─────────────────────────────────────┤
+│            │    NOTE PANEL (bottom, 180px)        │
+├────────────┴─────────────────────────────────────┤
+│  ← Previous                        Next Item →   │
+└──────────────────────────────────────────────────┘
+</pre>
+<p><strong>Document + Vote Items</strong> (audit sign-off, budget approval):</p>
+<pre>
+┌────────────┬──────────────────────┬──────────────┐
+│  SIDEBAR   │  DOCUMENT VIEWER     │  VOTE PANEL  │
+│  (280px)   │  (PDF embedded)      │  (320px)     │
+│            ├──────────────────────┴──────────────┤
+│            │    NOTE PANEL (bottom, 180px)        │
+├────────────┴─────────────────────────────────────┤
+│  ← Previous                        Next Item →   │
+└──────────────────────────────────────────────────┘
+</pre>
+<p><strong>Post-Meeting Minutes Review</strong> (Direction F):</p>
+<pre>
+┌──────────────────────────────────────────────────┐
+│  Meeting Minutes — Review &amp; Publish    [Draft]    │
+├──────────────────────────────────────────────────┤
+│                                                   │
+│  ┌─────────────────────────────────────────────┐ │
+│  │  Partner Meeting — Spring 2026               │ │
+│  │  1. Attendance (auto-populated)              │ │
+│  │  2. Analytics Review (snapshot attached)     │ │
+│  │  3. Audit Sign-off (PDF + vote result)       │ │
+│  │  4. Budget Approval (doc + vote + fee note)  │ │
+│  │  5. Topics Discussion (notes)                │ │
+│  │  6. Action Items (with owners + deadlines)   │ │
+│  └─────────────────────────────────────────────┘ │
+│                                                   │
+├──────────────────────────────────────────────────┤
+│  [← Back to Edit]       [Publish &amp; Send to All]  │
+└──────────────────────────────────────────────────┘
+</pre>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — refine the composite direction</li>
+<li><strong>[P]</strong> Party Mode — multi-perspective review</li>
+<li><strong>[C]</strong> Continue — save and move to user journeys</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 10 — User Journeys.</p></div>
+</div>
+</section>
+
+<section id="journeys">
+  <div class="section-header">
+    <div class="phase-badge phase-1">7</div>
+    <div class="section-header-text"><h2>User Journeys &amp; Component Strategy</h2><p>Steps 10–11: Full journey maps for all 3 user roles and gap analysis against existing design system</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now let's map out the complete user journeys, Nissim. Based on everything we've built — the brainstorming's 4-layer build order, the experience mechanics from Step 7, and the composite design direction — I see <strong>5 critical journeys</strong> to design:</p>
+<hr class="divider">
+<h3>Critical User Journeys</h3>
+<p>From the brainstorming and our design work, these are the journeys that need detailed flow design:</p>
+<ol>
+<li><strong>Organizer: Create & Prepare Meeting</strong> (pre-meeting)</li>
+<li><strong>Organizer: Run Meeting in Presenter Mode</strong> (live meeting)</li>
+<li><strong>Organizer: Review & Publish Minutes</strong> (post-meeting)</li>
+<li><strong>Absent Partner: Catch Up & Act</strong> (async post-meeting)</li>
+<li><strong>Organizer: Next Meeting with Carry-Forward</strong> (lifecycle)</li>
+</ol>
+<p>Let me design each one. Tell me if I'm missing any or if you'd reframe these.</p>
+<hr class="divider">
+<h3>Journey 1: Create & Prepare Meeting</h3>
+<pre>
+graph TD
+    A[Partner Portal → Meetings] --&gt; B[Create New Meeting]
+    B --&gt; C[Set Date, Time, Location]
+    C --&gt; D[Select Active Agenda Items]
+    D --&gt; D1[Toggle: Greeting ✓]
+    D --&gt; D2[Toggle: Analytics ✓]
+    D --&gt; D3[Toggle: Audit Sign-off ✓]
+    D --&gt; D4[Toggle: Budget Approval ✓]
+    D --&gt; D5[Toggle: Topic Discussion ✓]
+    D --&gt; D6[Toggle: Hot Topics ✓]
+    D --&gt; E[Add Custom Passive Items]
+    E --&gt; F[Reorder Items via Drag-and-Drop]
+    F --&gt; G[Configure Auditor Email]
+    G --&gt; H[Save Meeting → DRAFT status]
+    H --&gt; I[Send ICS Invites to Partners]
+    I --&gt; I1[ICS includes deep-links: analytics, topic voting]
+    I --&gt; I2[Auditor receives ICS only if audit item enabled]
+    H --&gt; J[Meeting Prep Dashboard]
+    J --&gt; J1{Prep Checklist}
+    J1 --&gt; K1[Audit PDF uploaded? ⚠️]
+    J1 --&gt; K2[Budget doc uploaded? ⚠️]
+    J1 --&gt; K3[RSVP status: 8/12 ✓]
+    J1 --&gt; K4[Topic voting closed? ✓]
+    J1 --&gt; K5[Open actions from last meeting? 3 items]
+    K1 --&gt; L[Upload Audit PDF]
+    K2 --&gt; M[Upload Budget Document]
+    J --&gt; N[Preview Presenter Mode]
+    N --&gt; O[Ready to Start Meeting ✓]
+</pre>
+<p><strong>Entry point:</strong> Partner Portal → Meetings → "Create New Meeting" button</p>
+<p><strong>Success:</strong> All checklist items green, organizer confident, ready to present</p>
+<p><strong>Edge cases:</strong></p>
+<ul>
+<li>Audit PDF not uploaded → checklist shows yellow warning, blocks "Start" until uploaded or item removed</li>
+<li>Zero RSVPs → warning but doesn't block (partners may attend without RSVP)</li>
+<li>Previous meeting has open action items → surfaced in prep dashboard automatically</li>
+</ul>
+<hr class="divider">
+<h3>Journey 2: Run Meeting in Presenter Mode</h3>
+<pre>
+graph TD
+    A[Meeting Prep → Start Presenter Mode] --&gt; B[Dark theme activates]
+    B --&gt; C[System creates Minutes entity - DRAFT]
+    C --&gt; D[Item 1: Who Is Who Gallery]
+    D --&gt; D1[Click partners to toggle Present/Absent]
+    D1 --&gt; D2[Attendance → auto-populates minutes]
+    D --&gt; D3[Note: welcome new partner, record stand-ins]
+    D --&gt; E[Next Item →]
+    E --&gt; F[Item 2: Analytics Review]
+    F --&gt; F1[Analytics dashboard embedded]
+    F --&gt; F2[Click Capture Snapshot → freezes data into minutes]
+    F --&gt; G[Next Item →]
+    G --&gt; H[Item 3: Audit Sign-off]
+    H --&gt; H1[PDF viewer shows uploaded audit report]
+    H --&gt; H2[Vote panel on right: per-partner approve/decline]
+    H2 --&gt; H3[Cast votes → result banner animates]
+    H3 --&gt; H4[Vote result + PDF → auto-attached to minutes]
+    H --&gt; I[Next Item →]
+    I --&gt; J[Item 4: Budget Approval]
+    J --&gt; J1[Budget doc viewer + vote panel]
+    J --&gt; J2[Vote on budget direction]
+    J2 --&gt; J3[Result → minutes + triggers async fee acceptance]
+    J --&gt; K[Next Item →]
+    K --&gt; L[Item 5: Topic Discussion]
+    L --&gt; L1[Topic voting results displayed]
+    L --&gt; L2[Notes on discussion points]
+    L --&gt; M[Next Item →]
+    M --&gt; N[Item 6: Hot Topics / Custom Items]
+    N --&gt; N1[Free-form notes only]
+    N --&gt; O[Next → becomes End Meeting]
+    O --&gt; P[Click End Meeting]
+    P --&gt; Q[Transition to Minutes Review - Journey 3]
+</pre>
+<p><strong>Entry point:</strong> "Start Presenter Mode" button on meeting prep screen</p>
+<p><strong>Success:</strong> All items walked through, votes captured, notes taken, minutes auto-assembled</p>
+<p><strong>At every step:</strong> Sidebar shows progress, note panel at bottom, auto-save indicator</p>
+<p><strong>Edge cases:</strong></p>
+<ul>
+<li>Organizer skips an item → sidebar shows it as skipped, minutes note "Item skipped"</li>
+<li>Vote tie or declined → result recorded as-is, organizer adds note</li>
+<li>Stand-in present → organizer records in notes: "Company Y represented by [name], delegated by [partner]"</li>
+<li>Organizer wants to go back → Back button works, doesn't lose data</li>
+<li>Mid-meeting: organizer adds action item → "Add Action Item" button available on every item</li>
+</ul>
+<hr class="divider">
+<h3>Journey 3: Review & Publish Minutes</h3>
+<pre>
+graph TD
+    A[End Meeting → Minutes Review Screen] --&gt; B[Auto-assembled minutes displayed]
+    B --&gt; B1[Section 1: Attendance - auto-populated]
+    B --&gt; B2[Section 2: Analytics - snapshot attached]
+    B --&gt; B3[Section 3: Audit - PDF + vote result]
+    B --&gt; B4[Section 4: Budget - doc + vote + fee note]
+    B --&gt; B5[Section 5: Topics - discussion notes]
+    B --&gt; B6[Section 6: Action Items - with owners]
+    B --&gt; C{Organizer Review}
+    C --&gt; D[Edit any section inline]
+    C --&gt; E[Add/modify action items]
+    C --&gt; F[Add free-text sections]
+    C --&gt; G{Satisfied?}
+    G --&gt;|No| C
+    G --&gt;|Yes| H[Click Publish &amp; Send]
+    H --&gt; I[Confirmation dialog: Send to all 12 partners?]
+    I --&gt;|Confirm| J[Minutes status → PUBLISHED]
+    J --&gt; K[Email sent to all invited partners]
+    J --&gt; L[Minutes available in partner portal]
+    J --&gt; M[Fee acceptance requests triggered for absent partners]
+    J --&gt; N[Feedback pulse survey sent - 24h delay]
+</pre>
+<p><strong>Entry point:</strong> Automatic transition from end of presenter mode</p>
+<p><strong>Success:</strong> Minutes published, all partners notified, async workflows triggered</p>
+<p><strong>Edge cases:</strong></p>
+<ul>
+<li>Organizer wants to save draft and publish later → "Save Draft" button, return to it from Meetings list</li>
+<li>Organizer realizes they forgot something → "Back to Edit" returns to a simplified editor (not presenter mode)</li>
+<li>PDF attachment too large for email → email contains link to portal, not inline attachment</li>
+</ul>
+<hr class="divider">
+<h3>Journey 4: Absent Partner — Catch Up & Act</h3>
+<pre>
+graph TD
+    A[Email: Meeting Minutes Published] --&gt; B[Click link → Partner Portal]
+    B --&gt; C[View Meeting Minutes]
+    C --&gt; C1[Read attendance, see who was present]
+    C --&gt; C2[View analytics snapshot]
+    C --&gt; C3[Download audit PDF, see vote result]
+    C --&gt; C4[See budget decision + new fee proposal]
+    C --&gt; C5[Review action items assigned to them]
+    C --&gt; D{Action Required?}
+    D --&gt;|Fee acceptance| E[Fee Acceptance Widget]
+    E --&gt; E1[Review proposed fee: CHF 5,200/year]
+    E --&gt; E2[Accept / Decline with optional comment]
+    E2 --&gt; E3[Confirmation + receipt]
+    D --&gt;|Action item assigned| F[View Action Item]
+    F --&gt; F1[Mark as acknowledged]
+    D --&gt;|Feedback pulse| G[Short Survey - 3 questions]
+    G --&gt; G1[Was the meeting productive? 1-5]
+    G --&gt; G2[Topics we should have discussed?]
+    G --&gt; G3[Suggestions for next meeting?]
+    G --&gt; G4[Submit feedback]
+    D --&gt;|No action needed| H[Done - fully informed]
+</pre>
+<p><strong>Entry point:</strong> Email notification with link to published minutes</p>
+<p><strong>Success:</strong> Absent partner fully informed and able to participate in all post-meeting decisions</p>
+<p><strong>Edge cases:</strong></p>
+<ul>
+<li>Partner doesn't act on fee acceptance → reminder at 7 days, 14 days, then organizer notified</li>
+<li>Partner declines fee → organizer receives notification with partner's comment</li>
+<li>Multiple absent partners → each gets independent workflow, organizer sees tracker</li>
+</ul>
+<hr class="divider">
+<h3>Journey 5: Next Meeting — Action Item Carry-Forward</h3>
+<pre>
+graph TD
+    A[Organizer creates next meeting] --&gt; B[System checks previous meeting]
+    B --&gt; C{Open action items from last meeting?}
+    C --&gt;|Yes| D[Surface open items in prep dashboard]
+    D --&gt; D1[Action: Nissim → Send agreement to Laura - OVERDUE]
+    D --&gt; D2[Action: Sandra → Propose venue - DUE IN 3 DAYS]
+    D --&gt; D3[Action: Nissim → Follow up with Thomas - COMPLETED]
+    C --&gt;|No| E[Clean slate]
+    D --&gt; F[Organizer adds Review Open Actions to agenda]
+    F --&gt; G[During meeting: review each action]
+    G --&gt; G1[Mark done ✓]
+    G --&gt; G2[Update status / extend deadline]
+    G --&gt; G3[Carry forward to next meeting]
+    G --&gt; H[New action items created during this meeting]
+    H --&gt; I[Cycle continues...]
+</pre>
+<p><strong>Entry point:</strong> Creating a new partner meeting</p>
+<p><strong>Success:</strong> No action item ever lost between meetings</p>
+<p><strong>Edge cases:</strong></p>
+<ul>
+<li>Action items from 2+ meetings ago still open → flagged as "Carried 2x" with urgency indicator</li>
+<li>Action item owner no longer a partner → organizer reassigns during review</li>
+</ul>
+<hr class="divider">
+<h3>Journey Patterns</h3>
+<table>
+<tr><th>Pattern</th><th>Used In</th><th>Implementation</th></tr>
+<tr><td><strong>Linear progression</strong></td><td>All journeys</td><td>Sidebar/progress with back/next, no branching during live meeting</td></tr>
+<tr><td><strong>Capture by using</strong></td><td>Journey 2</td><td>Every interaction auto-contributes to minutes entity</td></tr>
+<tr><td><strong>Checklist gating</strong></td><td>Journey 1</td><td>Prep checklist shows readiness, blocks start if critical items missing</td></tr>
+<tr><td><strong>Async extension</strong></td><td>Journey 4</td><td>Post-meeting workflows extend meeting value to non-attendees</td></tr>
+<tr><td><strong>Carry-forward</strong></td><td>Journey 5</td><td>System surfaces open items from previous meetings automatically</td></tr>
+<tr><td><strong>Confirm before publish</strong></td><td>Journey 3</td><td>Review screen + confirmation dialog before distributing to all partners</td></tr>
+</table>
+<h3>Flow Optimization Principles</h3>
+<ol>
+<li><strong>Minimize clicks during live meeting</strong> — Every agenda item interaction is 1-2 clicks max. No modals, no multi-step forms during presenter mode.</li>
+<li><strong>Auto-populate everything possible</strong> — Attendance → minutes, vote results → minutes, snapshots → minutes. Organizer only adds what the system can't know (free-text notes).</li>
+<li><strong>Never lose data</strong> — Auto-save at every step. Draft minutes persist. Action items carry forward. No interaction is ever lost.</li>
+<li><strong>Async = same context, different timeline</strong> — Absent partner sees the same minutes, same documents, same vote results. Their actions (fee acceptance, feedback) feed back into the same system.</li>
+<li><strong>Progressive readiness</strong> — Prep checklist turns from red → yellow → green as the organizer completes preparation. The "Start Presenter Mode" button only enables when minimum readiness is met.</li>
+</ol>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — refine any journey</li>
+<li><strong>[P]</strong> Party Mode — multi-perspective flow review</li>
+<li><strong>[C]</strong> Continue — save and move to component strategy</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 11 — Component Strategy.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Let me map the component strategy, Nissim. Based on our journeys and design direction, here's the gap analysis and full component spec.</p>
+<hr class="divider">
+<h3>Design System Coverage — Gap Analysis</h3>
+<p><strong>Already available in BATbern's MUI + Tailwind system:</strong></p>
+<table>
+<tr><th>Available Component</th><th>Used For</th></tr>
+<tr><td>MUI Button, ButtonGroup</td><td>Navigation, vote buttons, actions</td></tr>
+<tr><td>MUI TextField / TextArea</td><td>Note panel, action item forms</td></tr>
+<tr><td>MUI Card</td><td>Partner cards, action item cards</td></tr>
+<tr><td>MUI Avatar</td><td>Partner initials/photos</td></tr>
+<tr><td>MUI Chip</td><td>Badges (Present, Absent, New)</td></tr>
+<tr><td>MUI Stepper</td><td>Agenda sidebar foundation</td></tr>
+<tr><td>MUI List / ListItem</td><td>Vote rows, action item lists</td></tr>
+<tr><td>MUI Dialog</td><td>Confirmation modals</td></tr>
+<tr><td>MUI AppBar</td><td>Header bar</td></tr>
+<tr><td>Content Upload Component</td><td>Document upload (S3 presigned URL)</td></tr>
+<tr><td>Notification Toast</td><td>Auto-save confirmations, error alerts</td></tr>
+</table>
+<p><strong>Custom components needed</strong> (not available, must be built):</p>
+<table>
+<tr><th>Gap</th><th>Why It's Needed</th><th>Journey</th></tr>
+<tr><td>Agenda Sidebar</td><td>Presenter mode navigation — stepper variant with active/done/upcoming + click-to-jump</td><td>J2</td></tr>
+<tr><td>Vote Panel</td><td>Per-partner approve/decline with result tally + animation</td><td>J2</td></tr>
+<tr><td>Document Viewer</td><td>Embedded PDF viewer within agenda item, dark-themed</td><td>J2</td></tr>
+<tr><td>Note Panel</td><td>Always-visible textarea, auto-save, attached to agenda item</td><td>J2</td></tr>
+<tr><td>Partner Gallery</td><td>Grid of partner cards with presence toggle + badges</td><td>J2</td></tr>
+<tr><td>Meeting Prep Checklist</td><td>Readiness dashboard with color-coded status items</td><td>J1</td></tr>
+<tr><td>Action Item Card</td><td>Assignable item with owner, deadline, status, carry-forward</td><td>J2, J3, J5</td></tr>
+<tr><td>Minutes Document</td><td>Auto-assembled document with editable sections</td><td>J3</td></tr>
+<tr><td>Vote Result Banner</td><td>Animated result display for projector ("Approved — 8/8")</td><td>J2</td></tr>
+<tr><td>Fee Acceptance Widget</td><td>Partner-facing accept/decline with fee details</td><td>J4</td></tr>
+<tr><td>Feedback Pulse</td><td>3-question survey form</td><td>J4</td></tr>
+<tr><td>Agenda Builder</td><td>Drag-and-drop item toggling and reordering</td><td>J1</td></tr>
+</table>
+<hr class="divider">
+<h3>Custom Component Specifications</h3>
+<h4>1. AgendaSidebar</h4>
+<p><strong>Purpose:</strong> Persistent navigation showing all agenda items with progress during presenter mode</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>Vertical list of items, each with: number circle, item title, status icon</li>
+<li>Current item: blue highlight background, bold text, blue number</li>
+<li>Completed: green checkmark replaces number, muted text</li>
+<li>Upcoming: gray number, normal text</li>
+</ul>
+<p><strong>States:</strong> <code>upcoming</code> | <code>active</code> | <code>completed</code> | <code>skipped</code></p>
+<p><strong>Interactions:</strong> Click any item to jump (non-destructive). Current item auto-scrolls into view.</p>
+<p><strong>Size:</strong> 280px fixed width, full viewport height minus header/footer</p>
+<p><strong>Accessibility:</strong> <code>role="navigation"</code>, <code>aria-current="step"</code> on active, <code>aria-label="Meeting agenda"</code></p>
+<h4>2. VotePanel</h4>
+<p><strong>Purpose:</strong> Allow organizer to cast approve/decline votes on behalf of each present partner</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>Header: vote title ("Approve Financial Report 2025?")</li>
+<li>Partner rows: avatar + name + company + approve/decline buttons</li>
+<li>Result section: tally bar + result text</li>
+<li>Absent partners shown as disabled/grayed</li>
+</ul>
+<p><strong>States:</strong> <code>idle</code> (no votes) | <code>voting</code> (in progress) | <code>complete</code> (all voted)</p>
+<p><strong>Interactions:</strong> Click approve (green fill) or decline (red fill) per partner. Can change vote before completing. "Complete Vote" button locks results.</p>
+<p><strong>Result animation:</strong> When all votes cast, result banner slides in with tally: "Approved — 5/5"</p>
+<p><strong>Accessibility:</strong> <code>role="group"</code>, each vote button has <code>aria-label="Approve for [partner name]"</code></p>
+<h4>3. DocumentViewer</h4>
+<p><strong>Purpose:</strong> Display uploaded PDF/spreadsheet inline within an agenda item</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>Document title + metadata (pages, upload date, uploader)</li>
+<li>Embedded PDF viewer (iframe or react-pdf)</li>
+<li>Toolbar: zoom, page navigation, download button</li>
+<li>Dark chrome (zinc-900 background) matching presenter theme</li>
+</ul>
+<p><strong>States:</strong> <code>empty</code> (no document) | <code>loading</code> | <code>loaded</code> | <code>error</code></p>
+<p><strong>Empty state:</strong> "No document uploaded. Upload from the Meeting Prep screen."</p>
+<p><strong>Size:</strong> Fills available width minus vote panel (if present)</p>
+<p><strong>Accessibility:</strong> <code>aria-label="Document viewer: [document title]"</code>, keyboard zoom controls</p>
+<h4>4. NotePanel</h4>
+<p><strong>Purpose:</strong> Always-visible text area for organizer to capture discussion notes per agenda item</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>Label: "Notes — [current item name]"</li>
+<li>Multiline textarea with generous padding</li>
+<li>Auto-save indicator: "Saved ✓" (top-right, subtle)</li>
+<li>Character count (optional, no limit)</li>
+</ul>
+<p><strong>States:</strong> <code>empty</code> | <code>typing</code> | <code>saved</code></p>
+<p><strong>Position:</strong> Always at bottom, 180px height, consistent across all item types</p>
+<p><strong>Interactions:</strong> Click to focus, type freely. Auto-saves every 2 seconds of inactivity.</p>
+<p><strong>Accessibility:</strong> <code>aria-label="Meeting notes for [item name]"</code>, keyboard shortcut <code>N</code> to focus</p>
+<h4>5. PartnerGallery</h4>
+<p><strong>Purpose:</strong> Display all partner companies with presence toggle for Who Is Who agenda item</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>Grid of cards (auto-fill, min 200px)</li>
+<li>Each card: avatar (initials or photo), name, company, badge</li>
+<li>Badges: "Present" (green), "Absent" (gray/red), "New" (purple)</li>
+</ul>
+<p><strong>States per card:</strong> <code>present</code> | <code>absent</code> | <code>stand-in</code></p>
+<p><strong>Interactions:</strong> Click card to toggle present/absent. Present → green border + badge. Absent → dimmed.</p>
+<p><strong>Stand-in handling:</strong> Organizer clicks "Add Stand-in" on an absent partner → free-text name input, card shows "Represented by [name]"</p>
+<p><strong>Accessibility:</strong> <code>role="list"</code>, each card <code>role="listitem"</code> with <code>aria-label="[name], [company], [status]"</code></p>
+<h4>6. MeetingPrepChecklist</h4>
+<p><strong>Purpose:</strong> Dashboard showing meeting readiness with actionable status items</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>List of checklist items, each with: icon, label, status chip, action link</li>
+<li>Status chips: green "Ready", yellow "Pending", red "Missing"</li>
+<li>Overall readiness indicator at top: "4 of 6 items ready"</li>
+</ul>
+<p><strong>Items (dynamic based on enabled agenda items):</strong></p>
+<ul>
+<li>Audit PDF uploaded (if audit item enabled)</li>
+<li>Budget document uploaded (if budget item enabled)</li>
+<li>RSVP status (X of Y responded)</li>
+<li>Topic voting closed (if topic item enabled)</li>
+<li>Open action items from last meeting (count)</li>
+<li>ICS invites sent</li>
+</ul>
+<p><strong>Interactions:</strong> Click action link to navigate to upload or relevant screen</p>
+<h4>7. ActionItemCard</h4>
+<p><strong>Purpose:</strong> Capture and display action items with ownership and lifecycle</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>Title (text input)</li>
+<li>Owner (dropdown: organizer or partner name)</li>
+<li>Deadline (date picker)</li>
+<li>Status badge: "Open" | "In Progress" | "Completed" | "Carried Forward"</li>
+<li>Source: linked to agenda item where it was created</li>
+</ul>
+<p><strong>Carry-forward indicator:</strong> "Carried from Autumn 2025" with meeting link</p>
+<p><strong>Interactions:</strong> Inline editing during meeting. Status toggle in minutes review.</p>
+<h4>8. MinutesDocument</h4>
+<p><strong>Purpose:</strong> Auto-assembled meeting record, reviewable and editable before publishing</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>Document header: meeting title, date, location, "Auto-assembled by BATbern"</li>
+<li>Sections (one per completed agenda item): heading, content, attachments</li>
+<li>Attendance section: tag badges for present/absent partners</li>
+<li>Vote sections: result banner + partner-level votes</li>
+<li>Action items section: cards with owners and deadlines</li>
+<li>Each section: editable text area for organizer adjustments</li>
+</ul>
+<p><strong>States:</strong> <code>draft</code> (editable) | <code>published</code> (read-only)</p>
+<p><strong>Actions:</strong> "Publish & Send" button, "Save Draft" button, "Back to Edit"</p>
+<h4>9. VoteResultBanner</h4>
+<p><strong>Purpose:</strong> Projector-friendly display of vote outcome with animation</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>Large result text (44px): "Approved — 8/8" or "Declined — 3/5"</li>
+<li>Background: green/10 for approved, red/10 for declined</li>
+<li>Subtle animation: fade-in + scale from 95% to 100% over 300ms</li>
+</ul>
+<p><strong>Size:</strong> Full width of content area, 120px height</p>
+<p><strong>Projector priority:</strong> This is the "Mentimeter moment" — large, clear, unmistakable</p>
+<h4>10. AgendaBuilder</h4>
+<p><strong>Purpose:</strong> Configure which agenda items are active and their order for a meeting</p>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>List of available item types with toggle switches</li>
+<li>Active items shown in a reorderable list (drag handles)</li>
+<li>"Add Custom Item" button at bottom → inline title + description input</li>
+</ul>
+<p><strong>Interactions:</strong> Toggle items on/off. Drag to reorder active items. Add/remove custom items.</p>
+<p><strong>Validation:</strong> At least 1 item must be active. Warning if no greeting item.</p>
+<hr class="divider">
+<h3>Component Implementation Roadmap</h3>
+<p><strong>Layer 1 — Foundation (needed for any meeting to work):</strong></p>
+<ul>
+<li>AgendaBuilder (Journey 1 — create meeting)</li>
+<li>AgendaSidebar (Journey 2 — presenter mode navigation)</li>
+<li>NotePanel (Journey 2 — used on every item)</li>
+<li>PartnerGallery (Journey 2 — first agenda item)</li>
+<li>MeetingPrepChecklist (Journey 1 — readiness dashboard)</li>
+</ul>
+<p><strong>Layer 2 — Core Interactions (needed for the full meeting flow):</strong></p>
+<ul>
+<li>DocumentViewer (Journey 2 — audit + budget items)</li>
+<li>VotePanel (Journey 2 — audit + budget sign-off)</li>
+<li>VoteResultBanner (Journey 2 — projector-friendly result display)</li>
+<li>ActionItemCard (Journey 2, 3, 5 — captures + carries forward)</li>
+</ul>
+<p><strong>Layer 3 — Post-Meeting (needed for minutes and distribution):</strong></p>
+<ul>
+<li>MinutesDocument (Journey 3 — review + publish)</li>
+<li>FeeAcceptanceWidget (Journey 4 — absent partner async)</li>
+<li>FeedbackPulse (Journey 4 — post-meeting survey)</li>
+</ul>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — refine any component spec</li>
+<li><strong>[P]</strong> Party Mode — architect/dev perspectives on component design</li>
+<li><strong>[C]</strong> Continue — save and move to UX patterns</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 12 — UX Patterns.</p></div>
+</div>
+</section>
+
+<section id="patterns">
+  <div class="section-header">
+    <div class="phase-badge phase-1">8</div>
+    <div class="section-header-text"><h2>UX Patterns &amp; Responsive / Accessibility</h2><p>Steps 12–13: Consistency patterns for presenter + portal modes; responsive design and WCAG 2.1 AA</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now let's nail down the consistency patterns, Nissim. For this feature set, the most critical pattern categories are specific to our dual-context design: <strong>presenter mode (projector)</strong> and <strong>portal mode (partner screens)</strong>. Let me map these out.</p>
+<hr class="divider">
+<h3>Button Hierarchy</h3>
+<p><strong>Presenter Mode (Projector — Organizer Controls):</strong></p>
+<table>
+<tr><th>Level</th><th>Style</th><th>Size</th><th>Usage</th></tr>
+<tr><td><strong>Primary</strong></td><td><code>bg-blue-400 text-zinc-950</code></td><td>48px height, 24px text</td><td>"Next Item →", "Start Vote", "End Meeting"</td></tr>
+<tr><td><strong>Secondary</strong></td><td><code>bg-zinc-800 text-zinc-100 border-zinc-700</code></td><td>48px height, 24px text</td><td>"← Previous", "Save Draft"</td></tr>
+<tr><td><strong>Destructive</strong></td><td><code>bg-red-400/10 text-red-400 border-red-400/20</code></td><td>48px height</td><td>"Skip Item", "Cancel Vote"</td></tr>
+<tr><td><strong>Ghost</strong></td><td><code>transparent text-zinc-400</code></td><td>48px height</td><td>"Add Note", context actions</td></tr>
+</table>
+<p><strong>Portal Mode (Partner Screens — Normal Size):</strong></p>
+<table>
+<tr><th>Level</th><th>Style</th><th>Size</th><th>Usage</th></tr>
+<tr><td><strong>Primary</strong></td><td><code>bg-blue-400 text-zinc-950</code></td><td>40px height, 15px text</td><td>"Accept Fee", "Submit Feedback"</td></tr>
+<tr><td><strong>Secondary</strong></td><td><code>bg-zinc-800 text-zinc-100</code></td><td>40px height</td><td>"Decline", "Save Draft"</td></tr>
+<tr><td><strong>Link</strong></td><td><code>text-blue-400 underline</code></td><td>Inline</td><td>"View Minutes", "Download PDF"</td></tr>
+</table>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>Maximum 1 primary button visible per screen area</li>
+<li>Primary always on the right; secondary on the left (directional: back=left, forward=right)</li>
+<li>In presenter mode: buttons must be 48px+ height for projector visibility</li>
+<li>All buttons have labels — never icon-only in presenter mode (Twice-a-Year Obvious principle)</li>
+</ul>
+<h3>Feedback Patterns</h3>
+<table>
+<tr><th>Feedback Type</th><th>Presenter Mode</th><th>Portal Mode</th></tr>
+<tr><td><strong>Auto-save</strong></td><td>Subtle "Saved ✓" text (top-right), green text, fades after 2s</td><td>Same</td></tr>
+<tr><td><strong>Vote cast</strong></td><td>Button fills with color (green/red), immediate visual change</td><td>N/A</td></tr>
+<tr><td><strong>Vote complete</strong></td><td>VoteResultBanner animates in (full-width, 120px, 300ms)</td><td>N/A</td></tr>
+<tr><td><strong>Presence toggle</strong></td><td>Badge changes immediately (green ↔ gray), subtle animation</td><td>N/A</td></tr>
+<tr><td><strong>Success action</strong></td><td>Green toast (bottom-right), auto-dismiss 3s</td><td>Same</td></tr>
+<tr><td><strong>Error</strong></td><td>Red toast (bottom-right), manual dismiss, retry action</td><td>Same, plus inline error message</td></tr>
+<tr><td><strong>Warning</strong></td><td>Yellow toast, auto-dismiss 5s</td><td>Same</td></tr>
+<tr><td><strong>Document uploaded</strong></td><td>Progress bar → "Uploaded ✓" with thumbnail</td><td>Same</td></tr>
+<tr><td><strong>Minutes published</strong></td><td>Full-screen confirmation with partner count</td><td>Email confirmation toast</td></tr>
+</table>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>In presenter mode: no modal dialogs that obscure the main content (except "End Meeting" confirmation)</li>
+<li>Toasts stack in bottom-right, max 2 visible</li>
+<li>Animations: 200-300ms duration, ease-out curve — snappy, not sluggish</li>
+<li>Auto-save: never shows "Saving..." spinner. Either "Saved ✓" or nothing. Confidence, not anxiety.</li>
+</ul>
+<h3>Navigation Patterns</h3>
+<p><strong>Presenter Mode:</strong></p>
+<table>
+<tr><th>Pattern</th><th>Behavior</th></tr>
+<tr><td><strong>Linear progression</strong></td><td>"← Previous" / "Next Item →" buttons in footer. Always visible.</td></tr>
+<tr><td><strong>Sidebar jump</strong></td><td>Click any agenda item in sidebar to jump. Non-destructive (doesn't lose notes).</td></tr>
+<tr><td><strong>Keyboard shortcuts</strong></td><td><code>→</code>/<code>Space</code> = next, <code>←</code> = back, <code>1-9</code> = jump to item, <code>N</code> = focus notes, <code>V</code> = start vote, <code>Esc</code> = exit</td></tr>
+<tr><td><strong>Exit presenter</strong></td><td><code>Esc</code> → confirmation dialog: "Exit Presenter Mode? Draft minutes will be saved."</td></tr>
+<tr><td><strong>End meeting</strong></td><td>Last item's "Next →" becomes "End Meeting" → transition to minutes review</td></tr>
+</table>
+<p><strong>Portal Mode (Partner):</strong></p>
+<table>
+<tr><th>Pattern</th><th>Behavior</th></tr>
+<tr><td><strong>Standard nav</strong></td><td>Partner portal nav: Topic Voting \</td><td>Meetings \</td><td>Settings \</td><td>Help</td></tr>
+<tr><td><strong>Meeting list</strong></td><td>Meetings page shows: upcoming, past (with minutes links), draft (organizer only)</td></tr>
+<tr><td><strong>Minutes view</strong></td><td>Read-only document, section anchors, download PDF button</td></tr>
+<tr><td><strong>Back navigation</strong></td><td>Breadcrumb: Partner > Meetings > [Meeting Name] > Minutes</td></tr>
+</table>
+<h3>Form Patterns</h3>
+<table>
+<tr><th>Pattern</th><th>Implementation</th></tr>
+<tr><td><strong>Inline editing</strong></td><td>Notes, action item titles — click to edit, auto-save. No "Edit" button.</td></tr>
+<tr><td><strong>Toggle inputs</strong></td><td>Presence toggle (click card), agenda item toggle (switch). Instant save.</td></tr>
+<tr><td><strong>Vote inputs</strong></td><td>Approve/decline buttons — single click, immediate feedback. Reversible before "Complete Vote".</td></tr>
+<tr><td><strong>Date picker</strong></td><td>Action item deadlines — MUI DatePicker, default to 14 days from meeting date.</td></tr>
+<tr><td><strong>Text areas</strong></td><td>Note panel — no character limit, placeholder text, auto-expanding up to max height.</td></tr>
+<tr><td><strong>File upload</strong></td><td>Document upload — drag-and-drop zone with format/size validation. Progress bar for upload.</td></tr>
+<tr><td><strong>Validation</strong></td><td>Inline, real-time. Red border + error text below field. Never block form submission for warnings.</td></tr>
+</table>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>No required field indicators in presenter mode (everything optional except the flow itself)</li>
+<li>In portal mode: required fields marked with asterisk + <code>aria-required="true"</code></li>
+<li>Auto-save everything. No "Submit" buttons for notes. Only explicit "Submit" for votes and fee acceptance.</li>
+</ul>
+<h3>Empty & Loading States</h3>
+<table>
+<tr><th>State</th><th>Presenter Mode</th><th>Portal Mode</th></tr>
+<tr><td><strong>No document uploaded</strong></td><td>Gray box: "No document uploaded. Upload from Meeting Prep."</td><td>Same</td></tr>
+<tr><td><strong>No votes yet</strong></td><td>Vote panel shows partner list with neutral buttons</td><td>N/A</td></tr>
+<tr><td><strong>No notes</strong></td><td>Placeholder text: "Type notes for this agenda item..."</td><td>N/A</td></tr>
+<tr><td><strong>No action items</strong></td><td>"No action items yet. Add one during the meeting."</td><td>"No action items from this meeting."</td></tr>
+<tr><td><strong>Loading document</strong></td><td>Skeleton rectangle with shimmer animation</td><td>Same</td></tr>
+<tr><td><strong>Loading analytics</strong></td><td>Skeleton chart with shimmer</td><td>Same</td></tr>
+<tr><td><strong>No meetings</strong></td><td>"No upcoming meetings. Create one to get started."</td><td>"No upcoming partner meetings."</td></tr>
+<tr><td><strong>No minutes</strong></td><td>N/A</td><td>"Minutes not yet published for this meeting."</td></tr>
+</table>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>Empty states always have guidance text (what to do next)</li>
+<li>Loading states use skeleton animations, never spinners (skeletons feel faster)</li>
+<li>In presenter mode: loading states are brief (pre-load content before entering presenter mode)</li>
+</ul>
+<h3>Modal & Overlay Patterns</h3>
+<table>
+<tr><th>Use Case</th><th>Pattern</th></tr>
+<tr><td><strong>End Meeting</strong></td><td>Confirmation dialog: "End meeting and review minutes?" [Cancel] [End Meeting]</td></tr>
+<tr><td><strong>Exit Presenter</strong></td><td>Confirmation dialog: "Exit? Draft minutes saved." [Cancel] [Exit]</td></tr>
+<tr><td><strong>Publish Minutes</strong></td><td>Confirmation dialog: "Send to all 12 partners?" [Cancel] [Publish & Send]</td></tr>
+<tr><td><strong>Delete Action Item</strong></td><td>Inline confirmation: item dims, "Delete?" appears with [Cancel] [Delete]</td></tr>
+<tr><td><strong>Stand-in Entry</strong></td><td>Inline input: text field appears on absent partner card, not a modal</td></tr>
+</table>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>In presenter mode: minimize modals. Only confirmations for irreversible actions (end meeting, exit, publish).</li>
+<li>Never use modals for data entry in presenter mode — use inline inputs.</li>
+<li>All modals closeable with <code>Escape</code> key and clicking outside.</li>
+</ul>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — refine patterns</li>
+<li><strong>[P]</strong> Party Mode — multi-perspective review</li>
+<li><strong>[C]</strong> Continue — save and move to responsive design & accessibility</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Saved. Loading Step 13 — Responsive Design & Accessibility.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>This step is interesting for our feature set, Nissim, because we have a unique responsive situation: the presenter mode is <strong>desktop-only</strong> (projector), but the partner portal (async workflows) needs to work on mobile too. Let me lay it out.</p>
+<hr class="divider">
+<h3>Responsive Strategy</h3>
+<p>Our feature set has <strong>two distinct responsive contexts:</strong></p>
+<p><strong>1. Presenter Mode — Desktop Only (No Responsive Needed)</strong></p>
+<ul>
+<li>Fixed target: organizer's laptop → projector (1920x1080 or 1280x720)</li>
+<li>No mobile/tablet adaptation needed — this runs on a laptop in a meeting room</li>
+<li>Optimize for 1920x1080 as primary, 1280x720 as minimum</li>
+<li>Sidebar (280px) + main content + footer = fixed layout, not fluid</li>
+</ul>
+<p><strong>2. Partner Portal — Full Responsive (Mobile + Tablet + Desktop)</strong></p>
+<ul>
+<li>Minutes viewing, fee acceptance, feedback pulse must work on mobile</li>
+<li>Partners check minutes on phone when notified via email</li>
+<li>Fee acceptance is a quick action — phone-friendly is critical</li>
+</ul>
+<table>
+<tr><th>Screen</th><th>Presenter Mode</th><th>Partner Portal</th></tr>
+<tr><td><strong>Desktop (1024px+)</strong></td><td>Full three-zone layout</td><td>Standard portal layout</td></tr>
+<tr><td><strong>Tablet (768-1023px)</strong></td><td>Not applicable</td><td>Simplified sidebar, stacked content</td></tr>
+<tr><td><strong>Mobile (320-767px)</strong></td><td>Not applicable</td><td>Single column, bottom nav, touch-optimized</td></tr>
+</table>
+<h3>Breakpoint Strategy</h3>
+<p><strong>Presenter Mode:</strong> No breakpoints — fixed layout at ≥1280px. If screen is smaller, show a message: "Presenter Mode requires a screen width of 1280px or more."</p>
+<p><strong>Partner Portal (follows existing BATbern breakpoints):</strong></p>
+<table>
+<tr><th>Breakpoint</th><th>Width</th><th>Layout Changes</th></tr>
+<tr><td><code>xs</code></td><td>0-599px</td><td>Single column. Minutes sections stacked. Fee acceptance full-width. Bottom nav.</td></tr>
+<tr><td><code>sm</code></td><td>600-899px</td><td>Single column with wider padding. Attendance badges wrap 2-per-row.</td></tr>
+<tr><td><code>md</code></td><td>900-1199px</td><td>Two-column where useful (minutes sidebar + content). Standard nav.</td></tr>
+<tr><td><code>lg</code></td><td>1200px+</td><td>Full desktop layout. Same as existing partner portal.</td></tr>
+</table>
+<p><strong>Mobile-specific adaptations for partner features:</strong></p>
+<table>
+<tr><th>Feature</th><th>Mobile Adaptation</th></tr>
+<tr><td><strong>Minutes view</strong></td><td>Sections collapsible (accordion). Tap to expand.</td></tr>
+<tr><td><strong>Attendance list</strong></td><td>Horizontal scroll of badge chips, not grid</td></tr>
+<tr><td><strong>Vote results</strong></td><td>Full-width result card, stacked partner names</td></tr>
+<tr><td><strong>PDF attachments</strong></td><td>"Download PDF" button (no embedded viewer on mobile)</td></tr>
+<tr><td><strong>Fee acceptance</strong></td><td>Full-width card: fee amount, accept/decline buttons (48px+ height)</td></tr>
+<tr><td><strong>Feedback pulse</strong></td><td>Single-question-per-screen wizard (swipe/tap to advance)</td></tr>
+<tr><td><strong>Action items</strong></td><td>Stacked cards, swipe to mark complete</td></tr>
+</table>
+<h3>Accessibility Strategy</h3>
+<p><strong>Compliance target: WCAG 2.1 AA</strong> (consistent with existing BATbern platform standard)</p>
+<p><strong>Presenter Mode — Specific Considerations:</strong></p>
+<table>
+<tr><th>Concern</th><th>Approach</th></tr>
+<tr><td><strong>Projector contrast</strong></td><td>All text AAA (7:1+) on dark backgrounds — already verified in dark theme</td></tr>
+<tr><td><strong>No color-only info</strong></td><td>Badges: color + text + icon. Votes: color + icon + label.</td></tr>
+<tr><td><strong>Keyboard-only operation</strong></td><td>Full keyboard shortcuts for all presenter actions (→, ←, 1-9, N, V, Esc)</td></tr>
+<tr><td><strong>Screen reader</strong></td><td>Not projected, but organizer's laptop must be screen-reader compatible</td></tr>
+<tr><td><strong>Large text</strong></td><td>Minimum 18px in presenter mode (exceeds WCAG large text threshold of 18pt)</td></tr>
+<tr><td><strong>Focus indicators</strong></td><td><code>ring-2 ring-blue-400</code> on all interactive elements</td></tr>
+</table>
+<p><strong>Partner Portal — Specific Considerations:</strong></p>
+<table>
+<tr><th>Concern</th><th>Approach</th></tr>
+<tr><td><strong>Touch targets</strong></td><td>All buttons/links 44x44px minimum on mobile</td></tr>
+<tr><td><strong>Color contrast</strong></td><td>All text AA (4.5:1) minimum, AAA where possible</td></tr>
+<tr><td><strong>Screen reader</strong></td><td>Semantic HTML, ARIA labels, live regions for dynamic content</td></tr>
+<tr><td><strong>Heading structure</strong></td><td>One H1 per page, logical H2→H3 hierarchy</td></tr>
+<tr><td><strong>Form labels</strong></td><td>All inputs with explicit <code><label></code> + <code>aria-describedby</code> for errors</td></tr>
+<tr><td><strong>Focus management</strong></td><td>Skip links, no focus traps, logical tab order</td></tr>
+</table>
+<h3>Testing Strategy</h3>
+<p><strong>Automated:</strong></p>
+<ul>
+<li>axe-core in CI/CD pipeline (fails build on violations)</li>
+<li>Lighthouse accessibility audits on PRs</li>
+<li>Playwright tests for presenter mode keyboard navigation</li>
+</ul>
+<p><strong>Manual:</strong></p>
+<ul>
+<li>Presenter mode: test on actual projector at venue resolution (1920x1080)</li>
+<li>Partner portal: test on iPhone Safari + Android Chrome</li>
+<li>Keyboard-only walkthrough of full meeting flow</li>
+<li>VoiceOver (macOS) test of organizer experience</li>
+<li>Color blindness simulation (deuteranopia, protanopia) for vote colors</li>
+</ul>
+<p><strong>Device Matrix:</strong></p>
+<table>
+<tr><th>Feature</th><th>Devices to Test</th></tr>
+<tr><td>Presenter Mode</td><td>MacBook + external projector (1080p), MacBook + external monitor</td></tr>
+<tr><td>Minutes View</td><td>iPhone 14, Samsung Galaxy S23, iPad</td></tr>
+<tr><td>Fee Acceptance</td><td>iPhone (Safari), Android (Chrome)</td></tr>
+<tr><td>Feedback Pulse</td><td>iPhone, Android</td></tr>
+<tr><td>Meeting Prep</td><td>Desktop Chrome, Firefox, Safari</td></tr>
+</table>
+<h3>Implementation Guidelines</h3>
+<p><strong>Presenter Mode:</strong></p>
+<ul>
+<li>Fixed layout, no media queries. CSS Grid for three-zone layout.</li>
+<li><code>min-width: 1280px</code> check on mount. Show warning if below.</li>
+<li>Pre-load all agenda item content before entering presenter mode (no loading spinners during meeting).</li>
+<li>Keyboard event listeners attached at layout level, not per-component.</li>
+</ul>
+<p><strong>Partner Portal:</strong></p>
+<ul>
+<li>Mobile-first CSS (base = mobile, add complexity with <code>min-width</code> queries)</li>
+<li>Relative units (rem) for all typography and spacing</li>
+<li>Touch targets: <code>min-height: 44px</code>, <code>min-width: 44px</code>, <code>padding: 12px</code></li>
+<li>Images: responsive with <code>srcset</code>, WebP with JPEG fallback</li>
+<li>PDF: mobile shows download button, desktop shows embedded viewer</li>
+<li>Feedback pulse: single-question-per-screen on mobile, all-at-once on desktop</li>
+</ul>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul>
+<li><strong>[A]</strong> Advanced Elicitation — refine responsive/accessibility strategy</li>
+<li><strong>[P]</strong> Party Mode — multi-perspective review</li>
+<li><strong>[C]</strong> Continue — save and complete the workflow</li>
+</ul></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><hr class="divider">
+<p>Nissim, we did it! The UX Design Specification for BATbern's Active Partner Meeting Agenda is <strong>complete</strong>.</p>
+<h3>What We Built Together</h3>
+<table>
+<tr><th>Step</th><th>Deliverable</th></tr>
+<tr><td>Executive Summary</td><td>Project vision, 5 target users, key challenges, design opportunities</td></tr>
+<tr><td>Core Experience</td><td>"Walk through the agenda, the meeting documents itself" — experience principles</td></tr>
+<tr><td>Emotional Response</td><td>Journey mapping from prep → live → post-meeting, emotion-to-design connections</td></tr>
+<tr><td>Inspiration Analysis</td><td>OneNote, Miro, PowerPoint, Mentimeter patterns adopted/adapted</td></tr>
+<tr><td>Design System</td><td>Extended BATbern dark theme with <code>presenterTheme</code>, projector typography scale</td></tr>
+<tr><td>Design Directions</td><td>6 HTML mockups → composite A+E+F chosen (sidebar + doc viewer + minutes)</td></tr>
+<tr><td>User Journeys</td><td>5 complete flows with Mermaid diagrams and edge cases</td></tr>
+<tr><td>Component Strategy</td><td>12 custom components across 3 implementation layers</td></tr>
+<tr><td>UX Patterns</td><td>Button hierarchy, feedback, navigation, forms, empty states, modals</td></tr>
+<tr><td>Responsive & A11y</td><td>Dual-context strategy (projector fixed + portal responsive), WCAG 2.1 AA</td></tr>
+</table>
+<h3>Deliverables</h3>
+<ul>
+<li><strong>UX Spec:</strong> <code>docs/ux-design-specification.md</code></li>
+<li><strong>Design Directions:</strong> <code>docs/ux-design-directions.html</code> (interactive mockups)</li>
+</ul>
+<h3>Recommended Next Steps</h3>
+<ol>
+<li><strong>Create Wireframes</strong> — Detailed wireframes for each screen using the component specs and layout decisions from this UX spec</li>
+<li><strong>Solution Architecture</strong> — Technical architecture for the PartnerMeeting entity, minutes auto-assembly, vote system, and action item carry-forward</li>
+<li><strong>Epic & Story Creation</strong> — Break the 4-layer build order into implementable stories</li>
+<li><strong>Interactive Prototype</strong> — Clickable prototype of the presenter mode flow for stakeholder validation</li>
+</ol>
+<p>Which direction would you like to go next?</p></div>
+</div>
+</section>
+
+<section id="post-session">
+  <div class="section-header">
+    <div class="phase-badge phase-2">9</div>
+    <div class="section-header-text"><h2>Post-Session — Training Material Creation</h2><p>Nissim requests training materials; Sally moves files and creates verbatim + overview HTML pages</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>move '/Users/nissim/dev/bat/BATbern-develop/docs/ux-design-directions.html' and '/Users/nissim/dev/bat/BATbern-develop/docs/ux-design-specification.md' to '/Users/nissim/dev/bat/BATbern-develop/docs/trainings/ba_demo2'.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Done. Both files moved to <code>docs/trainings/ba_demo2/</code>.</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>i want to use this session, as an example session for my hands on training to business analysts, on how to interact with BMAD analyst agent and brainstrom and create a spec and also ux, as we did now, architecture and pm), so phases 1-3 of BMAD. can you create a html presentation of it, showing exactly, what my input prompts and your output prompts where, what you answered, and how this then resulted in an updated brainstorming document. link the ux html to the existing '/Users/nissim/dev/bat/BATbern-develop/docs/trainings/ba_demo2/index.html'. store it under docs/trainings/ba_demo2. also create html version of '/Users/nissim/dev/bat/BATbern-develop/docs/trainings/ba_demo2/ux-design-specification.md'</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Let me check the existing index.html to understand the style and link structure.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Good, I understand the design system. This is a substantial task — let me create both files in parallel using agents.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Two agents working in parallel:</p>
+<ol>
+<li><strong>UX Spec HTML</strong> — Converting the full markdown spec into a styled HTML page</li>
+<li><strong>Session Presentation</strong> — Creating the training presentation showing the conversation flow</li>
+</ol>
+<p>Both will match the existing <code>index.html</code> dark theme style. I'll let you know when they're done.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Session presentation is done. Still waiting on the UX spec HTML conversion.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Both files are ready. Here's what's now in <code>docs/trainings/ba_demo2/</code>:</p>
+<table>
+<tr><th>File</th><th>Description</th></tr>
+<tr><td><code>index.html</code></td><td>Brainstorming session presentation (already existed)</td></tr>
+<tr><td><strong><code>ux-session.html</code></strong></td><td><strong>NEW</strong> — Training presentation of the UX design conversation flow</td></tr>
+<tr><td><strong><code>ux-design-specification.html</code></strong></td><td><strong>NEW</strong> — Full HTML version of the UX spec</td></tr>
+<tr><td><code>ux-design-directions.html</code></td><td>Interactive design direction mockups (moved earlier)</td></tr>
+<tr><td><code>ux-design-specification.md</code></td><td>Raw markdown spec (moved earlier)</td></tr>
+</table>
+<p>The <code>ux-session.html</code> links to both the spec and the design directions. Nav bar connects all pages together. Ready for your BA training.</p></div>
+</div>
+</section>
+
+<section id="diagrams">
+  <div class="section-header">
+    <div class="phase-badge phase-2">10</div>
+    <div class="section-header-text"><h2>Replacing Mermaid Diagrams with Inline SVG</h2><p>Nissim requests visual diagrams instead of Mermaid code; Sally replaces all 5 with inline SVG</p></div>
+  </div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-16</span></div>
+  <div class="turn-content"><p>replace the mermaid diagrams spec with the real diagram. use html drawin or draw.io or any other tool for it</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Let me read the mermaid blocks to understand each diagram, then replace them with inline SVG.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now I have all 5 mermaid diagrams. I'll replace each with inline SVG flowcharts that match the dark theme. Let me build them.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now replace each mermaid block with an SVG diagram. Starting with Journey 1:</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Now Journey 2 — the presenter mode flow:</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Designer Agent</div>
+  <div class="turn-content"><p>Done. All 5 mermaid code blocks replaced with inline SVG diagrams:</p>
+<ol>
+<li><strong>Journey 1</strong> — Create & Prepare Meeting (linear flow with checklist decision loop)</li>
+<li><strong>Journey 2</strong> — Presenter Mode (6 agenda items as a vertical flow with side annotations)</li>
+<li><strong>Journey 3</strong> — Review & Publish Minutes (review loop + 3 output branches)</li>
+<li><strong>Journey 4</strong> — Absent Partner (decision diamond with 4 action branches)</li>
+<li><strong>Journey 5</strong> — Action Item Carry-Forward (yes/no branch with 3 outcomes)</li>
+</ol>
+<p>All use the same color system: purple (#6c63ff) for flow, green (#00d4aa) for success, yellow (#ffd166) for decisions, red (#ff6b6b) for warnings/loops.</p></div>
+</div>
+</section>
+</main>
+<script>
+const navLinks = document.querySelectorAll('nav a[href^="#"]');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.getAttribute('id');
+      navLinks.forEach(a => {
+        a.classList.remove('active');
+        if (a.getAttribute('href') === '#' + id) a.classList.add('active');
+      });
+    }
+  });
+}, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

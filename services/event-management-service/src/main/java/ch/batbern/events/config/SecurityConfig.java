@@ -1,39 +1,39 @@
 package ch.batbern.events.config;
 
+import ch.batbern.shared.security.JwtRolesConverter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.spec.SecretKeySpec;
+import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 /**
  * Security configuration for the Event Management Service
  * Configures role-based access control for event management endpoints with JWT authentication
  *
  * Method Security Strategy:
- * - Production/Staging: @EnableMethodSecurity enforces @PreAuthorize annotations
- * - Local Development: Method security disabled (trusted localhost environment, mirrors AWS VPC security)
+ * - All profiles (local, test, staging, production): @EnableMethodSecurity enforces @PreAuthorize.
+ *   Pattern 3b (Epic 11.E.7) makes this safe locally even for CUMS-provisioned speakers whose
+ *   Cognito user lives in staging while their user_profiles row lives in the local DB — the
+ *   JwtRolesConverter DB fallback populates ROLE_<X> from the local row. Before Pattern 3b
+ *   existed, local profile relaxed method security to a "trusted localhost" model; that
+ *   shortcut is no longer needed and masked role-config drift between dev and staging.
+ *   Removed 2026-05-25 during Bruno F2 admin-cleanup-api hardening.
  */
 @Configuration
 @EnableWebSecurity
@@ -46,13 +46,12 @@ public class SecurityConfig {
     private String watchJwtSecret;
 
     /**
-     * Enable method-level security for production, staging, and test environments
-     * Enforces @PreAuthorize annotations on controller methods
+     * Enable method-level security in every profile (local, test, staging, production).
+     * Enforces @PreAuthorize annotations on controller methods.
      */
     @Configuration
     @EnableMethodSecurity(prePostEnabled = true)
-    @Profile("!local")
-    static class ProductionMethodSecurityConfig {
+    static class MethodSecurityConfig {
     }
 
     /**
@@ -64,7 +63,9 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("!test")
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationConverter jwtAuthenticationConverter)
+            throws Exception {
         http
             .cors(Customizer.withDefaults()) // Uses CorsConfigurationSource bean if present
             .csrf(csrf -> csrf.disable()) // Disable for stateless API
@@ -99,10 +100,6 @@ public class SecurityConfig {
                 // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/PUT/DELETE require ORGANIZER)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
-                // SpeakerController: public read endpoints (speaker directory)
-                .requestMatchers(HttpMethod.GET, "/api/v1/speakers").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/speakers/*").permitAll()
-
                 // Story 5.9: Public materials download endpoint for archived events
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 
@@ -114,35 +111,10 @@ public class SecurityConfig {
                 // Email cancellation endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/cancel").permitAll()
 
-                // Story 6.1a: Speaker portal magic link validation (no auth required, token-protected)
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
-
-                // Story 6.2a: Speaker portal response submission (no auth required, token-protected)
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
-
-                // Story 6.2b: Speaker portal profile endpoints (no auth required, token-protected)
-                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/profile").permitAll()
-                .requestMatchers(HttpMethod.PATCH, "/api/v1/speaker-portal/profile").permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
-
-                // Story 6.4: Speaker dashboard endpoint (no auth required, token-protected)
-                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/dashboard").permitAll()
-
-                // Story 6.3: Speaker portal content submission endpoints (no auth required, token-protected)
-                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/content").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/draft").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/submit").permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        "/api/v1/speaker-portal/materials/presigned-url").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/materials/confirm").permitAll()
-
-                // Story 9.1: Speaker JWT magic link authentication endpoint (JWT-protected, no Cognito auth)
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-magic-login").permitAll()
-
-                // Story 6.3: E2E test token generation (dev/test profiles only, controller is @Profile protected)
-                .requestMatchers("/api/v1/e2e-test/**").permitAll()
+                // Story 11.E.3 / 11.F.1: /api/v1/speaker-portal/** is Cognito-secured via
+                // @PreAuthorize("hasRole('SPEAKER')") on each controller. The magic-link auth
+                // surface (/auth/speaker-magic-login + /speaker-portal/validate-token +
+                // /api/v1/e2e-test/**) was removed in Story 11.F.1.
 
                 // Story 10.7: Newsletter public endpoints (subscribe + token-based unsubscribe)
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()
@@ -157,8 +129,22 @@ public class SecurityConfig {
                 // Story 10.16: AI feature flag endpoint (public — no auth required)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
 
+                // Story 10.26: Internal Lambda forwarder endpoints (VPC-only access)
+                // Registrations list for batbern{N}@ event distribution lists
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations").permitAll()
+                // Admin settings read for support@ contact resolution
+                .requestMatchers(HttpMethod.GET, "/api/v1/admin/settings/*").permitAll()
+                // Spec auto-participant-email-aliases-excel-export (F2): per-event
+                // distribution-list resolver for batbern{N}-speaker@ + batbern{N}-moderator@
+                // aliases. Same VPC-only forwarder pattern as /events/*/registrations.
+                .requestMatchers(HttpMethod.GET,
+                        "/api/v1/events/*/distribution-list/*").permitAll()
+
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()
+
+                // Global teaser images: public list for presenter view (_global = all events)
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/_global/teaser-images").permitAll()
 
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
@@ -167,7 +153,7 @@ public class SecurityConfig {
             // Configure OAuth2 resource server to parse JWT tokens
             // Required even in local mode for SecurityContextHelper to extract user context
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
             );
 
         return http.build();
@@ -216,38 +202,18 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT Authentication Converter to extract roles from custom:role claim
-     * Maps custom:role claim (comma-separated string) to Spring Security ROLE_ authorities
+     * JWT Authentication Converter with database fallback when custom:role is empty.
+     * Epic 11.E.7: local-dev speakers have a Cognito user in staging but a user_profiles
+     * row only in the local DB, so the PreTokenGen Lambda can't populate custom:role.
+     * In staging the JWT always carries roles, so the fallback is dormant.
+     * See {@link JwtRolesConverter}.
      */
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    public JwtAuthenticationConverter jwtAuthenticationConverter(
+            ObjectProvider<DataSource> dataSourceProvider) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new CustomRolesToAuthoritiesConverter());
+        converter.setJwtGrantedAuthoritiesConverter(
+                new JwtRolesConverter(dataSourceProvider.getIfAvailable()));
         return converter;
-    }
-
-    /**
-     * Converter to extract roles from JWT claims and map to Spring Security authorities.
-     *
-     * Supports two JWT formats:
-     * - Cognito tokens: roles in "custom:role" claim (comma-separated, e.g. "ORGANIZER,SPEAKER")
-     * - Watch tokens:   role in "role" claim (single value, e.g. "ORGANIZER")
-     */
-    private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
-        @Override
-        public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // Cognito ID token: "custom:role" claim (comma-separated)
-            String rolesString = jwt.getClaimAsString("custom:role");
-            // Watch JWT fallback: "role" claim (single value)
-            if (rolesString == null || rolesString.isEmpty()) {
-                rolesString = jwt.getClaimAsString("role");
-            }
-            if (rolesString == null || rolesString.isEmpty()) {
-                return Collections.emptyList();
-            }
-            return Arrays.stream(rolesString.split(","))
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
-                .collect(Collectors.toList());
-        }
     }
 }

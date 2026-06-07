@@ -16,9 +16,18 @@
 import { PostConfirmationTriggerEvent, PostConfirmationTriggerHandler } from 'aws-lambda';
 import { getDbClient, executeTransaction } from './common/database';
 import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+import {
+  CognitoIdentityProviderClient,
+  AdminUpdateUserAttributesCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 
 // CloudWatch client for metrics
 const cloudWatchClient = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-central-1' });
+
+// Cognito client for the Story 12.1 custom:role='UNUSED' sentinel write
+const cognitoClient = new CognitoIdentityProviderClient({
+  region: process.env.AWS_REGION || 'eu-central-1',
+});
 
 /**
  * Valid user roles in the system
@@ -36,6 +45,14 @@ interface UserAttributes {
   'cognito:groups'?: string;
   'custom:preferences'?: string; // JSON string with user profile data
   'custom:role'?: string; // Role override for admin-created users (e.g. bootstrap organizer)
+  // Standard name claims. Native sign-ups carry names in custom:preferences; FEDERATED
+  // (Google) sign-ins carry them here, mapped by the IdP (Story 12.5) — see createUser
+  // fallback (Story 12.8 F1a).
+  given_name?: string;
+  family_name?: string;
+  // Story 12.11: present (JSON array string) ONLY for external-provider (federated)
+  // users — primary federated-detection signal for the consent decision.
+  identities?: string;
 }
 
 /**
@@ -80,7 +97,30 @@ function extractUserAttributes(event: PostConfirmationTriggerEvent): UserAttribu
     'cognito:groups': attributes['cognito:groups'], // Legacy field, no longer used
     'custom:preferences': attributes['custom:preferences'],
     'custom:role': attributes['custom:role'],
+    given_name: attributes.given_name,
+    family_name: attributes.family_name,
+    identities: attributes.identities,
   };
+}
+
+/**
+ * Story 12.11: detect a FEDERATED (external-provider) confirmation.
+ *
+ * Primary signal: the `identities` user attribute — Cognito sets it (a JSON array of
+ * linked providers) exclusively for external-provider users. Fallback: the Cognito
+ * username, which for Google-federated users is `Google_<provider-sub>` (verified in
+ * the live pool, 2026-06-04; matched case-insensitively).
+ *
+ * Used for the consent decision: a native self-registration required the
+ * RegistrationStep2 ToS checkbox, so confirmation IS the consent moment; a federated
+ * sign-in implies NO explicit consent and must leave `terms_accepted_at` NULL so the
+ * frontend onboarding gate fires.
+ */
+function isFederatedSignIn(userName: string, attributes: UserAttributes): boolean {
+  if (attributes.identities && attributes.identities.length > 0) {
+    return true;
+  }
+  return /^google_/i.test(userName);
 }
 
 /**
@@ -98,6 +138,34 @@ function parseUserPreferences(preferencesJson?: string): UserPreferences {
   } catch (error) {
     console.error('Failed to parse custom:preferences JSON', { preferencesJson, error });
     return {};
+  }
+}
+
+/**
+ * Resolve a unique username by appending .2 / .3 / … when the base collides.
+ *
+ * Mirrors the Java {@code SlugGenerationService.ensureUniqueUsername} and the
+ * JIT interceptor's existsByUsername loop, so the three code paths stay in
+ * sync on collision behaviour.
+ */
+async function resolveUniqueUsername(
+  client: { query: (text: string, params?: unknown[]) => Promise<{ rows: { username: string }[] }> },
+  base: string
+): Promise<string> {
+  const baseCheck = await client.query(
+    'SELECT username FROM user_profiles WHERE username = $1 LIMIT 1',
+    [base]
+  );
+  if (baseCheck.rows.length === 0) return base;
+  let suffix = 2;
+  for (;;) {
+    const candidate = `${base}.${suffix}`;
+    const row = await client.query(
+      'SELECT username FROM user_profiles WHERE username = $1 LIMIT 1',
+      [candidate]
+    );
+    if (row.rows.length === 0) return candidate;
+    suffix++;
   }
 }
 
@@ -179,7 +247,8 @@ async function createUser(
   email: string,
   emailVerified: boolean,
   preferences: UserPreferences,
-  role: UserRole
+  role: UserRole,
+  nativeConsent: boolean
 ): Promise<string | null> {
   // Extract user profile data from preferences
   const firstName = preferences.firstName || 'User';
@@ -206,17 +275,20 @@ async function createUser(
 
       // STEP 2a: Existing user found - check Cognito ID status
       if (existingUser.cognito_user_id === null || existingUser.cognito_user_id === '') {
-        // Historical participant registering for first time - LINK to Cognito account
+        // Historical participant registering for first time - LINK to Cognito account.
+        // Story 12.11: a NATIVE registration required the ToS checkbox, so the link is
+        // the consent moment (write-once via COALESCE); a FEDERATED link records none.
         await client.query(
           `UPDATE user_profiles
            SET cognito_user_id = $1,
                first_name = COALESCE(NULLIF(first_name, ''), $2),
                last_name = COALESCE(NULLIF(last_name, ''), $3),
                pref_language = COALESCE(pref_language, $4),
+               terms_accepted_at = COALESCE(terms_accepted_at, CASE WHEN $6 THEN CURRENT_TIMESTAMP END),
                is_active = true,
                updated_at = CURRENT_TIMESTAMP
            WHERE id = $5`,
-          [cognitoId, firstName, lastName, language, existingUser.id]
+          [cognitoId, firstName, lastName, language, existingUser.id, nativeConsent]
         );
 
         userId = existingUser.id;
@@ -252,7 +324,20 @@ async function createUser(
         throw new Error(errorMsg);
       }
     } else {
-      // STEP 2b: No existing user - INSERT new record
+      // STEP 2b: No existing user - INSERT new record.
+      //
+      // Resolve username collisions BEFORE the INSERT so the constraint never
+      // fires here. Without this, a bare INSERT would fail when the generated
+      // firstname.lastname matches an existing historical user (e.g. someone
+      // with the same name from a previous job). The Lambda would then throw,
+      // and the JIT interceptor would later create a duplicate account on the
+      // user's first authenticated request — without names, because JIT reads
+      // a different attribute path (2026-05-18 incident).
+      const finalUsername = await resolveUniqueUsername(client, username);
+      // Story 12.11: terms_accepted_at is stamped with the SERVER clock for native
+      // self-registrations (the RegistrationStep2 ToS checkbox was required to get
+      // here) and left NULL for federated sign-ins (consent must be explicit — the
+      // frontend onboarding gate collects it on /profile?onboarding=1).
       const insertResult = await client.query(
         `INSERT INTO user_profiles (
           cognito_user_id,
@@ -262,25 +347,27 @@ async function createUser(
           last_name,
           pref_language,
           pref_email_notifications,
+          terms_accepted_at,
           is_active,
           created_at,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, CASE WHEN $8 THEN CURRENT_TIMESTAMP END, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id`,
         [
           cognitoId,
           email,
-          username,
+          finalUsername,
           firstName,
           lastName,
           language,
           preferences.notifications?.email ?? true,
+          nativeConsent,
         ]
       );
 
       userId = insertResult.rows[0].id;
-      console.log('New user created in database', { userId, cognitoId, email, username });
+      console.log('New user created in database', { userId, cognitoId, email, username: finalUsername });
 
       // Publish metric for new user creation
       await publishMetric('NewUserCreated', 1, 'Count');
@@ -348,6 +435,35 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
 }
 
 /**
+ * Story 12.1 AC6: write the custom:role='UNUSED' sentinel on the just-confirmed user.
+ *
+ * This is documentation-in-the-data for console inspectors — it marks the stored
+ * custom:role attribute as deliberately unused (the authorization claim is projected
+ * fresh from the DB by the PreTokenGeneration Lambda; the stored attribute no longer
+ * flows into tokens after the client readAttributes drop). It is best-effort and
+ * MUST NOT throw: a failure is swallowed and logged, exactly like the surrounding
+ * non-blocking handler so it can never block Cognito confirmation.
+ */
+async function writeRoleUnusedSentinel(userPoolId: string, userName: string): Promise<void> {
+  try {
+    await cognitoClient.send(
+      new AdminUpdateUserAttributesCommand({
+        UserPoolId: userPoolId,
+        Username: userName,
+        UserAttributes: [{ Name: 'custom:role', Value: 'UNUSED' }],
+      })
+    );
+    console.log('Wrote custom:role=UNUSED sentinel', { userName });
+  } catch (error) {
+    // Non-blocking: never let the sentinel write fail confirmation.
+    console.warn('Failed to write custom:role=UNUSED sentinel (non-blocking)', {
+      userName,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
+/**
  * Main Lambda handler for PostConfirmation trigger
  *
  * IMPORTANT: This function MUST NOT throw errors, as that would block Cognito user confirmation.
@@ -370,8 +486,24 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
     // Parse user preferences from custom:preferences JSON (Story 1.2.3, ADR-001)
     const preferences = parseUserPreferences(attributes['custom:preferences']);
 
+    // Story 12.8 F1a: FEDERATED (Google) sign-ins carry names in the standard
+    // given_name/family_name claims (mapped by the IdP, Story 12.5), NOT in
+    // custom:preferences. Fall back to them so a federated user provisions with real names
+    // instead of the 'User'/'User' placeholder. Native sign-ups are unaffected — their
+    // custom:preferences names are already set, so the fallback is a no-op for them.
+    if (!preferences.firstName && attributes.given_name) {
+      preferences.firstName = attributes.given_name;
+    }
+    if (!preferences.lastName && attributes.family_name) {
+      preferences.lastName = attributes.family_name;
+    }
+
     // Get initial role — respects custom:role for admin-created users (ADR-001)
     const role = getDefaultRole(attributes);
+
+    // Story 12.11: native confirmations carry implicit ToS consent (required checkbox
+    // in RegistrationStep2); federated ones do not.
+    const nativeConsent = !isFederatedSignIn(event.userName, attributes);
 
     console.log('Processing user confirmation', {
       cognitoId,
@@ -381,10 +513,14 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
       lastName: preferences.lastName,
       language: preferences.language,
       role,
+      nativeConsent,
     });
 
     // Create user and assign role in database
-    await createUser(cognitoId, email, email_verified === 'true', preferences, role);
+    await createUser(cognitoId, email, email_verified === 'true', preferences, role, nativeConsent);
+
+    // Story 12.1 AC6: best-effort custom:role='UNUSED' sentinel (non-blocking).
+    await writeRoleUnusedSentinel(event.userPoolId, event.userName);
 
     // Record success metrics
     const duration = Date.now() - startTime;

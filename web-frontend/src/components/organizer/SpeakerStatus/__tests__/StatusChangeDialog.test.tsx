@@ -32,6 +32,10 @@ vi.mock('react-i18next', () => ({
         'organizer:speakerStatus.contacted': 'Contacted',
         'organizer:speakerStatus.ready': 'Ready',
         'organizer:speakerStatus.accepted': 'Accepted',
+        // Story 11.D.4 — required-reason guard for DECLINED.
+        'organizer:kanbanDrag.declineDialog.title': `Decline ${params?.speakerName}?`,
+        'organizer:kanbanDrag.declineDialog.reasonHint':
+          'A reason is required for declined speakers. The reason appears in the status history and any decline notification.',
       };
       return translations[key] || key;
     },
@@ -289,6 +293,46 @@ describe('StatusChangeDialog', () => {
 
       expect(screen.getByText(/Open/)).toBeInTheDocument();
       expect(screen.getByText(/Contacted/)).toBeInTheDocument();
+    });
+  });
+
+  // Story 11.D.4 AC5 + AC10 case 29 — required-reason guard for DECLINED.
+  describe('Required-reason guard for DECLINED (Story 11.D.4 AC5)', () => {
+    it('should_disableConfirmButton_inStatusChangeDialog_when_newStatusIsDeclined_andReasonEmpty', () => {
+      render(<StatusChangeDialog {...defaultProps} newStatus={'DECLINED' as const} />);
+      const confirm = screen.getByTestId('status-change-confirm');
+      expect(confirm).toBeDisabled();
+    });
+
+    it('should_enableConfirmButton_inStatusChangeDialog_when_newStatusIsDeclined_andReasonProvided', async () => {
+      const user = userEvent.setup();
+      render(<StatusChangeDialog {...defaultProps} newStatus={'DECLINED' as const} />);
+      const reasonInput = screen.getByTestId('status-change-reason').querySelector('textarea');
+      expect(reasonInput).toBeTruthy();
+      await user.type(
+        reasonInput as HTMLTextAreaElement,
+        'Speaker withdrew due to schedule conflict'
+      );
+      const confirm = screen.getByTestId('status-change-confirm');
+      await waitFor(() => expect(confirm).not.toBeDisabled());
+    });
+
+    it('should_keepConfirmEnabled_inStatusChangeDialog_when_newStatusIsNotDeclined_andReasonEmpty', () => {
+      // Default `defaultProps` has newStatus='accepted' — reason is OPTIONAL; confirm must
+      // start enabled. Regression guard against accidental tightening.
+      render(<StatusChangeDialog {...defaultProps} />);
+      const confirm = screen.getByTestId('status-change-confirm');
+      expect(confirm).not.toBeDisabled();
+    });
+
+    it('should_renderDeclineDialogTitle_when_newStatusIsDeclined', () => {
+      render(<StatusChangeDialog {...defaultProps} newStatus={'DECLINED' as const} />);
+      expect(screen.getByText(/Decline Dr. Jane Smith\?/)).toBeInTheDocument();
+    });
+
+    it('should_renderReasonHint_when_newStatusIsDeclined', () => {
+      render(<StatusChangeDialog {...defaultProps} newStatus={'DECLINED' as const} />);
+      expect(screen.getByText(/A reason is required for declined speakers/)).toBeInTheDocument();
     });
   });
 });

@@ -5,7 +5,8 @@
  * Features:
  * - Drag-and-drop support (AC7.1)
  * - Click to browse (AC7.2)
- * - File type validation - JPEG, PNG, WebP (AC7.3)
+ * - File type validation - JPEG, PNG, SVG (AC7.3; Story 12.12 follow-up aligned the
+ *   list to the backend ProfilePictureService allow-list — webp was frontend-only)
  * - File size validation - max 5MB (AC7.4)
  * - Image preview after selection (AC7.5)
  * - Upload uses presigned URL (AC7.6)
@@ -17,17 +18,21 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, X, AlertCircle } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
-import { speakerPortalService } from '@/services/speakerPortalService';
+// Code review 2026-05-18 (D1): photo upload moved from the deleted speaker-portal endpoints
+// to the CUMS /api/v1/users/me/picture/* endpoints. The eventCode prop is gone — profile
+// photo lives on User, not per-event.
+import { uploadProfilePicture } from '@/services/api/userAccountApi';
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (AC7.4)
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']; // (AC7.3)
+// (AC7.3) — Story 12.12 follow-up: mirror the backend ProfilePictureService allow-list
+// EXACTLY (png/jpg/jpeg/svg → image/jpeg, image/png, image/svg+xml). webp was
+// frontend-only and 400'd at the presigned-url phase (InvalidFileTypeException).
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/svg+xml'];
 
 interface ProfilePhotoUploadProps {
-  /** Magic link token for authentication */
-  token: string;
   /** Current profile photo URL (null if none) */
-  currentPhotoUrl: string | null;
+  currentPhotoUrl: string | null | undefined;
   /** Callback when photo is successfully uploaded */
   onPhotoUploaded: (url: string) => void;
   /** Callback when an error occurs */
@@ -36,10 +41,9 @@ interface ProfilePhotoUploadProps {
 
 /**
  * Profile photo upload component with drag-and-drop support.
- * Uses presigned URL pattern for direct S3 upload.
+ * Uses presigned URL pattern for direct S3 upload via the CUMS user-picture endpoints.
  */
 const ProfilePhotoUpload = ({
-  token,
   currentPhotoUrl,
   onPhotoUploaded,
   onError,
@@ -96,7 +100,7 @@ const ProfilePhotoUpload = ({
 
       return true;
     },
-    [onError]
+    [onError, t]
   );
 
   /**
@@ -119,8 +123,9 @@ const ProfilePhotoUpload = ({
       setIsUploading(true);
 
       try {
-        // Upload using service (3-phase presigned URL flow)
-        const uploadedUrl = await speakerPortalService.uploadProfilePhoto(token, file, (progress) =>
+        // Upload using CUMS user-picture endpoints (3-phase presigned URL flow). Returns the
+        // CDN URL string directly.
+        const uploadedUrl = await uploadProfilePicture(file, (progress) =>
           setUploadProgress(progress)
         );
 
@@ -142,7 +147,7 @@ const ProfilePhotoUpload = ({
         onError({ type: 'UPLOAD_FAILED', message: errorMsg });
       }
     },
-    [token, validateFile, onPhotoUploaded, onError]
+    [validateFile, onPhotoUploaded, onError]
   );
 
   /**

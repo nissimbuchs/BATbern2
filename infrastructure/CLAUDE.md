@@ -193,29 +193,26 @@ git push origin develop
 
 The infrastructure uses `DeploymentMode` to determine what to deploy:
 
-- **Development** (`LOCAL` mode): Only deploys AWS infrastructure (Network, Database, Cognito, Secrets, Storage). Services run locally in Docker or natively.
-- **Staging/Production** (`CLOUD` mode): Deploys full AWS infrastructure including ECS microservices, API Gateway, and Frontend.
+- **Development** (`LOCAL` mode): No AWS infrastructure deployed. Services run locally in Docker or natively, using production Cognito/S3.
+- **Production** (`CLOUD` mode, envName `staging`): Deploys full AWS infrastructure including ECS microservices, API Gateway, and Frontend. Serves www.batbern.ch.
 
 This is controlled by `EnvironmentHelper.shouldDeployWebInfrastructure()` in `lib/config/environment-config.ts`.
 
 ## Multi-Environment Configuration
 
-### AWS Account Mapping
-- **Development**: 954163570305 (eu-central-1)
-- **Staging**: 188701360969 (eu-central-1)
-- **Production**: 422940799530 (eu-central-1)
+### AWS Account Mapping (Consolidated)
+- **Development**: Local only (no AWS account; uses production Cognito/S3)
+- **Production**: 188701360969 (eu-central-1) — CDK `envName: 'staging'`, `isProduction: true`
+- **Management**: 510187933511 — domain registration only (profile `batbern-mgmt`)
+
+> The former production account (422940799530) is decommissioned. CloudFormation stacks retain `BATbern-staging-*` names.
 
 ### Environment Configs
-Each environment has a dedicated config file in `lib/config/`:
-- `dev-config.ts` - Cost-optimized (Single-AZ, t3.micro, 1 NAT gateway)
-- `staging-config.ts` - Production-like (Multi-AZ, t3.small, 2 NAT gateways)
-- `prod-config.ts` - High-availability (Multi-AZ, t3.medium, 3 NAT gateways, deletion protection)
+- `dev-config.ts` - Local development (no AWS infrastructure deployed)
+- `staging-config.ts` - Production config (domains: batbern.ch, RDS deletion protection, 14-day backups)
 
 ### AWS Profile Setup
-The npm scripts automatically use correct AWS profiles:
-- `batbern-dev` for development
-- `batbern-staging` for staging
-- `batbern-prod` for production
+The npm scripts use the `batbern-staging` profile for all deployments (production runs in the staging account):
 
 Configure profiles in `~/.aws/config`:
 ```ini
@@ -227,11 +224,12 @@ region = eu-central-1
 
 ## Key Architectural Patterns
 
-### 1. Subdomain Delegation Architecture (DNS)
-- **Production**: Owns `batbern.ch` hosted zone
-- **Staging**: Owns delegated subdomain `staging.batbern.ch`
+### 1. DNS Architecture (Consolidated)
+- **Production (staging account)**: Owns `batbern.ch` hosted zone (migrated from former production account)
+- **Domains**: www.batbern.ch, api.batbern.ch, cdn.batbern.ch
 - **Certificates**: Created in us-east-1 (CloudFront requirement) via DnsStack
 - **Cross-Region**: Uses `crossRegionReferences: true` to reference us-east-1 certificates from eu-central-1 stacks
+- **Domain Registration**: Managed in AWS management account (510187933511, profile `batbern-mgmt`)
 
 ### 2. ECS Service Connect (Microservices)
 - All microservices use **Service Connect** for service-to-service discovery
@@ -254,10 +252,7 @@ Cognito Lambda triggers (post-confirmation, pre-authentication, pre-token-genera
 ### 5. GitHub Actions Integration
 - **CICD Stack** creates IAM role with OIDC provider for GitHub Actions
 - **ECR Repositories**: One per microservice (event-management, speaker-coordination, etc.)
-- **Role ARNs**:
-  - Dev: `arn:aws:iam::954163570305:role/batbern-development-github-actions-role`
-  - Staging: `arn:aws:iam::188701360969:role/batbern-staging-github-actions-role`
-  - Prod: `arn:aws:iam::422940799530:role/batbern-production-github-actions-role`
+- **Role ARN**: `arn:aws:iam::188701360969:role/batbern-staging-github-actions-role`
 
 ## Critical Development Standards
 

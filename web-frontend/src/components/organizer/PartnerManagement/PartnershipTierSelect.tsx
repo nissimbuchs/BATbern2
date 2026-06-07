@@ -73,7 +73,7 @@ export const PartnershipTierSelect: React.FC<PartnershipTierSelectProps> = ({
         {(Object.keys(PARTNERSHIP_TIERS) as PartnershipLevel[]).map((tierKey) => {
           const tier = PARTNERSHIP_TIERS[tierKey];
           return (
-            <MenuItem key={tierKey} value={tierKey}>
+            <MenuItem key={tierKey} value={tierKey} data-testid={`tier-select-option-${tierKey}`}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                 <Typography component="span" sx={{ fontSize: '1.25rem' }}>
                   {tier.emoji}

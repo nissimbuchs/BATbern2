@@ -112,6 +112,17 @@ For detailed technology stack information, see [tech-stack.md](./tech-stack.md).
 
 ## Key Architectural Decisions
 
+### Architecture Decision Records (ADRs)
+
+The architecture is governed by accepted ADRs in `docs/architecture/ADR-*.md`. Most-cited ADRs:
+
+- **ADR-002**: Generic File Upload Service (presigned-URL pattern)
+- **ADR-003**: Meaningful Identifiers in Public APIs (`username`, `eventCode`, `companyName`; no UUIDs in public APIs)
+- **ADR-004**: Factor User Fields from Domain Entities (User is single source of truth for email, name, bio, photo, company)
+- **ADR-007**: Unified User Profile (one User per person; no duplicate identity entities)
+- **ADR-009**: Unified Speaker Workflow — single 8-state machine (`IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED` + `DECLINED`), SPEAKER as a User role (no `Speaker` entity, no `speakers` table), standard Cognito with `FORCE_CHANGE_PASSWORD` on first login (no magic-link / dual-auth). Supersedes the legacy 10-state model and the magic-link auth stack. See `ADR-009-unified-speaker-workflow.md` and the implementation plan in `docs/plans/speaker-workflow-refactor.md`.
+- **ADR-010**: Federated Identity via Cognito (Google SSO over OIDC) — **delivered 2026-06-04 (Epic 12)**. Cognito as OIDC broker on the custom domain `auth.batbern.ch` (backend JWT contract unchanged), existing accounts link via `AdminLinkProviderForUser` in `PreSignUp_ExternalProvider`, new Google users auto-provision as ATTENDEE via canonical JIT and pass the ToS consent gate (Pattern C). Inactive-blocking moved to the API-Gateway `is_active` gate; `companyId` removed from the token (resolved via user-api). Runtime kill-switch: `FEATURES_SSO_ENABLED`. **Deferred tail (backlog Story 12.10)**: Apple/generic OIDC + trigger-retirement cleanup to the target set `PreSignUp`, `PreTokenGeneration`, `CustomEmailSender` — PostConfirmation/PreAuthentication remain deployed until then. See `ADR-010-federated-identity-via-cognito.md` and the delivery record in `docs/plans/sso-oidc-federation.md`.
+
 ### Domain-Driven Design Approach
 The platform employs a **Domain-Driven Design microservices architecture** with four distinct bounded contexts:
 - **Event Management Domain** - Organizer workflows and automation

@@ -1,0 +1,578 @@
+package ch.batbern.partners.integration;
+
+import ch.batbern.partners.config.TestAwsConfig;
+import ch.batbern.partners.config.TestSecurityConfig;
+import ch.batbern.partners.domain.MeetingType;
+import ch.batbern.partners.domain.Partner;
+import ch.batbern.partners.domain.PartnerMeeting;
+import ch.batbern.partners.domain.PartnerMeetingRsvp;
+import ch.batbern.partners.domain.PartnershipLevel;
+import ch.batbern.partners.domain.RsvpStatus;
+import ch.batbern.partners.domain.TopicSuggestion;
+import ch.batbern.partners.dto.TestFixtureCleanupRequest;
+import ch.batbern.partners.repository.PartnerMeetingRepository;
+import ch.batbern.partners.repository.PartnerMeetingRsvpRepository;
+import ch.batbern.partners.repository.PartnerRepository;
+import ch.batbern.partners.repository.TopicRepository;
+import ch.batbern.partners.repository.TopicVoteRepository;
+import ch.batbern.shared.test.AbstractIntegrationTest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * Integration tests for {@code TestFixtureCleanupController} on PCS.
+ *
+ * <p>Covers:
+ * <ul>
+ *   <li>Authorization: 403 (non-organizer roles), 200 (organizer)</li>
+ *   <li>Prefix validation: invalid prefix rejected with 400 (defense against {@code prefix=br}
+ *       which would otherwise match the real {@code brtest*} entries — also intentionally
+ *       defends against {@code prefix=B} matching nothing real but indicating loose intent)</li>
+ *   <li>SQL-injection-shaped prefixes → 400 (regex enforcement at service layer)</li>
+ *   <li>Unknown entityType → 400</li>
+ *   <li>Empty / missing prefix → 400</li>
+ *   <li>Successful deletion: only the matching test rows deleted; real-shaped rows survive</li>
+ * </ul>
+ *
+ * <p>The 401-unauthenticated case is NOT testable here because PCS's
+ * {@code SecurityConfig.testFilterChain} sets {@code .anyRequest().permitAll()} at the HTTP
+ * layer (production auth is at the API Gateway layer per Story 1.2); method-level
+ * {@code @PreAuthorize} returns 403 even without authentication, so 401 only manifests in
+ * production. Same precedent as the EMS cleanup test class.
+ *
+ * <p>Defensive assertion: every successful-cleanup test seeds real-looking partners (ELCA,
+ * Swisscom) and verifies they survive. This is the production-safety guarantee that
+ * justifies running this endpoint against the production account — the staging audit
+ * found 7 {@code brtest*} partners co-existing with real partners in the same table.
+ */
+@Transactional
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
+@DisplayName("TestFixtureCleanup REST API Integration Tests (PCS)")
+class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTest {
+
+    private static final String ENDPOINT = "/api/v1/admin/test-fixtures/pcs/cleanup";
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private PartnerRepository partnerRepository;
+
+    @Autowired
+    private PartnerMeetingRepository meetingRepository;
+
+    @Autowired
+    private PartnerMeetingRsvpRepository rsvpRepository;
+
+    @Autowired
+    private TopicRepository topicRepository;
+
+    @Autowired
+    private TopicVoteRepository topicVoteRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void cleanState() {
+        // Tests start from a known-empty slate so deletion counts are deterministic.
+        // Cascade deletes remove partner_meeting_attendance, partner_meeting_rsvps,
+        // partner_notes, topic_suggestions (+ topic_votes). partner_meetings are standalone
+        // (no FK from partners), so clear them explicitly — rsvps first (FK to meetings).
+        rsvpRepository.deleteAll();
+        meetingRepository.deleteAll();
+        partnerRepository.deleteAll();
+        // topic_suggestions / topic_votes reference company_name as a string (ADR-003), NOT a
+        // partner FK, so partnerRepository.deleteAll() does not reach them — clear explicitly
+        // (votes first, FK to suggestions).
+        topicVoteRepository.deleteAll();
+        topicRepository.deleteAll();
+    }
+
+    // ---------- Authorization ----------
+
+    @Nested
+    @DisplayName("Authorization")
+    class Authorization {
+
+        @Test
+        @DisplayName("returns 401 when caller is unauthenticated (HTTP-level disabled in test config)")
+        @Disabled("HTTP-level auth disabled in SecurityConfig.testFilterChain — method-level "
+                + "@PreAuthorize returns 403 without auth. 401 only manifests behind the API "
+                + "Gateway in prod. Mirrors EMS/SlotAssignmentControllerIntegrationTest precedent.")
+        void returns401_whenUnauthenticated() throws Exception {
+            // Documented expectation; not exercisable in test config — see class javadoc.
+        }
+
+        @Test
+        @DisplayName("returns 403 when caller is ATTENDEE (not ORGANIZER)")
+        @WithMockUser(roles = {"ATTENDEE"})
+        void returns403_whenAttendee() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("brtest")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("returns 403 when caller is SPEAKER (not ORGANIZER)")
+        @WithMockUser(roles = {"SPEAKER"})
+        void returns403_whenSpeaker() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("brtest")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("returns 403 when caller is PARTNER (not ORGANIZER)")
+        @WithMockUser(roles = {"PARTNER"})
+        void returns403_whenPartner() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("brtest")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    // ---------- Input validation ----------
+
+    @Nested
+    @DisplayName("Input validation")
+    class InputValidation {
+
+        @Test
+        @DisplayName("returns 400 when entityType is unknown")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenUnknownEntityType() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("invoices")
+                    .prefix("brtest")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 400 when prefix is empty")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenPrefixEmpty() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 400 when prefix is too short (e.g. 'br' — would match real partners)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenPrefixTooShort() throws Exception {
+            // "br" would match brtest* AND any other 2-char-starting company name.
+            // Defense against operator typos that could nuke real partners.
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("br")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 400 when prefix contains SQL-injection-shaped chars")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenSqlInjectionShapedPrefix() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("brtest'; DROP TABLE partners; --")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 400 when prefix contains wildcard chars")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenWildcardPrefix() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("brtest%")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    // ---------- Successful cleanup ----------
+
+    @Nested
+    @DisplayName("Successful cleanup")
+    class SuccessfulCleanup {
+
+        @Test
+        @DisplayName("deletes brtest* partners but leaves real partner companies alone")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesTestPartners_preservesRealPartners() throws Exception {
+            // Given: two test partners (canonical brtest pattern) + two real-shaped partners.
+            // company_name is VARCHAR(12) — real names must fit (ELCA=4, Swisscom=8).
+            partnerRepository.save(buildPartner("brtest117"));
+            partnerRepository.save(buildPartner("brtest150"));
+            partnerRepository.save(buildPartner("ELCA"));
+            partnerRepository.save(buildPartner("Swisscom"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("brtest")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.partners").value(2))
+                    .andExpect(jsonPath("$.entityType").value("partners"))
+                    .andExpect(jsonPath("$.prefix").value("brtest"));
+
+            assertThat(partnerRepository.findByCompanyName("brtest117")).isEmpty();
+            assertThat(partnerRepository.findByCompanyName("brtest150")).isEmpty();
+            assertThat(partnerRepository.findByCompanyName("ELCA")).isPresent();
+            assertThat(partnerRepository.findByCompanyName("Swisscom")).isPresent();
+        }
+
+        @Test
+        @DisplayName("is idempotent — re-running with nothing to delete returns 0 counts")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void isIdempotent_whenNothingMatches() throws Exception {
+            partnerRepository.save(buildPartner("ELCA"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("brtest")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.partners").value(0));
+
+            assertThat(partnerRepository.findByCompanyName("ELCA")).isPresent();
+        }
+    }
+
+    // ---------- Meeting cleanup (id allowlist) ----------
+
+    @Nested
+    @DisplayName("Meeting cleanup (id allowlist)")
+    class MeetingCleanup {
+
+        @Test
+        @DisplayName("deletes only the allow-listed meetings; non-listed meetings survive")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesAllowlistedMeetings_preservesOthers() throws Exception {
+            // Given: three meetings — two will be allow-listed for deletion, one left out.
+            PartnerMeeting toDelete1 = meetingRepository.save(buildMeeting("BATbern90"));
+            PartnerMeeting toDelete2 = meetingRepository.save(buildMeeting("BATbern91"));
+            PartnerMeeting survivor = meetingRepository.save(buildMeeting("BATbern92"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .meetingIds(List.of(toDelete1.getId(), toDelete2.getId()))
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.meetings").value(2))
+                    .andExpect(jsonPath("$.entityType").value("meetings"));
+
+            // count() issues a fresh SQL COUNT (bypasses the L1 cache after the native delete).
+            assertThat(meetingRepository.count()).isEqualTo(1);
+            assertThat(meetingRepository.findById(survivor.getId())).isPresent();
+        }
+
+        @Test
+        @DisplayName("cascade-deletes RSVPs when their meeting is removed")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void cascadeDeletesRsvps() throws Exception {
+            PartnerMeeting meeting = meetingRepository.save(buildMeeting("BATbern93"));
+            rsvpRepository.save(buildRsvp(meeting.getId(), "partner@e2e.batbern.invalid"));
+            assertThat(rsvpRepository.findByMeetingId(meeting.getId())).hasSize(1);
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .meetingIds(List.of(meeting.getId()))
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.meetings").value(1));
+
+            // ON DELETE CASCADE (V9) removed the dependent RSVP row.
+            assertThat(rsvpRepository.findByMeetingId(meeting.getId())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("is idempotent — unknown meeting ids delete nothing and return 0")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void isIdempotent_whenIdsUnknown() throws Exception {
+            PartnerMeeting survivor = meetingRepository.save(buildMeeting("BATbern94"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .meetingIds(List.of(UUID.randomUUID()))
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.meetings").value(0));
+
+            assertThat(meetingRepository.findById(survivor.getId())).isPresent();
+        }
+
+        @Test
+        @DisplayName("returns 400 when meetingIds is empty")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenMeetingIdsEmpty() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .meetingIds(List.of())
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 400 when meetingIds is missing (null)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenMeetingIdsMissing() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    // ---------- Topic cleanup (prefix-based) ----------
+
+    @Nested
+    @DisplayName("Topic cleanup (prefix-based)")
+    class TopicCleanup {
+
+        @Test
+        @DisplayName("returns 400 when topics prefix is not the bound literal (e.g. 'Bruno')")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenTopicsPrefixNotBoundLiteral() throws Exception {
+            // "Bruno" would match "Bruno Test Topic" AND any real topic merely starting with
+            // the word Bruno — the anchored regex ^Bruno Test Topic$ rejects it.
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("topics")
+                    .prefix("Bruno")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 403 when caller is PARTNER (not ORGANIZER) for topics")
+        @WithMockUser(roles = {"PARTNER"})
+        void returns403_whenPartnerForTopics() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("topics")
+                    .prefix("Bruno Test Topic")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("deletes 'Bruno Test Topic*' suggestions (cascading votes) but leaves real topics alone")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesTestTopics_cascadesVotes_preservesRealTopics() throws Exception {
+            // Given: two test topics (canonical "Bruno Test Topic" prefix), one carrying a vote,
+            // plus a real-looking topic that must survive.
+            TopicSuggestion test1 = topicRepository.saveAndFlush(
+                    buildTopic("Bruno Test Topic - Digital Transformation in Architecture"));
+            topicRepository.save(buildTopic("Bruno Test Topic - Cloud Native"));
+            TopicSuggestion real = topicRepository.save(buildTopic("AI in Enterprise Architecture"));
+
+            // Vote on the first test topic — must cascade-delete with the suggestion (V4 FK).
+            // saveAndFlush above makes the suggestion row visible to this raw JDBC insert.
+            jdbcTemplate.update(
+                    "INSERT INTO topic_votes (topic_id, company_name) VALUES (?, ?)",
+                    test1.getId(), "ELCA");
+            Integer votesBefore = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_votes WHERE topic_id = ?", Integer.class, test1.getId());
+            assertThat(votesBefore).isEqualTo(1);
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("topics")
+                    .prefix("Bruno Test Topic")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.topics").value(2))
+                    .andExpect(jsonPath("$.entityType").value("topics"))
+                    .andExpect(jsonPath("$.prefix").value("Bruno Test Topic"));
+
+            // Both test topics gone; the real one survives. Assert via raw SQL COUNT rather than
+            // findById — the native DELETE bypassed Hibernate's L1 cache, so findById would
+            // return the stale managed entity.
+            Integer test1Rows = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_suggestions WHERE id = ?", Integer.class, test1.getId());
+            assertThat(test1Rows).isZero();
+            Integer realRows = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_suggestions WHERE id = ?", Integer.class, real.getId());
+            assertThat(realRows).isEqualTo(1);
+            Integer brunoRows = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_suggestions WHERE title LIKE 'Bruno Test Topic%'",
+                    Integer.class);
+            assertThat(brunoRows).isZero();
+
+            // topic_votes cascade-deleted via topic_id FK ON DELETE CASCADE (V4).
+            Integer votesAfter = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM topic_votes WHERE topic_id = ?", Integer.class, test1.getId());
+            assertThat(votesAfter).isZero();
+        }
+
+        @Test
+        @DisplayName("is idempotent — re-running with nothing to delete returns 0 counts")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void isIdempotent_whenNoTopicsMatch() throws Exception {
+            topicRepository.save(buildTopic("AI in Enterprise Architecture"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("topics")
+                    .prefix("Bruno Test Topic")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.topics").value(0));
+
+            assertThat(topicRepository.count()).isEqualTo(1);
+        }
+    }
+
+    // ---------- Test data builders ----------
+
+    private TopicSuggestion buildTopic(String title) {
+        return TopicSuggestion.builder()
+                .companyName("ELCA")
+                .suggestedBy("partner.user")
+                .title(title)
+                .description("Cleanup integration-test topic")
+                .build();
+    }
+
+    private Partner buildPartner(String companyName) {
+        Instant now = Instant.now();
+        return Partner.builder()
+                .companyName(companyName)
+                .partnershipLevel(PartnershipLevel.GOLD)
+                .partnershipStartDate(LocalDate.of(2024, 1, 1))
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
+    private PartnerMeeting buildMeeting(String eventCode) {
+        return PartnerMeeting.builder()
+                .eventCode(eventCode)
+                .meetingType(MeetingType.SPRING)
+                .meetingDate(LocalDate.of(2026, 3, 15))
+                .startTime(LocalTime.of(12, 0))
+                .endTime(LocalTime.of(14, 0))
+                .location("Test Venue, Bern")
+                .createdBy("batbern.organizer")
+                .build();
+    }
+
+    private PartnerMeetingRsvp buildRsvp(UUID meetingId, String attendeeEmail) {
+        return PartnerMeetingRsvp.builder()
+                .meetingId(meetingId)
+                .attendeeEmail(attendeeEmail)
+                .status(RsvpStatus.ACCEPTED)
+                .respondedAt(Instant.now())
+                .build();
+    }
+}

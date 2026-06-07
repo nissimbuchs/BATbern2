@@ -4,10 +4,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.services.ses.SesClient;
+import software.amazon.awssdk.services.ses.model.SendEmailRequest;
+import software.amazon.awssdk.services.ses.model.SendEmailResponse;
+import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
+import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Test suite for EmailService template variable replacement functionality.
@@ -454,6 +466,194 @@ class EmailServiceTest {
 
             // Then - entire block removed
             assertThat(result).isEqualTo("");
+        }
+    }
+
+    @Nested
+    @DisplayName("Configuration Set Application (bounce processing pipeline)")
+    class ConfigurationSetApplication {
+
+        private SesClient sesClient;
+
+        @BeforeEach
+        void wireMockSes() {
+            sesClient = mock(SesClient.class);
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
+            ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
+            ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("test-id").build());
+            when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
+                    .thenReturn(SendRawEmailResponse.builder().messageId("test-id").build());
+        }
+
+        @Test
+        @DisplayName("should_attachConfigurationSet_when_simpleSendAndPropertyConfigured")
+        void should_attachConfigurationSet_when_simpleSendAndPropertyConfigured() {
+            ReflectionTestUtils.setField(emailService, "configurationSetName", "batbern-staging-newsletter");
+
+            emailService.sendHtmlEmailSync("user@batbern.ch", "subj", "<p>body</p>");
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isEqualTo("batbern-staging-newsletter");
+        }
+
+        @Test
+        @DisplayName("should_omitConfigurationSet_when_propertyNotConfigured")
+        void should_omitConfigurationSet_when_propertyNotConfigured() {
+            ReflectionTestUtils.setField(emailService, "configurationSetName", null);
+
+            emailService.sendHtmlEmailSync("user@batbern.ch", "subj", "<p>body</p>");
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isNull();
+        }
+
+        @Test
+        @DisplayName("should_attachConfigurationSet_when_rawSendWithAttachmentsAndPropertyConfigured")
+        void should_attachConfigurationSet_when_rawSendWithAttachmentsAndPropertyConfigured() {
+            ReflectionTestUtils.setField(emailService, "configurationSetName", "batbern-staging-newsletter");
+
+            emailService.sendHtmlEmailWithAttachments(
+                    "user@batbern.ch", "subj", "<p>body</p>",
+                    List.of(new EmailService.EmailAttachment("event.ics",
+                            "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(),
+                            "text/calendar", true)));
+
+            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isEqualTo("batbern-staging-newsletter");
+        }
+
+        @Test
+        @DisplayName("should_omitConfigurationSet_when_rawSendWithAttachmentsAndPropertyNotConfigured")
+        void should_omitConfigurationSet_when_rawSendWithAttachmentsAndPropertyNotConfigured() {
+            ReflectionTestUtils.setField(emailService, "configurationSetName", null);
+
+            emailService.sendHtmlEmailWithAttachments(
+                    "user@batbern.ch", "subj", "<p>body</p>",
+                    List.of(new EmailService.EmailAttachment("event.ics",
+                            "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(),
+                            "text/calendar", true)));
+
+            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isNull();
+        }
+
+        @Test
+        @DisplayName("should_useExplicitOverride_when_configurationSetPassedToFourArgSync")
+        void should_useExplicitOverride_when_configurationSetPassedToFourArgSync() {
+            // Even with the bean-level value set, an explicit override (used by NewsletterEmailService)
+            // must take precedence — the 4-arg sync method is the explicit-override entry point.
+            ReflectionTestUtils.setField(emailService, "configurationSetName", "default-cs");
+
+            emailService.sendHtmlEmailSync("user@batbern.ch", "subj", "<p>body</p>", "explicit-override-cs");
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isEqualTo("explicit-override-cs");
+        }
+    }
+
+    /**
+     * Reserved-domain recipient filter — RFC 2606 / RFC 6761.
+     *
+     * Goal: never burn SES quota or bounce reputation on test/scanner addresses
+     * (zaproxy@example.com, anything@*.test, etc.). The check sits at the SES
+     * boundary so every send path is covered uniformly — registration, deregister,
+     * speaker invite, partner invite, task reminder, newsletter, …
+     */
+    @Nested
+    @DisplayName("Reserved Recipient Domain Filter (RFC 2606 / RFC 6761)")
+    class ReservedRecipientDomainFilter {
+
+        private SesClient sesClient;
+
+        @BeforeEach
+        void wireMockSes() {
+            sesClient = mock(SesClient.class);
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
+            ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
+            ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+        }
+
+        @Test
+        @DisplayName("should_throwAndSkipSes_when_simpleSendToReservedDomain")
+        void should_throwAndSkipSes_when_simpleSendToReservedDomain() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    ReservedEmailRecipientException.class,
+                    () -> emailService.sendHtmlEmailSync("zaproxy@example.com", "subj", "<p>body</p>")
+            );
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_throwAndSkipSes_when_rawSendWithAttachmentsToReservedDomain")
+        void should_throwAndSkipSes_when_rawSendWithAttachmentsToReservedDomain() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    ReservedEmailRecipientException.class,
+                    () -> emailService.sendHtmlEmailWithAttachments(
+                            "zaproxy@example.com", "subj", "<p>body</p>",
+                            List.of(new EmailService.EmailAttachment("event.ics",
+                                    "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(),
+                                    "text/calendar", true)))
+            );
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_throwAndSkipSes_when_syncWithAttachmentsToReservedDomain")
+        void should_throwAndSkipSes_when_syncWithAttachmentsToReservedDomain() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    ReservedEmailRecipientException.class,
+                    () -> emailService.sendHtmlEmailSyncWithAttachments(
+                            "user@example.test", "subj", "<p>body</p>", List.of(), null)
+            );
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @org.junit.jupiter.params.ParameterizedTest(name = "[{index}] {0}")
+        @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "anyone@example.com",
+            "anyone@example.org",
+            "anyone@example.net",
+            "root@localhost",
+            "user@anything.test",
+            "user@anything.invalid",
+            "user@anything.example",
+            "user@anything.localhost",
+            "USER@EXAMPLE.COM",                 // case-insensitive
+            "User@SubDomain.Example.com"        // sub of example.com (matches *.example TLD-suffix rule)
+        })
+        @DisplayName("isReservedRecipientForSes — covers all RFC 2606/6761 reserved patterns")
+        void should_recognizeReservedRecipient_when_anyKnownPattern(String recipient) {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    ReservedEmailRecipientException.class,
+                    () -> emailService.sendHtmlEmailSync(recipient, "subj", "<p>body</p>")
+            );
+        }
+
+        @org.junit.jupiter.params.ParameterizedTest(name = "[{index}] {0}")
+        @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "user@batbern.ch",
+            "info@swisscom.com",
+            "speaker@example-company.ch",       // contains the substring "example" but not as reserved
+            "test@batbern.ch"                    // local-part "test" is fine; only the domain matters
+        })
+        @DisplayName("isReservedRecipientForSes — does NOT block legitimate domains")
+        void should_passThrough_when_legitimateDomain(String recipient) {
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("test-id").build());
+
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+                    () -> emailService.sendHtmlEmailSync(recipient, "subj", "<p>body</p>")
+            );
+            verify(sesClient).sendEmail(any(SendEmailRequest.class));
         }
     }
 }

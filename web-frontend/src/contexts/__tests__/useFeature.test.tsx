@@ -16,6 +16,7 @@ describe('useFeature', () => {
       analytics: true,
       offline: false,
       notifications: true,
+      sso: true,
     },
   };
 
@@ -37,6 +38,13 @@ describe('useFeature', () => {
 
   it('should_returnCorrectValue_when_checkingNotifications', () => {
     const { result } = renderHook(() => useFeature('notifications'), { wrapper });
+
+    expect(result.current).toBe(true);
+  });
+
+  it('should_resolveSsoFlag_when_checkingSso', () => {
+    // Story 12.9: the "Continue with Google" button is gated on useFeature('sso').
+    const { result } = renderHook(() => useFeature('sso'), { wrapper });
 
     expect(result.current).toBe(true);
   });

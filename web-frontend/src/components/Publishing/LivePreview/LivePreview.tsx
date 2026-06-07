@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
-import { PublishingPhase, PublishingMode } from '@/types/event.types';
+import { PublishingPhase } from '@/types/event.types';
 
 type DeviceType = 'desktop' | 'mobile' | 'print';
 
@@ -30,10 +30,9 @@ interface DeviceDimensions {
 export interface LivePreviewProps {
   eventCode: string;
   phase: PublishingPhase;
-  mode: PublishingMode;
 }
 
-export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode }) => {
+export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase }) => {
   const { t } = useTranslation('organizer');
   const { preview, fetchPreview, isLoadingPreview, previewError } = usePublishing(eventCode);
   const [device, setDevice] = useState<DeviceType>('desktop');
@@ -92,7 +91,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
   };
 
   const handleRetry = () => {
-    fetchPreview?.(phase, mode);
+    fetchPreview?.(phase);
   };
 
   const getPreviewUrl = () => {
@@ -102,7 +101,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
     // Generate preview URL - use actual public event page with preview mode
     // This allows previewing how the event will look on the public site
     const baseUrl = `/events/${eventCode}`;
-    const params = new URLSearchParams({ preview: 'true', mode: mode || 'progressive' });
+    const params = new URLSearchParams({ preview: 'true' });
     if (phase) {
       params.append('phase', phase);
     }
@@ -134,24 +133,30 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
             aria-label={t('livePreview.desktopPreview')}
             aria-pressed={device === 'desktop'}
           >
-            <DesktopIcon sx={{ mr: 1 }} />
-            {t('livePreview.desktop')}
+            <DesktopIcon sx={{ mr: { xs: 0, md: 1 } }} />
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+              {t('livePreview.desktop')}
+            </Box>
           </ToggleButton>
           <ToggleButton
             value="mobile"
             aria-label={t('livePreview.mobilePreview')}
             aria-pressed={device === 'mobile'}
           >
-            <MobileIcon sx={{ mr: 1 }} />
-            {t('livePreview.mobile')}
+            <MobileIcon sx={{ mr: { xs: 0, md: 1 } }} />
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+              {t('livePreview.mobile')}
+            </Box>
           </ToggleButton>
           <ToggleButton
             value="print"
             aria-label={t('livePreview.printPreview')}
             aria-pressed={device === 'print'}
           >
-            <PrintIcon sx={{ mr: 1 }} />
-            {t('livePreview.print')}
+            <PrintIcon sx={{ mr: { xs: 0, md: 1 } }} />
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+              {t('livePreview.print')}
+            </Box>
           </ToggleButton>
         </ToggleButtonGroup>
 
@@ -252,8 +257,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
       {/* Preview Info */}
       <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="caption" color="text.secondary">
-          {t('livePreview.previewModeCaption', {
-            mode: mode || 'Progressive',
+          {t('livePreview.previewPhaseCaption', {
             phase: phase || 'Topic',
           })}
         </Typography>

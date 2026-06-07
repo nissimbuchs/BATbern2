@@ -2,85 +2,142 @@
  * devEmailService Tests
  *
  * Coverage for:
- * - fetchAll: GET /dev/emails
- * - clearAll: DELETE /dev/emails
+ * - fetchAll: aggregates from EMS + PCS, merged newest-first
+ * - clearAll: DELETE on both services
  * - replyToEmail: POST /dev/emails/{id}/reply
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { devEmailService } from './devEmailService';
+import { devEmailService, type CapturedEmailWithSource } from './devEmailService';
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
-const MOCK_EMAILS = [
-  {
-    id: 'email-1',
-    to: 'alice@batbern.ch',
-    subject: 'BATbern Invitation',
-    htmlBody: '<p>Hello</p>',
-    fromEmail: 'noreply@batbern.ch',
-    fromName: 'BATbern Team',
-    capturedAt: '2025-12-01T10:00:00Z',
-    attachments: [],
-  },
-];
+const EMS_EMAIL = {
+  id: 'ems-1',
+  to: 'alice@batbern.ch',
+  cc: [],
+  subject: 'Speaker Invitation',
+  htmlBody: '<p>Hello</p>',
+  fromEmail: 'noreply@batbern.ch',
+  fromName: 'BATbern Team',
+  capturedAt: '2025-12-01T10:00:00Z',
+  attachments: [],
+};
+
+const PCS_EMAIL = {
+  id: 'pcs-1',
+  to: 'partner@company.com',
+  cc: ['partner.assistant@company.com'],
+  subject: 'Einladung: BATbern Partner-Meeting',
+  htmlBody: '<p>Liebe Partner</p>',
+  fromEmail: 'noreply@batbern.ch',
+  fromName: 'BATbern Team',
+  capturedAt: '2025-12-01T12:00:00Z', // newer
+  attachments: [{ filename: 'partner-meeting.ics', mimeType: 'text/calendar', sizeBytes: 512 }],
+};
 
 describe('devEmailService', () => {
   beforeEach(() => vi.clearAllMocks());
 
   describe('fetchAll', () => {
-    it('should GET /dev/emails and return parsed emails', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: async () => MOCK_EMAILS,
-      });
+    it('merges emails from EMS, PCS and CUMS, sorted newest first, tagged with source URL', async () => {
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, json: async () => [EMS_EMAIL] }) // EMS
+        .mockResolvedValueOnce({ ok: true, json: async () => [PCS_EMAIL] }) // PCS
+        .mockResolvedValueOnce({ ok: true, json: async () => [] }); // CUMS (empty)
 
       const result = await devEmailService.fetchAll();
 
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/dev/emails'));
-      expect(result).toEqual(MOCK_EMAILS);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8002/dev/emails'));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8004/dev/emails'));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8001/dev/emails'));
+      // PCS email is newer → should come first
+      expect(result[0].id).toBe('pcs-1');
+      expect(result[0]._sourceBaseUrl).toContain('8004');
+      expect(result[1].id).toBe('ems-1');
+      expect(result[1]._sourceBaseUrl).toContain('8002');
     });
 
-    it('should return empty array when no emails', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: async () => [],
-      });
+    it('returns only EMS emails when PCS is unavailable', async () => {
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, json: async () => [EMS_EMAIL] }) // EMS ok
+        .mockRejectedValueOnce(new Error('Connection refused')); // PCS down
+
+      const result = await devEmailService.fetchAll();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('ems-1');
+    });
+
+    it('returns only PCS emails when EMS returns non-ok', async () => {
+      mockFetch
+        .mockResolvedValueOnce({ ok: false, status: 503 }) // EMS unhealthy
+        .mockResolvedValueOnce({ ok: true, json: async () => [PCS_EMAIL] }); // PCS ok
+
+      const result = await devEmailService.fetchAll();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('pcs-1');
+    });
+
+    it('returns empty array when both services are unavailable', async () => {
+      mockFetch.mockRejectedValue(new Error('Connection refused'));
 
       const result = await devEmailService.fetchAll();
 
       expect(result).toEqual([]);
     });
 
-    it('should throw on non-ok response', async () => {
-      mockFetch.mockResolvedValue({ ok: false, status: 503 });
+    it('returns empty array when both services return empty', async () => {
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, json: async () => [] })
+        .mockResolvedValueOnce({ ok: true, json: async () => [] });
 
-      await expect(devEmailService.fetchAll()).rejects.toThrow('Failed to fetch emails: 503');
+      const result = await devEmailService.fetchAll();
+
+      expect(result).toEqual([]);
     });
   });
 
   describe('clearAll', () => {
-    it('should DELETE /dev/emails', async () => {
-      mockFetch.mockResolvedValue({ ok: true, status: 200 });
+    it('sends DELETE to EMS, PCS and CUMS', async () => {
+      mockFetch.mockResolvedValue({ ok: true, status: 204 });
 
       await devEmailService.clearAll();
 
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/dev/emails'), {
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8002/dev/emails'), {
+        method: 'DELETE',
+      });
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8004/dev/emails'), {
+        method: 'DELETE',
+      });
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8001/dev/emails'), {
         method: 'DELETE',
       });
     });
 
-    it('should resolve successfully on 204 No Content', async () => {
-      mockFetch.mockResolvedValue({ ok: false, status: 204 });
+    it('resolves even when PCS is unavailable', async () => {
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, status: 204 }) // EMS ok
+        .mockRejectedValueOnce(new Error('Connection refused')); // PCS down
 
       await expect(devEmailService.clearAll()).resolves.toBeUndefined();
     });
+  });
 
-    it('should throw on non-ok non-204 response', async () => {
-      mockFetch.mockResolvedValue({ ok: false, status: 500 });
+  describe('attachmentDownloadUrl', () => {
+    it('builds download URL from source base URL', () => {
+      const email: CapturedEmailWithSource = {
+        ...PCS_EMAIL,
+        _sourceBaseUrl: 'http://localhost:8004',
+      };
 
-      await expect(devEmailService.clearAll()).rejects.toThrow('Failed to clear inbox: 500');
+      const url = devEmailService.attachmentDownloadUrl(email, 'partner-meeting.ics');
+
+      expect(url).toBe('http://localhost:8004/dev/emails/pcs-1/attachments/partner-meeting.ics');
     });
   });
 

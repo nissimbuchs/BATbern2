@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BATbern — UX Design Specification: Active Partner Meeting Agenda</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* Nav */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+  nav .brand {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--accent);
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+
+  /* ---- TOC ---- */
+  .toc-container {
+    max-width: 960px;
+    margin: 40px auto 0;
+    padding: 0 24px;
+  }
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 32px;
+    margin-bottom: 40px;
+  }
+  .toc h2 {
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .toc ol {
+    list-style: none;
+    counter-reset: toc-counter;
+    columns: 2;
+    column-gap: 32px;
+  }
+  .toc ol li {
+    counter-increment: toc-counter;
+    margin-bottom: 6px;
+    break-inside: avoid;
+  }
+  .toc ol li::before {
+    content: counter(toc-counter, decimal-leading-zero) ".";
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 8px;
+    font-size: 13px;
+  }
+  .toc a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .toc a:hover {
+    color: var(--accent2);
+  }
+
+  /* ---- Main Content ---- */
+  .content {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .subtitle-meta {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+  .subtitle-meta strong { color: var(--text); }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-top: 56px;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 36px;
+    margin-bottom: 14px;
+  }
+
+  h4 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--accent4);
+    margin-top: 28px;
+    margin-bottom: 10px;
+  }
+
+  p {
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+
+  strong { color: var(--text); }
+  em { color: var(--text-muted); font-style: italic; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+
+  /* ---- Lists ---- */
+  ul, ol {
+    margin-bottom: 14px;
+    padding-left: 24px;
+  }
+  li {
+    margin-bottom: 6px;
+  }
+  li::marker {
+    color: var(--accent);
+  }
+
+  /* ---- Tables ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+  thead th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  tbody td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    vertical-align: top;
+  }
+  tbody tr:hover td {
+    background: var(--surface2);
+  }
+
+  /* ---- Code blocks ---- */
+  code {
+    font-family: 'Cascadia Code', 'JetBrains Mono', 'Fira Code', monospace;
+    background: var(--surface2);
+    color: var(--accent4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  pre code {
+    background: none;
+    color: var(--text);
+    padding: 0;
+    font-size: 13px;
+  }
+
+  /* ---- Mermaid diagrams ---- */
+  /* ---- SVG Flow Diagrams ---- */
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+  .flow-diagram svg { display: block; margin: 0 auto; }
+  .flow-diagram svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+  .flow-diagram .flow-label {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mermaid-block {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .mermaid-label {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 0 8px 0 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .mermaid-block pre {
+    border-color: var(--accent);
+    border-width: 1px;
+  }
+  .mermaid-block pre code {
+    color: var(--accent2);
+  }
+
+  /* ---- Blockquote ---- */
+  blockquote {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 14px 20px;
+    margin-bottom: 14px;
+    border-radius: 0 8px 8px 0;
+    color: var(--text-muted);
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 700px) {
+    .toc ol { columns: 1; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 22px; }
+    pre { padding: 14px; }
+    table { font-size: 12px; }
+    thead th, tbody td { padding: 7px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sticky Navigation -->
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <span class="brand">UX Design Specification</span>
+  <span class="sep">|</span>
+  <a href="agenda-ux-session.html">UX Session</a>
+  <a href="agenda-ux-directions.html">Design Directions</a>
+</nav>
+
+<!-- Table of Contents -->
+<div class="toc-container">
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#executive-summary">Executive Summary</a></li>
+      <li><a href="#core-user-experience">Core User Experience</a></li>
+      <li><a href="#desired-emotional-response">Desired Emotional Response</a></li>
+      <li><a href="#ux-pattern-analysis">UX Pattern Analysis &amp; Inspiration</a></li>
+      <li><a href="#design-system-foundation">Design System Foundation</a></li>
+      <li><a href="#defining-experience">Defining Experience</a></li>
+      <li><a href="#visual-design-foundation">Visual Design Foundation</a></li>
+      <li><a href="#design-direction-decision">Design Direction Decision</a></li>
+      <li><a href="#user-journey-flows">User Journey Flows</a></li>
+      <li><a href="#component-strategy">Component Strategy</a></li>
+      <li><a href="#ux-consistency-patterns">UX Consistency Patterns</a></li>
+      <li><a href="#responsive-design-accessibility">Responsive Design &amp; Accessibility</a></li>
+    </ol>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="content">
+
+<h1>UX Design Specification &mdash; BATbern Active Partner Meeting Agenda</h1>
+<p class="subtitle-meta"><strong>Author:</strong> Nissim &nbsp;&bull;&nbsp; <strong>Date:</strong> 2026-04-04</p>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="executive-summary">Executive Summary</h2>
+
+<h3>Project Vision</h3>
+<p>Transform BATbern's bi-annual partner meetings from manual, verbal processes into an interactive, system-driven experience. Six static agenda items become live features with pre-meeting preparation, real-time meeting execution via a projector-driven presenter mode, and post-meeting async workflows. The system captures meeting minutes as a natural byproduct of use &mdash; no one "takes notes," the meeting documents itself.</p>
+
+<h3>Target Users</h3>
+
+<h4>Primary: Organizer (Meeting Driver)</h4>
+<ul>
+  <li>Runs the meeting from their laptop, projected for all partners to see</li>
+  <li>Needs a streamlined controller interface: advance agenda items, trigger votes, upload documents, take notes</li>
+  <li>Tech-savvy, but uses this only twice a year &mdash; interface must be self-explanatory</li>
+  <li>Success = running the meeting without ever leaving the system</li>
+</ul>
+
+<h4>Secondary: Present Partner (In-Room Participant)</h4>
+<ul>
+  <li>Views the projected screen &mdash; no personal device interaction during the meeting</li>
+  <li>Participates verbally; organizer captures their input (votes, attendance)</li>
+  <li>Needs to see clear, readable content on the projector (large text, high contrast)</li>
+</ul>
+
+<h4>Secondary: Absent Partner (Async Participant)</h4>
+<ul>
+  <li>Receives meeting minutes and participates in post-meeting workflows via the partner portal</li>
+  <li>Needs complete context: what was presented, what was decided, what requires their action</li>
+  <li>Interacts via desktop or mobile for fee acceptance, feedback pulse</li>
+</ul>
+
+<h4>Tertiary: New Partner (First-Year Onboarding)</h4>
+<ul>
+  <li>First exposure to the BATbern partner meeting system</li>
+  <li>Needs to understand the community and process quickly &mdash; onboarding tour, context package</li>
+  <li>Visible "New" badge in the Who Is Who gallery signals veterans to be welcoming</li>
+</ul>
+
+<h4>Tertiary: Stand-In (Non-System Delegate)</h4>
+<ul>
+  <li>Attends on behalf of a partner company without a system account</li>
+  <li>Organizer records their presence and proxies their votes with clear attribution</li>
+  <li>No login required &mdash; represented via free-text name in the system</li>
+</ul>
+
+<h3>Key Design Challenges</h3>
+<ol>
+  <li><strong>Projector-First Design</strong> &mdash; The primary consumption mode during the meeting is a projector. This means large typography, high contrast, minimal clutter, and no interactions that require individual partner devices. The organizer's laptop is the sole input device.</li>
+  <li><strong>Bi-Annual Usage = Zero Learning Curve</strong> &mdash; Partners see this system twice a year. The organizer uses it twice a year. Every screen must be immediately understandable without training or memory of last time. Strong visual affordances, obvious next actions, no hidden features.</li>
+  <li><strong>Minutes as Byproduct</strong> &mdash; Every organizer action (toggling attendance, uploading a document, triggering a vote, typing a note) must silently contribute to auto-assembling meeting minutes. The UX challenge: make this invisible during the meeting, reviewable after.</li>
+  <li><strong>Async Continuity</strong> &mdash; Post-meeting workflows (fee acceptance, feedback, action item review) must feel like a natural extension of the meeting, not a disconnected system. Absent partners need enough context to participate meaningfully.</li>
+  <li><strong>Stand-In Governance</strong> &mdash; Proxy voting and delegation must have clear attribution chains without adding complexity. The organizer is the sole operator &mdash; stand-in representation must be quick and unambiguous.</li>
+</ol>
+
+<h3>Design Opportunities</h3>
+<ol>
+  <li><strong>"The Meeting Runs Itself"</strong> &mdash; A well-designed presenter mode where the organizer walks through the agenda and the system captures everything creates an experience that feels magical. No note-taker, no separate spreadsheet, no "can someone email the PDF" &mdash; it just works.</li>
+  <li><strong>Reusable Interaction Vocabulary</strong> &mdash; Four components (vote, document viewer, note-taker, attendance gallery) recur across all agenda items. Consistent patterns mean partners instantly recognize "oh, this is a vote" regardless of whether it's audit sign-off or budget approval.</li>
+  <li><strong>Institutional Memory</strong> &mdash; Year-over-year meeting archives with analytics snapshots, decision records, and action item history build a governance asset. "What did we decide about fees in 2024?" becomes a 10-second lookup.</li>
+  <li><strong>Projector-Optimized Dark Mode</strong> &mdash; The existing BATbern dark theme (zinc-950 + blue-400) is perfect for projector readability. This becomes a distinctive visual identity for partner meetings &mdash; professional, high-contrast, unmistakably "meeting mode."</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="core-user-experience">Core User Experience</h2>
+
+<h3>Defining Experience</h3>
+<p>The core experience is the <strong>Presenter/Controller Mode</strong> &mdash; the organizer walks through the meeting agenda item by item, with each item presenting its specific interaction (gallery, vote, document viewer, notes) in a single continuous flow. The system silently builds the meeting minutes behind the scenes as a natural byproduct of use.</p>
+
+<p><strong>Core Interaction Loop:</strong></p>
+<ol>
+  <li>Organizer advances to the next agenda item (one click)</li>
+  <li>The item's specific interaction renders in the main area (vote, gallery, document, etc.)</li>
+  <li>Organizer performs the item's action (toggle attendance, trigger vote, upload document, take notes)</li>
+  <li>System captures the interaction's output into the minutes automatically</li>
+  <li>Organizer advances to the next item</li>
+</ol>
+
+<p><strong>What Must Be Effortless:</strong></p>
+<ul>
+  <li>Advancing to the next agenda item &mdash; one click</li>
+  <li>Casting a vote on behalf of a partner &mdash; one click per partner</li>
+  <li>Toggling partner presence in the Who Is Who gallery &mdash; one click</li>
+  <li>Adding a note to the current agenda item &mdash; always-visible text input</li>
+  <li>Minutes assembling themselves &mdash; zero clicks, it just happens</li>
+</ul>
+
+<p><strong>What Happens Automatically:</strong></p>
+<ul>
+  <li>Attendance list populates the minutes when the organizer marks who's present</li>
+  <li>Vote results get recorded in the minutes when voting closes</li>
+  <li>Uploaded documents get attached to the minutes</li>
+  <li>Analytics snapshots get captured when the analytics item is presented</li>
+  <li>Action items from previous meetings surface when creating the next meeting</li>
+</ul>
+
+<h3>Platform Strategy</h3>
+<ul>
+  <li><strong>Web only</strong> &mdash; runs in the browser on the organizer's laptop, projected to room</li>
+  <li><strong>Mouse/keyboard primary</strong> &mdash; organizer operates from their desk</li>
+  <li><strong>No offline needed</strong> &mdash; meetings happen in venues with connectivity</li>
+  <li><strong>Projector-optimized</strong> &mdash; dark theme, large type, high contrast, minimal UI chrome</li>
+  <li><strong>Single input device</strong> &mdash; the organizer's laptop is the sole control surface; partners participate verbally</li>
+</ul>
+
+<h3>Effortless Interactions</h3>
+<table>
+  <thead><tr><th>Interaction</th><th>Current State</th><th>Target State</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Meeting notes</strong></td><td>Someone manually takes notes, emails them later</td><td>Minutes auto-assemble from agenda interactions</td></tr>
+    <tr><td><strong>Audit sign-off</strong></td><td>Verbal "all agreed?" with no record</td><td>One-click approve/decline per partner, result logged</td></tr>
+    <tr><td><strong>Fee approval</strong></td><td>Verbal agreement, manual follow-up</td><td>Live vote + async portal acceptance for absent partners</td></tr>
+    <tr><td><strong>Attendance tracking</strong></td><td>Manual roll call or informal</td><td>Who Is Who gallery with one-click presence toggle</td></tr>
+    <tr><td><strong>Document sharing</strong></td><td>PDFs emailed before/after meeting</td><td>Upload to agenda item, embedded viewer, permanently attached</td></tr>
+    <tr><td><strong>Action items</strong></td><td>Live in someone's head or a spreadsheet</td><td>Created in-context, assigned to owners, carried forward to next meeting</td></tr>
+  </tbody>
+</table>
+
+<h3>Critical Success Moments</h3>
+<ol>
+  <li><strong>"It just captured everything"</strong> &mdash; After the meeting, organizer clicks "Review Minutes" and sees a complete, well-structured document they barely need to edit</li>
+  <li><strong>"That was smooth"</strong> &mdash; Moving from greeting &rarr; analytics &rarr; audit &rarr; budget &rarr; topics feels like walking through a presentation, not operating software</li>
+  <li><strong>"Everyone got the minutes"</strong> &mdash; One click to publish, all partners (present + absent) receive the complete record with attachments</li>
+  <li><strong>"Nothing fell through the cracks"</strong> &mdash; Opening next meeting's prep and seeing carried-forward action items from last time</li>
+  <li><strong>"The absent partner is fully informed"</strong> &mdash; Minutes + async fee vote + feedback pulse means no one is ever out of the loop</li>
+</ol>
+
+<h3>Experience Principles</h3>
+<table>
+  <thead><tr><th>#</th><th>Principle</th><th>What It Means in Practice</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><strong>One Flow, One Screen</strong></td><td>The organizer never leaves the presenter mode during the meeting. Every agenda item renders in the same main area. Navigation is linear: back/next.</td></tr>
+    <tr><td>2</td><td><strong>Capture by Using</strong></td><td>Minutes build themselves from the organizer's natural actions. No "save to minutes" button &mdash; toggling attendance IS recording attendance. Voting IS recording the vote.</td></tr>
+    <tr><td>3</td><td><strong>Projector-Readable Always</strong></td><td>Every screen must be legible from 5 meters on a projector. Large type (min 24px body), high contrast (dark theme), generous whitespace, no dense tables.</td></tr>
+    <tr><td>4</td><td><strong>Twice-a-Year Obvious</strong></td><td>No feature should require remembering how it worked last time. Labels &gt; icons. Explicit buttons &gt; gestures. Guided flow &gt; open dashboard.</td></tr>
+    <tr><td>5</td><td><strong>The Meeting Extends Beyond the Room</strong></td><td>Absent partners, async fee votes, feedback pulses, and published minutes ensure the meeting's value isn't limited to the 90 minutes in the room.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="desired-emotional-response">Desired Emotional Response</h2>
+
+<h3>Primary Emotional Goals</h3>
+<table>
+  <thead><tr><th>User</th><th>Primary Emotion</th><th>Supporting Emotion</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Organizer (prep)</strong></td><td>Confident and in control</td><td>Calm, methodical &mdash; like a pilot running a pre-flight checklist</td></tr>
+    <tr><td><strong>Organizer (live)</strong></td><td>Flow state efficiency</td><td>Pride in the tool, feeling like a conductor</td></tr>
+    <tr><td><strong>Present Partner</strong></td><td>Trust</td><td>Professional respect &mdash; "this organization runs things properly"</td></tr>
+    <tr><td><strong>Absent Partner</strong></td><td>Included, not excluded</td><td>Respected &mdash; their input still matters even without physical presence</td></tr>
+    <tr><td><strong>New Partner</strong></td><td>Belonging</td><td>Welcomed &mdash; "I'm part of this community now"</td></tr>
+  </tbody>
+</table>
+
+<h3>Emotional Journey Mapping</h3>
+
+<p><strong>Before the meeting (Organizer):</strong><br>
+Confidence and readiness. The prep checklist shows green checkmarks: audit PDF uploaded, budget doc ready, RSVP at 10/12, topic voting closed. "I'm ready. The system has my back."</p>
+
+<p><strong>Starting the meeting (Presenter Mode activates):</strong><br>
+A subtle shift &mdash; like stepping onto a stage. The dark theme fills the screen. The agenda sidebar appears. The Who Is Who gallery loads. Pride: "This is professional. This is BATbern." Partners see something polished, not a spreadsheet.</p>
+
+<p><strong>During the meeting (flowing through items):</strong><br>
+Each item transition feels effortless and rhythmic. Click next, new interaction appears, handle it, click next. The organizer is a conductor, not a data entry clerk. Dominant emotion: flow.</p>
+
+<p><strong>After a vote:</strong><br>
+8/8 partners approve the audit report. Result appears instantly: "Financial Report 2025 &mdash; Approved (8/8)." Satisfaction and accomplishment. A decision made, recorded, and historized in 10 seconds.</p>
+
+<p><strong>After the meeting (reviewing minutes):</strong><br>
+Organizer clicks "Review Minutes" and sees a complete document &mdash; attendees, snapshots, PDFs, votes, notes, action items. Genuine delight: "This actually wrote itself."</p>
+
+<p><strong>Absent partner (receiving minutes):</strong><br>
+Complete meeting record arrives. They can participate in async fee acceptance. Inclusion: their input matters even though they weren't there.</p>
+
+<p><strong>New partner (first meeting):</strong><br>
+Their company appears in the Who Is Who gallery with a "New" badge. Veterans welcome them. Belonging.</p>
+
+<h3>Emotion-to-Design Implications</h3>
+<table>
+  <thead><tr><th>Desired Emotion</th><th>UX Design Approach</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Confidence</strong> (organizer prep)</td><td>Meeting prep checklist with clear green/yellow/red status indicators. Nothing ambiguous.</td></tr>
+    <tr><td><strong>Pride</strong> (presenter mode)</td><td>Dark theme, polished transitions, professional typography. The projected screen looks like it belongs at a Swiss tech conference.</td></tr>
+    <tr><td><strong>Flow</strong> (during meeting)</td><td>Linear navigation, consistent layout, no modal interruptions, no page loads between items.</td></tr>
+    <tr><td><strong>Trust</strong> (partners watching)</td><td>Clean, readable projector display. Vote tallies shown transparently. Document viewer works instantly.</td></tr>
+    <tr><td><strong>Delight</strong> (auto-minutes)</td><td>The "Review Minutes" screen reveals a complete, formatted, ready document &mdash; a subtle moment of satisfaction.</td></tr>
+    <tr><td><strong>Inclusion</strong> (absent partner)</td><td>Same information, same context, same ability to act &mdash; just async.</td></tr>
+    <tr><td><strong>Belonging</strong> (new partner)</td><td>Subtle "New" badge, partner profile cards showing company + role + photo.</td></tr>
+  </tbody>
+</table>
+
+<h3>Emotions to Avoid</h3>
+<table>
+  <thead><tr><th>Avoid</th><th>Prevention Strategy</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Anxiety</strong> ("did it save?")</td><td>Auto-save with visible indicators. Minutes build progressively &mdash; never a big-bang at the end.</td></tr>
+    <tr><td><strong>Confusion</strong> ("what do I click?")</td><td>Large, labeled buttons. Linear flow. No hidden menus. Twice-a-year obvious.</td></tr>
+    <tr><td><strong>Embarrassment</strong> (projector shows something wrong)</td><td>Preview mode before meeting. Prep checklist catches missing uploads.</td></tr>
+    <tr><td><strong>Frustration</strong> (technical failure mid-meeting)</td><td>Graceful degradation. If document viewer fails, show download link. If vote fails, allow manual note.</td></tr>
+    <tr><td><strong>Exclusion</strong> (absent partner)</td><td>Full minutes + async workflows ensure absent = delayed, never absent = excluded.</td></tr>
+  </tbody>
+</table>
+
+<h3>Emotional Design Principles</h3>
+<ol>
+  <li><strong>Confidence Through Visibility</strong> &mdash; Always show system state clearly. Auto-save indicators, progress markers, checklist statuses. The organizer should never wonder "is it working?"</li>
+  <li><strong>Delight Through Automation</strong> &mdash; The magic moment is when the system produces something the user didn't explicitly create. Auto-assembled minutes are the primary delight vector.</li>
+  <li><strong>Trust Through Consistency</strong> &mdash; Every vote looks the same. Every document viewer works the same. Predictability builds trust, especially at bi-annual frequency.</li>
+  <li><strong>Inclusion Through Completeness</strong> &mdash; Every artifact from the meeting (minutes, votes, documents, action items) is available to absent partners. No information is locked behind physical presence.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="ux-pattern-analysis">UX Pattern Analysis &amp; Inspiration</h2>
+
+<h3>Inspiring Products Analysis</h3>
+
+<h4>OneNote &mdash; Meeting Minutes</h4>
+<ul>
+  <li><strong>Freeform note-taking with structure</strong>: Sections and pages give organization without rigid templates. Notes feel effortless.</li>
+  <li><strong>Invisible auto-save</strong>: You never think about saving. It just happens.</li>
+  <li><strong>Sections as agenda items</strong>: Each section tab maps naturally to a meeting topic.</li>
+  <li><strong>Rich content embedding</strong>: Images, files, tables &mdash; all inline. The document becomes a living artifact.</li>
+</ul>
+
+<h4>Miro &mdash; PI Planning Days (SAFe)</h4>
+<ul>
+  <li><strong>Facilitator mode</strong>: One person drives what everyone sees &mdash; exactly our presenter mode concept.</li>
+  <li><strong>Built-in dot voting</strong>: Simple, visual, instant results. Universally understood.</li>
+  <li><strong>Facilitation tools</strong>: Timers, spotlight, "bring everyone to me" &mdash; tools for the session driver.</li>
+  <li><strong>Spatial journey</strong>: Move from board to board, like moving from agenda item to agenda item.</li>
+</ul>
+
+<h4>Microsoft PowerPoint &mdash; Presenter Mode</h4>
+<ul>
+  <li><strong>Presenter view vs. audience view</strong>: Presenter sees notes + next slide + timer. Audience sees clean content.</li>
+  <li><strong>Click-to-advance linear flow</strong>: Everyone knows how it works. Zero learning curve.</li>
+  <li><strong>Smooth slide transitions</strong>: Visual continuity between slides. No jarring state changes.</li>
+  <li><strong>"What's next" preview</strong>: Upcoming slide reduces presenter anxiety.</li>
+</ul>
+
+<h4>Mentimeter &mdash; Live Audience Interaction</h4>
+<ul>
+  <li><strong>Projector-first design</strong>: Every screen designed to look great projected. Large fonts, high contrast.</li>
+  <li><strong>Animated result reveals</strong>: Vote results build up visually &mdash; creates anticipation and delight.</li>
+  <li><strong>Results are the content</strong>: The vote visualization IS the presentation.</li>
+  <li><strong>Zero friction</strong>: No account needed to participate.</li>
+</ul>
+
+<h3>Transferable UX Patterns</h3>
+<table>
+  <thead><tr><th>Pattern</th><th>Source</th><th>How We Apply It</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Sections as agenda items</strong></td><td>OneNote</td><td>Agenda sidebar with tabs/items, click to navigate</td></tr>
+    <tr><td><strong>Invisible auto-save</strong></td><td>OneNote</td><td>All organizer actions auto-save. Subtle indicator only.</td></tr>
+    <tr><td><strong>Facilitator controls the view</strong></td><td>Miro</td><td>Organizer's presenter mode drives what the projector shows</td></tr>
+    <tr><td><strong>Built-in voting with visual results</strong></td><td>Miro + Mentimeter</td><td>Approve/decline per partner with instant visual tally</td></tr>
+    <tr><td><strong>Presenter view vs. audience view</strong></td><td>PowerPoint</td><td>Organizer laptop shows controls + notes; projector shows clean content</td></tr>
+    <tr><td><strong>Click-to-advance linear flow</strong></td><td>PowerPoint</td><td>Next/back buttons advance through agenda items like slides</td></tr>
+    <tr><td><strong>"What's next" preview</strong></td><td>PowerPoint</td><td>Sidebar shows upcoming agenda item title</td></tr>
+    <tr><td><strong>Projector-optimized display</strong></td><td>Mentimeter</td><td>Large fonts, high contrast, results as visual heroes</td></tr>
+    <tr><td><strong>Animated result reveal</strong></td><td>Mentimeter</td><td>Subtle animation when vote results appear &mdash; moment of delight</td></tr>
+    <tr><td><strong>Rich inline content</strong></td><td>OneNote</td><td>Notes, documents, vote results, attendance &mdash; all in one flowing view</td></tr>
+  </tbody>
+</table>
+
+<h3>Anti-Patterns to Avoid</h3>
+<table>
+  <thead><tr><th>Anti-Pattern</th><th>Source</th><th>Why We Avoid It</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Freeform canvas without structure</strong></td><td>OneNote/Miro</td><td>Our minutes need predictable structure for auto-assembly</td></tr>
+    <tr><td><strong>General-purpose complexity</strong></td><td>Miro</td><td>Purpose-built simplicity beats flexible power tools for bi-annual use</td></tr>
+    <tr><td><strong>Individual device requirement</strong></td><td>Mentimeter</td><td>Partners don't use devices during the meeting &mdash; organizer is sole operator</td></tr>
+    <tr><td><strong>Passive content only</strong></td><td>PowerPoint</td><td>Each "slide" must support interaction (votes, galleries, document viewers)</td></tr>
+    <tr><td><strong>Empty states without guidance</strong></td><td>PowerPoint</td><td>If an agenda item has no content, show clear "Upload document" or "No items" state</td></tr>
+    <tr><td><strong>Dense data tables on projector</strong></td><td>Excel/Miro</td><td>Projector-readable means max 8-12 items visible, large text, no scrolling</td></tr>
+  </tbody>
+</table>
+
+<h3>Design Inspiration Strategy</h3>
+
+<p><strong>Adopt directly:</strong></p>
+<ul>
+  <li>PowerPoint's presenter vs. audience dual-view model (organizer laptop vs. projector)</li>
+  <li>PowerPoint's click-to-advance linear flow for agenda navigation</li>
+  <li>OneNote's invisible auto-save pattern</li>
+  <li>Mentimeter's projector-optimized result display with large, high-contrast visuals</li>
+</ul>
+
+<p><strong>Adapt for our context:</strong></p>
+<ul>
+  <li>Miro's facilitator mode &rarr; simplified to linear agenda progression (no infinite canvas)</li>
+  <li>Mentimeter's audience voting &rarr; organizer-proxied voting (one person clicks for all)</li>
+  <li>OneNote's freeform sections &rarr; structured agenda items with specific interaction types per item</li>
+  <li>Miro's dot voting &rarr; simple approve/decline with clear visual tally</li>
+</ul>
+
+<p><strong>Avoid entirely:</strong></p>
+<ul>
+  <li>Multi-device interaction patterns (partners don't use devices during meetings)</li>
+  <li>General-purpose tool complexity (purpose-built for bi-annual partner meetings)</li>
+  <li>Dense data visualizations on projector (keep it large, simple, readable at 5 meters)</li>
+  <li>Free-form canvas layouts (structured, predictable auto-assembly for minutes)</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="design-system-foundation">Design System Foundation</h2>
+
+<h3>Design System Choice</h3>
+<p><strong>Extend the existing BATbern design system</strong> &mdash; no new framework needed.</p>
+<ul>
+  <li><strong>MUI (Material-UI) v5+</strong> as React component foundation (80% standard components)</li>
+  <li><strong>Tailwind CSS</strong> for the dark-themed presenter mode (reusing public landing page dark theme)</li>
+  <li><strong>Custom BATbern components</strong> (20%) for domain-specific meeting features</li>
+  <li><strong>Atomic Design Structure</strong>: Atoms &rarr; Molecules &rarr; Organisms &rarr; Templates</li>
+</ul>
+
+<h3>Rationale for Selection</h3>
+<p>The BATbern design system (documented in <code>docs/front-end-spec.md</code>) already provides the complete foundation:</p>
+<ul>
+  <li>Full color palette with both light (portals) and dark (public pages) themes</li>
+  <li>Typography system (Inter primary, JetBrains Mono for monospace)</li>
+  <li>8px spacing grid, 12-column responsive layout</li>
+  <li>9+ defined component specifications</li>
+  <li>WCAG 2.1 AA accessibility compliance</li>
+</ul>
+<p>The partner meeting presenter mode uses the <strong>dark theme variant</strong> for projector optimization &mdash; this theme already exists and simply needs a projector-scale typography extension.</p>
+
+<h3>Implementation Approach</h3>
+
+<p><strong>Presenter Mode = Dark Theme (Tailwind)</strong></p>
+<ul>
+  <li>Uses zinc-950 + blue-400 dark theme for projector readability</li>
+  <li>Visually distinct from regular portal usage &mdash; partners see "meeting mode"</li>
+  <li>Aligns with the "pride" emotional goal &mdash; polished and professional</li>
+</ul>
+
+<p><strong>New Reusable Components:</strong></p>
+<table>
+  <thead><tr><th>Component</th><th>MUI Base</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Agenda Sidebar</strong></td><td>Stepper (vertical)</td><td>Active/completed/upcoming states, click to navigate</td></tr>
+    <tr><td><strong>Vote Panel</strong></td><td>ButtonGroup + Card</td><td>Approve/decline per partner, result tally, animated reveal</td></tr>
+    <tr><td><strong>Document Viewer</strong></td><td>Card + embedded PDF</td><td>Upload zone, inline viewer, dark-themed chrome</td></tr>
+    <tr><td><strong>Note Panel</strong></td><td>TextField (multiline)</td><td>Always-visible, auto-save, attaches to current agenda item</td></tr>
+    <tr><td><strong>Partner Gallery</strong></td><td>Grid + Avatar</td><td>Company logo, partner name, photo, presence/new badges</td></tr>
+    <tr><td><strong>Meeting Prep Checklist</strong></td><td>List + Chip</td><td>Green/yellow/red status per item, linked to agenda readiness</td></tr>
+    <tr><td><strong>Action Item Card</strong></td><td>Card + Chip</td><td>Title, owner, deadline, status badge, carry-forward indicator</td></tr>
+    <tr><td><strong>Minutes Preview</strong></td><td>Paper + Typography</td><td>Auto-assembled document, section per agenda item, editable</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Projector Typography Scale:</strong></p>
+<table>
+  <thead><tr><th>Element</th><th>Standard (Portal)</th><th>Projector (Presenter Mode)</th></tr></thead>
+  <tbody>
+    <tr><td>H1</td><td>40px</td><td>56px</td></tr>
+    <tr><td>H2</td><td>32px</td><td>44px</td></tr>
+    <tr><td>H3</td><td>24px</td><td>32px</td></tr>
+    <tr><td>Body</td><td>16px</td><td>24px</td></tr>
+    <tr><td>Caption</td><td>12px</td><td>18px</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Partner Role Colors in Dark Theme:</strong></p>
+<ul>
+  <li>Text: <code>text-orange-400</code> (#FB923C) on zinc-950 for AA contrast</li>
+  <li>Badge backgrounds: <code>bg-orange-400/10</code> with <code>text-orange-400</code></li>
+  <li>Vote approved: <code>text-green-400</code> (#4ADE80), declined: <code>text-red-400</code> (#F87171)</li>
+</ul>
+
+<h3>Customization Strategy</h3>
+<ul>
+  <li><strong>New theme variant</strong>: <code>presenterTheme</code> &mdash; dark, large typography, projector-optimized</li>
+  <li><strong>New component category</strong>: <code>meeting/</code> folder alongside existing component folders</li>
+  <li><strong>Layout template</strong>: <code>PresenterLayout</code> separate from <code>OrganizerLayout</code></li>
+  <li><strong>Shared patterns</strong>: Vote and Document Viewer components reusable for future non-meeting features</li>
+  <li>All new components built as Organisms in the atomic design hierarchy, reusing existing MUI atoms</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="defining-experience">Defining Experience</h2>
+
+<h3>The Core Interaction</h3>
+<p><strong>"Walk through the agenda, and the meeting documents itself."</strong></p>
+<p>The defining experience is the Presenter Mode flow &mdash; the organizer advances through agenda items while the system silently captures everything into auto-assembling meeting minutes. Each agenda item is like a PowerPoint slide, but interactive: votes, galleries, document viewers, and notes.</p>
+
+<h3>User Mental Model</h3>
+<p><strong>Current approach:</strong></p>
+<ul>
+  <li>PowerPoint with agenda points, someone taking notes in Word/OneNote</li>
+  <li>PDFs opened in separate apps, verbal "all in favor?" with handwritten notes</li>
+  <li>Post-meeting: compile notes, attach PDFs, email to everyone</li>
+  <li>Action items in an email, hoping people remember</li>
+</ul>
+
+<p><strong>Mental model we build on:</strong> The organizer already thinks of a meeting as "a sequence of agenda items we walk through." They're used to PowerPoint's linear slide model. Our innovation: <strong>the meeting IS a presentation, but each slide does something.</strong></p>
+
+<p><strong>Where confusion could happen:</strong></p>
+<ul>
+  <li>"Where did my notes go?" &rarr; Notes visibly attached to current item</li>
+  <li>"Did the vote save?" &rarr; Instant visual confirmation</li>
+  <li>"How do I go back?" &rarr; Back button works non-destructively</li>
+</ul>
+
+<h3>Success Criteria</h3>
+<table>
+  <thead><tr><th>Criteria</th><th>Measurable Target</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Meeting execution</strong></td><td>Full 6-item agenda completed in presenter mode without leaving the system</td></tr>
+    <tr><td><strong>Minutes completeness</strong></td><td>Auto-assembled minutes contain 90%+ of meeting content with minimal editing</td></tr>
+    <tr><td><strong>Zero training</strong></td><td>New organizer can run a meeting after 2-minute orientation or cold with prep checklist</td></tr>
+    <tr><td><strong>Vote recording</strong></td><td>Every vote captured with partner-level attribution in under 30 seconds</td></tr>
+    <tr><td><strong>Post-meeting distribution</strong></td><td>Minutes published and sent to all partners within 5 minutes of meeting end</td></tr>
+    <tr><td><strong>Action item persistence</strong></td><td>100% of action items carry forward to next meeting</td></tr>
+  </tbody>
+</table>
+
+<h3>Novel UX Patterns</h3>
+<table>
+  <thead><tr><th>Aspect</th><th>Pattern Type</th><th>Implementation</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Linear agenda flow</strong></td><td>Established (PowerPoint)</td><td>Click-to-advance through items</td></tr>
+    <tr><td><strong>Auto-assembling minutes</strong></td><td><strong>Novel</strong></td><td>System captures outputs of each interaction silently</td></tr>
+    <tr><td><strong>Proxied voting</strong></td><td>Novel</td><td>Organizer clicks on behalf of partners (like a teller in parliament)</td></tr>
+    <tr><td><strong>Embedded document viewer</strong></td><td>Established</td><td>PDF viewer inline in the agenda item</td></tr>
+    <tr><td><strong>Presence gallery</strong></td><td>Established (video call grids)</td><td>Who Is Who with presence badges</td></tr>
+    <tr><td><strong>Action item carry-forward</strong></td><td>Novel</td><td>System surfaces open items from previous meetings automatically</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Key innovations:</strong></p>
+<ol>
+  <li><strong>Minutes as byproduct</strong> &mdash; every organizer action contributes to a document they never explicitly create</li>
+  <li><strong>Proxied group voting</strong> &mdash; organizer casts votes for each partner in turn, fitting the single-device constraint</li>
+</ol>
+
+<h3>Experience Mechanics</h3>
+
+<h4>1. Initiation &mdash; Starting the Meeting</h4>
+<pre><code>Organizer: Partner Portal &rarr; Meetings &rarr; [Meeting Name] &rarr; "Start Presenter Mode"
+&rarr; Screen transitions to dark theme
+&rarr; Agenda sidebar appears on the left
+&rarr; First item (Greeting / Who Is Who) loads in main area
+&rarr; System creates PartnerMeetingMinutes entity in DRAFT status</code></pre>
+
+<h4>2. Interaction &mdash; Agenda Item Types</h4>
+<table>
+  <thead><tr><th>Agenda Item</th><th>Main Area Content</th><th>Organizer Controls</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Greeting / Who Is Who</strong></td><td>Partner gallery grid (logo, name, photo, badges)</td><td>Click partner &rarr; toggle Present/Absent</td></tr>
+    <tr><td><strong>Analytics Review</strong></td><td>Analytics dashboard embed</td><td>"Capture Snapshot" &rarr; freezes current data into minutes</td></tr>
+    <tr><td><strong>Audit Sign-off</strong></td><td>PDF viewer with uploaded audit report</td><td>"Start Vote" &rarr; per-partner approve/decline</td></tr>
+    <tr><td><strong>Budget Approval</strong></td><td>PDF/spreadsheet viewer with budget doc</td><td>"Start Vote" &rarr; per-partner approve/decline</td></tr>
+    <tr><td><strong>Topic Discussion</strong></td><td>Topic voting results + blob game results</td><td>Note panel for discussion points</td></tr>
+    <tr><td><strong>Hot Topics</strong></td><td>Free-form note area</td><td>Note panel only (unstructured)</td></tr>
+    <tr><td><strong>Custom Items</strong></td><td>Title + description + note panel</td><td>Note panel for discussion</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Always visible on every item:</strong></p>
+<ul>
+  <li>Note panel (bottom or right) &mdash; organizer types notes at any time</li>
+  <li>Agenda sidebar (left) &mdash; all items listed, current highlighted, click to jump</li>
+  <li>"Next Item" button (prominent, bottom-right) &mdash; advances the flow</li>
+  <li>Auto-save indicator (subtle, top-right) &mdash; "Saved &#10003;"</li>
+</ul>
+
+<h4>3. Feedback &mdash; Knowing It's Working</h4>
+<table>
+  <thead><tr><th>Action</th><th>Immediate Feedback</th></tr></thead>
+  <tbody>
+    <tr><td>Toggle partner present</td><td>Green "Present" badge, checkmark animation</td></tr>
+    <tr><td>Toggle partner absent</td><td>Badge goes gray, subtle fade</td></tr>
+    <tr><td>Upload document</td><td>Progress bar &rarr; "Uploaded &#10003;" with thumbnail</td></tr>
+    <tr><td>Start vote</td><td>Vote panel expands with partner list + approve/decline buttons</td></tr>
+    <tr><td>Cast vote for a partner</td><td>Button fills with color (green/red), partner row marked</td></tr>
+    <tr><td>Complete vote</td><td>Result banner: "Approved &mdash; 8/8" with subtle animation</td></tr>
+    <tr><td>Type a note</td><td>Auto-save indicator pulses briefly</td></tr>
+    <tr><td>Advance to next item</td><td>Smooth slide transition, sidebar updates position</td></tr>
+  </tbody>
+</table>
+
+<h4>4. Completion &mdash; Ending the Meeting</h4>
+<pre><code>After last item &rarr; "Next" button changes to "End Meeting"
+&rarr; Click "End Meeting"
+&rarr; Transition to Minutes Review screen
+&rarr; Auto-assembled minutes: attendance, snapshots, documents, votes, notes, action items
+&rarr; Organizer reviews and edits if needed
+&rarr; Clicks "Publish &amp; Send"
+&rarr; All partners (present + absent) receive email with minutes link/PDF
+&rarr; Meeting status &rarr; COMPLETED</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="visual-design-foundation">Visual Design Foundation</h2>
+
+<h3>Color System &mdash; Presenter Mode</h3>
+<p><strong>Base:</strong> BATbern dark theme (zinc-950 + blue-400) from public landing page.</p>
+
+<table>
+  <thead><tr><th>Purpose</th><th>Token</th><th>Value</th><th>Contrast on zinc-950</th></tr></thead>
+  <tbody>
+    <tr><td>Background</td><td><code>bg-zinc-950</code></td><td>#09090B</td><td>&mdash;</td></tr>
+    <tr><td>Surface (cards)</td><td><code>bg-zinc-900</code></td><td>#18181B</td><td>&mdash;</td></tr>
+    <tr><td>Surface hover</td><td><code>bg-zinc-800</code></td><td>#27272A</td><td>&mdash;</td></tr>
+    <tr><td>Primary text</td><td><code>text-zinc-100</code></td><td>#F4F4F5</td><td>15.8:1 AAA</td></tr>
+    <tr><td>Secondary text</td><td><code>text-zinc-300</code></td><td>#D4D4D8</td><td>12.2:1 AAA</td></tr>
+    <tr><td>Muted text</td><td><code>text-zinc-500</code></td><td>#71717A</td><td>5.9:1 AA</td></tr>
+    <tr><td>Accent (links, CTAs)</td><td><code>text-blue-400</code></td><td>#60A5FA</td><td>7.8:1 AA+</td></tr>
+    <tr><td>Border</td><td><code>border-zinc-800</code></td><td>#27272A</td><td>&mdash;</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Meeting-Specific Semantic Colors:</strong></p>
+<table>
+  <thead><tr><th>Purpose</th><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+  <tbody>
+    <tr><td>Partner accent</td><td><code>text-orange-400</code></td><td>#FB923C</td><td>Partner names, role badges</td></tr>
+    <tr><td>Present / Approved</td><td><code>text-green-400</code></td><td>#4ADE80</td><td>Present badge, approved vote</td></tr>
+    <tr><td>Absent / Declined</td><td><code>text-red-400</code></td><td>#F87171</td><td>Absent badge, declined vote</td></tr>
+    <tr><td>Pending</td><td><code>text-yellow-400</code></td><td>#FACC15</td><td>Pending vote, incomplete items</td></tr>
+    <tr><td>Active item</td><td><code>bg-blue-400/10</code></td><td>blue-400 @ 10%</td><td>Current agenda item in sidebar</td></tr>
+    <tr><td>Completed item</td><td><code>text-zinc-500</code></td><td>#71717A</td><td>Completed agenda items in sidebar</td></tr>
+    <tr><td>New partner badge</td><td><code>bg-purple-400/10 text-purple-400</code></td><td>#C084FC</td><td>"New" badge for first-year partners</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Vote Result Visualization:</strong></p>
+<ul>
+  <li>Approved: <code>bg-green-400/10</code> + <code>text-green-400</code> + checkmark icon</li>
+  <li>Declined: <code>bg-red-400/10</code> + <code>text-red-400</code> + X icon</li>
+  <li>Result banner: <code>bg-zinc-900</code> card with large result text (44px) centered</li>
+</ul>
+
+<h3>Typography System &mdash; Presenter Mode</h3>
+<p>Font: <strong>Inter</strong> (same as platform) at projector scale (~1.5x standard):</p>
+
+<table>
+  <thead><tr><th>Element</th><th>Size</th><th>Weight</th><th>Usage</th></tr></thead>
+  <tbody>
+    <tr><td>Meeting Title</td><td>56px</td><td>700 Bold</td><td>Top of screen</td></tr>
+    <tr><td>Agenda Item Title</td><td>44px</td><td>600 SemiBold</td><td>Current item heading</td></tr>
+    <tr><td>Section Label</td><td>32px</td><td>600 SemiBold</td><td>Subsections (e.g., "Vote Results")</td></tr>
+    <tr><td>Body / Partner Name</td><td>24px</td><td>400 Regular</td><td>Gallery names, notes, descriptions</td></tr>
+    <tr><td>Button Label</td><td>24px</td><td>500 Medium</td><td>"Next Item", "Start Vote", "Approve"</td></tr>
+    <tr><td>Badge Text</td><td>18px</td><td>600 SemiBold</td><td>"Present", "New", "Approved"</td></tr>
+    <tr><td>Metadata</td><td>18px</td><td>400 Regular</td><td>Timestamps, auto-save, vote counts</td></tr>
+    <tr><td>Sidebar Item</td><td>20px</td><td>400/600</td><td>Agenda titles (600 for active)</td></tr>
+  </tbody>
+</table>
+
+<p>Minimum readable text on projector at 5m: 18px. Font rendering: <code>font-smoothing: antialiased</code>.</p>
+
+<h3>Spacing &amp; Layout Foundation</h3>
+
+<p><strong>Three-Zone Layout:</strong></p>
+<pre><code>&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  Meeting Title                              Auto-save &#10003;      &#9474;  Header (64px)
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;            &#9474;                                                 &#9474;
+&#9474;  AGENDA    &#9474;            MAIN CONTENT AREA                    &#9474;
+&#9474;  SIDEBAR   &#9474;    (Gallery / Vote / Document / Notes)           &#9474;
+&#9474;  280px     &#9474;                                                 &#9474;
+&#9474;            &#9474;                                                 &#9474;
+&#9474;  1. &#10003; Greet&#9474;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;  2. &#8594; Analy&#9474;         NOTE PANEL (always visible)             &#9474;
+&#9474;  3.  Audit &#9474;    &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;      &#9474;
+&#9474;  4.  Budget&#9474;    &#9474; Type notes here...            Saved &#10003;&#9474;      &#9474;
+&#9474;  5.  Topics&#9474;    &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;      &#9474;
+&#9474;  6.  Other &#9474;                                                 &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;  &#8592; Previous Item                              Next Item &#8594;    &#9474;  Footer (64px)
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</code></pre>
+
+<table>
+  <thead><tr><th>Zone</th><th>Width</th><th>Height</th><th>Padding</th></tr></thead>
+  <tbody>
+    <tr><td>Header</td><td>Full width</td><td>64px fixed</td><td>24px horizontal</td></tr>
+    <tr><td>Sidebar</td><td>280px fixed</td><td>Viewport - header - footer</td><td>16px, 12px between items</td></tr>
+    <tr><td>Main Content</td><td>Remaining</td><td>70% available</td><td>32px</td></tr>
+    <tr><td>Note Panel</td><td>Same as main</td><td>30% available (min 200px)</td><td>24px</td></tr>
+    <tr><td>Footer</td><td>Full width</td><td>64px fixed</td><td>24px horizontal</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Spacing Scale (1.5x standard):</strong> 12px (compact) &middot; 24px (standard) &middot; 36px (comfortable) &middot; 48px (spacious)</p>
+<p><strong>Grid:</strong> Single-column main content &mdash; no multi-column layouts on projector.</p>
+
+<h3>Accessibility Considerations</h3>
+
+<p><strong>Projector-Specific:</strong></p>
+<ul>
+  <li>All text WCAG AAA (7:1+) on dark backgrounds</li>
+  <li>No color-only information: badges use color + text label + icon</li>
+  <li>Vote results: color + icon + text (never color alone)</li>
+</ul>
+
+<p><strong>Keyboard Navigation (Organizer Laptop):</strong></p>
+<ul>
+  <li><code>&rarr;</code> / <code>Space</code>: Advance to next agenda item</li>
+  <li><code>&larr;</code>: Previous item</li>
+  <li><code>1-9</code>: Jump to item by number</li>
+  <li><code>N</code>: Focus note panel</li>
+  <li><code>V</code>: Start vote</li>
+  <li><code>Escape</code>: Exit presenter mode (with confirmation)</li>
+</ul>
+
+<p><strong>ARIA:</strong></p>
+<ul>
+  <li><code>aria-live="polite"</code> on vote results and auto-save indicators</li>
+  <li>Sidebar: <code>role="navigation"</code> + <code>aria-current="step"</code> on active item</li>
+  <li>Gallery: <code>role="list"</code> with presence state in <code>aria-label</code></li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="design-direction-decision">Design Direction Decision</h2>
+
+<h3>Design Directions Explored</h3>
+<p>Six design directions created as interactive HTML mockups (<code>docs/ux-design-directions.html</code>):</p>
+
+<table>
+  <thead><tr><th>Direction</th><th>Layout</th><th>Screens Shown</th></tr></thead>
+  <tbody>
+    <tr><td>A: Classic Sidebar</td><td>Sidebar + main area + bottom note panel</td><td>Who Is Who gallery</td></tr>
+    <tr><td>B: Top Progress Bar</td><td>Progress bar + full-width content</td><td>Who Is Who gallery</td></tr>
+    <tr><td>C: Split Vote</td><td>Left document + right vote panel</td><td>Audit sign-off</td></tr>
+    <tr><td>D: Minimal Zen</td><td>Centered content, dot navigation</td><td>Who Is Who gallery</td></tr>
+    <tr><td>E: Document Viewer</td><td>Full document + side panel</td><td>Audit with vote panel</td></tr>
+    <tr><td>F: Minutes Preview</td><td>Document-style review</td><td>Auto-assembled minutes</td></tr>
+  </tbody>
+</table>
+
+<h3>Chosen Direction</h3>
+<p><strong>Composite: A + E (modified) + F</strong></p>
+<ul>
+  <li><strong>Direction A</strong> as the primary presenter mode layout for all agenda items</li>
+  <li><strong>Direction E</strong> for document-heavy items (audit, budget) &mdash; modified: note panel always at bottom (consistent with A), vote panel on the right</li>
+  <li><strong>Direction F</strong> as the post-meeting minutes review and publish screen</li>
+</ul>
+
+<h3>Design Rationale</h3>
+<ol>
+  <li><strong>Consistency wins</strong> &mdash; Direction A's sidebar + content + bottom notes creates a predictable layout. The note panel never moves.</li>
+  <li><strong>Document items need the vote panel</strong> &mdash; Direction E's right-side vote panel is the natural place for per-partner approve/decline when viewing a document. Notes stay at the bottom.</li>
+  <li><strong>Minutes are the payoff</strong> &mdash; Direction F delivers the "it captured everything" delight moment. Clean, document-like, publishable.</li>
+  <li><strong>Projector clarity</strong> &mdash; All directions use dark theme with large typography, avoiding dense layouts.</li>
+</ol>
+
+<h3>Composite Layout Specification</h3>
+
+<p><strong>Standard Agenda Items</strong> (greeting, analytics, topics, hot topics):</p>
+<pre><code>&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  SIDEBAR   &#9474;        MAIN CONTENT AREA             &#9474;
+&#9474;  (280px)   &#9474;  (gallery / analytics / discussion)  &#9474;
+&#9474;            &#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;            &#9474;    NOTE PANEL (bottom, 180px)        &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;  &#8592; Previous                        Next Item &#8594;   &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</code></pre>
+
+<p><strong>Document + Vote Items</strong> (audit sign-off, budget approval):</p>
+<pre><code>&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  SIDEBAR   &#9474;  DOCUMENT VIEWER     &#9474;  VOTE PANEL  &#9474;
+&#9474;  (280px)   &#9474;  (PDF embedded)      &#9474;  (320px)     &#9474;
+&#9474;            &#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;            &#9474;    NOTE PANEL (bottom, 180px)        &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;  &#8592; Previous                        Next Item &#8594;   &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</code></pre>
+
+<p><strong>Post-Meeting Minutes Review</strong> (Direction F):</p>
+<pre><code>&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  Meeting Minutes &#8212; Review &amp; Publish    [Draft]    &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9474;
+&#9474;  &#9474;  Partner Meeting &#8212; Spring 2026               &#9474; &#9474;
+&#9474;  &#9474;  1. Attendance (auto-populated)              &#9474; &#9474;
+&#9474;  &#9474;  2. Analytics Review (snapshot attached)     &#9474; &#9474;
+&#9474;  &#9474;  3. Audit Sign-off (PDF + vote result)       &#9474; &#9474;
+&#9474;  &#9474;  4. Budget Approval (doc + vote + fee note)  &#9474; &#9474;
+&#9474;  &#9474;  5. Topics Discussion (notes)                &#9474; &#9474;
+&#9474;  &#9474;  6. Action Items (with owners + deadlines)   &#9474; &#9474;
+&#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496; &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;  [&#8592; Back to Edit]       [Publish &amp; Send to All]  &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="user-journey-flows">User Journey Flows</h2>
+
+<h3>Journey 1: Create &amp; Prepare Meeting (Organizer, Pre-Meeting)</h3>
+<p><strong>Entry:</strong> Partner Portal &rarr; Meetings &rarr; "Create New Meeting"<br>
+<strong>Success:</strong> All checklist items green, organizer confident and ready to present</p>
+
+<div class="flow-diagram">
+  <span class="flow-label">Journey 1 Flow</span>
+  <svg width="720" height="680" viewBox="0 0 720 680" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#E23615"/></marker>
+    </defs>
+    <!-- Nodes -->
+    <rect x="220" y="10" width="280" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="360" y="33" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">Partner Portal → Meetings</text>
+
+    <rect x="220" y="66" width="280" height="36" rx="8" fill="#1a1d27" stroke="#28AF8F" stroke-width="1.5"/>
+    <text x="360" y="89" text-anchor="middle" fill="#e8eaf6" font-size="13">Create New Meeting</text>
+
+    <rect x="220" y="122" width="280" height="36" rx="8" fill="#1a1d27" stroke="#2e3350" stroke-width="1.5"/>
+    <text x="360" y="145" text-anchor="middle" fill="#e8eaf6" font-size="13">Set Date, Time, Location</text>
+
+    <rect x="220" y="178" width="280" height="36" rx="8" fill="#1a1d27" stroke="#2e3350" stroke-width="1.5"/>
+    <text x="360" y="201" text-anchor="middle" fill="#e8eaf6" font-size="13">Select Active Agenda Items</text>
+
+    <rect x="220" y="234" width="280" height="36" rx="8" fill="#1a1d27" stroke="#2e3350" stroke-width="1.5"/>
+    <text x="360" y="257" text-anchor="middle" fill="#e8eaf6" font-size="13">Add Custom Passive Items</text>
+
+    <rect x="220" y="290" width="280" height="36" rx="8" fill="#1a1d27" stroke="#2e3350" stroke-width="1.5"/>
+    <text x="360" y="313" text-anchor="middle" fill="#e8eaf6" font-size="13">Reorder via Drag-and-Drop</text>
+
+    <rect x="220" y="346" width="280" height="36" rx="8" fill="#1a1d27" stroke="#2e3350" stroke-width="1.5"/>
+    <text x="360" y="369" text-anchor="middle" fill="#e8eaf6" font-size="13">Configure Auditor Email</text>
+
+    <rect x="220" y="402" width="280" height="36" rx="8" fill="#1a1d27" stroke="#28AF8F" stroke-width="1.5"/>
+    <text x="360" y="425" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">Save Meeting → DRAFT</text>
+
+    <!-- Branch from Save -->
+    <rect x="20" y="462" width="260" height="36" rx="8" fill="#1a1d27" stroke="#FFCA4C" stroke-width="1.5"/>
+    <text x="150" y="485" text-anchor="middle" fill="#e8eaf6" font-size="13">Send ICS Invites (deep-links)</text>
+
+    <rect x="380" y="462" width="280" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="520" y="485" text-anchor="middle" fill="#e8eaf6" font-size="13">Meeting Prep Dashboard</text>
+
+    <!-- Decision diamond -->
+    <polygon points="520,530 610,558 520,586 430,558" fill="#1a1d27" stroke="#FFCA4C" stroke-width="1.5"/>
+    <text x="520" y="562" text-anchor="middle" fill="#FFCA4C" font-size="12" font-weight="600">All green?</text>
+
+    <!-- Yes/No -->
+    <rect x="350" y="614" width="220" height="36" rx="8" fill="#1a1d27" stroke="#28AF8F" stroke-width="2"/>
+    <text x="460" y="637" text-anchor="middle" fill="#28AF8F" font-size="13" font-weight="700">Start Presenter Mode ✓</text>
+
+    <rect x="70" y="540" width="250" height="36" rx="8" fill="#1a1d27" stroke="#AF2322" stroke-width="1.5"/>
+    <text x="195" y="563" text-anchor="middle" fill="#e8eaf6" font-size="13">Upload docs / follow up RSVPs</text>
+
+    <!-- Arrows -->
+    <line x1="360" y1="46" x2="360" y2="66" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <line x1="360" y1="102" x2="360" y2="122" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <line x1="360" y1="158" x2="360" y2="178" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <line x1="360" y1="214" x2="360" y2="234" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <line x1="360" y1="270" x2="360" y2="290" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <line x1="360" y1="326" x2="360" y2="346" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <line x1="360" y1="382" x2="360" y2="402" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <!-- Branch lines from Save -->
+    <line x1="300" y1="438" x2="150" y2="462" stroke="#FFCA4C" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <line x1="420" y1="438" x2="520" y2="462" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <!-- Prep to diamond -->
+    <line x1="520" y1="498" x2="520" y2="530" stroke="#FFCA4C" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <!-- Yes -->
+    <line x1="520" y1="586" x2="460" y2="614" stroke="#28AF8F" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <text x="505" y="604" fill="#28AF8F" font-size="11" font-weight="600">Yes</text>
+    <!-- No -->
+    <line x1="430" y1="558" x2="320" y2="558" stroke="#AF2322" stroke-width="1.5" marker-end="url(#arrow1)"/>
+    <text x="375" y="552" fill="#AF2322" font-size="11" font-weight="600">No</text>
+    <!-- Loop back -->
+    <path d="M70,558 Q30,558 30,498 Q30,480 70,480 L150,480" fill="none" stroke="#AF2322" stroke-width="1.2" stroke-dasharray="4,3"/>
+    <line x1="70" y1="480" x2="380" y2="480" stroke="none"/>
+    <path d="M70,558 Q20,558 20,500 Q20,440 195,440 Q380,440 520,462" fill="none" stroke="#8890b5" stroke-width="1" stroke-dasharray="4,3"/>
+  </svg>
+</div>
+
+<p><strong>Edge cases:</strong></p>
+<ul>
+  <li>Audit PDF not uploaded &rarr; yellow warning, blocks "Start" until uploaded or item removed</li>
+  <li>Zero RSVPs &rarr; warning but doesn't block</li>
+  <li>Previous meeting has open action items &rarr; surfaced in prep dashboard automatically</li>
+</ul>
+
+<h3>Journey 2: Run Meeting in Presenter Mode (Organizer, Live)</h3>
+<p><strong>Entry:</strong> "Start Presenter Mode" on meeting prep screen<br>
+<strong>Success:</strong> All items walked through, votes captured, notes taken, minutes auto-assembled</p>
+
+<div class="flow-diagram">
+  <span class="flow-label">Journey 2 — Presenter Mode Flow</span>
+  <svg width="720" height="820" viewBox="0 0 720 820" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#E23615"/></marker>
+      <marker id="arrow2g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#28AF8F"/></marker>
+    </defs>
+    <!-- Start -->
+    <rect x="200" y="10" width="320" height="38" rx="19" fill="#E23615" stroke="none"/>
+    <text x="360" y="34" text-anchor="middle" fill="white" font-size="14" font-weight="700">Start Presenter Mode</text>
+
+    <rect x="180" y="68" width="360" height="34" rx="8" fill="#1a1d27" stroke="#2e3350" stroke-width="1.5"/>
+    <text x="360" y="90" text-anchor="middle" fill="#8890b5" font-size="12">Dark theme activates · Minutes entity created (DRAFT)</text>
+
+    <!-- Item 1 -->
+    <rect x="160" y="122" width="240" height="38" rx="8" fill="#1a1d27" stroke="#28AF8F" stroke-width="2"/>
+    <text x="280" y="146" text-anchor="middle" fill="#28AF8F" font-size="13" font-weight="600">1. Who Is Who Gallery</text>
+    <rect x="440" y="126" width="220" height="30" rx="6" fill="#22263a" stroke="#2e3350" stroke-width="1"/>
+    <text x="550" y="146" text-anchor="middle" fill="#8890b5" font-size="11">Toggle Present / Absent</text>
+
+    <!-- Item 2 -->
+    <rect x="160" y="186" width="240" height="38" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="2"/>
+    <text x="280" y="210" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">2. Analytics Review</text>
+    <rect x="440" y="190" width="220" height="30" rx="6" fill="#22263a" stroke="#2e3350" stroke-width="1"/>
+    <text x="550" y="210" text-anchor="middle" fill="#8890b5" font-size="11">Capture Snapshot → minutes</text>
+
+    <!-- Item 3 -->
+    <rect x="160" y="250" width="240" height="38" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="2"/>
+    <text x="280" y="274" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">3. Audit Sign-off</text>
+    <rect x="440" y="246" width="220" height="44" rx="6" fill="#22263a" stroke="#FFCA4C" stroke-width="1"/>
+    <text x="550" y="264" text-anchor="middle" fill="#FFCA4C" font-size="11" font-weight="600">PDF viewer + Vote panel</text>
+    <text x="550" y="280" text-anchor="middle" fill="#8890b5" font-size="11">Approve/Decline → result</text>
+
+    <!-- Item 4 -->
+    <rect x="160" y="318" width="240" height="38" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="2"/>
+    <text x="280" y="342" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">4. Budget Approval</text>
+    <rect x="440" y="322" width="220" height="30" rx="6" fill="#22263a" stroke="#2e3350" stroke-width="1"/>
+    <text x="550" y="342" text-anchor="middle" fill="#8890b5" font-size="11">Doc + Vote → async fee</text>
+
+    <!-- Item 5 -->
+    <rect x="160" y="382" width="240" height="38" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="2"/>
+    <text x="280" y="406" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">5. Topic Discussion</text>
+    <rect x="440" y="386" width="220" height="30" rx="6" fill="#22263a" stroke="#2e3350" stroke-width="1"/>
+    <text x="550" y="406" text-anchor="middle" fill="#8890b5" font-size="11">Voting results + notes</text>
+
+    <!-- Item 6 -->
+    <rect x="160" y="446" width="240" height="38" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="2"/>
+    <text x="280" y="470" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">6. Hot Topics / Custom</text>
+    <rect x="440" y="450" width="220" height="30" rx="6" fill="#22263a" stroke="#2e3350" stroke-width="1"/>
+    <text x="550" y="470" text-anchor="middle" fill="#8890b5" font-size="11">Free-form notes</text>
+
+    <!-- End Meeting -->
+    <rect x="200" y="510" width="320" height="38" rx="19" fill="#AF2322" stroke="none"/>
+    <text x="360" y="534" text-anchor="middle" fill="white" font-size="14" font-weight="700">End Meeting →</text>
+
+    <rect x="200" y="568" width="320" height="38" rx="19" fill="#28AF8F" stroke="none"/>
+    <text x="360" y="592" text-anchor="middle" fill="#0f1117" font-size="14" font-weight="700">Transition to Minutes Review</text>
+
+    <!-- "Always visible" annotation -->
+    <rect x="40" y="630" width="640" height="50" rx="10" fill="#22263a" stroke="#FFCA4C" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="360" y="650" text-anchor="middle" fill="#FFCA4C" font-size="12" font-weight="600">Always visible on every item:</text>
+    <text x="360" y="670" text-anchor="middle" fill="#8890b5" font-size="11">Agenda Sidebar (left) · Note Panel (bottom) · Auto-save ✓ (top-right) · Next/Back (footer)</text>
+
+    <!-- Arrows (main flow) -->
+    <line x1="360" y1="48" x2="360" y2="68" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow2)"/>
+    <line x1="360" y1="102" x2="280" y2="122" stroke="#28AF8F" stroke-width="1.5" marker-end="url(#arrow2g)"/>
+    <line x1="280" y1="160" x2="280" y2="186" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow2)"/>
+    <line x1="280" y1="224" x2="280" y2="250" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow2)"/>
+    <line x1="280" y1="288" x2="280" y2="318" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow2)"/>
+    <line x1="280" y1="356" x2="280" y2="382" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow2)"/>
+    <line x1="280" y1="420" x2="280" y2="446" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow2)"/>
+    <line x1="280" y1="484" x2="360" y2="510" stroke="#AF2322" stroke-width="1.5"/>
+    <line x1="360" y1="548" x2="360" y2="568" stroke="#28AF8F" stroke-width="1.5" marker-end="url(#arrow2g)"/>
+
+    <!-- Side connectors -->
+    <line x1="400" y1="141" x2="440" y2="141" stroke="#2e3350" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="400" y1="205" x2="440" y2="205" stroke="#2e3350" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="400" y1="269" x2="440" y2="265" stroke="#FFCA4C" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="400" y1="337" x2="440" y2="337" stroke="#2e3350" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="400" y1="401" x2="440" y2="401" stroke="#2e3350" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="400" y1="465" x2="440" y2="465" stroke="#2e3350" stroke-width="1" stroke-dasharray="3,3"/>
+  </svg>
+</div>
+
+<p><strong>At every step:</strong> Sidebar shows progress, note panel at bottom, auto-save indicator</p>
+<p><strong>Edge cases:</strong></p>
+<ul>
+  <li>Skip an item &rarr; marked as skipped in minutes</li>
+  <li>Stand-in &rarr; organizer records in notes, proxies their votes</li>
+  <li>Go back &rarr; non-destructive, data preserved</li>
+  <li>Add action item &rarr; button available on every item</li>
+</ul>
+
+<h3>Journey 3: Review &amp; Publish Minutes (Organizer, Post-Meeting)</h3>
+<p><strong>Entry:</strong> Automatic transition from end of presenter mode<br>
+<strong>Success:</strong> Minutes published, all partners notified, async workflows triggered</p>
+
+<div class="flow-diagram">
+  <span class="flow-label">Journey 3 — Review &amp; Publish Minutes</span>
+  <svg width="720" height="540" viewBox="0 0 720 540" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#E23615"/></marker>
+      <marker id="arrow3g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#28AF8F"/></marker>
+      <marker id="arrow3r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#AF2322"/></marker>
+    </defs>
+    <!-- End Meeting -->
+    <rect x="220" y="10" width="280" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="360" y="33" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">End Meeting → Minutes Review</text>
+
+    <rect x="220" y="66" width="280" height="36" rx="8" fill="#1a1d27" stroke="#28AF8F" stroke-width="1.5"/>
+    <text x="360" y="89" text-anchor="middle" fill="#28AF8F" font-size="13">Auto-assembled minutes displayed</text>
+
+    <!-- Decision: review -->
+    <polygon points="360,130 440,158 360,186 280,158" fill="#1a1d27" stroke="#FFCA4C" stroke-width="1.5"/>
+    <text x="360" y="162" text-anchor="middle" fill="#FFCA4C" font-size="12" font-weight="600">Review</text>
+
+    <!-- Edit options -->
+    <rect x="40" y="142" width="180" height="30" rx="6" fill="#22263a" stroke="#2e3350" stroke-width="1"/>
+    <text x="130" y="162" text-anchor="middle" fill="#8890b5" font-size="11">Edit sections inline</text>
+    <rect x="500" y="130" width="180" height="30" rx="6" fill="#22263a" stroke="#2e3350" stroke-width="1"/>
+    <text x="590" y="150" text-anchor="middle" fill="#8890b5" font-size="11">Add/modify action items</text>
+    <rect x="500" y="166" width="180" height="30" rx="6" fill="#22263a" stroke="#2e3350" stroke-width="1"/>
+    <text x="590" y="186" text-anchor="middle" fill="#8890b5" font-size="11">Add free-text sections</text>
+
+    <line x1="280" y1="158" x2="220" y2="157" stroke="#2e3350" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="440" y1="150" x2="500" y2="145" stroke="#2e3350" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="440" y1="165" x2="500" y2="181" stroke="#2e3350" stroke-width="1" stroke-dasharray="3,3"/>
+
+    <!-- Satisfied? -->
+    <polygon points="360,214 440,242 360,270 280,242" fill="#1a1d27" stroke="#FFCA4C" stroke-width="1.5"/>
+    <text x="360" y="246" text-anchor="middle" fill="#FFCA4C" font-size="12" font-weight="600">Satisfied?</text>
+
+    <!-- No loop -->
+    <text x="245" y="210" fill="#AF2322" font-size="11" font-weight="600">No</text>
+    <path d="M280,242 Q200,242 200,200 Q200,158 280,158" fill="none" stroke="#AF2322" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow3r)"/>
+
+    <!-- Yes path -->
+    <text x="470" y="250" fill="#28AF8F" font-size="11" font-weight="600">Yes</text>
+    <line x1="440" y1="242" x2="500" y2="242" stroke="#28AF8F" stroke-width="1.5"/>
+
+    <rect x="500" y="224" width="180" height="36" rx="8" fill="#1a1d27" stroke="#28AF8F" stroke-width="2"/>
+    <text x="590" y="247" text-anchor="middle" fill="#28AF8F" font-size="13" font-weight="600">Publish &amp; Send</text>
+
+    <rect x="220" y="298" width="280" height="36" rx="8" fill="#1a1d27" stroke="#FFCA4C" stroke-width="1.5"/>
+    <text x="360" y="321" text-anchor="middle" fill="#FFCA4C" font-size="13">Confirm: Send to all partners?</text>
+
+    <rect x="220" y="358" width="280" height="36" rx="19" fill="#28AF8F" stroke="none"/>
+    <text x="360" y="381" text-anchor="middle" fill="#0f1117" font-size="13" font-weight="700">Minutes → PUBLISHED</text>
+
+    <!-- Outputs -->
+    <rect x="40" y="420" width="200" height="32" rx="6" fill="#22263a" stroke="#E23615" stroke-width="1"/>
+    <text x="140" y="441" text-anchor="middle" fill="#e8eaf6" font-size="12">Email to all partners</text>
+
+    <rect x="260" y="420" width="200" height="32" rx="6" fill="#22263a" stroke="#FFCA4C" stroke-width="1"/>
+    <text x="360" y="441" text-anchor="middle" fill="#e8eaf6" font-size="12">Fee acceptance triggered</text>
+
+    <rect x="480" y="420" width="200" height="32" rx="6" fill="#22263a" stroke="#AF2322" stroke-width="1"/>
+    <text x="580" y="441" text-anchor="middle" fill="#e8eaf6" font-size="12">Feedback pulse (24h)</text>
+
+    <!-- Arrows -->
+    <line x1="360" y1="46" x2="360" y2="66" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow3)"/>
+    <line x1="360" y1="102" x2="360" y2="130" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow3)"/>
+    <line x1="360" y1="186" x2="360" y2="214" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow3)"/>
+    <line x1="590" y1="260" x2="590" y2="288" stroke="#28AF8F" stroke-width="1.5"/>
+    <path d="M590,288 Q590,298 500,316 L500,316" fill="none" stroke="#28AF8F" stroke-width="1.5"/>
+    <line x1="360" y1="334" x2="360" y2="358" stroke="#FFCA4C" stroke-width="1.5" marker-end="url(#arrow3)"/>
+    <line x1="260" y1="394" x2="140" y2="420" stroke="#E23615" stroke-width="1" marker-end="url(#arrow3)"/>
+    <line x1="360" y1="394" x2="360" y2="420" stroke="#FFCA4C" stroke-width="1" marker-end="url(#arrow3)"/>
+    <line x1="460" y1="394" x2="580" y2="420" stroke="#AF2322" stroke-width="1" marker-end="url(#arrow3r)"/>
+  </svg>
+</div>
+
+<p><strong>Edge cases:</strong></p>
+<ul>
+  <li>Save draft and publish later &rarr; "Save Draft" button available</li>
+  <li>PDF too large for email &rarr; email contains portal link</li>
+</ul>
+
+<h3>Journey 4: Absent Partner &mdash; Catch Up &amp; Act (Async)</h3>
+<p><strong>Entry:</strong> Email notification with link to published minutes<br>
+<strong>Success:</strong> Absent partner fully informed and able to participate in post-meeting decisions</p>
+
+<div class="flow-diagram">
+  <span class="flow-label">Journey 4 — Absent Partner Async</span>
+  <svg width="720" height="340" viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#E23615"/></marker>
+    </defs>
+    <rect x="220" y="10" width="280" height="36" rx="8" fill="#1a1d27" stroke="#AF2322" stroke-width="1.5"/>
+    <text x="360" y="33" text-anchor="middle" fill="#AF2322" font-size="13" font-weight="600">Email: Minutes Published</text>
+
+    <rect x="220" y="66" width="280" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="360" y="89" text-anchor="middle" fill="#e8eaf6" font-size="13">Partner Portal → View Minutes</text>
+
+    <rect x="220" y="122" width="280" height="36" rx="8" fill="#1a1d27" stroke="#2e3350" stroke-width="1.5"/>
+    <text x="360" y="145" text-anchor="middle" fill="#e8eaf6" font-size="13">Read full meeting record</text>
+
+    <polygon points="360,186 460,218 360,250 260,218" fill="#1a1d27" stroke="#FFCA4C" stroke-width="1.5"/>
+    <text x="360" y="222" text-anchor="middle" fill="#FFCA4C" font-size="12" font-weight="600">Actions?</text>
+
+    <!-- Four branches -->
+    <rect x="20" y="280" width="160" height="36" rx="8" fill="#1a1d27" stroke="#FFCA4C" stroke-width="1.5"/>
+    <text x="100" y="303" text-anchor="middle" fill="#FFCA4C" font-size="12">Fee: Accept/Decline</text>
+
+    <rect x="200" y="280" width="160" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="280" y="303" text-anchor="middle" fill="#e8eaf6" font-size="12">Action Item</text>
+
+    <rect x="380" y="280" width="160" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="460" y="303" text-anchor="middle" fill="#e8eaf6" font-size="12">Feedback Survey</text>
+
+    <rect x="560" y="280" width="140" height="36" rx="8" fill="#1a1d27" stroke="#28AF8F" stroke-width="1.5"/>
+    <text x="630" y="303" text-anchor="middle" fill="#28AF8F" font-size="12">Fully informed ✓</text>
+
+    <!-- Arrows -->
+    <line x1="360" y1="46" x2="360" y2="66" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow4)"/>
+    <line x1="360" y1="102" x2="360" y2="122" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow4)"/>
+    <line x1="360" y1="158" x2="360" y2="186" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow4)"/>
+    <line x1="290" y1="240" x2="100" y2="280" stroke="#FFCA4C" stroke-width="1.2" marker-end="url(#arrow4)"/>
+    <line x1="330" y1="248" x2="280" y2="280" stroke="#E23615" stroke-width="1.2" marker-end="url(#arrow4)"/>
+    <line x1="390" y1="248" x2="460" y2="280" stroke="#E23615" stroke-width="1.2" marker-end="url(#arrow4)"/>
+    <line x1="430" y1="240" x2="630" y2="280" stroke="#28AF8F" stroke-width="1.2" marker-end="url(#arrow4)"/>
+  </svg>
+</div>
+
+<p><strong>Edge cases:</strong></p>
+<ul>
+  <li>No action on fee &rarr; reminders at 7d, 14d, then organizer notified</li>
+  <li>Partner declines fee &rarr; organizer notified with comment</li>
+</ul>
+
+<h3>Journey 5: Next Meeting &mdash; Action Item Carry-Forward (Lifecycle)</h3>
+<p><strong>Entry:</strong> Organizer creates next partner meeting<br>
+<strong>Success:</strong> No action item ever lost between meetings</p>
+
+<div class="flow-diagram">
+  <span class="flow-label">Journey 5 — Action Item Carry-Forward</span>
+  <svg width="720" height="360" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow5" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#E23615"/></marker>
+      <marker id="arrow5g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#28AF8F"/></marker>
+    </defs>
+    <rect x="240" y="10" width="240" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="360" y="33" text-anchor="middle" fill="#e8eaf6" font-size="13" font-weight="600">Create next meeting</text>
+
+    <polygon points="360,74 470,106 360,138 250,106" fill="#1a1d27" stroke="#FFCA4C" stroke-width="1.5"/>
+    <text x="360" y="110" text-anchor="middle" fill="#FFCA4C" font-size="12" font-weight="600">Open actions?</text>
+
+    <!-- Yes branch -->
+    <text x="210" y="100" fill="#28AF8F" font-size="11" font-weight="600">Yes</text>
+    <rect x="60" y="150" width="240" height="36" rx="8" fill="#1a1d27" stroke="#28AF8F" stroke-width="1.5"/>
+    <text x="180" y="173" text-anchor="middle" fill="#28AF8F" font-size="13">Surface in prep dashboard</text>
+
+    <rect x="60" y="206" width="240" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="180" y="229" text-anchor="middle" fill="#e8eaf6" font-size="13">Add "Review Open Actions"</text>
+
+    <rect x="60" y="262" width="240" height="36" rx="8" fill="#1a1d27" stroke="#E23615" stroke-width="1.5"/>
+    <text x="180" y="285" text-anchor="middle" fill="#e8eaf6" font-size="13">During meeting: review each</text>
+
+    <!-- 3 outcomes -->
+    <rect x="20" y="318" width="120" height="30" rx="6" fill="#22263a" stroke="#28AF8F" stroke-width="1"/>
+    <text x="80" y="338" text-anchor="middle" fill="#28AF8F" font-size="11" font-weight="600">Mark done ✓</text>
+
+    <rect x="155" y="318" width="120" height="30" rx="6" fill="#22263a" stroke="#FFCA4C" stroke-width="1"/>
+    <text x="215" y="338" text-anchor="middle" fill="#FFCA4C" font-size="11">Extend deadline</text>
+
+    <rect x="290" y="318" width="120" height="30" rx="6" fill="#22263a" stroke="#AF2322" stroke-width="1"/>
+    <text x="350" y="338" text-anchor="middle" fill="#AF2322" font-size="11">Carry forward</text>
+
+    <!-- No branch -->
+    <text x="490" y="100" fill="#8890b5" font-size="11" font-weight="600">No</text>
+    <rect x="500" y="150" width="180" height="36" rx="8" fill="#1a1d27" stroke="#2e3350" stroke-width="1.5"/>
+    <text x="590" y="173" text-anchor="middle" fill="#8890b5" font-size="13">Clean slate</text>
+
+    <!-- Arrows -->
+    <line x1="360" y1="46" x2="360" y2="74" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow5)"/>
+    <line x1="250" y1="106" x2="180" y2="150" stroke="#28AF8F" stroke-width="1.5" marker-end="url(#arrow5g)"/>
+    <line x1="470" y1="106" x2="590" y2="150" stroke="#8890b5" stroke-width="1.5" marker-end="url(#arrow5)"/>
+    <line x1="180" y1="186" x2="180" y2="206" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow5)"/>
+    <line x1="180" y1="242" x2="180" y2="262" stroke="#E23615" stroke-width="1.5" marker-end="url(#arrow5)"/>
+    <line x1="120" y1="298" x2="80" y2="318" stroke="#28AF8F" stroke-width="1"/>
+    <line x1="180" y1="298" x2="215" y2="318" stroke="#FFCA4C" stroke-width="1"/>
+    <line x1="240" y1="298" x2="350" y2="318" stroke="#AF2322" stroke-width="1"/>
+  </svg>
+</div>
+
+<p><strong>Edge cases:</strong></p>
+<ul>
+  <li>Items carried 2+ meetings &rarr; flagged with urgency indicator</li>
+  <li>Owner no longer a partner &rarr; organizer reassigns</li>
+</ul>
+
+<h3>Journey Patterns</h3>
+<table>
+  <thead><tr><th>Pattern</th><th>Used In</th><th>Implementation</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Linear progression</strong></td><td>All journeys</td><td>Sidebar/progress with back/next, no branching during live meeting</td></tr>
+    <tr><td><strong>Capture by using</strong></td><td>Journey 2</td><td>Every interaction auto-contributes to minutes entity</td></tr>
+    <tr><td><strong>Checklist gating</strong></td><td>Journey 1</td><td>Prep checklist shows readiness, soft-blocks start if critical items missing</td></tr>
+    <tr><td><strong>Async extension</strong></td><td>Journey 4</td><td>Post-meeting workflows extend value to non-attendees</td></tr>
+    <tr><td><strong>Carry-forward</strong></td><td>Journey 5</td><td>System surfaces open items from previous meetings automatically</td></tr>
+    <tr><td><strong>Confirm before publish</strong></td><td>Journey 3</td><td>Review screen + confirmation dialog before distributing</td></tr>
+  </tbody>
+</table>
+
+<h3>Flow Optimization Principles</h3>
+<ol>
+  <li><strong>Minimize clicks during live meeting</strong> &mdash; Every agenda item interaction is 1-2 clicks max. No modals, no multi-step forms during presenter mode.</li>
+  <li><strong>Auto-populate everything possible</strong> &mdash; Attendance, vote results, snapshots all flow into minutes automatically. Organizer only adds free-text notes.</li>
+  <li><strong>Never lose data</strong> &mdash; Auto-save at every step. Draft minutes persist. Action items carry forward.</li>
+  <li><strong>Async = same context, different timeline</strong> &mdash; Absent partners see the same minutes, documents, and vote results. Their actions feed back into the same system.</li>
+  <li><strong>Progressive readiness</strong> &mdash; Prep checklist turns red &rarr; yellow &rarr; green. "Start Presenter Mode" enables when minimum readiness is met.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="component-strategy">Component Strategy</h2>
+
+<h3>Design System Components (Available from BATbern MUI + Tailwind)</h3>
+<table>
+  <thead><tr><th>Component</th><th>Used For</th></tr></thead>
+  <tbody>
+    <tr><td>MUI Button, ButtonGroup</td><td>Navigation, vote buttons, actions</td></tr>
+    <tr><td>MUI TextField / TextArea</td><td>Note panel, action item forms</td></tr>
+    <tr><td>MUI Card</td><td>Partner cards, action item cards</td></tr>
+    <tr><td>MUI Avatar</td><td>Partner initials/photos</td></tr>
+    <tr><td>MUI Chip</td><td>Badges (Present, Absent, New)</td></tr>
+    <tr><td>MUI Stepper</td><td>Agenda sidebar foundation</td></tr>
+    <tr><td>MUI List / ListItem</td><td>Vote rows, action item lists</td></tr>
+    <tr><td>MUI Dialog</td><td>Confirmation modals</td></tr>
+    <tr><td>MUI AppBar</td><td>Header bar</td></tr>
+    <tr><td>Content Upload Component</td><td>Document upload (S3 presigned URL)</td></tr>
+    <tr><td>Notification Toast</td><td>Auto-save confirmations, error alerts</td></tr>
+  </tbody>
+</table>
+
+<h3>Custom Components</h3>
+
+<h4>1. AgendaSidebar</h4>
+<p><strong>Purpose:</strong> Persistent navigation showing all agenda items with progress during presenter mode<br>
+<strong>Anatomy:</strong> Vertical list &mdash; number circle, item title, status icon per item<br>
+<strong>States:</strong> <code>upcoming</code> (gray) | <code>active</code> (blue highlight, bold) | <code>completed</code> (green checkmark) | <code>skipped</code> (gray, strikethrough)<br>
+<strong>Interactions:</strong> Click any item to jump (non-destructive). Current item auto-scrolls.<br>
+<strong>Size:</strong> 280px fixed width. <strong>Accessibility:</strong> <code>role="navigation"</code>, <code>aria-current="step"</code></p>
+
+<h4>2. VotePanel</h4>
+<p><strong>Purpose:</strong> Organizer casts approve/decline votes on behalf of each present partner<br>
+<strong>Anatomy:</strong> Header (vote title) &rarr; partner rows (avatar + name + approve/decline buttons) &rarr; result tally<br>
+<strong>States:</strong> <code>idle</code> | <code>voting</code> | <code>complete</code><br>
+<strong>Interactions:</strong> Click approve (green) or decline (red) per partner. Change before completing. "Complete Vote" locks results.<br>
+<strong>Result animation:</strong> Banner slides in: "Approved &mdash; 5/5" (300ms fade + scale)<br>
+<strong>Accessibility:</strong> <code>role="group"</code>, each button <code>aria-label="Approve for [name]"</code></p>
+
+<h4>3. DocumentViewer</h4>
+<p><strong>Purpose:</strong> Display uploaded PDF/spreadsheet inline within an agenda item<br>
+<strong>Anatomy:</strong> Document title + metadata, embedded PDF viewer, toolbar (zoom, pages, download)<br>
+<strong>States:</strong> <code>empty</code> ("No document uploaded") | <code>loading</code> | <code>loaded</code> | <code>error</code><br>
+<strong>Size:</strong> Fills available width minus vote panel. Dark chrome (zinc-900).<br>
+<strong>Accessibility:</strong> <code>aria-label="Document viewer: [title]"</code>, keyboard zoom</p>
+
+<h4>4. NotePanel</h4>
+<p><strong>Purpose:</strong> Always-visible text area for discussion notes, attached to current agenda item<br>
+<strong>Anatomy:</strong> Label ("Notes &mdash; [item name]"), multiline textarea, auto-save indicator<br>
+<strong>States:</strong> <code>empty</code> | <code>typing</code> | <code>saved</code><br>
+<strong>Position:</strong> Always bottom, 180px height, consistent across all item types<br>
+<strong>Interactions:</strong> Auto-saves every 2s of inactivity. Keyboard shortcut <code>N</code> to focus.</p>
+
+<h4>5. PartnerGallery</h4>
+<p><strong>Purpose:</strong> Grid of partner companies with presence toggle for Who Is Who<br>
+<strong>Anatomy:</strong> Auto-fill grid (min 200px), each card: avatar, name, company, badge<br>
+<strong>States per card:</strong> <code>present</code> (green border) | <code>absent</code> (dimmed) | <code>stand-in</code> ("Represented by [name]")<br>
+<strong>Interactions:</strong> Click to toggle. "Add Stand-in" on absent partner &rarr; free-text name input.<br>
+<strong>Accessibility:</strong> <code>role="list"</code>, cards as <code>role="listitem"</code> with status in <code>aria-label</code></p>
+
+<h4>6. MeetingPrepChecklist</h4>
+<p><strong>Purpose:</strong> Dashboard showing meeting readiness with actionable status items<br>
+<strong>Anatomy:</strong> List items with icon, label, status chip (green/yellow/red), action link<br>
+<strong>Dynamic items based on enabled agenda:</strong> audit PDF, budget doc, RSVP count, topic voting, open actions, ICS sent<br>
+<strong>Overall indicator:</strong> "4 of 6 items ready"</p>
+
+<h4>7. ActionItemCard</h4>
+<p><strong>Purpose:</strong> Capture and display action items with ownership and lifecycle<br>
+<strong>Anatomy:</strong> Title, owner dropdown, deadline picker, status badge, source link<br>
+<strong>States:</strong> <code>open</code> | <code>in-progress</code> | <code>completed</code> | <code>carried-forward</code><br>
+<strong>Carry-forward:</strong> Shows "Carried from [meeting name]" with link</p>
+
+<h4>8. MinutesDocument</h4>
+<p><strong>Purpose:</strong> Auto-assembled meeting record, reviewable and editable before publishing<br>
+<strong>Anatomy:</strong> Header (title, date, location), sections per agenda item, attendance tags, vote results, action items<br>
+<strong>States:</strong> <code>draft</code> (editable) | <code>published</code> (read-only)<br>
+<strong>Actions:</strong> "Publish &amp; Send", "Save Draft", "Back to Edit"</p>
+
+<h4>9. VoteResultBanner</h4>
+<p><strong>Purpose:</strong> Projector-friendly vote outcome display with animation<br>
+<strong>Anatomy:</strong> Large result text (44px), colored background (green/red at 10% opacity)<br>
+<strong>Animation:</strong> Fade-in + scale 95%&rarr;100% over 300ms<br>
+<strong>Size:</strong> Full content width, 120px height</p>
+
+<h4>10. AgendaBuilder</h4>
+<p><strong>Purpose:</strong> Configure active agenda items and their order for a meeting<br>
+<strong>Anatomy:</strong> Toggle switches per item type, reorderable list with drag handles, "Add Custom Item" button<br>
+<strong>Validation:</strong> Minimum 1 active item. Warning if no greeting item.</p>
+
+<h4>11. FeeAcceptanceWidget</h4>
+<p><strong>Purpose:</strong> Partner-facing accept/decline for new fee after meeting decision<br>
+<strong>Anatomy:</strong> Fee amount, change from previous, accept/decline buttons, optional comment<br>
+<strong>Used in:</strong> Absent partner portal (Journey 4)</p>
+
+<h4>12. FeedbackPulse</h4>
+<p><strong>Purpose:</strong> Post-meeting 3-question survey<br>
+<strong>Anatomy:</strong> "Was the meeting productive?" (1-5), "Topics we should discuss?", "Suggestions?"<br>
+<strong>Sent:</strong> 24h after minutes published</p>
+
+<h3>Component Implementation Roadmap</h3>
+<p><strong>Layer 1 &mdash; Foundation (create &amp; prep meeting):</strong></p>
+<ul>
+  <li>AgendaBuilder, AgendaSidebar, NotePanel, PartnerGallery, MeetingPrepChecklist</li>
+</ul>
+
+<p><strong>Layer 2 &mdash; Core Interactions (full meeting flow):</strong></p>
+<ul>
+  <li>DocumentViewer, VotePanel, VoteResultBanner, ActionItemCard</li>
+</ul>
+
+<p><strong>Layer 3 &mdash; Post-Meeting (minutes &amp; distribution):</strong></p>
+<ul>
+  <li>MinutesDocument, FeeAcceptanceWidget, FeedbackPulse</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="ux-consistency-patterns">UX Consistency Patterns</h2>
+
+<h3>Button Hierarchy</h3>
+
+<p><strong>Presenter Mode (Projector):</strong></p>
+<table>
+  <thead><tr><th>Level</th><th>Style</th><th>Size</th><th>Usage</th></tr></thead>
+  <tbody>
+    <tr><td>Primary</td><td><code>bg-blue-400 text-zinc-950</code></td><td>48px h, 24px text</td><td>"Next Item &rarr;", "Start Vote", "End Meeting"</td></tr>
+    <tr><td>Secondary</td><td><code>bg-zinc-800 text-zinc-100 border-zinc-700</code></td><td>48px h</td><td>"&larr; Previous", "Save Draft"</td></tr>
+    <tr><td>Destructive</td><td><code>bg-red-400/10 text-red-400</code></td><td>48px h</td><td>"Skip Item", "Cancel Vote"</td></tr>
+    <tr><td>Ghost</td><td><code>transparent text-zinc-400</code></td><td>48px h</td><td>"Add Note", context actions</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Portal Mode (Partner Screens):</strong></p>
+<table>
+  <thead><tr><th>Level</th><th>Style</th><th>Size</th><th>Usage</th></tr></thead>
+  <tbody>
+    <tr><td>Primary</td><td><code>bg-blue-400 text-zinc-950</code></td><td>40px h, 15px text</td><td>"Accept Fee", "Submit Feedback"</td></tr>
+    <tr><td>Secondary</td><td><code>bg-zinc-800 text-zinc-100</code></td><td>40px h</td><td>"Decline", "Save Draft"</td></tr>
+    <tr><td>Link</td><td><code>text-blue-400 underline</code></td><td>Inline</td><td>"View Minutes", "Download PDF"</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Rules:</strong> Max 1 primary per screen area. Primary on right, secondary on left. All buttons have labels in presenter mode (never icon-only). 48px+ height for projector visibility.</p>
+
+<h3>Feedback Patterns</h3>
+<table>
+  <thead><tr><th>Feedback</th><th>Presenter Mode</th><th>Portal Mode</th></tr></thead>
+  <tbody>
+    <tr><td>Auto-save</td><td>"Saved &#10003;" top-right, green, fades after 2s</td><td>Same</td></tr>
+    <tr><td>Vote cast</td><td>Button fills green/red immediately</td><td>N/A</td></tr>
+    <tr><td>Vote complete</td><td>VoteResultBanner animates in (300ms)</td><td>N/A</td></tr>
+    <tr><td>Presence toggle</td><td>Badge changes green &harr; gray, subtle animation</td><td>N/A</td></tr>
+    <tr><td>Success</td><td>Green toast bottom-right, auto-dismiss 3s</td><td>Same</td></tr>
+    <tr><td>Error</td><td>Red toast, manual dismiss, retry action</td><td>Same + inline error</td></tr>
+    <tr><td>Warning</td><td>Yellow toast, auto-dismiss 5s</td><td>Same</td></tr>
+    <tr><td>Document uploaded</td><td>Progress bar &rarr; "Uploaded &#10003;" with thumbnail</td><td>Same</td></tr>
+    <tr><td>Minutes published</td><td>Full-screen confirmation with partner count</td><td>Email confirmation toast</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Rules:</strong> No modal dialogs obscuring content in presenter mode (except confirmations). Toasts stack bottom-right, max 2. Animations 200-300ms ease-out. Auto-save never shows "Saving..." spinner &mdash; either "Saved &#10003;" or nothing.</p>
+
+<h3>Navigation Patterns</h3>
+
+<p><strong>Presenter Mode:</strong></p>
+<ul>
+  <li>Linear: "&larr; Previous" / "Next Item &rarr;" in footer, always visible</li>
+  <li>Sidebar jump: click any item, non-destructive</li>
+  <li>Keyboard: <code>&rarr;</code>/<code>Space</code> next, <code>&larr;</code> back, <code>1-9</code> jump, <code>N</code> notes, <code>V</code> vote, <code>Esc</code> exit</li>
+  <li>Exit: <code>Esc</code> &rarr; confirmation dialog, draft saved</li>
+  <li>End meeting: last item's "Next &rarr;" becomes "End Meeting"</li>
+</ul>
+
+<p><strong>Portal Mode:</strong></p>
+<ul>
+  <li>Standard partner nav: Topic Voting | Meetings | Settings | Help</li>
+  <li>Breadcrumb: Partner &gt; Meetings &gt; [Meeting Name] &gt; Minutes</li>
+  <li>Meeting list: upcoming, past (with minutes links), draft (organizer only)</li>
+</ul>
+
+<h3>Form Patterns</h3>
+<table>
+  <thead><tr><th>Pattern</th><th>Implementation</th></tr></thead>
+  <tbody>
+    <tr><td>Inline editing</td><td>Notes, action items &mdash; click to edit, auto-save. No "Edit" button.</td></tr>
+    <tr><td>Toggle inputs</td><td>Presence (click card), agenda items (switch). Instant save.</td></tr>
+    <tr><td>Vote inputs</td><td>Approve/decline &mdash; single click, immediate feedback, reversible before "Complete Vote"</td></tr>
+    <tr><td>Date picker</td><td>MUI DatePicker, default 14 days from meeting</td></tr>
+    <tr><td>Text areas</td><td>No character limit, placeholder text, auto-expanding</td></tr>
+    <tr><td>File upload</td><td>Drag-and-drop with format/size validation, progress bar</td></tr>
+    <tr><td>Validation</td><td>Inline real-time. Red border + error text. Never block for warnings.</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Rules:</strong> Auto-save everything. No "Submit" for notes. Only explicit "Submit" for votes and fee acceptance. No required field indicators in presenter mode.</p>
+
+<h3>Empty &amp; Loading States</h3>
+<table>
+  <thead><tr><th>State</th><th>Display</th></tr></thead>
+  <tbody>
+    <tr><td>No document</td><td>Gray box: "No document uploaded. Upload from Meeting Prep."</td></tr>
+    <tr><td>No votes yet</td><td>Partner list with neutral buttons</td></tr>
+    <tr><td>No notes</td><td>Placeholder: "Type notes for this agenda item..."</td></tr>
+    <tr><td>No action items</td><td>"No action items yet. Add one during the meeting."</td></tr>
+    <tr><td>Loading content</td><td>Skeleton rectangle with shimmer (never spinners)</td></tr>
+    <tr><td>No meetings</td><td>"No upcoming meetings. Create one to get started."</td></tr>
+    <tr><td>No minutes</td><td>"Minutes not yet published for this meeting."</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Rules:</strong> Empty states always have guidance text. Skeleton animations for loading. Pre-load content before entering presenter mode.</p>
+
+<h3>Modal &amp; Overlay Patterns</h3>
+<table>
+  <thead><tr><th>Use Case</th><th>Pattern</th></tr></thead>
+  <tbody>
+    <tr><td>End Meeting</td><td>Confirmation: "End meeting and review minutes?" [Cancel] [End Meeting]</td></tr>
+    <tr><td>Exit Presenter</td><td>Confirmation: "Exit? Draft minutes saved." [Cancel] [Exit]</td></tr>
+    <tr><td>Publish Minutes</td><td>Confirmation: "Send to all 12 partners?" [Cancel] [Publish &amp; Send]</td></tr>
+    <tr><td>Delete Action Item</td><td>Inline: item dims, "Delete?" with [Cancel] [Delete]</td></tr>
+    <tr><td>Stand-in Entry</td><td>Inline text field on absent partner card, not a modal</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Rules:</strong> Minimize modals in presenter mode &mdash; only for irreversible actions. Never modals for data entry. All closeable with <code>Escape</code> and click-outside.</p>
+
+<!-- ============================================================ -->
+<h2 id="responsive-design-accessibility">Responsive Design &amp; Accessibility</h2>
+
+<h3>Responsive Strategy</h3>
+<p>Two distinct contexts:</p>
+
+<p><strong>1. Presenter Mode &mdash; Desktop Only</strong></p>
+<ul>
+  <li>Fixed target: laptop &rarr; projector (1920x1080 primary, 1280x720 minimum)</li>
+  <li>No mobile/tablet adaptation &mdash; runs on laptop in meeting room</li>
+  <li>Fixed three-zone layout, not fluid</li>
+</ul>
+
+<p><strong>2. Partner Portal &mdash; Full Responsive</strong></p>
+<ul>
+  <li>Minutes viewing, fee acceptance, feedback pulse must work on mobile</li>
+  <li>Partners check minutes on phone from email notification</li>
+</ul>
+
+<h3>Breakpoint Strategy</h3>
+<p><strong>Presenter Mode:</strong> No breakpoints. Fixed layout &ge;1280px. Warning message if screen smaller.</p>
+
+<p><strong>Partner Portal (existing BATbern breakpoints):</strong></p>
+<table>
+  <thead><tr><th>Breakpoint</th><th>Width</th><th>Changes</th></tr></thead>
+  <tbody>
+    <tr><td><code>xs</code></td><td>0-599px</td><td>Single column, bottom nav, full-width cards</td></tr>
+    <tr><td><code>sm</code></td><td>600-899px</td><td>Wider padding, badges 2-per-row</td></tr>
+    <tr><td><code>md</code></td><td>900-1199px</td><td>Two-column where useful</td></tr>
+    <tr><td><code>lg</code></td><td>1200px+</td><td>Full desktop layout</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Mobile adaptations:</strong></p>
+<table>
+  <thead><tr><th>Feature</th><th>Mobile</th></tr></thead>
+  <tbody>
+    <tr><td>Minutes view</td><td>Collapsible sections (accordion)</td></tr>
+    <tr><td>Attendance</td><td>Horizontal scroll of badge chips</td></tr>
+    <tr><td>PDF attachments</td><td>Download button (no embedded viewer)</td></tr>
+    <tr><td>Fee acceptance</td><td>Full-width card, 48px+ buttons</td></tr>
+    <tr><td>Feedback pulse</td><td>Single-question-per-screen wizard</td></tr>
+    <tr><td>Action items</td><td>Stacked cards, swipe to complete</td></tr>
+  </tbody>
+</table>
+
+<h3>Accessibility Strategy</h3>
+<p><strong>Compliance: WCAG 2.1 AA</strong> (matches existing BATbern standard)</p>
+
+<p><strong>Presenter Mode:</strong></p>
+<ul>
+  <li>All text AAA (7:1+) on dark backgrounds</li>
+  <li>No color-only information (badges: color + text + icon)</li>
+  <li>Full keyboard operation (&rarr;, &larr;, 1-9, N, V, Esc)</li>
+  <li>Minimum 18px text (exceeds WCAG large text threshold)</li>
+  <li>Focus indicators: <code>ring-2 ring-blue-400</code></li>
+  <li><code>aria-live="polite"</code> on vote results and auto-save</li>
+</ul>
+
+<p><strong>Partner Portal:</strong></p>
+<ul>
+  <li>Touch targets: 44x44px minimum</li>
+  <li>All text AA (4.5:1) minimum</li>
+  <li>Semantic HTML + ARIA labels + live regions</li>
+  <li>Logical heading hierarchy (H1&rarr;H2&rarr;H3)</li>
+  <li>Skip links, no focus traps, logical tab order</li>
+  <li>Form labels with <code>aria-describedby</code> for errors</li>
+</ul>
+
+<h3>Testing Strategy</h3>
+<p><strong>Automated:</strong> axe-core in CI/CD, Lighthouse on PRs, Playwright keyboard nav tests</p>
+
+<p><strong>Manual:</strong></p>
+<ul>
+  <li>Presenter mode on actual projector (1920x1080)</li>
+  <li>Partner portal on iPhone Safari + Android Chrome</li>
+  <li>Keyboard-only full meeting flow walkthrough</li>
+  <li>VoiceOver (macOS) for organizer experience</li>
+  <li>Color blindness simulation for vote colors</li>
+</ul>
+
+<p><strong>Device Matrix:</strong></p>
+<table>
+  <thead><tr><th>Feature</th><th>Devices</th></tr></thead>
+  <tbody>
+    <tr><td>Presenter Mode</td><td>MacBook + projector (1080p), external monitor</td></tr>
+    <tr><td>Minutes View</td><td>iPhone 14, Galaxy S23, iPad</td></tr>
+    <tr><td>Fee Acceptance</td><td>iPhone Safari, Android Chrome</td></tr>
+    <tr><td>Meeting Prep</td><td>Desktop Chrome, Firefox, Safari</td></tr>
+  </tbody>
+</table>
+
+<h3>Implementation Guidelines</h3>
+
+<p><strong>Presenter Mode:</strong></p>
+<ul>
+  <li>Fixed layout, no media queries. CSS Grid for zones.</li>
+  <li><code>min-width: 1280px</code> check on mount with warning.</li>
+  <li>Pre-load all content before entering (no loading spinners during meeting).</li>
+  <li>Keyboard listeners at layout level, not per-component.</li>
+</ul>
+
+<p><strong>Partner Portal:</strong></p>
+<ul>
+  <li>Mobile-first CSS (<code>min-width</code> media queries)</li>
+  <li>Relative units (rem) for typography and spacing</li>
+  <li>Touch targets: <code>min-height: 44px</code>, <code>padding: 12px</code></li>
+  <li>Responsive images with <code>srcset</code>, WebP + JPEG fallback</li>
+  <li>PDF: download on mobile, embedded on desktop</li>
+</ul>
+
+</div><!-- end .content -->
+
+</body>
+</html>

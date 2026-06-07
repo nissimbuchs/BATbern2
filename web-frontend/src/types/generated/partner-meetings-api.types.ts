@@ -41,7 +41,14 @@ export interface paths {
     get: operations['getPartnerMeeting'];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Delete a partner meeting
+     * @description Deletes a partner meeting. If a calendar invite was already sent, a METHOD:CANCEL
+     *     ICS is dispatched asynchronously to all partners and organizers so their calendar
+     *     clients remove the entry. RSVPs are cascade-deleted (V9 ON DELETE CASCADE).
+     *     ORGANIZER role required.
+     */
+    delete: operations['deletePartnerMeeting'];
     options?: never;
     head?: never;
     /**
@@ -264,6 +271,40 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PartnerMeetingDTO'];
         };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Meeting not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  deletePartnerMeeting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        meetingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Meeting deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Forbidden */
       403: {

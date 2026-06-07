@@ -65,9 +65,11 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { CustomTaskModal } from '@/components/organizer/Tasks/CustomTaskModal';
 import { TaskCard } from '@/components/organizer/Tasks/TaskCard';
 import { useAuth } from '@/hooks/useAuth';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 const TaskBoardPage: React.FC = () => {
   const { t, i18n } = useTranslation('organizer');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
   const locale = i18n.language === 'de' ? de : enUS;
   const { user } = useAuth();
@@ -80,6 +82,7 @@ const TaskBoardPage: React.FC = () => {
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [completionNotes, setCompletionNotes] = useState('');
   const [activeTask, setActiveTask] = useState<EventTaskResponse | null>(null);
+  const [deletingTask, setDeletingTask] = useState<EventTaskResponse | null>(null);
 
   // Drag-and-drop sensors — PointerSensor for mouse/stylus, TouchSensor for mobile
   const sensors = useSensors(
@@ -115,6 +118,15 @@ const TaskBoardPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setCompletingTaskId(null);
       setCompletionNotes('');
+    },
+  });
+
+  // Delete task mutation
+  const deleteTaskMutation = useMutation({
+    mutationFn: (taskId: string) => taskService.deleteTask(taskId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setDeletingTask(null);
     },
   });
 
@@ -157,6 +169,10 @@ const TaskBoardPage: React.FC = () => {
   const handleEditTask = (task: EventTaskResponse) => {
     setEditingTask(task);
     setIsCustomTaskModalOpen(true);
+  };
+
+  const handleDeleteTask = (task: EventTaskResponse) => {
+    setDeletingTask(task);
   };
 
   const handleCompleteTask = (taskId: string) => {
@@ -285,7 +301,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'grey.50',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -308,6 +325,7 @@ const TaskBoardPage: React.FC = () => {
                       locale={locale}
                       onComplete={handleCompleteTask}
                       onEdit={handleEditTask}
+                      onDelete={handleDeleteTask}
                       t={t}
                     />
                   </Paper>
@@ -321,7 +339,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'warning.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -344,6 +363,7 @@ const TaskBoardPage: React.FC = () => {
                       locale={locale}
                       onComplete={handleCompleteTask}
                       onEdit={handleEditTask}
+                      onDelete={handleDeleteTask}
                       t={t}
                     />
                   </Paper>
@@ -357,7 +377,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'info.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -380,6 +401,7 @@ const TaskBoardPage: React.FC = () => {
                       locale={locale}
                       onComplete={handleCompleteTask}
                       onEdit={handleEditTask}
+                      onDelete={handleDeleteTask}
                       t={t}
                     />
                   </Paper>
@@ -393,7 +415,8 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'success.lighter',
-                      height: { xs: 280, md: 'calc(100vh - 260px)' },
+                      minHeight: { xs: 280, md: 'auto' },
+                      height: { md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -415,6 +438,7 @@ const TaskBoardPage: React.FC = () => {
                       status="completed"
                       locale={locale}
                       onEdit={handleEditTask}
+                      onDelete={handleDeleteTask}
                       t={t}
                     />
                   </Paper>
@@ -437,7 +461,13 @@ const TaskBoardPage: React.FC = () => {
       </Container>
 
       {/* Task Completion Modal */}
-      <Dialog open={!!completingTaskId} onClose={handleCancelComplete} maxWidth="sm" fullWidth>
+      <Dialog
+        open={!!completingTaskId}
+        onClose={handleCancelComplete}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
+      >
         <DialogTitle>{t('tasks.completeTask', 'Complete Task')}</DialogTitle>
         <DialogContent>
           <TextField
@@ -466,6 +496,39 @@ const TaskBoardPage: React.FC = () => {
               <CircularProgress size={20} />
             ) : (
               t('tasks.markComplete', 'Mark Complete')
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Task Confirmation Dialog */}
+      <Dialog
+        open={!!deletingTask}
+        onClose={() => setDeletingTask(null)}
+        maxWidth="xs"
+        fullWidth
+        fullScreen={isMobile}
+      >
+        <DialogTitle>{t('tasks.deleteTask', 'Delete Task')}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {t('tasks.deleteTaskConfirm', 'Are you sure you want to delete "{{name}}"?', {
+              name: deletingTask?.taskName,
+            })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletingTask(null)}>{t('common:actions.cancel')}</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleteTaskMutation.isPending}
+            onClick={() => deletingTask && deleteTaskMutation.mutate(deletingTask.id)}
+          >
+            {deleteTaskMutation.isPending ? (
+              <CircularProgress size={20} />
+            ) : (
+              t('tasks.deleteTask', 'Delete Task')
             )}
           </Button>
         </DialogActions>
@@ -515,6 +578,7 @@ interface DraggableTaskProps {
   locale: Locale;
   onComplete?: (taskId: string) => void;
   onEdit?: (task: EventTaskResponse) => void;
+  onDelete?: (task: EventTaskResponse) => void;
   t: ReturnType<typeof useTranslation>['t'];
 }
 
@@ -524,6 +588,7 @@ const DraggableTask: React.FC<DraggableTaskProps> = ({
   locale,
   onComplete,
   onEdit,
+  onDelete,
   t,
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -544,6 +609,7 @@ const DraggableTask: React.FC<DraggableTaskProps> = ({
       locale={locale}
       onComplete={onComplete}
       onEdit={onEdit}
+      onDelete={onDelete}
       showCompleteButton={status !== 'completed'}
       showEventCode={true}
       showTriggerState={true}
@@ -574,6 +640,7 @@ interface TaskColumnProps {
   locale: Locale;
   onComplete?: (taskId: string) => void;
   onEdit?: (task: EventTaskResponse) => void;
+  onDelete?: (task: EventTaskResponse) => void;
   t: ReturnType<typeof useTranslation>['t'];
 }
 
@@ -583,6 +650,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   locale,
   onComplete,
   onEdit,
+  onDelete,
   t,
 }) => {
   if (tasks.length === 0) {
@@ -605,6 +673,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
           locale={locale}
           onComplete={onComplete}
           onEdit={onEdit}
+          onDelete={onDelete}
           t={t}
         />
       ))}

@@ -1,0 +1,40 @@
+meta {
+  name: Delete partner meeting
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/partner-meetings/{{createdMeetingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("returns 204 No Content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  No invite was ever sent for this meeting (send-invite is deliberately NOT
+  exercised by this collection — it dispatches real emails to real partners; see
+  README.md), so invite_sent_at is null and deleteMeeting does NOT send a
+  METHOD:CANCEL email. The DELETE simply removes the row; RSVPs cascade-delete
+  (V9). 09a verifies the row is gone; 98 is the belt-and-suspenders allowlist
+  sweep for any meeting whose explicit DELETE did not run (e.g. the AUTUMN
+  meeting from test 07).
+}

@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-02-23
+**Last Updated:** 2026-06-04
 
-**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6 and 8 COMPLETE**
+**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6, 8, 11, and 12 COMPLETE**
 
-**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented. Epic 7 deferred; Epic 9 planned.
+**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal), 8 (Partner Coordination), 11 (Unified Speaker Workflow Refactor), and 12 (Federated Identity / Google SSO) fully implemented. Epic 7 deferred.
 
 **Epic Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
@@ -19,11 +19,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 6**: Speaker Self-Service Portal - 100% COMPLETE (all stories 6.0-6.5 deployed)
 - 📦 **Epic 7**: Attendee Experience Enhancements - DEFERRED to Phase 3
 - ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination)
-- 🔨 **Epic 9**: Speaker Authentication & Account Integration - IN PROGRESS (Story 9.1 JWT magic link done; 9.2-9.5 planned)
+- ✅ **Epic 11**: Unified Speaker Workflow Refactor - 100% COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Supersedes prior Epic 9 plan.
+- ✅ **Epic 12**: Federated Identity / Google SSO (ADR-010) - COMPLETE (Google OIDC login live 2026-06-04; Apple/generic OIDC + Cognito trigger retirement deferred via backlog Story 12.10)
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
 - ✅ Authentication & authorization (AWS Cognito, role-based access)
+- ✅ "Continue with Google" OIDC login (Cognito federation @ auth.batbern.ch, transparent account linking, JIT provisioning, ToS consent gate, avatar import; runtime kill-switch `FEATURES_SSO_ENABLED`)
 - ✅ Complete event workflow (9-state machine + speaker coordination + task system)
 - ✅ Auto-publishing & CDN integration (speakers @ 30 days, agenda @ 14 days)
 - ✅ Event lifecycle automation (EVENT_LIVE, EVENT_COMPLETED transitions)
@@ -35,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 3 — Epics 1-6 and 8 complete; Epic 9 in progress (Story 9.1 done); Epic 7 deferred
+**Current Phase:** Phase 3 — Epics 1-6, 8, 11, and 12 complete; Epic 7 deferred
 
 ## Project Overview
 
@@ -50,7 +52,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 ## Current Development Phase
 
-**Phase:** ✅ **MVP COMPLETE** + **Epics 6 and 8 COMPLETE**
+**Phase:** ✅ **MVP COMPLETE** + **Epics 6, 8, 11, and 12 COMPLETE**
 
 **Epic Completion Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
@@ -61,7 +63,8 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 6**: Speaker Self-Service Portal - **100% COMPLETE** (all stories 6.0-6.5 deployed, 6.4 WCAG 2.1 AA)
 - 📦 **Epic 7**: Attendee Experience Enhancements - **DEFERRED to Phase 3**
 - ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination)
-- 🔨 **Epic 9**: Speaker Authentication & Account Integration - **IN PROGRESS** (Story 9.1 JWT magic link complete; 9.2-9.5 planned)
+- ✅ **Epic 11**: Unified Speaker Workflow Refactor - **100% COMPLETE** (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25; supersedes prior Epic 9 plan)
+- ✅ **Epic 12**: Federated Identity / Google SSO - **COMPLETE** (Google OIDC login live 2026-06-04 per ADR-010; deferred tail — Apple/generic OIDC + trigger retirement — parked as backlog Story 12.10)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -71,10 +74,10 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ Epic 8 Partner Coordination complete (2026-02-22)
 
 **When Adding New Features:**
-- ✅ Platform through Epic 8 is feature-complete (except Epic 7)
-- Epic 9: Stories 9.2-9.5 next (Cognito account creation, dual auth, migration, multi-role nav)
+- ✅ Platform through Epic 12 is feature-complete (except Epic 7)
 - Epic 7: Personal dashboard, bookmarks, PWA — deferred to Phase 3
-- Prioritize Epic 9 completion, production readiness, and Epic 3 data import
+- Epic 12 deferred tail (backlog Story 12.10): Apple/generic OIDC + Cognito trigger-retirement cleanup — precondition: gateway `is_active` gate + canonical JIT verified in production
+- Prioritize production readiness and Epic 3 data import
 
 ## Build System
 
@@ -225,7 +228,15 @@ make dev-native-up                                   # Start services natively (
 - ✅ PostgreSQL 15 runs in Docker (persistent volume)
 - ✅ All services run natively (Java processes + Vite dev server)
 - ✅ Uses staging Cognito for authentication (AWS)
-- ✅ Local database is read-only mirror synced from staging
+- ✅ Local database is read-only mirror synced from staging — **except** for CUMS-side
+  writes during speaker invitation (Pattern N): `adminCreateUserSilently` creates the
+  Cognito user in staging while `user_profiles` / `role_assignments` rows land in the
+  local DB only. The PreTokenGen Lambda runs against the staging DB and therefore
+  emits a JWT with no `custom:role` for these users. **Pattern 3b** (DB-fallback in
+  `shared-kernel/.../security/JwtRolesConverter` + `AuthContext.hydrateRolesIfMissing`)
+  resolves roles from the local DB so local-dev speakers can actually log in. The
+  fallback is dormant in staging because the JWT there always carries roles. See
+  `docs/architecture/06b-user-lifecycle-sync.md` §"Pattern 3b" for the full pattern.
 - ✅ **Zero AWS development environment costs** (saves $600-720/year)
 - ✅ 60-70% less resources than Docker Compose
 - See [Local Development Guide](docs/guides/local-development-setup.md) for details
@@ -350,6 +361,46 @@ make setup-test-users ENV=development     # development
 
 **CI/CD:** `deploy-staging.yml` gets tokens for all roles from GitHub secrets (`STAGING_ORGANIZER_*`, `STAGING_SPEAKER_*`, `STAGING_PARTNER_*`). Falls back to `STAGING_TEST_USER_*` for organizer.
 
+### Bruno `.bru` File Syntax — Comments Go in `docs { }`, NOT `#`
+
+**CRITICAL — common Claude mistake.** Bruno's `.bru` grammar does NOT support free-floating `#` comments at the top level (between blocks). When the parser sees a `#` line outside a recognised block, it prints `Warning: Skipping invalid file ...` and **silently skips the entire file** — the request never runs, but `bru run` exits 0 if every other file passed. This makes the failure invisible in CI: a "PASS" summary can hide cleanup hooks that never executed.
+
+```bruno
+# ❌ Wrong — parser skips this file with a Warning
+meta {
+  name: Pretest cleanup
+  type: http
+  seq: 0
+}
+
+# Audit-pass addition: unconditional pretest cleanup.
+# Runs BEFORE every other test in this collection.
+
+post { ... }
+```
+
+```bruno
+# ✅ Correct — prose lives in a docs { } block at the end of the file
+meta {
+  name: Pretest cleanup
+  type: http
+  seq: 0
+}
+
+post { ... }
+
+tests { ... }
+
+docs {
+  Audit-pass addition: unconditional pretest cleanup.
+  Runs BEFORE every other test in this collection.
+}
+```
+
+The only blocks Bruno's parser accepts at file scope are: `meta`, `docs`, `settings`, `headers`, `body:*`, `auth:*`, `params:*`, `query`, `tests`, `assert`, `script:pre-request`, `script:post-response`, `vars:*`, `metadata`, and the HTTP verb blocks (`get`, `post`, `put`, etc.). Anything else — including `#`-prefixed comments — fails the parse.
+
+**Detection:** grep CI output for `Skipping invalid file` after any Bruno run. A clean run should have zero such warnings.
+
 ## Critical Development Standards
 
 ### Type Sharing
@@ -409,6 +460,26 @@ class CompanyRepositoryTest {
 }
 ```
 
+### Lambda Handler Tests
+
+**CRITICAL**: Every Lambda function MUST have a handler-level unit test that directly imports and runs the handler module. CDK `Template.fromStack()` tests only verify the CloudFormation declaration — they do NOT test that the handler can load and execute. A missing native dependency (e.g. `sharp`, `pg-native`) causes `Runtime.ImportModuleError` at Lambda cold-start and 503 for **all** requests; a handler test catches this before any deploy.
+
+```typescript
+// ✅ Correct — imports and runs the handler (catches module load failures)
+test('module loads without crashing', async () => {
+  const { handler } = await import('../../../lib/lambda/image-resize/index');
+  expect(typeof handler).toBe('function');
+});
+
+// ❌ Wrong — only checks CloudFormation properties, not handler behaviour
+template.hasResourceProperties('AWS::CloudFront::Distribution', {
+  DefaultCacheBehavior: Match.objectLike({ LambdaFunctionAssociations: ... })
+});
+// This passes even if the Lambda module crashes at init
+```
+
+**Bundling rule for native dependencies:** The `tryBundle` local bundler MUST return `false` outside Jest (forcing Docker), so that native packages are installed with the correct Linux x64 platform. A local esbuild-only bundle silently omits native binaries. See `infrastructure/lib/stacks/storage-stack.ts` for the reference pattern.
+
 ### File Uploads
 
 **ALWAYS** use presigned URLs for direct S3 uploads. Never proxy files through backend:
@@ -421,6 +492,47 @@ await axios.put(uploadUrl, file);
 // ❌ Wrong - proxying through backend
 await axios.post('/api/upload', formData);  // Wastes backend resources
 ```
+
+### Database Migrations (Flyway) — NEVER modify an already-applied migration
+
+**CRITICAL.** Once a Flyway migration (`V{n}__*.sql`) has been applied to ANY shared
+environment (staging/production — and remember the staging account at 188701360969 **is**
+production), its file content is **frozen forever**. Flyway records each applied
+migration's checksum in `flyway_schema_history`; changing even one character (or one line
+of a `DO $$ … $$` block) changes the checksum, so on the next boot Flyway's validation
+fails with `Migration checksum mismatch for migration version {n}` → the JPA
+`entityManagerFactory` bean fails → **the service crashes on startup**. ECS then
+circuit-breaker-rolls-back to the last image whose checksums matched, so the service
+silently stays on stale code (a green deploy that never actually advances).
+
+```sql
+-- ❌ WRONG — editing an applied migration (changes its checksum, breaks startup)
+-- V86__fix_cloudfront_domain_in_media_urls.sql  (already deployed)
+-   v_cdn_domain := 'https://cdn.staging.batbern.ch';
++   v_cdn_domain := 'https://cdn.batbern.ch';
+
+-- ✅ RIGHT — leave V86 untouched; fix the data/schema in a NEW forward migration
+-- V{next}__fix_cdn_domain_in_media_urls.sql
+UPDATE event_photos SET display_url =
+  REPLACE(display_url, 'https://cdn.staging.batbern.ch', 'https://cdn.batbern.ch')
+WHERE display_url LIKE '%cdn.staging.batbern.ch%';
+```
+
+**Rules:**
+- Never edit, rename, renumber, or delete a migration that has shipped. To change its
+  effect, add a new higher-numbered migration.
+- **Bulk find-and-replace across the repo is the classic footgun** — `*.sql` migration
+  files get swept up in domain/string substitutions. Always exclude
+  `**/db/migration/**` from repo-wide substitutions, then review any migration that a
+  bulk edit touched. (This exact mistake — #669's `cdn.staging.batbern.ch → cdn.batbern.ch`
+  sweep editing the applied `V86`, 2026-05-26 — silently froze event-management on a stale
+  image for ~16 builds; root-caused 2026-05-27. See `docs/plans/bruno-staging-hardening.md`.)
+- If a mismatch has already shipped: prefer reverting the migration file byte-exact to its
+  applied content (so the checksum matches again) + a new forward migration for the intended
+  change. `flywayRepair` only re-aligns checksums (it does NOT re-run the migration), so it
+  still needs a follow-up migration for any data change.
+- Diagnose a stuck service by comparing its deployed ECS image tag to develop HEAD and
+  grepping its CloudWatch log for `checksum mismatch` / `FlywayValidateException`.
 
 ## OpenAPI Type Generation
 
@@ -455,16 +567,17 @@ git commit -m "test(integration): add company API contract tests"
 
 ## Deployment
 
+> **Consolidated Environment:** BATbern uses a single AWS account (188701360969, profile `batbern-staging`) for production.
+> CloudFormation stacks retain `BATbern-staging-*` names; the `isProduction: true` flag in CDK config controls production behavior.
+> Production URLs: www.batbern.ch, api.batbern.ch, cdn.batbern.ch
+
 ```bash
-# Development (auto-deploy on push to develop)
+# Production deploy (auto-deploy on push to develop)
 git push origin develop
 
-# Staging (manual via GitHub Actions)
-# Actions → Deploy to Staging → Run workflow
-
-# Production (manual — 3 steps)
+# Tagged releases (manual — 3 steps)
 # 1. Merge develop → main via a PR on GitHub
-#    This builds images and pushes them to production ECR with the merge commit SHA as the tag.
+#    This builds images and pushes them to ECR with the merge commit SHA as the tag.
 # 2. Note the 7-char SHA of the merge commit (visible in the commit list or build run)
 # 3. Actions → Deploy to Production → Run workflow → version: <sha7>
 #    e.g. version: a3f7c91
@@ -473,21 +586,54 @@ git push origin develop
 
 # CDK deployment (infrastructure changes only)
 cd infrastructure
-npm run deploy:staging
-npm run deploy:prod
+npm run deploy:staging   # Deploys to production (staging account serves production traffic)
 ```
+
+### Beta Frontend Canary — de-risk big frontend-only changes before prod
+
+`beta.batbern.ch` is a **second frontend** (`BATbern-staging-FrontendBeta`: its own S3 bucket
+`batbern-frontend-beta-staging` + CloudFront distribution) that serves the same build-once SPA
+artifact against the **same production API, Cognito, and database** as www. It exists so a
+**frontend-only** change can be previewed on real infrastructure (real CloudFront, real data,
+real `cdn.batbern.ch` image-resize Lambda) before it reaches every visitor — bundle/loading
+refactors, perf work (e.g. lazy-loading, chunk splitting, prerender), layout/CSS, client
+routing. The canonical use: push a feature branch's build to beta, run Lighthouse/PSI or a
+click-through, then promote to prod with confidence.
+
+```bash
+# Publish the current web-frontend build to beta (build → S3 sync → CloudFront invalidation)
+scripts/deploy/publish-beta-frontend.sh            # builds web-frontend first
+SKIP_BUILD=1 scripts/deploy/publish-beta-frontend.sh   # publish existing web-frontend/dist as-is
+
+# Infra/stack changes to beta (rare — the stack is gated behind a context flag):
+cd infrastructure && AWS_PROFILE=batbern-staging npx cdk deploy BATbern-staging-FrontendBeta \
+  --context environment=staging --context betaFrontend=true --require-approval never
+```
+
+**⚠️ Beta is a UI CANARY, not a sandbox.** It shares the **production** backend/Cognito/DB, so
+every action on beta acts on **live production data** with real accounts. Use it ONLY for
+frontend-only changes — never to test backend changes, migrations, or destructive flows
+(those gain nothing from beta and would hit prod data). It is public + `noindex`; do not
+advertise the URL. The publish script forces the `batbern-staging` profile (a dev shell
+exporting `AWS_PROFILE=batbern-dev` would otherwise point at the wrong account). The beta
+distribution and CORS allow-listing of `https://beta.batbern.ch` (gateway `SecurityConfig` +
+`CorsHandler`) are already in place. Full design: `docs/plans/beta-frontend-canary.md`.
 
 ## AWS Monitoring & Logs
 
 ### AWS Profiles
 
-The project uses multiple AWS accounts:
-- `batbern-dev` - Development environment (Account: 954163570305)
-- `batbern-staging` - Staging environment (Account: 188701360969)
-- `batbern-prod` - Production environment (Account: 422940799530)
+The project uses a consolidated single-account setup:
+- `batbern-staging` - Production environment (Account: 188701360969) — serves www.batbern.ch
+- `batbern-mgmt` - Management account (Account: 510187933511) — domain registration + consolidated billing
+
+**Billing Access:** CFO (`cfo-dani-kuehni`) has IAM billing access in the management account. See `docs/guides/aws-setup-guide.md` Phase 6 for details.
+
+> **Note:** The staging account serves production traffic. CloudFormation stacks retain `BATbern-staging-*` names.
+> The former production account (422940799530) is decommissioned.
 
 ```bash
-# Switch AWS profile for staging
+# Switch AWS profile for production
 export AWS_PROFILE=batbern-staging
 
 # Or prefix commands
@@ -498,7 +644,7 @@ AWS_PROFILE=batbern-staging aws <command>
 
 All services log to CloudWatch with the naming pattern: `/aws/ecs/BATbern-{env}/{service-name}`
 
-**Staging Environment Log Groups:**
+**Production Log Groups** (CloudWatch paths retain `staging` prefix):
 ```bash
 /aws/ecs/BATbern-staging/api-gateway
 /aws/ecs/BATbern-staging/event-management
@@ -696,7 +842,54 @@ This prevents the weekly doc-drift-auditor from flagging the commit and keeps do
 - Update OpenAPI specs when changing APIs
 - Regenerate types after API changes
 - instead of running the test suites several times and grep the output, dump the output to a temp file and grep that file. this saves time
-- whenever you run make, gradlew or git push or git comit, output result via tee to a temp file and then analyse or grep that one
+- whenever you run make, gradlew or git push or git comit, output result via tee to a temp file and then analyse or grep that one. ALWAYS prefix such pipelines with `set -o pipefail` (or check `${PIPESTATUS[0]}`) — without it the pipeline's exit code is `tee`'s (always 0), which silently hides a failed `git push` (rejected by the pre-push hook), a `BUILD FAILED`, or a non-zero `git commit`. A green-looking command that actually failed is worse than no check.
+
+## Localization — Email Templates: DE + EN Only; UI i18n: All 10 Locales
+
+**Scope of the "DE + EN only" rule (narrowed 2026-05-17 per Story 11.E.3 PM Q#5):**
+the rule applies **only to backend email templates** (`*.html` / `*.txt` files
+under `services/*/src/main/resources/email-templates/`). It does NOT apply to
+frontend UI i18n keys.
+
+**Backend email templates — DE + EN only.** Speaker invitations, confirmations,
+reminders, acceptance notices, organizer notifications, partner meeting invites,
+and any future email content MUST be authored in `de` + `en` with first-class
+wording quality. The 8 other locales (`fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`,
+`gsw-BE`) are NOT required for email templates. If a non-DE/EN locale is
+requested at render time and no template exists, fall back to English.
+
+**Frontend UI i18n — all 10 locales required.** New `web-frontend/public/locales/
+{locale}/*.json` keys MUST be populated in all 10 supported locales (`de`, `en`,
+`fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`, `gsw-BE`). The frontend has a real
+multilingual audience (public website visitors browse the homepage, archive, and
+registration in their preferred locale); falling back to English here is a
+visible UX degradation. Hand-translate, source translations from a tool, or
+copy-from-an-existing-similar-key — but the keys land in all 10 locales when the
+story merges.
+
+**Why the asymmetry:** Email templates carry rich, prose-style copy (multi-
+paragraph; pricing/legal nuance; speaker-context detail) that does not survive
+machine translation and is expensive to keep aligned across 10 locales for an
+audience that is overwhelmingly Swiss-German/German + English. Frontend nav /
+button / label keys are short atomic strings that translate cheaply and serve a
+genuinely multilingual public.
+
+**Implications for stories and PRs:**
+- **Frontend UI story** with new i18n keys → populate all 10 locales before
+  moving to `review`. EN + DE first-class quality; the other 8 may use straight
+  translations and get hand-polished in a follow-up if a native speaker flags
+  something.
+- **Backend email template story** → ship `de` + `en` templates only. Other
+  locales fall back to EN via the email-rendering service's locale chain. The
+  8-locale fan-out for emails is a deliberate non-goal.
+- **Test resilience:** Tests should assert against EN values OR use the
+  namespace-stripped key (per `_bmad-output/project-context.md` testing rules),
+  never lock in a specific non-EN translation.
+- This rule **supersedes** the older "10-locale parity for everything" pattern
+  from Stories 10.7 and 10.9 in the email-template space, AND **supersedes** the
+  intermediate "DE + EN only for everything" framing from the 2026-05-17
+  pre-Q#5 wording — the narrowed rule (emails only) is the binding contract.
+
 ## Personal Data & Security Guidelines
 
 **CRITICAL**: Never commit files containing real personal data (PII) to version control.

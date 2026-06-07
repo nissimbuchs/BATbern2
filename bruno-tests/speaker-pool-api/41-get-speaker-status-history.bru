@@ -1,0 +1,62 @@
+meta {
+  name: Get Speaker Status History
+  type: http
+  seq: 41
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status/history
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("should return 200 status - Story 5.4 AC15, AC16", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return status history array - Story 5.4 AC3, AC15", function() {
+    const history = res.getBody();
+    expect(history).to.be.an('array');
+    expect(history.length).to.be.greaterThan(0);
+  });
+
+  test("should contain status transition records - Story 5.4 AC3, AC4, AC15", function() {
+    const history = res.getBody();
+    const latestTransition = history[0]; // Should be ordered by changed_at DESC
+
+    expect(latestTransition.id).to.be.a('string');
+    expect(latestTransition.previousStatus).to.be.a('string');
+    expect(latestTransition.newStatus).to.be.a('string');
+    expect(latestTransition.changedByUsername).to.equal(bru.getEnvVar("organizerUsername"));
+    expect(latestTransition.changeReason).to.be.a('string');
+    expect(latestTransition.changedAt).to.be.a('string');
+  });
+
+  test("should track all transitions - Story 5.4 AC15 (Epic 11 sequence)", function() {
+    const history = res.getBody();
+    // PR 11 (ADR-009 §0.1): expected sequence is now 4 transitions —
+    //   IDENTIFIED → CONTACTED (test 37)
+    //   CONTACTED → READY     (test 38 via POST /promote)
+    //   READY → INVITED       (test 38a)
+    //   INVITED → ACCEPTED    (test 39)
+    // (was 3 transitions pre-Epic-11; INVITED is the new intermediate state.)
+    expect(history.length).to.be.greaterThanOrEqual(4);
+
+    // Verify transition sequence (history is newest-first; reverse for oldest-first)
+    const transitions = history.slice().reverse();
+    expect(transitions[0].newStatus).to.equal('CONTACTED');
+    expect(transitions[1].newStatus).to.equal('READY');
+    expect(transitions[2].newStatus).to.equal('INVITED');
+    expect(transitions[3].newStatus).to.equal('ACCEPTED');
+  });
+}

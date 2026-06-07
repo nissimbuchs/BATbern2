@@ -282,133 +282,125 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   }
 
   // Mobile card view
-  if (isMobile) {
-    return (
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          {t('speakers.sectionTitle', { count: sortedSessions.length })}
-        </Typography>
+  const mobileContent = (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        {t('speakers.sectionTitle', { count: sortedSessions.length })}
+      </Typography>
 
-        {sortedSessions.map((session) => {
-          const structural = isStructural(session);
-          const chipInfo = structural
-            ? STRUCTURAL_CHIP[session.sessionType as StructuralType]
-            : null;
-          return (
-            <Card
-              key={session.sessionSlug}
-              sx={{
-                mb: 2,
-                cursor: 'pointer',
-                bgcolor: structural ? 'action.hover' : undefined,
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-              data-testid={`session-card-${session.sessionSlug}`}
-              onClick={() => handleRowClick(session)}
-            >
-              <CardContent>
-                <Stack spacing={1}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {formatTime(session.startTime)}-{formatTime(session.endTime)}
+      {sortedSessions.map((session) => {
+        const structural = isStructural(session);
+        const chipInfo = structural ? STRUCTURAL_CHIP[session.sessionType as StructuralType] : null;
+        return (
+          <Card
+            key={session.sessionSlug}
+            sx={{
+              mb: 2,
+              cursor: 'pointer',
+              bgcolor: structural ? 'action.hover' : undefined,
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+            data-testid={`session-card-${session.sessionSlug}`}
+            onClick={() => handleRowClick(session)}
+          >
+            <CardContent>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  {formatTime(session.startTime)}-{formatTime(session.endTime)}
+                </Typography>
+
+                {structural && chipInfo ? (
+                  <>
+                    <Chip
+                      size="small"
+                      icon={chipInfo.icon}
+                      label={chipInfo.label}
+                      color={chipInfo.color}
+                      variant="outlined"
+                    />
+                    <Typography variant="body2">{session.title}</Typography>
+                  </>
+                ) : session.speakers && session.speakers.length > 0 ? (
+                  <>
+                    <Stack direction="column" spacing={1}>
+                      {session.speakers.map((spk) => (
+                        <UserAvatar
+                          key={spk.username}
+                          firstName={spk.firstName}
+                          lastName={spk.lastName}
+                          company={spk.company}
+                          profilePictureUrl={spk.profilePictureUrl}
+                          size={48}
+                          showCompany={true}
+                          horizontal={true}
+                        />
+                      ))}
+                    </Stack>
+                    <Typography variant="body2">{session.title}</Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {getMaterialsStatusIcon(session)}
+                      <Typography variant="caption">{getMaterialsStatusLabel(session)}</Typography>
+                    </Stack>
+                  </>
+                ) : session.speaker ? (
+                  <>
+                    <UserAvatar
+                      name={session.speaker.name}
+                      company={session.speaker.company}
+                      profilePictureUrl={session.speaker.profilePictureUrl}
+                      size={48}
+                      showCompany={true}
+                      horizontal={true}
+                    />
+                    <Typography variant="body2">{session.title}</Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {getMaterialsStatusIcon(session)}
+                      <Typography variant="caption">{getMaterialsStatusLabel(session)}</Typography>
+                    </Stack>
+                  </>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('speakers.notAssigned')}
                   </Typography>
-
-                  {structural && chipInfo ? (
-                    <>
-                      <Chip
-                        size="small"
-                        icon={chipInfo.icon}
-                        label={chipInfo.label}
-                        color={chipInfo.color}
-                        variant="outlined"
-                      />
-                      <Typography variant="body2">{session.title}</Typography>
-                    </>
-                  ) : session.speakers && session.speakers.length > 0 ? (
-                    <>
-                      <Stack direction="column" spacing={1}>
-                        {session.speakers.map((spk) => (
-                          <UserAvatar
-                            key={spk.username}
-                            firstName={spk.firstName}
-                            lastName={spk.lastName}
-                            company={spk.company}
-                            profilePictureUrl={spk.profilePictureUrl}
-                            size={48}
-                            showCompany={true}
-                            horizontal={true}
-                          />
-                        ))}
-                      </Stack>
-                      <Typography variant="body2">{session.title}</Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        {getMaterialsStatusIcon(session)}
-                        <Typography variant="caption">
-                          {getMaterialsStatusLabel(session)}
-                        </Typography>
-                      </Stack>
-                    </>
-                  ) : session.speaker ? (
-                    <>
-                      <UserAvatar
-                        name={session.speaker.name}
-                        company={session.speaker.company}
-                        profilePictureUrl={session.speaker.profilePictureUrl}
-                        size={48}
-                        showCompany={true}
-                        horizontal={true}
-                      />
-                      <Typography variant="body2">{session.title}</Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        {getMaterialsStatusIcon(session)}
-                        <Typography variant="caption">
-                          {getMaterialsStatusLabel(session)}
-                        </Typography>
-                      </Stack>
-                    </>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      {t('speakers.notAssigned')}
-                    </Typography>
-                  )}
-                </Stack>
-              </CardContent>
-
-              <CardActions>
-                {session.speaker && !structural && (
-                  <Button
-                    size="small"
-                    startIcon={<FolderIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMaterialsClick(session); // Story 5.9 - AC2
-                    }}
-                  >
-                    {t('speakers.materials')}
-                  </Button>
                 )}
-                {onSessionDelete && (
-                  <IconButton
-                    size="small"
-                    color="error"
-                    aria-label={t('common:actions.delete')}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(session);
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                )}
-              </CardActions>
-            </Card>
-          );
-        })}
-      </Box>
-    );
-  }
+              </Stack>
+            </CardContent>
+
+            <CardActions>
+              {session.speaker && !structural && (
+                <Button
+                  size="small"
+                  startIcon={<FolderIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMaterialsClick(session); // Story 5.9 - AC2
+                  }}
+                >
+                  {t('speakers.materials')}
+                </Button>
+              )}
+              {onSessionDelete && (
+                <IconButton
+                  size="small"
+                  color="error"
+                  aria-label={t('common:actions.delete')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(session);
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              )}
+            </CardActions>
+          </Card>
+        );
+      })}
+    </Box>
+  );
 
   // Desktop table view
-  return (
+  const desktopContent = (
     <Box>
       <Typography variant="h6" gutterBottom>
         {t('speakers.sectionTitle', { count: sortedSessions.length })}
@@ -545,6 +537,16 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
           </TableBody>
         </Table>
       </TableContainer>
+    </Box>
+  );
+
+  // Modal + delete-confirm dialog must render in BOTH mobile and desktop branches.
+  // Previously the mobile branch did an early `return` and skipped these mounts,
+  // so tapping a card on a phone fired state updates with nothing visible to show
+  // for them (Story 11.F.1 code-review follow-up, 2026-05-25).
+  return (
+    <>
+      {isMobile ? mobileContent : desktopContent}
 
       {/* Session Edit Modal */}
       <SessionEditModal
@@ -557,7 +559,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
       />
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
+      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel} fullScreen={isMobile}>
         <DialogTitle>{t('speakers.deleteSessionTitle')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -575,6 +577,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 };

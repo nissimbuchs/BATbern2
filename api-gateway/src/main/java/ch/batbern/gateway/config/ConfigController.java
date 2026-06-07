@@ -3,7 +3,9 @@ package ch.batbern.gateway.config;
 import ch.batbern.gateway.config.dto.CognitoConfigDTO;
 import ch.batbern.gateway.config.dto.FeatureFlagsDTO;
 import ch.batbern.gateway.config.dto.FrontendConfigDTO;
+import ch.batbern.gateway.config.dto.TurnstileConfigDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,6 +46,17 @@ public class ConfigController {
     private int serverPort;
 
     /**
+     * "Continue with Google" SSO button kill-switch (Story 12.9). Ships dark (default false);
+     * flip {@code features.sso.enabled} (env FEATURES_SSO_ENABLED) at the gateway to toggle —
+     * the frontend re-reads it at runtime, so no rebuild/redeploy (ADR-010 §D8).
+     */
+    @Value("${features.sso.enabled:false}")
+    private boolean ssoEnabled;
+
+    @Autowired
+    private TurnstileProperties turnstileProperties;
+
+    /**
      * Get frontend runtime configuration
      *
      * Returns environment-specific configuration that the frontend
@@ -55,6 +68,8 @@ public class ConfigController {
     @GetMapping
     public ResponseEntity<FrontendConfigDTO> getConfig() {
         log.debug("Serving frontend config for environment: {}", environment);
+
+        boolean turnstileEnabled = turnstileProperties.isEnabled();
 
         FrontendConfigDTO config = FrontendConfigDTO.builder()
                 .environment(environment)
@@ -68,7 +83,14 @@ public class ConfigController {
                         .notifications(true)
                         .analytics(!"development".equals(environment))
                         .pwa(!"development".equals(environment))
+                        .turnstile(turnstileEnabled)
+                        .sso(ssoEnabled)
                         .build())
+                .turnstile(turnstileEnabled
+                        ? TurnstileConfigDTO.builder()
+                                .siteKey(turnstileProperties.getSiteKey())
+                                .build()
+                        : null)
                 .build();
 
         return ResponseEntity.ok(config);
@@ -84,7 +106,7 @@ public class ConfigController {
     private String getApiBaseUrl() {
         return switch (environment.toLowerCase()) {
             case "development" -> String.format("http://localhost:%d/api/v1", serverPort);
-            case "staging" -> "https://api.staging.batbern.ch/api/v1";
+            case "staging" -> "https://api.batbern.ch/api/v1";
             case "production" -> "https://api.batbern.ch/api/v1";
             default -> {
                 log.warn("Unknown environment '{}', defaulting to development", environment);

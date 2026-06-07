@@ -1,0 +1,30 @@
+meta {
+  name: Get partner meeting — 404 for unknown id
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/partner-meetings/00000000-0000-4000-8000-000000000999
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("returns 404 for a well-formed but unknown meeting id", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

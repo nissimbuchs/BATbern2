@@ -35,8 +35,8 @@ on:
     - cron: '0 3 * * 1'
 
 env:
-  API_BASE_URL: https://api.staging.batbern.ch
-  FRONTEND_URL: https://staging.batbern.ch
+  API_BASE_URL: https://api.batbern.ch
+  FRONTEND_URL: https://www.batbern.ch
 
 jobs:
   # ═══════════════════════════════════════════════════════════════
@@ -66,14 +66,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: ZAP API Scan — ${{ matrix.api }}
-        uses: zaproxy/action-api-scan@v0.9.0
+        uses: zaproxy/action-api-scan@v0.10.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
           # Pass the OpenAPI spec as a file path inside the Docker workspace mount.
           # The action mounts GITHUB_WORKSPACE at /zap/wrk/, so the spec is accessible
           # at /zap/wrk/<spec-path>. ZAP reads the spec, then actively scans the server
-          # URL declared inside the spec (https://api.staging.batbern.ch).
+          # URL declared inside the spec (https://api.batbern.ch).
           target: /zap/wrk/${{ matrix.spec }}
           format: openapi
           rules_file_name: '.zap/rules.tsv'
@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload HTML report — ${{ matrix.api }}
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-api-report-${{ matrix.api }}
           path: report_html.html
@@ -103,7 +103,7 @@ jobs:
 
       - name: Upload JSON report — ${{ matrix.api }}
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-json-${{ matrix.api }}
           path: zap-json-stage/
@@ -144,7 +144,7 @@ jobs:
 
       - name: Upload HTML report — frontend
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-frontend-report
           path: report_html.html
@@ -152,7 +152,7 @@ jobs:
 
       - name: Upload JSON report — frontend
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-json-frontend
           path: zap-json-stage/
@@ -169,7 +169,7 @@ jobs:
 
     steps:
       - name: Download all ZAP JSON reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: zap-json-*
           merge-multiple: true
@@ -178,7 +178,7 @@ jobs:
 
       - name: Upload combined ZAP JSON reports (for projectdoc)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-reports
           path: security-reports/

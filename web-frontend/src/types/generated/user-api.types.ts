@@ -4,6 +4,33 @@
  */
 
 export interface paths {
+  '/public/users/{username}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get public user by username (no authentication)
+     * @description Anonymous lookup of a user's narrow public projection (Story 11.C.1, AC7).
+     *
+     *     Replaces the deleted GET /api/v1/speakers/{username} endpoint that the
+     *     public archive page used to call for speaker portraits. Mirrors the
+     *     narrow projection of /api/v1/public/organizers (firstName, lastName,
+     *     profilePictureUrl + username) — no email, no role list, no other PII.
+     *
+     *     Used by web-frontend's useUserPortrait hook on the public archive page.
+     */
+    get: operations['getPublicUserByUsername'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/{username}/watch-pairing': {
     parameters: {
       query?: never;
@@ -81,7 +108,7 @@ export interface paths {
      *     **Validation Rules**:
      *     - Email must be valid and unique
      *     - Names: 2-100 characters
-     *     - Bio: max 2000 characters
+     *     - Bio: max 5000 characters
      *
      *     **Cognito Sync**: Updates synchronize with AWS Cognito
      *
@@ -317,6 +344,113 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/me/additional-emails': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add an additional email address to the current user
+     * @description Story 10.32 — register a new additional email on the caller's profile.
+     *     Additional emails receive forwarded copies of mail addressed to this user
+     *     (ok@/partner@/batbern{N}@ role fan-out, registration confirmations) and are
+     *     accepted as authorised senders by the Story 10.26 SES forwarder Lambda.
+     *
+     *     Cap: 5 per user (configurable via `batbern.user.additional-emails.max`).
+     *     Uniqueness: global, case-insensitive, across BOTH primary emails on
+     *     `user_profiles` AND additional emails on any user.
+     */
+    post: operations['addAdditionalEmail'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/me/additional-emails/{email}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove an additional email address from the current user
+     * @description Story 10.32 — remove an additional email previously registered on the
+     *     caller's profile. The primary email on `user_profiles` is NEVER affected
+     *     by this endpoint.
+     */
+    delete: operations['deleteAdditionalEmail'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/me/additional-emails/{email}/resend-verification': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resend the verification email for an additional email address
+     * @description Additional-email verification v2 — re-dispatch the signed verification
+     *     link to one of the caller's own (still unverified) additional emails.
+     *     Idempotent in effect: a 204 means a fresh email was queued. The token is
+     *     regenerated on each call (stateless HMAC JWT, 48h TTL).
+     */
+    post: operations['resendAdditionalEmailVerification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/additional-emails/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check an additional-email verification token (no mutation)
+     * @description Additional-email verification v2 — public, token-credentialed pre-flight
+     *     check used by the `/verify-email` landing page. Validates the token's
+     *     signature + expiry and returns the (masked) email and its current
+     *     verification status WITHOUT mutating any state. Mail-scanner prefetches
+     *     of the link land here (GET) and never confirm; the actual confirm is a
+     *     separate POST. No JWT — the token IS the credential.
+     */
+    get: operations['checkAdditionalEmailVerification'];
+    put?: never;
+    /**
+     * Confirm an additional-email verification token (mutates)
+     * @description Additional-email verification v2 — public, token-credentialed confirm.
+     *     POST-only so mail-scanner prefetches (GET) cannot accidentally verify.
+     *     On success sets `verified_at` and returns the masked email. Idempotent:
+     *     a token for an already-verified row returns 200 with
+     *     `alreadyVerified: true`. If the underlying row was deleted (or re-added
+     *     with a new id) since the token was issued, returns 404. No JWT — the
+     *     token IS the credential.
+     */
+    post: operations['confirmAdditionalEmailVerification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/{username}/roles': {
     parameters: {
       query?: never;
@@ -415,7 +549,16 @@ export interface paths {
      *     3. Client calls confirm endpoint with file ID
      */
     post: operations['uploadProfilePicture'];
-    delete?: never;
+    /**
+     * Remove own profile picture
+     * @description Remove the authenticated user's own profile picture.
+     *
+     *     **Acceptance Criteria**: AC13
+     *
+     *     Self-service counterpart to `DELETE /users/{username}/picture` (admin). Resolves the
+     *     caller from the bearer token; idempotent in effect (clears the picture references).
+     */
+    delete: operations['removeOwnProfilePicture'];
     options?: never;
     head?: never;
     patch?: never;
@@ -556,6 +699,126 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/provision': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Provision a user with a role (Story 11.C.2 — AR13)
+     * @description Idempotent endpoint for the canonical "create User + grant role" flow used by the
+     *     Speaker Workflow Service (`SpeakerWorkflowService.transition()` at CONTACTED → READY).
+     *
+     *     **ADR-009**: Decision 3 — Cognito provisioning. Cognito wiring is split across two
+     *     endpoints per Story 11.E.2's Resolved Q#1 Variant B:
+     *
+     *     - **READY (this endpoint)**: `AdminCreateUser` (silent shell, `MessageAction=SUPPRESS`)
+     *       creates the Cognito user in `FORCE_CHANGE_PASSWORD` state. The temporary password
+     *       passed to Cognito is internal-only and is **NOT** returned in the response.
+     *     - **INVITED (sibling endpoint `/users/{username}/issue-invitation-credentials`)**:
+     *       `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` issues the
+     *       fresh temporary password embedded in the invitation email.
+     *
+     *     SPEAKER role is granted via a row insert into PostgreSQL `user_roles` per ADR-001 —
+     *     NOT via `AdminAddUserToGroup` (no Cognito groups exist; see Story 11.E.1 Resolved Q#1).
+     *
+     *     **Behaviour**:
+     *     - If User exists by email (case-insensitive lookup, matches `getOrCreateUser`):
+     *       grants the requested role if not already held; returns existing `username` and `created=false`.
+     *     - If User does not exist: creates User row, grants role, returns generated `username` and
+     *       `created=true`. The username is auto-generated from email per the existing
+     *       `getOrCreateUser` policy.
+     *     - **Idempotent**: re-calling for an already-provisioned user is a no-op and returns
+     *       the same `username` with `created=false`. The `role_assignments` UNIQUE constraint
+     *       backs the idempotency guarantee at the DB layer.
+     *
+     *     **Authorization**: ORGANIZER or ADMIN (service-to-service call from event-management-service
+     *     propagates the ORGANIZER JWT per `microservices-http-clients.md`).
+     *
+     *     **Performance**: <200ms (P95)
+     */
+    post: operations['provisionUserWithRole'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/issue-invitation-credentials': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Issue (or skip) Cognito temp credentials at invitation time (Story 11.E.2 — AR15/FR9)
+     * @description Service-to-service endpoint called by `SpeakerWorkflowService.runInvitedHook` at
+     *     READY → INVITED. Delegates to Cognito's `AdminGetUser` + conditional
+     *     `AdminSetUserPassword(Permanent=false)` to mint a fresh temporary password (when
+     *     the user is `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED`) or to
+     *     confirm that the existing password remains valid (when the user is `CONFIRMED`).
+     *
+     *     **Per Resolved Q#1 Variant B + Q#4** of Story 11.E.2: credential issuance is
+     *     deliberately decoupled from `/users/provision` (which only runs the silent
+     *     `AdminCreateUser` shell). The two-endpoint design avoids storing the temp password
+     *     anywhere between READY and INVITED.
+     *
+     *     **Idempotent**: repeated calls are safe. `FRESH_TEMP_PASSWORD` branch overwrites the
+     *     previous temp password (only the most recently issued one is valid). `USE_EXISTING_PASSWORD`
+     *     branch is a pure read.
+     *
+     *     **Authorization**: ORGANIZER or ADMIN (service-to-service call from
+     *     event-management-service propagates the ORGANIZER JWT).
+     *
+     *     **Performance**: <300ms (P95)
+     */
+    post: operations['issueInvitationCredentials'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/profile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Patch user profile fields (bio, profilePictureUrl) (Story 11.C.2 — AR14)
+     * @description Narrow profile-patch endpoint scoped to `bio` and `profilePictureUrl`. Used by the
+     *     consolidated `ContentSubmissionService` when an organizer (on behalf) or a speaker
+     *     (self) submits content that includes a CV blurb or a portrait.
+     *
+     *     **ADR-009 Decision 2 + ADR-007**: `bio` and `profilePictureUrl` live on the User
+     *     entity (single source of truth). This endpoint overwrites the global values — there
+     *     is no per-event snapshot.
+     *
+     *     **Authorization**: ORGANIZER, ADMIN, or SPEAKER. If the principal has role SPEAKER but
+     *     **not** ORGANIZER/ADMIN, the service enforces `currentUsername == pathVariable.username`
+     *     and returns 403 otherwise. Prevents a SPEAKER from patching another speaker's profile.
+     *
+     *     **Validation**: At least one of `bio` or `profilePictureUrl` must be non-null. Null
+     *     fields are left unchanged.
+     */
+    patch: operations['patchUserProfile'];
+    trace?: never;
+  };
   '/users/get-or-create': {
     parameters: {
       query?: never;
@@ -651,6 +914,28 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * @description Narrow public projection of a user — exactly the fields the public
+     *     archive page needs for portrait display. No email, no role list,
+     *     no other PII. Mirrors PublicOrganizerResponse's projection.
+     */
+    PublicUserResponse: {
+      /**
+       * @description Public identifier (ADR-003)
+       * @example john.doe
+       */
+      username: string;
+      /** @example John */
+      firstName?: string | null;
+      /** @example Doe */
+      lastName?: string | null;
+      /**
+       * Format: uri
+       * @description CloudFront URL of the user's portrait, when set.
+       * @example https://cdn.batbern.ch/users/john.doe/profile.jpg
+       */
+      profilePictureUrl?: string | null;
+    };
     WatchPairingRequest: {
       /**
        * @description 6-digit numeric pairing code generated by the web frontend
@@ -689,8 +974,11 @@ export interface components {
        * @example john.doe
        */
       id: string;
-      /** @example cognito-user-123 */
-      cognitoUserId?: string;
+      /**
+       * @description True if this user has a linked Cognito account (UUID not exposed per ADR-003)
+       * @example true
+       */
+      hasCognitoAccount?: boolean;
       /**
        * Format: email
        * @example john.doe@example.com
@@ -730,9 +1018,99 @@ export interface components {
        * @example 2025-01-20T14:30:00Z
        */
       lastLoginAt?: string;
+      /**
+       * Format: date-time
+       * @description Story 12.11: moment the user accepted the Terms of Service + Privacy Policy.
+       *     null = consent not on record — the frontend onboarding gate blocks the user on
+       *     /profile?onboarding=1 until accepted. Returned unconditionally (no ?include=
+       *     needed) because the gate check must always be present. Set server-side only
+       *     (write-once via UpdateUserRequest.termsAccepted).
+       * @example 2026-06-04T16:00:00Z
+       */
+      termsAcceptedAt?: string | null;
       company?: components['schemas']['Company'];
       preferences?: components['schemas']['UserPreferences'];
       settings?: components['schemas']['UserSettings'];
+      /**
+       * @description Story 10.32: additional email addresses registered on this profile.
+       *     Receive forwarded copies of mail addressed to the user (ok@/partner@/batbern{N}@
+       *     role fan-out, registration confirmations) and are accepted as authorised
+       *     senders by the Story 10.26 forwarder Lambda. Always present; may be empty.
+       */
+      additionalEmails?: components['schemas']['AdditionalEmail'][];
+    };
+    /** @description Story 10.32 — one additional email address registered on a user profile. */
+    AdditionalEmail: {
+      /**
+       * Format: email
+       * @example info@berner-architekten-treffen.ch
+       */
+      email: string;
+      /**
+       * @description Optional free-text user hint (e.g. "Hostpoint shared mailbox").
+       * @example Hostpoint shared
+       */
+      label?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-05-22T10:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Reserved for the v2 verification flow (Story 10.32 Resolved Decision #1).
+       *     v1 always returns null.
+       */
+      verifiedAt?: string | null;
+    };
+    AddAdditionalEmailRequest: {
+      /**
+       * Format: email
+       * @example info@berner-architekten-treffen.ch
+       */
+      email: string;
+      /** @example Hostpoint shared */
+      label?: string | null;
+    };
+    /**
+     * @description Additional-email verification v2 — GET-check response. Returns the masked
+     *     email and current verification status without mutating state.
+     */
+    AdditionalEmailVerificationCheckResponse: {
+      /**
+       * @description Masked form of the additional email (e.g. `in***@example.com`). The
+       *     full address is never returned on the public verify path.
+       * @example in***@berner-architekten-treffen.ch
+       */
+      email: string;
+      /**
+       * @description True if the row's verified_at is already set.
+       * @example false
+       */
+      verified: boolean;
+    };
+    ConfirmAdditionalEmailVerificationRequest: {
+      /** @description The signed verification token from the email link. */
+      token: string;
+    };
+    /** @description Additional-email verification v2 — POST-confirm response. */
+    AdditionalEmailVerificationConfirmResponse: {
+      /**
+       * @description Masked form of the additional email.
+       * @example in***@berner-architekten-treffen.ch
+       */
+      email: string;
+      /**
+       * @description Always true after a successful confirm.
+       * @example true
+       */
+      verified: boolean;
+      /**
+       * @description True when the row was already verified before this call (idempotent
+       *     re-confirm); false when this call set verified_at.
+       * @example false
+       */
+      alreadyVerified: boolean;
     };
     UserPreferences: {
       /**
@@ -793,6 +1171,16 @@ export interface components {
        * @example PostFinance
        */
       companyId?: string;
+      /**
+       * @description Story 12.11: accept the Terms of Service + Privacy Policy. WRITE-ONCE
+       *     semantics — when true and no consent is on record, the server stamps
+       *     terms_accepted_at with ITS OWN clock (the client never supplies the
+       *     timestamp). When consent is already recorded, true is a no-op (the
+       *     original timestamp is preserved). false or absent never changes or
+       *     revokes recorded consent.
+       * @example true
+       */
+      termsAccepted?: boolean;
     };
     /**
      * @description User search result with meaningful IDs.
@@ -851,6 +1239,102 @@ export interface components {
        * @example Software engineer passionate about cloud architecture
        */
       bio?: string;
+    };
+    /**
+     * @description Request to provision a User with a role (Story 11.C.2 — AR13).
+     *     Used by SpeakerWorkflowService.transition() at CONTACTED → READY.
+     */
+    ProvisionUserRequest: {
+      /**
+       * Format: email
+       * @description Required. Lookup key for the existing-user path (case-insensitive).
+       * @example jane.smith@example.com
+       */
+      email: string;
+      /**
+       * @description Optional. If absent, defaults are derived from the email local-part
+       *     (e.g., `jane.smith@x.com` → firstName=`Jane`, lastName=`Smith`).
+       * @example Jane
+       */
+      firstName?: string;
+      /**
+       * @description Optional. If absent, defaults are derived from the email local-part.
+       *     See `firstName`.
+       * @example Smith
+       */
+      lastName?: string;
+      /**
+       * @description Role to grant. **Non-ADMIN callers may only grant SPEAKER via this endpoint.**
+       *     ADMIN callers may grant any role. Server returns 400 if a non-ADMIN caller
+       *     requests a non-SPEAKER role.
+       * @example SPEAKER
+       * @enum {string}
+       */
+      role: 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
+    };
+    /**
+     * @description Response from the user-provisioning endpoint. Story 11.E.2 (Resolved Q#1 Variant B)
+     *     removed the `temporaryPassword` field — credential issuance is owned by the sibling
+     *     `/users/{username}/issue-invitation-credentials` endpoint, which is called at
+     *     READY → INVITED rather than at CONTACTED → READY.
+     */
+    ProvisionUserResponse: {
+      /**
+       * @description Canonical username (existing or newly generated). No regex `pattern` constraint
+       *     on the response — the server may emit legacy usernames that predate the current
+       *     `firstname.lastname[.NN]` convention (e.g., hyphenated or apostrophed names).
+       *     Pattern is enforced on `ProvisionUserRequest.username` only.
+       * @example jane.smith
+       */
+      username: string;
+      /**
+       * @description True if a new User row was created; false if the user already existed.
+       * @example true
+       */
+      created: boolean;
+    };
+    /**
+     * @description Response from `/users/{username}/issue-invitation-credentials` (Story 11.E.2 — AR15/FR9).
+     *     Determines whether the invitation email renders the "temporary password" block or the
+     *     "use your existing password" block.
+     */
+    InvitationCredentialsResponse: {
+      /**
+       * @description Fresh temporary password for the speaker's first login. Non-null when
+       *     `action = "FRESH_TEMP_PASSWORD"`; null when `action = "USE_EXISTING_PASSWORD"`.
+       *     Never persisted at rest in CUMS or EMS; the caller embeds it once in the
+       *     invitation email and discards it from memory.
+       * @example Tk7!aB2@nx9pQ4#z
+       */
+      temporaryPassword?: string | null;
+      /**
+       * @description Discriminator for the calling email service. Determines whether the
+       *     invitation-email template renders the temp-password block or the
+       *     "use your existing password" block.
+       * @example FRESH_TEMP_PASSWORD
+       * @enum {string}
+       */
+      action: 'FRESH_TEMP_PASSWORD' | 'USE_EXISTING_PASSWORD';
+    };
+    /**
+     * @description Patch the narrow profile fields owned by the consolidated ContentSubmissionService
+     *     (Story 11.C.2 — AR14). At least one of `bio` or `profilePictureUrl` must be present.
+     *     Null fields are left unchanged.
+     */
+    PatchUserProfileRequest: {
+      /**
+       * @description Updated user biography. Overwrites the global value per ADR-009 §6.7.
+       * @example Experienced security architect with 15 years in the industry.
+       */
+      bio?: string;
+      /**
+       * @description Updated profile picture URL (typically a CloudFront URL produced by an earlier
+       *     presigned-upload flow). Modelled as a plain string (not `format: uri`) so the
+       *     Bean Validation {@code @Size(max=2048)} constraint generated by the Spring
+       *     OpenAPI generator applies cleanly.
+       * @example https://cdn.batbern.ch/users/jane.smith.jpg
+       */
+      profilePictureUrl?: string;
     };
     /** @description Request to get an existing user or create a new one. Supports both authenticated (Cognito) and anonymous users (ADR-005). */
     GetOrCreateUserRequest: {
@@ -1186,6 +1670,38 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  getPublicUserByUsername: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Public user identifier (ADR-003) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Public user projection */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublicUserResponse'];
+        };
+      };
+      /** @description User not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
   getWatchPairingStatus: {
     parameters: {
       query?: never;
@@ -1409,6 +1925,10 @@ export interface operations {
         role?: 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
         /** @description Filter by company name (deprecated, use filter parameter) */
         company?: string;
+        /** @description Field to sort by (whitelisted server-side) */
+        sortBy?: 'name' | 'email' | 'company';
+        /** @description Sort direction */
+        sortDir?: 'asc' | 'desc';
       };
       header?: never;
       path?: never;
@@ -1661,6 +2181,214 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  addAdditionalEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddAdditionalEmailRequest'];
+      };
+    };
+    responses: {
+      /** @description Additional email created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdditionalEmail'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      /**
+       * @description The email is already registered as a primary email on `user_profiles`
+       *     or as an additional email on any user. Error code: `ADDITIONAL_EMAIL_DUPLICATE`.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Per-user cap reached. Error code: `ADDITIONAL_EMAIL_LIMIT_REACHED`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  deleteAdditionalEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description URL-encoded email address. Case-insensitive match against the caller's
+         *     additional emails.
+         * @example info@berner-architekten-treffen.ch
+         */
+        email: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Additional email removed */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No matching additional email on the caller's profile. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  resendAdditionalEmailVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description URL-encoded email address. Case-insensitive match against the caller's
+         *     additional emails.
+         * @example info@berner-architekten-treffen.ch
+         */
+        email: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A fresh verification email was dispatched. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No matching additional email on the caller's profile. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description The email is already verified. Error code: `ALREADY_VERIFIED`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  checkAdditionalEmailVerification: {
+    parameters: {
+      query: {
+        /** @description The signed verification token from the email link. */
+        token: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Token is valid; returns masked email + status. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdditionalEmailVerificationCheckResponse'];
+        };
+      };
+      /** @description Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  confirmAdditionalEmailVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmAdditionalEmailVerificationRequest'];
+      };
+    };
+    responses: {
+      /** @description Email verified (or already verified). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdditionalEmailVerificationConfirmResponse'];
+        };
+      };
+      /** @description Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description The additional-email row referenced by the token no longer exists
+       *     (deleted or re-added with a new id since issuance).
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
   getUserRoles: {
     parameters: {
       query?: never;
@@ -1771,7 +2499,7 @@ export interface operations {
           filename: string;
           fileSizeBytes: number;
           /** @enum {string} */
-          mimeType: 'image/png' | 'image/jpeg' | 'image/jpg';
+          mimeType: 'image/png' | 'image/jpeg' | 'image/svg+xml';
         };
       };
     };
@@ -1800,6 +2528,27 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  removeOwnProfilePicture: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Profile picture removed successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -1941,6 +2690,131 @@ export interface operations {
         };
         content?: never;
       };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  provisionUserWithRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProvisionUserRequest'];
+      };
+    };
+    responses: {
+      /** @description User provisioned (created or already existed) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProvisionUserResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+      /**
+       * @description Cognito upstream error. Story 11.E.2 wired `AdminCreateUser` (silent) at READY,
+       *     so a transient Cognito 5xx, throttle, or network failure during the call is
+       *     mapped to `CognitoOperationException` → 502 here. Caller should retry; the
+       *     provisioning is idempotent.
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  issueInvitationCredentials: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Target user's username (Story 1.16.2) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Credentials issued or confirmed existing */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InvitationCredentialsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /**
+       * @description Cognito user is in a state that requires operator intervention (ARCHIVED,
+       *     COMPROMISED, UNKNOWN). EMS should NOT silently retry.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+      /**
+       * @description Upstream Cognito Admin SDK call failed. EMS should treat this as a transient
+       *     upstream error (retry after a brief backoff) and abort the INVITED transition.
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  patchUserProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Target user's username (Story 1.16.2) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PatchUserProfileRequest'];
+      };
+    };
+    responses: {
+      /** @description Profile patched successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];

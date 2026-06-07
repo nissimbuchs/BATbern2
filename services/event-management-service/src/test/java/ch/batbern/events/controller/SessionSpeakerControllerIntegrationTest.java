@@ -163,7 +163,9 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
                 .andExpect(jsonPath("$.lastName").value("Doe"))
                 .andExpect(jsonPath("$.company").value("GoogleZH"))
                 .andExpect(jsonPath("$.speakerRole").value("PRIMARY_SPEAKER"))
-                .andExpect(jsonPath("$.presentationTitle").value("Test Presentation"))
+                // Story 11.E.8: session_users.presentation_title dropped (V102) — response
+                // field kept for FE source-compat but always null now.
+                .andExpect(jsonPath("$.presentationTitle").isEmpty())
                 .andExpect(jsonPath("$.isConfirmed").value(false));
     }
 

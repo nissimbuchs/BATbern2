@@ -44,6 +44,7 @@ export class DatabaseStack extends cdk.Stack {
       allocatedStorage: props.config.rds.allocatedStorage,
       deletionProtection: props.config.rds.deletionProtection,
       envName: props.config.envName,
+      isProduction: props.config.isProduction,
       instanceIdentifier: `batbern-${props.config.envName}-postgres`,
     });
 

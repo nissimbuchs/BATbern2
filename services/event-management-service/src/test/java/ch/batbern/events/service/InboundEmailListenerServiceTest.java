@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -115,5 +116,119 @@ class InboundEmailListenerServiceTest {
 
         verifyNoInteractions(router);
         verifyNoInteractions(s3Client);
+    }
+
+    // ─── T12.1: iCal REPLY MIME part detected and routed ──────────────────────
+
+    @Test
+    void handleS3Notification_withIcsReplyPart_callsRouteIcsReply() throws IOException {
+        String icsBody = "BEGIN:VCALENDAR\r\n"
+                + "METHOD:REPLY\r\n"
+                + "BEGIN:VEVENT\r\n"
+                + "UID:11111111-1111-1111-1111-111111111111@batbern.ch\r\n"
+                + "ATTENDEE;PARTSTAT=ACCEPTED;CN=Alice:mailto:alice@partner.com\r\n"
+                + "DTSTART:20260514T100000Z\r\n"
+                + "END:VEVENT\r\n"
+                + "END:VCALENDAR\r\n";
+
+        byte[] rawBytes = buildMultipartEmail("alice@partner.com", icsBody)
+                .getBytes(StandardCharsets.UTF_8);
+        mockS3Return(rawBytes);
+
+        listenerService.handleS3Notification(s3NotificationJson("emails/ics-reply-key"));
+
+        ArgumentCaptor<InboundEmailRouter.IcsReply> captor =
+                ArgumentCaptor.forClass(InboundEmailRouter.IcsReply.class);
+        verify(router).routeIcsReply(captor.capture());
+        verify(router, never()).route(any());
+
+        InboundEmailRouter.IcsReply reply = captor.getValue();
+        assertThat(reply.meetingUid()).isEqualTo("11111111-1111-1111-1111-111111111111@batbern.ch");
+        assertThat(reply.attendeeEmail()).isEqualTo("alice@partner.com");
+        assertThat(reply.partStat()).isEqualTo("ACCEPTED");
+    }
+
+    // ─── T12.2: missing ATTENDEE → WARN, router NOT called ────────────────────
+
+    @Test
+    void handleS3Notification_withIcsReplyMissingAttendee_discardsGracefully() throws IOException {
+        String icsBody = "BEGIN:VCALENDAR\r\n"
+                + "METHOD:REPLY\r\n"
+                + "BEGIN:VEVENT\r\n"
+                + "UID:11111111-1111-1111-1111-111111111111@batbern.ch\r\n"
+                + "DTSTART:20260514T100000Z\r\n"
+                + "END:VEVENT\r\n"
+                + "END:VCALENDAR\r\n";
+
+        byte[] rawBytes = buildMultipartEmail("alice@partner.com", icsBody)
+                .getBytes(StandardCharsets.UTF_8);
+        mockS3Return(rawBytes);
+
+        listenerService.handleS3Notification(s3NotificationJson("emails/ics-no-attendee"));
+
+        verifyNoInteractions(router);
+    }
+
+    // ─── T12.3: missing UID → WARN, router NOT called ────────────────────────
+
+    @Test
+    void handleS3Notification_withIcsReplyMissingUid_discardsGracefully() throws IOException {
+        String icsBody = "BEGIN:VCALENDAR\r\n"
+                + "METHOD:REPLY\r\n"
+                + "BEGIN:VEVENT\r\n"
+                + "ATTENDEE;PARTSTAT=ACCEPTED;CN=Alice:mailto:alice@partner.com\r\n"
+                + "DTSTART:20260514T100000Z\r\n"
+                + "END:VEVENT\r\n"
+                + "END:VCALENDAR\r\n";
+
+        byte[] rawBytes = buildMultipartEmail("alice@partner.com", icsBody)
+                .getBytes(StandardCharsets.UTF_8);
+        mockS3Return(rawBytes);
+
+        listenerService.handleS3Notification(s3NotificationJson("emails/ics-no-uid"));
+
+        verifyNoInteractions(router);
+    }
+
+    // ─── T12.4: plain-text email → existing router.route() path unchanged ─────
+
+    @Test
+    void handleS3Notification_withPlainTextEmail_usesExistingRoutePath() throws IOException {
+        byte[] rawBytes = RAW_EMAIL.getBytes(StandardCharsets.UTF_8);
+        mockS3Return(rawBytes);
+
+        listenerService.handleS3Notification(s3NotificationJson("emails/plain-text-key"));
+
+        verify(router).route(any());
+        verify(router, never()).routeIcsReply(any());
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private void mockS3Return(byte[] rawBytes) {
+        ResponseInputStream<GetObjectResponse> responseStream = new ResponseInputStream<>(
+                GetObjectResponse.builder().build(),
+                new ByteArrayInputStream(rawBytes)
+        );
+        when(s3Client.getObject(any(GetObjectRequest.class))).thenReturn(responseStream);
+    }
+
+    private String buildMultipartEmail(String from, String icsBody) {
+        String boundary = "boundary-ics-reply-test";
+        return "From: " + from + "\r\n"
+                + "To: replies@batbern.ch\r\n"
+                + "Subject: Accepted: Partner Meeting\r\n"
+                + "MIME-Version: 1.0\r\n"
+                + "Content-Type: multipart/mixed; boundary=\"" + boundary + "\"\r\n"
+                + "\r\n"
+                + "--" + boundary + "\r\n"
+                + "Content-Type: text/plain; charset=UTF-8\r\n"
+                + "\r\n"
+                + "Accepted.\r\n"
+                + "--" + boundary + "\r\n"
+                + "Content-Type: text/calendar; charset=UTF-8; method=REPLY\r\n"
+                + "\r\n"
+                + icsBody
+                + "--" + boundary + "--\r\n";
     }
 }

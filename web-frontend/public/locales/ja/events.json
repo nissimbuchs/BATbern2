@@ -12,7 +12,7 @@
       "publishing": "公開",
       "newsletter": "ニュースレター",
       "settings": "設定",
-      "photos": "Photos"
+      "photos": "写真"
     },
     "tabsAriaLabel": "イベントページのナビゲーション",
     "overview": {
@@ -30,7 +30,9 @@
       "selectedTopic": "選択中のトピック",
       "quickActions": "クイックアクション",
       "selectTopic": "トピックを選択",
-      "previewPublic": "公開ページをプレビュー"
+      "previewPublic": "公開ページをプレビュー",
+      "startPresentation": "プレゼンテーションを開始",
+      "liveControl": "ライブコントロール"
     },
     "participantsTab": {
       "title": "イベント参加者",
@@ -57,7 +59,10 @@
       "empty": "まだ参加者が登録されていません",
       "actions": {
         "cancel": "登録をキャンセル",
-        "delete": "登録を削除"
+        "delete": "登録を削除",
+        "resendConfirmation": "確認メールを再送",
+        "resendSuccess": "確認メールを再送しました",
+        "resendError": "確認メールの再送に失敗しました"
       },
       "deleteDialog": {
         "title": "登録を削除",
@@ -97,8 +102,37 @@
       "moderatorLabel": "モデレーター",
       "moderatorUpdated": "モデレーターが正常に更新されました",
       "moderatorUpdateError": "モデレーターの更新に失敗しました。",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "登録定員",
+      "capacityHelperText": "無制限の登録の場合は空白のままにしてください。会場の定員を超えることはできません。",
+      "capacityUpdated": "定員を正常に更新しました",
+      "capacityUpdateError": "定員の更新に失敗しました。",
+      "notifications": "通知",
+      "activeAutomations": "アクティブな自動化",
+      "manageAll": "すべての通知を管理",
+      "dangerZone": "危険ゾーン",
+      "dangerWarning": "これらの操作は元に戻せません。注意して進めてください。",
+      "cancelEvent": "イベントをキャンセル",
+      "cancelEventDesc": "イベントをキャンセルし、全登録者に通知します",
+      "deleteEvent": "イベントを削除",
+      "deleteEventDesc": "イベントを完全に削除します（登録がない場合のみ）",
+      "cannotDelete": "登録があるイベントは削除できません。代わりにイベントをキャンセルしてください。",
+      "confirmCancel": "イベントをキャンセルしますか？",
+      "cancelConfirmText": "イベントがキャンセルされ、{{count}}人の登録済み参加者に通知されます。この操作は元に戻せません。",
+      "confirmCancelBtn": "はい、キャンセルします",
+      "confirmDelete": "イベントを削除しますか？",
+      "deleteConfirmText": "イベント「{{title}}」が完全に削除されます。この操作は元に戻せません。",
+      "confirmDeleteBtn": "はい、削除します",
+      "deleteError": "イベントの削除に失敗しました。再試行してください。",
+      "speakerReminders": "登壇者締め切りリマインダー",
+      "speakerRemindersDesc": "締め切り3日前",
+      "registrationEmails": "登録確認メール",
+      "registrationEmailsDesc": "登録時に即座に送信",
+      "agendaDistribution": "最終プログラムの配布",
+      "agendaDistributionDesc": "イベント当日-14日に予定",
+      "checkInReminders": "イベント当日のチェックインリマインダー",
+      "checkInRemindersDesc": "イベント当日の朝",
+      "startPresentation": "プレゼンテーションを開始",
+      "liveControl": "ライブコントロール"
     },
     "speakers": {
       "progress": "進捗",
@@ -138,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "会場 / ケータリングに送信",
+      "subtitle": "テンプレートを選び、必要に応じてメモを追加し、プレビューを確認してから、会場担当者、ケータリング担当者、またはその両方に送信します。",
+      "notConfigured": "会場またはケータリングの連絡先が設定されていません。",
+      "openAdmin": "管理 → 会場とケータリングを開く",
+      "templateLabel": "テンプレート",
+      "noTemplates": "利用可能なテンプレートがありません",
+      "recipients": "宛先",
+      "venueRole": "会場",
+      "cateringRole": "ケータリング",
+      "notesLabel": "メモ（任意）",
+      "notesPlaceholder": "例：12:30に別室で8名分のランチテーブルを予約してください。",
+      "previewButton": "プレビュー",
+      "previewFailed": "プレビューに失敗しました：",
+      "to": "宛先",
+      "cc": "Cc",
+      "replyTo": "返信先",
+      "subject": "件名",
+      "sendButton": "送信",
+      "confirmTitle": "メールを送信しますか？",
+      "confirmBody": "{{recipients}} に実際のメールが送信されます。返信先は設定された会場コーディネーターです。",
+      "confirmSend": "はい、送信",
+      "sentSuccess": "{{count}} 名の受信者に送信しました。",
+      "sentFailed": "送信に失敗しました：{{message}}"
     }
   },
   "dashboard": {
@@ -431,11 +490,6 @@
       "alreadyPublished": "既に公開済み",
       "publishTopicFirst": "最初にトピックを公開してください",
       "publishSpeakersFirst": "最初にスピーカーを公開してください",
-      "mode": "モード",
-      "modeDraft": "下書き",
-      "modeProgressive": "プログレッシブ",
-      "modeComplete": "完全",
-      "notifySubscribers": "購読者に通知",
       "validationErrors": "検証エラー：",
       "phase": {
         "topic": "トピック",
@@ -443,8 +497,7 @@
         "agenda": "アジェンダ"
       },
       "accessibility": {
-        "publishingPhase": "{{phase}}を公開中",
-        "notifySubscribers": "公開時に購読者に通知"
+        "publishingPhase": "{{phase}}を公開中"
       }
     },
     "validation": {
@@ -485,10 +538,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
-      "agenda": "Agenda",
-      "updates": "Updates"
+      "topic": "トピック",
+      "speakers": "登壇者",
+      "agenda": "プログラム",
+      "updates": "更新情報"
     }
   },
   "notifications": {
@@ -528,7 +581,7 @@
       "date": "日付",
       "time": "時間",
       "location": "場所",
-      "capacity": "定員"
+      "capacity": "登録者数"
     },
     "errors": {
       "loadFailed": "イベントの読み込みに失敗しました",
@@ -763,7 +816,8 @@
       "confirmed": "[MISSING] Confirmed",
       "registered": "[MISSING] Registered",
       "waitlist": "[MISSING] Waitlist",
-      "cancelled": "[MISSING] Cancelled"
+      "cancelled": "[MISSING] Cancelled",
+      "attended": "参加済み"
     }
   },
   "capacity": {
@@ -776,14 +830,39 @@
     "heading": "このイベントについて"
   },
   "photos": {
-    "title": "Event Photos",
-    "uploadButton": "Upload Photo",
-    "deleteConfirmTitle": "Delete Photo",
-    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "emptyState": "No photos yet. Upload the first one!",
-    "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "title": "イベント写真",
+    "uploadButton": "写真をアップロード",
+    "deleteConfirmTitle": "写真を削除",
+    "deleteConfirmMessage": "この写真を削除してもよいですか？この操作は元に戻せません。",
+    "deleteConfirm": "削除",
+    "deleteCancel": "キャンセル",
+    "emptyState": "まだ写真がありません。最初の1枚をアップロードしましょう！",
+    "uploading": "アップロード中...",
+    "uploadError": "アップロードに失敗しました。再試行してください。",
+    "uploadErrorPartial": "{{total}}件中{{failed}}件のアップロードが失敗しました。再試行してください。"
+  },
+  "teaserImage": {
+    "title": "ティーザー画像",
+    "description": "プレゼンテーションページでフルスクリーンスライドとして表示される画像。",
+    "uploadButton": "ティーザー画像を追加",
+    "uploading": "アップロード中...",
+    "uploadError": "アップロードに失敗しました。再試行してください。",
+    "removeError": "削除に失敗しました。再試行してください。",
+    "positionError": "位置の更新に失敗しました。再試行してください。",
+    "limitReached": "ティーザー画像の最大数 {{max}} に達しました。",
+    "position": {
+      "label": "表示する位置",
+      "afterWelcome": "ウェルカムスライドの後",
+      "afterCommittee": "委員会スライドの後",
+      "afterTopicReveal": "トピック公開スライドの後",
+      "afterUpcomingEvents": "今後のイベントスライドの後"
+    }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "ネームバッジをエクスポート",
+      "exportNameBadgesDocx": "ネームバッジをWordで",
+      "exportError": "エクスポートに失敗しました"
+    }
   }
 }

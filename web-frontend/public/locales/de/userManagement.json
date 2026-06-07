@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "Anzeigen",
-    "editRoles": "Rollen bearbeiten"
+    "editRoles": "Rollen bearbeiten",
+    "openMenu": "Aktionsmenü öffnen"
   },
   "roles": {
     "organizer": "Organisator",
@@ -210,7 +211,32 @@
       "themeDark": "Dunkel",
       "themeAuto": "Automatisch (Systemeinstellung)",
       "timezone": "Zeitzone",
-      "save": "Kontoeinstellungen speichern"
+      "save": "Kontoeinstellungen speichern",
+      "additionalEmailsTitle": "Zusätzliche E-Mail-Adressen",
+      "additionalEmailsHelp": "Mails, die BATbern an dich sendet oder weiterleitet (Organizer-Verteiler, Anmeldebestätigungen), erreichen auch diese Adressen, und du kannst von jeder dieser Adressen an ok@/partner@/batbern{N}@ senden. Newsletter-Kopien gehen nur an deine Hauptadresse — abonniere jede Adresse separat, falls gewünscht. Änderungen können bis zu 5 Minuten benötigen, bis sie für die E-Mail-Weiterleitung wirksam sind.",
+      "additionalEmailLabel": "Bezeichnung (optional)",
+      "additionalEmailAddButton": "E-Mail hinzufügen",
+      "additionalEmailAtLimit": "Du hast die maximale Anzahl zusätzlicher E-Mails erreicht. Entferne eine, um eine weitere hinzuzufügen.",
+      "additionalEmailAdded": "Zusätzliche E-Mail hinzugefügt",
+      "additionalEmailRemoved": "Zusätzliche E-Mail entfernt",
+      "additionalEmailErrorDuplicate": "Diese E-Mail ist bereits einem Profil zugeordnet.",
+      "additionalEmailErrorLimit": "Du hast bereits die maximale Anzahl zusätzlicher E-Mails.",
+      "additionalEmailErrorInvalid": "Bitte gib eine gültige E-Mail-Adresse ein.",
+      "additionalEmailUnverifiedPill": "Nicht verifiziert",
+      "additionalEmailRemoveConfirm": "{{email}} aus deinem Profil entfernen?",
+      "additionalEmailRemoveConfirmTitle": "Zusätzliche E-Mail entfernen?",
+      "additionalEmailRemoveConfirmYes": "Entfernen",
+      "additionalEmailRemoveConfirmCancel": "Abbrechen",
+      "additionalEmailDeleteFailed": "Zusätzliche E-Mail konnte nicht entfernt werden. Bitte versuche es erneut.",
+      "additionalEmailDeleteNotFound": "Diese zusätzliche E-Mail ist nicht mehr in deinem Profil.",
+      "additionalEmailDeleteAriaLabel": "Zusätzliche E-Mail {{email}} entfernen",
+      "additionalEmailVerifiedPill": "Bestätigt",
+      "additionalEmailResendButton": "Erneut senden",
+      "additionalEmailResendSuccess": "Bestätigungs-E-Mail gesendet.",
+      "additionalEmailResendFailed": "Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+      "additionalEmailResendAlreadyVerified": "Diese E-Mail-Adresse ist bereits bestätigt.",
+      "additionalEmailResendAriaLabel": "Bestätigungs-E-Mail erneut an {{email}} senden",
+      "additionalEmailVerifiedAriaLabel": "{{email}} ist bestätigt"
     },
     "notifications": {
       "title": "Benachrichtigungseinstellungen",
@@ -272,6 +298,17 @@
   "cognito": {
     "linked": "Cognito verknüpft",
     "notLinked": "Kein Cognito-Konto",
-    "tooltip": "Cognito-ID: {{id}}"
+    "tooltip": "Cognito-Konto verknüpft"
+  },
+  "verifyEmail": {
+    "title": "Bestätigen Sie Ihre E-Mail-Adresse",
+    "loading": "Ihr Bestätigungslink wird geprüft…",
+    "confirmMessage": "Bestätigen Sie, dass {{email}} Ihre E-Mail-Adresse ist.",
+    "confirmButton": "E-Mail-Adresse bestätigen",
+    "success": "Ihre E-Mail-Adresse wurde bestätigt. Sie können diese Seite schliessen.",
+    "alreadyVerified": "Diese E-Mail-Adresse ist bereits bestätigt.",
+    "homeLink": "Zu batbern.ch",
+    "invalidToken": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte fordern Sie in Ihren Kontoeinstellungen einen neuen an.",
+    "notFound": "Diese E-Mail-Adresse befindet sich nicht mehr auf dem Profil, zu dem sie hinzugefügt wurde. Falls Sie sie erneut hinzugefügt haben, verwenden Sie den Link aus der neuesten Bestätigungs-E-Mail."
   }
 }

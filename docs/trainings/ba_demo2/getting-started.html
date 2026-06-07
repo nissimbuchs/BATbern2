@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your First 5 Minutes with BMAD</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 72px; scroll-margin-top: 80px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent2);
+    color: var(--bg);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.6rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent2); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 12px; }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .b-neutral { background: rgba(232,234,246,.1); color: var(--text); border: 2px solid var(--border); }
+  .b-green { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .b-purple { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .b-red { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .b-yellow { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+
+  /* Step blocks */
+  .step-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+  .step-block h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent2);
+    color: var(--bg);
+    font-weight: 800;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .step-block p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .step-block p:last-child { margin-bottom: 0; }
+
+  /* Command display */
+  .cmd-display {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 1rem;
+    color: var(--accent2);
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .cmd-display .prompt { color: var(--text-muted); }
+  .cmd-display .comment { color: var(--text-muted); font-size: 0.85em; }
+
+  /* Big type cards for "5 Things" */
+  .big-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .big-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    text-align: center;
+    transition: border-color .2s, transform .2s;
+  }
+  .big-card:hover { transform: translateY(-2px); }
+  .big-card .big-type {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+  .big-card h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .big-card p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .big-card.bc-1 { border-color: rgba(40,175,143,.4); }
+  .big-card.bc-1 .big-type { color: var(--accent2); }
+  .big-card.bc-2 { border-color: rgba(226,54,21,.4); }
+  .big-card.bc-2 .big-type { color: var(--accent); }
+  .big-card.bc-3 { border-color: rgba(255,202,76,.4); }
+  .big-card.bc-3 .big-type { color: var(--accent4); }
+  .big-card.bc-4 { border-color: rgba(175,35,34,.4); }
+  .big-card.bc-4 .big-type { color: var(--accent3); }
+  .big-card.bc-5 { border-color: rgba(232,234,246,.25); }
+  .big-card.bc-5 .big-type { color: var(--text); }
+
+  /* Fix-it list */
+  .fix-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .fix-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+  }
+  .fix-item .situation { font-size: 0.88rem; color: var(--accent3); font-weight: 600; }
+  .fix-item .arrow { color: var(--border); font-size: 1.2rem; }
+  .fix-item .solution { font-size: 0.88rem; color: var(--accent2); }
+
+  /* Menu example */
+  .menu-example {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px 24px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    line-height: 2;
+    margin: 16px 0;
+    color: var(--text-muted);
+  }
+  .menu-example .agent-name { color: var(--accent2); font-weight: 700; }
+  .menu-example .menu-num { color: var(--accent); font-weight: 700; }
+  .menu-example .menu-label { color: var(--text); }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 24px 0;
+  }
+  .flow-item {
+    text-align: center;
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    min-width: 140px;
+  }
+  .flow-item h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
+  .flow-item p { font-size: 0.75rem; color: var(--text-muted); }
+  .flow-arrow { font-size: 1.5rem; color: var(--border); padding: 0 4px; }
+  .f-analysis { background: rgba(40,175,143,.1); border: 1px solid rgba(40,175,143,.3); color: var(--accent2); }
+  .f-planning { background: rgba(226,54,21,.1); border: 1px solid rgba(226,54,21,.3); color: var(--accent); }
+  .f-solutioning { background: rgba(175,35,34,.1); border: 1px solid rgba(175,35,34,.3); color: var(--accent3); }
+  .f-implementation { background: rgba(255,202,76,.1); border: 1px solid rgba(255,202,76,.3); color: var(--accent4); }
+
+  /* Artifact chain */
+  .chain {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin: 16px 0;
+  }
+  .chain strong { color: var(--text); }
+  .chain .chain-arrow { color: var(--accent); margin: 0 6px; }
+
+  .note {
+    background: rgba(255,202,76,.06);
+    border: 1px solid rgba(255,202,76,.25);
+    border-left: 4px solid var(--accent4);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 14px 18px;
+    font-size: 0.88rem;
+    margin: 20px 0;
+  }
+  .note strong { color: var(--accent4); }
+
+  .note-green {
+    background: rgba(40,175,143,.06);
+    border: 1px solid rgba(40,175,143,.25);
+    border-left: 4px solid var(--accent2);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 14px 18px;
+    font-size: 0.88rem;
+    margin: 20px 0;
+  }
+  .note-green strong { color: var(--accent2); }
+
+  .motivational {
+    background: var(--surface);
+    border: 1px solid rgba(226,54,21,.4);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    margin: 40px 0;
+  }
+  .motivational p {
+    font-size: 1.05rem;
+    color: var(--text);
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.8;
+  }
+  .motivational p strong { color: var(--accent); }
+
+  .hero-link {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 20px;
+    color: var(--accent2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all .2s;
+  }
+  .hero-link:hover { background: var(--accent2); color: var(--bg); }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+    .big-cards { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .fix-item { grid-template-columns: 1fr; gap: 6px; }
+    .fix-item .arrow { transform: rotate(90deg); justify-self: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#install" class="active">Install</a>
+  <a href="#opening">Open the Tool</a>
+  <a href="#first-agent">First Agent</a>
+  <a href="#five-things">5 Things</a>
+  <a href="#wrong">What If</a>
+  <a href="#exercise">Try It</a>
+  <a href="#workflow">Workflow</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">Start Here &mdash; Zero Experience Required</div>
+    <h1>Your First 5 Minutes<br>with <span>BMAD</span></h1>
+    <p>You have Claude Code installed. You've never used an agent. This page walks you through everything you need to know in about five minutes. No jargon, no tricks, no pressure.</p>
+    <p style="font-size:0.9rem;color:var(--accent2);font-weight:600">Breathe. You've got this.</p>
+  </div>
+
+  <!-- 0. INSTALLATION -->
+  <section id="install">
+    <div class="section-header">
+      <div class="phase-badge b-green">0</div>
+      <div class="section-header-text">
+        <h2>One-Time Setup (Windows 11)</h2>
+        <p>Install the tools you need &mdash; you only do this once</p>
+      </div>
+    </div>
+
+    <div class="step-block" style="border-color:rgba(175,35,34,.4)">
+      <h3 style="color:var(--accent3)"><span class="step-num" style="background:var(--accent3)">!</span> Get Your Claude Code License First</h3>
+      <p>Company compliance requires an <strong>Enterprise license</strong> for Claude Code. You must have this before you start.</p>
+      <ol style="margin:12px 0 12px 20px;font-size:0.9rem;color:var(--text-muted)">
+        <li>Go to the <strong>ELCA Manager Portal</strong> &rarr; <strong>Licenses</strong></li>
+        <li>Order a <strong>Claude Code Enterprise</strong> license</li>
+        <li>You will need a <strong>Vertec project number</strong> where the license cost will be invoiced</li>
+        <li>Wait for the license confirmation email before proceeding</li>
+      </ol>
+      <p style="font-size:0.85rem;color:var(--accent3)">⚠️ Do not use personal or free-tier accounts &mdash; only enterprise licenses are approved for company data.</p>
+    </div>
+
+    <div class="note">
+      <strong>You'll need admin rights for about 10 minutes.</strong> Open <strong>Make Me Admin</strong> from the Start menu and activate admin access before starting. You have one hour &mdash; more than enough.
+    </div>
+
+    <div class="step-block">
+      <h3><span class="step-num">1</span> Install Node.js (if not already installed)</h3>
+      <p>BMAD requires <strong>Node.js v20+</strong>. Open <strong>UnigetUI</strong> and search for <code>Node.js LTS</code>, then click Install. Or use PowerShell:</p>
+      <div class="cmd-display">
+        <span class="prompt">&gt;</span> winget install OpenJS.NodeJS.LTS
+      </div>
+      <p>Verify it's installed:</p>
+      <div class="cmd-display">
+        <span class="prompt">&gt;</span> node --version<br>
+        <span class="comment"># Should show v20.x.x or higher</span>
+      </div>
+    </div>
+
+    <div class="step-block">
+      <h3><span class="step-num">2</span> Install Claude Code</h3>
+      <p>Claude Code is the AI coding assistant that runs BMAD agents. Install it via npm (which comes with Node.js):</p>
+      <div class="cmd-display">
+        <span class="prompt">&gt;</span> npm install -g @anthropic-ai/claude-code
+      </div>
+      <p>Verify it's installed:</p>
+      <div class="cmd-display">
+        <span class="prompt">&gt;</span> claude --version
+      </div>
+      <p>The first time you run <code>claude</code>, it will ask you to log in with your Anthropic account. Follow the prompts &mdash; it opens a browser window.</p>
+    </div>
+
+    <div class="step-block">
+      <h3><span class="step-num">3</span> Install BMAD into your project</h3>
+      <p>Navigate to your project folder in PowerShell, then run the BMAD installer:</p>
+      <div class="cmd-display">
+        <span class="prompt">&gt;</span> cd C:\Users\YourName\Projects\my-project<br>
+        <span class="prompt">&gt;</span> npx bmad-method install
+      </div>
+      <p>The installer asks a few questions:</p>
+      <ul style="margin:12px 0 12px 20px;font-size:0.9rem;color:var(--text-muted)">
+        <li>Which module? &rarr; Choose <strong>bmm</strong> (the standard Business Method Module)</li>
+        <li>Which tool? &rarr; Choose <strong>claude-code</strong></li>
+        <li>Your name, preferred language, output folder &rarr; Follow the prompts</li>
+      </ul>
+      <p>That's it. BMAD is now installed in your project. You can close Make Me Admin.</p>
+    </div>
+
+    <div class="note-green">
+      <strong>You're set up!</strong> You only do the above once per machine (steps 1-2) and once per project (step 3). From now on, you just open Claude Code and activate agents.
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- 1. OPENING THE TOOL -->
+  <section id="opening">
+    <div class="section-header">
+      <div class="phase-badge b-green">1</div>
+      <div class="section-header-text">
+        <h2>Opening the Tool</h2>
+        <p>Three commands. That's all it takes.</p>
+      </div>
+    </div>
+
+    <div class="step-block">
+      <h3><span class="step-num">1</span> Open PowerShell</h3>
+      <p>Press <strong>Win + R</strong>, type <code>pwsh</code> (or <code>powershell</code>), and press Enter. You'll see a blinking cursor. That's your command line. Don't worry &mdash; you only need to type two things.</p>
+    </div>
+
+    <div class="step-block">
+      <h3><span class="step-num">2</span> Navigate to your project and start Claude Code</h3>
+      <p>Type the following and press Enter:</p>
+      <div class="cmd-display">
+        <span class="prompt">&gt;</span> cd C:\Users\YourName\Projects\my-project<br>
+        <span class="prompt">&gt;</span> claude
+      </div>
+      <p>Replace the path with your actual project folder. A prompt appears &mdash; it looks like a chat window in your terminal. You can type natural language, just like texting.</p>
+      <div class="note-green">
+        <strong>That's it. You're in.</strong> Claude Code is running. You can already ask it questions, and it will answer. But to unlock the real power, you'll activate an agent.
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. ACTIVATING YOUR FIRST AGENT -->
+  <section id="first-agent">
+    <div class="section-header">
+      <div class="phase-badge b-green">2</div>
+      <div class="section-header-text">
+        <h2>Activating Your First Agent</h2>
+        <p>One slash command turns Claude into a specialized colleague</p>
+      </div>
+    </div>
+
+    <p style="font-size:0.95rem;margin-bottom:16px;">Agents are specialized personas. Instead of a generic AI, you get a focused expert with a structured workflow. Here's how to activate one:</p>
+
+    <div class="cmd-display" style="font-size:1.1rem;text-align:center;">
+      /bmad-agent-bmm-analyst
+    </div>
+
+    <p style="font-size:0.93rem;color:var(--text-muted);margin:16px 0;">Type that command and press Enter. The agent introduces itself and shows you a menu with numbered options. It looks something like this:</p>
+
+    <div class="menu-example">
+      <span class="agent-name">Mary (Business Analyst)</span> reporting for duty!<br><br>
+      <span class="menu-num">[BP]</span> <span class="menu-label">Brainstorm Project</span> &mdash; Guided ideation session<br>
+      <span class="menu-num">[DR]</span> <span class="menu-label">Domain Research</span> &mdash; Explore a domain or industry<br>
+      <span class="menu-num">[PB]</span> <span class="menu-label">Product Brief</span> &mdash; Create a 1-2 page strategic vision<br>
+      <span class="menu-num">[CH]</span> <span class="menu-label">Chat</span> &mdash; Just talk with me<br>
+    </div>
+
+    <p style="font-size:0.93rem;color:var(--text-muted);margin-top:16px;">Type a code like <code>BP</code> or a keyword like <code>brainstorm</code>. That's how you talk to agents. They understand both.</p>
+  </section>
+
+  <!-- 3. THE 5 THINGS YOU'LL TYPE MOST -->
+  <section id="five-things">
+    <div class="section-header">
+      <div class="phase-badge b-purple">3</div>
+      <div class="section-header-text">
+        <h2>The 5 Things You'll Type Most</h2>
+        <p>Memorize these and you can work with any BMAD agent</p>
+      </div>
+    </div>
+
+    <div class="big-cards">
+      <div class="big-card bc-1">
+        <div class="big-type">1-9</div>
+        <h4>A Number</h4>
+        <p>Select a menu option. Type the number or the short code shown next to it.</p>
+      </div>
+
+      <div class="big-card bc-2">
+        <div class="big-type">C</div>
+        <h4>Continue</h4>
+        <p>Move to the next step. This is the single most common thing you'll type. The agent finishes a section, you review it, and type C to proceed.</p>
+      </div>
+
+      <div class="big-card bc-3">
+        <div class="big-type">yes</div>
+        <h4>Approve</h4>
+        <p>"yes", "ok", "looks good" &mdash; all mean the same thing. You're telling the agent to keep going with what it proposed.</p>
+      </div>
+
+      <div class="big-card bc-4">
+        <div class="big-type">no, X</div>
+        <h4>A Correction</h4>
+        <p>"no, change X to Y" or "merge these two" or "remove that part" &mdash; you're the boss. The agent adjusts.</p>
+      </div>
+
+      <div class="big-card bc-5">
+        <div class="big-type">why?</div>
+        <h4>A Question</h4>
+        <p>"why did you choose this?" or "explain more about X" &mdash; agents love questions. Asking makes the output better, not worse.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>That's really it.</strong> Numbers to select, C to continue, yes to approve, corrections to redirect, questions to dig deeper. Everything else is just natural conversation.
+    </div>
+  </section>
+
+  <!-- 4. WHAT IF SOMETHING GOES WRONG? -->
+  <section id="wrong">
+    <div class="section-header">
+      <div class="phase-badge b-red">4</div>
+      <div class="section-header-text">
+        <h2>What If Something Goes Wrong?</h2>
+        <p>Short answer: nothing breaks. Here's the long answer.</p>
+      </div>
+    </div>
+
+    <div class="fix-grid">
+      <div class="fix-item">
+        <div class="situation">The agent proposes something incorrect</div>
+        <div class="arrow">&rarr;</div>
+        <div class="solution">Say "no, that's wrong because..." and explain. The agent will adjust immediately.</div>
+      </div>
+      <div class="fix-item">
+        <div class="situation">You want to go back to an earlier point</div>
+        <div class="arrow">&rarr;</div>
+        <div class="solution">Say "let's go back to..." &mdash; agents track conversation context and can revisit any step.</div>
+      </div>
+      <div class="fix-item">
+        <div class="situation">You're confused about what to do next</div>
+        <div class="arrow">&rarr;</div>
+        <div class="solution">Type <code>/bmad-help</code> &mdash; it analyzes your current state and shows you what step comes next.</div>
+      </div>
+      <div class="fix-item">
+        <div class="situation">The agent is doing too much at once</div>
+        <div class="arrow">&rarr;</div>
+        <div class="solution">Say "stop" or "wait" &mdash; then redirect it to what you need. You control the pace.</div>
+      </div>
+      <div class="fix-item">
+        <div class="situation">You made a typo or gave wrong information</div>
+        <div class="arrow">&rarr;</div>
+        <div class="solution">Just correct yourself in the next message. The agent adapts. No need to start over.</div>
+      </div>
+    </div>
+
+    <div class="note-green">
+      <strong>Bottom line: You cannot break anything.</strong> The agent doesn't judge. It doesn't get frustrated. It adapts to whatever you tell it. If you're unsure, just ask &mdash; "what should I do here?" works perfectly.
+    </div>
+  </section>
+
+  <!-- 5. YOUR FIRST EXERCISE -->
+  <section id="exercise">
+    <div class="section-header">
+      <div class="phase-badge b-yellow">5</div>
+      <div class="section-header-text">
+        <h2>Your First Exercise</h2>
+        <p>Try this right now &mdash; it takes 60 seconds</p>
+      </div>
+    </div>
+
+    <div class="step-block" style="border-color:rgba(255,202,76,.4)">
+      <h3 style="color:var(--accent4)">Activate the Analyst and just chat</h3>
+
+      <div class="cmd-display">
+        <span class="comment"># Step 1: Activate the agent</span><br>
+        /bmad-agent-bmm-analyst
+      </div>
+
+      <div class="cmd-display">
+        <span class="comment"># Step 2: Select Chat mode</span><br>
+        CH
+      </div>
+
+      <div class="cmd-display">
+        <span class="comment"># Step 3: Ask a question</span><br>
+        What can you help me with?
+      </div>
+
+      <p style="margin-top:16px;">See? It's just a conversation. You already know how to do this.</p>
+      <p>When you're done chatting, type <code>DA</code> (Dismiss Agent) to return to the regular Claude Code prompt.</p>
+    </div>
+  </section>
+
+  <!-- 6. THE BMAD WORKFLOW IN 30 SECONDS -->
+  <section id="workflow">
+    <div class="section-header">
+      <div class="phase-badge b-neutral">6</div>
+      <div class="section-header-text">
+        <h2>The BMAD Workflow in 30 Seconds</h2>
+        <p>Four phases, each with a specialized agent, producing artifacts that chain together</p>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-item f-analysis">
+        <h4>Analyze</h4>
+        <p>Explore ideas</p>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-item f-planning">
+        <h4>Plan</h4>
+        <p>Define requirements</p>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-item f-solutioning">
+        <h4>Solution</h4>
+        <p>Design architecture</p>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-item f-implementation">
+        <h4>Implement</h4>
+        <p>Build story by story</p>
+      </div>
+    </div>
+
+    <p style="font-size:0.93rem;color:var(--text-muted);text-align:center;margin-bottom:20px;">Each phase has an agent. You activate one, work through its menu, produce an artifact, then move to the next.</p>
+
+    <div class="chain">
+      <strong>Brainstorming</strong>
+      <span class="chain-arrow">&rarr;</span>
+      <strong>PRD</strong>
+      <span class="chain-arrow">&rarr;</span>
+      <strong>UX Spec</strong>
+      <span class="chain-arrow">&rarr;</span>
+      <strong>Architecture</strong>
+      <span class="chain-arrow">&rarr;</span>
+      <strong>Epics &amp; Stories</strong>
+      <span class="chain-arrow">&rarr;</span>
+      <strong>Code</strong>
+    </div>
+
+    <div class="note">
+      <strong>You don't need to do all phases.</strong> For small, well-understood features, the Quick Flow skips straight to what matters. For large, novel features, the Full Path gives you thorough coverage. BMAD adapts to you.
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- MOTIVATIONAL CLOSE -->
+  <div class="motivational">
+    <p>The best BAs aren't the ones who type the most. They're the ones who <strong>ask the right questions</strong> and <strong>push back when something isn't right</strong>. That's your superpower &mdash; the agent handles the rest.</p>
+  </div>
+
+  <div style="text-align:center;margin-top:32px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+    <a href="common-interactions.html" class="hero-link">Next: Common Interactions &rarr;</a>
+    <a href="master.html" class="hero-link">Back to Training Hub</a>
+  </div>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

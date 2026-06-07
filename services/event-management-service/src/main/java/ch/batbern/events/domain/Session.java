@@ -22,6 +22,8 @@ import lombok.ToString;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -38,6 +40,31 @@ import java.util.UUID;
 @AllArgsConstructor
 @ToString(exclude = {"sessionUsers"})  // Prevent circular reference in bidirectional relationship
 public class Session {
+
+    /**
+     * Structural session types that do NOT represent a speaker talk — used by
+     * speaker-portal endpoints to filter out organizer-owned timetable slots
+     * (moderation start/end, breaks, lunch, networking) from the speaker
+     * dashboard and authorization checks.
+     *
+     * <p>Source of truth for this set: V59 CHECK constraint plus the
+     * {@code TimetableSlot.MODERATION} enum. NULL {@code session_type} is
+     * tolerated as a speaker session by callers (legacy data pre-V21/V59).
+     * Added 2026-05-22 after BATbern75 surfaced the leak (Story 10.32
+     * Phase 6/7 follow-up — bug report not Story 10.32 scope).
+     */
+    public static final Set<String> STRUCTURAL_SESSION_TYPES = Set.of(
+            "moderation", "break", "lunch", "networking"
+    );
+
+    /**
+     * @return {@code true} when this session's {@code session_type} is a
+     *         non-speaker structural slot. NULL session_type returns {@code false}.
+     */
+    public boolean isStructuralSlot() {
+        return sessionType != null
+                && STRUCTURAL_SESSION_TYPES.contains(sessionType.toLowerCase(Locale.ROOT));
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

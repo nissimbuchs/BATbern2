@@ -1,190 +1,128 @@
 /**
- * E2E Tests for User Creation Workflow
- * Story 2.5.2: User Management Frontend
+ * E2E: User Creation — slice 3 / users (plan §C)
+ * docs/plans/playwright-staging-hardening.md
  *
- * Tests the user creation modal and form validation
+ * Rewritten 2026-05-30 to reality + the quality bar (testid-only locators, factory data,
+ * mandatory cleanup, no empty tests). Story 2.5.2.
  *
- * Requirements:
- * 1. User Management Service deployed with user creation endpoint
- * 2. PostgreSQL database with users table
- * 3. Authenticated organizer user
+ * Reality check (verified in UserCreateEditModal.tsx + UserList.tsx):
+ *   • Creation is a MODAL (UserCreateEditModal) opened from `user-add-button` on
+ *     /organizer/users — fields are `user-create-{firstName,lastName,email}`, role checkboxes
+ *     `user-create-role-{ROLE}`, submit `user-create-submit`, cancel `user-create-cancel`.
+ *   • On a successful create the create mutation resolves and the modal calls `onClose()` — a
+ *     failed create renders a server-error Alert and keeps the dialog open. So the dialog
+ *     CLOSING is the exact success signal (no fixed sleeps), exactly as the company-creation
+ *     @smoke uses the form's onClose.
+ *   • The username is server-derived from `firstName.lastName` (Bruno/Test → `bruno.test`(.N)),
+ *     so the created row is reachable by the `cums/users` `bruno.test%` sweep; teardown deletes
+ *     it by the exact username resolved via search (race-free targeted delete).
  *
- * Setup Instructions:
- * 1. Run: npx playwright test e2e/workflows/user-management/user-creation.spec.ts
+ * The old spec's `should_showEmailValidationError` / extra validation tests asserted MUI
+ * helperText that carries no testid; email/format validation is covered by Bruno's users-api
+ * collection. The retained validation test asserts the one DETERMINISTIC testid signal
+ * (`user-create-role-error` on empty submit) and that the dialog stays open.
+ *
+ * Prod-safety (plan risk #1): the `@smoke` creates a real CUMS user (DB + Cognito) on staging
+ * (= prod). Teardown resolves the username and `cleanupById(token, 'users', username)` removes
+ * it in afterEach, with the `bruno.test%` global-teardown sweep as backstop.
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import * as factory from '../../helpers/test-data-factory';
+import { readOrganizerToken, findUsernameByEmail } from '../../helpers/user-fixture';
+import { cleanupById } from '../../helpers/test-fixtures-cleanup';
 
-/**
- * Helper: Navigate to User Management page
- */
-async function navigateToUserManagement(page: Page) {
-  // Direct navigation is more reliable than clicking nav links
-  await page.goto('/organizer/users');
-  await page.waitForSelector('[data-testid="user-table"]', { timeout: 10000 });
-}
+test.describe('User Creation', { tag: '@gate' }, () => {
+  // Serial: the @smoke creates a real user; serialising keeps the shared cleanup deterministic.
+  test.describe.configure({ mode: 'serial' });
 
-/**
- * Helper: Open Create User Modal
- */
-async function openCreateUserModal(page: Page) {
-  const addUserButton = page.locator('button:has-text("Add User")');
-  await addUserButton.click();
+  let token: string;
+  // Emails created via the UI this run — resolved to usernames + explicit-deleted in afterEach.
+  const createdEmails: string[] = [];
 
-  // Wait for modal to open
-  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
-  await expect(page.locator('[role="dialog"]')).toBeVisible();
-}
+  test.beforeAll(() => {
+    token = readOrganizerToken();
+  });
 
-test.describe('User Creation Workflow', () => {
-  // Test data - use simple names to comply with username format constraint (firstname.lastname pattern)
-  const TEST_USER = {
-    firstName: 'TestFirst',
-    lastName: 'TestLast',
-    email: `test.user.${Date.now()}@example.com`,
-    roles: ['ATTENDEE'],
-  };
   test.beforeEach(async ({ page }) => {
-    await page.goto('/organizer/events');
-    await navigateToUserManagement(page);
+    await page.goto('/organizer/users');
+    await expect(page.getByTestId('user-table')).toBeVisible({ timeout: 15_000 });
   });
 
-  test('should_openCreateModal_when_addUserButtonClicked', async ({ page }) => {
-    await openCreateUserModal(page);
+  test.afterEach(async () => {
+    while (createdEmails.length > 0) {
+      const email = createdEmails.pop();
+      if (!email) continue;
+      const username = await findUsernameByEmail(token, email);
+      if (username) await cleanupById(token, 'users', username);
+    }
+  });
 
-    // Verify modal title - use exact heading to avoid strict mode violation
-    await expect(page.getByRole('heading', { name: 'Create New User', exact: true })).toBeVisible();
+  test('should_displayCreationModal_when_addUserClicked', async ({ page }) => {
+    await page.getByTestId('user-add-button').click();
 
-    // Verify form fields exist using name attributes
-    await expect(page.locator('input[name="firstName"]')).toBeVisible();
-    await expect(page.locator('input[name="lastName"]')).toBeVisible();
-    await expect(page.locator('input[name="email"]')).toBeVisible();
-
-    // Verify role checkboxes exist using data-testid
+    await expect(page.getByTestId('user-create-dialog')).toBeVisible();
+    // Field testids sit on the MUI TextField wrapper; the native <input> is nested. Asserting
+    // the wrapper visible is fine here, but any .fill() below must target `.locator('input')`.
+    await expect(page.getByTestId('user-create-firstName')).toBeVisible();
+    await expect(page.getByTestId('user-create-lastName')).toBeVisible();
+    await expect(page.getByTestId('user-create-email')).toBeVisible();
+    // The four role checkboxes (ORGANIZER, SPEAKER, PARTNER, ATTENDEE).
     await expect(page.locator('[data-testid^="user-create-role-"]')).toHaveCount(4);
+    await expect(page.getByTestId('user-create-submit')).toBeVisible();
   });
 
-  test('should_showValidationErrors_when_submittingEmptyForm', async ({ page }) => {
-    await openCreateUserModal(page);
+  test('should_requireRole_when_submittingWithoutRole', async ({ page }) => {
+    await page.getByTestId('user-add-button').click();
+    await expect(page.getByTestId('user-create-dialog')).toBeVisible();
 
-    // Try to submit without filling form using data-testid
-    const submitButton = page.getByTestId('user-create-submit');
-    await submitButton.click();
+    // Fill name + email but select NO role, then submit → deterministic role-error testid.
+    await page.getByTestId('user-create-firstName').locator('input').fill(factory.USER_FIRST_NAME);
+    await page.getByTestId('user-create-lastName').locator('input').fill(factory.USER_LAST_NAME);
+    await page.getByTestId('user-create-email').locator('input').fill(factory.email());
+    await page.getByTestId('user-create-submit').click();
 
-    // Wait for validation errors
-    await page.waitForTimeout(500);
-
-    // Verify error messages appear (could be inline or toast)
-    const errorMessages = page.locator('text=/required/i').or(page.locator('[class*="error"]'));
-    const errorCount = await errorMessages.count();
-    expect(errorCount).toBeGreaterThan(0);
+    await expect(page.getByTestId('user-create-role-error')).toBeVisible();
+    // Validation blocked the submit → the dialog stays open (no row created → nothing to clean).
+    await expect(page.getByTestId('user-create-dialog')).toBeVisible();
   });
 
-  test('should_showEmailValidationError_when_invalidEmail', async ({ page }) => {
-    await openCreateUserModal(page);
+  test('should_closeModal_when_cancelClicked', async ({ page }) => {
+    await page.getByTestId('user-add-button').click();
+    await expect(page.getByTestId('user-create-dialog')).toBeVisible();
 
-    // Fill form with invalid email using name attributes
-    await page.fill('input[name="firstName"]', TEST_USER.firstName);
-    await page.fill('input[name="lastName"]', TEST_USER.lastName);
-    await page.fill('input[name="email"]', 'invalid-email');
-
-    // Select a role using data-testid
-    const roleCheckbox = page.getByTestId('user-create-role-ATTENDEE');
-    const parentLabel = page.locator('label').filter({ has: roleCheckbox });
-    await parentLabel.click();
-
-    // Try to submit using data-testid
-    const submitButton = page.getByTestId('user-create-submit');
-    await submitButton.click();
-
-    // Wait for validation
-    await page.waitForTimeout(500);
-
-    // Verify email validation error
-    await expect(page.locator('text=/invalid.*email/i')).toBeVisible({ timeout: 3000 });
+    await page.getByTestId('user-create-cancel').click();
+    await expect(page.getByTestId('user-create-dialog')).toBeHidden();
   });
 
-  test('should_createUser_when_validFormSubmitted', async ({ page }) => {
-    await openCreateUserModal(page);
+  test(
+    'should_createUser_when_validDataProvided',
+    { tag: ['@smoke', '@gate'] },
+    async ({ page }) => {
+      const email = factory.email(); // bruno-test-<ts>@e2e.batbern.invalid — unique per run
+      createdEmails.push(email); // register for cleanup before the network call
 
-    // Fill form with valid data using name attributes
-    await page.fill('input[name="firstName"]', TEST_USER.firstName);
-    await page.fill('input[name="lastName"]', TEST_USER.lastName);
-    await page.fill('input[name="email"]', TEST_USER.email);
+      await page.getByTestId('user-add-button').click();
+      await expect(page.getByTestId('user-create-dialog')).toBeVisible();
 
-    // Select ATTENDEE role using data-testid
-    const attendeeCheckbox = page.getByTestId('user-create-role-ATTENDEE');
-    const parentLabel = page.locator('label').filter({ has: attendeeCheckbox });
-    await parentLabel.click();
+      // Bruno/Test → server derives username `bruno.test`(.N) → swept by cums/users.
+      await page
+        .getByTestId('user-create-firstName')
+        .locator('input')
+        .fill(factory.USER_FIRST_NAME);
+      await page.getByTestId('user-create-lastName').locator('input').fill(factory.USER_LAST_NAME);
+      await page.getByTestId('user-create-email').locator('input').fill(email);
 
-    // Submit form using data-testid
-    const submitButton = page.getByTestId('user-create-submit');
-    await submitButton.click();
+      // Select the ATTENDEE role (MUI Checkbox toggles via its label).
+      const attendee = page.getByTestId('user-create-role-ATTENDEE');
+      await page.locator('label').filter({ has: attendee }).click();
 
-    // Wait for either modal to close (success) or error to appear
-    const modal = page.locator('[role="dialog"]');
-    await Promise.race([
-      modal.waitFor({ state: 'hidden', timeout: 10000 }),
-      page.locator('[role="alert"]').waitFor({ state: 'visible', timeout: 10000 }),
-    ]).catch(() => {
-      // Timeout - neither happened
-      console.log('Modal did not close and no error appeared');
-    });
+      await page.getByTestId('user-create-submit').click();
 
-    // Verify modal closed (if error appeared, this will fail appropriately)
-    await expect(modal).not.toBeVisible({ timeout: 2000 });
-
-    // Verify user appears in table (search for email)
-    const searchInput = page.locator('input[placeholder*="Search" i]');
-    await searchInput.fill(TEST_USER.email);
-    await page.waitForTimeout(1000); // Wait for debounce + API call
-
-    // Verify new user in table
-    await expect(page.locator(`text=${TEST_USER.email}`)).toBeVisible({ timeout: 5000 });
-  });
-
-  test('should_closeModal_when_cancelButtonClicked', async ({ page }) => {
-    await openCreateUserModal(page);
-
-    // Click cancel button using data-testid
-    const cancelButton = page.getByTestId('user-create-cancel');
-    await cancelButton.click();
-
-    // Verify modal closed
-    const modal = page.locator('[role="dialog"]');
-    await expect(modal).not.toBeVisible({ timeout: 3000 });
-  });
-
-  test('should_closeModal_when_closeIconClicked', async ({ page }) => {
-    await openCreateUserModal(page);
-
-    // Click close icon (X button)
-    const closeButton = page
-      .locator('[aria-label="close"]')
-      .or(page.locator('button[aria-label*="close" i]'));
-    await closeButton.click();
-
-    // Verify modal closed
-    const modal = page.locator('[role="dialog"]');
-    await expect(modal).not.toBeVisible({ timeout: 3000 });
-  });
-
-  test('should_requireAtLeastOneRole_when_creatingUser', async ({ page }) => {
-    await openCreateUserModal(page);
-
-    // Fill form without selecting roles using name attributes
-    await page.fill('input[name="firstName"]', TEST_USER.firstName);
-    await page.fill('input[name="lastName"]', TEST_USER.lastName);
-    await page.fill('input[name="email"]', TEST_USER.email);
-
-    // Try to submit without roles using data-testid
-    const submitButton = page.getByTestId('user-create-submit');
-    await submitButton.click();
-
-    // Wait for validation
-    await page.waitForTimeout(500);
-
-    // Verify role validation error using data-testid
-    await expect(page.getByTestId('user-create-role-error')).toBeVisible({ timeout: 3000 });
-  });
+      // Success ⇔ the create mutation resolved and the modal called onClose() (a failed create
+      // renders a server-error Alert and keeps the dialog open). afterEach then resolves the
+      // username via search and explicit-deletes the real row.
+      await expect(page.getByTestId('user-create-dialog')).toBeHidden({ timeout: 15_000 });
+    }
+  );
 });

@@ -216,6 +216,32 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Returns 405 Method Not Allowed when a URI matches a registered route but the HTTP verb
+     * doesn't. Without this explicit handler Spring raises
+     * {@code HttpRequestMethodNotSupportedException}, which falls through to the catch-all
+     * {@code @ExceptionHandler(Exception.class)} below and gets translated into a 500 — same
+     * class of gotcha as the {@code MethodArgumentNotValidException} rule in
+     * {@code _bmad-output/project-context.md}. Cross-service hygiene fix bundled with PR 2a.
+     */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+        log.debug("Method not supported for {} {}: {}",
+                request.getMethod(), request.getRequestURI(), ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.METHOD_NOT_ALLOWED.value())
+                .error("Method Not Allowed")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+    }
+
+    /**
      * Handle all other exceptions
      * Returns HTTP 500 Internal Server Error
      */

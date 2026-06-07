@@ -11,6 +11,7 @@ import axios from 'axios';
 import { Input } from '@/components/public/ui/input';
 import { Button } from '@/components/public/ui/button';
 import { useNewsletterSubscribe } from '@/hooks/useNewsletter/useNewsletter';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 type WidgetState = 'idle' | 'submitting' | 'success' | 'already-subscribed' | 'error';
 
@@ -21,6 +22,7 @@ export function NewsletterSubscribeWidget() {
   const [widgetState, setWidgetState] = useState<WidgetState>('idle');
 
   const subscribeMutation = useNewsletterSubscribe();
+  const { getToken, resetWidget, widgetRef } = useTurnstile();
 
   function validateEmail(value: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -37,21 +39,31 @@ export function NewsletterSubscribeWidget() {
 
     setWidgetState('submitting');
 
-    subscribeMutation.mutate(
-      { email },
-      {
-        onSuccess: () => {
-          setWidgetState('success');
-        },
-        onError: (error) => {
-          if (axios.isAxiosError(error) && error.response?.status === 409) {
-            setWidgetState('already-subscribed');
-          } else {
-            setWidgetState('error');
-          }
-        },
-      }
-    );
+    getToken().then((turnstileToken) => {
+      subscribeMutation.mutate(
+        { request: { email }, turnstileToken },
+        {
+          onSuccess: () => {
+            setWidgetState('success');
+          },
+          onError: (error) => {
+            if (axios.isAxiosError(error) && error.response?.status === 409) {
+              setWidgetState('already-subscribed');
+            } else if (
+              axios.isAxiosError(error) &&
+              error.response?.status === 403 &&
+              (error.response.data?.error === 'turnstile_required' ||
+                error.response.data?.error === 'turnstile_failed')
+            ) {
+              resetWidget();
+              setWidgetState('error');
+            } else {
+              setWidgetState('error');
+            }
+          },
+        }
+      );
+    });
   }
 
   if (widgetState === 'success') {
@@ -73,6 +85,8 @@ export function NewsletterSubscribeWidget() {
   return (
     <div className="py-4">
       <p className="mb-3 text-sm font-medium">{t('newsletter.widget.title')}</p>
+      {/* Invisible Turnstile widget container (Story 10.31, AC7) */}
+      <div ref={widgetRef} />
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-2 sm:flex-row">
         <div className="flex-1">
           <Input

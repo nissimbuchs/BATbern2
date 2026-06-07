@@ -111,13 +111,11 @@ public class SpeakerAcceptedEventListener {
     }
 
     /**
-     * Check if speaker status is ACCEPTED or later in the workflow.
+     * Check if speaker status is ACCEPTED or later along the content lifecycle.
      *
-     * States considered as "accepted or later":
-     * - ACCEPTED
-     * - CONTENT_SUBMITTED
-     * - QUALITY_REVIEWED
-     * - CONFIRMED
+     * <p>ADR-009 §0.1: CONFIRMED is gone — the {@code is_publishable} predicate
+     * ({@code QUALITY_REVIEWED AND slot_assigned}) is derived at read time
+     * (exposed in 11.B.3).
      *
      * @param status the speaker workflow state
      * @return true if accepted or later, false otherwise
@@ -125,7 +123,6 @@ public class SpeakerAcceptedEventListener {
     private boolean isAcceptedOrLater(SpeakerWorkflowState status) {
         return status == SpeakerWorkflowState.ACCEPTED
                || status == SpeakerWorkflowState.CONTENT_SUBMITTED
-               || status == SpeakerWorkflowState.QUALITY_REVIEWED
-               || status == SpeakerWorkflowState.CONFIRMED;
+               || status == SpeakerWorkflowState.QUALITY_REVIEWED;
     }
 }

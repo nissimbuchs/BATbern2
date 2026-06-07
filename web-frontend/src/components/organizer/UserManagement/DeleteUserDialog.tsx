@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon, Warning as WarningIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useDeleteUser } from '../../../hooks/useUserManagement';
 import type { User } from '../../../types/user.types';
 
@@ -24,6 +25,7 @@ interface DeleteUserDialogProps {
 
 const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose, onSuccess }) => {
   const { t } = useTranslation('userManagement');
+  const { isMobile } = useBreakpoints();
   const deleteUserMutation = useDeleteUser();
 
   const handleDelete = async () => {
@@ -47,7 +49,9 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isMobile}
       aria-labelledby="delete-user-dialog-title"
+      data-testid="delete-user-dialog"
     >
       <DialogTitle id="delete-user-dialog-title">
         <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -77,20 +81,20 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
               {user.firstName} {user.lastName}
             </strong>
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" data-testid="delete-user-email">
             {user.email}
           </Typography>
         </Box>
 
         {/* GDPR Warning */}
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }} data-testid="delete-user-gdpr-warning">
           <Typography variant="body2" fontWeight="bold">
             {t('modal.deleteConfirm.gdprWarning')}
           </Typography>
         </Alert>
 
         {/* Cascade Warning */}
-        <Alert severity="warning">
+        <Alert severity="warning" data-testid="delete-user-cascade-warning">
           <Typography variant="body2">{t('modal.deleteConfirm.cascadeWarning')}</Typography>
         </Alert>
 

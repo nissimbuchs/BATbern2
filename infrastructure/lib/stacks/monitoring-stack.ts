@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
@@ -16,6 +17,8 @@ export interface MonitoringStackProps extends cdk.StackProps {
   enableGitHubIssues?: boolean;
   githubOwner?: string;
   githubRepo?: string;
+  /** Story 10.29: DLQ name for bounce processing — enables DLQ visibility alarm. */
+  bounceProcessingDlqName?: string;
 }
 
 /**
@@ -32,7 +35,7 @@ export class MonitoringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: MonitoringStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
 
     // Create SNS topic for alarm notifications (production and staging)
     if (isProd || props.config.envName === 'staging') {
@@ -126,6 +129,85 @@ export class MonitoringStack extends cdk.Stack {
         description: 'CloudWatch Dashboard URL for User Sync monitoring (ADR-001)',
         exportName: `${props.config.envName}-UserSyncDashboardUrl`,
       });
+    }
+
+    // Story 10.29 AC9: SES Bounce/Complaint Rate Alarms
+    // evaluationPeriods=3 + datapointsToAlarm=2: requires 2 of 3 consecutive 5-min periods
+    // above threshold. Prevents a single transactional email from triggering the alarm when
+    // the rolling reputation score is temporarily elevated (e.g. after a large newsletter blast
+    // with stale addresses). treatMissingData=NOT_BREACHING: periods with no sends count as OK.
+    const bounceRateWarning = new cloudwatch.Alarm(this, 'BounceRateWarning', {
+      alarmName: `batbern-${props.config.envName}-bounce-rate-warning`,
+      alarmDescription: 'SES bounce rate exceeds 3% warning threshold',
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/SES',
+        metricName: 'Reputation.BounceRate',
+        statistic: 'Average',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: 0.03,
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+
+    const bounceRateCritical = new cloudwatch.Alarm(this, 'BounceRateCritical', {
+      alarmName: `batbern-${props.config.envName}-bounce-rate-critical`,
+      alarmDescription: 'SES bounce rate exceeds 5% critical threshold — sending may be paused by AWS',
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/SES',
+        metricName: 'Reputation.BounceRate',
+        statistic: 'Average',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: 0.05,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+
+    const complaintRateCritical = new cloudwatch.Alarm(this, 'ComplaintRateCritical', {
+      alarmName: `batbern-${props.config.envName}-complaint-rate-critical`,
+      alarmDescription: 'SES complaint rate exceeds 0.05% — sending may be paused by AWS',
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/SES',
+        metricName: 'Reputation.ComplaintRate',
+        statistic: 'Average',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: 0.0005,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+
+    if (this.alarmTopic) {
+      const snsAction = new cloudwatchActions.SnsAction(this.alarmTopic);
+      bounceRateWarning.addAlarmAction(snsAction);
+      bounceRateCritical.addAlarmAction(snsAction);
+      complaintRateCritical.addAlarmAction(snsAction);
+    }
+
+    // Story 10.29 AC9: Bounce processing DLQ alarm (when DLQ name provided)
+    if (props.bounceProcessingDlqName) {
+      const dlqAlarm = new cloudwatch.Alarm(this, 'BounceProcessingDLQAlarm', {
+        alarmName: `batbern-${props.config.envName}-bounce-processing-dlq`,
+        alarmDescription: 'Bounce processing failures detected — messages in DLQ',
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/SQS',
+          metricName: 'ApproximateNumberOfMessagesVisible',
+          dimensionsMap: { QueueName: props.bounceProcessingDlqName },
+          statistic: 'Maximum',
+          period: cdk.Duration.minutes(1),
+        }),
+        threshold: 0,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      });
+
+      if (this.alarmTopic) {
+        dlqAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alarmTopic));
+      }
     }
 
     // Apply tags

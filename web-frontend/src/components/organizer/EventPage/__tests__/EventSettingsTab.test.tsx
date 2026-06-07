@@ -47,13 +47,24 @@ const mockEvent: Event = {
   workflowState: 'SPEAKER_CONFIRMATION',
   organizerUsername: 'john.doe',
   currentAttendeeCount: 0,
+  realAttendeeCount: 0,
   createdAt: '2024-12-01T10:00:00Z',
   updatedAt: '2025-01-15T14:30:00Z',
 };
 
+// Real, self-registered attendees → delete must be blocked.
 const mockEventWithAttendees: Event = {
   ...mockEvent,
   currentAttendeeCount: 87,
+  realAttendeeCount: 87,
+};
+
+// Only programmatic registrations (auto-enrolled organizers/partners): total count is
+// non-zero but realAttendeeCount is 0 → delete must be ENABLED. This is the core fix.
+const mockEventProgrammaticOnly: Event = {
+  ...mockEvent,
+  currentAttendeeCount: 15,
+  realAttendeeCount: 0,
 };
 
 describe('EventSettingsTab Component (Story 5.6)', () => {
@@ -94,18 +105,6 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
         screen.getByText(/The organizer responsible for moderating this event/i)
       ).toBeInTheDocument();
 
-      // Notifications Section
-      expect(screen.getByText(/^Notifications$/i)).toBeInTheDocument();
-      expect(screen.getByText(/active automations/i)).toBeInTheDocument();
-      expect(screen.getByText(/Speaker deadline reminders/i)).toBeInTheDocument();
-      expect(screen.getByText(/Registration confirmation emails/i)).toBeInTheDocument();
-      expect(screen.getByText(/Final agenda distribution/i)).toBeInTheDocument();
-      expect(screen.getByText(/Event day check-in reminders/i)).toBeInTheDocument();
-      expect(screen.getByText(/3 days before deadline/i)).toBeInTheDocument();
-      expect(screen.getByText(/Immediate on registration/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Manage All Notifications/i })).toBeInTheDocument();
-      expect(screen.getByText(/Mar 1, 2025|1 Mar 2025/i)).toBeInTheDocument();
-
       // Danger Zone Section
       expect(screen.getByText(/Danger Zone/i)).toBeInTheDocument();
       expect(screen.getByText(/These actions are irreversible/i)).toBeInTheDocument();
@@ -115,25 +114,17 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       expect(deleteButton).not.toBeDisabled();
     });
 
-    it.skip('displays notification switches when rendered', () => {
+    it('should_notRenderMockNotificationData_when_rendered', () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
-      const switches = screen.getAllByRole('checkbox');
-      expect(switches.length).toBeGreaterThanOrEqual(4);
-    });
-
-    it.skip('toggles notification when switch clicked', async () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
-      const switches = screen.getAllByRole('checkbox');
-      const firstSwitch = switches[0];
-      expect(firstSwitch).toBeChecked();
-
-      fireEvent.click(firstSwitch);
-
-      await waitFor(() => {
-        expect(firstSwitch).not.toBeChecked();
-      });
+      // The mock notification-rules section was removed (backend integration never landed).
+      expect(screen.queryByText(/MOCK DATA/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/mock notification data/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/active automations/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Speaker deadline reminders/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Manage All Notifications/i })
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -145,12 +136,25 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       expect(deleteButton).not.toBeDisabled();
     });
 
-    it('disables delete and shows warning when has attendees', () => {
+    it('disables delete and shows warning when has real attendees', () => {
       renderWithProviders(<EventSettingsTab event={mockEventWithAttendees} eventCode="BAT54" />);
 
       const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
       expect(deleteButton).toBeDisabled();
-      expect(screen.getByText(/Cannot delete event with registrations/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Cannot delete event with attendee registrations/i)
+      ).toBeInTheDocument();
+    });
+
+    it('enables delete when only programmatic registrations exist', () => {
+      // currentAttendeeCount=15 (auto-enrolled organizers/partners) but realAttendeeCount=0.
+      renderWithProviders(<EventSettingsTab event={mockEventProgrammaticOnly} eventCode="BAT54" />);
+
+      const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
+      expect(deleteButton).not.toBeDisabled();
+      expect(
+        screen.queryByText(/Cannot delete event with attendee registrations/i)
+      ).not.toBeInTheDocument();
     });
   });
 

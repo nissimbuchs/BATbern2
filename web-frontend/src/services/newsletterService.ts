@@ -25,11 +25,32 @@ export interface NewsletterSendRequest {
   isReminder: boolean;
   locale: 'de' | 'en';
   templateKey?: string; // Optional override; service defaults to 'newsletter-event' if omitted
+  testMode?: boolean; // Send only to organizer-role subscribers
 }
 
 export interface NewsletterSendResponse {
+  id: string;
   recipientCount: number;
   sentAt: string;
+  /** PENDING | IN_PROGRESS | COMPLETED | PARTIAL | FAILED */
+  status: string;
+  sentCount: number;
+  failedCount: number;
+  startedAt?: string;
+  completedAt?: string;
+  testMode?: boolean;
+}
+
+export interface NewsletterSendStatusResponse {
+  id: string;
+  /** PENDING | IN_PROGRESS | COMPLETED | PARTIAL | FAILED */
+  status: string;
+  sentCount: number;
+  failedCount: number;
+  totalCount: number;
+  percentComplete: number;
+  startedAt?: string;
+  completedAt?: string;
 }
 
 export interface NewsletterPreviewResponse {
@@ -45,15 +66,27 @@ export interface NewsletterSendHistoryItem {
   sentByUsername: string;
   recipientCount: number;
   templateKey: string;
+  status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
+  sentCount?: number;
+  failedCount?: number;
+  testMode?: boolean;
 }
 
 export interface SubscriberCountResponse {
   totalActive: number;
 }
 
-/** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed. */
-export async function subscribe(request: NewsletterSubscribeRequest): Promise<void> {
-  await apiClient.post('/newsletter/subscribe', request);
+/** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed.
+ *  @param turnstileToken Optional Cloudflare Turnstile token (AC8, Story 10.31). Passed via
+ *  X-Turnstile-Token header when present.
+ */
+export async function subscribe(
+  request: NewsletterSubscribeRequest,
+  turnstileToken?: string | null
+): Promise<void> {
+  await apiClient.post('/newsletter/subscribe', request, {
+    headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {},
+  });
 }
 
 /** Verify an unsubscribe token — returns email if valid, throws 404 if not. */
@@ -117,7 +150,7 @@ export async function previewNewsletter(
   return response.data;
 }
 
-/** Send newsletter for an event (ORGANIZER only). */
+/** Send newsletter for an event (ORGANIZER only). Returns immediately with PENDING status. */
 export async function sendNewsletter(
   eventCode: string,
   request: NewsletterSendRequest
@@ -125,6 +158,28 @@ export async function sendNewsletter(
   const response = await apiClient.post<NewsletterSendResponse>(
     `/events/${encodeURIComponent(eventCode)}/newsletter/send`,
     request
+  );
+  return response.data;
+}
+
+/** Poll send-job progress (ORGANIZER only). */
+export async function getSendStatus(
+  eventCode: string,
+  sendId: string
+): Promise<NewsletterSendStatusResponse> {
+  const response = await apiClient.get<NewsletterSendStatusResponse>(
+    `/events/${encodeURIComponent(eventCode)}/newsletter/sends/${encodeURIComponent(sendId)}/status`
+  );
+  return response.data;
+}
+
+/** Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER only). */
+export async function retryFailedRecipients(
+  eventCode: string,
+  sendId: string
+): Promise<NewsletterSendResponse> {
+  const response = await apiClient.post<NewsletterSendResponse>(
+    `/events/${encodeURIComponent(eventCode)}/newsletter/sends/${encodeURIComponent(sendId)}/retry`
   );
   return response.data;
 }

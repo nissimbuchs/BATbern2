@@ -14,7 +14,7 @@ import ch.batbern.events.service.BatbernAiService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -37,19 +37,19 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     BatbernAiService aiService;
 
-    @MockBean
+    @MockitoBean
     EventRepository eventRepository;
 
-    @MockBean
+    @MockitoBean
     TopicRepository topicRepository;
 
-    @MockBean
+    @MockitoBean
     SpeakerPoolRepository speakerPoolRepository;
 
-    @MockBean
+    @MockitoBean
     SessionRepository sessionRepository;
 
     private static final UUID SPEAKER_POOL_ID = UUID.randomUUID();

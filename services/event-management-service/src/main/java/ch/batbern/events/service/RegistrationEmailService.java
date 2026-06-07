@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +43,7 @@ public class RegistrationEmailService {
     private final EmailService emailService;
     private final IcsCalendarService icsCalendarService;
     private final EmailTemplateService emailTemplateService;
+    private final EventTimeResolver eventTimeResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -51,6 +53,12 @@ public class RegistrationEmailService {
 
     @Value("${app.email.organizer-email:events@batbern.ch}")
     private String organizerEmail;
+
+    // .ics ORGANIZER address — must NOT be a forwarded SES alias.
+    // iMIP REPLYs (auto-sent by mail clients on Accept/Decline) hit this address.
+    // Forwarding them to the events@ alias fan-outs every acceptance to all organizers.
+    @Value("${app.email.calendar-organizer-email:calendar@batbern.ch}")
+    private String calendarOrganizerEmail;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
@@ -79,13 +87,15 @@ public class RegistrationEmailService {
     ) {
         try {
             log.info("Sending registration confirmation email to: {} for event: {}",
-                    userProfile.getEmail(), event.getEventCode());
+                    LoggingUtils.maskEmail(userProfile.getEmail()), event.getEventCode());
 
             // Default to German locale if not specified
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
 
-            // Convert event date from Instant to ZonedDateTime (Swiss timezone)
-            ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
+            // Derive event start time from EventTypeConfiguration (typical_start_time)
+            // The event.date Instant stores only the date (midnight UTC); the actual
+            // start time is determined by the event type (e.g. AFTERNOON → 13:00).
+            ZonedDateTime eventDateTime = resolveEventDateTime(event);
 
             // Load email template (i18n)
             EmailTokens tokens = new EmailTokens(confirmationToken, cancellationToken, deregistrationUrl);
@@ -99,22 +109,60 @@ public class RegistrationEmailService {
             EmailService.EmailAttachment calendarAttachment = new EmailService.EmailAttachment(
                     "event.ics",
                     icsFile,
-                    "text/calendar; charset=utf-8; method=REQUEST"
+                    "text/calendar; charset=utf-8; method=REQUEST",
+                    true  // inline → accept/decline in Apple Mail, Outlook, Gmail
             );
+
+            // Story 10.32: CC the registrant's additional emails (if any) so
+            // a single registration confirmation reaches every address they
+            // declared on their profile. Anonymous registrants (no user_profiles
+            // link) have an empty list and behave unchanged.
+            List<String> cc = additionalEmailsFor(userProfile);
 
             emailService.sendHtmlEmailWithAttachments(
                     userProfile.getEmail(),
+                    cc,
                     content.subject(),
                     content.html(),
                     List.of(calendarAttachment)
             );
 
-            log.info("Registration confirmation email sent successfully to: {}", userProfile.getEmail());
+            if (!cc.isEmpty()) {
+                log.info(
+                        "Registration confirmation email sent to: {} with {} CC additional email(s)",
+                        LoggingUtils.maskEmail(userProfile.getEmail()),
+                        cc.size());
+            } else {
+                log.info("Registration confirmation email sent successfully to: {}",
+                        LoggingUtils.maskEmail(userProfile.getEmail()));
+            }
 
         } catch (Exception e) {
-            log.error("Failed to send registration confirmation email to: {}", userProfile.getEmail(), e);
+            log.error("Failed to send registration confirmation email to: {}",
+                    LoggingUtils.maskEmail(userProfile.getEmail()), e);
             // Don't re-throw - email failure shouldn't block registration
         }
+    }
+
+    /**
+     * Story 10.32 — collect additional emails from the (Story 10.32-aware)
+     * UserResponse DTO. Returns an empty list for anonymous registrants and
+     * for users whose CUMS response predates the additional-emails field.
+     */
+    private static List<String> additionalEmailsFor(UserResponse userProfile) {
+        if (userProfile == null) {
+            return List.of();
+        }
+        List<ch.batbern.events.dto.generated.users.AdditionalEmail> raw =
+                userProfile.getAdditionalEmails();
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        return raw.stream()
+                .map(ch.batbern.events.dto.generated.users.AdditionalEmail::getEmail)
+                .filter(java.util.Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .toList();
     }
 
     private record EmailContent(String html, String subject) {}
@@ -195,11 +243,17 @@ public class RegistrationEmailService {
     }
 
     /**
+     * Resolve event start time via shared EventTimeResolver.
+     */
+    private ZonedDateTime resolveEventDateTime(Event event) {
+        return eventTimeResolver.resolve(event).start();
+    }
+
+    /**
      * Generate .ics calendar file for the event.
      */
     private byte[] generateCalendarFile(Event event, ZonedDateTime startDateTime) {
-        // Calculate end time (assume 4-hour event if endDate not specified)
-        ZonedDateTime endDateTime = startDateTime.plusHours(4);
+        EventTimeResolver.TimeRange range = eventTimeResolver.resolve(event);
 
         String eventDescription = "Berner Architekten Treffen - " + event.getTitle();
 
@@ -207,9 +261,9 @@ public class RegistrationEmailService {
                 event.getTitle(),
                 eventDescription,
                 event.getVenueAddress() != null ? event.getVenueAddress() : "",
-                startDateTime,
-                endDateTime,
-                organizerEmail,
+                range.start(),
+                range.end(),
+                calendarOrganizerEmail,
                 organizerName
         );
     }

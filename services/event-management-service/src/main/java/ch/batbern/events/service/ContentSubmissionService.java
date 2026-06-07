@@ -1,25 +1,26 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.ContentSubmission;
+import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.events.dto.ContentDraftRequest;
-import ch.batbern.events.dto.ContentDraftResponse;
-import ch.batbern.events.dto.ContentSubmitRequest;
 import ch.batbern.events.dto.ContentSubmitResponse;
 import ch.batbern.events.dto.SpeakerContentInfo;
-import ch.batbern.events.dto.TokenValidationResult;
+import ch.batbern.events.dto.SpeakerContentResponse;
+import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
+import ch.batbern.events.service.content.ContentSubmissionPayload;
+import ch.batbern.events.service.workflow.TransitionPayload;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,18 +30,32 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
- * Service for speaker self-service content submission via magic link.
- * Story 6.3: Speaker Content Self-Submission Portal
+ * Consolidated content-submission service used by BOTH the organizer-on-behalf endpoint
+ * ({@code POST /api/v1/events/{eventCode}/speakers/{speakerId}/content}) and the
+ * speaker-self magic-link portal endpoint
+ * ({@code POST /api/v1/speaker-portal/content/submit}).
  *
- * Handles:
- * - Content info retrieval (session assignment check, draft restoration)
- * - Draft saving (auto-save and manual save)
- * - Content submission (title, abstract with validation)
- * - Revision support (version increment, feedback display)
+ * <p>Per ADR-009 §"Cross-cutting: two data-entry flows, one service layer" and Story
+ * 11.C.2 (AC3/AC4/FR7), the two HTTP controllers stay separate (different auth scopes)
+ * but they delegate to a single backend write path here. The principal-agnostic
+ * {@link ContentSubmissionPayload} record is the unified shape both flows pass in.
  *
- * Uses token-based authentication via MagicLinkService.
+ * <p>{@link #getContentInfo(SpeakerPool)} drives the speaker portal's read side; per
+ * Story 11.E.8 §2.9 it returns {@code sessions.title}/{@code sessions.description} as
+ * the canonical "current" so organizer-side edits to the session propagate instantly.
+ * The legacy {@code saveDraft} method is gone — speaker-portal drafts live in
+ * {@code localStorage} on the frontend, and {@link #submit} is the only backend write
+ * path for content.
+ *
+ * <p>This service is the sole production caller of
+ * {@code SpeakerWorkflowService.transition(CONTENT_SUBMITTED, ...)} — status mutation
+ * and {@code speaker_status_history} writes are owned by
+ * {@code SpeakerWorkflowService} per Story 11.B.2 AC1 (sole writer invariant). The
+ * {@code CONTENT_SUBMITTED} arm of the side-effect switch is a no-op there — content
+ * persistence and event publication happen here.
  */
 @Slf4j
 @Service
@@ -50,33 +65,40 @@ public class ContentSubmissionService {
     private static final int MAX_TITLE_LENGTH = 200;
     private static final int MAX_ABSTRACT_LENGTH = 1000;
 
-    private final MagicLinkService magicLinkService;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
-    private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final SpeakerStatusHistoryRepository statusHistoryRepository;
+    private final SpeakerWorkflowService speakerWorkflowService;
+    private final UserApiClient userApiClient;
+    private final EventRepository eventRepository;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
+
+    // ============================================================
+    // Speaker portal helpers — Story 11.E.3 (Cognito Bearer auth)
+    // ============================================================
 
     /**
      * Get content information for the speaker portal.
-     * Story 6.3 AC1: Session assignment check
-     * Story 6.3 AC4: Draft restoration
-     * Story 6.3 AC8: Revision feedback display
+     * Story 6.3 AC1: Session assignment check.
+     * Story 6.3 AC4: Draft restoration.
+     * Story 6.3 AC8: Revision feedback display.
      *
-     * @param token Magic link token
+     * <p>Story 11.E.3: caller has resolved the speaker_pool row via
+     * {@link SpeakerPortalAuthorizationService} (Cognito-authenticated path); the
+     * event-context fields (eventCode, eventTitle, speakerName) come from the entity.
+     *
+     * @param speaker speaker_pool row (pre-resolved by the controller)
      * @return Speaker content info including session status and draft
-     * @throws IllegalArgumentException if token is invalid or expired
      */
     @Transactional(readOnly = true)
-    public SpeakerContentInfo getContentInfo(String token) {
-        TokenValidationResult validation = validateToken(token);
+    public SpeakerContentInfo getContentInfo(SpeakerPool speaker) {
+        Event event = eventRepository.findById(speaker.getEventId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Event not found for speaker pool " + speaker.getId()));
 
-        SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found"));
-
-        // AC1: Check session assignment
         boolean hasSession = speaker.getSessionId() != null;
         String sessionTitle = null;
         Session session = null;
@@ -87,43 +109,46 @@ public class ContentSubmissionService {
                 session = sessionOpt.get();
                 sessionTitle = session.getTitle();
             } else {
-                hasSession = false; // Session was deleted
+                hasSession = false;
             }
         }
 
-        // ACCEPTED or CONTENT_SUBMITTED speakers can submit content even without a session
-        // CONTENT_SUBMITTED covers the revision case where session may have been deleted
-        // (session will be created on submission via SpeakerContentSubmissionService)
         boolean canSubmit = hasSession
                 || speaker.getStatus() == SpeakerWorkflowState.ACCEPTED
-                || speaker.getStatus() == SpeakerWorkflowState.CONTENT_SUBMITTED;
+                || speaker.getStatus() == SpeakerWorkflowState.CONTENT_SUBMITTED
+                || speaker.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED;
 
         if (!canSubmit) {
             return SpeakerContentInfo.noSession(
-                    validation.speakerName(),
-                    validation.eventCode(),
-                    validation.eventTitle()
+                    speaker.getSpeakerName(),
+                    event.getEventCode(),
+                    event.getTitle()
             );
         }
 
-        // AC4: Get current draft/submission
-        Optional<ContentSubmission> latestSubmission = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
+        // Story 11.E.8 §2.9 consolidation: sessions.title / sessions.description are the
+        // canonical "current" — every editor (speaker submit, organizer-on-behalf submit,
+        // organizer session-edit modal) writes there. The speaker portal form must
+        // initialise from the same canonical so an organizer edit propagates instantly.
+        // The latest session_content_history row is only consulted for reviewer feedback
+        // (REVISION_NEEDED) and the version counter shown on the timeline.
+        Optional<SessionContentVersion> latestSubmission = session != null
+                ? sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(session.getId())
+                : Optional.empty();
 
-        // AC8: Check if revision needed
-        boolean needsRevision = "REVISION_NEEDED".equals(speaker.getContentStatus());
+        String contentStatus = ContentStatusDeriver.derive(speaker.getStatus(), latestSubmission);
+        boolean needsRevision = "REVISION_NEEDED".equals(contentStatus);
         String reviewerFeedback = null;
         Instant reviewedAt = null;
         String reviewedBy = null;
 
         if (needsRevision && latestSubmission.isPresent()) {
-            ContentSubmission submission = latestSubmission.get();
+            SessionContentVersion submission = latestSubmission.get();
             reviewerFeedback = submission.getReviewerFeedback();
             reviewedAt = submission.getReviewedAt();
             reviewedBy = submission.getReviewedBy();
         }
 
-        // AC7: Get material info if session exists
         boolean hasMaterial = false;
         String materialUrl = null;
         String materialFileName = null;
@@ -132,26 +157,37 @@ public class ContentSubmissionService {
             List<SessionMaterial> materials = sessionMaterialsRepository.findBySession_Id(session.getId());
             if (!materials.isEmpty()) {
                 hasMaterial = true;
-                // Return the first/primary material (typically presentation)
                 SessionMaterial primaryMaterial = materials.get(0);
                 materialUrl = primaryMaterial.getCloudFrontUrl();
                 materialFileName = primaryMaterial.getFileName();
             }
         }
 
+        // Canonical title/abstract for the form come from sessions.title/description.
+        // hasDraft remains true once a session exists (a placeholder title was written at
+        // CONTACTED → READY), and the speaker portal uses it as the signal that the form
+        // is editable. draftVersion / lastSavedAt reflect the latest history row so the
+        // portal can show "v3 submitted on …" alongside the (potentially organizer-edited)
+        // current title.
+        String canonicalTitle = session != null ? session.getTitle() : null;
+        String canonicalAbstract = session != null ? session.getDescription() : null;
+        Instant canonicalUpdatedAt = session != null ? session.getUpdatedAt() : null;
+
         return SpeakerContentInfo.builder()
-                .speakerName(validation.speakerName())
-                .eventCode(validation.eventCode())
-                .eventTitle(validation.eventTitle())
+                .speakerName(speaker.getSpeakerName())
+                .eventCode(event.getEventCode())
+                .eventTitle(event.getTitle())
                 .hasSessionAssigned(hasSession)
                 .sessionTitle(sessionTitle != null ? sessionTitle : "Your Presentation")
                 .canSubmitContent(canSubmit)
-                .contentStatus(speaker.getContentStatus())
-                .hasDraft(latestSubmission.isPresent())
-                .draftTitle(latestSubmission.map(ContentSubmission::getTitle).orElse(null))
-                .draftAbstract(latestSubmission.map(ContentSubmission::getContentAbstract).orElse(null))
-                .draftVersion(latestSubmission.map(ContentSubmission::getSubmissionVersion).orElse(null))
-                .lastSavedAt(latestSubmission.map(ContentSubmission::getUpdatedAt).orElse(null))
+                // 2026-05-20 (Q#E) — `contentStatus` field dropped from the DTO; the
+                // local `contentStatus` variable is retained as the source of
+                // `needsRevision` below but no longer leaks to the wire.
+                .hasDraft(session != null)
+                .draftTitle(canonicalTitle)
+                .draftAbstract(canonicalAbstract)
+                .draftVersion(latestSubmission.map(SessionContentVersion::getSubmissionVersion).orElse(null))
+                .lastSavedAt(latestSubmission.map(SessionContentVersion::getUpdatedAt).orElse(canonicalUpdatedAt))
                 .needsRevision(needsRevision)
                 .reviewerFeedback(reviewerFeedback)
                 .reviewedAt(reviewedAt)
@@ -162,214 +198,177 @@ public class ContentSubmissionService {
                 .build();
     }
 
+    // Story 11.E.8 §2.9 — backend saveDraft is gone. Drafts now live in the speaker
+    // portal's localStorage. sessions.title / sessions.description are the single source
+    // of truth for the canonical title and abstract; submit() is the only write path.
+
+    // ============================================================
+    // Consolidated submit (Story 11.C.2 — AC3, AC4)
+    // ============================================================
+
     /**
-     * Save content draft.
-     * Story 6.3 AC4: Draft auto-save
+     * Shared content-submission write path used by both the organizer-on-behalf endpoint
+     * and the speaker-self magic-link portal endpoint (Story 11.C.2 — AC4).
      *
-     * @param request Draft request with title and abstract
-     * @return Draft response with saved timestamp
-     * @throws IllegalArgumentException if token is invalid
+     * <p>Behaviour:
+     * <ol>
+     *   <li>Validate title + contentAbstract (non-blank, length caps).</li>
+     *   <li>Load {@link SpeakerPool} by id; 404 if missing.</li>
+     *   <li>Pre-check source state: must be {@code ACCEPTED} or {@code CONTENT_SUBMITTED}
+     *       (resubmission). Throws if other.</li>
+     *   <li>Compute the next submission version.</li>
+     *   <li>Get or create the session (slug-collision handled).</li>
+     *   <li>Persist the new {@link SessionContentVersion} row (Story 11.E.8 rename).</li>
+     *   <li>If the payload carries a non-null bio or profilePictureUrl, call
+     *       {@code UserApiClient.patchUserProfile(...)} (AR14). Skipped (with warning)
+     *       when {@code speaker.getUsername()} is null — pre-11.B.2 legacy data.</li>
+     *   <li>If presentationUploadId is non-null, link the uploaded file (deferred —
+     *       see TODO inline).</li>
+     *   <li>Delegate state transition to {@code SpeakerWorkflowService.transition(
+     *       CONTENT_SUBMITTED, ...)} — sole writer per Story 11.B.2.</li>
+     *   <li>Publish {@link SpeakerContentSubmittedEvent} (organizer notification).</li>
+     * </ol>
+     *
+     * @param speakerPoolId speaker pool entry to submit content for
+     * @param eventCode     event code (path parameter)
+     * @param payload       principal-agnostic content payload (Story 11.C.2 — AC4)
+     * @param username      username of the submitter (speaker or organizer-on-behalf); recorded in audit trail
+     * @return submission id + version + status + session title
      */
     @Transactional
-    public ContentDraftResponse saveDraft(ContentDraftRequest request) {
-        TokenValidationResult validation = validateToken(request.token());
-
-        SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found"));
-
-        // Get or create draft
-        Optional<ContentSubmission> existingDraft = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
-
-        ContentSubmission draft;
-        String contentStatus = speaker.getContentStatus();
-        boolean canUpdateExisting = "PENDING".equals(contentStatus) || "REVISION_NEEDED".equals(contentStatus);
-        if (existingDraft.isPresent() && canUpdateExisting) {
-            // Update existing draft (including revisions after rejection)
-            draft = existingDraft.get();
-            draft.setTitle(truncate(request.title(), MAX_TITLE_LENGTH));
-            draft.setContentAbstract(truncate(request.contentAbstract(), MAX_ABSTRACT_LENGTH));
-            draft.setAbstractCharCount(request.contentAbstract() != null ? request.contentAbstract().length() : 0);
-        } else {
-            // Create new draft
-            Session session = speaker.getSessionId() != null
-                    ? sessionRepository.findById(speaker.getSessionId()).orElse(null)
-                    : null;
-
-            Integer nextVersion = Optional.ofNullable(
-                    contentSubmissionRepository.findMaxVersionBySpeakerPoolId(speaker.getId())
-            ).map(v -> v + 1).orElse(1);
-
-            draft = ContentSubmission.builder()
-                    .speakerPool(speaker)
-                    .session(session)
-                    .title(truncate(request.title(), MAX_TITLE_LENGTH))
-                    .contentAbstract(truncate(request.contentAbstract(), MAX_ABSTRACT_LENGTH))
-                    .abstractCharCount(request.contentAbstract() != null ? request.contentAbstract().length() : 0)
-                    .submissionVersion(nextVersion)
-                    .build();
+    public ContentSubmitResponse submit(
+            UUID speakerPoolId,
+            String eventCode,
+            ContentSubmissionPayload payload,
+            String username
+    ) {
+        // 1. Validate required fields (lightweight sanity — full @Valid is on the controller DTOs).
+        if (payload == null) {
+            throw new IllegalArgumentException("Content submission payload is required");
         }
-
-        draft = contentSubmissionRepository.save(draft);
-
-        log.info("Draft saved for speaker pool: {}, version: {}", speaker.getId(), draft.getSubmissionVersion());
-
-        return new ContentDraftResponse(draft.getId(), draft.getUpdatedAt());
-    }
-
-    /**
-     * Submit content for review.
-     * Story 6.3 AC5: Content submission
-     * Story 6.3 AC8: Version increment on resubmission
-     *
-     * @param request Submit request with title and abstract
-     * @return Submit response with submission ID and version
-     * @throws IllegalArgumentException if validation fails
-     * @throws IllegalStateException if no session assigned
-     */
-    @Transactional
-    public ContentSubmitResponse submitContent(ContentSubmitRequest request) {
-        // Validate required fields
-        if (request.title() == null || request.title().isBlank()) {
+        if (payload.title() == null || payload.title().isBlank()) {
             throw new IllegalArgumentException("Presentation title is required");
         }
-        if (request.contentAbstract() == null || request.contentAbstract().isBlank()) {
+        if (payload.contentAbstract() == null || payload.contentAbstract().isBlank()) {
             throw new IllegalArgumentException("Presentation abstract is required");
         }
-        if (request.title().length() > MAX_TITLE_LENGTH) {
+        if (payload.title().length() > MAX_TITLE_LENGTH) {
             throw new IllegalArgumentException("Title exceeds maximum length of " + MAX_TITLE_LENGTH + " characters");
         }
-        if (request.contentAbstract().length() > MAX_ABSTRACT_LENGTH) {
+        if (payload.contentAbstract().length() > MAX_ABSTRACT_LENGTH) {
             throw new IllegalArgumentException(
                     "Abstract exceeds maximum length of " + MAX_ABSTRACT_LENGTH + " characters");
         }
 
-        TokenValidationResult validation = validateToken(request.token());
+        log.info("Submitting content (Story 11.C.2): speakerPoolId={}, eventCode={}, actor={}",
+                speakerPoolId, eventCode, username);
 
-        SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found"));
+        // 2. Load the speaker pool entry.
+        SpeakerPool speaker = speakerPoolRepository.findById(speakerPoolId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "Speaker not found in pool: " + speakerPoolId));
 
-        // AC1: Get or create session
-        Session session;
-        boolean needsNewSession = speaker.getSessionId() == null;
-
-        // Check if existing session was deleted (orphaned FK)
-        if (!needsNewSession) {
-            Optional<Session> existingSession = sessionRepository.findById(speaker.getSessionId());
-            if (existingSession.isEmpty()) {
-                log.warn("Session {} was deleted for speaker {} - will create new session",
-                        speaker.getSessionId(), speaker.getId());
-                speaker.setSessionId(null);
-                needsNewSession = true;
-            }
+        // P1 (review patch): verify the speaker's eventId matches the eventCode in the URL.
+        // Prevents cross-event corruption where a stale/mistyped URL pairs a speaker from
+        // event A with eventCode = event B's code (the new Session row would then have
+        // inconsistent event_id ↔ event_code).
+        ch.batbern.events.domain.Event eventForCode = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "Event not found for code: " + eventCode));
+        if (!eventForCode.getId().equals(speaker.getEventId())) {
+            throw new IllegalArgumentException(
+                    "Speaker " + speakerPoolId + " does not belong to event " + eventCode
+                            + " (speaker.eventId=" + speaker.getEventId()
+                            + ", event.id=" + eventForCode.getId() + ")");
         }
 
-        if (needsNewSession) {
-            // Speakers without a session: create one on content submission
-            if (speaker.getStatus() != SpeakerWorkflowState.ACCEPTED
-                    && speaker.getStatus() != SpeakerWorkflowState.CONTENT_SUBMITTED) {
-                throw new IllegalStateException(
-                        "Cannot submit content - speaker must be in ACCEPTED or CONTENT_SUBMITTED state");
-            }
-
-            // Create session with presentation title and abstract
-            String sessionSlug = request.title().trim().toLowerCase()
-                    .replaceAll("[^a-z0-9]+", "-")
-                    .replaceAll("^-|-$", "");
-
-            session = Session.builder()
-                    .eventId(speaker.getEventId())
-                    .eventCode(validation.eventCode())
-                    .sessionSlug(sessionSlug)
-                    .title(request.title().trim())
-                    .description(request.contentAbstract().trim())
-                    .sessionType("presentation")
-                    .build();
-            session = sessionRepository.save(session);
-
-            // Create session_users link
-            SessionUser sessionUser = SessionUser.builder()
-                    .session(session)
-                    .username(speaker.getUsername())
-                    .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
-                    .isConfirmed(false)
-                    .build();
-            sessionUserRepository.save(sessionUser);
-
-            // Update speaker with session reference
-            speaker.setSessionId(session.getId());
-
-            log.info("Created new session {} for speaker {} on content submission",
-                    session.getId(), speaker.getId());
-        } else {
-            session = sessionRepository.findById(speaker.getSessionId())
-                    .orElseThrow(() -> new IllegalStateException("Session not found - contact organizer"));
-
-            // Update session title and description from submitted content
-            session.setTitle(request.title().trim());
-            session.setDescription(request.contentAbstract().trim());
-            session = sessionRepository.save(session);
+        // 3. Pre-check the source state. SpeakerWorkflowService.transition() will also enforce
+        //    this — we surface a friendly error message here before the workflow check runs.
+        //    QUALITY_REVIEWED is accepted as a source state: a speaker (or organizer-on-behalf)
+        //    can revise content after the moderator's review; the back-transition
+        //    QUALITY_REVIEWED → CONTENT_SUBMITTED requeues the submission for re-review.
+        SpeakerWorkflowState currentStatus = speaker.getStatus();
+        if (currentStatus != SpeakerWorkflowState.ACCEPTED
+                && currentStatus != SpeakerWorkflowState.CONTENT_SUBMITTED
+                && currentStatus != SpeakerWorkflowState.QUALITY_REVIEWED) {
+            throw new IllegalStateException(
+                    "Cannot submit content — speaker must be in ACCEPTED, CONTENT_SUBMITTED, or "
+                            + "QUALITY_REVIEWED state (was: " + currentStatus + ")");
         }
 
-        // AC8: Determine version (increment if resubmitting)
-        Integer maxVersion = contentSubmissionRepository.findMaxVersionBySpeakerPoolId(speaker.getId());
+        // 4. Story 11.E.8: strict lookup — the session was provisioned at the CONTACTED → READY
+        //    transition. If it's missing here, that's a data-integrity bug (out-of-band delete)
+        //    rather than a legitimate first-time submission. Throw rather than silently re-create.
+        Session session = loadAssignedSession(speaker, payload.title().trim(),
+                payload.contentAbstract().trim());
+
+        // 5. Determine next version (1 if first submission). Story 11.E.8: keyed by session_id.
+        Integer maxVersion = sessionContentHistoryRepository.findMaxVersionBySessionId(session.getId());
         int newVersion = (maxVersion != null) ? maxVersion + 1 : 1;
 
-        // Capture previous status for history tracking
-        SpeakerWorkflowState previousStatus = speaker.getStatus();
-
-        // Create submission record
-        ContentSubmission submission = ContentSubmission.builder()
-                .speakerPool(speaker)
+        // 6. Persist the new SessionContentVersion row (renamed from ContentSubmission per V99).
+        SessionContentVersion submission = SessionContentVersion.builder()
                 .session(session)
-                .title(request.title().trim())
-                .contentAbstract(request.contentAbstract().trim())
-                .abstractCharCount(request.contentAbstract().trim().length())
+                .title(payload.title().trim())
+                .contentAbstract(payload.contentAbstract().trim())
+                .abstractCharCount(payload.contentAbstract().trim().length())
                 .submissionVersion(newVersion)
+                .submittedByUsername(username)
                 .submittedAt(Instant.now())
                 .build();
+        submission = sessionContentHistoryRepository.save(submission);
 
-        submission = contentSubmissionRepository.save(submission);
+        // 7. Patch user profile (bio / profilePictureUrl) if the payload carries either.
+        //    Story 11.C.2 — AR14. The User profile is the single source of truth (ADR-007 +
+        //    ADR-009 §"Decision 2"); patches overwrite globally.
+        maybePatchUserProfile(speaker, payload);
 
-        // AC5: Update speaker pool status and content status
-        Instant now = Instant.now();
-        speaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);  // Move to "Inhalt eingereicht" column in Kanban
-        speaker.setContentStatus("SUBMITTED");
-        speaker.setContentSubmittedAt(now);
-        speakerPoolRepository.save(speaker);
-
-        // Record status history for content submission
-        if (previousStatus != SpeakerWorkflowState.CONTENT_SUBMITTED) {
-            SpeakerStatusHistory statusHistory = new SpeakerStatusHistory();
-            statusHistory.setSpeakerPoolId(speaker.getId());
-            statusHistory.setEventId(session.getEventId());
-            statusHistory.setSessionId(session.getId());
-            statusHistory.setPreviousStatus(previousStatus);
-            statusHistory.setNewStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-            String changedBy = speaker.getUsername() != null
-                    ? speaker.getUsername() : validation.speakerName();
-            statusHistory.setChangedByUsername(changedBy);
-            statusHistory.setChangeReason("Content submitted via speaker portal (version " + newVersion + ")");
-            statusHistory.setChangedAt(now);
-            statusHistoryRepository.save(statusHistory);
-            log.debug("Created status history for speaker {} transition to CONTENT_SUBMITTED", speaker.getId());
+        // 8. Link uploaded presentation material if a presentationUploadId is provided.
+        //    P2 (review patch): reject with 400 if non-blank. The auto-linking behaviour was
+        //    silently a no-op (clients saw 201 but their upload was never associated). Until
+        //    Story 11.D.4 wires the materials helper, fail closed so callers know it's not
+        //    supported yet rather than thinking their deck was attached.
+        if (payload.presentationUploadId() != null && !payload.presentationUploadId().isBlank()) {
+            throw new IllegalArgumentException(
+                    "presentationUploadId is not yet supported on this endpoint"
+                            + " — Story 11.D.4 wires the materials helper");
         }
 
-        // AC6: Publish domain event for organizer notification
-        SpeakerContentSubmittedEvent event = new SpeakerContentSubmittedEvent(
+        // 9. (Story 11.E.8 removed) legacy speaker_pool.content_status / content_submitted_at
+        //    writes are gone — V100 dropped those columns. contentStatus is now derived at
+        //    read time from session_content_history.
+
+        // 10. Delegate the workflow transition to the sole writer (Story 11.B.2 AC1). On a
+        //     same-state CONTENT_SUBMITTED → CONTENT_SUBMITTED resubmission, transition()
+        //     writes a self-transition history row and skips side-effect hooks (11.B.2 AC2/AC3).
+        TransitionPayload transitionPayload = TransitionPayload.builder()
+                .reason("Content submitted (version " + newVersion + ")")
+                .build();
+        speakerWorkflowService.transition(
+                speaker.getId(),
+                SpeakerWorkflowState.CONTENT_SUBMITTED,
+                username,
+                transitionPayload
+        );
+
+        // 11. Publish the domain event consumed by OrganizerNotificationService. Payload mirrors
+        //     what the legacy magic-link service emitted (Story 5.5 / 6.3 — unchanged shape).
+        //     eventTitle is taken from the already-loaded Event row.
+        String eventTitle = eventForCode.getTitle() != null ? eventForCode.getTitle() : eventCode;
+        SpeakerContentSubmittedEvent contentEvent = new SpeakerContentSubmittedEvent(
                 submission.getId(),
                 speaker.getId(),
-                validation.speakerName(),
-                validation.eventCode(),
-                validation.eventTitle(),
+                speaker.getSpeakerName(),
+                eventCode,
+                eventTitle,
                 session.getTitle(),
-                request.title().trim(),
+                payload.title().trim(),
                 newVersion
         );
-        eventPublisher.publishEvent(event);
+        eventPublisher.publishEvent(contentEvent);
 
-        log.info("Content submitted for speaker pool: {}, submission: {}, version: {}",
-                speaker.getId(), submission.getId(), newVersion);
+        log.info("Content submitted: speakerPoolId={}, submissionId={}, version={}, actor={}",
+                speaker.getId(), submission.getId(), newVersion, username);
 
         return new ContentSubmitResponse(
                 submission.getId(),
@@ -380,27 +379,180 @@ public class ContentSubmissionService {
     }
 
     /**
-     * Validate token and throw if invalid.
+     * Story 11.E.8: strict lookup of the {@link Session} provisioned at the
+     * CONTACTED → READY transition. This method updates the placeholder title and
+     * description that {@code SpeakerWorkflowService.provisionSessionAndPrimarySpeaker}
+     * wrote at READY-time to the real presentation title and abstract.
+     *
+     * <p>Throws {@link IllegalStateException} if the speaker has no {@code session_id}
+     * or the referenced session row is missing. Both conditions indicate a data-integrity
+     * problem (speaker reached CONTENT_SUBMITTED without going through READY, or the
+     * session was deleted out-of-band) rather than a legitimate first-time submission.
+     * Pre-11.E.8 local-dev data is covered by the V96 backfill migration.
      */
-    private TokenValidationResult validateToken(String token) {
-        TokenValidationResult result = magicLinkService.validateToken(token);
-
-        if (!result.valid()) {
-            String message = switch (result.error()) {
-                case "NOT_FOUND" -> "Invalid token";
-                case "EXPIRED" -> "Token has expired";
-                case "ALREADY_USED" -> "Token has already been used";
-                default -> "Token validation failed";
-            };
-            throw new IllegalArgumentException(message);
+    private Session loadAssignedSession(SpeakerPool speaker, String presentationTitle,
+            String presentationAbstract) {
+        UUID sessionId = speaker.getSessionId();
+        if (sessionId == null) {
+            throw new IllegalStateException(
+                    "Speaker " + speaker.getId() + " has no session_id — must be promoted to "
+                            + "READY before content submission (Story 11.E.8)");
         }
-
-        return result;
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Speaker " + speaker.getId() + " references missing session " + sessionId
+                                + " — data integrity issue; re-provision at READY"));
+        session.setTitle(presentationTitle);
+        session.setDescription(presentationAbstract);
+        return sessionRepository.save(session);
     }
 
     /**
-     * Truncate string to max length.
+     * Patch the speaker's User profile (bio + profilePictureUrl) when the payload carries
+     * non-null values. Skipped (with a warning) when the canonical username (resolved via
+     * session_users) is null — pre-11.B.2 legacy data where the speaker arrived at
+     * CONTENT_SUBMITTED without going through a CONTACTED → READY provisioning.
+     *
+     * <p><b>Dual-write asymmetry (known issue, code review 2026-05-16):</b> this HTTP
+     * PATCH against CUMS commits in the User Management Service immediately. If a later
+     * step in the @Transactional submit() pipeline throws (e.g.
+     * {@link ch.batbern.events.service.workflow.InvalidStateTransitionException} on a
+     * concurrent state change), the local content row is rolled back but the CUMS-side
+     * bio/profilePictureUrl update is NOT. The user observes a 5xx but sees their bio
+     * has been changed. Move this call to a {@code @TransactionalEventListener(AFTER_COMMIT)}
+     * to convert to eventual consistency once Story 11.D.4 / Phase E has a domain event
+     * to fire from. Tracked in deferred-work.md.
+     *
+     * <p>If the User Management Service is unavailable BEFORE its commit, the
+     * {@link ch.batbern.events.exception.UserServiceException} propagates and rolls back
+     * the EMS @Transactional content write — atomic in that direction.
      */
+    private void maybePatchUserProfile(SpeakerPool speaker, ContentSubmissionPayload payload) {
+        boolean hasBio = payload.bio() != null && !payload.bio().isBlank();
+        boolean hasPictureUrl = payload.profilePictureUrl() != null && !payload.profilePictureUrl().isBlank();
+        if (!hasBio && !hasPictureUrl) {
+            return;
+        }
+
+        String username = primarySpeakerResolver.resolve(speaker)
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                .orElse(null);
+        if (username == null || username.isBlank()) {
+            log.warn("Skipping profile patch for speaker {} — no canonical username (pre-11.B.2"
+                    + " legacy speaker, or session_users overlay missing)", speaker.getId());
+            return;
+        }
+
+        PatchUserProfileRequest request = new PatchUserProfileRequest();
+        if (hasBio) {
+            request.setBio(payload.bio());
+        }
+        if (hasPictureUrl) {
+            request.setProfilePictureUrl(payload.profilePictureUrl());
+        }
+        userApiClient.patchUserProfile(username, request);
+        log.debug("Patched user profile for {} (bio={}, pictureUrl={})",
+                username, hasBio, hasPictureUrl);
+    }
+
+    // ============================================================
+    // Organizer-side GET (moved from SpeakerContentSubmissionService — Story 11.C.2)
+    // ============================================================
+
+    /**
+     * Get speaker content for an organizer-side view of a speaker pool entry. Handles
+     * orphaned {@code session_id} references by detecting deleted sessions and clearing
+     * the FK (Story 5.5 AC34); workflow status is left untouched (Story 11.B.2 single-writer
+     * invariant).
+     *
+     * @param poolId the speaker pool ID
+     * @return the speaker content (may have {@code hasContent=false} if no session)
+     */
+    @Transactional
+    public SpeakerContentResponse getSpeakerContent(String poolId) {
+        log.debug("Fetching speaker content for pool entry: {}", poolId);
+
+        UUID poolUuid = UUID.fromString(poolId);
+        SpeakerPool speaker = speakerPoolRepository.findById(poolUuid)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "Speaker not found in pool"));
+
+        if (speaker.getSessionId() == null) {
+            return SpeakerContentResponse.builder()
+                    .speakerPoolId(speaker.getId())
+                    .eventId(speaker.getEventId())
+                    .status(speaker.getStatus())
+                    .speakerName(speaker.getSpeakerName())
+                    .company(speaker.getCompany())
+                    .hasContent(false)
+                    .build();
+        }
+
+        Optional<Session> sessionOpt = sessionRepository.findById(speaker.getSessionId());
+
+        if (sessionOpt.isEmpty()) {
+            log.warn("Speaker {} references deleted session {}. Unlinking and resetting.",
+                    poolId, speaker.getSessionId());
+            speaker.setSessionId(null);
+            speakerPoolRepository.save(speaker);
+
+            return SpeakerContentResponse.builder()
+                    .speakerPoolId(speaker.getId())
+                    .eventId(speaker.getEventId())
+                    .status(speaker.getStatus())
+                    .speakerName(speaker.getSpeakerName())
+                    .company(speaker.getCompany())
+                    .hasContent(false)
+                    .warning("Content was lost. Please resubmit.")
+                    .build();
+        }
+
+        Session session = sessionOpt.get();
+        List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
+        String username = sessionUsers.isEmpty() ? null : sessionUsers.get(0).getUsername();
+
+        // Story 11.E.8 §2.9: sessions.title / sessions.description are the canonical
+        // "current" for every read surface. Don't override with the history row — that
+        // re-introduces the divergence §2.9 closed (organizer session-modal edits would
+        // stop propagating to the organizer drawer).
+        String presentationTitle = session.getTitle();
+        String presentationAbstract = session.getDescription();
+
+        boolean hasMaterial = false;
+        String materialUrl = null;
+        String materialFileName = null;
+
+        List<SessionMaterial> materials = sessionMaterialsRepository
+                .findBySession_IdOrderByCreatedAtAsc(session.getId());
+        if (!materials.isEmpty()) {
+            hasMaterial = true;
+            SessionMaterial latestMaterial = materials.get(materials.size() - 1);
+            materialUrl = latestMaterial.getCloudFrontUrl();
+            materialFileName = latestMaterial.getFileName();
+        }
+
+        return SpeakerContentResponse.builder()
+                .speakerPoolId(speaker.getId())
+                .eventId(speaker.getEventId())
+                .sessionId(session.getId())
+                .presentationTitle(presentationTitle)
+                .presentationAbstract(presentationAbstract)
+                .username(username)
+                .speakerName(speaker.getSpeakerName())
+                .company(speaker.getCompany())
+                .status(speaker.getStatus())
+                .hasContent(true)
+                .submittedAt(session.getCreatedAt())
+                .hasMaterial(hasMaterial)
+                .materialUrl(materialUrl)
+                .materialFileName(materialFileName)
+                .build();
+    }
+
+    // ============================================================
+    // Helpers
+    // ============================================================
+
     private String truncate(String value, int maxLength) {
         if (value == null) {
             return null;

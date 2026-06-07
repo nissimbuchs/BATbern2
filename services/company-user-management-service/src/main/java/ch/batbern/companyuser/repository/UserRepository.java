@@ -2,14 +2,19 @@ package ch.batbern.companyuser.repository;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +43,23 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     Optional<User> findByUsername(String username);
 
     /**
+     * Story 10.32 (P0-1 fix) — find user by username with a pessimistic
+     * write lock on the {@code user_profiles} row. Used by
+     * {@code addAdditionalEmail} to serialise concurrent POSTs against the
+     * per-user 5-email cap. The default READ_COMMITTED isolation lets two
+     * concurrent transactions both see {@code countByUser=4}, both pass the
+     * gate, and both INSERT; pessimistic lock on the parent row forces one
+     * to wait until the other commits, at which point its re-read of the
+     * count sees the updated value and rejects the 6th entry.
+     *
+     * @param username User's username
+     * @return Optional user (locked FOR UPDATE if present)
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u WHERE u.username = :username")
+    Optional<User> findByUsernameForUpdate(@Param("username") String username);
+
+    /**
      * Check if user exists by username
      * Story 1.16.2: Critical for duplicate username validation
      *
@@ -56,6 +78,16 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     Optional<User> findByEmail(String email);
 
     /**
+     * Find user by email address (case-insensitive).
+     * Story 11.C.2 review: provisionUserWithRole + getOrCreateUser idempotency requires
+     * "Jane@x.com" and "jane@x.com" to resolve to the same row.
+     *
+     * @param email User's email (any case)
+     * @return Optional user
+     */
+    Optional<User> findByEmailIgnoreCase(String email);
+
+    /**
      * Check if user exists by email
      * AC4: Duplicate email validation
      *
@@ -65,6 +97,15 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     boolean existsByEmail(String email);
 
     /**
+     * Check if user exists by email (case-insensitive).
+     * Story 11.C.2 review: idempotency parity with findByEmailIgnoreCase.
+     *
+     * @param email User's email (any case)
+     * @return true if exists, false otherwise
+     */
+    boolean existsByEmailIgnoreCase(String email);
+
+    /**
      * Find user by Cognito user ID
      * AC5: Cognito authentication integration
      *
@@ -72,6 +113,41 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Optional user
      */
     Optional<User> findByCognitoUserId(String cognitoUserId);
+
+    /**
+     * Story 12.12 review (finding #5) — atomically claim the one-time federated avatar
+     * import attempt. The previous load-check-save sequence let two concurrent first
+     * federated requests both pass the NULL guards and double-dispatch the Google fetch;
+     * this conditional UPDATE is a compare-and-set the database serialises: exactly one
+     * caller sees affected-rows == 1.
+     *
+     * <p>{@code clearAutomatically} so entities already in the persistence context don't
+     * shadow the bulk update on a subsequent read in the same session/transaction.
+     *
+     * @return 1 if this caller won the claim, 0 if it was already claimed (or a picture
+     *         already exists)
+     */
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE User u SET u.pictureImportAttemptedAt = :attemptedAt "
+            + "WHERE u.id = :id AND u.pictureImportAttemptedAt IS NULL AND u.profilePictureUrl IS NULL")
+    int claimPictureImportAttempt(@Param("id") UUID id, @Param("attemptedAt") Instant attemptedAt);
+
+    /**
+     * Story 12.12 review (finding #1) — release a claimed avatar-import attempt after a
+     * TRANSIENT failure (upstream 5xx/429, network timeout, executor rejection) so a later
+     * federated request retries. Terminal outcomes (success, 3xx/4xx, non-image, oversize,
+     * SSRF-rejected claim) never release: one terminal attempt per user, ever.
+     * The {@code profilePictureUrl IS NULL} condition keeps the never-clobber invariant —
+     * a picture that appeared meanwhile stays untouched and the claim stays burned.
+     *
+     * @return 1 if the claim was released, 0 otherwise
+     */
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE User u SET u.pictureImportAttemptedAt = NULL "
+            + "WHERE u.id = :id AND u.profilePictureUrl IS NULL")
+    int releasePictureImportAttempt(@Param("id") UUID id);
 
     /**
      * Find users by company ID (Story 1.16.2: company name, not UUID)
@@ -131,11 +207,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @param pageable Pagination parameters
      * @return Page of users with roles loaded
      */
-    @Query("""
-        SELECT DISTINCT u FROM User u
-        LEFT JOIN FETCH u.roles
-        ORDER BY u.lastName ASC, u.firstName ASC
-        """)
+    @Query("SELECT u FROM User u ORDER BY u.lastName ASC, u.firstName ASC")
     Page<User> findAllWithRoles(Pageable pageable);
 
     /**
@@ -146,12 +218,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @param pageable Pagination parameters
      * @return Page of users with the specified role and roles loaded
      */
-    @Query("""
-        SELECT DISTINCT u FROM User u
-        LEFT JOIN FETCH u.roles r
-        WHERE :role MEMBER OF u.roles
-        ORDER BY u.lastName ASC, u.firstName ASC
-        """)
+    @Query("SELECT u FROM User u WHERE :role MEMBER OF u.roles ORDER BY u.lastName ASC, u.firstName ASC")
     Page<User> findByRolesContainingWithRoles(@Param("role") Role role, Pageable pageable);
 
     /**
@@ -162,12 +229,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @param pageable Pagination parameters
      * @return Page of users in the specified company with roles loaded
      */
-    @Query("""
-        SELECT DISTINCT u FROM User u
-        LEFT JOIN FETCH u.roles
-        WHERE u.companyId = :companyId
-        ORDER BY u.lastName ASC, u.firstName ASC
-        """)
+    @Query("SELECT u FROM User u WHERE u.companyId = :companyId ORDER BY u.lastName ASC, u.firstName ASC")
     Page<User> findByCompanyIdWithRoles(@Param("companyId") String companyId, Pageable pageable);
 
     /**
@@ -180,8 +242,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Page of users matching both criteria with roles loaded
      */
     @Query("""
-        SELECT DISTINCT u FROM User u
-        LEFT JOIN FETCH u.roles r
+        SELECT u FROM User u
         WHERE :role MEMBER OF u.roles
         AND u.companyId = :companyId
         ORDER BY u.lastName ASC, u.firstName ASC
@@ -201,8 +262,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Page of matching users with roles loaded
      */
     @Query("""
-        SELECT DISTINCT u FROM User u
-        LEFT JOIN FETCH u.roles
+        SELECT u FROM User u
         WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -223,8 +283,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Page of matching users with the specified role and roles loaded
      */
     @Query("""
-        SELECT DISTINCT u FROM User u
-        LEFT JOIN FETCH u.roles r
+        SELECT u FROM User u
         WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -249,8 +308,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Page of matching users in the specified company with roles loaded
      */
     @Query("""
-        SELECT DISTINCT u FROM User u
-        LEFT JOIN FETCH u.roles
+        SELECT u FROM User u
         WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -276,8 +334,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Page of matching users with both filters and roles loaded
      */
     @Query("""
-        SELECT DISTINCT u FROM User u
-        LEFT JOIN FETCH u.roles r
+        SELECT u FROM User u
         WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))

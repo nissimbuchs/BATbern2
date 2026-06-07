@@ -1,0 +1,60 @@
+meta {
+  name: Create partner meeting (SPRING)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/partner-meetings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "eventCode": "{{meetingEventCode}}",
+    "meetingType": "SPRING",
+    "startTime": "12:00",
+    "endTime": "14:00",
+    "location": "Bruno Test Venue, Bern",
+    "agenda": "Initial agenda created by partner-meetings-api test {{meetingTestTimestamp}}"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("createdMeetingId", res.getBody().id);
+  }
+}
+
+tests {
+  test("returns 201 with a meeting id", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().id).to.be.a("string");
+  });
+
+  test("meeting links to the fixture event and auto-fills the date", function() {
+    const body = res.getBody();
+    expect(body.eventCode).to.equal(bru.getVar("meetingEventCode"));
+    expect(body.meetingType).to.equal("SPRING");
+    expect(body.meetingDate).to.be.a("string");
+  });
+
+  test("has CORS headers", function() {
+    expect(res.getHeader('access-control-allow-origin')).to.exist;
+  });
+}

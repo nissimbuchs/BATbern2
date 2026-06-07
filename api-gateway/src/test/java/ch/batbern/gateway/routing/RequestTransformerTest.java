@@ -43,7 +43,10 @@ class RequestTransformerTest {
         assertThat(transformedRequest.getHeader("X-User-Id")).isEqualTo("user-123");
         assertThat(transformedRequest.getHeader("X-User-Email")).isEqualTo("test@example.com");
         assertThat(transformedRequest.getHeader("X-User-Role")).isEqualTo("organizer");
-        assertThat(transformedRequest.getHeader("X-Company-Id")).isEqualTo("company-456");
+        // Story 12.1 AC2: the dead X-Company-Id header is no longer propagated (verified:
+        // no downstream service reads it). Even with companyId on the UserContext, the
+        // header must be absent.
+        assertThat(transformedRequest.getHeader("X-Company-Id")).isNull();
     }
 
     @Test

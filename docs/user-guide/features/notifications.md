@@ -14,7 +14,7 @@ The system is designed to reduce manual monitoring while preventing information 
 
 | Channel | Status | Details |
 |---------|--------|---------|
-| Transactional Email | ✅ `[IMPLEMENTED]` | Speaker invitations, deadline reminders, registration confirmations, partner calendar invites |
+| Transactional Email | ✅ `[IMPLEMENTED]` | Speaker invitations, deadline reminders, registration confirmations, partner calendar invites, email forwarding & distribution lists |
 | In-App Notification Center | 🔨 `[IN PROGRESS]` | Notification feed with mark-as-read, delete, and full-page view |
 | Notification Preferences & Rules | 📋 `[PLANNED]` | Per-event settings, quiet hours, digest scheduling, escalation configuration |
 
@@ -40,7 +40,7 @@ Three-tier escalation triggered automatically before the content submission dead
 
 ### Registration Confirmation Emails (Epic 4)
 
-Sent automatically when an attendee completes event registration. Includes event details and a QR code for day-of check-in.
+Sent automatically when an attendee completes event registration. Includes event details (including the event's start and end times), a QR code for day-of check-in, and an `.ics` calendar attachment so attendees can add the event to their calendar with accurate times.
 
 ### Partner Calendar Invites (Epic 8)
 
@@ -49,6 +49,21 @@ RFC 5545 `.ics` calendar invites delivered via email to partners. Each file cont
 ### Task Deadline Reminders (Epic 5)
 
 Organizers receive email reminders for tasks approaching their due dates. Timing is controlled by the task template's trigger configuration (e.g., 1 day before deadline). See [Task System](../workflow/task-system.md).
+
+### Email Forwarding & Distribution Lists (2026-03)
+
+The platform provides serverless email forwarding for 6 inboxes: `ok@`, `info@`, `events@`, `partner@`, `support@`, and `batbernNN@batbern.ch`. Emails received at these addresses are automatically forwarded to the appropriate recipients based on their role or event registration status:
+
+- **Dynamic recipient resolution** — Lambda resolves recipients via role-based and registration-based API calls
+- **Sender exclusion** — Original sender is excluded from forwarding to prevent bounce loops
+- **CC address forwarding** — CC recipients on inbound emails are recognised as mailing-list addresses and resolved through the same recipient-resolution pipeline; they are forwarded alongside the primary recipients
+- **All mailing list variants recognised** — All `batbernNN@batbern.ch` series addresses (e.g. `batbern44@batbern.ch`) are detected and handled correctly, not only the latest series
+- **Environment isolation** — Staging uses `replies@staging.batbern.ch` with `noreply@berner-architekten-treffen.ch`; production uses `replies@batbern.ch` with `noreply@batbern.ch`
+- **Admin configuration** — Organizers manage forwarding rules via Admin Settings UI
+
+### Partner Meeting iCal RSVP Parsing (2026-03)
+
+When partners reply to calendar invites (Accept / Decline / Tentative), the platform's inbound email handler automatically parses `METHOD:REPLY` ICS attachments and updates the RSVP status in the `partner_meeting_rsvps` table. Organizers see RSVP status in the Partner Meeting management UI.
 
 ---
 

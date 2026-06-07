@@ -25,7 +25,6 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         use_sql_comments: true
         jdbc:
@@ -67,10 +66,40 @@ aws:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
   cognito:
     user-pool-id: ${COGNITO_USER_POOL_ID:}
+    client-id: ${COGNITO_CLIENT_ID:}
     region: ${AWS_REGION:eu-central-1}
   eventbridge:
     bus-name: ${EVENT_BUS_NAME:batbern-staging}
     source: ch.batbern.companyuser
+
+# Daily nudge for accounts that signed up but never confirmed their email.
+# Cognito's sign-up confirmation code is fixed at 24h (not configurable), so this re-sends a fresh
+# code to accounts unconfirmed for >= after-hours, bounded to a window so each account is nudged at
+# most a few times across daily runs (Cognito UNCONFIRMED users have no DB row for per-user state).
+cognito:
+  resend:
+    enabled: ${COGNITO_RESEND_ENABLED:true}
+    cron: "0 15 8 * * *"                          # daily 08:15 (distinct from 02:00 reconciliation)
+    after-hours: ${COGNITO_RESEND_AFTER_HOURS:48} # nudge once unconfirmed >= 2 days
+    window-hours: ${COGNITO_RESEND_WINDOW_HOURS:48} # only nudge within [after, after+window) of signup
+
+# Additional-email verification (v2): stateless HMAC-signed verification token.
+# Secret is injected from Secrets Manager (WATCH_JWT_SECRET → JWT_SECRET) in
+# production; the 'changeme' default triggers a random-key fallback for local/test.
+jwt:
+  secret: ${JWT_SECRET:changeme}
+
+# Public base URL used to build the {{baseUrl}}/verify-email?token= link in
+# additional-email verification emails. Defaults to production www.
+app:
+  base-url: ${APP_BASE_URL:https://www.batbern.ch}
+
+batbern:
+  user:
+    additional-emails:
+      verification:
+        # 48h TTL on the signed verification link.
+        token-validity-hours: ${ADDITIONAL_EMAIL_VERIFICATION_TOKEN_VALIDITY_HOURS:48}
 
 # Server Configuration
 server:
@@ -173,7 +202,6 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: true
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
     enabled: true

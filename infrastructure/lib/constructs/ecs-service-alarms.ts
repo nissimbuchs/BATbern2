@@ -52,6 +52,11 @@ export interface EcsServiceAlarmsProps {
   readonly alarmTopic: sns.ITopic;
 
   /**
+   * Override production detection (defaults to environment === 'production')
+   */
+  readonly isProduction?: boolean;
+
+  /**
    * Optional: Custom alarm thresholds
    */
   readonly thresholds?: {
@@ -67,7 +72,7 @@ export class EcsServiceAlarms extends Construct {
     super(scope, id);
 
     // Default thresholds - stricter for production
-    const isProduction = props.environment === 'production';
+    const isProduction = props.isProduction ?? (props.environment === 'production');
     const thresholds = {
       memoryUtilization: props.thresholds?.memoryUtilization ?? 80,
       oomKillCount: props.thresholds?.oomKillCount ?? (isProduction ? 1 : 3),

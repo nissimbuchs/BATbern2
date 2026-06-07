@@ -2,10 +2,11 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.repository.RegistrationRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -34,8 +35,13 @@ class RegistrationCleanupServiceTest {
     @Mock
     private RegistrationRepository registrationRepository;
 
-    @InjectMocks
     private RegistrationCleanupService cleanupService;
+
+    @BeforeEach
+    void setUp() {
+        // Default production config: 4-day token validity (96h), 5-day cleanup window (120h).
+        cleanupService = new RegistrationCleanupService(registrationRepository, 120, 96);
+    }
 
     @Test
     @DisplayName("Should delete unconfirmed registrations older than 48 hours")
@@ -157,6 +163,38 @@ class RegistrationCleanupServiceTest {
 
         // Assert
         verify(registrationRepository).findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class));
+    }
+
+    @Test
+    @DisplayName("Effective cleanup window is the larger of configured window and (token validity + grace)")
+    void effectiveCleanupHours_takesSafeMaximum() {
+        // Configured 120h vs token-validity 96h + 24h grace = 120h -> 120h
+        RegistrationCleanupService svc = new RegistrationCleanupService(registrationRepository, 120, 96);
+        assertThat(svc.effectiveCleanupHours()).isEqualTo(120);
+    }
+
+    @Test
+    @DisplayName("Cleanup window shorter than token validity is clamped so valid links are never orphaned")
+    void effectiveCleanupHours_clampsWhenBelowTokenValidity() {
+        // Misconfig: delete after 48h but link valid 96h -> clamp to 96 + 24 = 120h
+        RegistrationCleanupService svc = new RegistrationCleanupService(registrationRepository, 48, 96);
+        assertThat(svc.effectiveCleanupHours()).isEqualTo(120);
+    }
+
+    @Test
+    @DisplayName("Deletion threshold reflects the effective cleanup window, not the legacy 48h")
+    void deletesUsingEffectiveWindow() {
+        RegistrationCleanupService svc = new RegistrationCleanupService(registrationRepository, 120, 96);
+        when(registrationRepository.findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class)))
+                .thenReturn(Collections.emptyList());
+
+        svc.cleanupUnconfirmedRegistrations();
+
+        ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
+        verify(registrationRepository).findByStatusAndCreatedAtBefore(eq("registered"), captor.capture());
+        // Threshold should be ~120h ago (allow a small clock delta around the boundary)
+        assertThat(captor.getValue()).isBeforeOrEqualTo(Instant.now().minus(119, ChronoUnit.HOURS));
+        assertThat(captor.getValue()).isAfter(Instant.now().minus(122, ChronoUnit.HOURS));
     }
 
     // Helper method to create test registrations

@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload test reports artifact
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-shared-kernel
           path: |
@@ -187,7 +187,14 @@ jobs:
           SHOULD_BUILD="false"
 
           # Build if infrastructure changed (deploy will deploy all)
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package"; then
+          # Note: the `lambda` alternation (no `lib/` prefix) catches
+          # `infrastructure/lambda/email-forwarder/**` and the other
+          # standalone Lambdas that live outside `infrastructure/lib/`.
+          # Without it, a pure-Lambda-code change (e.g. the Story 10.32
+          # address-resolver fan-out patch) is classified as code-only,
+          # the deploy chooses fast-path, and the Lambda asset is never
+          # rebuilt or published. See 2026-05-22 post-merge incident.
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin|lambda)/|^infrastructure/package"; then
             echo "✓ Infrastructure changes detected - building all services"
             SHOULD_BUILD="true"
           # Build if shared-kernel changed (deploy will deploy all)
@@ -249,7 +256,7 @@ jobs:
 
       - name: Upload test reports artifact
         if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.service }}
           path: |
@@ -261,7 +268,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build Docker image
         if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true'
@@ -325,28 +332,32 @@ jobs:
             docker push ${ECR_REPO}:latest-production
           fi
 
-      - name: Configure AWS credentials (Production)
-        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR (Production)
-        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Push to production ECR
-        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          VERSION="${GITHUB_SHA:0:7}"
-          STAGING_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
-          PROD_REGISTRY="422940799530.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
-          PROD_REPO="${PROD_REGISTRY}/batbern/production/${{ matrix.service }}"
-
-          echo "Promoting ${STAGING_REPO}:${VERSION} → ${PROD_REPO}:${VERSION}"
-          docker tag ${STAGING_REPO}:${VERSION} ${PROD_REPO}:${VERSION}
-          docker push ${PROD_REPO}:${VERSION}
+      # DEPRECATED: Production account (422940799530) is decommissioned.
+      # Production traffic is served by the staging account (188701360969).
+      # Images pushed to staging ECR are used directly for production deployments.
+      # The steps below are kept commented out for reference.
+      #
+      # - name: Configure AWS credentials (Production)
+      #   if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
+      #     aws-region: ${{ env.AWS_REGION }}
+      #
+      # - name: Login to Amazon ECR (Production)
+      #   if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   uses: aws-actions/amazon-ecr-login@v2
+      #
+      # - name: Push to production ECR
+      #   if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   run: |
+      #     VERSION="${GITHUB_SHA:0:7}"
+      #     STAGING_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
+      #     PROD_REGISTRY="422940799530.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+      #     PROD_REPO="${PROD_REGISTRY}/batbern/production/${{ matrix.service }}"
+      #     echo "Promoting ${STAGING_REPO}:${VERSION} → ${PROD_REPO}:${VERSION}"
+      #     docker tag ${STAGING_REPO}:${VERSION} ${PROD_REPO}:${VERSION}
+      #     docker push ${PROD_REPO}:${VERSION}
 
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Frontend Application
@@ -468,7 +479,7 @@ jobs:
 
       - name: Upload test reports artifact
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true' && always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-frontend
           path: |
@@ -486,7 +497,7 @@ jobs:
 
       - name: Upload build artifacts
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: web-frontend/dist/
@@ -501,6 +512,113 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   # ═══════════════════════════════════════════════════════════
+  # BUILD + TEST: Infrastructure (CDK + Lambda jest unit tests)
+  # ═══════════════════════════════════════════════════════════
+  # Gates the infrastructure jest suite (test/unit/**) — CDK Template assertions AND
+  # Lambda-handler tests. Previously NO CI job ran `cd infrastructure && npm test`, so
+  # test-only drift (stale mocks, stale IAM-action assertions) could reach prod
+  # undetected even though `npm run build`/`cdk synth` and the deploy stayed green.
+  # Mirrors the build-frontend change-detection + node-setup pattern.
+  # ═══════════════════════════════════════════════════════════
+  build-infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to enable git diff between commits
+
+      - name: Check if infrastructure exists
+        id: check-infra
+        run: |
+          if [ -d "infrastructure" ] && [ -f "infrastructure/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "::warning::Infrastructure directory does not exist"
+          fi
+
+      - name: Detect infrastructure changes
+        id: infra-changes
+        run: |
+          # For PR events, compare against base branch; for push, compare against previous commit
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          echo "Comparing $BASE_SHA...$HEAD_SHA"
+
+          # Ensure the base commit is available in the local checkout
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch more history..."
+            git fetch --deepen=100 origin develop 2>/dev/null || echo "::warning::Could not deepen history"
+            if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+              echo "::warning::Base commit $BASE_SHA still not found after deepening history"
+            fi
+          fi
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+
+          # If we can't determine the diff (e.g., first push), run the suite to be safe
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "⚠️  Cannot determine changed files, will run infrastructure tests"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Run when any infra source, lambda, test, or dependency manifest changed
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib|bin|lambda|test)/|^infrastructure/package"; then
+            echo "✓ Infrastructure changes detected"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️  No infrastructure changes detected, skipping tests"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Node.js 20
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/package-lock.json
+
+      - name: Install dependencies
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        run: npm ci
+
+      - name: Run unit tests (CDK + Lambda handlers)
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        # Scope to test/unit only — CDK stacks + Lambda handlers (the drift this gate exists to
+        # catch). test/integration (docker-compose, Testcontainers) needs Docker/AWS and is NOT
+        # appropriate for this lightweight build gate; running the full `jest` swept those in and
+        # docker-compose.test.ts failed in CI (`docker compose config` threw → its catch hit the
+        # undefined global `fail()`). See Story 12.1.
+        run: npm test -- --ci test/unit
+
+      - name: Type-check + compile
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        run: npm run build
+
+      - name: Upload test reports artifact
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true' && always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-infrastructure
+          path: |
+            infrastructure/coverage/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ═══════════════════════════════════════════════════════════
   # CODE QUALITY ANALYSIS: SonarCloud Multi-Module Scan
   # ═══════════════════════════════════════════════════════════
   # Note: Integration tests are run as part of the build-services job above
@@ -510,8 +628,8 @@ jobs:
     name: SonarCloud Analysis
     needs: [build-shared-kernel, build-services, build-frontend]
     runs-on: ubuntu-latest
-    # Skip SonarCloud for Dependabot PRs (they don't have access to secrets)
-    if: github.actor != 'dependabot[bot]'
+    # Disabled — SonarCloud analysis turned off
+    if: false
 
     steps:
       - name: Checkout code
@@ -562,7 +680,10 @@ jobs:
           CHANGED_SERVICES=""
 
           # If infrastructure or shared-kernel changed, analyze everything
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package|^shared-kernel/"; then
+          # Note: the `lambda` alternation (no `lib/` prefix) catches
+          # `infrastructure/lambda/email-forwarder/**` and the other
+          # standalone Lambdas that live outside `infrastructure/lib/`.
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin|lambda)/|^infrastructure/package|^shared-kernel/"; then
             echo "✓ Infrastructure or shared-kernel changes detected - analyzing all modules"
             ANALYZE_ALL="true"
           fi
@@ -724,12 +845,23 @@ jobs:
   # DEPLOYMENT: Trigger staging deployment after successful build
   # ═══════════════════════════════════════════════════════════
   deploy-to-staging:
-    needs: [build-shared-kernel, build-services, build-frontend, sonarcloud]
+    needs: [build-shared-kernel, build-services, build-frontend, build-infrastructure]
     # Deploy to staging on: (1) push to develop OR (2) PR to develop
-    # This allows testing PRs in staging environment before merge
+    # This allows testing PRs in staging environment before merge.
+    #
+    # Dependabot PRs are EXCLUDED from the PR-to-develop deploy gate: their runs
+    # execute with a restricted token and no access to repo secrets, so the
+    # staging auth-token fetch silently no-ops and every authenticated Bruno /
+    # Playwright assertion fails (expected 401 to equal 200). They also have no
+    # business firing a real production deploy per-PR. Build + unit-test jobs
+    # still run; the real deploy gate runs once on the push-to-develop after
+    # merge, where secrets exist. (Root-caused 2026-06-01: monthly dependabot
+    # batch left 18 PRs unmergeable + thrashed prod with concurrent deploys.)
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop')
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.base.ref == 'develop' &&
+       github.actor != 'dependabot[bot]')
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
     permissions:

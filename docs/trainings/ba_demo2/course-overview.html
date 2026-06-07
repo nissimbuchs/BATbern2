@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELCAi Agentic Engineering Basics &mdash; Course Overview</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 1040px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 72px; scroll-margin-top: 80px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.05rem; max-width: 700px; margin: 0 auto 12px; }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .b-neutral { background: rgba(232,234,246,.1); color: var(--text); border: 2px solid var(--border); }
+
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* Two course cards side by side */
+  .course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  .course-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+  }
+  .course-card.cc-instructor { border-color: rgba(226,54,21,.4); }
+  .course-card.cc-self { border-color: rgba(40,175,143,.4); }
+
+  .course-card .cc-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    width: fit-content;
+  }
+  .cc-instructor .cc-badge { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .cc-self .cc-badge { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+
+  .course-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
+  .course-card .cc-subtitle { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px; }
+
+  .cc-details {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 16px;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+  .cc-details dt { color: var(--text-muted); font-weight: 600; }
+  .cc-details dd { color: var(--text); }
+
+  .cc-content-list {
+    list-style: none;
+    flex: 1;
+  }
+  .cc-content-list li {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(46,51,80,.5);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .cc-content-list li:last-child { border-bottom: none; }
+  .cc-content-list .bullet {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .cc-instructor .bullet { color: var(--accent); }
+  .cc-self .bullet { color: var(--accent2); }
+
+  /* Detail sections */
+  .detail-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .detail-block h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .detail-block h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 16px 0 8px;
+    color: var(--text);
+  }
+  .detail-block p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  /* Tag */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-right: 4px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .tag-red { background: rgba(175,35,34,.12); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+  .tag-yellow { background: rgba(255,202,76,.12); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.85rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .note {
+    background: rgba(255,202,76,.06);
+    border: 1px solid rgba(255,202,76,.25);
+    border-left: 4px solid var(--accent4);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 14px 18px;
+    font-size: 0.88rem;
+    margin: 20px 0;
+  }
+  .note strong { color: var(--accent4); }
+
+  .hero-link {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 20px;
+    color: var(--accent2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all .2s;
+  }
+  .hero-link:hover { background: var(--accent2); color: var(--bg); }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+    .course-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#courses" class="active">Courses</a>
+  <a href="#instructor-detail">Instructor-Led</a>
+  <a href="#self-guided-detail">Self-Guided</a>
+  <a href="#prerequisites">Prerequisites</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">Training Catalog</div>
+    <h1>ELCAi Agentic Engineering<br><span>Basics</span></h1>
+    <p>Two formats, one goal: get comfortable working with AI agents using the BMAD Method. Choose instructor-led for hands-on guidance, or self-guided if you prefer your own pace.</p>
+  </div>
+
+  <!-- SIDE-BY-SIDE COURSE CARDS -->
+  <section id="courses">
+    <div class="course-grid">
+
+      <!-- Instructor-Led -->
+      <div class="course-card cc-instructor">
+        <div class="cc-badge">Instructor-Led</div>
+        <h3>ELCAi Agentic Engineering Basics for All Roles</h3>
+        <div class="cc-subtitle">Live, hands-on, with real-time guidance and Q&amp;A</div>
+
+        <dl class="cc-details">
+          <dt>Lecturer</dt>
+          <dd>Nissim Buchs</dd>
+          <dt>Duration</dt>
+          <dd>1 full day</dd>
+          <dt>Schedule</dt>
+          <dd>Monthly (see calendar)</dd>
+          <dt>Target</dt>
+          <dd>All roles &mdash; BA, PM, Testers, Architects, Developers</dd>
+          <dt>Format</dt>
+          <dd>Morning theory + afternoon exercises</dd>
+        </dl>
+
+        <ul class="cc-content-list">
+          <li><span class="bullet">&#x25B8;</span> Onboarding &amp; Claude Code installation</li>
+          <li><span class="bullet">&#x25B8;</span> BMAD fundamentals &amp; live demo</li>
+          <li><span class="bullet">&#x25B8;</span> Exercise 1: Quick Flow (brainstorm to PRD)</li>
+          <li><span class="bullet">&#x25B8;</span> Exercise 2: Full Path (multi-agent, 3 phases)</li>
+          <li><span class="bullet">&#x25B8;</span> Open Q&amp;A and troubleshooting</li>
+        </ul>
+      </div>
+
+      <!-- Self-Guided -->
+      <div class="course-card cc-self">
+        <div class="cc-badge">Self-Guided</div>
+        <h3>ELCAi Agentic Engineering Basics &mdash; Self-Guided</h3>
+        <div class="cc-subtitle">Work at your own pace, always available</div>
+
+        <dl class="cc-details">
+          <dt>Duration</dt>
+          <dd>2-4 hours (self-paced)</dd>
+          <dt>Availability</dt>
+          <dd>Always available</dd>
+          <dt>Target</dt>
+          <dd>Business Analysts (primary), all roles welcome</dd>
+          <dt>Prerequisites</dt>
+          <dd>Claude Code installed</dd>
+          <dt>Format</dt>
+          <dd>Step-by-step HTML sessions with example prompts</dd>
+        </dl>
+
+        <ul class="cc-content-list">
+          <li><span class="bullet">&#x25B8;</span> Getting Started cheat sheet (5 min)</li>
+          <li><span class="bullet">&#x25B8;</span> BMAD introduction &amp; concepts</li>
+          <li><span class="bullet">&#x25B8;</span> Quick Flow example (brainstorm to PRD)</li>
+          <li><span class="bullet">&#x25B8;</span> Full Path Phase 1: Brainstorming session</li>
+          <li><span class="bullet">&#x25B8;</span> Full Path Phase 2: UX Design + PRD sessions</li>
+          <li><span class="bullet">&#x25B8;</span> Full Path Phase 3: Architecture + Epics &amp; Stories sessions</li>
+          <li><span class="bullet">&#x25B8;</span> Common interactions reference card</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- INSTRUCTOR-LED DETAIL -->
+  <section id="instructor-detail">
+    <div class="section-header">
+      <div class="phase-badge b-neutral" style="background:rgba(226,54,21,.15);color:var(--accent);border-color:var(--accent);">&#x1F393;</div>
+      <div class="section-header-text">
+        <h2>Instructor-Led: Full Day Agenda</h2>
+        <p>Monthly sessions with Nissim Buchs &mdash; theory in the morning, hands-on in the afternoon</p>
+      </div>
+    </div>
+
+    <div class="detail-block" style="border-color:rgba(226,54,21,.3)">
+      <h3><span class="tag tag-purple">Morning</span> Foundations (09:00 &ndash; 12:00)</h3>
+
+      <table>
+        <tr><th>Time</th><th>Topic</th><th>Description</th></tr>
+        <tr><td>09:00 &ndash; 09:30</td><td>Welcome &amp; Setup</td><td>Verify Claude Code installation, project setup, introductions</td></tr>
+        <tr><td>09:30 &ndash; 10:15</td><td>BMAD Fundamentals</td><td>The 4 phases, 7 agents, artifact chain, how workflows work</td></tr>
+        <tr><td>10:15 &ndash; 10:30</td><td>Break</td><td></td></tr>
+        <tr><td>10:30 &ndash; 11:30</td><td>Live Demo</td><td>Instructor walks through a complete Quick Flow session in real time</td></tr>
+        <tr><td>11:30 &ndash; 12:00</td><td>Q&amp;A</td><td>Questions on concepts, tools, and what to expect in the afternoon</td></tr>
+      </table>
+    </div>
+
+    <div class="detail-block" style="border-color:rgba(226,54,21,.3)">
+      <h3><span class="tag tag-purple">Afternoon</span> Hands-On Exercises (13:00 &ndash; 17:00)</h3>
+
+      <table>
+        <tr><th>Time</th><th>Exercise</th><th>Description</th></tr>
+        <tr><td>13:00 &ndash; 14:30</td><td>Exercise 1: Quick Flow</td><td>Participants activate the Analyst Agent and produce a brainstorming report and PRD for a given scenario. Instructor coaches in real time.</td></tr>
+        <tr><td>14:30 &ndash; 14:45</td><td>Break</td><td></td></tr>
+        <tr><td>14:45 &ndash; 16:15</td><td>Exercise 2: Full Path</td><td>Multi-agent session: Analyst (brainstorm) &rarr; UX Designer (UX spec) &rarr; PM (PRD). Participants experience agent handoffs and artifact chaining.</td></tr>
+        <tr><td>16:15 &ndash; 17:00</td><td>Wrap-Up &amp; Q&amp;A</td><td>Review artifacts produced, discuss patterns learned, troubleshoot issues, next steps for applying BMAD in real projects.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- SELF-GUIDED DETAIL -->
+  <section id="self-guided-detail">
+    <div class="section-header">
+      <div class="phase-badge b-neutral" style="background:rgba(40,175,143,.15);color:var(--accent2);border-color:var(--accent2);">&#x1F4BB;</div>
+      <div class="section-header-text">
+        <h2>Self-Guided: Session-by-Session Breakdown</h2>
+        <p>All sessions are available now &mdash; complete Phases 1 through 3 at your own pace</p>
+      </div>
+    </div>
+
+    <div class="detail-block" style="border-color:rgba(232,234,246,.25)">
+      <h3><span class="tag" style="background:rgba(232,234,246,.1);color:var(--text-muted);border:1px solid var(--border)">Onboarding</span> Getting Started</h3>
+      <table>
+        <tr><th>Session</th><th>Duration</th><th>What You'll Learn</th><th>Status</th></tr>
+        <tr><td><a href="getting-started.html" style="color:var(--accent2)">Your First 5 Minutes</a></td><td>5 min</td><td>Open the tool, activate an agent, the 5 things you'll type most</td><td><span class="tag tag-green">Available</span></td></tr>
+        <tr><td><a href="bmad-intro.html" style="color:var(--accent2)">BMAD Introduction</a></td><td>15 min</td><td>Phases, agents, workflows, artifact chain</td><td><span class="tag tag-green">Available</span></td></tr>
+        <tr><td><a href="common-interactions.html" style="color:var(--accent2)">Common Interactions</a></td><td>5 min</td><td>How to approve, correct, ask, navigate, and power-steer agents</td><td><span class="tag tag-green">Available</span></td></tr>
+      </table>
+    </div>
+
+    <div class="detail-block" style="border-color:rgba(40,175,143,.3)">
+      <h3><span class="tag tag-green">Example 1</span> Quick Flow &mdash; Partner Enhancements</h3>
+      <table>
+        <tr><th>Session</th><th>Duration</th><th>What You'll Learn</th><th>Status</th></tr>
+        <tr><td><a href="quick-session.html" style="color:var(--accent2)">Brainstorm &rarr; PRD</a></td><td>30 min</td><td>Single-session workflow: brainstorm features, then produce a PRD</td><td><span class="tag tag-green">Available</span></td></tr>
+      </table>
+    </div>
+
+    <div class="detail-block" style="border-color:rgba(226,54,21,.3)">
+      <h3><span class="tag tag-purple">Example 2</span> Full Path &mdash; Active Meeting Agenda</h3>
+      <p>Multi-agent, multi-session journey across all three BA phases.</p>
+
+      <h4><span class="tag tag-green">Phase 1</span> Analysis</h4>
+      <table>
+        <tr><th>Session</th><th>Duration</th><th>Agent</th><th>Status</th></tr>
+        <tr><td><a href="agenda-brainstorm-session.html" style="color:var(--accent2)">Brainstorming Session</a></td><td>30 min</td><td>Mary (Analyst)</td><td><span class="tag tag-green">Available</span></td></tr>
+        <tr><td><a href="agenda-brainstorm-detailed.html" style="color:var(--accent2)">Detailed Walkthrough</a></td><td>45 min</td><td>Mary (Analyst)</td><td><span class="tag tag-green">Available</span></td></tr>
+      </table>
+
+      <h4><span class="tag tag-purple">Phase 2</span> Planning</h4>
+      <table>
+        <tr><th>Session</th><th>Duration</th><th>Agent</th><th>Status</th></tr>
+        <tr><td><a href="agenda-ux-session.html" style="color:var(--accent2)">UX Design Session</a></td><td>30 min</td><td>Sally (UX Designer)</td><td><span class="tag tag-green">Available</span></td></tr>
+        <tr><td><a href="agenda-prd-session.html" style="color:var(--accent2)">PRD Creation Session</a></td><td>30 min</td><td>John (PM)</td><td><span class="tag tag-green">Available</span></td></tr>
+      </table>
+
+      <h4><span class="tag tag-red">Phase 3</span> Solutioning</h4>
+      <table>
+        <tr><th>Session</th><th>Duration</th><th>Agent</th><th>Status</th></tr>
+        <tr><td><a href="agenda-architecture-session.html" style="color:var(--accent2)">Architecture Session</a></td><td>30 min</td><td>Winston (Architect)</td><td><span class="tag tag-green">Available</span></td></tr>
+        <tr><td><a href="agenda-epics-session.html" style="color:var(--accent2)">Epics &amp; Stories Session</a></td><td>30 min</td><td>John (PM)</td><td><span class="tag tag-green">Available</span></td></tr>
+      </table>
+    </div>
+
+    <div class="note">
+      <strong>All phases complete:</strong> The self-guided course now covers the full BA workflow from brainstorming through architecture and epics/stories. Phase 3 (Solutioning) sessions &mdash; Architecture and Epics &amp; Stories &mdash; are fully available alongside Phases 1 and 2.
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- PREREQUISITES -->
+  <section id="prerequisites">
+    <div class="section-header">
+      <div class="phase-badge b-neutral">&#x2699;</div>
+      <div class="section-header-text">
+        <h2>Prerequisites &amp; Setup</h2>
+        <p>What you need before starting either course</p>
+      </div>
+    </div>
+
+    <div class="detail-block">
+      <h3>For Both Formats</h3>
+      <table>
+        <tr><th>Requirement</th><th>Details</th></tr>
+        <tr><td>Claude Code</td><td>Installed and working. Run <code>claude --version</code> to verify.</td></tr>
+        <tr><td>BMAD Method</td><td>Installed in your project. The <code>/bmad-agent-bmm-analyst</code> command should work.</td></tr>
+        <tr><td>A project folder</td><td>Any project with a <code>.claude</code> directory containing BMAD configuration.</td></tr>
+        <tr><td>Terminal access</td><td>Mac Terminal, Windows Terminal, or VS Code integrated terminal.</td></tr>
+      </table>
+
+      <h4>Instructor-Led: Additional</h4>
+      <p>Bring a laptop with the above installed. The instructor will verify setup during the first 30 minutes. If you run into issues beforehand, contact the instructor.</p>
+
+      <h4>Self-Guided: Additional</h4>
+      <p>No additional requirements. Start with the <a href="getting-started.html" style="color:var(--accent2)">Getting Started</a> page and work through at your own pace. The sessions include exact prompts you can copy-paste.</p>
+    </div>
+  </section>
+
+  <div style="text-align:center;margin-top:32px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+    <a href="getting-started.html" class="hero-link">Start: Getting Started &rarr;</a>
+    <a href="master.html" class="hero-link">Training Hub</a>
+  </div>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

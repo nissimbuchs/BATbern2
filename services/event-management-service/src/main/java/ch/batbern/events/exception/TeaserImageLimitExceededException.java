@@ -10,4 +10,8 @@ public class TeaserImageLimitExceededException extends RuntimeException {
     public TeaserImageLimitExceededException(String eventCode, int maxImages) {
         super("Maximum of " + maxImages + " teaser images reached for event: " + eventCode);
     }
+
+    public TeaserImageLimitExceededException(int maxImages) {
+        super("Maximum of " + maxImages + " global teaser images reached");
+    }
 }

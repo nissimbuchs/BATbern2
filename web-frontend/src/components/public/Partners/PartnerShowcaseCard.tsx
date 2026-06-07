@@ -6,6 +6,7 @@
 
 import { Card } from '@/components/public/ui/card';
 import { format } from 'date-fns';
+import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 interface PartnerShowcaseCardProps {
   companyName: string;
@@ -32,7 +33,7 @@ export const PartnerShowcaseCard = ({
 
   return (
     <Card
-      className={`flex-shrink-0 w-80 h-48 p-4 bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors ${
+      className={`flex-shrink-0 w-80 h-48 p-4 bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors ${
         website ? 'cursor-pointer' : 'cursor-default opacity-70'
       }`}
       onClick={handleClick}
@@ -41,7 +42,12 @@ export const PartnerShowcaseCard = ({
         {/* Logo */}
         <div className="flex-1 w-full max-h-32 flex items-center justify-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={companyName} className="max-w-full max-h-32 object-contain" />
+            <img
+              src={buildCdnImageUrl(logoUrl, { h: 256, fit: 'contain' }) ?? logoUrl}
+              alt={companyName}
+              loading="lazy"
+              className="max-w-full max-h-32 object-contain"
+            />
           ) : (
             <div className="w-48 h-24 flex items-center justify-center rounded bg-primary">
               <span className="text-4xl font-semibold text-primary-foreground">{initials}</span>

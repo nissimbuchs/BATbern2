@@ -3,7 +3,7 @@
 // This file contains only service-specific dependencies and configuration
 
 plugins {
-    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.7'
 }
 
 // Git properties generation
@@ -37,6 +37,11 @@ dependencies {
     implementation 'com.amazonaws:aws-xray-recorder-sdk-spring:2.15.1'
     implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.15.1'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
+    // Additional-email verification (v2): JWT for stateless signed verification tokens
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // Service-specific: Testing
     testImplementation 'io.rest-assured:rest-assured:5.5.6'

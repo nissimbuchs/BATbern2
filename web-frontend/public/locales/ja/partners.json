@@ -165,7 +165,19 @@
       "actions": "操作"
     },
     "error": "ミーティングを読み込めませんでした",
-    "inviteSuccess": "カレンダー招待を送信中です"
+    "inviteSuccess": "カレンダー招待を送信中です",
+    "rsvp": {
+      "title": "参加者の返答",
+      "loading": "返答を読み込み中...",
+      "error": "RSVP返答を読み込めませんでした",
+      "noResponses": "まだ返答はありません",
+      "summary": "{{accepted}} 承諾 · {{declined}} 辞退 · {{tentative}} 仮承諾",
+      "status": {
+        "accepted": "承諾",
+        "declined": "辞退",
+        "tentative": "仮承諾"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "あなたのアカウントは会社に紐付けられていません",

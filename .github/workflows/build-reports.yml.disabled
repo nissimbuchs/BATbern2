@@ -1,0 +1,295 @@
+name: Build Test & Quality Reports
+
+on:
+  workflow_run:
+    workflows: ["Build Pipeline"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  build-reports:
+    name: Generate Test & Quality Dashboard
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    permissions:
+      id-token: write   # Required for OIDC AWS authentication
+      contents: read
+      actions: read     # Required to download artifacts from other workflow runs
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/projectdoc/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: build-artifacts
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Configure AWS credentials (staging)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: eu-central-1
+
+      - name: Restore artifacts and backfill from S3 historical store
+        # Option B: persist per-module test/coverage data to S3 so partial builds
+        # (change-detection skipped unchanged modules) still produce a complete report.
+        #
+        # 1. Restore this run's downloaded artifacts to their original repo-root paths.
+        # 2. For any module missing from this run, pull the latest from S3.
+        run: |
+          S3_STORE="s3://batbern-content-staging/ci-reports/latest-test-reports"
+          MODULES=(
+            "shared-kernel"
+            "api-gateway"
+            "services/event-management-service"
+            "services/speaker-coordination-service"
+            "services/partner-coordination-service"
+            "services/attendee-experience-service"
+            "services/company-user-management-service"
+          )
+
+          # Step 1 — restore this run's artifacts from build-artifacts/ to repo root.
+          # download-artifact places them as build-artifacts/{artifact-name}/{original-path},
+          # so rsync-ing each subdirectory into ./ reconstructs the original layout.
+          echo "=== Restoring current-run artifacts to repo root ==="
+          if [ -d "build-artifacts" ]; then
+            for dir in build-artifacts/test-reports-*/; do
+              if [ -d "$dir" ]; then
+                echo "  Restoring: $dir"
+                rsync -a "$dir" ./ 2>/dev/null || true
+              fi
+            done
+          else
+            echo "  No build-artifacts directory (download may have been skipped)"
+          fi
+
+          # Step 2 — backfill from S3 for modules with no data in this run.
+          echo ""
+          echo "=== Backfilling missing modules from S3 ==="
+          for module in "${MODULES[@]}"; do
+            test_dir="${module}/build/test-results"
+            coverage_dir="${module}/build/reports/jacoco"
+            checkstyle_dir="${module}/build/reports/checkstyle"
+
+            if [ -d "$test_dir" ]; then
+              echo "  $module — local data present, skipping S3 fetch"
+            else
+              echo "  $module — no local data, fetching from S3..."
+              aws s3 sync "${S3_STORE}/${module}/build/test-results/"  "${test_dir}/"      --quiet 2>/dev/null || true
+              aws s3 sync "${S3_STORE}/${module}/build/reports/jacoco/" "${coverage_dir}/" --quiet 2>/dev/null || true
+              aws s3 sync "${S3_STORE}/${module}/build/reports/checkstyle/" "${checkstyle_dir}/" --quiet 2>/dev/null || true
+            fi
+          done
+
+          # Frontend
+          if [ -d "web-frontend/coverage" ]; then
+            echo "  web-frontend — local coverage present, skipping S3 fetch"
+          else
+            echo "  web-frontend — no local coverage, fetching from S3..."
+            aws s3 sync "${S3_STORE}/web-frontend/coverage/"      "web-frontend/coverage/"      --quiet 2>/dev/null || true
+            aws s3 sync "${S3_STORE}/web-frontend/test-results/"  "web-frontend/test-results/"  --quiet 2>/dev/null || true
+          fi
+
+          echo ""
+          echo "=== Final test data summary ==="
+          for module in "${MODULES[@]}"; do
+            count=$(find "${module}/build/test-results" -name "*.xml" 2>/dev/null | wc -l)
+            echo "  $module: $count test XML files"
+          done
+          fe_count=$(find web-frontend/coverage -name "lcov.info" 2>/dev/null | wc -l)
+          echo "  web-frontend coverage: $fe_count lcov.info file(s)"
+
+      - name: Fetch latest ZAP DAST reports from security-scan artifact
+        # Pre-populates security-reports/ so build-reports.js skips the S3 download and uses
+        # the freshest data. Falls back to S3 (fetched by build-reports.js) if no artifact found.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p security-reports
+          RUN_ID=$(gh run list \
+            --workflow=security-scan.yml \
+            --status=success \
+            --limit=1 \
+            --json databaseId \
+            -q '.[0].databaseId' 2>/dev/null || echo "")
+          if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+            gh run download "$RUN_ID" \
+              --name zap-reports \
+              --dir security-reports/ 2>/dev/null \
+              && echo "ZAP reports fetched from run $RUN_ID: $(ls security-reports/)" \
+              || echo "No zap-reports artifact in run $RUN_ID — build-reports.js will fall back to S3"
+          else
+            echo "No recent successful security-scan run found — build-reports.js will fall back to S3"
+          fi
+
+      - name: Install projectdoc dependencies
+        working-directory: apps/projectdoc
+        run: npm ci
+
+      - name: Build test & quality reports
+        # ZAP reports are fetched from staging S3 by build-reports.js (batbern-staging credentials
+        # are now available via OIDC above). Security-scan.yml uploads zap-reports artifact which
+        # gets synced to S3 by the "Upload ZAP reports to staging S3" step at the end of this job.
+        working-directory: apps/projectdoc
+        run: npm run build:reports
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA: ${{ github.sha }}
+          CI: true
+
+      - name: Build documentation site (with reports)
+        working-directory: apps/projectdoc
+        run: npm run build
+
+      - name: Upload reports as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-quality-reports
+          path: apps/projectdoc/dist/reports/
+          retention-days: 30
+
+      - name: Upload full documentation site
+        uses: actions/upload-artifact@v7
+        with:
+          name: projectdoc-site
+          path: apps/projectdoc/dist/
+          retention-days: 7
+
+      - name: Upload ZAP reports to staging S3
+        # Stores ZAP JSON under batbern-content-staging/ci-reports/zap/ so the
+        # local deploy script can fetch them with the batbern-staging AWS profile.
+        run: |
+          if [ -d "security-reports" ] && [ "$(ls -A security-reports)" ]; then
+            aws s3 sync security-reports/ \
+              s3://batbern-content-staging/ci-reports/zap/ \
+              --delete \
+              --region eu-central-1
+            echo "ZAP reports uploaded: $(ls security-reports/)"
+          else
+            echo "No ZAP reports found — skipping S3 upload"
+          fi
+
+      - name: Upload fresh test reports to S3 historical store
+        # Option B: persist any modules built in this run so future partial builds
+        # can backfill from S3 instead of producing a zero-data report.
+        if: always()
+        run: |
+          S3_STORE="s3://batbern-content-staging/ci-reports/latest-test-reports"
+          MODULES=(
+            "shared-kernel"
+            "api-gateway"
+            "services/event-management-service"
+            "services/speaker-coordination-service"
+            "services/partner-coordination-service"
+            "services/attendee-experience-service"
+            "services/company-user-management-service"
+          )
+
+          echo "=== Uploading fresh test reports to S3 historical store ==="
+          for module in "${MODULES[@]}"; do
+            test_dir="${module}/build/test-results"
+            coverage_dir="${module}/build/reports/jacoco"
+            checkstyle_dir="${module}/build/reports/checkstyle"
+
+            # Only upload dirs that came from the current run's downloaded artifacts
+            # (i.e. exist under build-artifacts/), not ones we pulled from S3 ourselves.
+            artifact_name="test-reports-$(basename "$module")"
+            if [ -d "build-artifacts/${artifact_name}" ]; then
+              echo "  Uploading $module (built this run)..."
+              [ -d "$test_dir" ]      && aws s3 sync "$test_dir/"      "${S3_STORE}/${module}/build/test-results/"       --delete --quiet || true
+              [ -d "$coverage_dir" ]  && aws s3 sync "$coverage_dir/"  "${S3_STORE}/${module}/build/reports/jacoco/"     --delete --quiet || true
+              [ -d "$checkstyle_dir" ] && aws s3 sync "$checkstyle_dir/" "${S3_STORE}/${module}/build/reports/checkstyle/" --delete --quiet || true
+            else
+              echo "  Skipping $module (not rebuilt this run)"
+            fi
+          done
+
+          # Frontend
+          if [ -d "build-artifacts/test-reports-frontend" ]; then
+            echo "  Uploading web-frontend (built this run)..."
+            [ -d "web-frontend/coverage" ]      && aws s3 sync "web-frontend/coverage/"      "${S3_STORE}/web-frontend/coverage/"      --delete --quiet || true
+            [ -d "web-frontend/test-results" ]  && aws s3 sync "web-frontend/test-results/"  "${S3_STORE}/web-frontend/test-results/"  --delete --quiet || true
+          else
+            echo "  Skipping web-frontend (not rebuilt this run)"
+          fi
+
+          echo "S3 historical store update complete."
+
+      - name: Create PR comment with report summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summaryPath = 'apps/projectdoc/dist/reports/data/summary.json';
+
+            if (fs.existsSync(summaryPath)) {
+              const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+
+              const healthIcon = {
+                'passing': '✅',
+                'warning': '⚠️',
+                'failing': '❌'
+              }[summary.summary.healthStatus] || '❓';
+
+              const comment = `
+            ## ${healthIcon} Test & Quality Report
+
+            **Build Health:** ${summary.summary.healthStatus}
+
+            ### Summary
+            - **Tests:** ${summary.summary.tests.passed}/${summary.summary.tests.total} passed (${summary.summary.tests.successRate}%)
+            - **Coverage:** ${summary.summary.coverage.overall}% (Target: ${summary.summary.coverage.target}%)
+            - **Security Issues:** ${summary.summary.security.totalIssues} (Critical: ${summary.summary.security.critical}, High: ${summary.summary.security.high})
+            - **Quality Violations:** ${summary.summary.quality.totalViolations} (Errors: ${summary.summary.quality.errors}, Warnings: ${summary.summary.quality.warnings})
+
+            📊 [View Full Report](https://project.batbern.ch/reports/) (available after deployment)
+              `;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+      - name: Fail if health status is failing
+        # Option C: only fail the job when there is real test data to evaluate.
+        # 0 tests found = no data (modules skipped by change detection, S3 backfill
+        # not yet seeded) — that's a warning, not a failure.
+        working-directory: apps/projectdoc
+        run: |
+          if [ -f "dist/reports/data/summary.json" ]; then
+            health_status=$(jq -r '.summary.healthStatus' dist/reports/data/summary.json)
+            total_tests=$(jq -r '.summary.tests.total // 0' dist/reports/data/summary.json)
+            echo "Health status: $health_status | Total tests: $total_tests"
+
+            if [ "$health_status" = "failing" ] && [ "$total_tests" -gt 0 ]; then
+              echo "❌ Build health status is FAILING ($total_tests tests evaluated)"
+              echo "View the reports for details."
+              exit 1
+            elif [ "$health_status" = "failing" ] && [ "$total_tests" -eq 0 ]; then
+              echo "⚠️  Health status is failing but no test data was found — S3 historical store may not be seeded yet. Skipping failure."
+            fi
+          fi

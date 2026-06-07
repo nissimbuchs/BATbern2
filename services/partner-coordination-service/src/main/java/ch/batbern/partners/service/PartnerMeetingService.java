@@ -137,24 +137,27 @@ public class PartnerMeetingService {
         // Fetch linked event details for ICS
         EventSummaryDTO event = eventManagementClient.getEventSummary(meeting.getEventCode());
 
-        // Generate ICS content
-        byte[] icsContent = icsGeneratorService.generate(meeting, event);
+        // Collect all invite recipients BEFORE ICS generation so ATTENDEE lines are included (AC1)
+        List<String> emails = collectInviteRecipientEmails();
 
-        // Collect all partner contact emails
-        List<String> emails = collectPartnerContactEmails();
+        // Increment SEQUENCE before ICS generation (RFC 5545: higher SEQUENCE = update)
+        meeting.setInviteSequence(meeting.getInviteSequence() + 1);
+
+        // Generate ICS content with recipient emails for ATTENDEE fields (Story 10.27 AC1)
+        byte[] icsContent = icsGeneratorService.generate(meeting, event, emails);
 
         // Dispatch emails asynchronously (AC8 — returns 202 immediately)
-        inviteEmailService.sendCalendarInvites(
-                emails,
+        var inviteDetails = new PartnerInviteEmailService.MeetingInviteDetails(
                 event.title(),
+                meeting.getEventCode(),
                 meeting.getMeetingDate(),
                 meeting.getStartTime(),
                 meeting.getEndTime(),
-                meeting.getLocation(),
-                icsContent
+                meeting.getLocation()
         );
+        inviteEmailService.sendCalendarInvites(emails, inviteDetails, icsContent);
 
-        // Mark invite_sent_at
+        // Persist updated sequence and invite_sent_at together
         meeting.setInviteSentAt(Instant.now());
         meetingRepository.save(meeting);
 
@@ -168,27 +171,92 @@ public class PartnerMeetingService {
     }
 
     /**
-     * Collect all unique partner contact emails.
+     * Delete a partner meeting.
      *
-     * Fetches all users with the PARTNER role from the User Service.
-     * Any PARTNER-role user is automatically a partner contact of their company.
+     * If a calendar invite has already been sent (inviteSentAt != null), a METHOD:CANCEL ICS
+     * is generated and sent to all partners and organizers so their calendar clients remove
+     * the entry automatically. The email is dispatched asynchronously.
      *
-     * Silently returns empty list if User Service is unavailable (logs warning).
+     * RSVPs are removed automatically via ON DELETE CASCADE (V9 migration).
+     *
+     * @param meetingId the meeting to delete
      */
-    private List<String> collectPartnerContactEmails() {
+    @Transactional
+    public void deleteMeeting(UUID meetingId) {
+        PartnerMeeting meeting = findMeetingById(meetingId);
+        log.info("Deleting partner meeting: id={}, eventCode={}, inviteSent={}",
+                meetingId, meeting.getEventCode(), meeting.getInviteSentAt() != null);
+
+        if (meeting.getInviteSentAt() != null) {
+            // Fetch event title for the cancellation email body
+            EventSummaryDTO event = eventManagementClient.getEventSummary(meeting.getEventCode());
+            List<String> emails = collectInviteRecipientEmails();
+            byte[] cancelIcs = icsGeneratorService.generateCancelIcs(meeting);
+            inviteEmailService.sendCancellationNotice(
+                    emails,
+                    event.title(),
+                    meeting.getEventCode(),
+                    meeting.getMeetingDate(),
+                    cancelIcs
+            );
+            log.info("Cancellation notice queued for {} recipients, meetingId={}", emails.size(), meetingId);
+        }
+
+        meetingRepository.delete(meeting);
+    }
+
+    /**
+     * Collect all unique invite recipient emails: partners + organizers.
+     *
+     * Partners receive the invite as the primary audience.
+     * Organizers are included so they have the calendar entry for coordination.
+     * Duplicates (e.g. a user with both roles) are removed.
+     *
+     * Silently tolerates User Service unavailability per role (logs warning).
+     */
+    private List<String> collectInviteRecipientEmails() {
+        List<String> emails = new ArrayList<>();
+        emails.addAll(fetchEmailsByRole("PARTNER"));
+        emails.addAll(fetchEmailsByRole("ORGANIZER"));
+
+        // Story 10.32 (P2-5 from 2026-05-22 review): case-insensitive dedup. CUMS
+        // returns emails in whatever case the user typed (e.g. "John.Doe@Example.com"
+        // for the primary vs lowercase-normalised additional emails), so .distinct()
+        // would keep both and the calendar invite would land twice. We preserve the
+        // first-seen casing (rendered nicer in MIME headers) but key dedup off the
+        // lowercased form.
+        java.util.Set<String> seenLowercased = new java.util.LinkedHashSet<>();
+        List<String> deduplicated = new ArrayList<>();
+        for (String email : emails) {
+            String key = email.toLowerCase(java.util.Locale.ROOT);
+            if (seenLowercased.add(key)) {
+                deduplicated.add(email);
+            }
+        }
+
+        log.debug("Collected {} invite recipient emails (partners + organizers)", deduplicated.size());
+        return deduplicated;
+    }
+
+    private List<String> fetchEmailsByRole(String role) {
         try {
-            List<UserResponse> partnerUsers = userServiceClient.getUsersByRole("PARTNER");
-
-            List<String> emails = partnerUsers.stream()
-                    .filter(u -> u.getEmail() != null && !u.getEmail().isBlank())
-                    .map(UserResponse::getEmail)
-                    .distinct()
-                    .collect(Collectors.toList());
-
-            log.debug("Collected {} partner contact emails", emails.size());
+            List<String> emails = new ArrayList<>();
+            for (UserResponse u : userServiceClient.getUsersByRole(role)) {
+                if (u.getEmail() != null && !u.getEmail().isBlank()) {
+                    emails.add(u.getEmail());
+                }
+                // Story 10.32 extension: include user's verified additional emails so
+                // calendar invites reach every address the user has registered.
+                if (u.getAdditionalEmails() != null) {
+                    u.getAdditionalEmails().stream()
+                            .map(ch.batbern.partners.client.user.dto.AdditionalEmail::getEmail)
+                            .filter(e -> e != null && !e.isBlank())
+                            .forEach(emails::add);
+                }
+            }
             return emails;
         } catch (Exception e) {
-            log.warn("Could not fetch partner contact emails from User Service: {}", e.getMessage());
+            log.warn("Could not fetch {} emails from User Service: {}", role, e.getMessage());
             return new ArrayList<>();
         }
     }

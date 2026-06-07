@@ -9,6 +9,7 @@ import { Building2 } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import { useCompany } from '@/hooks/useCompany/useCompany';
 import { useUserPortrait } from '@/hooks/useUserPortrait';
+import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 interface SpeakerDisplayProps {
   speaker: SessionSpeaker;
@@ -55,6 +56,10 @@ export const SpeakerDisplay = ({
 
   const logoUrl = speaker.companyLogoUrl ?? company?.logo?.url;
 
+  // Prefer the human-readable display name; fall back to the slug. `speaker.company`
+  // (the slug) stays the stable key for logo lookup above — only the label changes.
+  const companyLabel = speaker.companyDisplayName ?? speaker.company;
+
   // Size mappings
   const sizeClasses = {
     small: {
@@ -94,12 +99,16 @@ export const SpeakerDisplay = ({
         >
           {effectivePortraitUrl ? (
             <img
-              src={effectivePortraitUrl}
+              src={
+                buildCdnImageUrl(effectivePortraitUrl, { w: 160, h: 160, fit: 'cover' }) ??
+                undefined
+              }
               alt={`${speaker.firstName} ${speaker.lastName}`}
               className="h-full w-full object-cover"
               width={80}
               height={80}
               loading="lazy"
+              data-testid="speaker-photo"
             />
           ) : (
             <span className={`${sizes.initials} font-light text-zinc-300`}>
@@ -112,13 +121,16 @@ export const SpeakerDisplay = ({
 
       {/* Speaker Info (flex-grow to take available space) */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <div className={`${sizes.name} font-light text-zinc-100`}>
+        <div className={`${sizes.name} font-light text-zinc-100`} data-testid="speaker-name">
           {speaker.firstName} {speaker.lastName}
         </div>
         {speaker.company && (
-          <div className={`${sizes.company} text-zinc-400 flex items-center gap-1.5`}>
+          <div
+            className={`${sizes.company} text-zinc-400 flex items-center gap-1.5`}
+            data-testid="speaker-company"
+          >
             <Building2 className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">{speaker.company}</span>
+            <span className="truncate">{companyLabel}</span>
           </div>
         )}
       </div>
@@ -130,8 +142,8 @@ export const SpeakerDisplay = ({
         >
           {logoUrl ? (
             <img
-              src={logoUrl}
-              alt={`${speaker.company} logo`}
+              src={buildCdnImageUrl(logoUrl, { h: 128, fit: 'contain' }) ?? undefined}
+              alt={`${companyLabel} logo`}
               className={`${sizes.logoImage} object-contain`}
               width={128}
               height={64}

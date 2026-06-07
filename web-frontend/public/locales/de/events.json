@@ -30,7 +30,13 @@
       "selectedTopic": "Ausgewähltes Thema",
       "quickActions": "Schnellzugriff",
       "selectTopic": "Thema auswählen",
-      "previewPublic": "Öffentliche Seite vorschauen"
+      "previewPublic": "Öffentliche Seite vorschauen",
+      "enrollStakeholders": "Organisatoren & Partner einschreiben",
+      "enrollStakeholdersLoading": "Einschreiben…",
+      "enrollStakeholdersSuccess": "{{enrolled}} Organisatoren/Partner eingeschrieben ({{skipped}} bereits registriert)",
+      "enrollStakeholdersError": "Einschreiben fehlgeschlagen",
+      "startPresentation": "Präsentation starten",
+      "liveControl": "Live Steuerung"
     },
     "participantsTab": {
       "title": "Veranstaltungsteilnehmer",
@@ -55,7 +61,38 @@
       "moderatorDesc": "Der für die Moderation dieser Veranstaltung verantwortliche Organisator.",
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator erfolgreich aktualisiert",
-      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
+      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden.",
+      "capacityLabel": "Anmeldekapazität",
+      "capacityHelperText": "Leer lassen für unbegrenzte Anmeldungen. Darf die Veranstaltungskapazität nicht überschreiten.",
+      "capacityUpdated": "Kapazität erfolgreich aktualisiert",
+      "capacityUpdateError": "Kapazität konnte nicht aktualisiert werden.",
+      "notifications": "Benachrichtigungen",
+      "activeAutomations": "aktive Automatisierungen",
+      "manageAll": "Alle Benachrichtigungen verwalten",
+      "dangerZone": "Gefahrenbereich",
+      "dangerWarning": "Diese Aktionen sind nicht rückgängig zu machen. Bitte mit Vorsicht vorgehen.",
+      "cancelEvent": "Veranstaltung absagen",
+      "cancelEventDesc": "Sagt die Veranstaltung ab und benachrichtigt alle Angemeldeten",
+      "deleteEvent": "Veranstaltung löschen",
+      "deleteEventDesc": "Löscht die Veranstaltung dauerhaft (nur ohne Teilnehmer-Anmeldungen)",
+      "cannotDelete": "Veranstaltung mit Teilnehmer-Anmeldungen kann nicht gelöscht werden. Stattdessen absagen.",
+      "confirmCancel": "Veranstaltung absagen?",
+      "cancelConfirmText": "Die Veranstaltung wird abgesagt und alle {{count}} angemeldeten Teilnehmer werden benachrichtigt. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirmCancelBtn": "Ja, absagen",
+      "confirmDelete": "Veranstaltung löschen?",
+      "deleteConfirmText": "Die Veranstaltung \"{{title}}\" wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirmDeleteBtn": "Ja, löschen",
+      "deleteError": "Veranstaltung konnte nicht gelöscht werden. Bitte erneut versuchen.",
+      "speakerReminders": "Referenten-Erinnerungen",
+      "speakerRemindersDesc": "3 Tage vor Deadline",
+      "registrationEmails": "Anmeldebestätigungs-E-Mails",
+      "registrationEmailsDesc": "Sofort bei Anmeldung",
+      "agendaDistribution": "Finale Programmverteilung",
+      "agendaDistributionDesc": "Geplant für Veranstaltungstag -14",
+      "checkInReminders": "Check-in-Erinnerungen am Veranstaltungstag",
+      "checkInRemindersDesc": "Am Morgen des Veranstaltungstags",
+      "startPresentation": "Präsentation starten",
+      "liveControl": "Live Steuerung"
     },
     "participantTable": {
       "headers": {
@@ -64,7 +101,10 @@
       "empty": "Noch keine Teilnehmer angemeldet",
       "actions": {
         "cancel": "Anmeldung stornieren",
-        "delete": "Anmeldung löschen"
+        "delete": "Anmeldung löschen",
+        "resendConfirmation": "Bestätigungsmail erneut senden",
+        "resendSuccess": "Bestätigungsmail wurde erfolgreich versendet",
+        "resendError": "Fehler beim Versenden der Bestätigungsmail"
       },
       "deleteDialog": {
         "title": "Anmeldung löschen",
@@ -128,14 +168,49 @@
       "historyDate": "Datum",
       "historyType": "Typ",
       "historyRecipients": "Empfänger",
+      "historyStatus": "Status",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Erinnerung",
-      "previewTitle": "E-Mail-Vorschau"
+      "previewTitle": "E-Mail-Vorschau",
+      "sendInProgress": "Newsletter wird versendet...",
+      "sendCompleted": "Newsletter an {{count}} Empfänger versendet.",
+      "sendPartial": "An {{sent}} Empfänger versendet. {{failed}} fehlgeschlagen — Wiederholung nutzen.",
+      "sendFailed": "Versand fehlgeschlagen. Bitte «Wiederholen» in der Versandhistorie nutzen.",
+      "retryButton": "Wiederholen",
+      "retryTooltip": "Fehlgeschlagene Empfänger erneut senden",
+      "testMode": "Testmodus (nur Organisatoren)",
+      "testModeWarning": "Testmodus aktiviert — Newsletter wird nur an Organisatoren-Abonnenten gesendet.",
+      "confirmSendBodyTestMode": "{{type}} mit Vorlage '{{templateKey}}' nur an Organisatoren-Abonnenten (Testmodus) für Veranstaltung «{{eventTitle}}» senden?"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "An Veranstaltungsort / Catering senden",
+      "subtitle": "Eine Vorlage auswählen, optional Notizen ergänzen, Vorschau prüfen und anschliessend an Veranstaltungsort, Catering oder beide senden.",
+      "notConfigured": "Kontakte für Veranstaltungsort oder Catering sind nicht konfiguriert.",
+      "openAdmin": "Administration → Veranstaltungsort & Catering öffnen",
+      "templateLabel": "Vorlage",
+      "noTemplates": "Keine Vorlagen verfügbar",
+      "recipients": "Empfänger",
+      "venueRole": "Veranstaltungsort",
+      "cateringRole": "Catering",
+      "notesLabel": "Notizen (optional)",
+      "notesPlaceholder": "z. B. Bitte einen Mittagstisch für 8 Personen um 12:30 Uhr im Säli reservieren.",
+      "previewButton": "Vorschau",
+      "previewFailed": "Vorschau fehlgeschlagen:",
+      "to": "An",
+      "cc": "Cc",
+      "replyTo": "Antwort an",
+      "subject": "Betreff",
+      "sendButton": "Senden",
+      "confirmTitle": "E-Mail senden?",
+      "confirmBody": "Es wird eine echte E-Mail an {{recipients}} gesendet. Antwortadresse ist die hinterlegte Veranstaltungsort-Koordinator:in.",
+      "confirmSend": "Ja, senden",
+      "sentSuccess": "An {{count}} Empfänger gesendet.",
+      "sentFailed": "Versand fehlgeschlagen: {{message}}"
     }
   },
   "dashboard": {
@@ -429,11 +504,6 @@
       "alreadyPublished": "Bereits veröffentlicht",
       "publishTopicFirst": "Bitte veröffentlichen Sie zuerst das Thema",
       "publishSpeakersFirst": "Bitte veröffentlichen Sie zuerst die Referenten",
-      "mode": "Modus",
-      "modeDraft": "Entwurf",
-      "modeProgressive": "Progressiv",
-      "modeComplete": "Vollständig",
-      "notifySubscribers": "Abonnenten benachrichtigen",
       "validationErrors": "Validierungsfehler:",
       "phase": {
         "topic": "Thema",
@@ -441,8 +511,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "Veröffentliche {{phase}}",
-        "notifySubscribers": "Abonnenten bei Veröffentlichung benachrichtigen"
+        "publishingPhase": "Veröffentliche {{phase}}"
       }
     },
     "validation": {
@@ -480,13 +549,21 @@
       "cdnUnknown": "Unbekannt",
       "noVersions": "Kein Versionsverlauf verfügbar"
     },
-    "autoPublishInDays": "Auto-publish in {{days}} days",
-    "autoPublishScheduled": "Auto-publish scheduled",
+    "timeline": {
+      "progress": "{{completed}} von {{total}} Phasen veröffentlicht ({{percent}}%)",
+      "now": "Jetzt",
+      "inDays_one": "{{count}} Tag",
+      "inDays_other": "{{count}} Tage",
+      "publishedOn": "Veröffentlicht am {{date}}",
+      "scheduled": "Geplant: {{date}}"
+    },
+    "autoPublishInDays": "Automatische Veröffentlichung in {{days}} Tagen",
+    "autoPublishScheduled": "Automatische Veröffentlichung geplant",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
+      "topic": "Thema",
+      "speakers": "Referenten",
       "agenda": "Agenda",
-      "updates": "Updates"
+      "updates": "Aktualisierungen"
     }
   },
   "notifications": {
@@ -526,7 +603,7 @@
       "date": "Datum",
       "time": "Zeit",
       "location": "Ort",
-      "capacity": "Kapazität"
+      "capacity": "Anmeldungen"
     },
     "errors": {
       "loadFailed": "Veranstaltung konnte nicht geladen werden",
@@ -602,7 +679,9 @@
       "uploadTitle": "Session-Materialien hochladen",
       "uploadDescription": "Laden Sie Präsentationen, Dokumente oder Videos hoch (max. 100MB pro Datei, bis zu 10 Dateien)",
       "existingTitle": "Vorhandene Materialien",
-      "downloadError": "Material konnte nicht heruntergeladen werden"
+      "downloadError": "Material konnte nicht heruntergeladen werden",
+      "delete": "Material löschen",
+      "deleteError": "Material konnte nicht gelöscht werden"
     },
     "errors": {
       "titleRequired": "Titel ist erforderlich",
@@ -761,7 +840,8 @@
       "confirmed": "Bestätigt",
       "registered": "Angemeldet",
       "waitlist": "Warteliste",
-      "cancelled": "Storniert"
+      "cancelled": "Storniert",
+      "attended": "Teilgenommen"
     }
   },
   "capacity": {
@@ -782,7 +862,8 @@
     "deleteCancel": "Abbrechen",
     "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
     "uploading": "Wird hochgeladen...",
-    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "uploadErrorPartial": "{{failed}} von {{total}} Uploads fehlgeschlagen. Bitte erneut versuchen."
   },
   "teaserImage": {
     "title": "Teaser-Bilder",
@@ -799,6 +880,13 @@
       "afterCommittee": "Komitee-Folie",
       "afterTopicReveal": "Themenbekanntgabe-Folie",
       "afterUpcomingEvents": "Kommende Events-Folie"
+    }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Namensschilder exportieren",
+      "exportNameBadgesDocx": "Namensschilder als Word",
+      "exportError": "Export fehlgeschlagen"
     }
   }
 }

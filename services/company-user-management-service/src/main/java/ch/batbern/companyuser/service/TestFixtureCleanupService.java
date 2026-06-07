@@ -1,0 +1,273 @@
+package ch.batbern.companyuser.service;
+
+import ch.batbern.companyuser.dto.TestFixtureCleanupRequest;
+import ch.batbern.companyuser.dto.TestFixtureCleanupResponse;
+import ch.batbern.companyuser.repository.TestFixtureCleanupRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+/**
+ * Bruno test-fixture cleanup logic for CUMS.
+ *
+ * <p>Removes rows in {@code companies}, {@code user_profiles}, and {@code logos} that match
+ * canonical Bruno test-data prefixes (see {@code bruno-tests/README.md}). The set of allowed
+ * prefixes per entity type is locked in this class — request bodies cannot supply arbitrary
+ * patterns, only one of the literal prefixes we recognize.
+ *
+ * <p>Belt-and-suspenders gating:
+ * <ol>
+ *   <li>Controller-layer {@code @PreAuthorize("hasRole('ORGANIZER')")} requires the caller's
+ *       JWT to carry the organizer role.</li>
+ *   <li>Service-layer regex validation in {@link #cleanup(TestFixtureCleanupRequest)} rejects
+ *       prefixes that don't match the bound pattern for the requested entity type.</li>
+ *   <li>The DELETE statements use parameterized {@code LIKE :pattern} (set-based) — the prefix
+ *       is concatenated with {@code "%"} but cannot inject SQL because Spring Data binds it
+ *       as a parameter, not by string concat into the query.</li>
+ * </ol>
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class TestFixtureCleanupService {
+
+    /**
+     * Entity types this service can clean, with their bound prefix-validation regex.
+     *
+     * <p>The validation regex is anchored to the FULL prefix — a request with
+     * {@code prefix=BAT} for entityType=companies is rejected because {@code BAT} doesn't
+     * match {@code ^BRUNOTESTCO$}. The deletion then runs {@code LIKE 'BRUNOTESTCO%'}.
+     *
+     * <p>To add a new canonical prefix later (e.g., for E2E Playwright tests), widen the
+     * validation regex here — do NOT accept new prefixes via the request body.
+     */
+    public enum CleanupEntityType {
+        COMPANIES(Pattern.compile("^BRUNOTESTCO$")),
+        /**
+         * Sweeps {@code user_profiles} by username prefix.
+         *
+         * <p>Two prefix values are accepted (PR 11, plan §C "speaker-pool cleanup is
+         * cross-service"):
+         * <ul>
+         *   <li>{@code bruno.test.} — original canonical; LIKE {@code bruno.test.%}
+         *       catches users with a collision suffix (e.g. {@code bruno.test.2},
+         *       {@code bruno.test.3}). Created when a previous test already claimed the
+         *       bare {@code bruno.test} username.</li>
+         *   <li>{@code bruno.test} — broader sweep; LIKE {@code bruno.test%} catches
+         *       both the bare {@code bruno.test} AND every suffixed variant. Created
+         *       when the speaker-pool-api promote tests run first (firstName=Bruno,
+         *       lastName=Test ⇒ {@code SlugGenerationService} produces bare
+         *       {@code bruno.test} on the no-collision branch — see
+         *       {@code shared-kernel/.../SlugGenerationService.ensureUniqueUsername}).
+         *       <strong>Safety:</strong> the DB CHECK constraint
+         *       {@code chk_username_format = ^[a-z]+\.[a-z]+(\.[0-9]+)?$} limits real
+         *       usernames to {@code bruno.<lastname>} or {@code bruno.<lastname>.N}
+         *       form. The staging audit (2026-05-24) found no users matching
+         *       {@code bruno.test*} other than the test residue this endpoint targets;
+         *       a future user named "Bruno Tester" would also be swept here, which is
+         *       an accepted-by-design risk for the cleanup endpoint (callers are gated
+         *       by {@code ROLE_ORGANIZER} + audit log).</li>
+         * </ul>
+         */
+        USERS(Pattern.compile("^bruno\\.test\\.?$")),
+        /**
+         * Sweeps the {@code user_additional_emails} table — the failure-mode target
+         * for plan §F4 (the {@code 15-add-additional-email} test that accumulates
+         * rows for the auth user every time {@code 17-delete-additional-email}
+         * fails).
+         *
+         * <p>Accepts TWO prefix values via the same regex:
+         * <ul>
+         *   <li>{@code bruno-test-} for the canonical pattern
+         *       {@code bruno-test-<ts>@e2e.batbern.invalid} (per B1).</li>
+         *   <li>{@code bruno-additional-} for the legacy leak prefix
+         *       {@code bruno-additional-NNN@example.com} that PR 5 is migrating
+         *       away from. Once the migration is done this branch can be removed,
+         *       but keep it for now to sweep historical leakage.</li>
+         * </ul>
+         */
+        ADDITIONAL_EMAILS(Pattern.compile("^bruno-test-$|^bruno-additional-$")),
+        /**
+         * Sweeps {@code user_profiles} by SYNTHETIC EMAIL DOMAIN (suffix match), not by
+         * username prefix. This is the only safe discriminator for JIT-created users that
+         * anonymous / quick event registrations spawn with a test email (issue #725).
+         *
+         * <p>When a registration comes in with an email but no canonical
+         * {@code firstname.lastname}, the backend derives a username like
+         * {@code user.<emaillocalpart>} (e.g. {@code bruno-test-…@e2e.batbern.invalid} ⇒
+         * {@code user.brunotest}) or the test supplies its own ({@code promote.ee},
+         * {@code test.attendee}). None of those start with {@code bruno.test}, so the
+         * {@link #USERS} username-prefix sweep can't reach them — and widening that sweep
+         * to {@code user.%} would delete REAL anonymous attendees. The synthetic email
+         * domain is the only thing that reliably separates test users from prod users.
+         *
+         * <p>The allow-list is locked to three literal values, validated against this bound
+         * regex (the request body cannot supply an arbitrary domain):
+         * <ul>
+         *   <li>{@code @e2e.batbern.invalid} — the canonical Bruno/Playwright test domain
+         *       (RFC-2606 {@code .invalid} TLD; can never be a real deliverable address).</li>
+         *   <li>{@code @batbern-test.ch} — the {@code promote-e2e-*} / {@code user.eetest}
+         *       test domain.</li>
+         *   <li>{@code zaproxy@example.com} — a single full address, the OWASP ZAP scan
+         *       artifact ({@code john.doe}). Matched as a suffix ({@code %zaproxy@example.com})
+         *       so it can never widen to all of {@code @example.com}. The suffix form would
+         *       technically also match a contrived {@code …zaproxy@example.com} local part,
+         *       but no real address ends that way; an exact-match branch is not worth the
+         *       added complexity for a single known artifact.</li>
+         * </ul>
+         *
+         * <p><strong>Safety:</strong> a suffix sweep on these domains can only match rows
+         * whose email ends in a domain no human would ever register under. Real attendees
+         * use real, deliverable domains, so they are structurally unreachable here.
+         */
+        USERS_BY_EMAIL(
+                Pattern.compile("^@e2e\\.batbern\\.invalid$|^@batbern-test\\.ch$|^zaproxy@example\\.com$"),
+                true
+        );
+
+        private final Pattern allowedPrefix;
+
+        /**
+         * When {@code true}, the validated value is matched as a SUFFIX
+         * ({@code LIKE '%' || value}) instead of the default prefix
+         * ({@code LIKE value || '%'}). Used by {@link #USERS_BY_EMAIL} so an email
+         * domain matches the END of the email column.
+         */
+        private final boolean suffixMatch;
+
+        CleanupEntityType(Pattern allowedPrefix) {
+            this(allowedPrefix, false);
+        }
+
+        CleanupEntityType(Pattern allowedPrefix, boolean suffixMatch) {
+            this.allowedPrefix = allowedPrefix;
+            this.suffixMatch = suffixMatch;
+        }
+
+        public boolean isSuffixMatch() {
+            return suffixMatch;
+        }
+
+        public boolean validates(String prefix) {
+            return prefix != null && allowedPrefix.matcher(prefix).matches();
+        }
+
+        public String regexDescription() {
+            return allowedPrefix.pattern();
+        }
+
+        static CleanupEntityType fromString(String value) {
+            if (value == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "entityType is required");
+            }
+            try {
+                return CleanupEntityType.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Unknown entityType: '" + value
+                                + "'. Allowed: companies, users, additional_emails, users_by_email"
+                );
+            }
+        }
+    }
+
+    private final TestFixtureCleanupRepository repository;
+
+    /**
+     * Execute cleanup for one entity type.
+     *
+     * @throws IllegalArgumentException on unknown entityType or non-validating prefix.
+     *         Caught by {@code GlobalExceptionHandler} which returns 400.
+     */
+    @Transactional
+    public TestFixtureCleanupResponse cleanup(TestFixtureCleanupRequest request) {
+        CleanupEntityType entityType = CleanupEntityType.fromString(request.getEntityType());
+
+        if (!entityType.validates(request.getPrefix())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Prefix '" + request.getPrefix() + "' does not match the allowed pattern "
+                            + entityType.regexDescription() + " for entityType " + request.getEntityType()
+            );
+        }
+
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        // Suffix match for email-domain sweeps (USERS_BY_EMAIL): '%' || domain matches the
+        // END of the email column. Everything else is the canonical prefix sweep: value || '%'.
+        String likePattern = entityType.isSuffixMatch()
+                ? "%" + request.getPrefix()
+                : request.getPrefix() + "%";
+
+        switch (entityType) {
+            case COMPANIES:
+                // Wipe logos associated with companies-about-to-be-deleted (soft FK by name).
+                // Anchored on `associated_entity_id LIKE <prefix>%` only — the previous
+                // `s3_key LIKE %/<prefix>%` wildcard was a fragile second path that broke
+                // any time the S3 key layout changed (and risked matching unrelated keys
+                // where the prefix appeared after any path separator). ASSOCIATED-state
+                // logos are the only ones tied to a specific company; PENDING/CONFIRMED
+                // logos for failed Bruno uploads are swept by the lifecycle expiry, not by
+                // this endpoint.
+                int logosForCompanies = repository.deleteLogosByAssociatedEntityIdLike(
+                        request.getPrefix() + "%"  // associated_entity_id starting with prefix
+                );
+                int companies = repository.deleteCompaniesByNameLike(likePattern);
+                counts.put("logos", logosForCompanies);
+                counts.put("companies", companies);
+                break;
+            case USERS:
+                int users = repository.deleteUserProfilesByUsernameLike(likePattern);
+                counts.put("user_profiles", users);
+                // role_assignments + user_additional_emails are cascade-deleted via FK
+                // ON DELETE CASCADE; their counts are not tracked separately here (see
+                // TestFixtureCleanupResponse Javadoc). Omit the keys entirely rather than
+                // emitting a -1 sentinel so the API shape stays clean.
+                break;
+            case ADDITIONAL_EMAILS:
+                // Plan §F4: sweeps the user_additional_emails table directly. Used by
+                // the users-api collection's 00/99 hooks to prevent the per-auth-user
+                // 5-row cap from blocking test 15 when test 17 fails to clean up.
+                // Case-insensitive LIKE so a stored "Bruno-Test-..." mixed case still
+                // matches (defensive — current canonical is lowercase).
+                int additionalEmails = repository.deleteAdditionalEmailsByEmailLike(likePattern);
+                counts.put("user_additional_emails", additionalEmails);
+                break;
+            case USERS_BY_EMAIL:
+                // Issue #725: sweeps user_profiles whose EMAIL ends in a synthetic test
+                // domain — reaches JIT users from anonymous registrations regardless of
+                // how their username was derived (user.<localpart>, promote.ee, etc.).
+                // role_assignments + user_additional_emails cascade via FK ON DELETE
+                // CASCADE, same as the USERS branch. likePattern here is '%' || domain.
+                int usersByEmail = repository.deleteUserProfilesByEmailLike(likePattern);
+                counts.put("user_profiles", usersByEmail);
+                break;
+            default:
+                throw new IllegalStateException("Unhandled entity type: " + entityType);
+        }
+
+        String caller = SecurityContextHolder.getContext().getAuthentication() != null
+                ? SecurityContextHolder.getContext().getAuthentication().getName()
+                : "unknown";
+        log.warn(
+                "Test fixture cleanup executed: caller={} entityType={} prefix={} counts={}",
+                caller, entityType, request.getPrefix(), counts
+        );
+
+        return TestFixtureCleanupResponse.builder()
+                .deletionCounts(counts)
+                .executedAt(Instant.now())
+                .entityType(request.getEntityType())
+                .prefix(request.getPrefix())
+                .build();
+    }
+}

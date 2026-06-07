@@ -1,263 +1,135 @@
 /**
- * E2E Tests for Slot Assignment Workflow
- * Story BAT-11 (5.7): Slot Assignment & Progressive Publishing (AC1-13)
+ * E2E: Slot Assignment — slice 6 / sessions+slot-assignment (plan §C)
+ * docs/plans/playwright-staging-hardening.md
  *
- * IMPORTANT: These tests are RED PHASE tests (TDD). They should FAIL until
- * the Slot Assignment functionality is fully implemented.
+ * Rewritten 2026-05-30 to reality + the quality bar (testid-only locators, API/factory fixture
+ * data, mandatory cleanup, no empty tests). Story 5.7 (BAT-11): Slot Assignment & Progressive
+ * Publishing.
  *
- * Requirements:
- * 1. Event Management Service with session timing endpoints deployed
- * 2. PostgreSQL database with session_timing_history table (Migration V28)
- * 3. SlotAssignmentPage component with drag-and-drop
- * 4. ConflictDetectionAlert modal
- * 5. SpeakerPreferencePanel component
- * 6. API endpoints: PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}/timing
+ * What this replaces (rewrite-to-reality):
+ *   • The old spec was a 5-test `test.describe.skip(...)` RED-PHASE TDD block asserting an
+ *     IDEALIZED DOM that was never built: `assignment-progress` ("0 of 3 assigned"),
+ *     `speaker-card`, `slot-dropzone[data-time]`, `assignment-success-toast`,
+ *     `conflict-detection-modal` + room-change resolution, `speaker-preference-panel`,
+ *     `auto-assign-all-button` + a 3-step `bulk-auto-assignment-modal` wizard with
+ *     `algorithm-balanced`/`assignment-preview-list`/`match-score`, an
+ *     `assignment-complete-banner` and a `/publishing` tab walk. NONE of those testids exist.
+ *   • Its helpers POSTed placeholder sessions to a hardcoded `BATbern997` and created events
+ *     through the UI with hardcoded speakers ('john.doe'/'jane.smith') — no cleanup, fictional flow.
  *
- * Setup Instructions:
- * 1. Ensure migration V28 is applied: session_timing_history, speaker_slot_preferences tables
- * 2. Ensure Event Management Service is running with slot assignment endpoints
- * 3. Run: npx playwright test e2e/workflows/slot-assignment/slot-assignment-workflow.spec.ts
+ * Reality (verified in SlotAssignmentPage / DragDropSlotAssignment / SlotAssignmentController):
+ *   • The page is routed in production at `/organizer/events/:eventCode/slot-assignment` and is
+ *     a three-column layout: `speaker-pool-sidebar` (unassigned sessions), `session-timeline-grid`
+ *     + `timeline-grid` (drop cells `slot-<HH:MM>-Main-Hall`, driven by the BACKEND timetable),
+ *     `quick-actions-panel` (`generate-structural-button`, `auto-assign-button`, clear-all).
+ *   • The slot GRID is computed from the event-type config (EVENING is seeded in Flyway V10:
+ *     4 speaker slots + a break), so it renders rows for ANY EVENING event — no sessions needed.
+ *   • Assignment uses native HTML5 drag-and-drop, which is too flaky to gate. The deterministic
+ *     mutating path is the **auto-assign** button → modal → confirm (`POST /sessions/auto-assign`),
+ *     which assigns every unassigned session into a free slot. That is this slice's `@smoke`.
+ *   • "Unassigned" = a non-structural session with `startTime IS NULL`. The REST create endpoint
+ *     requires timing (`CreateSessionRequest @NotNull`), so the fixture creates timed sessions then
+ *     clears all timings to reach the unassigned state (`addUnassignedSessions`, event-fixture.ts).
+ *
+ * Cleanup contract: each run creates ONE throwaway EVENING event via the API fixture (captured
+ * `BATbern{N}` code) and deletes it in afterAll (`cleanupByCode`) — `sessions.event_id` (V2) and
+ * `session_timing_history.session_id` (V28) are `ON DELETE CASCADE`, so the event delete removes
+ * every session + timing row. Server-generated `sessionSlug`s aren't prefix-sweepable, so the
+ * parent-event delete is the only teardown (plan §A5 server-generated-code caveat). Never touches
+ * a real event.
+ *
+ * Prod-safety (plan risk #1 + #2): the `@smoke` mutates ONLY its own throwaway event; the
+ * server-generated code is captured and explicit-deleted. No drag-drop, no cron/workflow walk.
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { BASE_URL, API_URL } from '../../../playwright.config';
+import {
+  readOrganizerToken,
+  createRegistrationEvent,
+  addUnassignedSessions,
+  getUnassignedSessionCount,
+  type RegistrationEvent,
+} from '../../helpers/event-fixture';
+import { cleanupByCode } from '../../helpers/test-fixtures-cleanup';
 
-/**
- * Helper: Create event with confirmed speakers (ready for slot assignment)
- */
-async function createEventWithConfirmedSpeakers(page: Page): Promise<string> {
-  await page.goto(`${BASE_URL}/organizer/events`);
-  await page.click('button:has-text("New Event")');
+// EVENING-event slot cells are `slot-<HH:MM>-Main-Hall`. The <HH:MM> is rendered in the
+// BROWSER's timezone (toTimeStr on the backend-computed slot start), so it varies by env —
+// match the testid by shape, never a hardcoded time.
+const SLOT_CELL = /^slot-\d{1,2}:\d{2}-Main-Hall$/;
 
-  // Fill event form
-  await page.fill('input[name="title"]', `E2E Slot Test ${Date.now()}`);
-  await page.fill('input[name="eventNumber"]', '997');
-  await page.fill('input[name="eventDate"]', '2025-06-15');
-  await page.fill('input[name="venueName"]', 'Test Venue');
-  await page.fill('input[name="venueAddress"]', 'Test Address, Bern');
-  await page.fill('input[name="venueCapacity"]', '100');
+test.describe('Slot Assignment (Story 5.7)', { tag: '@gate' }, () => {
+  // One throwaway EVENING event for the file (serial) — created once, torn down once. The
+  // read-only @gate runs first on the bare event; the @smoke then adds + auto-assigns its own
+  // sessions. Serial so the @smoke's mutation can't race the @gate's render.
+  test.describe.configure({ mode: 'serial' });
 
-  // Select event type (creates placeholder sessions)
-  await page.click('[data-testid="event-type-selector"]');
-  await page.click('[role="option"]:has-text("Evening Event")');
+  let token: string;
+  let fixtureEvent: RegistrationEvent;
 
-  await page.click('button[type="submit"]:has-text("Create Event")');
+  test.beforeAll(async () => {
+    token = readOrganizerToken();
+    // createRegistrationEvent makes a CREATED, EVENING-type event with a captured BATbern{N} —
+    // EVENING's seeded slot template is what makes the timetable/auto-assign deterministic.
+    fixtureEvent = await createRegistrationEvent(token);
+  });
 
-  // Extract event code
-  await page.waitForSelector('[data-testid="event-card"]', { timeout: 5000 });
-  const eventCode = await page.locator('[data-testid="event-code"]').first().textContent();
+  test.afterAll(async () => {
+    if (fixtureEvent?.eventCode) {
+      await cleanupByCode(token, fixtureEvent.eventCode); // cascade removes sessions + timing
+    }
+  });
 
-  // Add speakers and move to SLOT_ASSIGNMENT state
-  // (This would normally be done through the speaker workflow)
-  // For E2E, we use API to set up state
-  await setupConfirmedSpeakers(eventCode || 'BATbern997');
-
-  return eventCode || 'BATbern997';
-}
-
-/**
- * Helper: Setup confirmed speakers via API (bypasses speaker workflow for testing)
- */
-async function setupConfirmedSpeakers(eventCode: string) {
-  // Create placeholder sessions with confirmed speakers
-  const speakers = [
-    { username: 'john.doe', company: 'TechCorp', topic: 'Cloud Architecture' },
-    { username: 'jane.smith', company: 'DataInc', topic: 'Machine Learning' },
-    { username: 'bob.wilson', company: 'DevOps AG', topic: 'Kubernetes Best Practices' },
-  ];
-
-  for (const speaker of speakers) {
-    await fetch(`${API_URL}/api/v1/events/${eventCode}/sessions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: `${speaker.username} - ${speaker.company}`,
-        description: speaker.topic,
-        sessionType: 'presentation',
-        // startTime: null, endTime: null (placeholder session)
-        speakers: [speaker.username],
-      }),
-    });
+  /** Navigate to the slot-assignment page and wait for the three-column layout to render. */
+  async function openSlotAssignment(page: Page) {
+    await page.goto(`/organizer/events/${fixtureEvent.eventCode}/slot-assignment`);
+    await expect(page.getByTestId('quick-actions-panel')).toBeVisible();
   }
-}
 
-// Skip these tests until Slot Assignment feature is implemented (RED PHASE TDD)
-test.describe.skip('Slot Assignment Workflow (Story BAT-11)', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/organizer/events');
+  test('should_renderSlotAssignmentLayout_when_pageOpened', async ({ page }) => {
+    await openSlotAssignment(page);
+
+    // Three-column layout.
+    await expect(page.getByTestId('speaker-pool-sidebar')).toBeVisible();
+    await expect(page.getByTestId('session-timeline-grid')).toBeVisible();
+    await expect(page.getByTestId('timeline-grid')).toBeVisible();
+    await expect(page.getByTestId('quick-actions-panel')).toBeVisible();
+
+    // Quick actions present.
+    await expect(page.getByTestId('generate-structural-button')).toBeVisible();
+    await expect(page.getByTestId('auto-assign-button')).toBeVisible();
+
+    // The backend timetable produced at least one droppable speaker slot (EVENING config) —
+    // proves the grid is wired to the event-type slot template, not an empty shell.
+    await expect(page.getByTestId(SLOT_CELL).first()).toBeVisible();
   });
 
-  test('should assign session timing via drag-and-drop (AC5-AC9)', async ({ page }) => {
-    const eventCode = await createEventWithConfirmedSpeakers(page);
+  test(
+    'should_assignAllSessions_when_autoAssignConfirmed',
+    { tag: ['@smoke', '@gate'] },
+    async ({ page }) => {
+      // Seed two unassigned (placeholder) sessions on the fixture event via the API.
+      await addUnassignedSessions(token, fixtureEvent.eventCode, 2);
+      expect(await getUnassignedSessionCount(token, fixtureEvent.eventCode)).toBe(2);
 
-    // Navigate from Speakers tab to Slot Assignment page
-    await page.goto(`${BASE_URL}/organizer/events/${eventCode}/speakers`);
-    await expect(page.locator('[data-testid="assign-timings-button"]')).toBeVisible();
-    await page.click('[data-testid="assign-timings-button"]');
+      await openSlotAssignment(page);
 
-    // Should navigate to slot assignment page
-    await page.waitForURL(`${BASE_URL}/organizer/events/${eventCode}/slot-assignment`);
+      // The sidebar shows the two unassigned session cards (default filter = unassigned).
+      await expect(page.getByTestId('drag-handle')).toHaveCount(2);
 
-    // Verify three-column layout
-    await expect(page.locator('[data-testid="speaker-pool-sidebar"]')).toBeVisible();
-    await expect(page.locator('[data-testid="session-timeline-grid"]')).toBeVisible();
-    await expect(page.locator('[data-testid="quick-actions-panel"]')).toBeVisible();
+      // Auto-assign: button → modal → confirm. Deterministic (no native drag-drop). The
+      // component awaits the POST + refetch before closing the modal, so modal-hidden is the
+      // completion signal.
+      await page.getByTestId('auto-assign-button').click();
+      await expect(page.getByTestId('auto-assign-modal')).toBeVisible();
+      await page.getByTestId('auto-assign-confirm').click();
+      await expect(page.getByTestId('auto-assign-modal')).toBeHidden({ timeout: 15_000 });
 
-    // Verify unassigned speakers count
-    const progressText = await page.locator('[data-testid="assignment-progress"]').textContent();
-    expect(progressText).toContain('0 of 3 assigned');
+      // UI confirmation: the unassigned list is now empty (all sessions got a slot).
+      await expect(page.getByTestId('empty-state')).toBeVisible();
 
-    // Drag first speaker to a time slot
-    const speakerCard = page.locator('[data-testid="speaker-card"]').first();
-    const slotDropZone = page.locator('[data-testid="slot-dropzone"][data-time="09:00"]').first();
-
-    await speakerCard.dragTo(slotDropZone);
-
-    // Verify assignment success
-    await expect(page.locator('[data-testid="assignment-success-toast"]')).toBeVisible();
-    await expect(page.locator('[data-testid="session-timeline-grid"]')).toContainText('john.doe');
-
-    // Verify progress updated
-    const updatedProgress = await page.locator('[data-testid="assignment-progress"]').textContent();
-    expect(updatedProgress).toContain('1 of 3 assigned');
-  });
-
-  test('should detect and resolve timing conflicts (AC9)', async ({ page }) => {
-    const eventCode = await createEventWithConfirmedSpeakers(page);
-    await page.goto(`${BASE_URL}/organizer/events/${eventCode}/slot-assignment`);
-
-    // Assign first speaker to 09:00-09:45
-    const speaker1 = page.locator('[data-testid="speaker-card"]').first();
-    const slot1 = page.locator('[data-testid="slot-dropzone"][data-time="09:00"]').first();
-    await speaker1.dragTo(slot1);
-    await page.waitForTimeout(500); // Wait for assignment to complete
-
-    // Try to assign second speaker to overlapping time (same room, overlapping time)
-    const speaker2 = page.locator('[data-testid="speaker-card"]').nth(1);
-    const slot2 = page.locator('[data-testid="slot-dropzone"][data-time="09:15"]').first(); // Overlaps with 09:00-09:45
-
-    await speaker2.dragTo(slot2);
-
-    // Conflict detection modal should appear
-    await expect(page.locator('[data-testid="conflict-detection-modal"]')).toBeVisible();
-    await expect(page.locator('[data-testid="conflict-type"]')).toHaveText('room_overlap');
-    await expect(page.locator('[data-testid="conflict-message"]')).toContainText(
-      'Session timing conflicts with existing schedule'
-    );
-
-    // Verify resolution options
-    await expect(page.locator('button:has-text("Find Alternative Slot")')).toBeVisible();
-    await expect(page.locator('button:has-text("Change Room")')).toBeVisible();
-    await expect(page.locator('button:has-text("Reassign Other Session")')).toBeVisible();
-    await expect(page.locator('button:has-text("Cancel")')).toBeVisible();
-
-    // Choose "Change Room" resolution
-    await page.click('button:has-text("Change Room")');
-    await page.selectOption('[data-testid="room-selector"]', 'Room B');
-    await page.click('button:has-text("Confirm Assignment")');
-
-    // Verify conflict resolved and assignment successful
-    await expect(page.locator('[data-testid="conflict-detection-modal"]')).not.toBeVisible();
-    await expect(page.locator('[data-testid="assignment-success-toast"]')).toBeVisible();
-  });
-
-  test('should show speaker time preferences during drag (AC7-AC8, AC11)', async ({ page }) => {
-    const eventCode = await createEventWithConfirmedSpeakers(page);
-    await page.goto(`${BASE_URL}/organizer/events/${eventCode}/slot-assignment`);
-
-    // Click on speaker card to view preferences
-    await page.click('[data-testid="speaker-card"]').first();
-    await page.click('[data-testid="view-preferences-button"]');
-
-    // Speaker preference panel should slide in from right
-    await expect(page.locator('[data-testid="speaker-preference-panel"]')).toBeVisible();
-
-    // Verify preference sections
-    await expect(page.locator('[data-testid="time-preferences-section"]')).toBeVisible();
-    await expect(page.locator('[data-testid="av-requirements-section"]')).toBeVisible();
-    await expect(page.locator('[data-testid="room-setup-section"]')).toBeVisible();
-
-    // Start dragging speaker - should highlight matching slots
-    const speakerCard = page.locator('[data-testid="speaker-card"]').first();
-    await speakerCard.hover();
-    await page.mouse.down();
-
-    // Verify preference match highlighting (green for good match)
-    const morningSlot = page.locator('[data-testid="slot-dropzone"][data-time="09:00"]').first();
-    await expect(morningSlot).toHaveClass(/preference-match-high/); // Green highlight
-
-    const eveningSlot = page.locator('[data-testid="slot-dropzone"][data-time="18:00"]').first();
-    await expect(eveningSlot).toHaveClass(/preference-match-low/); // Red highlight
-
-    await page.mouse.up();
-  });
-
-  test('should use bulk auto-assignment based on preferences (AC13)', async ({ page }) => {
-    const eventCode = await createEventWithConfirmedSpeakers(page);
-    await page.goto(`${BASE_URL}/organizer/events/${eventCode}/slot-assignment`);
-
-    // Click Auto-Assign All button
-    await page.click('[data-testid="auto-assign-all-button"]');
-
-    // Auto-assignment modal should appear
-    await expect(page.locator('[data-testid="bulk-auto-assignment-modal"]')).toBeVisible();
-
-    // Step 1: Select algorithm
-    await page.click('[data-testid="algorithm-balanced"]'); // Balanced approach
-    await page.click('button:has-text("Next")');
-
-    // Step 2: Preview assignments
-    await expect(page.locator('[data-testid="assignment-preview-list"]')).toBeVisible();
-    await expect(page.locator('[data-testid="preview-item"]')).toHaveCount(3); // 3 speakers
-
-    // Verify match scores are shown
-    await expect(page.locator('[data-testid="match-score"]').first()).toBeVisible();
-
-    // Step 3: Confirm and apply
-    await page.click('button:has-text("Apply Assignments")');
-
-    // Wait for bulk assignment to complete
-    await expect(page.locator('[data-testid="bulk-assignment-success-toast"]')).toBeVisible();
-    await expect(page.locator('[data-testid="bulk-auto-assignment-modal"]')).not.toBeVisible();
-
-    // Verify all speakers assigned
-    const progressText = await page.locator('[data-testid="assignment-progress"]').textContent();
-    expect(progressText).toContain('3 of 3 assigned (100%)');
-
-    // Verify success banner appears
-    await expect(page.locator('[data-testid="assignment-complete-banner"]')).toBeVisible();
-    await expect(page.locator('[data-testid="assignment-complete-banner"]')).toContainText(
-      'All timings assigned!'
-    );
-    await expect(page.locator('a:has-text("Go to Publishing Tab")')).toBeVisible();
-  });
-
-  test('should navigate to publishing tab after completing assignments', async ({ page }) => {
-    const eventCode = await createEventWithConfirmedSpeakers(page);
-    await page.goto(`${BASE_URL}/organizer/events/${eventCode}/slot-assignment`);
-
-    // Complete all assignments (using auto-assign for speed)
-    await page.click('[data-testid="auto-assign-all-button"]');
-    await page.click('[data-testid="algorithm-balanced"]');
-    await page.click('button:has-text("Next")');
-    await page.click('button:has-text("Apply Assignments")');
-
-    // Wait for completion banner
-    await expect(page.locator('[data-testid="assignment-complete-banner"]')).toBeVisible();
-
-    // Click "Go to Publishing Tab" link
-    await page.click('a:has-text("Go to Publishing Tab")');
-
-    // Should navigate to publishing tab
-    await page.waitForURL(`${BASE_URL}/organizer/events/${eventCode}/publishing`);
-    await expect(page.locator('[data-testid="publishing-timeline"]')).toBeVisible();
-
-    // Verify session timings validation shows as complete
-    await expect(page.locator('[data-testid="validation-session-timings"]')).toHaveClass(
-      /validation-passed/
-    );
-    await expect(page.locator('[data-testid="validation-session-timings-status"]')).toContainText(
-      'Ready (3/3 sessions assigned)'
-    );
-  });
+      // Authoritative verification: the server has zero unassigned sessions left — the
+      // assignment actually persisted (stronger than the UI signal alone).
+      expect(await getUnassignedSessionCount(token, fixtureEvent.eventCode)).toBe(0);
+    }
+  );
 });

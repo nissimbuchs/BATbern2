@@ -64,7 +64,8 @@ export const getUpcomingEvents = async (): Promise<components['schemas']['Event'
     ...SKIP_AUTH,
   });
   // API returns paginated response; extract data array
-  const events = response.data.data ?? (response.data as unknown as components['schemas']['Event'][]);
+  const events =
+    response.data.data ?? (response.data as unknown as components['schemas']['Event'][]);
   // Filter to strictly future events (same pattern as public UpcomingEventsSection),
   // then sort by date ascending and take the first 3.
   const now = new Date();
@@ -96,10 +97,25 @@ export const updatePresentationSettings = async (
   return response.data;
 };
 
+/**
+ * Fetches all global teaser images (shown on ALL event presentations).
+ * Uses _global as reserved eventCode (maps to event_code IS NULL on backend).
+ */
+export const getGlobalTeaserImages = async (): Promise<
+  components['schemas']['TeaserImageItem'][]
+> => {
+  const response = await apiClient.get<components['schemas']['TeaserImageItem'][]>(
+    '/events/_global/teaser-images',
+    SKIP_AUTH
+  );
+  return response.data;
+};
+
 export const presentationService = {
   getPresentationData,
   getPublicOrganizers,
   getUpcomingEvents,
   getPresentationSettings,
   updatePresentationSettings,
+  getGlobalTeaserImages,
 };

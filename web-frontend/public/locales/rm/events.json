@@ -12,7 +12,7 @@
       "publishing": "Publicaziun",
       "newsletter": "Newsletter",
       "settings": "Parameters",
-      "photos": "Photos"
+      "photos": "Fotografias"
     },
     "tabsAriaLabel": "Navigaziun da la pagina eveniment",
     "overview": {
@@ -30,7 +30,9 @@
       "selectedTopic": "Tema tschernì",
       "quickActions": "Acziuns rumadas",
       "selectTopic": "Tscherner tema",
-      "previewPublic": "Prevista da la pagina publica"
+      "previewPublic": "Prevista da la pagina publica",
+      "startPresentation": "Entschaiver presentaziun",
+      "liveControl": "Controlla live"
     },
     "participantsTab": {
       "title": "Participonts dal eveniment",
@@ -57,7 +59,10 @@
       "empty": "Naguts participonts registrads enfin ussa",
       "actions": {
         "cancel": "Annullar registraziun",
-        "delete": "Stizzar registraziun"
+        "delete": "Stizzar registraziun",
+        "resendConfirmation": "Turnar a trametter il mail da conferma",
+        "resendSuccess": "Mail da conferma tramess cun success",
+        "resendError": "Errur tar il trametter dal mail da conferma"
       },
       "deleteDialog": {
         "title": "Stizzar registraziun",
@@ -97,8 +102,37 @@
       "moderatorLabel": "Moderatur",
       "moderatorUpdated": "Moderatur actualisà cun success",
       "moderatorUpdateError": "Actualisar moderatur fallì.",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "Capacità d'inscripziun",
+      "capacityHelperText": "Laschar vid per inscripziuns senza limit. Na po betg surpassar la capacità dal lieu.",
+      "capacityUpdated": "Capacità actualisada cun success",
+      "capacityUpdateError": "Actualisar capacità falliu.",
+      "notifications": "Notificaziuns",
+      "activeAutomations": "automatisaziuns activas",
+      "manageAll": "Administrar tuttas notificaziuns",
+      "dangerZone": "Zona da privel",
+      "dangerWarning": "Questas acziuns na pòn betg vegnir revocadas. Proceder cun precauziun.",
+      "cancelEvent": "Revoccar eveniment",
+      "cancelEventDesc": "Revocca l'eveniment ed infurmescha tut ils inscrits",
+      "deleteEvent": "Stizzar eveniment",
+      "deleteEventDesc": "Stizza l'eveniment definitivamain (mo senza inscripziuns)",
+      "cannotDelete": "Betg pussaivel da stizzar in eveniment cun inscripziuns. Revoccar l'eveniment.",
+      "confirmCancel": "Revoccar l'eveniment?",
+      "cancelConfirmText": "L'eveniment vegn revoccau ed ils {{count}} participants vegnan infurmads. Questa acziun na po betg vegnir revocada.",
+      "confirmCancelBtn": "Gea, revoccar",
+      "confirmDelete": "Stizzar l'eveniment?",
+      "deleteConfirmText": "L'eveniment \"{{title}}\" vegn stizzau definitivamain. Questa acziun na po betg vegnir revocada.",
+      "confirmDeleteBtn": "Gea, stizzar",
+      "deleteError": "Stizzar eveniment falliu. Empruva danovamain.",
+      "speakerReminders": "Memorandums da termin per referents",
+      "speakerRemindersDesc": "3 dis avant il termin",
+      "registrationEmails": "E-mails da confirmaziun d'inscripziun",
+      "registrationEmailsDesc": "Immediatamain a l'inscripziun",
+      "agendaDistribution": "Distribuziun da program final",
+      "agendaDistributionDesc": "Planisau per di da l'eveniment -14",
+      "checkInReminders": "Memorandums da check-in il di da l'eveniment",
+      "checkInRemindersDesc": "Il matin da l'eveniment",
+      "startPresentation": "Entschaiver presentaziun",
+      "liveControl": "Controlla live"
     },
     "speakers": {
       "progress": "Progress",
@@ -138,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Trametter al lieu / catering",
+      "subtitle": "Tscherner ina muster, agiuntar eventualmain notas, controllar la preanvista e tramettre al contact dal lieu, al contact dal catering u a tuts dus.",
+      "notConfigured": "Ils contacts per lieu u catering n'èn betg configurads.",
+      "openAdmin": "Avrir Administraziun → Lieu & Catering",
+      "templateLabel": "Muster",
+      "noTemplates": "Naginas musters disponiblas",
+      "recipients": "Destinaturs",
+      "venueRole": "Lieu",
+      "cateringRole": "Catering",
+      "notesLabel": "Notas (facultativ)",
+      "notesPlaceholder": "p. ex. Reservar ina maisa per 8 persunas a las 12:30 en la sala anteriura.",
+      "previewButton": "Preanvista",
+      "previewFailed": "Preanvista n'è betg reussida:",
+      "to": "A",
+      "cc": "Cc",
+      "replyTo": "Respunder a",
+      "subject": "Object",
+      "sendButton": "Trametter",
+      "confirmTitle": "Trametter l'e-mail?",
+      "confirmBody": "In e-mail real vegn tramess a {{recipients}}. L'adressa da resposta è quella dal coordinatur dal lieu configurà.",
+      "confirmSend": "Gea, trametter",
+      "sentSuccess": "Tramess a {{count}} destinatur(s).",
+      "sentFailed": "Trametter n'è betg reussì: {{message}}"
     }
   },
   "dashboard": {
@@ -431,11 +490,6 @@
       "alreadyPublished": "Gia publicà",
       "publishTopicFirst": "Publitgescha il tema emprima",
       "publishSpeakersFirst": "Publitgescha ils referents emprima",
-      "mode": "Modus",
-      "modeDraft": "Bozza",
-      "modeProgressive": "Progressiv",
-      "modeComplete": "Cumplet",
-      "notifySubscribers": "Notifitgar abonents",
       "validationErrors": "Sbagls da validaziun:",
       "phase": {
         "topic": "Tema",
@@ -443,8 +497,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "Publicar {{phase}}",
-        "notifySubscribers": "Notifitgar abonents a la publicaziun"
+        "publishingPhase": "Publicar {{phase}}"
       }
     },
     "validation": {
@@ -485,10 +538,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
+      "topic": "Tema",
+      "speakers": "Referents",
       "agenda": "Agenda",
-      "updates": "Updates"
+      "updates": "Actualisaziuns"
     }
   },
   "notifications": {
@@ -528,7 +581,7 @@
       "date": "Data",
       "time": "Temp",
       "location": "Lieu",
-      "capacity": "Capacitad"
+      "capacity": "Registraziuns"
     },
     "errors": {
       "loadFailed": "Chargiar eveniment fallì",
@@ -763,7 +816,8 @@
       "confirmed": "[MISSING] Confirmed",
       "registered": "[MISSING] Registered",
       "waitlist": "[MISSING] Waitlist",
-      "cancelled": "[MISSING] Cancelled"
+      "cancelled": "[MISSING] Cancelled",
+      "attended": "Participà"
     }
   },
   "capacity": {
@@ -776,14 +830,39 @@
     "heading": "Davart quest'eveniment"
   },
   "photos": {
-    "title": "Event Photos",
-    "uploadButton": "Upload Photo",
-    "deleteConfirmTitle": "Delete Photo",
-    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "emptyState": "No photos yet. Upload the first one!",
-    "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "title": "Fotografias da l'eveniment",
+    "uploadButton": "Chargiar fotografia",
+    "deleteConfirmTitle": "Stizzar fotografia",
+    "deleteConfirmMessage": "Es ti segir che ti vuls stizzar questa fotografia? Quai na po betg vegnir revocau.",
+    "deleteConfirm": "Stizzar",
+    "deleteCancel": "Interrumper",
+    "emptyState": "Naginas fotografias anc. Chargiar la primara!",
+    "uploading": "Chargiar...",
+    "uploadError": "Chargiar falliu. Empruva danovamain.",
+    "uploadErrorPartial": "{{failed}} da {{total}} chargiads fallids. Empruva danovamain."
+  },
+  "teaserImage": {
+    "title": "Imagens teaser",
+    "description": "Imagens visualisadas sco diapositivas a maun plaina sin la pagina da presentaziun.",
+    "uploadButton": "Agiuntar imagem teaser",
+    "uploading": "Chargiar...",
+    "uploadError": "Chargiar falliu. Empruva danovamain.",
+    "removeError": "Stizzar falliu. Empruva danovamain.",
+    "positionError": "Actualisar posiziun falliu. Empruva danovamain.",
+    "limitReached": "Maximum da {{max}} imagens teaser cuntanschiu.",
+    "position": {
+      "label": "Mussar suenter",
+      "afterWelcome": "Diaposiiva da bainvegni",
+      "afterCommittee": "Diaposiiva dal comité",
+      "afterTopicReveal": "Diaposiiva da revelazione tema",
+      "afterUpcomingEvents": "Diaposiiva d'eveniments futuers"
+    }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Exportar las etiquettas da num",
+      "exportNameBadgesDocx": "Etichettas da num sco Word",
+      "exportError": "Exportaziun fallida"
+    }
   }
 }

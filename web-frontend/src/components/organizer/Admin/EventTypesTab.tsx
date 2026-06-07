@@ -21,6 +21,7 @@ import Grid from '@mui/material/Grid';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useEventTypes, useUpdateEventType } from '@/hooks/useEventTypes';
 import { EventTypeConfigurationForm } from '@/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm';
 import { SlotTemplatePreview } from '@/components/organizer/SlotTemplatePreview/SlotTemplatePreview';
@@ -32,6 +33,7 @@ type UpdateEventSlotConfigurationRequest =
 
 export const EventTypesTab: React.FC = () => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const { data: eventTypes, isLoading, error } = useEventTypes();
   const updateMutation = useUpdateEventType();
 
@@ -81,10 +83,10 @@ export const EventTypesTab: React.FC = () => {
 
   return (
     <>
-      <Grid container spacing={3}>
+      <Grid container spacing={3} data-testid="event-types-tab">
         {eventTypes?.map((config) => (
           <Grid size={{ xs: 12, md: 4 }} key={config.type}>
-            <Card>
+            <Card data-testid={`event-type-card-${config.type}`}>
               <CardContent>
                 <SlotTemplatePreview eventType={config.type} slotConfiguration={config} />
               </CardContent>
@@ -94,6 +96,7 @@ export const EventTypesTab: React.FC = () => {
                   startIcon={<EditIcon />}
                   onClick={() => handleEditClick(config.type)}
                   aria-label={`Edit ${config.type}`}
+                  data-testid={`edit-event-type-${config.type}`}
                 >
                   {t('common:actions.edit')}
                 </Button>
@@ -103,7 +106,14 @@ export const EventTypesTab: React.FC = () => {
         ))}
       </Grid>
 
-      <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
+      <Dialog
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
+        data-testid="edit-event-type-modal"
+      >
         <DialogTitle>
           {t('common:actions.edit')} {editingType && getEventTypeName(editingType)}
         </DialogTitle>

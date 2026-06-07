@@ -1,0 +1,44 @@
+meta {
+  name: PCS cleanup — partners happy path
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "partners",
+    "prefix": "brtest"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.entityType: eq partners
+  res.body.prefix: eq brtest
+}
+
+tests {
+  test("returns 200 and routes to PCS", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.entityType).to.equal("partners");
+    expect(body.prefix).to.equal("brtest");
+    expect(body.deletionCounts).to.be.an("object");
+    expect(body.deletionCounts.partners).to.be.a("number");
+  });
+}

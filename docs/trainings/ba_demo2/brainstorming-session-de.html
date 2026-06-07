@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brainstorming-Sitzung Ergebnisse — Aktive Partner-Meeting-Agenda</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350;
+    --accent: #6c63ff; --accent2: #00d4aa; --accent3: #ff6b6b; --accent4: #ffd166;
+    --text: #e8eaf6; --text-muted: #8890b5; --radius: 12px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  main { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 1.4rem; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--accent2); }
+  h3 { font-size: 1.1rem; font-weight: 700; margin: 28px 0 12px; }
+  h4 { font-size: 0.95rem; font-weight: 700; margin: 20px 0 8px; }
+  p { margin-bottom: 10px; }
+  .meta { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; }
+  .meta strong { color: var(--text); }
+  ul, ol { margin: 8px 0 12px 24px; }
+  li { margin-bottom: 4px; }
+  strong { color: white; }
+  em { color: var(--text-muted); }
+  code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; }
+
+  .idea { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 12px; }
+  .idea .id { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 0.5px; text-transform: uppercase; }
+  .idea h4 { margin: 2px 0 6px; font-size: 0.95rem; }
+  .idea p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 4px; }
+  .idea p:last-child { margin-bottom: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; overflow-x: auto; font-size: 0.82rem; font-family: 'Cascadia Code', 'Fira Code', monospace; margin: 16px 0; white-space: pre; }
+
+  .badge { display: inline-block; background: var(--accent); color: white; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 12px; border-radius: 20px; }
+  .badge-green { background: rgba(0,212,170,.15); color: var(--accent2); border: 1px solid rgba(0,212,170,.3); }
+  .badge-yellow { background: rgba(255,209,102,.15); color: var(--accent4); border: 1px solid rgba(255,209,102,.3); }
+  .badge-red { background: rgba(255,107,107,.15); color: var(--accent3); border: 1px solid rgba(255,107,107,.3); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  .back-link { display: inline-block; color: var(--accent2); text-decoration: none; font-size: 0.85rem; margin-bottom: 24px; }
+  .back-link:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) { h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<main>
+
+<a href="index-de.html" class="back-link">&larr; Zur&uuml;ck zur Schulungssitzung</a>
+<a href="brainstorming-session.html" class="back-link" style="float:right">English Version &rarr;</a>
+
+<h1>Brainstorming-Sitzung <span>Ergebnisse</span></h1>
+<div class="meta">
+  <strong>Moderation:</strong> Nissim &nbsp;|&nbsp;
+  <strong>Datum:</strong> 2026-04-04 &nbsp;|&nbsp;
+  <strong>Ideen:</strong> 35 &nbsp;|&nbsp;
+  <span class="badge">Workflow abgeschlossen</span>
+</div>
+
+<h2>&Uuml;bersicht der Sitzung</h2>
+<p><strong>Thema:</strong> Aktive Partner-Meeting-Agenda &mdash; Transformation von 6 statischen Tagesordnungspunkten in interaktive, systemgest&uuml;tzte Funktionen innerhalb der BATbern-Eventmanagement-Plattform.</p>
+<p><strong>Ziele:</strong></p>
+<ul>
+  <li>Jeden der 6 Tagesordnungspunkte systemgest&uuml;tzt machen (nicht nur Text in einer ICS-Einladung)</li>
+  <li>Neue Funktionalit&auml;ten identifizieren, die jeden Agendapunkt verbessern</li>
+  <li>Untersuchen, wie die Partnereinbindung vor, w&auml;hrend und nach dem Meeting verbessert werden kann</li>
+</ul>
+
+<h3>Aktuelle Tagesordnungspunkte (statisch)</h3>
+<ol>
+  <li>Alle anwesenden Partner begr&uuml;ssen (Partner = Benutzer mit Rolle PARTNER)</li>
+  <li>Analysen zu vergangenen Veranstaltungen, Teilnahmen und Teilnehmer-Feedback</li>
+  <li>Kosten der Vorjahre zeigen + Revisions-PDF des Pr&uuml;fers + Unterschrift f&uuml;r die B&uuml;cher einholen</li>
+  <li>Kosten des letzten Jahres + Budget des laufenden Jahres + neuer Beitrag pro Partner zeigen + Genehmigung einholen</li>
+  <li>Themen des laufenden Jahres besprechen (Themenabstimmung + Blob-Spiel zur Themenauswahl)</li>
+  <li>Weitere aktuelle Architektur-Themen besprechen, die Partner interessieren</li>
+</ol>
+
+<h3>Vorhandene Plattformf&auml;higkeiten</h3>
+<ul>
+  <li>Partnerrollen &amp; Authentifizierung (Epic 8 abgeschlossen)</li>
+  <li>Teilnahme-Analysen + XLSX-Export</li>
+  <li>Themenabstimmungssystem</li>
+  <li>ICS-Meeting-Einladungen</li>
+  <li>Partnerportal mit Anmeldung</li>
+</ul>
+
+<h2>Technikauswahl</h2>
+<p><strong>Ansatz:</strong> KI-empfohlene Techniken</p>
+<ul>
+  <li><strong>Morphologische Analyse:</strong> Systematische Zuordnung von 6 Tagesordnungspunkten &times; Interaktionsdimensionen</li>
+  <li><strong>Rollenspiel:</strong> Durchgang aus der Perspektive von Partner, Organisator, Pr&uuml;fer und abwesendem Partner</li>
+  <li><strong>Kreuzbestaeubung:</strong> Bew&auml;hrte Muster von Konferenzplattformen, Workshop-Tools und Retrospektive-Tools &uuml;bernehmen</li>
+</ul>
+
+<h2>Ergebnisse der Technikdurchf&uuml;hrung</h2>
+
+<h3>Phase 1: Morphologische Analyse</h3>
+<p><em>Matrix: 6 Tagesordnungspunkte &times; 5 Interaktionsdimensionen (PRE / LIVE / POST / ARTIFACT / NOTIFICATION)</em></p>
+
+<h4>A1 &mdash; Partnerbegr&uuml;ssung / Anwesenheit</h4>
+
+<div class="idea"><div class="id">A1-PRE #1</div><h4>RSVP-Anwesenheits-Dashboard</h4><p>Partner best&auml;tigen ihre Teilnahme vorab &uuml;ber das Portal. Organisatoren sehen ein Live-RSVP-Dashboard mit best&auml;tigt / abgelehnt / ausstehend und einer Teilnehmerprognose.</p><p><em>Neuheit: Verwandelt passives &laquo;Wer ist gekommen?&raquo; in proaktive Planung.</em></p></div>
+
+<div class="idea"><div class="id">A1-PRE #2</div><h4>Partner-Profilkarten</h4><p>Jeder best&auml;tigte Partner erh&auml;lt eine sichtbare Profilkarte (Foto, Firma, Rolle, Jahre als Partner). Besonders wertvoll, wenn neue Partner hinzukommen.</p><p><em>Neuheit: Beseitigt den unangenehmen &laquo;Wer bist du?&raquo;-Moment.</em></p></div>
+
+<div class="idea"><div class="id">A1-LIVE #3</div><h4>Wer ist Wer &mdash; Partner-Galerie-Ansicht</h4><p>Ein Klick auf den Tagesordnungspunkt &laquo;Begr&uuml;ssung&raquo; &ouml;ffnet eine Galerie aller Partnerfirmen, jeweils mit Logo, Delegiertenname, Foto und Rolle. Anwesende Partner erhalten ein gr&uuml;nes &laquo;Anwesend&raquo;-Badge; abwesende werden ausgegraut.</p><p><em>Neuheit: Kein Zeremoniell &mdash; kein Check-in-Ritual, kein Namensaufruf.</em></p></div>
+
+<div class="idea"><div class="id">CROSS-CUTTING #4</div><h4>Automatisch generiertes Sitzungsprotokoll</h4><p>Das System pflegt eine PartnerMeetingMinutes-Entit&auml;t, die sich aufbaut, w&auml;hrend der Organisator die aktive Agenda durchgeht. Jeder Tagesordnungspunkt tr&auml;gt seinen Abschnitt bei. Exportierbar als PDF.</p><p><em>Neuheit: Eliminiert &laquo;jemand f&uuml;hrt Protokoll&raquo;. Das System weiss bereits, was gezeigt und entschieden wurde.</em></p></div>
+
+<div class="idea"><div class="id">A1-POST #5</div><h4>Anwesenheitsabschnitt im Protokoll</h4><p>Die Wer-ist-Wer-Anwesenheitsdaten füllen automatisch den Abschnitt &laquo;Teilnehmer&raquo; des Sitzungsprotokolls.</p><p><em>Neuheit: Der erste Abschnitt des Protokolls schreibt sich selbst.</em></p></div>
+
+<h4>A2 &mdash; Analyse-Review</h4>
+
+<div class="idea"><div class="id">A2-PRE #6</div><h4>Analyse-Direktlink in der Meeting-Einladung</h4><p>Die ICS-Einladung enth&auml;lt einen direkten Link zur Analyseseite. Kein Entwicklungsaufwand.</p><p><em>Neuheit: Verwandelt die Einladung in ein Vorbereitungstool.</em></p></div>
+
+<div class="idea"><div class="id">A2-LIVE #7</div><h4>Analyse-Schnappschuss f&uuml;r das Protokoll</h4><p>Das System erfasst einen Schnappschuss der aktuellen Analysedaten und h&auml;ngt ihn als unver&auml;nderlichen historischen Datensatz an das Sitzungsprotokoll an.</p><p><em>Neuheit: Die Analyseseite entwickelt sich weiter, aber das Protokoll spiegelt immer wider, was an jenem Tag pr&auml;sentiert wurde.</em></p></div>
+
+<div class="idea"><div class="id">A2-POST #8</div><h4>Historisiertes Analyse-Archiv</h4><p>Jedes Partner-Meeting erstellt einen datierten Analyse-Schnappschuss. Baut ein durchsuchbares Jahresvergleichs-Archiv auf.</p><p><em>Neuheit: Routinepr&auml;sentationen werden zum institutionellen Ged&auml;chtnis.</em></p></div>
+
+<h4>A3 &mdash; Finanzielle Pr&uuml;fungsabnahme</h4>
+
+<div class="idea"><div class="id">A3-LIVE #9</div><h4>Pr&uuml;fbericht-Upload &amp; Viewer</h4><p>Der Organisator l&auml;dt das Revisions-PDF des Pr&uuml;fers hoch. Ein eingebetteter PDF-Viewer &ouml;ffnet sich bei Klick. Dauerhaft mit dem Sitzungsdatensatz verkn&uuml;pft.</p><p><em>Neuheit: Kein Versenden von PDFs per E-Mail. Das Dokument lebt im System.</em></p></div>
+
+<div class="idea"><div class="id">A3-LIVE #10</div><h4>Einfache Genehmigen/Ablehnen-Abstimmung</h4><p>Der Organisator l&ouml;st eine Abstimmung aus. Jeder anwesende Partner: Genehmigen / Ablehnen. Das System z&auml;hlt und protokolliert das Ergebnis.</p><p><em>Neuheit: Ersetzt das verbale Nicken durch einen nachvollziehbaren Datensatz. Ein Klick pro Partner.</em></p></div>
+
+<div class="idea"><div class="id">A3-POST #11</div><h4>Pr&uuml;fungsabschnitt im Sitzungsprotokoll</h4><p>Das Protokoll erh&auml;lt: hochgeladenes PDF als Anhang, Abstimmungsergebnis, Diskussionsnotizen. PDF dauerhaft historisiert.</p><p><em>Neuheit: Vollst&auml;ndiger Pr&uuml;fungspfad auch Jahre sp&auml;ter.</em></p></div>
+
+<h4>A4 &mdash; Budget- &amp; Beitragsgenehmigung</h4>
+
+<div class="idea"><div class="id">A4-LIVE #12</div><h4>Budget-Tabellen-Upload &amp; Viewer</h4><p>Gleiches Upload/Viewer-Muster wie beim Pr&uuml;fungs-PDF. Einheitliche Benutzererfahrung.</p><p><em>Neuheit: Verwendet dieselbe Komponente wieder.</em></p></div>
+
+<div class="idea"><div class="id">A4-LIVE #13</div><h4>Live-Abstimmung zur Budgetrichtung</h4><p>Einfache Genehmigen/Ablehnen-Abstimmung f&uuml;r die Budgetrichtung und den vorgeschlagenen neuen Beitrag. Erfasst die Stimmung im Raum.</p><p><em>Neuheit: Weichere Abstimmung &mdash; Richtungszustimmung, nicht bindend.</em></p></div>
+
+<div class="idea"><div class="id">A4-POST #14</div><h4>Asynchrone Beitragsakzeptanz im Partnerportal</h4><p>Nach dem Meeting pr&uuml;ft und best&auml;tigt jeder Partner den neuen Beitrag im Portal. Frist-Erinnerung bei fehlender Antwort. 100% Abdeckung.</p><p><em>Neuheit: Das Meeting trifft die Entscheidung, das Portal setzt sie um.</em></p></div>
+
+<div class="idea"><div class="id">A4-POST #15</div><h4>Beitragsakzeptanz-Tracker</h4><p>Organisator-Dashboard: akzeptiert / ausstehend / abgelehnt. Speist die Rechnungsstellungspipeline.</p><p><em>Neuheit: Schliesst die L&uuml;cke zwischen Meeting-Entscheidung und operativer Umsetzung.</em></p></div>
+
+<h4>A5 &mdash; Themendiskussion &amp; Abstimmung</h4>
+
+<div class="idea"><div class="id">A5-PRE #16</div><h4>Themenabstimmungs-Direktlink in der Meeting-Einladung</h4><p>Die ICS-Einladung enth&auml;lt einen direkten Link zur Themenauswahl-/Abstimmungsseite. Keine neue Entwicklung n&ouml;tig.</p><p><em>Neuheit: Gleiches Direktlink-Muster.</em></p></div>
+
+<div class="idea"><div class="id">A5-POST #17</div><h4>Themendiskussionsergebnisse im Protokoll</h4><p>Das Protokoll erfasst welche Themen besprochen wurden, Blob-Spiel-Ergebnisse, Entscheidungen und Massnahmen pro Thema.</p><p><em>Neuheit: Blob-Spiel-Ergebnisse historisiert.</em></p></div>
+
+<h4>A6 &mdash; Aktuelle Architektur-Themen</h4>
+
+<div class="idea"><div class="id">A6 #18</div><h4>Offene Diskussion &mdash; Zuk&uuml;nftige Erweiterung</h4><p>Bleibt als Freitext. Der Organisator f&uuml;gt Freitextnotizen zum Protokoll hinzu.</p><p><em>Neuheit: Bewusst unstrukturiert.</em></p></div>
+
+<hr class="divider">
+
+<h3>Phase 2: Rollenspiel</h3>
+
+<h4>Perspektive: Der neue Partner</h4>
+
+<div class="idea"><div class="id">ROLE-NEW #19</div><h4>Onboarding-Tour f&uuml;r neue Partner</h4><p>Gef&uuml;hrte Tour beim ersten Login durch die Partnerplattform: Analysen, Themenabstimmung, Partnerverzeichnis, Meeting-Agenda.</p><p><em>Neuheit: Verwandelt ein &uuml;berw&auml;ltigendes erstes Login in ein selbstbewusstes &laquo;Ich weiss, was los ist.&raquo;</em></p></div>
+
+<div class="idea"><div class="id">ROLE-NEW #20</div><h4>Kontextpaket f&uuml;r neue Partner</h4><p>Das System zeigt: aktueller Beitrag, Analysen des letzten Jahres, Organisatoren, andere Partnerfirmen. Automatisch zusammengestelltes Briefing.</p><p><em>Neuheit: Kein Organisator bereitet manuell ein Willkommenspaket vor.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-NEW #21</div><h4>&laquo;Neuer Partner&raquo;-Badge in Wer ist Wer</h4><p>Neue Partner (erstes Jahr) erhalten ein dezentes &laquo;Neu&raquo;-Badge. Signalisiert Veteranen, gastfreundlich zu sein.</p><p><em>Neuheit: Kleines UI-Detail, grosse soziale Wirkung.</em></p></div>
+
+<h4>Perspektive: Der abwesende Partner</h4>
+
+<div class="idea"><div class="id">ROLE-ABSENT #22</div><h4>Zugang zum Sitzungsprotokoll nach dem Meeting</h4><p>Alle Partner werden benachrichtigt, wenn das Protokoll ver&ouml;ffentlicht wird. Abwesende Partner k&ouml;nnen alles in ihrem eigenen Tempo nachlesen.</p><p><em>Neuheit: Kein Partner ist jemals nicht auf dem Laufenden.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ABSENT #23</div><h4>Asynchrone Beitragsabstimmung f&uuml;r abwesende Partner</h4><p>Gleicher Beitragsakzeptanz-Ablauf, ohne im Raum zu sein.</p><p><em>Neuheit: Entkoppelt die Beitragsentscheidung von der physischen Anwesenheit.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ABSENT #24</div><h4>Stellvertretungs-Delegationsprotokoll</h4><p>Organisator erfasst: &laquo;Firma Y vertreten durch [Name], delegiert von [Partner].&raquo; Kein Systemlogin n&ouml;tig. &laquo;Vertreten durch&raquo;-Badge in Wer ist Wer.</p><p><em>Neuheit: Handhabt Nicht-Systembenutzer. Governance-Pfad bleibt erhalten.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ABSENT #25</div><h4>Stellvertreter-Stimmzuordnung</h4><p>Organisator gibt Stimmen im Auftrag ab. Das Protokoll protokolliert eine klare Zuordnungskette.</p><p><em>Neuheit: Klarer Stimmrechts&uuml;bertragungspfad.</em></p></div>
+
+<h4>Perspektive: Der Organisator</h4>
+
+<div class="idea"><div class="id">ROLE-ORG #26</div><h4>Agenda-Builder &mdash; Aktive Punkte ausw&auml;hlen</h4><p>Aktive Elementtypen ein-/ausschalten, per Drag-and-Drop neu anordnen. Jedes Meeting massgeschneidert.</p><p><em>Neuheit: Die Jahresversammlung hat alle Punkte; ein Halbjahres-Check-in hat vielleicht nur Analysen + Themen.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ORG #27</div><h4>Benutzerdefinierte passive Tagesordnungspunkte</h4><p>Freiform-Punkte (Titel + Beschreibung) als Diskussionsplatzhalter.</p><p><em>Neuheit: Die Agenda ist nie auf das beschr&auml;nkt, was das System kennt.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ORG #28</div><h4>Meeting-Vorbereitungs-Checkliste</h4><p>Automatisch generierte Checkliste basierend auf aktivierten Punkten: ben&ouml;tigte Uploads, RSVP-Anzahl, Fristen.</p><p><em>Neuheit: Das System weiss, was jeder Punkt ben&ouml;tigt.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ORG #29</div><h4>Agenda-Controller / Pr&auml;sentationsmodus</h4><p>Agenda-Seitenleiste, aktueller Punkt hervorgehoben, jeder zeigt seine Interaktion. Schnellnotiz-Button immer sichtbar.</p><p><em>Neuheit: Meeting wie eine Pr&auml;sentation gesteuert, jede &laquo;Folie&raquo; ist interaktiv.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ORG #30</div><h4>Notizen pro Tagesordnungspunkt</h4><p>Freitextnotizen bei jedem Agendapunkt, kontextualisiert im Protokoll unter der richtigen &Uuml;berschrift.</p><p><em>Neuheit: Notizen immer kontextualisiert.</em></p></div>
+
+<h4>Perspektive: Der Pr&uuml;fer</h4>
+
+<div class="idea"><div class="id">ROLE-AUDITOR #31</div><h4>Pr&uuml;fer-E-Mail-Konfiguration</h4><p>Admin-Feld f&uuml;r die Pr&uuml;fer-E-Mail. Bedingte automatische Einladung, wenn der Pr&uuml;fungspunkt auf der Agenda steht. PDF per Organisator-Upload.</p><p><em>Neuheit: Kein Systemaufwand. Ein Konfigurationsfeld.</em></p></div>
+
+<hr class="divider">
+
+<h3>Phase 3: Kreuzbestaeubung</h3>
+
+<div class="idea"><div class="id">CROSS-POLL #32</div><h4>Feedback-Puls nach dem Meeting</h4><p>Kurze Umfrage nach Ver&ouml;ffentlichung des Protokolls: Produktivit&auml;tsbewertung, verpasste Themen, Vorschl&auml;ge. &Uuml;ber die Zeit aggregiert.</p><p><em>Neuheit: Das Meeting verbessert sich selbst. Zufriedenheitstrends verfolgen.</em></p></div>
+
+<div class="idea"><div class="id">CROSS-POLL #33</div><h4>Manuelle Protokollver&ouml;ffentlichung &amp; Verteilung</h4><p>Organisator pr&uuml;ft, bearbeitet, klickt &laquo;Ver&ouml;ffentlichen &amp; Senden.&raquo; Alle Teilnehmer erhalten eine E-Mail mit dem Protokoll.</p><p><em>Neuheit: Organisator kontrolliert; das System erledigt die Schwerstarbeit.</em></p></div>
+
+<div class="idea"><div class="id">CROSS-POLL #34</div><h4>Massnahmen mit Verantwortlichenzuweisung</h4><p>Titel, Beschreibung, zugewiesener Verantwortlicher, optionale Frist. Eigener Abschnitt im Protokoll.</p><p><em>Neuheit: Entscheidungen verpuffen nicht. Jede Massnahme hat einen Namen.</em></p></div>
+
+<div class="idea"><div class="id">CROSS-POLL #35</div><h4>&Uuml;bertrag offener Massnahmen</h4><p>Offene Punkte aus fr&uuml;heren Meetings erscheinen automatisch bei der Erstellung der n&auml;chsten Meeting-Agenda.</p><p><em>Neuheit: Nichts f&auml;llt durch die Maschen. Das System erinnert sich.</em></p></div>
+
+<h2>Ideenorganisation und Priorisierung</h2>
+
+<h3>Thematische Organisation</h3>
+<table>
+  <tr><th>Thema</th><th>Ideen</th><th>Beschreibung</th></tr>
+  <tr><td>1. Konfigurierbarer Meeting-Agenda-Motor</td><td>#26-#30</td><td>Agenda-Builder, Pr&auml;sentationsmodus, Notizen</td></tr>
+  <tr><td>2. Sitzungsprotokoll als lebendes Dokument</td><td>#4,5,7,8,11,33</td><td>Automatisch zusammengestellt, historisiert, manuell ver&ouml;ffentlicht</td></tr>
+  <tr><td>3. Partner-Interaktionskomponenten</td><td>#1-3,9,10,12,13</td><td>RSVP, Galerie, Abstimmung, Dokumentenviewer &mdash; wiederverwendbar</td></tr>
+  <tr><td>4. Nach-Meeting-Workflows</td><td>#14,15,23,32,34,35</td><td>Asynchrone Beitragsakzeptanz, Feedback, Massnahmen</td></tr>
+  <tr><td>5. Erfahrung f&uuml;r neue Partner &amp; Stellvertreter</td><td>#19-21,24,25</td><td>Onboarding-Tour, Kontextpaket, Delegation</td></tr>
+  <tr><td>6. Intelligente Meeting-Einladung</td><td>#6,16,31</td><td>Direktlinks, bedingte Pr&uuml;fer-Einladung</td></tr>
+</table>
+
+<h3>Priorisierungsergebnisse</h3>
+<p><span class="badge badge-green">P1 &mdash; Muss-Kriterien</span> Themen 1, 2, 3, 4 &mdash; 28 Ideen, die den gesamten Meeting-Lebenszyklus bilden.</p>
+<p><span class="badge badge-yellow">P2 &mdash; Schnelle Erfolge</span> Thema 6 + wiederverwendbare Komponenten &mdash; Direktlinks, Pr&uuml;fer-Einladung, Profilkarten.</p>
+<p><span class="badge badge-red">P3 &mdash; Sch&ouml;n zu haben</span> Thema 5 &mdash; Onboarding neuer Partner, Stellvertretungs-Delegation. Sp&auml;tere Phase.</p>
+
+<h3>Vorgeschlagene Reihenfolge (P1)</h3>
+<pre>SCHICHT 1 &mdash; Grundlagen
+&boxur;&boxh;&boxh; #26  Agenda-Builder (Kernentit&auml;t + UI)
+&boxur;&boxh;&boxh; #9   Dokument-Upload &amp; Viewer-Komponente
+&boxur;&boxh;&boxh; #10  Genehmigen/Ablehnen-Abstimmungskomponente
+&boxul;&boxh;&boxh; #1   RSVP-Dashboard
+
+SCHICHT 2 &mdash; Meeting-Ablauf
+&boxur;&boxh;&boxh; #3   Wer-ist-Wer-Galerie + Anwesenheits-Badges
+&boxur;&boxh;&boxh; #27  Benutzerdefinierte passive Tagesordnungspunkte
+&boxur;&boxh;&boxh; #29  Pr&auml;sentations-/Controllermodus
+&boxur;&boxh;&boxh; #30  Notizen pro Tagesordnungspunkt
+&boxul;&boxh;&boxh; #4   Sitzungsprotokoll-Entit&auml;t (automatische Zusammenstellung)
+
+SCHICHT 3 &mdash; Tagesordnungspunkt-Interaktionen
+&boxur;&boxh;&boxh; #5   Anwesenheit &rarr; Protokoll
+&boxur;&boxh;&boxh; #7   Analyse-Schnappschuss &rarr; Protokoll
+&boxur;&boxh;&boxh; #11  Pr&uuml;fungs-PDF + Abstimmung &rarr; Protokoll
+&boxur;&boxh;&boxh; #12  Budget-Dokument + Abstimmung &rarr; Protokoll
+&boxur;&boxh;&boxh; #28  Meeting-Vorbereitungs-Checkliste
+&boxul;&boxh;&boxh; #34  Massnahmen mit Verantwortlichen
+
+SCHICHT 4 &mdash; Nach-Meeting &amp; Lebenszyklus
+&boxur;&boxh;&boxh; #33  Protokoll ver&ouml;ffentlichen &amp; verteilen
+&boxur;&boxh;&boxh; #35  &Uuml;bertrag offener Massnahmen
+&boxur;&boxh;&boxh; #32  Feedback-Puls
+&boxur;&boxh;&boxh; #14  Asynchrone Beitragsakzeptanz
+&boxur;&boxh;&boxh; #15  Beitragsakzeptanz-Tracker
+&boxul;&boxh;&boxh; #23  Beitragsabstimmung abwesender Partner</pre>
+
+<h3>Wichtige Architekturentscheidungen</h3>
+<ol>
+  <li><strong>PartnerMeeting-Entit&auml;t</strong> &mdash; Agenda-Definition (aktive + passive Punkte, geordnet), verkn&uuml;pfte Dokumente, Abstimmungsergebnisse, Protokoll</li>
+  <li><strong>Wiederverwendbare Abstimmungskomponente</strong> &mdash; Genehmigen/Ablehnen f&uuml;r Pr&uuml;fung, Budget und zuk&uuml;nftige Verwendung</li>
+  <li><strong>Wiederverwendbarer Dokumentenviewer</strong> &mdash; Upload + eingebettete Ansicht f&uuml;r PDF und Tabellenkalkulation</li>
+  <li><strong>Sitzungsprotokoll</strong> &mdash; progressiv aus Tagesordnungspunkt-Artefakten zusammengestellt, bearbeitbar, manuell ver&ouml;ffentlicht</li>
+  <li><strong>Massnahmen-Entit&auml;t</strong> &mdash; Titel, Verantwortlicher, Frist, Status, verkn&uuml;pft mit Meeting + Tagesordnungspunkt, &Uuml;bertragslogik</li>
+</ol>
+
+<h2>Zusammenfassung und Erkenntnisse</h2>
+
+<p><strong>Wichtige Ergebnisse:</strong></p>
+<ul>
+  <li>35 Ideen mit 3 komplement&auml;ren Techniken generiert</li>
+  <li>Klare Systemarchitektur entstand organisch</li>
+  <li>4 wiederverwendbare Komponenten identifiziert (Agenda-Builder, Abstimmung, Dokumentenviewer, Protokoll-Engine)</li>
+  <li>Nat&uuml;rliche 4-Schichten-Reihenfolge mit sauberer Abh&auml;ngigkeitskette</li>
+  <li>Querschneidendes Sitzungsprotokoll-Muster als zentrales Artefakt entdeckt</li>
+</ul>
+
+<p><strong>Durchbruchmomente:</strong></p>
+<ul>
+  <li>Sitzungsprotokoll als lebendes Dokument, das sich aus Tagesordnungspunkt-Interaktionen selbst aufbaut</li>
+  <li>Asynchrone Beitragsakzeptanz erweitert das Meeting &uuml;ber den Raum hinaus (Verbindung zur Rechnungsstellung)</li>
+  <li>Konfigurierbare Agenda mit aktiven + passiven Punkten &mdash; keine fest codierte Reihenfolge</li>
+  <li>Stellvertretungs-Delegation f&uuml;r Nicht-Systembenutzer &mdash; echtes Governance-Bed&uuml;rfnis</li>
+</ul>
+
+<p><strong>Sitzungstechniken:</strong> Morphologische Analyse &rarr; Rollenspiel &rarr; Kreuzbestaeubung<br>
+<strong>Ideen gesamt:</strong> 35 &nbsp;|&nbsp; <strong>Muss-Kriterien:</strong> 28 &nbsp;|&nbsp; <strong>Schnelle Erfolge:</strong> 4 &nbsp;|&nbsp; <strong>Sch&ouml;n zu haben:</strong> 5</p>
+
+<hr class="divider">
+<p style="text-align:center;color:var(--text-muted);font-size:0.82rem">
+  Generiert aus <code>_bmad-output/brainstorming/brainstorming-session-2026-04-04.md</code><br>
+  <a href="index-de.html" style="color:var(--accent2)">Schulungssitzung</a> &nbsp;|&nbsp;
+  <a href="detailed-de.html" style="color:var(--accent2)">Detaillierte Durchf&uuml;hrung</a>
+</p>
+
+</main>
+</body>
+</html>

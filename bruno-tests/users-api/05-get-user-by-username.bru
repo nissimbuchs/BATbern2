@@ -40,7 +40,9 @@ tests {
     const testEmail = bru.getEnvVar("testUserEmail");
     expect(body.email).to.equal(testEmail);
     expect(body.firstName).to.equal("Bruno");
-    expect(body.lastName).to.equal("TestUser");
+    // Plan §F2: 04-create-user sets lastName='Test' so the derived username
+    // (`bruno.test` / `bruno.test.N`) matches the safety guard in 95-delete-test-user.
+    expect(body.lastName).to.equal("Test");
   });
 
   test("should return in reasonable time", function() {

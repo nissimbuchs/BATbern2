@@ -1,0 +1,55 @@
+meta {
+  name: Create Anonymous Registration (No Auth)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/registrations
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "firstName": "Test",
+    "lastName": "Attendee",
+    "email": "test.attendee@e2e.batbern.invalid",
+    "company": "Test Co",
+    "role": "Engineer",
+    "termsAccepted": true,
+    "communicationPreferences": {
+      "newsletterSubscribed": true,
+      "eventReminders": true
+    },
+    "specialRequests": ""
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return minimal confirmation response (Story 4.1.5c: Email confirmation flow)", function() {
+    const response = res.getBody();
+
+    // Minimal response for security - full data available after email confirmation
+    expect(response.message).to.be.a('string');
+    expect(response.message).to.include('Registration submitted');
+    expect(response.email).to.equal('test.attendee@e2e.batbern.invalid');
+  });
+
+  test("should verify no UUID id field (Story 2.2a: ADR-003)", function() {
+    const response = res.getBody();
+    expect(response.id).to.be.undefined;
+  });
+
+  test("should save email for later verification", function() {
+    bru.setVar("registeredEmail", res.getBody().email);
+  });
+}

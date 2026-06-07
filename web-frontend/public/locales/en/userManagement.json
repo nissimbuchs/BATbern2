@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "View",
-    "editRoles": "Edit Roles"
+    "editRoles": "Edit Roles",
+    "openMenu": "Open actions menu"
   },
   "roles": {
     "organizer": "Organizer",
@@ -184,7 +185,32 @@
       "themeDark": "Dark",
       "themeAuto": "Auto (follow system)",
       "timezone": "Timezone",
-      "save": "Save Account Settings"
+      "save": "Save Account Settings",
+      "additionalEmailsTitle": "Additional email addresses",
+      "additionalEmailsHelp": "Mail BATbern sends or forwards to you (organizer fan-out, event confirmations) also reaches these addresses, and you can send to ok@/partner@/batbern{N}@ from any of them. Newsletter copies go to your primary email only — subscribe each address separately if needed. Changes may take up to 5 minutes to take effect for inbound email forwarding.",
+      "additionalEmailLabel": "Label (optional)",
+      "additionalEmailAddButton": "Add email",
+      "additionalEmailAtLimit": "You have reached the maximum number of additional emails. Remove one to add another.",
+      "additionalEmailAdded": "Additional email added",
+      "additionalEmailRemoved": "Additional email removed",
+      "additionalEmailErrorDuplicate": "This email is already registered on a profile.",
+      "additionalEmailErrorLimit": "You already have the maximum number of additional emails.",
+      "additionalEmailErrorInvalid": "Please enter a valid email address.",
+      "additionalEmailUnverifiedPill": "Unverified",
+      "additionalEmailRemoveConfirm": "Remove {{email}} from your profile?",
+      "additionalEmailRemoveConfirmTitle": "Remove additional email?",
+      "additionalEmailRemoveConfirmYes": "Remove",
+      "additionalEmailRemoveConfirmCancel": "Cancel",
+      "additionalEmailDeleteFailed": "Failed to remove this additional email. Please try again.",
+      "additionalEmailDeleteNotFound": "This additional email is no longer on your profile.",
+      "additionalEmailDeleteAriaLabel": "Remove additional email {{email}}",
+      "additionalEmailVerifiedPill": "Verified",
+      "additionalEmailResendButton": "Resend",
+      "additionalEmailResendSuccess": "Verification email sent.",
+      "additionalEmailResendFailed": "Could not send the verification email. Please try again.",
+      "additionalEmailResendAlreadyVerified": "This email is already verified.",
+      "additionalEmailResendAriaLabel": "Resend verification email to {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} is verified"
     },
     "notifications": {
       "title": "Notification Preferences",
@@ -246,7 +272,7 @@
   "cognito": {
     "linked": "Cognito linked",
     "notLinked": "No Cognito account",
-    "tooltip": "Cognito ID: {{id}}"
+    "tooltip": "Has Cognito account"
   },
   "userDetail": {
     "tabs": {
@@ -273,5 +299,16 @@
         "WAITLISTED": "Waitlisted"
       }
     }
+  },
+  "verifyEmail": {
+    "title": "Confirm your email address",
+    "loading": "Checking your verification link…",
+    "confirmMessage": "Confirm that {{email}} is your email address.",
+    "confirmButton": "Confirm email address",
+    "success": "Your email address has been confirmed. You can close this page.",
+    "alreadyVerified": "This email address is already confirmed.",
+    "homeLink": "Go to batbern.ch",
+    "invalidToken": "This verification link is invalid or has expired. Please request a new one from your account settings.",
+    "notFound": "This email address is no longer on the profile it was added to. If you re-added it, use the link from the newest verification email."
   }
 }

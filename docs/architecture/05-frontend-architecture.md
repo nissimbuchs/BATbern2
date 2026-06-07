@@ -104,6 +104,11 @@ export interface CompanyFilters {
 **CRITICAL**: The runtime config sets `apiBaseURL` to include the `/api/v1` prefix (e.g., `http://localhost:8080/api/v1`).
 All API service paths must **exclude** the `/api/v1` prefix to avoid double concatenation errors.
 
+> Note: the base URL is now also seeded **synchronously at bootstrap** from
+> `getDefaultApiBaseUrl()` (hostname-derived, identical to the runtime-config value), so
+> public requests can fire before `/api/v1/config` resolves. `updateApiClientConfig()` still
+> applies the authoritative value on config load. See "Bootstrap & Prerendering (SSG)" below.
+
 **Why This Matters**:
 - Runtime config (from backend `/api/v1/config`): `apiBaseUrl: "http://localhost:8080/api/v1"`
 - If frontend code uses `/api/v1/users`, result is: `http://localhost:8080/api/v1/api/v1/users` ❌
@@ -1333,7 +1338,7 @@ class ComponentErrorBoundary extends React.Component<
 /speaker/dashboard            # Speaker main dashboard
 /speaker/invitations          # Speaking invitations
 /speaker/sessions             # My sessions
-/speaker/profile              # Speaker profile management
+/speaker-portal/profile       # → redirects to /profile (Story 12.11 — profile is role-neutral)
 
 # Partner routes
 /partner/dashboard            # Partner main dashboard (voting, meetings, profile)
@@ -1347,8 +1352,25 @@ class ComponentErrorBoundary extends React.Component<
 
 # Shared routes (role-adaptive)
 /companies                    # Company management
-/profile                      # User profile (adapts to role)
+/profile                      # User profile (role-neutral, Story 12.11: tabs Profile | Consent & Newsletter;
+                              # also the onboarding-gate target /profile?onboarding=1)
 ```
+
+### Route Guards (`ProtectedRoute`)
+
+All authenticated routes render through `ProtectedRoute`
+(`src/components/auth/ProtectedRoute/ProtectedRoute.tsx`), which enforces two checks:
+
+1. **Role-based access** — roles come from the hydrated auth user (`AuthContext`,
+   including the Pattern 3b DB fallback for empty JWT roles — see
+   `06b-user-lifecycle-sync.md`); unauthorized roles are redirected away before the
+   component tree renders.
+2. **ToS/Privacy consent gate** _(Story 12.11, "Pattern C" in 06b)_ — if the hydrated
+   user's `termsAcceptedAt` is `null` (consent confirmed absent), every protected path
+   except `/profile` and `/logout` redirects to `/profile?onboarding=1`, where the
+   Consent tab is preselected; a successful accept calls `refreshUser()` and the gate
+   lifts. `undefined` (hydration failed) **fails open** — a transient `/users/me`
+   failure never locks users out.
 
 ## Internationalization (i18n) Architecture
 
@@ -1969,3 +1991,62 @@ Initial bundle: common.json (de) + auth.json (de) = ~8KB
 On role switch: Load role namespace = ~5KB additional
 On language switch: Load en namespaces = ~25KB additional (lazy)
 ```
+
+## Bootstrap & Prerendering (SSG)
+
+> Plan & decision record: `docs/plans/public-homepage-prerender.md`.
+
+### Decoupled bootstrap (`src/main.tsx`)
+
+The app **renders its shell immediately** — it does **not** block on the runtime-config
+round-trip and shows **no full-screen bootstrap spinner**:
+
+- `main.tsx` synchronously sets the API client base URL via
+  `getDefaultApiBaseUrl()` (`src/config/runtime-config.ts`) = `getApiUrl() + '/api/v1'`,
+  which is byte-identical to the backend `ConfigController.getApiBaseUrl()` value in every
+  environment. Public data (e.g. the homepage current event) therefore loads **in parallel**
+  with `GET /api/v1/config` instead of after it.
+- `main.tsx` then mounts `<ConfigProvider><App/></ConfigProvider>` with `createRoot`.
+  `ConfigProvider` (`src/contexts/ConfigContext.tsx`) loads runtime config in an effect and,
+  on resolve, calls `updateApiClientConfig` + `setAmplifyRuntimeConfig`. It accepts an
+  optional `config` prop for tests. A config-load failure is **non-fatal** — public pages
+  keep working; it does not blank the app.
+- `useConfig()` still throws if read with no config. The only public-path consumer,
+  `useTurnstile`, uses `useOptionalConfig()` (null ⇒ "turnstile not ready / disabled"). The
+  newsletter widget (the hook's host) is additionally **lazy-loaded** below the fold.
+- Genuinely slow regions use the BATbern **logo** spinner (`BATbernLoader`), e.g. the
+  homepage event-data block — never a generic bootstrap spinner.
+
+### Build-time prerender (SSG) of public routes
+
+The public, MUI-free routes are prerendered to static HTML so real content paints **before
+any JS executes** (the FCP/LCP lever). Tooling = a **build-time Playwright crawl**
+(`web-frontend/scripts/prerender.mjs`), chosen over `vite-react-ssg` (beta, peers cap at
+Vite 7 / React Router 6 — incompatible with our Vite 8 / RR 7 stack) and RR7 framework-mode
+prerender (would require migrating off the `<BrowserRouter>` SPA). The crawl is
+version-immune: it operates on the already-built `dist`.
+
+- **Render model = paint-and-replace** (not hydration): the static HTML paints first, then
+  `createRoot().render()` mounts fresh and replaces it. No `hydrateRoot` ⇒ no
+  hydration-mismatch risk across the 10 locales. The prerendered shell is the **German
+  default locale**; other locales are corrected client-side on mount.
+- **Routes prerendered:** `/privacy`, `/support`, `/about` (pure static) and `/` (the
+  homepage *loading shell* — nav + animated logo spinner + footer; the live event hydrates
+  in client-side, preserving "build once").
+- **Output convention:** the homepage is written to `dist/home/index.html` (NOT
+  `dist/index.html`) so the build's neutral `dist/index.html` stays the SPA fallback for all
+  non-prerendered routes (admin/archive/events) — no shell flash on those. Static routes are
+  written to `dist/<route>/index.html`.
+- **Build scripts** (`web-frontend/package.json`): the default `build` is unchanged
+  (`tsc && vite build`); `build:prerender` = `build` + the crawl. The crawl **degrades
+  gracefully** to a CSR-only build if Chromium is unavailable (prerender is a pure
+  enhancement, never a hard build dependency). Deploy paths
+  (`deploy-staging.yml`, `scripts/deploy/publish-beta-frontend.sh`) run `build:prerender`;
+  the local/CI verification build (`make build` → `npm run build`, `build.yml`) stays the
+  fast plain `build`.
+- **CloudFront routing** (`infrastructure/lib/stacks/frontend-stack.ts`, `RouterFunction`):
+  `/`→`/home/index.html`, `/privacy|/about|/support`→ their folder `index.html`, everything
+  else → neutral `/index.html`. Safe even if a prerendered object is missing: the
+  distribution's `404 → /index.html` error response falls back to the CSR shell.
+- **Guardrails:** the crawl fails the build on an empty `#root` snapshot or a missing
+  per-route content marker, and on any uncaught page error.

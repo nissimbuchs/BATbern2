@@ -25,6 +25,8 @@ import {
   Box,
   IconButton,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +53,18 @@ interface FormErrors {
   contactDate?: string;
 }
 
+// `<input type="datetime-local">` interprets its value as **local time**. Building the
+// default with `toISOString().slice(0, 16)` returns UTC and silently shifts the wall-clock
+// time backwards (e.g. CEST organizer at 17:39 sees `15:38` and submits 2h-stale data).
+function nowAsLocalDatetimeLocal(): string {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  );
+}
+
 const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
   open,
   onClose,
@@ -61,10 +75,12 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
 }) => {
   const { t } = useTranslation('organizer');
   const recordOutreachMutation = useRecordOutreach();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const initialFormData: FormData = {
     contactMethod: '',
-    contactDate: new Date().toISOString().slice(0, 16), // Default to now (datetime-local format)
+    contactDate: nowAsLocalDatetimeLocal(),
     notes: '',
   };
 
@@ -76,10 +92,11 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
     if (open) {
       setFormData({
         ...initialFormData,
-        contactDate: new Date().toISOString().slice(0, 16),
+        contactDate: nowAsLocalDatetimeLocal(),
       });
       setErrors({});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const validateForm = (): boolean => {
@@ -144,6 +161,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isFullScreen}
       data-testid="mark-contacted-modal"
     >
       <DialogTitle>
@@ -171,13 +189,13 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
               label={t('speakerOutreach.contactMethod')}
               data-testid="contact-method-select"
             >
-              <MenuItem value="email">
+              <MenuItem value="email" data-testid="contact-method-option-email">
                 {t('speakerOutreach.markContactedModal.method.email')}
               </MenuItem>
-              <MenuItem value="phone">
+              <MenuItem value="phone" data-testid="contact-method-option-phone">
                 {t('speakerOutreach.markContactedModal.method.phone')}
               </MenuItem>
-              <MenuItem value="in_person">
+              <MenuItem value="in_person" data-testid="contact-method-option-in-person">
                 {t('speakerOutreach.markContactedModal.method.inPerson')}
               </MenuItem>
             </Select>

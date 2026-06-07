@@ -82,6 +82,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
         setShowArchived(includeArchivedParam === 'true');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only on mount
 
   // Update URL when filters change
@@ -107,6 +108,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
   useEffect(() => {
     onFiltersChange({ ...filters, search: debouncedSearchQuery });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,7 +194,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           </FormControl>
 
           {/* Workflow State Filter */}
-          <FormControl sx={{ minWidth: 200 }}>
+          <FormControl sx={{ minWidth: { sm: 200 } }}>
             <InputLabel id="workflow-state-filter-label">
               {t('dashboard.filter.workflowState')}
             </InputLabel>
@@ -228,7 +230,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           </FormControl>
 
           {/* Year Filter */}
-          <FormControl sx={{ minWidth: 150 }}>
+          <FormControl sx={{ minWidth: { sm: 150 } }}>
             <TextField
               data-testid="filter-year"
               type="number"

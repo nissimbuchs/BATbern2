@@ -1,0 +1,50 @@
+meta {
+  name: Posttest cleanup — final sweep of test-generated notifications (EMS)
+  type: http
+  seq: 99.6
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "notifications",
+    "prefix": "BRUNO-TEST-"
+  }
+}
+
+tests {
+  test("posttest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, notifications deletion count is reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.entityType).to.equal("notifications");
+      expect(body.deletionCounts.notifications).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Final sweep of test-generated notifications created as side effects during this run
+  (workflow transitions, publishes, registrations). Notifications have no FK to events,
+  so the events cascade never removes them; left uncleaned they pollute REAL organizers'
+  in-app notification lists on the production account. The server-side composite predicate
+  matches BRUNO-TEST-* event_code OR reserved-range BATbern{N} (N >= 10000) OR bruno.test.*
+  recipient. Status oneOf([200, 204, 404]) so it never fails the run.
+}

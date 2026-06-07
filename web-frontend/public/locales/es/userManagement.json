@@ -26,7 +26,8 @@
   },
   "actions": {
     "view": "Ver",
-    "editRoles": "Editar roles"
+    "editRoles": "Editar roles",
+    "openMenu": "Abrir menú de acciones"
   },
   "roles": {
     "organizer": "Organizador",
@@ -210,7 +211,32 @@
       "themeDark": "Oscuro",
       "themeAuto": "Automático (seguir el sistema)",
       "timezone": "Zona horaria",
-      "save": "Guardar configuración de cuenta"
+      "save": "Guardar configuración de cuenta",
+      "additionalEmailsTitle": "Direcciones de correo adicionales",
+      "additionalEmailsHelp": "Los correos que BATbern te envía o reenvía (distribución a organizadores, confirmaciones de eventos) también llegan a estas direcciones, y puedes enviar a ok@/partner@/batbern{N}@ desde cualquiera de ellas. Las copias de la newsletter solo se envían a tu correo principal — suscribe cada dirección por separado si lo necesitas. Los cambios pueden tardar hasta 5 minutos en hacerse efectivos para el reenvío entrante.",
+      "additionalEmailLabel": "Etiqueta (opcional)",
+      "additionalEmailAddButton": "Añadir correo",
+      "additionalEmailAtLimit": "Has alcanzado el número máximo de correos adicionales. Elimina uno para añadir otro.",
+      "additionalEmailAdded": "Correo adicional añadido",
+      "additionalEmailRemoved": "Correo adicional eliminado",
+      "additionalEmailErrorDuplicate": "Este correo ya está registrado en un perfil.",
+      "additionalEmailErrorLimit": "Ya tienes el número máximo de correos adicionales.",
+      "additionalEmailErrorInvalid": "Por favor, introduce una dirección de correo válida.",
+      "additionalEmailUnverifiedPill": "No verificado",
+      "additionalEmailRemoveConfirm": "¿Eliminar {{email}} de tu perfil?",
+      "additionalEmailRemoveConfirmTitle": "¿Eliminar correo adicional?",
+      "additionalEmailRemoveConfirmYes": "Eliminar",
+      "additionalEmailRemoveConfirmCancel": "Cancelar",
+      "additionalEmailDeleteFailed": "No se ha podido eliminar este correo adicional. Inténtalo de nuevo.",
+      "additionalEmailDeleteNotFound": "Este correo adicional ya no está en tu perfil.",
+      "additionalEmailDeleteAriaLabel": "Eliminar correo adicional {{email}}",
+      "additionalEmailVerifiedPill": "Verificado",
+      "additionalEmailResendButton": "Reenviar",
+      "additionalEmailResendSuccess": "Correo de verificación enviado.",
+      "additionalEmailResendFailed": "No se pudo enviar el correo de verificación. Inténtelo de nuevo.",
+      "additionalEmailResendAlreadyVerified": "Esta dirección de correo ya está verificada.",
+      "additionalEmailResendAriaLabel": "Reenviar el correo de verificación a {{email}}",
+      "additionalEmailVerifiedAriaLabel": "{{email}} está verificado"
     },
     "notifications": {
       "title": "Preferencias de notificación",
@@ -272,6 +298,17 @@
   "cognito": {
     "linked": "Cognito vinculado",
     "notLinked": "Sin cuenta Cognito",
-    "tooltip": "ID de Cognito: {{id}}"
+    "tooltip": "Cuenta de Cognito vinculada"
+  },
+  "verifyEmail": {
+    "title": "Confirme su dirección de correo electrónico",
+    "loading": "Comprobando su enlace de verificación…",
+    "confirmMessage": "Confirme que {{email}} es su dirección de correo electrónico.",
+    "confirmButton": "Confirmar dirección de correo",
+    "success": "Su dirección de correo ha sido confirmada. Puede cerrar esta página.",
+    "alreadyVerified": "Esta dirección de correo ya está confirmada.",
+    "homeLink": "Ir a batbern.ch",
+    "invalidToken": "Este enlace de verificación no es válido o ha caducado. Solicite uno nuevo en la configuración de su cuenta.",
+    "notFound": "Esta dirección de correo ya no está en el perfil al que se añadió. Si la volvió a añadir, utilice el enlace del correo de verificación más reciente."
   }
 }

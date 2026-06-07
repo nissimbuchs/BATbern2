@@ -66,7 +66,15 @@ public class EmailTemplateService {
      * Creates a custom (non-system) email template.
      * Content templates must have a non-null subject.
      */
+    private static final java.util.regex.Pattern TEMPLATE_KEY_PATTERN =
+            java.util.regex.Pattern.compile("^[a-z0-9]+(-[a-z0-9]+)*$");
+
     public EmailTemplate create(CreateEmailTemplateRequest request) {
+        if (!TEMPLATE_KEY_PATTERN.matcher(request.getTemplateKey()).matches()) {
+            throw new IllegalArgumentException(
+                    "Template key must be kebab-case (lowercase letters, digits, hyphens): "
+                            + request.getTemplateKey());
+        }
         boolean isLayout = Boolean.TRUE.equals(request.getIsLayout());
         if (!isLayout && (request.getSubject() == null || request.getSubject().isBlank())) {
             throw new IllegalArgumentException("Content templates must have a non-empty subject");

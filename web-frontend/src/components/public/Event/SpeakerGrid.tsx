@@ -15,6 +15,7 @@ interface SpeakerWithSession {
   firstName: string;
   lastName: string;
   company?: string;
+  companyDisplayName?: string;
   profilePictureUrl?: string;
   sessionTitle: string;
   sessionDescription?: string;
@@ -26,10 +27,10 @@ interface SpeakerGridProps {
   sessions: Session[];
 }
 
+const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+
 export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
   const { t } = useTranslation('events');
-
-  const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
 
   // Aggregate speakers from non-structural sessions only
   const speakersWithSessions = useMemo(() => {
@@ -46,6 +47,7 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
               firstName: speaker.firstName,
               lastName: speaker.lastName,
               company: speaker.company,
+              companyDisplayName: speaker.companyDisplayName,
               profilePictureUrl: speaker.profilePictureUrl,
               sessionTitle: speaker.presentationTitle || session.title,
               sessionDescription: session.description,
@@ -65,13 +67,14 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
   }
 
   return (
-    <div className="py-12">
+    <div className="py-12" data-testid="speaker-grid">
       <h2 className="text-3xl font-light mb-8 text-zinc-100">{t('common:navigation.speakers')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {speakersWithSessions.map((speaker) => (
           <Card
             key={speaker.username}
-            className="group hover:border-blue-400 transition-colors bg-zinc-900/50 border-zinc-800"
+            data-testid="speaker-card"
+            className="group hover:border-blue-400 transition-colors bg-zinc-700 border-zinc-600"
           >
             <CardHeader className="pb-4">
               <SpeakerDisplay
@@ -80,6 +83,7 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
                   firstName: speaker.firstName,
                   lastName: speaker.lastName,
                   company: speaker.company,
+                  companyDisplayName: speaker.companyDisplayName,
                   profilePictureUrl: speaker.profilePictureUrl,
                   bio: speaker.bio,
                   speakerRole:

@@ -1,0 +1,43 @@
+meta {
+  name: Provision User — ORGANIZER may NOT grant non-SPEAKER role (Story 11.C.2 P0)
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/users/provision
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "bruno.escalation@example.com",
+    "firstName": "Bruno",
+    "lastName": "Escalation",
+    "role": "ORGANIZER"
+  }
+}
+
+assert {
+  res.status: in [400, 401, 403]
+}
+
+tests {
+  test("should reject non-SPEAKER role from non-ADMIN caller", function() {
+    const status = res.getStatus();
+    // 400 — server enforces SPEAKER-only for non-ADMIN callers (P0 review patch).
+    // 401/403 acceptable when token role is insufficient.
+    expect([400, 401, 403]).to.include(status);
+  });
+}

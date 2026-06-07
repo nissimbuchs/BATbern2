@@ -7,6 +7,7 @@ import {
   FiberManualRecord as CurrentIcon,
 } from '@mui/icons-material';
 import { PublishingPhase } from '@/types/event.types';
+import { formatDate } from '@/utils/date/dateFormat';
 
 interface AutoPublishSchedule {
   phase: PublishingPhase;
@@ -23,7 +24,7 @@ export interface PublishingTimelineProps {
   scheduledDates?: Partial<Record<PublishingPhase, string>>;
 }
 
-const PHASE_KEYS: Array<PublishingPhase | 'updates'> = ['topic', 'speakers', 'agenda', 'updates'];
+const PHASE_KEYS: PublishingPhase[] = ['topic', 'speakers', 'agenda'];
 
 export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
   currentPhase,
@@ -33,11 +34,11 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
   publishedDates = {},
   scheduledDates = {},
 }) => {
-  const { t } = useTranslation('events');
+  const { t, i18n } = useTranslation('events');
+  const locale = i18n.language === 'de' ? 'de' : 'en';
   const phases = PHASE_KEYS.map((key) => ({ key, label: t(`publishing.phases.${key}`) }));
 
   const getPhaseClass = (phaseKey: string): string => {
-    // Check published status first - a phase can be both current and published
     if (publishedPhases.includes(phaseKey as PublishingPhase)) return 'complete';
     if (phaseKey === currentPhase) return 'current';
     return 'pending';
@@ -52,8 +53,12 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
     return <PendingIcon color="disabled" data-testid={`icon-pending-${phaseKey}`} />;
   };
 
+  const formatLocalDate = (dateStr: string, fmt?: string): string => {
+    return formatDate(new Date(dateStr), locale, fmt);
+  };
+
   const getScheduledDate = (phaseKey: string): string | null => {
-    if (phaseKey === 'topic') return 'Now';
+    if (phaseKey === 'topic') return t('publishing.timeline.now');
 
     const schedule = autoPublishSchedule.find((s) => s.phase === phaseKey);
     if (schedule) {
@@ -62,9 +67,9 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
       const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
       if (diffDays > 0) {
-        return `${diffDays} days`;
+        return t('publishing.timeline.inDays', { count: diffDays });
       }
-      return date.toLocaleDateString();
+      return formatLocalDate(schedule.scheduledDate);
     }
 
     // Default milestones based on phase
@@ -72,15 +77,12 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
     if (phaseKey === 'speakers') {
       const speakersDate = new Date(eventDateObj);
       speakersDate.setMonth(speakersDate.getMonth() - 1);
-      return speakersDate.toLocaleDateString();
+      return formatDate(speakersDate, locale);
     }
     if (phaseKey === 'agenda') {
       const agendaDate = new Date(eventDateObj);
       agendaDate.setDate(agendaDate.getDate() - 14);
-      return agendaDate.toLocaleDateString();
-    }
-    if (phaseKey === 'updates') {
-      return eventDateObj.toLocaleDateString();
+      return formatDate(agendaDate, locale);
     }
     return null;
   };
@@ -142,7 +144,11 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
           />
         </Box>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          {completedSteps} of {phases.length} phases published ({Math.round(progressPercent)}%)
+          {t('publishing.timeline.progress', {
+            completed: completedSteps,
+            total: phases.length,
+            percent: Math.round(progressPercent),
+          })}
         </Typography>
       </Box>
 
@@ -177,18 +183,14 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
                       // Show published date if phase is published
                       const publishedDate = publishedDates[phase.key as PublishingPhase];
                       if (publishedDate && phaseClass === 'complete') {
-                        const date = new Date(publishedDate);
                         return (
                           <Typography
                             variant="caption"
                             color="text.secondary"
                             data-testid={`published-date-${phase.key}`}
                           >
-                            Published on{' '}
-                            {date.toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
+                            {t('publishing.timeline.publishedOn', {
+                              date: formatLocalDate(publishedDate, 'd. MMM yyyy'),
                             })}
                           </Typography>
                         );
@@ -197,18 +199,14 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
                       // Show scheduled date if provided
                       const schedDate = scheduledDates[phase.key as PublishingPhase];
                       if (schedDate) {
-                        const date = new Date(schedDate);
                         return (
                           <Typography
                             variant="caption"
                             color="text.secondary"
                             data-testid={`scheduled-date-${phase.key}`}
                           >
-                            Scheduled:{' '}
-                            {date.toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
+                            {t('publishing.timeline.scheduled', {
+                              date: formatLocalDate(schedDate, 'd. MMM yyyy'),
                             })}
                           </Typography>
                         );

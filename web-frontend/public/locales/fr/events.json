@@ -30,7 +30,9 @@
       "selectedTopic": "Sujet sélectionné",
       "quickActions": "Actions rapides",
       "selectTopic": "Sélectionner un sujet",
-      "previewPublic": "Aperçu de la page publique"
+      "previewPublic": "Aperçu de la page publique",
+      "startPresentation": "Démarrer la présentation",
+      "liveControl": "Contrôle en direct"
     },
     "participantsTab": {
       "title": "Participants à l'événement",
@@ -57,7 +59,10 @@
       "empty": "Aucun participant inscrit pour l'instant",
       "actions": {
         "cancel": "Annuler l'inscription",
-        "delete": "Supprimer l'inscription"
+        "delete": "Supprimer l'inscription",
+        "resendConfirmation": "Renvoyer l'e-mail de confirmation",
+        "resendSuccess": "E-mail de confirmation renvoyé avec succès",
+        "resendError": "Échec de l'envoi de l'e-mail de confirmation"
       },
       "deleteDialog": {
         "title": "Supprimer l'inscription",
@@ -97,8 +102,37 @@
       "moderatorLabel": "Modérateur",
       "moderatorUpdated": "Modérateur mis à jour avec succès",
       "moderatorUpdateError": "Échec de la mise à jour du modérateur.",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "Capacité d'inscription",
+      "capacityHelperText": "Laisser vide pour des inscriptions illimitées. Ne peut pas dépasser la capacité du lieu.",
+      "capacityUpdated": "Capacité mise à jour avec succès",
+      "capacityUpdateError": "Échec de la mise à jour de la capacité.",
+      "notifications": "Notifications",
+      "activeAutomations": "automatisations actives",
+      "manageAll": "Gérer toutes les notifications",
+      "dangerZone": "Zone de danger",
+      "dangerWarning": "Ces actions sont irréversibles. Veuillez procéder avec prudence.",
+      "cancelEvent": "Annuler l'événement",
+      "cancelEventDesc": "Annule l'événement et notifie tous les inscrits",
+      "deleteEvent": "Supprimer l'événement",
+      "deleteEventDesc": "Supprime définitivement l'événement (uniquement sans inscriptions)",
+      "cannotDelete": "Impossible de supprimer un événement avec des inscriptions. Annulez l'événement à la place.",
+      "confirmCancel": "Annuler l'événement ?",
+      "cancelConfirmText": "L'événement sera annulé et les {{count}} participants inscrits seront notifiés. Cette action est irréversible.",
+      "confirmCancelBtn": "Oui, annuler",
+      "confirmDelete": "Supprimer l'événement ?",
+      "deleteConfirmText": "L'événement «{{title}}» sera définitivement supprimé. Cette action est irréversible.",
+      "confirmDeleteBtn": "Oui, supprimer",
+      "deleteError": "Échec de la suppression. Veuillez réessayer.",
+      "speakerReminders": "Rappels de délai pour les conférenciers",
+      "speakerRemindersDesc": "3 jours avant la date limite",
+      "registrationEmails": "E-mails de confirmation d'inscription",
+      "registrationEmailsDesc": "Immédiatement lors de l'inscription",
+      "agendaDistribution": "Distribution du programme final",
+      "agendaDistributionDesc": "Prévu pour le jour J-14",
+      "checkInReminders": "Rappels d'enregistrement le jour de l'événement",
+      "checkInRemindersDesc": "Le matin de l'événement",
+      "startPresentation": "Démarrer la présentation",
+      "liveControl": "Contrôle en direct"
     },
     "speakers": {
       "progress": "Progression",
@@ -138,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Envoyer au lieu / à la restauration",
+      "subtitle": "Choisissez un modèle, ajoutez éventuellement des notes, vérifiez l'aperçu, puis envoyez au contact du lieu, au contact de la restauration ou aux deux.",
+      "notConfigured": "Les contacts du lieu ou de la restauration ne sont pas configurés.",
+      "openAdmin": "Ouvrir Administration → Lieu & Restauration",
+      "templateLabel": "Modèle",
+      "noTemplates": "Aucun modèle disponible",
+      "recipients": "Destinataires",
+      "venueRole": "Lieu",
+      "cateringRole": "Restauration",
+      "notesLabel": "Notes (facultatif)",
+      "notesPlaceholder": "p. ex. Réserver une table pour 8 à 12 h 30 dans la salle attenante.",
+      "previewButton": "Aperçu",
+      "previewFailed": "Échec de l'aperçu :",
+      "to": "À",
+      "cc": "Cc",
+      "replyTo": "Répondre à",
+      "subject": "Objet",
+      "sendButton": "Envoyer",
+      "confirmTitle": "Envoyer l'e-mail ?",
+      "confirmBody": "Un e-mail réel sera envoyé à {{recipients}}. L'adresse de réponse est celle du coordinateur du lieu configuré.",
+      "confirmSend": "Oui, envoyer",
+      "sentSuccess": "Envoyé à {{count}} destinataire(s).",
+      "sentFailed": "Échec de l'envoi : {{message}}"
     }
   },
   "dashboard": {
@@ -431,11 +490,6 @@
       "alreadyPublished": "Déjà publié",
       "publishTopicFirst": "Veuillez d'abord publier le sujet",
       "publishSpeakersFirst": "Veuillez d'abord publier les intervenants",
-      "mode": "Mode",
-      "modeDraft": "Brouillon",
-      "modeProgressive": "Progressif",
-      "modeComplete": "Complet",
-      "notifySubscribers": "Notifier les abonnés",
       "validationErrors": "Erreurs de validation :",
       "phase": {
         "topic": "Sujet",
@@ -443,8 +497,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "Publication de {{phase}}",
-        "notifySubscribers": "Notifier les abonnés lors de la publication"
+        "publishingPhase": "Publication de {{phase}}"
       }
     },
     "validation": {
@@ -485,10 +538,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
-      "agenda": "Agenda",
-      "updates": "Updates"
+      "topic": "Sujet",
+      "speakers": "Conférenciers",
+      "agenda": "Programme",
+      "updates": "Mises à jour"
     }
   },
   "notifications": {
@@ -528,7 +581,7 @@
       "date": "Date",
       "time": "Heure",
       "location": "Lieu",
-      "capacity": "Capacité"
+      "capacity": "Inscriptions"
     },
     "errors": {
       "loadFailed": "Échec du chargement de l'événement",
@@ -763,7 +816,8 @@
       "confirmed": "[MISSING] Confirmed",
       "registered": "[MISSING] Registered",
       "waitlist": "[MISSING] Waitlist",
-      "cancelled": "[MISSING] Cancelled"
+      "cancelled": "[MISSING] Cancelled",
+      "attended": "Participé"
     }
   },
   "capacity": {
@@ -776,14 +830,39 @@
     "heading": "À propos de cet événement"
   },
   "photos": {
-    "title": "Event Photos",
-    "uploadButton": "Upload Photo",
-    "deleteConfirmTitle": "Delete Photo",
-    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "emptyState": "No photos yet. Upload the first one!",
-    "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "title": "Photos de l'événement",
+    "uploadButton": "Télécharger une photo",
+    "deleteConfirmTitle": "Supprimer la photo",
+    "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer cette photo ? Cette action est irréversible.",
+    "deleteConfirm": "Supprimer",
+    "deleteCancel": "Annuler",
+    "emptyState": "Aucune photo pour l'instant. Téléchargez la première !",
+    "uploading": "Téléchargement...",
+    "uploadError": "Échec du téléchargement. Veuillez réessayer.",
+    "uploadErrorPartial": "{{failed}} sur {{total}} téléchargements ont échoué. Veuillez réessayer."
+  },
+  "teaserImage": {
+    "title": "Images teaser",
+    "description": "Images affichées en plein écran sur la page de présentation.",
+    "uploadButton": "Ajouter une image teaser",
+    "uploading": "Téléchargement...",
+    "uploadError": "Échec du téléchargement. Veuillez réessayer.",
+    "removeError": "Échec de la suppression. Veuillez réessayer.",
+    "positionError": "Échec de la mise à jour de la position. Veuillez réessayer.",
+    "limitReached": "Maximum de {{max}} images teaser atteint.",
+    "position": {
+      "label": "Afficher après",
+      "afterWelcome": "Diapositive d'accueil",
+      "afterCommittee": "Diapositive du comité",
+      "afterTopicReveal": "Diapositive de révélation du sujet",
+      "afterUpcomingEvents": "Diapositive des prochains événements"
+    }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Exporter les badges nominatifs",
+      "exportNameBadgesDocx": "Badges nominatifs en Word",
+      "exportError": "Échec de l'exportation"
+    }
   }
 }

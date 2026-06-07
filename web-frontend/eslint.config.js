@@ -32,6 +32,22 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // Disable React Compiler rules added in react-hooks v7 — project does not use React Compiler
+      'react-hooks/static-components': 'off',
+      'react-hooks/use-memo': 'off',
+      'react-hooks/component-hook-factories': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'react-hooks/incompatible-library': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/globals': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/error-boundaries': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/set-state-in-render': 'off',
+      'react-hooks/unsupported-syntax': 'off',
+      'react-hooks/config': 'off',
+      'react-hooks/gating': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       // Temporarily downgrade to warnings for incremental development
       '@typescript-eslint/no-unused-vars': 'warn',

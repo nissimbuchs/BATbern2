@@ -22,7 +22,11 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Edit as EditIcon } from '@mui/icons-material';
+import {
+  CheckCircle as CheckCircleIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+} from '@mui/icons-material';
 import { format } from 'date-fns';
 import { type Locale } from 'date-fns/locale';
 import { type EventTaskResponse } from '@/services/taskService';
@@ -34,6 +38,7 @@ export interface TaskCardProps {
   locale: Locale;
   onComplete?: (taskId: string) => void;
   onEdit?: (task: EventTaskResponse) => void;
+  onDelete?: (task: EventTaskResponse) => void;
   showCompleteButton?: boolean;
   showEventCode?: boolean;
   showTriggerState?: boolean;
@@ -55,6 +60,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   locale,
   onComplete,
   onEdit,
+  onDelete,
   showCompleteButton = true,
   showEventCode = true,
   showTriggerState = false,
@@ -110,6 +116,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 aria-label={t('tasks.editTask', 'Edit task')}
               >
                 <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onDelete && (
+            <Tooltip title={t('tasks.deleteTask', 'Delete task')}>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(task);
+                }}
+                aria-label={t('tasks.deleteTask', 'Delete task')}
+              >
+                <DeleteIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}

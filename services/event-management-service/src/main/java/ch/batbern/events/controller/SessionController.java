@@ -8,7 +8,7 @@ import ch.batbern.events.dto.CreateSessionRequest;
 import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.dto.UpdateSessionRequest;
 import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionBatchImportService;
@@ -72,7 +72,7 @@ public class SessionController {
     private EventRepository eventRepository;
 
     @Autowired
-    private ContentSubmissionRepository contentSubmissionRepository;
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
 
     @Autowired
     private SlugGenerationService slugGenerationService;
@@ -384,7 +384,7 @@ public class SessionController {
         }
 
         // Delete related content submissions first to avoid foreign key constraint violation
-        contentSubmissionRepository.deleteBySessionId(session.getId());
+        sessionContentHistoryRepository.deleteBySessionId(session.getId());
 
         // Delete session
         sessionRepository.deleteById(session.getId());

@@ -68,6 +68,7 @@ const ConfirmRegistrationPage = () => {
     };
 
     confirmRegistration();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // No token -> redirect to home

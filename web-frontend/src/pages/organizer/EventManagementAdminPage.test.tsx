@@ -12,10 +12,11 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import EventManagementAdminPage from './EventManagementAdminPage';
 
-// Mock child tab components to isolate page-level tests
+// Mock ALL child tab components to isolate page-level tests and avoid
+// transitive dependency issues (e.g. tinymce from EmailTemplatesTab)
 vi.mock('@/components/organizer/Admin/EventTypesTab', () => ({
   EventTypesTab: () => <div data-testid="event-types-tab-content">EventTypes</div>,
 }));
@@ -24,6 +25,23 @@ vi.mock('@/components/organizer/Admin/ImportDataTab', () => ({
 }));
 vi.mock('@/components/organizer/Admin/TaskTemplatesTab', () => ({
   TaskTemplatesTab: () => <div data-testid="task-templates-tab-content">TaskTemplates</div>,
+}));
+vi.mock('@/components/organizer/Admin/EmailTemplatesTab', () => ({
+  EmailTemplatesTab: () => <div data-testid="email-templates-tab-content">EmailTemplates</div>,
+}));
+vi.mock('@/components/organizer/Admin/PresentationSettingsTab', () => ({
+  PresentationSettingsTab: () => (
+    <div data-testid="presentation-settings-tab-content">PresentationSettings</div>
+  ),
+}));
+vi.mock('@/components/organizer/Admin/AiPromptsTab', () => ({
+  AiPromptsTab: () => <div data-testid="ai-prompts-tab-content">AiPrompts</div>,
+}));
+vi.mock('@/components/organizer/Admin/AdminSettingsTab', () => ({
+  AdminSettingsTab: () => <div data-testid="admin-settings-tab-content">AdminSettings</div>,
+}));
+vi.mock('@/components/organizer/Admin/GlobalImagesTab', () => ({
+  GlobalImagesTab: () => <div data-testid="global-images-tab-content">GlobalImages</div>,
 }));
 
 // Mock i18n
@@ -90,6 +108,63 @@ describe('EventManagementAdminPage', () => {
       const user = userEvent.setup();
       renderPage();
       await user.click(screen.getByRole('tab', { name: /import data/i }));
+      expect(screen.getByTestId('import-data-tab-content')).toBeInTheDocument();
+    });
+
+    it('should_renderScrollableTabStrip_when_manyTabs', () => {
+      // The 9-tab strip overflows narrow viewports; it must be horizontally
+      // scrollable (variant="scrollable") so every tab stays reachable on mobile.
+      renderPage();
+      const tabs = screen.getByTestId('admin-tabs');
+      // MUI renders a scrollable scroller element only for variant="scrollable".
+      expect(tabs.querySelector('.MuiTabs-scrollableX')).toBeTruthy();
+    });
+  });
+
+  describe('Mobile bottom navigation', () => {
+    const originalMatchMedia = window.matchMedia;
+
+    const installMobileMatchMedia = (viewportWidth: number) => {
+      window.matchMedia = vi.fn((query: string) => {
+        const maxMatch = /max-width:\s*([\d.]+)px/.exec(query);
+        const minMatch = /min-width:\s*([\d.]+)px/.exec(query);
+        let matches = false;
+        if (maxMatch) matches = viewportWidth <= parseFloat(maxMatch[1]);
+        else if (minMatch) matches = viewportWidth >= parseFloat(minMatch[1]);
+        return {
+          matches,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        };
+      }) as unknown as typeof window.matchMedia;
+    };
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('should_renderBottomNavigationInsteadOfTabStrip_when_mobileViewport', () => {
+      installMobileMatchMedia(375);
+      renderPage();
+
+      // The scrollable desktop tab strip is gone; the fixed bottom nav replaces it.
+      expect(screen.queryByTestId('admin-tabs')).not.toBeInTheDocument();
+      expect(screen.getByTestId('admin-bottom-nav')).toBeInTheDocument();
+      // Tab content still renders below the nav.
+      expect(screen.getByTestId('event-types-tab-content')).toBeInTheDocument();
+    });
+
+    it('should_keepTabUrlBehaviour_when_bottomNavItemClicked', async () => {
+      installMobileMatchMedia(375);
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByRole('button', { name: /import data/i }));
       expect(screen.getByTestId('import-data-tab-content')).toBeInTheDocument();
     });
   });

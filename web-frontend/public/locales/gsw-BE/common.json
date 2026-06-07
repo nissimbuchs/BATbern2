@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organisator",
+      "speaker": "Referänt",
+      "partner": "Partner",
+      "attendee": "Teilnähmer"
+    }
   },
   "public": {
     "login": "Ämälde",
@@ -77,7 +83,10 @@
     "retry": "Nomol versuche",
     "back": "Zrugg",
     "confirm": "Bestätige",
-    "clearFilters": "Filter lösche"
+    "clearFilters": "Filter lösche",
+    "previous": "Vorigi",
+    "next": "Wyter",
+    "deleting": "Wird glöscht..."
   },
   "labels": {
     "status": "Status",
@@ -89,7 +98,18 @@
     "company": "Firma",
     "email": "E-Mail",
     "dueDate": "Fälligkeitsdatum",
-    "emailAddress": "E-Mail-Adress"
+    "emailAddress": "E-Mail-Adress",
+    "name": "Name",
+    "description": "Beschriibig",
+    "notes": "Bemerkige",
+    "event": "Veranstatig",
+    "viewMode": "Azeigemodis",
+    "gridView": "Rasteraziig",
+    "listView": "Listenaziig",
+    "sessions": "Sessions",
+    "topics": "Theme",
+    "firstName": "Vorname",
+    "lastName": "Nachname"
   },
   "filters": {
     "status": {
@@ -446,6 +466,11 @@
     "detail": {
       "backToArchive": "← Zrugg zum Archiv",
       "photos": "Fotos"
+    },
+    "sort": {
+      "newest": "Nöischti zerscht",
+      "oldest": "Ältischti zerscht",
+      "mostAttended": "Am meischte bsuecht"
     }
   },
   "notifications": {
@@ -479,7 +504,8 @@
       "SPEAKER": "Redneri",
       "REGISTRATION": "Amäldigä",
       "TASK_REMINDER": "Ufgabeerinnerige",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Lokau & Catering"
     },
     "layoutKey": "Layout",
     "standalone": "Keis (eigenständig)",
@@ -594,5 +620,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Dys Profil",
+    "pageSubtitle": "Verwaut dyni persönleche Aagabe, d Yywilligung u dr Newsletter",
+    "tabs": {
+      "profile": "Profil",
+      "consent": "Yywilligung & Newsletter"
+    },
+    "companyLabel": "Firma",
+    "companyInvalid": "D Firme-ID muess us 1-12 Buechstabe oder Zahle bestah",
+    "onboardingNotice": "Bitte vervollständig dys Profil zum Wytermache: Akzeptier unge d Nutzigsbedingige u d Datcheschutzerklärig.",
+    "consentTitle": "Nutzigsbedingige & Datcheschutzerklärig",
+    "consentLabelPrefix": "I akzeptiere d",
+    "consentLabelAnd": "u d",
+    "termsOfService": "Nutzigsbedingige",
+    "privacyPolicy": "Datcheschutzerklärig",
+    "consentAcceptedOn": "Akzeptiert am {{date}}",
+    "consentSave": "Akzeptiere u spychere",
+    "consentSaveError": "Dyni Yywilligung het nid chönne gspycheret wärde. Probiers no einisch.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Über chünftigi BATbern-Aaläss informiert blybe.",
+    "newsletterLabel": "Dr BATbern-Newsletter abonniere"
   }
 }

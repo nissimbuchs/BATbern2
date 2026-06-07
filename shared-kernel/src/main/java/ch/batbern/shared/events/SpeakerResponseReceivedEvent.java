@@ -13,9 +13,8 @@ import java.util.UUID;
 
 /**
  * Domain event published when a speaker responds to an invitation.
- * Story 6.2a: Invitation Response Portal - AC6 (Organizer Notification)
  *
- * This event is published for all response types (ACCEPT, DECLINE, TENTATIVE)
+ * This event is published for every response (ACCEPT or DECLINE per ADR-009 §0.6)
  * and triggers organizer notification via email.
  *
  * Event consumers:

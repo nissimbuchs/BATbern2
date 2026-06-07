@@ -31,8 +31,18 @@ export interface EventManagementStackProps extends cdk.StackProps {
   inboundEmailQueueUrl?: string;
   /** Story 10.17: S3 bucket name for raw inbound emails. */
   inboundEmailBucketName?: string;
+  /** Story 10.17: Environment-specific reply address (e.g. replies@staging.batbern.ch). */
+  inboundEmailReplyAddress?: string;
   /** Watch JWT signing secret — same value used by CUMS to sign, EMS to verify (SecurityConfig). */
   watchJwtSecret?: secretsmanager.ISecret;
+  /** Story 10.29: SQS queue URL for bounce/complaint processing. */
+  bounceQueueUrl?: string;
+  /**
+   * Story 10.29: SES Configuration Set name to attach to newsletter sends so BOUNCE/COMPLAINT
+   * events get routed to SNS → SQS → BounceProcessingService. Without it, SES drops the events
+   * silently and bouncers stay active in newsletter_subscribers.
+   */
+  sesConfigurationSetName?: string;
 }
 
 /**
@@ -50,6 +60,10 @@ export class EventManagementStack extends cdk.Stack {
 
     const envName = props.config.envName;
     const serviceName = 'event-management';
+
+    // Use batbern.ch when serving production traffic, berner-architekten-treffen.ch otherwise.
+    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'berner-architekten-treffen.ch';
 
     // AI / OpenAI secret (Story 10.16): look up from Secrets Manager when AI is enabled
     let openAiSecret: secretsmanager.ISecret | undefined;
@@ -70,6 +84,7 @@ export class EventManagementStack extends cdk.Stack {
         routePattern: '/api/v1/events',
         cpu: 256,
         memoryLimitMiB: 2048, // Increased from 1024 MB: JVM non-heap was consuming headroom, memory alarm firing (2026-02-24)
+        healthCheckStartPeriodSeconds: 300, // DB + Flyway + JPA + EventBridge needs more startup time than 120s default
         minCapacity: 1,
         maxCapacity: 2, // Scale up under load (sufficient for 3 events/year, ~300 users)
         additionalEnvironment: {
@@ -79,7 +94,9 @@ export class EventManagementStack extends cdk.Stack {
             AWS_S3_BUCKET_NAME: props.contentBucket.bucketName,
           }),
           ...(props.cloudFrontDistribution && {
-            CLOUDFRONT_DOMAIN: `https://${props.cloudFrontDistribution.distributionDomainName}`,
+            CLOUDFRONT_DOMAIN: props.config.domain?.cdnDomain
+              ? `https://${props.config.domain.cdnDomain}`
+              : `https://${props.cloudFrontDistribution.distributionDomainName}`,
             CLOUDFRONT_DISTRIBUTION_ID: props.cloudFrontDistribution.distributionId,
           }),
           // Service Connect URL for company-user-management service (ADR-004)
@@ -89,6 +106,11 @@ export class EventManagementStack extends cdk.Stack {
           // Must match the frontend domain for correct email link generation
           ...(props.config.domain && {
             APP_BASE_URL: `https://${props.config.domain.frontendDomain}`,
+          }),
+          // Email from-address and reply-to — use environment-specific addresses
+          EMAIL_FROM: `noreply@${sesFromDomain}`,
+          ...(props.inboundEmailReplyAddress && {
+            EMAIL_REPLY_TO: props.inboundEmailReplyAddress,
           }),
           // Story 10.16: AI content generation feature flag
           ...(props.aiEnabled && { AI_ENABLED: 'true' }),
@@ -100,10 +122,25 @@ export class EventManagementStack extends cdk.Stack {
           ...(props.inboundEmailBucketName && {
             AWS_INBOUND_EMAIL_BUCKET_NAME: props.inboundEmailBucketName,
           }),
+          // Story 10.29: Bounce/complaint processing via SQS
+          ...(props.bounceQueueUrl && {
+            AWS_BOUNCE_QUEUE_URL: props.bounceQueueUrl,
+            AWS_BOUNCE_ENABLED: 'true',
+          }),
+          // Story 10.29: SES Configuration Set name — Spring reads this as
+          // batbern.ses.configuration-set-name (NewsletterEmailService:135) and
+          // attaches it to each SendEmail so BOUNCE/COMPLAINT events flow to SNS → SQS.
+          ...(props.sesConfigurationSetName && {
+            BATBERN_SES_CONFIGURATION_SET_NAME: props.sesConfigurationSetName,
+          }),
         },
         additionalSecrets: {
           ...(openAiSecret && { OPENAI_API_KEY: ecs.Secret.fromSecretsManager(openAiSecret) }),
           ...(props.watchJwtSecret && { WATCH_JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret) }),
+          // JWT_SECRET provides a stable HMAC key for ConfirmationTokenService (registration email links).
+          // Without it the service generates a random key on each start, invalidating all in-flight tokens
+          // whenever ECS replaces a Fargate Spot task or a new deployment lands.
+          ...(props.watchJwtSecret && { JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret) }),
         },
       },
       cluster: props.cluster,
@@ -125,11 +162,9 @@ export class EventManagementStack extends cdk.Stack {
       props.watchJwtSecret.grantRead(this.service.taskDefinition.executionRole!);
     }
 
-    // Override desiredCount for Event Management specifically (3 tasks for HA + load capacity)
-    // 2048 MiB / 256 CPU per task; auto-scaling floor is 2, ceiling is 6
-    const cfnService = this.service.node.defaultChild as ecs.CfnService;
-    cfnService.addPropertyOverride('DesiredCount', 3);
-
+    // Removed: desiredCount override to 3 was conflicting with maxCapacity=2 (impossible state).
+    // The domain-service-construct sets desiredCount = isProd ? 2 : 1, which is correct.
+    // Auto-scaling (minCapacity=1, maxCapacity=2) handles load spikes.
 
     // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
     if (props.alarmTopic) {
@@ -157,17 +192,23 @@ export class EventManagementStack extends cdk.Stack {
     // Note: In SES sandbox mode, permissions are required for BOTH sender (FROM) and recipient (TO) identities
     // Using wildcard (*) for recipient identities to support any verified email in sandbox mode
     // In production (out of sandbox), only FROM identity permissions are needed
+    // AWS requires explicit permission on the configuration-set resource when configurationSetName
+    // is specified in SendEmail/SendRawEmail requests.
     this.service.taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['ses:SendEmail', 'ses:SendRawEmail'],
         resources: [
-          // FROM identity - batbern.ch domain (verified domain)
-          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/batbern.ch`,
-          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@batbern.ch`,
+          // FROM identity - environment-specific verified SES domain
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/${sesFromDomain}`,
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@${sesFromDomain}`,
           // TO identities - all verified emails (required for sandbox mode)
           // This allows sending to any verified recipient in sandbox mode
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
+          // Configuration set — required when configurationSetName is passed to SendRawEmail
+          ...(props.sesConfigurationSetName
+            ? [`arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/${props.sesConfigurationSetName}`]
+            : []),
         ],
       })
     );

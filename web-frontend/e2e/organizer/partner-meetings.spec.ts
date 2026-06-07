@@ -37,12 +37,12 @@ const MOCK_MEETING = {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-test.describe('Partner Meetings Page (Organizer)', () => {
+test.describe('Partner Meetings Page (Organizer) @gate', () => {
   test('AC1 — organizer creates meeting, it appears in the list', async ({ page }) => {
     const meetings: (typeof MOCK_MEETING)[] = [];
 
     // Mock list endpoint — returns accumulating list
-    await page.route(`${BASE_URL}/api/v1/partner-meetings`, async (route) => {
+    await page.route(`**/api/v1/partner-meetings`, async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
@@ -76,16 +76,15 @@ test.describe('Partner Meetings Page (Organizer)', () => {
     await page.getByTestId('meeting-end-time').fill('14:00');
     await page.getByTestId('create-meeting-submit').click();
 
-    // Meeting appears in list
+    // Meeting appears in list (row testid carries the server id; no text matching needed)
     await expect(page.getByTestId('partner-meetings-table')).toBeVisible();
     await expect(page.getByTestId('meeting-row-e2e-meeting-uuid-1')).toBeVisible();
-    await expect(page.getByText('BATbern57')).toBeVisible();
   });
 
   test('AC2 — organizer writes agenda, saved on reload', async ({ page }) => {
     const currentMeeting = { ...MOCK_MEETING };
 
-    await page.route(`${BASE_URL}/api/v1/partner-meetings`, async (route) => {
+    await page.route(`**/api/v1/partner-meetings`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -93,7 +92,7 @@ test.describe('Partner Meetings Page (Organizer)', () => {
       });
     });
 
-    await page.route(`${BASE_URL}/api/v1/partner-meetings/${MOCK_MEETING.id}`, async (route) => {
+    await page.route(`**/api/v1/partner-meetings/${MOCK_MEETING.id}`, async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
@@ -134,7 +133,7 @@ test.describe('Partner Meetings Page (Organizer)', () => {
   }) => {
     const currentMeeting = { ...MOCK_MEETING };
 
-    await page.route(`${BASE_URL}/api/v1/partner-meetings`, async (route) => {
+    await page.route(`**/api/v1/partner-meetings`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -142,7 +141,7 @@ test.describe('Partner Meetings Page (Organizer)', () => {
       });
     });
 
-    await page.route(`${BASE_URL}/api/v1/partner-meetings/${MOCK_MEETING.id}`, async (route) => {
+    await page.route(`**/api/v1/partner-meetings/${MOCK_MEETING.id}`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -150,22 +149,19 @@ test.describe('Partner Meetings Page (Organizer)', () => {
       });
     });
 
-    await page.route(
-      `${BASE_URL}/api/v1/partner-meetings/${MOCK_MEETING.id}/send-invite`,
-      async (route) => {
-        // Mark invite as sent in mock state
-        currentMeeting.inviteSentAt = new Date().toISOString();
-        await route.fulfill({
-          status: 202,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            message: 'Calendar invite is being sent to all partner contacts',
-            meetingId: MOCK_MEETING.id,
-            recipientCount: 3,
-          }),
-        });
-      }
-    );
+    await page.route(`**/api/v1/partner-meetings/${MOCK_MEETING.id}/send-invite`, async (route) => {
+      // Mark invite as sent in mock state
+      currentMeeting.inviteSentAt = new Date().toISOString();
+      await route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: 'Calendar invite is being sent to all partner contacts',
+          meetingId: MOCK_MEETING.id,
+          recipientCount: 3,
+        }),
+      });
+    });
 
     await page.goto(PAGE_URL);
 
@@ -183,14 +179,14 @@ test.describe('Partner Meetings Page (Organizer)', () => {
     await expect(page.getByTestId('confirm-send-invite-btn')).toBeVisible();
     await page.getByTestId('confirm-send-invite-btn').click();
 
-    // Success alert appears
-    await expect(page.getByRole('alert')).toContainText(/invite/i);
+    // Success alert appears (testid-scoped to the meeting's detail panel)
+    await expect(page.getByTestId('invite-success-alert-e2e-meeting-uuid-1')).toBeVisible();
   });
 
   test('AC4 — organizer writes post-meeting notes, saved on reload', async ({ page }) => {
     const currentMeeting = { ...MOCK_MEETING };
 
-    await page.route(`${BASE_URL}/api/v1/partner-meetings`, async (route) => {
+    await page.route(`**/api/v1/partner-meetings`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -198,7 +194,7 @@ test.describe('Partner Meetings Page (Organizer)', () => {
       });
     });
 
-    await page.route(`${BASE_URL}/api/v1/partner-meetings/${MOCK_MEETING.id}`, async (route) => {
+    await page.route(`**/api/v1/partner-meetings/${MOCK_MEETING.id}`, async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,

@@ -5,6 +5,28 @@ All notable changes to the BATbern Shared Kernel will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — speaker-workflow-refactor
+
+### Removed
+- `SpeakerWorkflowState.SLOT_ASSIGNED` — replaced by derived flag `is_slot_assigned := session.start_time IS NOT NULL` per ADR-009 §0.1.
+- `SpeakerWorkflowState.CONFIRMED` — replaced by derived flag `is_publishable := quality_reviewed AND is_slot_assigned` per ADR-009 §0.1.
+- `SpeakerWorkflowState.OVERFLOW` — capacity enforced at the invitation step (slot-capacity gate replaces overflow parking lane) per ADR-009 §0.7.
+- `SpeakerWorkflowState.WITHDREW` — collapsed into `DECLINED` with reason recorded in `speaker_status_history` per ADR-009 §0.7.
+- `SpeakerResponseType.TENTATIVE` — speakers respond ACCEPT or DECLINE only per ADR-009 §0.6.
+
+### Added
+- `SpeakerPromotedToReadyEvent` — signals the `CONTACTED → READY` provisioning gate (User created/looked-up + SPEAKER role granted + Cognito provisioning in Phase E). Consumed by Phase E (Story 11.E.2) to send the Cognito invitation email.
+
+### Changed
+- Javadoc on `SpeakerWorkflowState.CONTACTED` now describes "still brainstorming" semantics.
+- Javadoc on `SpeakerWorkflowState.READY` now describes the provisioning gate.
+- Javadoc on `SpeakerResponseType.ACCEPT` / `DECLINE` no longer references magic-link token consumption (Cognito session is the auth from Phase E onward).
+
+### Migration notes
+- Downstream services (`event-management-service`, `web-frontend`) WILL fail to compile against this version of shared-kernel until they are updated. The compile failures are intentional signals for Story 11.B.2 (workflow-service single-writer) and Story 11.B.3 (Flyway migration + OpenAPI tighten).
+- DB-level migration of legacy `speaker_pool.status` values is owned by Story 11.B.3.
+- See `docs/architecture/ADR-009-unified-speaker-workflow.md` for the full target state model.
+
 ## [1.0.0] - 2024-12-20
 
 ### Added

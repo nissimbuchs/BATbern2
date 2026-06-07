@@ -8,8 +8,8 @@ Version history and release notes for the BATbern platform. Releases follow [Sem
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes and minor improvements
 
-**Current Version**: v1.2.1
-**Last Updated**: 2026-02-27
+**Current Version**: v1.2.2
+**Last Updated**: 2026-04-07
 
 ---
 
@@ -49,9 +49,33 @@ Each release includes:
 - 📋 Story 10.2: Email Templates admin (TinyMCE WYSIWYG for content templates; Monaco for layout templates)
 - 📋 Story 10.3: Automated task scheduler integration (trigger reminders by due date/state)
 
+**Improvements (delivered)**:
+- ✅ Event deletion now ignores programmatic registrations. Every new event auto-enrols all
+  organizers and partners as participants, which previously left the **Delete Event** button
+  permanently disabled. Deletion is now blocked only when an event has *real* (self-registered)
+  attendees; events with only auto-enrolled stakeholders can be deleted. The API returns `409`
+  if real attendees exist, and the event detail exposes a `realAttendeeCount` field.
+- ✅ Legacy structural entries in historical events — the "Moderation" slots (28 rows, BATbern11–48)
+  and the "Programmheft" entries (41 rows, BATbern1–41) — are reclassified from content talks to
+  technical sessions (`session_type = moderation`), matching how moderation slots are modelled in
+  new events (BATbern57+). Applied directly to the production database (no migration).
+
 ---
 
 ## v1.2.x - Current Release
+
+### v1.2.2 - Email & Public Event Page Fixes `[2026-04-07]`
+
+**Type**: Patch Release
+
+**Bug Fixes**:
+- ✅ Registration confirmation emails and ICS calendar attachments now use the correct, resolved event start and end times (previously used placeholder/incorrect values)
+- ✅ Email forwarding Lambda now correctly forwards CC addresses as mailing-list recipients, and recognises all `batbernNN@batbern.ch` address variants
+- ✅ Public event page now shows resolved start **and** end times (not just the event date)
+- ✅ Newsletter subscriber list: registered-user icon corrected; subscriber display names improved for readability
+- ✅ TypeScript 7 compatibility: deprecated `baseUrl`-only `tsconfig.json` options resolved; removed stale lucide icon imports
+
+---
 
 ### v1.2.1 - Speaker JWT Magic Link Authentication `[2026-02-23]`
 
@@ -447,7 +471,8 @@ Each release includes:
 
 | Version | Status | Support End Date |
 |---------|--------|------------------|
-| v1.2.1 | **Current** | Until v1.3.0 release |
+| v1.2.2 | **Current** | Until v1.3.0 release |
+| v1.2.1 | Security fixes only | Until v1.3.0 release |
 | v1.2.0 | Security fixes only | Until v1.3.0 release |
 | v1.1.x | Security fixes only | 2026-05-01 |
 | v0.9.x | Unsupported | Ended 2026-01-01 |

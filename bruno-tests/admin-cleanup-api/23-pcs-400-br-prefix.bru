@@ -1,0 +1,37 @@
+meta {
+  name: PCS cleanup — prefix=br (too short, would match real partners) rejected
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "partners",
+    "prefix": "br"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns 400 when prefix is too loose (matches any partner whose company starts with br*)", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

@@ -18,6 +18,14 @@ export interface EnvironmentConfig {
   envName: string;
   region: string;
   account: string;
+  /**
+   * Marks this environment as serving production traffic.
+   * When true, production-grade settings are applied (email domains, CORS origins,
+   * log retention, removal policies, etc.) regardless of envName.
+   * This allows the staging account to serve as the production environment
+   * without renaming CloudFormation stacks.
+   */
+  isProduction?: boolean;
   vpc: VpcConfig;
   rds: RdsConfig;
   elasticache: ElastiCacheConfig;
@@ -67,7 +75,10 @@ export interface DomainConfig {
   zoneName: string; // Route53 hosted zone name (e.g., 'staging.batbern.ch' or 'batbern.ch')
   hostedZoneId?: string;
   frontendCertificateArn?: string; // us-east-1 for CloudFront
+  cdnCertificateArn?: string; // us-east-1 for CloudFront CDN
   apiCertificateArn?: string; // eu-central-1 for API Gateway
+  betaFrontendCertificateArn?: string; // us-east-1 for the beta.batbern.ch canary (see docs/plans/beta-frontend-canary.md)
+  authCertificateArn?: string; // us-east-1 for the auth.<zone> Cognito hosted-UI custom domain (Story 12.9 DF-1)
 }
 
 export interface VpcConfig {

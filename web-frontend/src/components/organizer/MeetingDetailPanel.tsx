@@ -28,6 +28,8 @@ import {
   sendInvite,
   type PartnerMeetingDTO,
 } from '@/services/api/partnerMeetingsApi';
+import PartnerMeetingRsvpPanel from './PartnerMeetingRsvpPanel';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 interface MeetingDetailPanelProps {
   meeting: PartnerMeetingDTO;
@@ -35,12 +37,14 @@ interface MeetingDetailPanelProps {
 
 const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
   const { t } = useTranslation('partners');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
 
   const [agenda, setAgenda] = useState(meeting.agenda ?? '');
   const [notes, setNotes] = useState(meeting.notes ?? '');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [rsvpRefreshKey, setRsvpRefreshKey] = useState(0);
 
   // Keep local state in sync if meeting data changes
   useEffect(() => {
@@ -62,6 +66,7 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
       void queryClient.invalidateQueries({ queryKey: ['partnerMeetings'] });
       setInviteSuccess(true);
       setConfirmOpen(false);
+      setRsvpRefreshKey((k) => k + 1);
     },
   });
 
@@ -89,7 +94,12 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
       data-testid={`meeting-detail-${meeting.id}`}
     >
       {inviteSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setInviteSuccess(false)}>
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() => setInviteSuccess(false)}
+          data-testid={`invite-success-alert-${meeting.id}`}
+        >
           {t('meetings.inviteSuccess')}
         </Alert>
       )}
@@ -163,7 +173,12 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
       </Box>
 
       {/* Confirmation dialog */}
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs">
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        maxWidth="xs"
+        fullScreen={isMobile}
+      >
         <DialogTitle>{t('meetings.sendInvite')}</DialogTitle>
         <DialogContent>
           <Typography>{t('meetings.confirmSendInvite')}</Typography>
@@ -180,6 +195,13 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* RSVP responses — Story 10.27 */}
+      <PartnerMeetingRsvpPanel
+        meetingId={meeting.id}
+        inviteSentAt={meeting.inviteSentAt ?? null}
+        refreshKey={rsvpRefreshKey}
+      />
     </Box>
   );
 };

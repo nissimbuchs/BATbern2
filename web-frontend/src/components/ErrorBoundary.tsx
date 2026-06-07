@@ -60,16 +60,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <p className="text-zinc-400">{i18next.t('common:errors.unexpectedError')}</p>
 
-            {/* Show error message in development */}
-            {import.meta.env.DEV && this.state.error && (
-              <div className="mt-4 p-4 bg-zinc-900 border border-zinc-800 rounded-lg text-left">
-                <p className="text-xs text-zinc-500 mb-2">
+            {/* Show error message and stack for diagnostics.
+                Always shown (not just in DEV) because the ErrorBoundary
+                triggers silently in production — without surfacing the
+                message here, the only diagnostic channel was the browser
+                console, which users don't always have open. */}
+            {this.state.error && (
+              <details className="mt-4 p-4 bg-zinc-900 border border-zinc-800 rounded-lg text-left">
+                <summary className="text-xs text-zinc-500 mb-2 cursor-pointer">
                   {i18next.t('common:errors.devDetails')}
-                </p>
-                <pre className="text-xs text-red-400 overflow-x-auto">
-                  {this.state.error.message}
+                </summary>
+                <pre className="text-xs text-red-400 overflow-x-auto whitespace-pre-wrap break-words">
+                  {this.state.error.name}: {this.state.error.message}
+                  {this.state.error.stack ? `\n\n${this.state.error.stack}` : ''}
                 </pre>
-              </div>
+              </details>
             )}
 
             <div className="flex justify-center gap-4">

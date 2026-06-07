@@ -58,7 +58,7 @@ const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: 4 }} data-testid="notifications-page">
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
@@ -69,7 +69,12 @@ const NotificationsPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           {t('notifications.title')}
         </Typography>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          flexWrap="wrap"
+        >
           <FormControlLabel
             control={
               <Switch

@@ -5,6 +5,7 @@ import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -59,6 +61,183 @@ public class GlobalExceptionHandler {
                 .severity("LOW")
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(AdditionalEmailDuplicateException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailDuplicateException(
+            AdditionalEmailDuplicateException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email duplicate: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .errorCode("ADDITIONAL_EMAIL_DUPLICATE")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(AdditionalEmailLimitReachedException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailLimitReachedException(
+            AdditionalEmailLimitReachedException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email limit reached: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .errorCode("ADDITIONAL_EMAIL_LIMIT_REACHED")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(AdditionalEmailNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailNotFoundException(
+            AdditionalEmailNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email not found: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .errorCode("ADDITIONAL_EMAIL_NOT_FOUND")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Additional-email verification (v2) — malformed / bad-signature / wrong-type
+     * token. Maps to 400 with errorCode {@code TOKEN_INVALID}. Never a 500.
+     */
+    @ExceptionHandler(VerificationTokenInvalidException.class)
+    public ResponseEntity<ErrorResponse> handleVerificationTokenInvalidException(
+            VerificationTokenInvalidException ex,
+            HttpServletRequest request) {
+        log.warn("Verification token invalid: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .errorCode("TOKEN_INVALID")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Additional-email verification (v2) — expired token. Maps to 400 with
+     * errorCode {@code TOKEN_EXPIRED}. Never a 500.
+     */
+    @ExceptionHandler(VerificationTokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleVerificationTokenExpiredException(
+            VerificationTokenExpiredException ex,
+            HttpServletRequest request) {
+        log.warn("Verification token expired: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .errorCode("TOKEN_EXPIRED")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Additional-email verification (v2) — resend requested for an
+     * already-verified email. Maps to 409 with errorCode {@code ALREADY_VERIFIED}.
+     */
+    @ExceptionHandler(AdditionalEmailAlreadyVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailAlreadyVerifiedException(
+            AdditionalEmailAlreadyVerifiedException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email already verified: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .errorCode("ALREADY_VERIFIED")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Story 10.32 (P1-1 from 2026-05-22 review) — translate Spring's
+     * {@link DataIntegrityViolationException} into the same 409 envelope as
+     * {@link AdditionalEmailDuplicateException} when the underlying SQLState
+     * is {@code 23505} (unique violation) or the message references the
+     * additional-emails unique index / trigger. This covers two races the
+     * service-level pre-check cannot:
+     * <ul>
+     *   <li>Concurrent POSTs that both pass {@code existsByEmailIgnoreCase}
+     *       and then collide on the {@code uq_user_additional_emails_email_lower}
+     *       index.</li>
+     *   <li>Direct DB writes that bypass the service entirely and trip the
+     *       {@code enforce_additional_email_not_primary} trigger.</li>
+     * </ul>
+     * Anything that is not a recognised unique-violation falls through to the
+     * generic 500 handler so unrelated DB failures are not silently masked.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request) {
+        String causeMessage = ex.getMostSpecificCause() != null
+                ? String.valueOf(ex.getMostSpecificCause().getMessage()).toLowerCase()
+                : "";
+        boolean isAdditionalEmailDuplicate =
+                causeMessage.contains("uq_user_additional_emails_email_lower")
+                || causeMessage.contains("enforce_additional_email_not_primary")
+                || (causeMessage.contains("user_additional_emails") && causeMessage.contains("duplicate"));
+
+        if (isAdditionalEmailDuplicate) {
+            log.warn("Additional email duplicate (DB-level): {}", ex.getMessage());
+            ErrorResponse error = ErrorResponse.builder()
+                    .timestamp(Instant.now())
+                    .path(request.getRequestURI())
+                    .status(HttpStatus.CONFLICT.value())
+                    .error("Conflict")
+                    .errorCode("ADDITIONAL_EMAIL_DUPLICATE")
+                    .message("Email is already registered as a primary or additional email")
+                    .correlationId(CorrelationIdGenerator.generate())
+                    .severity("LOW")
+                    .build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+
+        log.error("Data integrity violation: ", ex);
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Internal Server Error")
+                .message("A data integrity error occurred")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("ERROR")
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     @ExceptionHandler(UserValidationException.class)
@@ -411,6 +590,101 @@ public class GlobalExceptionHandler {
                 .severity("LOW")
                 .build();
         return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Story 11.E.2 (AC3/AC5): Cognito Admin SDK call failed — surface as 502 Bad Gateway
+     * so cross-service callers (event-management-service) see a clean upstream-failure signal.
+     */
+    @ExceptionHandler(CognitoOperationException.class)
+    public ResponseEntity<ErrorResponse> handleCognitoOperationException(
+            CognitoOperationException ex,
+            HttpServletRequest request) {
+        log.error("Cognito operation failed (action={}, user={}): {}",
+                ex.getAction(), ex.getMaskedEmail(), ex.getMessage(), ex);
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_GATEWAY.value())
+                .error("Bad Gateway")
+                .message("Identity provider unavailable; please retry shortly")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("ERROR")
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
+    }
+
+    /**
+     * Story 11.E.2 (AC2 item 6): {@code issueInvitationCredentials} hit a Cognito user
+     * status that requires operator intervention (ARCHIVED/COMPROMISED/UNKNOWN). Map to
+     * 422 instead of the generic IllegalStateException → 400 path so the calling service
+     * (EMS) can distinguish "input bad" (400) from "state unprocessable" (422).
+     */
+    @ExceptionHandler(UnprocessableInvitationStateException.class)
+    public ResponseEntity<ErrorResponse> handleUnprocessableInvitationState(
+            UnprocessableInvitationStateException ex,
+            HttpServletRequest request) {
+        log.warn("Unprocessable invitation state: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("HIGH")
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    /**
+     * Handle Spring's {@link ResponseStatusException} explicitly so it isn't swallowed by the
+     * generic {@code @ExceptionHandler(Exception.class)} below (which would otherwise turn
+     * an intentional 400 into a 500). Same class of gotcha called out in
+     * {@code _bmad-output/project-context.md} for {@code MethodArgumentNotValidException}.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(
+            ResponseStatusException ex,
+            HttpServletRequest request) {
+        log.warn("Response status exception: {} - {}", ex.getStatusCode(), ex.getReason());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(ex.getStatusCode().value())
+                .error(HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase())
+                .message(ex.getReason() != null ? ex.getReason() : "Request rejected")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("WARNING")
+                .build();
+        return ResponseEntity.status(ex.getStatusCode()).body(error);
+    }
+
+    /**
+     * Returns 405 Method Not Allowed when a URI matches a registered route but the HTTP verb
+     * doesn't (e.g. POST against a GET-only endpoint). Without this explicit handler Spring
+     * raises {@code HttpRequestMethodNotSupportedException}, which falls through to the
+     * catch-all {@code @ExceptionHandler(Exception.class)} below and gets translated into a 500 —
+     * the same class of gotcha as the {@code MethodArgumentNotValidException} rule in
+     * {@code _bmad-output/project-context.md}. Discovered via PR 2a's event-types-api tests
+     * 08/09 (in EMS) which exposed that all four services share this gap.
+     */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+        log.debug("Method not supported for {} {}: {}",
+                request.getMethod(), request.getRequestURI(), ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.METHOD_NOT_ALLOWED.value())
+                .error("Method Not Allowed")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
     }
 
     @ExceptionHandler(Exception.class)

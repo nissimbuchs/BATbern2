@@ -46,7 +46,7 @@ const TopicManagementPage: React.FC = () => {
       { label: t('common:navigation.events'), path: '/organizer/events' },
       { label: t('navigation.topicManagement', 'Topic Management') },
     ];
-  }, [eventCode, event?.title, t]);
+  }, [eventCode, event, t]);
 
   return (
     <Box>

@@ -92,6 +92,14 @@ public class PartnerMeeting {
     private Instant inviteSentAt;
 
     /**
+     * RFC 5545 SEQUENCE counter — incremented on every send-invite call so that
+     * Outlook, Gmail, and macOS Mail treat the resend as an update of the existing
+     * calendar entry rather than a new duplicate event.
+     */
+    @Column(name = "invite_sequence", nullable = false)
+    private int inviteSequence;
+
+    /**
      * ADR-003: organizer username who created this meeting record.
      * No UUID FK.
      */

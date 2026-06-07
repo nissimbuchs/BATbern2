@@ -2,11 +2,12 @@
  * usePresentationData Hook
  * Story 10.8a: Moderator Presentation Page — Functional
  *
- * Loads all data for the moderator presentation page with 4 queries:
+ * Loads all data for the moderator presentation page with 5 queries:
  *   1. Main event (topics, venue, sessions, speakers) — polled every 60 s
  *   2. Public organizers (Committee slide)
  *   3. Upcoming events (Upcoming Events slide)
  *   4. Presentation settings (About slide)
+ *   5. Global teaser images (shown on all events)
  *
  * Sessions and speakers are embedded in query 1 — no separate sessions call needed.
  *
@@ -23,6 +24,7 @@ import {
   getPublicOrganizers,
   getUpcomingEvents,
   getPresentationSettings,
+  getGlobalTeaserImages,
   type PresentationEventDetail,
   type PresentationSession,
   type PresentationSettings,
@@ -36,6 +38,7 @@ export interface PresentationData {
   organizers: User[];
   upcomingEvents: components['schemas']['Event'][];
   settings: PresentationSettings | null;
+  globalTeaserImages: components['schemas']['TeaserImageItem'][];
 }
 
 export interface UsePresentationDataResult {
@@ -121,11 +124,19 @@ export function usePresentationData(eventCode: string): UsePresentationDataResul
     retry: 1,
   });
 
+  const globalTeaserImagesQuery = useQuery({
+    queryKey: ['presentation-global-teaser-images'],
+    queryFn: getGlobalTeaserImages,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
   const isLoading =
     eventQuery.isLoading ||
     organizersQuery.isLoading ||
     upcomingQuery.isLoading ||
-    settingsQuery.isLoading;
+    settingsQuery.isLoading ||
+    globalTeaserImagesQuery.isLoading;
 
   // AC #42: surface error only when initial load (event) fails
   const isInitialLoadError =
@@ -140,6 +151,7 @@ export function usePresentationData(eventCode: string): UsePresentationDataResul
     void organizersQuery.refetch();
     void upcomingQuery.refetch();
     void settingsQuery.refetch();
+    void globalTeaserImagesQuery.refetch();
   };
 
   return {
@@ -152,6 +164,7 @@ export function usePresentationData(eventCode: string): UsePresentationDataResul
         aboutText: DEFAULT_ABOUT_TEXT,
         partnerCount: 9,
       },
+      globalTeaserImages: globalTeaserImagesQuery.data ?? [],
     },
     isLoading,
     isInitialLoadError,

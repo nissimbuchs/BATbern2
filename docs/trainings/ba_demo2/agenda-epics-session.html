@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training — Epics &amp; Stories Session: From PRD to Implementable Stories</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --user-bg: #1e2a45;
+    --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a;
+    --agent-border: #28AF8F;
+    --artifact-bg: #2a1e45;
+    --artifact-border: #E23615;
+    --note-bg: #2e2a1a;
+    --note-border: #FFCA4C;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  /* Layout */
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .phase-1 { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-4 { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .phase-bridge { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* Overview cards */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .overview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .overview-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .overview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { color: var(--text-muted); font-size: 0.88rem; }
+  .overview-card.phase1 { border-color: rgba(40,175,143,.4); }
+  .overview-card.phase2 { border-color: rgba(226,54,21,.4); }
+  .overview-card.phase3 { border-color: rgba(175,35,34,.4); }
+  .overview-card.bridge { border-color: rgba(255,202,76,.4); }
+
+  /* Conversation turns */
+  .turn { margin-bottom: 20px; }
+  .turn-user {
+    background: var(--user-bg);
+    border: 1px solid var(--user-border);
+    border-left: 4px solid var(--user-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-agent {
+    background: var(--agent-bg);
+    border: 1px solid var(--agent-border);
+    border-left: 4px solid var(--agent-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-artifact {
+    background: var(--artifact-bg);
+    border: 1px solid var(--artifact-border);
+    border-left: 4px solid var(--artifact-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-note {
+    background: var(--note-bg);
+    border: 1px solid var(--note-border);
+    border-left: 4px solid var(--note-border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 0.88rem;
+  }
+  .turn-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .turn-label .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .label-user { color: var(--user-border); }
+  .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); }
+  .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); }
+  .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); }
+  .label-note .dot { background: var(--accent4); }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: var(--text-muted); }
+  .turn-content code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Collapsible */
+  details {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 10px;
+  }
+  summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::before { content: '\25B6'; font-size: 10px; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { color: var(--text); }
+  .details-body { padding: 12px 14px; font-size: 0.87rem; border-top: 1px solid var(--border); }
+
+  /* Tags */
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .tag-yellow { background: rgba(255,202,76,.12); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+  .tag-red { background: rgba(175,35,34,.12); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  .cmd {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.85rem;
+    padding: 2px 10px;
+    color: var(--accent4);
+  }
+
+  .connector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .connector::before, .connector::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Takeaway grid */
+  .takeaway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .takeaway {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .takeaway h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .takeaway p { font-size: 0.87rem; color: var(--text-muted); }
+
+  /* Result stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+  .stat-card .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Pre/code blocks */
+  .turn-content pre {
+    background: rgba(0,0,0,.3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 10px 0;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#overview" class="active">Overview</a>
+  <a href="#step0-setup">0. Setup</a>
+  <a href="#step1-validate">1. Validate</a>
+  <a href="#step2-epics">2. Design Epics</a>
+  <a href="#step3-stories">3. Create Stories</a>
+  <a href="#step4-validation">4. Validation</a>
+  <a href="#result">Result</a>
+  <a href="#takeaways">Takeaways</a>
+  <span class="sep">|</span>
+  <a href="agenda-epics.html">View Epics &amp; Stories</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">BMAD Hands-On Training &mdash; Session 5</div>
+    <h1>Epics &amp; Stories Session<br><span>From PRD to Implementable Stories</span></h1>
+    <p>A complete walkthrough of a real BMAD epic/story creation session &mdash; how business analysts interact with the PM Agent (John) to decompose a PRD, architecture, and UX spec into user-value epics and acceptance-criteria-driven stories.</p>
+    <div class="hero-meta">
+      <div><div class="label">Agent</div><div class="value">PM (John)</div></div>
+      <div><div class="label">Workflow</div><div class="value">Create Epics &amp; Stories</div></div>
+      <div><div class="label">Phase</div><div class="value">3 &mdash; Solutioning</div></div>
+      <div><div class="label">Steps</div><div class="value">4</div></div>
+      <div><div class="label">Epics</div><div class="value">4</div></div>
+      <div><div class="label">Stories</div><div class="value">20</div></div>
+      <div><div class="label">FRs Covered</div><div class="value">35/35</div></div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F5FA;</div>
+      <div class="section-header-text">
+        <h2>Session Overview</h2>
+        <p>Where this session fits in the BMAD workflow</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Context</div>
+      <div class="turn-content">
+        <p>Before this session, four prior BMAD sessions produced key artifacts:</p>
+        <ol>
+          <li><strong><a href="agenda-brainstorm-session.html" style="color:var(--accent2)">Brainstorming Session</a></strong> (Analyst Agent &mdash; Mary) &rarr; 35 ideas across 6 themes</li>
+          <li><strong><a href="agenda-ux-session.html" style="color:var(--accent2)">UX Design Specification</a></strong> (UX Designer Agent) &rarr; 5 user journeys, 12 custom components, Presenter Mode layout</li>
+          <li><strong><a href="agenda-prd-session.html" style="color:var(--accent2)">PRD Creation Session</a></strong> (PM Agent &mdash; John) &rarr; 12-section PRD with 35 functional requirements</li>
+          <li><strong><a href="agenda-architecture-session.html" style="color:var(--accent2)">Architecture Session</a></strong> (Architect Agent &mdash; Winston) &rarr; 11 entities, 30+ patterns, entity model</li>
+        </ol>
+        <p>This session uses the <strong>PM Agent (John)</strong> again, but now in the <strong>Create Epics &amp; Stories (CE)</strong> workflow. John reads all three prerequisite documents (PRD, Architecture, UX Design), extracts every requirement, and decomposes them into user-value epics with acceptance-criteria-driven stories.</p>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-card phase1">
+        <div class="icon">&#x1F50D;</div>
+        <h3>Step 1 &mdash; Validate Prerequisites</h3>
+        <p>Find and confirm all input documents, extract requirements inventory: 35 FRs, 20 NFRs, architecture items, UX items.</p>
+      </div>
+      <div class="overview-card phase2">
+        <div class="icon">&#x1F3D7;</div>
+        <h3>Step 2 &mdash; Design Epic List</h3>
+        <p>Group requirements into user-value epics (not technical layers). User refines from 6 epics down to 4 through merges and renaming.</p>
+      </div>
+      <div class="overview-card phase3">
+        <div class="icon">&#x1F4DD;</div>
+        <h3>Step 3 &mdash; Create Stories</h3>
+        <p>Write stories for each epic with user stories and Given/When/Then acceptance criteria. User catches a gap in minutes assembly.</p>
+      </div>
+      <div class="overview-card bridge">
+        <div class="icon">&#x2705;</div>
+        <h3>Step 4 &mdash; Final Validation</h3>
+        <p>5-point validation: FR coverage, architecture compliance, story quality, epic structure, dependency chains. All pass.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 0: PRE-SESSION SETUP -->
+  <section id="step0-setup">
+    <div class="section-header">
+      <div class="phase-badge phase-1">0</div>
+      <div class="section-header-text">
+        <h2>Pre-Session: Loading the PM Agent</h2>
+        <p>Activating John and selecting the workflow</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>The <strong>PM Agent (John)</strong> handles both PRD creation and epic/story decomposition. The same agent, different workflow. His slash command is <code>/bmad-bmm-agents-pm</code>.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>/bmad-bmm-agents-pm</code></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John)</div>
+      <div class="turn-content">
+        <p><strong>John here &mdash; your PM.</strong></p>
+        <p>I drive clarity from ambiguity. Let's turn requirements into something a team can build.</p>
+        <table>
+          <tr><th>#</th><th>Cmd</th><th>Description</th></tr>
+          <tr><td>1</td><td><strong>[MH]</strong></td><td>Redisplay Menu Help</td></tr>
+          <tr><td>2</td><td><strong>[CH]</strong></td><td>Chat with the Agent</td></tr>
+          <tr><td>3</td><td><strong>[CP]</strong></td><td>Create PRD &mdash; Product Requirements Document</td></tr>
+          <tr><td>4</td><td><strong>[EP]</strong></td><td>Edit PRD</td></tr>
+          <tr><td>5</td><td><strong>[CE]</strong></td><td>Create Epics and Stories</td></tr>
+          <tr><td>6</td><td><strong>[CS]</strong></td><td>Create Story &mdash; Detailed story file</td></tr>
+          <tr><td>7</td><td><strong>[SP]</strong></td><td>Sprint Planning</td></tr>
+          <tr><td>8</td><td><strong>[SS]</strong></td><td>Sprint Status</td></tr>
+          <tr><td>9</td><td><strong>[PM]</strong></td><td>Start Party Mode</td></tr>
+          <tr><td>10</td><td><strong>[DA]</strong></td><td>Dismiss Agent</td></tr>
+        </table>
+        <div class="tags">
+          <span class="tag tag-green">AGENT LOADED</span>
+          <span class="tag tag-purple">PM PERSONA</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>ce</code></div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>What Happens Behind the Scenes</div>
+      <div class="turn-content">
+        <p>The <code>CE</code> command triggers the <strong>Create Epics and Stories</strong> workflow. John will follow a 4-step structured process: validate prerequisites, design epics, create stories per epic, then run final validation. Each step requires user confirmation before proceeding.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 1: VALIDATE PREREQUISITES -->
+  <section id="step1-validate">
+    <div class="section-header">
+      <div class="phase-badge phase-1">1</div>
+      <div class="section-header-text">
+        <h2>Step 1: Validate Prerequisites</h2>
+        <p>Finding all input documents and extracting the requirements inventory</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Document Discovery</div>
+      <div class="turn-content">
+        <p><strong>Starting Create Epics and Stories workflow.</strong></p>
+        <p>Let me search for all prerequisite documents...</p>
+        <p><em>Scans the project directory for PRD, Architecture, and UX Design files.</em></p>
+        <p><strong>Documents Found:</strong></p>
+        <table>
+          <tr><th>Document</th><th>Path</th><th>Status</th></tr>
+          <tr><td>PRD</td><td><code>docs/trainings/ba_demo2/prd.md</code></td><td style="color:var(--accent2)">Found</td></tr>
+          <tr><td>Architecture</td><td><code>docs/trainings/ba_demo2/architecture.md</code></td><td style="color:var(--accent2)">Found</td></tr>
+          <tr><td>UX Design</td><td><code>docs/trainings/ba_demo2/ux-design-specification.md</code></td><td style="color:var(--accent2)">Found</td></tr>
+        </table>
+        <p><em>Also found <code>quick-prd.md</code> in the same directory but excluded it &mdash; it belongs to a different feature.</em></p>
+        <p>All 3 prerequisite documents are present. Please confirm:</p>
+        <ol>
+          <li>Are these the correct documents?</li>
+          <li>Any documents to add?</li>
+          <li>Any documents to exclude?</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><p>1: yes / 2: no / 2: no</p></div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>The user made a numbering typo (wrote "2: no" twice instead of "2: no / 3: no") but the intent is clear. John correctly interprets this as: documents confirmed, nothing to add, nothing to exclude. BMAD agents handle natural, imperfect human input.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Requirements Extraction</div>
+      <div class="turn-content">
+        <p><strong>Extracting requirements from all 3 documents...</strong></p>
+        <p><strong>Functional Requirements: 35 across 10 groups</strong></p>
+        <table>
+          <tr><th>Group</th><th>Count</th><th>Description</th></tr>
+          <tr><td>FR1</td><td>7</td><td>Meeting Management</td></tr>
+          <tr><td>FR2</td><td>5</td><td>RSVP &amp; Attendance</td></tr>
+          <tr><td>FR3</td><td>8</td><td>Presenter Mode</td></tr>
+          <tr><td>FR4</td><td>4</td><td>Document Upload &amp; Viewing</td></tr>
+          <tr><td>FR5</td><td>7</td><td>Voting</td></tr>
+          <tr><td>FR6</td><td>8</td><td>Meeting Minutes</td></tr>
+          <tr><td>FR7</td><td>3</td><td>Meeting Prep</td></tr>
+          <tr><td>FR8</td><td>6</td><td>Post-Meeting Workflows</td></tr>
+          <tr><td>FR9</td><td>5</td><td>Action Items</td></tr>
+          <tr><td>FR10</td><td>3</td><td>Analytics Snapshot</td></tr>
+        </table>
+        <p><strong>Non-Functional Requirements: 20</strong> (performance, security, reliability, accessibility, scalability)</p>
+        <p><strong>Architecture additional: 11 items</strong> (brownfield extension, entity naming with ADR-003, JSONB minutes content, query-based assembly, dedicated PresenterLayout, Zustand store, useAutoSave hook, Spring @Scheduled, no starter template, table prefixing, OpenAPI contract-first)</p>
+        <p><strong>UX additional: 10 items</strong> (projector-optimized dark theme, three-zone layout, orange partner accents, status color coding, MUI + Tailwind design system extension, presenterTheme variant, 8 new reusable components, animated vote reveal, linear presentation feel)</p>
+
+        <div class="tags">
+          <span class="tag tag-green">35 FRs</span>
+          <span class="tag tag-purple">20 NFRs</span>
+          <span class="tag tag-yellow">11 ARCH</span>
+          <span class="tag tag-red">10 UX</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>File Created</div>
+      <div class="turn-content">
+        <p><strong>Created <code>docs/trainings/ba_demo2/epics.md</code></strong> from template with requirements inventory populated.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John)</div>
+      <div class="turn-content">
+        <p>Requirements extraction complete. Can you confirm the inventory is complete, or do you want to add/adjust anything?</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 2: DESIGN EPIC LIST -->
+  <section id="step2-epics">
+    <div class="section-header">
+      <div class="phase-badge phase-2">2</div>
+      <div class="section-header-text">
+        <h2>Step 2: Design Epic List</h2>
+        <p>Grouping requirements into user-value epics</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Epic Design Principles</div>
+      <div class="turn-content">
+        <p><strong>Designing the epic structure.</strong></p>
+        <p>Principles I follow for epic design:</p>
+        <ul>
+          <li><strong>User-value first</strong> &mdash; each epic delivers a coherent user outcome, not a technical layer</li>
+          <li><strong>No forward dependencies</strong> &mdash; stories within an epic only depend on earlier stories</li>
+          <li><strong>Independently demoable</strong> &mdash; each epic can be demonstrated to stakeholders</li>
+          <li><strong>Right-sized</strong> &mdash; neither too large (unclear progress) nor too small (overhead)</li>
+        </ul>
+        <p>I identified <strong>6 user value themes</strong> from the requirements. Proposed epic structure:</p>
+        <table>
+          <tr><th>#</th><th>Epic</th><th>FRs</th></tr>
+          <tr><td>1</td><td>Meeting Creation &amp; Agenda Configuration</td><td>FR1, FR2.1&ndash;2.2, FR7</td></tr>
+          <tr><td>2</td><td>Presenter Mode &amp; Live Meeting Flow</td><td>FR2.3&ndash;2.5, FR3, FR4, FR10</td></tr>
+          <tr><td>3</td><td>Voting &amp; Governance Decisions</td><td>FR5</td></tr>
+          <tr><td>4</td><td>Meeting Minutes &amp; Publication</td><td>FR6</td></tr>
+          <tr><td>5</td><td>Post-Meeting Workflows &amp; Partner Engagement</td><td>FR8</td></tr>
+          <tr><td>6</td><td>Action Items &amp; Meeting Continuity</td><td>FR9</td></tr>
+        </table>
+        <p><strong>FR coverage: 35/35 (100%)</strong></p>
+        <p>Three questions before I proceed:</p>
+        <ol>
+          <li>Does the epic grouping reflect the user value you envision?</li>
+          <li>Should any epics be merged or split?</li>
+          <li>Any naming adjustments?</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt &mdash; 3 Adjustments</div>
+      <div class="turn-content">
+        <ol>
+          <li>merge epic 2 and 3</li>
+          <li>i think, epic 6 is small and should be able to be done in epic 2, can you check if this works for the dependencies</li>
+          <li>As we already have a general partner-coordination epic 8, could you call the epics 8.1, 8.2, ...</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Dependency Analysis</div>
+      <div class="turn-content">
+        <p><strong>Analyzing your adjustments...</strong></p>
+        <p><strong>1. Merge Epic 2 + 3 (Presenter Mode + Voting):</strong> Makes sense &mdash; voting happens <em>inside</em> Presenter Mode during specific agenda items. They share the same UI context and the same meeting lifecycle state (IN_PROGRESS). Merged.</p>
+        <p><strong>2. Action Items (Epic 6) into Presenter Mode (Epic 2):</strong> Let me check the dependency chain...</p>
+        <p>FR9 action items span multiple contexts:</p>
+        <ul>
+          <li><strong>FR9.1</strong> (create during meeting) &rarr; fits in Epic 2 (Presenter Mode)</li>
+          <li><strong>FR9.2</strong> (include in minutes) &rarr; fits in Epic 4 (Minutes)</li>
+          <li><strong>FR9.4</strong> (mark done/extend/carry forward during review) &rarr; fits in Epic 4 (Minutes)</li>
+          <li><strong>FR9.5</strong> (urgency indicator for 2+ carry-forwards) &rarr; fits in both Epic 1 (prep) and Epic 4 (minutes)</li>
+          <li><strong>FR9.3</strong> (surface in new meeting prep) &rarr; fits in Epic 1 (Meeting Creation)</li>
+        </ul>
+        <p>This actually works <em>better</em> than a standalone epic &mdash; action items become a <strong>cross-cutting concern</strong> that gets implemented in context where they're used, rather than as an isolated feature nobody can demo.</p>
+        <p><strong>3. Renaming to 8.x:</strong> Perfect &mdash; connects to the existing Epic 8 (Partner Coordination) parent in the BATbern backlog.</p>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+        <p><strong>Revised 4-Epic Structure:</strong></p>
+        <table>
+          <tr><th>Epic</th><th>Name</th><th>FRs Covered</th></tr>
+          <tr><td><strong>8.1</strong></td><td>Meeting Creation &amp; Agenda Configuration</td><td>FR1.1&ndash;1.7, FR2.1&ndash;2.2, FR7.1&ndash;7.3, FR9.3, FR9.5</td></tr>
+          <tr><td><strong>8.2</strong></td><td>Presenter Mode &amp; Live Meeting</td><td>FR2.3&ndash;2.5, FR3.1&ndash;3.8, FR4.1&ndash;4.4, FR5.1&ndash;5.7, FR9.1, FR10.1&ndash;10.3</td></tr>
+          <tr><td><strong>8.3</strong></td><td>Meeting Minutes &amp; Publication</td><td>FR6.1&ndash;6.8, FR9.2, FR9.4, FR9.5</td></tr>
+          <tr><td><strong>8.4</strong></td><td>Post-Meeting Workflows &amp; Partner Engagement</td><td>FR8.1&ndash;8.6</td></tr>
+        </table>
+        <p><strong>FR coverage: 35/35 (100%)</strong> &mdash; all requirements mapped, no orphans.</p>
+        <div class="tags">
+          <span class="tag tag-green">4 EPICS</span>
+          <span class="tag tag-green">100% FR COVERAGE</span>
+          <span class="tag tag-purple">ACTION ITEMS DISTRIBUTED</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>Notice how the user's domain expertise improves the epic structure &mdash; merging voting into presenter mode is architecturally sound because votes happen inside presenter mode. Renaming to 8.x connects to the existing Epic 8 parent. The PM agent validated the action item dependency before accepting.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 3: CREATE STORIES -->
+  <section id="step3-stories">
+    <div class="section-header">
+      <div class="phase-badge phase-3">3</div>
+      <div class="section-header-text">
+        <h2>Step 3: Create Stories</h2>
+        <p>Writing stories with user stories and acceptance criteria, epic by epic</p>
+      </div>
+    </div>
+
+    <!-- Epic 8.1 -->
+    <div class="connector">Epic 8.1: Meeting Creation &amp; Agenda Configuration</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Epic 8.1 Stories</div>
+      <div class="turn-content">
+        <p><strong>Epic 8.1: Meeting Creation &amp; Agenda Configuration</strong> &mdash; 5 stories</p>
+
+        <details>
+          <summary>Story 8.1.1: Create Partner Meeting with Basic Details</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> create a new partner meeting with date, time, and location, <strong>so that</strong> I can begin configuring the next bi-annual partner meeting.</p>
+            <p><strong>Given</strong> I am logged in as an organizer on the meetings page<br>
+            <strong>When</strong> I click "Create New Meeting" and fill in date, time, and location<br>
+            <strong>Then</strong> a new PartnerMeeting entity is created in DRAFT status with a generated meetingCode (PM-{YYYY}-{Spring|Autumn})<br>
+            <strong>And</strong> I am redirected to the meeting detail/prep page</p>
+            <p><strong>Given</strong> a meeting already exists with the same meetingCode<br>
+            <strong>When</strong> I try to create another for the same period<br>
+            <strong>Then</strong> the system prevents duplicate meeting codes and shows an error</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.1.2: Agenda Builder with Active &amp; Passive Items</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> select which active agenda item types to include and add custom passive items, <strong>so that</strong> I can tailor the meeting agenda to what's relevant this time.</p>
+            <p><strong>Given</strong> I am on the meeting detail page for a DRAFT meeting<br>
+            <strong>When</strong> I toggle active agenda item types (Greeting, Analytics, Audit, Budget, Topics, Hot Topics)<br>
+            <strong>Then</strong> only selected types appear in the agenda list</p>
+            <p><strong>Given</strong> the agenda has items<br>
+            <strong>When</strong> I drag items to reorder them<br>
+            <strong>Then</strong> the sort order updates and persists</p>
+            <p><strong>Given</strong> I want an ad-hoc discussion topic<br>
+            <strong>When</strong> I click "Add Custom Item" and enter a title and description<br>
+            <strong>Then</strong> a passive agenda item is added to the list</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.1.3: Auditor Email Configuration &amp; ICS Invites</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> configure the auditor's email and send ICS invites to all partners when the meeting is scheduled, <strong>so that</strong> everyone has the meeting on their calendar and the auditor is invited only when relevant.</p>
+            <p><strong>Given</strong> the Audit Sign-off agenda item is enabled<br>
+            <strong>When</strong> I enter an auditor email address<br>
+            <strong>Then</strong> the auditor email is saved to the meeting</p>
+            <p><strong>Given</strong> the meeting is in DRAFT with a complete agenda<br>
+            <strong>When</strong> I click "Schedule Meeting" (DRAFT &rarr; SCHEDULED)<br>
+            <strong>Then</strong> ICS invites are sent to all active partners, and the auditor if the audit item is enabled</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.1.4: Partner RSVP &amp; Dashboard</summary>
+          <div class="details-body">
+            <p><strong>As a</strong> partner, <strong>I want to</strong> confirm or decline my attendance via the portal, <strong>so that</strong> the organizer knows who to expect.</p>
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> see an RSVP dashboard with confirmed/declined/pending counts, <strong>so that</strong> I can follow up with non-responders.</p>
+            <p><strong>Given</strong> a meeting is SCHEDULED<br>
+            <strong>When</strong> a partner visits the portal<br>
+            <strong>Then</strong> they see options to confirm or decline attendance</p>
+            <p><strong>Given</strong> a partner responds<br>
+            <strong>When</strong> the organizer views the meeting detail<br>
+            <strong>Then</strong> the RSVP dashboard shows updated counts</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.1.5: Meeting Prep Checklist &amp; Action Item Carry-Forward</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> see a readiness checklist and any open action items from previous meetings, <strong>so that</strong> I know what still needs attention before starting the meeting.</p>
+            <p><strong>Given</strong> a SCHEDULED meeting<br>
+            <strong>When</strong> I view the prep checklist<br>
+            <strong>Then</strong> I see green/yellow/red status for each enabled item</p>
+            <p><strong>Given</strong> critical items are missing<br>
+            <strong>When</strong> I click "Start Presenter Mode"<br>
+            <strong>Then</strong> the system shows a warning and soft-blocks entry</p>
+            <p><strong>Given</strong> open action items exist from a previous meeting<br>
+            <strong>When</strong> a new meeting is created<br>
+            <strong>Then</strong> those items surface in the prep dashboard with urgency indicators (2+ carry-forwards highlighted)</p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><p>yes, ok</p></div>
+    </div>
+
+    <!-- Epic 8.2 -->
+    <div class="connector">Epic 8.2: Presenter Mode &amp; Live Meeting</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Epic 8.2 Stories</div>
+      <div class="turn-content">
+        <p><strong>Epic 8.2: Presenter Mode &amp; Live Meeting</strong> &mdash; 8 stories</p>
+
+        <details>
+          <summary>Story 8.2.1: Presenter Mode Layout &amp; Navigation Shell</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> enter a full-screen presenter mode with a dark theme, agenda sidebar, and linear navigation, <strong>so that</strong> I can project and drive the meeting from my laptop.</p>
+            <p><strong>Given</strong> I am on a SCHEDULED meeting's detail page<br>
+            <strong>When</strong> I click "Start Presenter Mode"<br>
+            <strong>Then</strong> PresenterLayout renders: zinc-950 dark theme, 280px sidebar, fluid main, 180px note panel<br>
+            <strong>And</strong> meeting status transitions to IN_PROGRESS</p>
+            <p><strong>Given</strong> I am in Presenter Mode<br>
+            <strong>When</strong> I press &rarr;/&larr; or click Next/Previous<br>
+            <strong>Then</strong> the active agenda item advances/retreats</p>
+            <p><strong>Given</strong> I press Esc<br>
+            <strong>Then</strong> a confirmation dialog appears; if confirmed, I return to meeting detail (meeting stays IN_PROGRESS)</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.2.2: Who Is Who &mdash; Attendance &amp; Stand-In Tracking</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> toggle partner presence, record stand-in delegates, and see "New" badges, <strong>so that</strong> attendance is captured accurately with zero ceremony.</p>
+            <p><strong>Given</strong> the Greeting item is active<br>
+            <strong>When</strong> I see the partner gallery<br>
+            <strong>Then</strong> each card shows: logo, name, photo, RSVP status</p>
+            <p><strong>Given</strong> a partner sent a delegate<br>
+            <strong>When</strong> I click "Add Stand-in" and enter a name<br>
+            <strong>Then</strong> the card shows "Represented by [name]" with a stand-in badge</p>
+            <p><strong>Given</strong> a partner company is in their first year<br>
+            <strong>Then</strong> a purple "New" badge appears on their card</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.2.3: Per-Item Note Taking with Auto-Save</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> a persistent note panel at the bottom of every agenda item that auto-saves, <strong>so that</strong> I can capture discussion points without worrying about losing them.</p>
+            <p><strong>Given</strong> I am on any agenda item<br>
+            <strong>When</strong> I type in the note panel<br>
+            <strong>Then</strong> content auto-saves within 2 seconds (debounced PATCH) and "Saved" indicator appears</p>
+            <p><strong>Given</strong> the browser crashes<br>
+            <strong>When</strong> I re-enter Presenter Mode<br>
+            <strong>Then</strong> all previously auto-saved notes are intact</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.2.4: Document Upload &amp; Embedded Viewer</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> upload PDFs and spreadsheets and view them inline during the meeting, <strong>so that</strong> audit reports and budget documents are presented and permanently attached.</p>
+            <p><strong>Given</strong> I upload a document (up to 20MB) to an agenda item<br>
+            <strong>Then</strong> the file uploads via S3 presigned URL and is attached permanently</p>
+            <p><strong>Given</strong> a document is attached to the active item in Presenter Mode<br>
+            <strong>Then</strong> it displays in an embedded viewer with dark chrome</p>
+            <p><strong>Given</strong> the viewer fails to render<br>
+            <strong>Then</strong> a download link is shown instead</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.2.5: Proxied Voting with Attribution</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> conduct approve/decline votes on behalf of each present partner, <strong>so that</strong> formal decisions are recorded with per-partner attribution.</p>
+            <p><strong>Given</strong> a votable agenda item is active<br>
+            <strong>When</strong> I press V or click "Start Vote"<br>
+            <strong>Then</strong> a vote panel lists all present partners with approve/decline buttons</p>
+            <p><strong>Given</strong> a stand-in is attending<br>
+            <strong>When</strong> I cast their vote<br>
+            <strong>Then</strong> attribution shows: companyName, decision, voterType (STAND_IN), standInName, delegatedBy</p>
+            <p><strong>Given</strong> all present partners have voted<br>
+            <strong>When</strong> I click "Complete Vote"<br>
+            <strong>Then</strong> a result banner animates and vote records become immutable</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.2.6: Analytics Snapshot Capture</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> view the analytics dashboard during the Analytics Review item and capture a snapshot, <strong>so that</strong> what was presented is historized as part of the meeting record.</p>
+            <p><strong>Given</strong> the Analytics Review item is active<br>
+            <strong>Then</strong> the existing analytics dashboard embeds in the main area</p>
+            <p><strong>Given</strong> I click "Capture Snapshot"<br>
+            <strong>Then</strong> analytics data is frozen as immutable JSONB attached to this meeting</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.2.7: Action Item Creation During Meeting</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> create action items at any agenda point with an assigned owner and deadline, <strong>so that</strong> decisions and follow-ups are captured in context.</p>
+            <p><strong>Given</strong> any agenda item in Presenter Mode<br>
+            <strong>When</strong> I click "Add Action Item"<br>
+            <strong>Then</strong> a form appears with: title, description (optional), assigned owner, optional deadline</p>
+            <p><strong>Given</strong> I submit the form<br>
+            <strong>Then</strong> the action item is linked to the current meeting and agenda item</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.2.8: End Meeting &amp; Transition to Minutes</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> end the meeting and transition to minutes review, <strong>so that</strong> the live phase concludes cleanly.</p>
+            <p><strong>Given</strong> I am on the last agenda item<br>
+            <strong>When</strong> I click "End Meeting"<br>
+            <strong>Then</strong> a confirmation dialog appears</p>
+            <p><strong>Given</strong> I confirm<br>
+            <strong>Then</strong> meeting status changes to COMPLETED, presenter session fields clear, and I navigate to Minutes Review</p>
+            <p><strong>Given</strong> I skipped some items<br>
+            <strong>Then</strong> skipped items are marked as "Skipped" in the record</p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><p>yes, ok</p></div>
+    </div>
+
+    <!-- Epic 8.3 -->
+    <div class="connector">Epic 8.3: Meeting Minutes &amp; Publication</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Epic 8.3 Stories</div>
+      <div class="turn-content">
+        <p><strong>Epic 8.3: Meeting Minutes &amp; Publication</strong> &mdash; 4 stories</p>
+
+        <details>
+          <summary>Story 8.3.1: Minutes Auto-Assembly from Meeting Data</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want</strong> the system to auto-assemble minutes from all meeting data, <strong>so that</strong> I see a near-complete document without manual compilation.</p>
+            <p><strong>Given</strong> the meeting is COMPLETED and I navigate to Minutes Review<br>
+            <strong>When</strong> the page loads<br>
+            <strong>Then</strong> the system assembles minutes as structured JSONB containing: attendance, per-item content (votes, documents, analytics, notes), and action items<br>
+            <strong>And</strong> a MeetingMinutes entity is created in DRAFT status</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.3.2: Minutes Review, Editing &amp; Action Item Management</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> review and edit the auto-assembled minutes and manage action items, <strong>so that</strong> I can add clarifications and ensure action items are complete.</p>
+            <p><strong>Given</strong> DRAFT minutes are displayed<br>
+            <strong>When</strong> I click on any section<br>
+            <strong>Then</strong> I can edit the text content</p>
+            <p><strong>Given</strong> carried-forward action items exist<br>
+            <strong>Then</strong> each shows carry-forward count and urgency indicator<br>
+            <strong>And</strong> I can mark done, extend deadline, or carry forward</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.3.3: Publish Minutes &amp; Distribute to Partners</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> publish the minutes and send them to all partners, <strong>so that</strong> everyone has the complete meeting record.</p>
+            <p><strong>Given</strong> finalized DRAFT minutes<br>
+            <strong>When</strong> I click "Publish &amp; Send"<br>
+            <strong>Then</strong> status changes to PUBLISHED (immutable) and emails are sent to all invited partners</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.3.4: Partner Minutes Viewing (Mobile-Friendly)</summary>
+          <div class="details-body">
+            <p><strong>As a</strong> partner, <strong>I want to</strong> view published minutes in a mobile-friendly format, <strong>so that</strong> I can review everything discussed, even from my phone.</p>
+            <p><strong>Given</strong> I was invited to the meeting<br>
+            <strong>When</strong> I click the portal link<br>
+            <strong>Then</strong> I see minutes with collapsible sections per agenda item</p>
+            <p><strong>Given</strong> I was NOT invited<br>
+            <strong>Then</strong> I receive a 403 &mdash; access denied</p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt &mdash; Gap Identified</div>
+      <div class="turn-content">
+        <p>in 8.3.1, dont forget, that we can have manual agenda entries, so they should it's notes should also e added to the meeting minutes</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; AC Updated</div>
+      <div class="turn-content">
+        <p><strong>Good catch.</strong> You're right &mdash; custom/passive agenda items have titles, descriptions, and organizer notes that must appear in the minutes just like active items.</p>
+        <p>I've updated <strong>Story 8.3.1</strong> to add an explicit acceptance criterion:</p>
+        <p><strong>Given</strong> the meeting had custom passive agenda items (e.g., "Venue proposal for 2027")<br>
+        <strong>When</strong> the minutes are assembled<br>
+        <strong>Then</strong> each custom item appears as its own section with the item title as the heading and the organizer's notes as the content</p>
+        <div class="tags">
+          <span class="tag tag-yellow">AC UPDATED</span>
+          <span class="tag tag-green">CUSTOM ITEMS COVERED</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>This is exactly why BMAD uses collaborative facilitation, not auto-generation. The user's domain knowledge caught a gap the agent missed &mdash; custom/passive agenda items need their notes in the minutes too. One missing AC could have led to incomplete minutes in production.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><p>yes</p></div>
+    </div>
+
+    <!-- Epic 8.4 -->
+    <div class="connector">Epic 8.4: Post-Meeting Workflows &amp; Partner Engagement</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Epic 8.4 Stories</div>
+      <div class="turn-content">
+        <p><strong>Epic 8.4: Post-Meeting Workflows &amp; Partner Engagement</strong> &mdash; 3 stories</p>
+
+        <details>
+          <summary>Story 8.4.1: Async Fee Acceptance for Partners</summary>
+          <div class="details-body">
+            <p><strong>As a</strong> partner, <strong>I want to</strong> review and accept or decline the new annual fee via the portal, <strong>so that</strong> I can participate in the fee decision even if I wasn't in the room.</p>
+            <p><strong>As an</strong> organizer, <strong>I want</strong> fee acceptance requests to be triggered automatically after a budget vote with a fee decision, <strong>so that</strong> I don't have to manually chase each partner.</p>
+            <p><strong>Given</strong> a budget approval vote with a fee decision was completed<br>
+            <strong>When</strong> minutes are published<br>
+            <strong>Then</strong> FeeAcceptance records (PENDING) are created for every invited partner</p>
+            <p><strong>Given</strong> I am a partner with a pending fee acceptance<br>
+            <strong>When</strong> I visit the portal<br>
+            <strong>Then</strong> I see fee amount, change from previous, and accept/decline buttons with optional comment</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.4.2: Fee Acceptance Tracking &amp; Reminders</summary>
+          <div class="details-body">
+            <p><strong>As an</strong> organizer, <strong>I want to</strong> see who has responded and have the system send automatic reminders, <strong>so that</strong> I ensure 100% response without manual follow-up.</p>
+            <p><strong>Given</strong> a partner has not responded after 7 days<br>
+            <strong>Then</strong> a reminder email is sent</p>
+            <p><strong>Given</strong> no response after 14 days<br>
+            <strong>Then</strong> a second reminder is sent and the organizer is notified</p>
+          </div>
+        </details>
+        <details>
+          <summary>Story 8.4.3: Feedback Pulse Survey &amp; Results</summary>
+          <div class="details-body">
+            <p><strong>As a</strong> partner, <strong>I want to</strong> receive a short post-meeting survey, <strong>so that</strong> future meetings improve based on feedback.</p>
+            <p><strong>As an</strong> organizer, <strong>I want</strong> aggregated feedback with historical trends, <strong>so that</strong> I can measure whether meetings are getting better.</p>
+            <p><strong>Given</strong> minutes were published<br>
+            <strong>When</strong> 24 hours pass<br>
+            <strong>Then</strong> a feedback email is sent to all invited partners</p>
+            <p><strong>Given</strong> responses are collected<br>
+            <strong>Then</strong> organizer sees aggregated scores and historical trends</p>
+          </div>
+        </details>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+        <p><strong>Summary:</strong></p>
+        <table>
+          <tr><th>Epic</th><th>Stories</th><th>FRs</th></tr>
+          <tr><td>8.1 &mdash; Meeting Creation</td><td>5</td><td>FR1, FR2.1&ndash;2.2, FR7, FR9.3, FR9.5</td></tr>
+          <tr><td>8.2 &mdash; Presenter Mode</td><td>8</td><td>FR2.3&ndash;2.5, FR3, FR4, FR5, FR9.1, FR10</td></tr>
+          <tr><td>8.3 &mdash; Minutes</td><td>4</td><td>FR6, FR9.2, FR9.4, FR9.5</td></tr>
+          <tr><td>8.4 &mdash; Post-Meeting</td><td>3</td><td>FR8</td></tr>
+          <tr><th>Total</th><th>20</th><th>35 FRs</th></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 4: FINAL VALIDATION -->
+  <section id="step4-validation">
+    <div class="section-header">
+      <div class="phase-badge phase-4">4</div>
+      <div class="section-header-text">
+        <h2>Step 4: Final Validation</h2>
+        <p>Systematic checks before handoff to implementation</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; 5-Point Validation</div>
+      <div class="turn-content">
+        <p><strong>Running final validation checks...</strong></p>
+
+        <p><strong>1. FR Coverage: 35/35</strong></p>
+        <table>
+          <tr><th>FR</th><th>Story</th><th>Status</th></tr>
+          <tr><td>FR1.1&ndash;1.7</td><td>8.1.1, 8.1.2, 8.1.3</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR2.1&ndash;2.2</td><td>8.1.4</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR2.3&ndash;2.5</td><td>8.2.2</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR3.1&ndash;3.8</td><td>8.2.1, 8.2.3</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR4.1&ndash;4.4</td><td>8.2.4</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR5.1&ndash;5.7</td><td>8.2.5</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR6.1&ndash;6.8</td><td>8.3.1, 8.3.2, 8.3.3, 8.3.4</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR7.1&ndash;7.3</td><td>8.1.5</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR8.1&ndash;8.6</td><td>8.4.1, 8.4.2, 8.4.3</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR9.1</td><td>8.2.7</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR9.2, FR9.4, FR9.5</td><td>8.3.2</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR9.3, FR9.5</td><td>8.1.5</td><td style="color:var(--accent2)">Covered</td></tr>
+          <tr><td>FR10.1&ndash;10.3</td><td>8.2.6</td><td style="color:var(--accent2)">Covered</td></tr>
+        </table>
+
+        <p><strong>2. Architecture Compliance:</strong> No starter (brownfield). Tables created on-demand per story. Entity naming follows ADR-003. JSONB for minutes content. <span style="color:var(--accent2)">PASS</span></p>
+
+        <p><strong>3. Story Quality:</strong> All stories are focused (single user outcome). All have Given/When/Then ACs. No forward dependencies within epics. <span style="color:var(--accent2)">PASS</span></p>
+
+        <p><strong>4. Epic Structure:</strong> User-value epics, not technical layers. Each epic is independently demoable. No epic exceeds 8 stories. <span style="color:var(--accent2)">PASS</span></p>
+
+        <p><strong>5. Dependency Validation:</strong> Epics are independent (can be developed in parallel with minor cross-epic coordination). Within each epic, stories follow forward-only dependency chains. <span style="color:var(--accent2)">PASS</span></p>
+
+        <div class="tags">
+          <span class="tag tag-green">5/5 CHECKS PASSED</span>
+          <span class="tag tag-green">READY FOR IMPLEMENTATION</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>The final validation is not ceremonial &mdash; it systematically checks FR coverage, architecture compliance, story quality, epic structure, and dependency chains. This catches issues before they become bugs.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result">
+    <div class="section-header">
+      <div class="phase-badge phase-1">&#x1F3AF;</div>
+      <div class="section-header-text">
+        <h2>Session Result</h2>
+        <p>What the session produced</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Completion</div>
+      <div class="turn-content">
+        <p><strong>Epic and story creation complete.</strong></p>
+        <p><strong>4 epics, 20 stories, 35 FRs &mdash; 100% coverage.</strong></p>
+        <p>The epics document has been saved to <code>docs/trainings/ba_demo2/epics.md</code> with all stories, user stories, and acceptance criteria.</p>
+        <p><strong>Next steps:</strong></p>
+        <ol>
+          <li><strong>Implementation Readiness Check</strong> &mdash; run <code>[IR]</code> to validate the full document set is complete</li>
+          <li><strong>Sprint Planning</strong> &mdash; run <code>[SP]</code> to create a sprint plan from the epics</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Epics</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">20</div>
+        <div class="stat-label">Stories</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">35</div>
+        <div class="stat-label">FRs Covered</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">20</div>
+        <div class="stat-label">NFRs Addressed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">5/5</div>
+        <div class="stat-label">Validation Checks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Orphan FRs</div>
+      </div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>Generated Artifact</div>
+      <div class="turn-content">
+        <p><strong>Epics &amp; Stories Document</strong> &mdash; <a href="agenda-epics.html" style="color:var(--accent)">View rendered epics &amp; stories</a></p>
+        <p>Source: <code>docs/trainings/ba_demo2/epics.md</code></p>
+        <p>A complete epic breakdown with 4 user-value epics, 20 stories with user stories and Given/When/Then acceptance criteria, FR coverage map, and requirements inventory. Ready for sprint planning and implementation.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAKEAWAYS -->
+  <section id="takeaways">
+    <div class="section-header">
+      <div class="phase-badge phase-2">&#x1F4A1;</div>
+      <div class="section-header-text">
+        <h2>Key Takeaways</h2>
+        <p>What BAs and PMs should learn from this session</p>
+      </div>
+    </div>
+
+    <div class="takeaway-grid">
+      <div class="takeaway">
+        <h3>User-Value Epics, Not Technical Layers</h3>
+        <p>John proposed epics organized by user outcome (meeting creation, live meeting, minutes, post-meeting), not by technical layer (backend, frontend, database). Each epic is independently demoable to stakeholders.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Domain Expertise Improves Structure</h3>
+        <p>The user's 3 adjustments transformed 6 epics into a tighter 4-epic structure. Merging voting into presenter mode and distributing action items across epics was better than what the agent proposed. The human steers, the agent executes.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Collaborative Facilitation Catches Gaps</h3>
+        <p>Auto-generation would have missed the custom agenda item gap in Story 8.3.1. The user's domain knowledge caught it. One missing acceptance criterion could have led to incomplete meeting minutes in production.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Cross-Cutting Concerns Belong in Context</h3>
+        <p>Action items (FR9) were originally a standalone epic. Distributing them across the epics where they're used (creation in 8.2, review in 8.3, carry-forward in 8.1) makes each story demoable and avoids isolated features.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Systematic Validation Prevents Drift</h3>
+        <p>The 5-point validation is not a checkbox exercise. It verified FR coverage (35/35), architecture compliance, story quality, epic structure, and dependency chains. Running this before implementation prevents discovering gaps mid-sprint.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Minimal Input, Maximum Output</h3>
+        <p>The user's inputs were brief: one command (<code>ce</code>), three adjustments, one bug catch, and four confirmations (<code>c</code>). The PM agent drove the analysis, extraction, and writing. BAs should focus on reviewing and redirecting, not generating content.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

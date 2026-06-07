@@ -60,6 +60,32 @@ public class NewsletterSend {
     @Column(name = "recipient_count")
     private Integer recipientCount;
 
+    /** Send-job lifecycle status. Values: PENDING, IN_PROGRESS, COMPLETED, PARTIAL, FAILED. */
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private String status = "PENDING";
+
+    /** Recipients successfully delivered. Updated mid-send for progress polling. */
+    @Column(name = "sent_count", nullable = false)
+    @Builder.Default
+    private int sentCount = 0;
+
+    /** Recipients for which delivery failed. */
+    @Column(name = "failed_count", nullable = false)
+    @Builder.Default
+    private int failedCount = 0;
+
+    @Column(name = "started_at")
+    private Instant startedAt;
+
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
+    /** True when the send was restricted to organizer-role subscribers (test mode). */
+    @Column(name = "test_mode", nullable = false)
+    @Builder.Default
+    private boolean testMode = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

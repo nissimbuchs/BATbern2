@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "主催者",
+      "speaker": "講演者",
+      "partner": "パートナー",
+      "attendee": "参加者"
+    }
   },
   "public": {
     "login": "ログイン",
@@ -74,13 +80,13 @@
     "close": "閉じる",
     "sending": "送信中...",
     "loading": "読み込み中...",
-    "retry": "Retry",
-    "back": "Back",
-    "confirm": "Confirm",
-    "clearFilters": "Clear filters",
-    "previous": "Previous",
-    "next": "Next",
-    "deleting": "Deleting..."
+    "retry": "再試行",
+    "back": "戻る",
+    "confirm": "確認",
+    "clearFilters": "フィルターをクリア",
+    "previous": "前へ",
+    "next": "次へ",
+    "deleting": "削除中..."
   },
   "language": {
     "select": "言語を選択",
@@ -493,7 +499,7 @@
       "emailReadOnly": "メールアドレス（読み取り専用）",
       "bio": "自己紹介",
       "bioPlaceholder": "自己紹介を入力してください...",
-      "bioExceeds": "自己紹介は500文字以内にしてください",
+      "bioExceeds": "自己紹介は5000文字以内にしてください",
       "maxExpertiseAreas": "専門分野は最大10件まで",
       "maxSpeakingTopics": "発表トピックは最大10件まで",
       "socialLinks": "ソーシャルメディアリンク",
@@ -509,12 +515,12 @@
       "saveFailed": "プロフィールの保存に失敗しました"
     },
     "photo": {
-      "invalidFileType": "無効なファイル形式です。対応形式：JPEG、PNG、WebP",
+      "invalidFileType": "無効なファイル形式です。対応形式：JPEG、PNG、SVG",
       "fileTooLarge": "ファイルサイズは5MB未満にしてください",
       "changePhoto": "写真を変更",
       "dragDropHere": "写真をここにドラッグ＆ドロップ",
       "orClickBrowse": "またはクリックして参照",
-      "supportedFormats": "JPEG、PNG、WebP（最大5MB）",
+      "supportedFormats": "JPEG、PNG、SVG（最大5MB）",
       "uploading": "アップロード中...",
       "cancel": "キャンセル",
       "uploadAria": "プロフィール写真をアップロード"
@@ -554,6 +560,11 @@
     "detail": {
       "backToArchive": "← アーカイブに戻る",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "新しい順",
+      "oldest": "古い順",
+      "mostAttended": "参加者の多い順"
     }
   },
   "notifications": {
@@ -588,7 +599,8 @@
       "SPEAKER": "スピーカー",
       "REGISTRATION": "登録",
       "TASK_REMINDER": "タスクリマインダー",
-      "NEWSLETTER": "ニュースレター"
+      "NEWSLETTER": "ニュースレター",
+      "VENUE_COORDINATION": "会場とケータリング"
     },
     "layoutKey": "レイアウト",
     "standalone": "なし（スタンドアロン）",
@@ -693,25 +705,25 @@
     }
   },
   "labels": {
-    "status": "Status",
-    "title": "Title",
-    "date": "Date",
-    "overview": "Overview",
-    "sortBy": "Sort by",
-    "actions": "Actions",
-    "company": "Company",
-    "email": "Email",
-    "dueDate": "Due Date",
-    "emailAddress": "Email Address",
-    "name": "Name",
-    "description": "Description",
-    "notes": "Notes",
-    "event": "Event",
-    "viewMode": "View mode",
-    "gridView": "Grid view",
-    "listView": "List view",
-    "sessions": "Sessions",
-    "topics": "Topics",
+    "status": "ステータス",
+    "title": "タイトル",
+    "date": "日付",
+    "overview": "概要",
+    "sortBy": "並び順",
+    "actions": "アクション",
+    "company": "会社",
+    "email": "メール",
+    "dueDate": "期日",
+    "emailAddress": "メールアドレス",
+    "name": "名前",
+    "description": "説明",
+    "notes": "メモ",
+    "event": "イベント",
+    "viewMode": "表示モード",
+    "gridView": "グリッド表示",
+    "listView": "リスト表示",
+    "sessions": "セッション",
+    "topics": "トピック",
     "firstName": "名",
     "lastName": "姓"
   },
@@ -763,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "プロフィール",
+    "pageSubtitle": "個人情報・同意・ニュースレターを管理します",
+    "tabs": {
+      "profile": "プロフィール",
+      "consent": "同意とニュースレター"
+    },
+    "companyLabel": "会社",
+    "companyInvalid": "会社IDは1〜12文字の英数字で入力してください",
+    "onboardingNotice": "続行するにはプロフィールを完成させてください。以下で利用規約とプライバシーポリシーに同意してください。",
+    "consentTitle": "利用規約とプライバシーポリシー",
+    "consentLabelPrefix": "私は次に同意します：",
+    "consentLabelAnd": "および",
+    "termsOfService": "利用規約",
+    "privacyPolicy": "プライバシーポリシー",
+    "consentAcceptedOn": "{{date}} に同意済み",
+    "consentSave": "同意して保存",
+    "consentSaveError": "同意の保存に失敗しました。もう一度お試しください。",
+    "newsletterTitle": "ニュースレター",
+    "newsletterDescription": "今後のBATbernイベントの招待状や最新情報をお届けします。",
+    "newsletterLabel": "BATbernニュースレターを購読する"
   }
 }

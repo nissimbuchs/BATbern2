@@ -79,7 +79,7 @@ public class TestAwsConfig {
         when(mockS3Client.copyObject(any(CopyObjectRequest.class)))
                 .thenReturn(successResponse);
 
-        // Configure mock for putObject (used by LegacyImportService.importAssets)
+        // Configure mock for putObject (used by EventPhotoService, TeaserImageService, etc.)
         PutObjectResponse putResponse = PutObjectResponse.builder().build();
         when(mockS3Client.putObject(
                 any(PutObjectRequest.class), any(software.amazon.awssdk.core.sync.RequestBody.class)))
@@ -108,7 +108,7 @@ public class TestAwsConfig {
         when(mockS3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                 .thenReturn(mockPresignedRequest);
 
-        // Configure mock for presignGetObject (used by LegacyExportService.exportAssetManifest)
+        // Configure mock for presignGetObject (used by services that issue download-side presigned URLs)
         PresignedGetObjectRequest mockGetPresignedRequest = Mockito.mock(PresignedGetObjectRequest.class);
         try {
             when(mockGetPresignedRequest.url()).thenReturn(new URL("https://presigned.s3.amazonaws.com/test-asset"));

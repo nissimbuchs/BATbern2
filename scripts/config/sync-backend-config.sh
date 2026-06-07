@@ -172,7 +172,7 @@ if [ "$ENVIRONMENT" == "development" ]; then
 elif [ "$ENVIRONMENT" == "staging" ]; then
     SPRING_PROFILE="${ENVIRONMENT}"
     LOG_LEVEL="INFO"
-    APP_BASE_URL="https://staging.batbern.ch"
+    APP_BASE_URL="https://www.batbern.ch"
 else
     # Production
     SPRING_PROFILE="${ENVIRONMENT}"

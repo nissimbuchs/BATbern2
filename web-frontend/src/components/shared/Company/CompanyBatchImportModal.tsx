@@ -44,6 +44,7 @@ import {
   Update as UpdateIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useCompanyBatchImport } from '@/hooks/useCompanyBatchImport';
 import { useCompanies } from '@/hooks/useCompanies/useCompanies';
 import { parseCompanyJson, createImportCandidates } from '@/utils/companyImport';
@@ -102,6 +103,7 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
   onImportComplete,
 }) => {
   const { t } = useTranslation('common');
+  const { isMobile } = useBreakpoints();
   const [parseError, setParseError] = useState<string | null>(null);
   const [importCandidates, setImportCandidates] = useState<ImportCandidate[]>([]);
   const [importResult, setImportResult] = useState<BatchImportResult | null>(null);
@@ -252,6 +254,7 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
       onClose={handleClose}
       maxWidth="lg"
       fullWidth
+      fullScreen={isMobile}
       aria-labelledby="batch-import-dialog-title"
     >
       <DialogTitle id="batch-import-dialog-title">

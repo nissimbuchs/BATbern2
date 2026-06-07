@@ -159,6 +159,21 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status", is("WAITLIST")));
     }
 
+    // ── T5.4b: 200 ATTENDED ───────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("should return 200 with ATTENDED status when user attended the event (regression: was 400 before fix)")
+    @WithMockUser(username = USERNAME)
+    void should_return200_with_attendedStatus() throws Exception {
+        saveRegistration(testEvent, USERNAME, "attended");
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(true)))
+                .andExpect(jsonPath("$.eventCode", is(EVENT_CODE)))
+                .andExpect(jsonPath("$.status", is("ATTENDED")));
+    }
+
     // ── T5.5: 200 CANCELLED ───────────────────────────────────────────────────
 
     @Test

@@ -1,8 +1,10 @@
 # BATbern Event Management Platform - Site Map (Mermaid Diagrams)
 
+> **⚠️ Note (2026-05-15):** This sitemap was originally authored when Epics 6, 7, 8 were all deferred. Epic 6 (Speaker Portal) and Epic 8 (Partner Coordination) are now **100% complete**. Top-level epic-status labels (and the diagrams in sections 1 + 13.2) have been refreshed; **screen-level details below each Epic 6 / Epic 8 section may diverge from actual implementation** — the diagrams capture the *planned* design, not the *delivered* design. Consult `_bmad-output/implementation-artifacts/` and the corresponding Epic PRDs for authoritative implementation status.
+
 **Generated:** 2026-01-25
-**Version:** 2.0 (MVP Completion Update)
-**Purpose:** Visual representation of actual MVP implementation (Epics 1-5) and Phase 2+ deferrals
+**Version:** 2.1 (Epic 6 + Epic 8 status flip, 2026-05-15)
+**Purpose:** Visual representation of actual MVP implementation (Epics 1-5, 6, 8) and Phase 3 deferral (Epic 7)
 
 ---
 
@@ -11,9 +13,9 @@
 ### Status & Implementation Colors
 - 🟢 **Green** - ✅ IMPLEMENTED IN MVP (Epics 1-5)
 - 🔵 **Blue** - 🔄 PARTIAL/PLACEHOLDER (basic implementation, full features deferred)
-- 🟡 **Yellow** - 📦 DEFERRED TO EPIC 6 (Speaker Self-Service Portal)
-- 🟠 **Orange** - 📦 DEFERRED TO EPIC 7 (Attendee Experience Enhancements)
-- 🟣 **Purple** - 📦 DEFERRED TO EPIC 8 (Partner Analytics & Voting)
+- 🟡 **Yellow** - ✅ DELIVERED (Epic 6: Speaker Self-Service Portal)
+- 🟠 **Orange** - 📦 DEFERRED TO PHASE 3 (Epic 7: Attendee Experience Enhancements)
+- 🟣 **Purple** - ✅ DELIVERED (Epic 8: Partner Coordination)
 - 🔴 **Red** - ❌ NOT IMPLEMENTED IN MVP (planned but not built)
 
 ### Role Indicators
@@ -35,9 +37,9 @@ graph TB
     Root --> Auth[🔒 Authentication<br/>✅ 100% COMPLETE]
     Root --> Global[🌐 Global/Shared<br/>✅ CORE COMPLETE]
     Root --> Organizer[🎯 Organizer Portal<br/>✅ 90% COMPLETE]
-    Root --> Partner[💼 Partner Portal<br/>🔄 10% BASIC ONLY<br/>📦 Epic 8 Deferred]
-    Root --> Speaker[🎤 Speaker Portal<br/>📦 DEFERRED Epic 6]
-    Root --> Attendee[👤 Attendee Portal<br/>🔄 PUBLIC ONLY<br/>📦 Epic 7 Deferred]
+    Root --> Partner[💼 Partner Portal<br/>✅ COMPLETE<br/>Epic 8 Delivered]
+    Root --> Speaker[🎤 Speaker Portal<br/>✅ COMPLETE<br/>Epic 6 Delivered]
+    Root --> Attendee[👤 Attendee Portal<br/>🔄 PUBLIC ONLY<br/>📦 Epic 7 Phase 3]
 
     style Root fill:#e1f5ff,stroke:#333,stroke-width:3px
     style Public fill:#90EE90,stroke:#333,stroke-width:2px
@@ -324,7 +326,7 @@ graph TB
 
 ---
 
-## 5. Partner Portal (🔄 10% BASIC - Epic 8 Deferred)
+## 5. Partner Portal (✅ COMPLETE - Epic 8)
 
 ### 5.1 What Was Implemented (Basic)
 
@@ -356,7 +358,7 @@ graph TB
     style History fill:#90EE90
 ```
 
-### 5.2 What Was Deferred (Epic 8)
+### 5.2 Epic 8 — Delivered (wireframes in this section show planned scope; implementation in production)
 
 ```mermaid
 graph TB
@@ -385,9 +387,9 @@ graph TB
 
 ---
 
-## 6. Speaker Portal (📦 DEFERRED TO EPIC 6)
+## 6. Speaker Portal (✅ COMPLETE - Epic 6)
 
-### 6.1 All Speaker Features Deferred
+### 6.1 Epic 6 — Delivered (wireframes in this section show planned scope; implementation in production)
 
 ```mermaid
 graph TB
@@ -605,7 +607,7 @@ flowchart TD
     style Timeline fill:#90EE90
 ```
 
-### 8.4 Deferred User Journeys (Epic 6-8)
+### 8.4 Deferred User Journeys (Epic 7 — Phase 3)
 
 ```mermaid
 flowchart TD
@@ -680,13 +682,15 @@ xychart-beta
 
 ### 9.3 Deferred Features by Epic
 
+> **Phase 3 deferred work: Epic 7 (Attendee Experience) + low-priority MVP enhancements.** Epic 6 (Speaker Portal) and Epic 8 (Partner Coordination) are now delivered; their screens are no longer in this chart. See `CLAUDE.md` MVP Status for authoritative status.
+
 ```mermaid
 %%{init: {'theme':'base'}}%%
 xychart-beta
-    title "Deferred Features by Epic (Screen Count)"
-    x-axis ["Epic 6 (Speaker)", "Epic 7 (Attendee)", "Epic 8 (Partner)", "Low Priority MVP"]
+    title "Deferred Features (Phase 3 — Epic 7 + Low-Priority)"
+    x-axis ["Epic 7 (Attendee)", "Low Priority MVP"]
     y-axis "Number of Screens" 0 --> 15
-    bar [6, 9, 6, 10]
+    bar [9, 10]
 ```
 
 ---
@@ -728,24 +732,20 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "📦 DEFERRED - OPTIONAL ENHANCEMENTS"
-        SpeakerSelfService[Speaker Self-Service<br/>📦 Epic 6<br/>40% Workload Reduction]
-        PartnerAnalytics[Partner Analytics<br/>📦 Epic 8<br/>ROI Visibility]
+    subgraph "📦 DEFERRED TO PHASE 3"
         AttendeePersonal[Attendee Personal Features<br/>📦 Epic 7<br/>Bookmarks/PWA]
         ContentCMS[Content Management System<br/>❌ Not in MVP<br/>Manual S3 Upload]
         WorkflowViz[Workflow Visualization<br/>❌ Not in MVP<br/>Status Indicators Sufficient]
     end
 
-    SpeakerSelfService -.->|Gather Feedback| Decide1{Implement?}
-    PartnerAnalytics -.->|Assess Demand| Decide2{Implement?}
     AttendeePersonal -.->|User Demand| Decide3{Implement?}
 
-    style SpeakerSelfService fill:#FFD700
-    style PartnerAnalytics fill:#DDA0DD
     style AttendeePersonal fill:#FFA500
     style ContentCMS fill:#ffcccc
     style WorkflowViz fill:#ffcccc
 ```
+
+> Epic 6 (Speaker Self-Service) and Epic 8 (Partner Coordination) are no longer in this diagram — both delivered in 2026-02. See sections 5 and 6 for delivered scope.
 
 ---
 
@@ -855,30 +855,20 @@ gantt
     MVP Launch                    :milestone, mvp, 2026-01-10, 0d
 ```
 
-### 13.2 Phase 2+ Deferred Epics
+### 13.2 Phase 3 Deferred Work (Epic 7 + Low-Priority Enhancements)
+
+> Epic 6 (Speaker Portal) and Epic 8 (Partner Coordination) were delivered in 2026-02 — they have moved out of this chart into the "Delivered (Phase 2)" section above. Only Epic 7 (Attendee Experience) remains deferred to Phase 3.
 
 ```mermaid
 gantt
-    title Phase 2+ Optional Enhancements (Epics 6-8)
+    title Phase 3 Deferred Work (Epic 7)
     dateFormat YYYY-MM-DD
-
-    section Epic 6: Speaker Portal
-    Speaker Service Foundation    :epic6, 2026-02-01, 2.5w
-    Material Submission           :2026-02-18, 3w
-    Profile Management            :2026-03-11, 2w
-    Invitation Response           :2026-03-25, 3w
-    Speaker Dashboard             :2026-04-15, 2w
 
     section Epic 7: Attendee Experience
     Personal Dashboard            :epic7, 2026-05-01, 2w
     Content Discovery             :2026-05-15, 3w
     Content Viewer                :2026-06-05, 2w
     Mobile PWA                    :2026-06-19, 3w
-
-    section Epic 8: Partner Analytics
-    Analytics Dashboard           :epic8, 2026-07-10, 2w
-    Topic Voting System           :2026-07-24, 2w
-    Meeting Automation            :2026-08-07, 2w
 ```
 
 ---
@@ -888,9 +878,9 @@ gantt
 ### Color Coding Reference
 - 🟢 Green (`#90EE90`) = ✅ IMPLEMENTED IN MVP (Epics 1-5)
 - 🔵 Light Blue (`#87CEEB`) = 🔄 PARTIAL/PLACEHOLDER
-- 🟡 Gold (`#FFD700`) = 📦 DEFERRED TO EPIC 6 (Speaker Portal)
-- 🟠 Orange (`#FFA500`) = 📦 DEFERRED TO EPIC 7 (Attendee Experience)
-- 🟣 Purple (`#DDA0DD`) = 📦 DEFERRED TO EPIC 8 (Partner Analytics)
+- 🟡 Gold (`#FFD700`) = ✅ DELIVERED (Epic 6: Speaker Portal)
+- 🟠 Orange (`#FFA500`) = 📦 DEFERRED TO PHASE 3 (Epic 7: Attendee Experience)
+- 🟣 Purple (`#DDA0DD`) = ✅ DELIVERED (Epic 8: Partner Coordination)
 - 🔴 Red (`#ffcccc`) = ❌ NOT IMPLEMENTED IN MVP
 
 ### Rendering Notes

@@ -275,7 +275,6 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     private void createAcceptedSpeaker(Event event) {
         SpeakerPool speaker = SpeakerPool.builder()
                 .eventId(event.getId())
-                .username("john.doe")
                 .speakerName("John Doe")
                 .company("TechCorp")
                 .status(SpeakerWorkflowState.ACCEPTED)

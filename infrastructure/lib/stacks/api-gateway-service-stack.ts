@@ -24,6 +24,13 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   alarmTopic?: sns.ITopic;
   /** Watch JWT signing secret — same value used by CUMS to sign, API Gateway to verify (SecurityConfig). */
   watchJwtSecret?: secretsmanager.ISecret;
+  /**
+   * Cloudflare Turnstile secret key stored in AWS Secrets Manager (Story 10.31, Task 11.3).
+   * When provided, TURNSTILE_SECRET_KEY is injected as a container secret (not plain env var).
+   * For staging with always-pass test keys, leave undefined and set TURNSTILE_SECRET_KEY via
+   * the environment block directly.
+   */
+  turnstileSecret?: secretsmanager.ISecret;
   // Note: Service URLs not needed - API Gateway uses Service Connect DNS names
   // (e.g., http://event-management:8080) configured in environment variables below
 }
@@ -48,12 +55,12 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     super(scope, id, props);
 
     const envName = props.config.envName;
-    const isProd = envName === 'production';
+    const isProd = props.config.isProduction ?? (envName === 'production');
 
     // Common environment variables (non-sensitive)
     const commonEnv = {
       SPRING_PROFILES_ACTIVE: envName,
-      APP_ENVIRONMENT: envName,
+      APP_ENVIRONMENT: isProd ? 'production' : envName,
       AWS_REGION: props.config.region,
       LOG_LEVEL: (isProd || envName === 'staging') ? 'INFO' : 'DEBUG',
       ...(props.databaseEndpoint && {
@@ -69,6 +76,9 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     }
     if (props.watchJwtSecret) {
       secrets.WATCH_JWT_SECRET = ecs.Secret.fromSecretsManager(props.watchJwtSecret);
+    }
+    if (props.turnstileSecret) {
+      secrets.TURNSTILE_SECRET_KEY = ecs.Secret.fromSecretsManager(props.turnstileSecret);
     }
 
     // Create stable log group for API Gateway
@@ -114,6 +124,24 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         // Cognito configuration
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
+        // Cloudflare Turnstile bot protection (Story 10.31, Task 11.2)
+        // TURNSTILE_SECRET_KEY is injected at deploy time via the TURNSTILE_SECRET_KEY
+        // environment variable (set from GitHub secret in the deploy workflow).
+        TURNSTILE_ENABLED: isProd ? 'true' : 'false',
+        TURNSTILE_SITE_KEY: isProd ? (process.env.TURNSTILE_SITE_KEY ?? '') : '',
+        ...(!props.turnstileSecret && isProd
+          ? { TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? '' }
+          : {}),
+        // "Continue with Google" SSO button (Story 12.9). Enabled here so the button goes
+        // live on deploy. Instant kill-switch: set FEATURES_SSO_ENABLED=false + restart (the
+        // frontend re-reads features.sso from GET /api/v1/config — no rebuild/redeploy).
+        FEATURES_SSO_ENABLED: 'true',
+        // Request-time is_active gate (Story 12.2 AccountActiveFilter) — durably ON.
+        // Verified in prod 2026-06-04 (Story 12.8 AC2): a deactivated federated account was
+        // blocked with 403 ACCOUNT_DEACTIVATED at the gateway and re-activation restored
+        // access after the ~60s TTL — exactly the "verify a test deactivation, then flip
+        // true" gate 12.2's rollout prescribed. Kill-switch: set 'false' + restart.
+        SECURITY_ACTIVE_GATE_ENABLED: 'true',
       },
       secrets,
       healthCheck: {

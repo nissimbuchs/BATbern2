@@ -16,12 +16,23 @@ import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 const EVENTS_API_PATH = '/events';
 
 /**
- * Submit Content Request DTO
+ * Submit Content Request DTO.
+ *
+ * Story 11.D.4 (AC8 + AC9) — `username` removed from the wire contract (the 11.C.2
+ * `ContentSubmissionService.submit()` resolves the speaker username from `speaker_pool`
+ * server-side; the Java DTO is `@JsonIgnoreProperties(ignoreUnknown = false)` and a
+ * legacy `username` field on the request body now returns 400).
+ *
+ * Optional `bio`, `profilePictureUrl`, `presentationUploadId` extend the on-behalf form
+ * with bio + portrait + presentation upload entry points. The backend patches `User.bio`
+ * and `User.profile_picture_url` via `UserApiClient.patchUserProfile` (Story 11.C.2 AR14).
  */
 export interface SubmitContentRequest {
-  username: string;
   presentationTitle: string;
   presentationAbstract: string;
+  bio?: string;
+  profilePictureUrl?: string;
+  presentationUploadId?: string;
 }
 
 /**

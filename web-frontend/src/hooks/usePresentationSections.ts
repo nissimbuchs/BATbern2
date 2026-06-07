@@ -62,7 +62,8 @@ const BREAK_SESSION_TYPES = new Set(['break', 'lunch']);
 
 export function usePresentationSections(
   event: PresentationEventDetail | null,
-  sessions: PresentationSession[]
+  sessions: PresentationSession[],
+  globalTeaserImages?: TeaserImageItem[]
 ): PresentationSection[] {
   return useMemo(() => {
     if (!event) {
@@ -71,9 +72,11 @@ export function usePresentationSections(
 
     const sections: PresentationSection[] = [];
     const teaserImages = event.teaserImages ?? [];
+    const globalImages = globalTeaserImages ?? [];
 
     // §1 Welcome
     sections.push({ type: 'welcome', key: 'welcome' });
+    insertTeaserImages(sections, globalImages, 'AFTER_WELCOME');
     insertTeaserImages(sections, teaserImages, 'AFTER_WELCOME');
 
     // §2 About
@@ -81,11 +84,13 @@ export function usePresentationSections(
 
     // §3 Committee
     sections.push({ type: 'committee', key: 'committee' });
+    insertTeaserImages(sections, globalImages, 'AFTER_COMMITTEE');
     insertTeaserImages(sections, teaserImages, 'AFTER_COMMITTEE');
 
     // §4 Topic Reveal
     sections.push({ type: 'topic-reveal', key: 'topic-reveal' });
     // §4.5 Teaser Images at AFTER_TOPIC_REVEAL (Story 10.22 AC5; default position)
+    insertTeaserImages(sections, globalImages, 'AFTER_TOPIC_REVEAL');
     insertTeaserImages(sections, teaserImages, 'AFTER_TOPIC_REVEAL');
 
     // §5 Agenda Preview
@@ -153,13 +158,14 @@ export function usePresentationSections(
 
     // Upcoming Events
     sections.push({ type: 'upcoming-events', key: 'upcoming-events' });
+    insertTeaserImages(sections, globalImages, 'AFTER_UPCOMING_EVENTS');
     insertTeaserImages(sections, teaserImages, 'AFTER_UPCOMING_EVENTS');
 
     // Apéro
     sections.push({ type: 'apero', key: 'apero' });
 
     return sections;
-  }, [event, sessions]);
+  }, [event, sessions, globalTeaserImages]);
 }
 
 /**

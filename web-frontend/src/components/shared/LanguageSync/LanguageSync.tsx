@@ -64,6 +64,7 @@ export const LanguageSync: React.FC = () => {
     // state changes (login/logout), never on language changes. Including `i18n` would
     // cause it to re-fetch the OLD backend preference after the user picks a new language
     // (before the PUT completes), reverting the UI choice and causing a flicker.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isLoading]);
 
   // This component doesn't render anything

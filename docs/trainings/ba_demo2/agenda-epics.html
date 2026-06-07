@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Epics &amp; Stories — BATbern Active Partner Meeting Agenda</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 96px 24px 80px; }
+
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 40px; }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 56px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent2);
+    scroll-margin-top: 80px;
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+  h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    color: var(--accent4);
+  }
+
+  p { margin-bottom: 12px; font-size: 0.93rem; }
+  strong { color: white; }
+  em { color: var(--text-muted); }
+
+  ul, ol { margin: 8px 0 16px 24px; }
+  li { margin-bottom: 6px; font-size: 0.9rem; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 0.85rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  pre {
+    background: rgba(0,0,0,.3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 12px 0 20px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .highlight {
+    background: var(--surface2);
+    border-left: 4px solid var(--accent2);
+    padding: 16px 20px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 16px 0;
+    font-size: 0.9rem;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .tag-yellow { background: rgba(255,202,76,.12); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+  .tag-red { background: rgba(175,35,34,.12); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+
+  .check { color: var(--accent2); }
+  .status-pass { color: var(--accent2); font-weight: 700; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Story details */
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+  }
+  summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  summary::before { content: '\25B6'; font-size: 10px; transition: transform .2s; color: var(--text-muted); }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { border-bottom: 1px solid var(--border); }
+  .story-body {
+    padding: 16px 20px;
+    font-size: 0.9rem;
+  }
+  .story-body p { margin-bottom: 10px; }
+  .user-story {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+  .ac-block {
+    background: rgba(0,0,0,.15);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    font-size: 0.87rem;
+  }
+  .ac-block .kw { color: var(--accent2); font-weight: 700; }
+
+  /* Epic header card */
+  .epic-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .epic-header h3 {
+    margin-top: 0;
+    font-size: 1.15rem;
+    color: var(--accent2);
+  }
+  .epic-header p { color: var(--text-muted); margin-bottom: 8px; }
+  .epic-header .tag { margin-top: 8px; }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .stat-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 0.85rem;
+  }
+  .stat-pill strong { color: var(--accent2); }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.5rem; }
+    main { padding: 80px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#overview" class="active">Overview</a>
+  <a href="#inventory">Requirements</a>
+  <a href="#coverage">FR Coverage</a>
+  <a href="#epic-list">Epic List</a>
+  <a href="#epic-8-1">8.1</a>
+  <a href="#epic-8-2">8.2</a>
+  <a href="#epic-8-3">8.3</a>
+  <a href="#epic-8-4">8.4</a>
+  <span class="sep">|</span>
+  <a href="agenda-epics-session.html">Epics Session</a>
+</nav>
+
+<main>
+
+<h1>Epics &amp; Stories<br><span>BATbern Active Partner Meeting Agenda</span></h1>
+<p class="subtitle">Author: Nissim &nbsp;|&nbsp; Date: 2026-04-05 &nbsp;|&nbsp; Status: Complete &nbsp;|&nbsp; Epics: 4 &nbsp;|&nbsp; Stories: 20 &nbsp;|&nbsp; FRs: 35/35</p>
+
+<div class="stats-row">
+  <div class="stat-pill"><strong>4</strong> Epics</div>
+  <div class="stat-pill"><strong>20</strong> Stories</div>
+  <div class="stat-pill"><strong>35</strong> Functional Requirements</div>
+  <div class="stat-pill"><strong>20</strong> Non-Functional Requirements</div>
+  <div class="stat-pill"><strong>100%</strong> FR Coverage</div>
+</div>
+
+<!-- OVERVIEW -->
+<h2 id="overview">Overview</h2>
+<p>This document provides the complete epic and story breakdown for BATbern Active Partner Meeting Agenda, decomposing the requirements from the PRD, UX Design, and Architecture into implementable stories.</p>
+<p><strong>Input Documents:</strong></p>
+<ul>
+  <li><code>docs/trainings/ba_demo2/prd.md</code></li>
+  <li><code>docs/trainings/ba_demo2/architecture.md</code></li>
+  <li><code>docs/trainings/ba_demo2/ux-design-specification.md</code></li>
+</ul>
+
+<!-- REQUIREMENTS INVENTORY -->
+<h2 id="inventory">Requirements Inventory</h2>
+
+<h3>Functional Requirements (35 across 10 groups)</h3>
+
+<h4>FR1: Meeting Management (7)</h4>
+<ul>
+  <li>FR1.1: Create partner meetings with date, time, and location</li>
+  <li>FR1.2: Select which active agenda item types are included (Greeting, Analytics, Audit, Budget, Topics, Hot Topics)</li>
+  <li>FR1.3: Add custom passive agenda items (title + description) for ad-hoc discussion</li>
+  <li>FR1.4: Reorder agenda items via drag-and-drop</li>
+  <li>FR1.5: Send ICS calendar invites to all partners when meeting is saved</li>
+  <li>FR1.6: Maintain meeting status lifecycle: DRAFT &rarr; SCHEDULED &rarr; IN_PROGRESS &rarr; COMPLETED</li>
+  <li>FR1.7: Configure auditor email address; auditor receives ICS invite only when Audit Sign-off item is on agenda</li>
+</ul>
+
+<h4>FR2: RSVP &amp; Attendance (5)</h4>
+<ul>
+  <li>FR2.1: Partners confirm or decline meeting attendance via partner portal</li>
+  <li>FR2.2: Display RSVP dashboard showing confirmed / declined / pending counts</li>
+  <li>FR2.3: Toggle partner presence (present/absent) during meeting via Who Is Who gallery</li>
+  <li>FR2.4: Record stand-in delegates for absent partner companies (free-text name, delegated by which partner)</li>
+  <li>FR2.5: Display "New" badge for first-year partner companies in gallery</li>
+</ul>
+
+<h4>FR3: Presenter Mode (8)</h4>
+<ul>
+  <li>FR3.1: Full-screen Presenter Mode with dark theme optimized for projector (min 1280px width)</li>
+  <li>FR3.2: Agenda sidebar showing all items with status: upcoming, active, completed, skipped</li>
+  <li>FR3.3: Linear navigation via Next/Previous buttons and keyboard shortcuts</li>
+  <li>FR3.4: Jump to any agenda item via sidebar (non-destructive)</li>
+  <li>FR3.5: Persistent note panel at bottom of every agenda item with auto-save</li>
+  <li>FR3.6: Auto-save all organizer actions within 2 seconds of input</li>
+  <li>FR3.7: Auto-save indicator ("Saved") that fades after 2 seconds</li>
+  <li>FR3.8: Keyboard shortcuts: N (focus notes), V (start vote), Esc (exit with confirmation)</li>
+</ul>
+
+<h4>FR4: Document Upload &amp; Viewing (4)</h4>
+<ul>
+  <li>FR4.1: Upload PDF and spreadsheet documents to agenda items</li>
+  <li>FR4.2: Display uploaded documents in embedded viewer within Presenter Mode</li>
+  <li>FR4.3: Permanently attach uploaded documents to meeting record</li>
+  <li>FR4.4: Support documents up to 20MB using existing S3 presigned URL pattern</li>
+</ul>
+
+<h4>FR5: Voting (7)</h4>
+<ul>
+  <li>FR5.1: Start a vote on any votable agenda item (audit sign-off, budget approval)</li>
+  <li>FR5.2: Display vote panel listing all present partners with approve/decline buttons</li>
+  <li>FR5.3: Cast votes on behalf of each present partner (one click per partner)</li>
+  <li>FR5.4: Cast votes on behalf of stand-in delegates with clear attribution</li>
+  <li>FR5.5: Allow vote changes before vote is completed (reversible)</li>
+  <li>FR5.6: Display vote results with visual banner upon completion</li>
+  <li>FR5.7: Record vote results with per-partner attribution in meeting minutes</li>
+</ul>
+
+<h4>FR6: Meeting Minutes (8)</h4>
+<ul>
+  <li>FR6.1: Create PartnerMeetingMinutes entity in DRAFT status when Presenter Mode starts</li>
+  <li>FR6.2: Auto-populate minutes attendance section from Who Is Who presence data</li>
+  <li>FR6.3: Auto-populate minutes with vote results, uploaded documents, analytics snapshots, and organizer notes</li>
+  <li>FR6.4: Allow organizers to review and edit auto-assembled minutes after meeting ends</li>
+  <li>FR6.5: Allow organizers to add, edit, and remove action items during minutes review</li>
+  <li>FR6.6: Allow organizers to publish minutes (DRAFT &rarr; PUBLISHED)</li>
+  <li>FR6.7: Send email notifications with portal link to all partners upon minutes publication</li>
+  <li>FR6.8: Display published minutes in mobile-friendly format in partner portal</li>
+</ul>
+
+<h4>FR7: Meeting Prep (3)</h4>
+<ul>
+  <li>FR7.1: Display Meeting Prep Checklist showing readiness status per enabled agenda item</li>
+  <li>FR7.2: Display each checklist item with green/yellow/red status and actionable link</li>
+  <li>FR7.3: Soft-block "Start Presenter Mode" when critical items are missing</li>
+</ul>
+
+<h4>FR8: Post-Meeting Workflows (6)</h4>
+<ul>
+  <li>FR8.1: Trigger async fee acceptance requests to all partners after budget approval vote with fee decision</li>
+  <li>FR8.2: Allow partners to accept or decline new fee via partner portal with optional comment</li>
+  <li>FR8.3: Display fee acceptance tracker for organizers (accepted / pending / declined per partner)</li>
+  <li>FR8.4: Send fee acceptance reminders at 7 and 14 days for non-responsive partners, then notify organizer</li>
+  <li>FR8.5: Send feedback pulse survey (3 questions) to all partners 24 hours after minutes publication</li>
+  <li>FR8.6: Aggregate feedback pulse results and display to organizers with historical trends</li>
+</ul>
+
+<h4>FR9: Action Items (5)</h4>
+<ul>
+  <li>FR9.1: Create action items at any agenda item with title, description, assigned owner, optional deadline</li>
+  <li>FR9.2: Include action items as distinct section in meeting minutes</li>
+  <li>FR9.3: Surface open action items from previous meetings when creating a new meeting</li>
+  <li>FR9.4: Mark action items as done, extend deadline, or carry forward during review</li>
+  <li>FR9.5: Display urgency indicator on action items carried forward from 2+ meetings</li>
+</ul>
+
+<h4>FR10: Analytics Snapshot (3)</h4>
+<ul>
+  <li>FR10.1: Embed existing analytics dashboard within Analytics Review agenda item in Presenter Mode</li>
+  <li>FR10.2: Capture snapshot of current analytics data as immutable record attached to minutes</li>
+  <li>FR10.3: Store analytics snapshots as part of meeting record for year-over-year browsing</li>
+</ul>
+
+<h3>Non-Functional Requirements (20)</h3>
+<table>
+  <tr><th>#</th><th>Category</th><th>Requirement</th></tr>
+  <tr><td>NFR1</td><td>Performance</td><td>Presenter Mode initial load &lt; 3 seconds</td></tr>
+  <tr><td>NFR2</td><td>Performance</td><td>Agenda item transition &lt; 300ms</td></tr>
+  <tr><td>NFR3</td><td>Performance</td><td>Auto-save latency &lt; 2 seconds from last input</td></tr>
+  <tr><td>NFR4</td><td>Performance</td><td>Document viewer render &lt; 5 seconds for 20MB PDFs</td></tr>
+  <tr><td>NFR5</td><td>Performance</td><td>Vote result display &lt; 500ms after completing</td></tr>
+  <tr><td>NFR6</td><td>Performance</td><td>Minutes page load &lt; 2 seconds on 4G mobile</td></tr>
+  <tr><td>NFR7</td><td>Security</td><td>Existing AWS Cognito authentication; organizer role required</td></tr>
+  <tr><td>NFR8</td><td>Security</td><td>Partners can only view published minutes for meetings they were invited to</td></tr>
+  <tr><td>NFR9</td><td>Security</td><td>Document storage via S3 with presigned URLs; not publicly accessible</td></tr>
+  <tr><td>NFR10</td><td>Security</td><td>Vote records immutable once completed; audit trail preserved</td></tr>
+  <tr><td>NFR11</td><td>Reliability</td><td>Auto-save every action; no data loss on browser crash</td></tr>
+  <tr><td>NFR12</td><td>Reliability</td><td>Graceful Presenter Mode exit with draft saved; resume capability</td></tr>
+  <tr><td>NFR13</td><td>Reliability</td><td>Single organizer per meeting (no multi-user editing)</td></tr>
+  <tr><td>NFR14</td><td>Accessibility</td><td>WCAG 2.1 AAA contrast (7:1+) on dark backgrounds for Presenter Mode</td></tr>
+  <tr><td>NFR15</td><td>Accessibility</td><td>WCAG 2.1 AA (4.5:1 contrast); 44x44px touch targets for partner portal</td></tr>
+  <tr><td>NFR16</td><td>Accessibility</td><td>No color-only information &mdash; badges, votes, status use color + text + icon</td></tr>
+  <tr><td>NFR17</td><td>Accessibility</td><td>Screen reader support &mdash; aria-live on vote results and auto-save</td></tr>
+  <tr><td>NFR18</td><td>Scalability</td><td>Support up to 30 partners per meeting</td></tr>
+  <tr><td>NFR19</td><td>Scalability</td><td>Unlimited meeting records with browsable archive</td></tr>
+  <tr><td>NFR20</td><td>Scalability</td><td>No offline support needed</td></tr>
+</table>
+
+<h3>Additional Requirements</h3>
+
+<h4>From Architecture (11 items)</h4>
+<ul>
+  <li>Brownfield extension of Partner Coordination Service &mdash; no new microservice</li>
+  <li>11 new entities following ADR-003 (meaningful IDs), ADR-004 (no user field duplication), ADR-006 (OpenAPI contract-first)</li>
+  <li>meetingCode as meaningful identifier (pattern: <code>PM-{YYYY}-{Spring|Autumn}</code>)</li>
+  <li>All new database tables prefixed with <code>partner_meeting_*</code></li>
+  <li>Minutes content stored as JSONB &mdash; structured sections for auto-assembly</li>
+  <li>Query-based minutes assembly (not event-sourced)</li>
+  <li>Dedicated PresenterLayout component (not modal/overlay)</li>
+  <li>Zustand store for presenter navigation state</li>
+  <li>useAutoSave hook with debounced TanStack Query mutation</li>
+  <li>Spring @Scheduled for fee reminders and feedback pulse triggers</li>
+  <li>No starter template &mdash; extends existing codebase directly</li>
+</ul>
+
+<h4>From UX Design (10 items)</h4>
+<ul>
+  <li>Projector-optimized dark theme: zinc-950 background, blue-400 accents, 56px H1 / 24px body</li>
+  <li>Three-zone fixed layout: 280px sidebar + fluid main + 180px bottom notes</li>
+  <li>Partner accent color: orange-400 for names and role badges</li>
+  <li>Present/Approved: green-400 | Absent/Declined: red-400 | New partner: purple-400</li>
+  <li>Extend existing BATbern design system (MUI + Tailwind)</li>
+  <li>New presenterTheme variant for dark/large typography</li>
+  <li>8 new reusable components (AgendaSidebar, VotePanel, DocumentViewer, NotePanel, PartnerGallery, MeetingPrepChecklist, ActionItemCard, MinutesPreview)</li>
+  <li>Animated vote result reveal for delight moment</li>
+  <li>All interactions must feel like "walking through a presentation" &mdash; linear, predictable, no page loads</li>
+</ul>
+
+<!-- FR COVERAGE MAP -->
+<h2 id="coverage">FR Coverage Map</h2>
+
+<table>
+  <tr><th>FR</th><th>Epic</th><th>Description</th></tr>
+  <tr><td>FR1.1&ndash;FR1.7</td><td>8.1</td><td>Meeting CRUD, agenda config, ICS invites, status lifecycle</td></tr>
+  <tr><td>FR2.1&ndash;FR2.2</td><td>8.1</td><td>RSVP portal + dashboard</td></tr>
+  <tr><td>FR2.3&ndash;FR2.5</td><td>8.2</td><td>Live attendance toggle, stand-ins, "New" badge</td></tr>
+  <tr><td>FR3.1&ndash;FR3.8</td><td>8.2</td><td>Presenter Mode layout, navigation, auto-save</td></tr>
+  <tr><td>FR4.1&ndash;FR4.4</td><td>8.2</td><td>Document upload &amp; embedded viewer</td></tr>
+  <tr><td>FR5.1&ndash;FR5.7</td><td>8.2</td><td>Voting with proxied attribution</td></tr>
+  <tr><td>FR6.1&ndash;FR6.8</td><td>8.3</td><td>Minutes auto-assembly, review, publish, distribution</td></tr>
+  <tr><td>FR7.1&ndash;FR7.3</td><td>8.1</td><td>Meeting prep checklist</td></tr>
+  <tr><td>FR8.1&ndash;FR8.6</td><td>8.4</td><td>Fee acceptance, feedback pulse, tracking</td></tr>
+  <tr><td>FR9.1</td><td>8.2</td><td>Create action items during meeting</td></tr>
+  <tr><td>FR9.2, FR9.4, FR9.5</td><td>8.3</td><td>Action items in minutes, review/update, urgency</td></tr>
+  <tr><td>FR9.3, FR9.5</td><td>8.1</td><td>Surface carried-forward items in prep dashboard</td></tr>
+  <tr><td>FR10.1&ndash;FR10.3</td><td>8.2</td><td>Analytics embedding + snapshot capture</td></tr>
+</table>
+
+<!-- EPIC LIST -->
+<h2 id="epic-list">Epic List</h2>
+
+<div class="card">
+  <h3 style="color:var(--accent2);margin-top:0">Epic 8.1: Meeting Creation &amp; Agenda Configuration</h3>
+  <p>Organizers can create partner meetings with a configurable agenda, send invitations, track RSVPs, and see a prep dashboard with carried-forward action items &mdash; the complete pre-meeting workflow.</p>
+  <p><span class="tag tag-green">5 STORIES</span> <span class="tag tag-purple">FR1, FR2.1-2.2, FR7, FR9.3, FR9.5</span></p>
+</div>
+
+<div class="card">
+  <h3 style="color:var(--accent2);margin-top:0">Epic 8.2: Presenter Mode &amp; Live Meeting</h3>
+  <p>Organizers run the meeting in a projector-optimized presenter mode: attendance, documents, analytics, voting, notes, and action item creation &mdash; all in one linear flow.</p>
+  <p><span class="tag tag-green">8 STORIES</span> <span class="tag tag-purple">FR2.3-2.5, FR3, FR4, FR5, FR9.1, FR10</span></p>
+</div>
+
+<div class="card">
+  <h3 style="color:var(--accent2);margin-top:0">Epic 8.3: Meeting Minutes &amp; Publication</h3>
+  <p>Auto-assembled minutes with review, editing, action item management, and publication to all partners. The meeting documents itself.</p>
+  <p><span class="tag tag-green">4 STORIES</span> <span class="tag tag-purple">FR6, FR9.2, FR9.4, FR9.5</span></p>
+</div>
+
+<div class="card">
+  <h3 style="color:var(--accent2);margin-top:0">Epic 8.4: Post-Meeting Workflows &amp; Partner Engagement</h3>
+  <p>Fee acceptance, feedback surveys, automated reminders, and organizer tracking dashboards. The meeting extends beyond the room.</p>
+  <p><span class="tag tag-green">3 STORIES</span> <span class="tag tag-purple">FR8</span></p>
+</div>
+
+<hr>
+
+<!-- EPIC 8.1 STORIES -->
+<h2 id="epic-8-1">Epic 8.1: Meeting Creation &amp; Agenda Configuration</h2>
+<p>Organizers can create partner meetings with a configurable agenda, send invitations, track RSVPs, and see a prep dashboard with carried-forward action items &mdash; the complete pre-meeting workflow.</p>
+<p><strong>FRs covered:</strong> FR1.1&ndash;FR1.7, FR2.1, FR2.2, FR7.1&ndash;FR7.3, FR9.3, FR9.5</p>
+
+<details>
+  <summary>Story 8.1.1: Create Partner Meeting with Basic Details</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> create a new partner meeting with date, time, and location,<br>
+      <strong>So that</strong> I can begin configuring the next bi-annual partner meeting.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am logged in as an organizer on the meetings page<br>
+      <span class="kw">When</span> I click "Create New Meeting" and fill in date, time, and location<br>
+      <span class="kw">Then</span> a new PartnerMeeting entity is created in DRAFT status with a generated meetingCode (<code>PM-{YYYY}-{Spring|Autumn}</code>)<br>
+      <span class="kw">And</span> I am redirected to the meeting detail/prep page</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a meeting already exists with the same meetingCode pattern for that period<br>
+      <span class="kw">When</span> I try to create another meeting for the same period<br>
+      <span class="kw">Then</span> the system prevents duplicate meeting codes and shows an appropriate error</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.1.2: Agenda Builder with Active &amp; Passive Items</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> select which active agenda item types to include and add custom passive items,<br>
+      <strong>So that</strong> I can tailor the meeting agenda to what's relevant this time.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on the meeting detail page for a DRAFT meeting<br>
+      <span class="kw">When</span> I toggle active agenda item types (Greeting, Analytics, Audit, Budget, Topics, Hot Topics)<br>
+      <span class="kw">Then</span> only selected types appear in the agenda list<br>
+      <span class="kw">And</span> unselected types are excluded from the meeting</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the agenda has items<br>
+      <span class="kw">When</span> I drag items to reorder them<br>
+      <span class="kw">Then</span> the sort order updates and persists</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I want an ad-hoc discussion topic<br>
+      <span class="kw">When</span> I click "Add Custom Item" and enter a title and description<br>
+      <span class="kw">Then</span> a passive agenda item is added to the list</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.1.3: Auditor Email Configuration &amp; ICS Invites</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> configure the auditor's email and send ICS invites to all partners when the meeting is scheduled,<br>
+      <strong>So that</strong> everyone has the meeting on their calendar and the auditor is invited only when relevant.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the Audit Sign-off agenda item is enabled<br>
+      <span class="kw">When</span> I enter an auditor email address<br>
+      <span class="kw">Then</span> the auditor email is saved to the meeting</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the meeting is in DRAFT status with a complete agenda<br>
+      <span class="kw">When</span> I click "Schedule Meeting" (transition DRAFT &rarr; SCHEDULED)<br>
+      <span class="kw">Then</span> ICS calendar invites are sent to all active partners<br>
+      <span class="kw">And</span> if audit item is enabled and auditor email is set, the auditor receives an ICS invite<br>
+      <span class="kw">And</span> the meeting status changes to SCHEDULED</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the audit item is NOT on the agenda<br>
+      <span class="kw">When</span> the meeting is scheduled<br>
+      <span class="kw">Then</span> no invite is sent to the auditor email</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.1.4: Partner RSVP &amp; Dashboard</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As a</strong> partner,<br>
+      <strong>I want to</strong> confirm or decline my attendance via the portal,<br>
+      <strong>So that</strong> the organizer knows who to expect.
+    </div>
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> see an RSVP dashboard with confirmed/declined/pending counts,<br>
+      <strong>So that</strong> I can follow up with non-responders.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am a partner and a meeting is SCHEDULED<br>
+      <span class="kw">When</span> I visit the partner portal<br>
+      <span class="kw">Then</span> I see the meeting with options to confirm or decline attendance</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a partner confirms or declines<br>
+      <span class="kw">When</span> the organizer views the meeting detail page<br>
+      <span class="kw">Then</span> the RSVP dashboard shows updated counts (confirmed / declined / pending)</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.1.5: Meeting Prep Checklist &amp; Action Item Carry-Forward</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> see a readiness checklist based on my enabled agenda items and any open action items from previous meetings,<br>
+      <strong>So that</strong> I know exactly what's ready and what still needs attention before starting the meeting.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on the meeting detail page for a SCHEDULED meeting<br>
+      <span class="kw">When</span> I view the prep checklist<br>
+      <span class="kw">Then</span> I see a green/yellow/red status for each enabled item:</p>
+      <ul>
+        <li>Audit PDF uploaded? (if audit item enabled)</li>
+        <li>Budget document uploaded? (if budget item enabled)</li>
+        <li>RSVP count</li>
+        <li>Topic voting status (if topics item enabled)</li>
+        <li>Open action items from previous meetings</li>
+      </ul>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> critical items are missing (e.g., audit PDF not uploaded when audit item is enabled)<br>
+      <span class="kw">When</span> I click "Start Presenter Mode"<br>
+      <span class="kw">Then</span> the system shows a warning and soft-blocks entry (can override with confirmation)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> open action items exist from a previous COMPLETED meeting<br>
+      <span class="kw">When</span> a new meeting is created<br>
+      <span class="kw">Then</span> those items are surfaced in the prep dashboard with urgency indicators (2+ carry-forwards highlighted)</p>
+    </div>
+  </div>
+</details>
+
+<hr>
+
+<!-- EPIC 8.2 STORIES -->
+<h2 id="epic-8-2">Epic 8.2: Presenter Mode &amp; Live Meeting</h2>
+<p>Organizers run the meeting in a projector-optimized presenter mode: attendance, documents, analytics, voting, notes, and action item creation &mdash; all in one linear flow. Everything that happens in the room, captured as it happens.</p>
+<p><strong>FRs covered:</strong> FR2.3&ndash;FR2.5, FR3.1&ndash;FR3.8, FR4.1&ndash;FR4.4, FR5.1&ndash;FR5.7, FR9.1, FR10.1&ndash;FR10.3</p>
+
+<details>
+  <summary>Story 8.2.1: Presenter Mode Layout &amp; Navigation Shell</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> enter a full-screen presenter mode with a dark theme, agenda sidebar, and linear navigation,<br>
+      <strong>So that</strong> I can project and drive the meeting from my laptop.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on a SCHEDULED meeting's detail page<br>
+      <span class="kw">When</span> I click "Start Presenter Mode"<br>
+      <span class="kw">Then</span> the screen transitions to the PresenterLayout: zinc-950 dark theme, 280px agenda sidebar on the left, fluid main area, 180px note panel at the bottom<br>
+      <span class="kw">And</span> the meeting status transitions to IN_PROGRESS<br>
+      <span class="kw">And</span> presenterSessionStartedBy is set to my username</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am in Presenter Mode<br>
+      <span class="kw">When</span> I click Next/Previous or use arrow keyboard shortcuts<br>
+      <span class="kw">Then</span> the active agenda item advances/retreats and the sidebar updates (upcoming/active/completed states)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am in Presenter Mode<br>
+      <span class="kw">When</span> I press a number key (1-9)<br>
+      <span class="kw">Then</span> the corresponding agenda item activates (non-destructive sidebar jump)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am in Presenter Mode<br>
+      <span class="kw">When</span> I press Esc<br>
+      <span class="kw">Then</span> a confirmation dialog appears: "Exit Presenter Mode? Your progress is saved."<br>
+      <span class="kw">And</span> if confirmed, I return to meeting detail (meeting stays IN_PROGRESS for re-entry)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the meeting is already IN_PROGRESS with presenterSessionStartedBy set<br>
+      <span class="kw">When</span> another organizer tries to start Presenter Mode<br>
+      <span class="kw">Then</span> they see "Meeting is being presented by [name]"</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.2.2: Who Is Who &mdash; Attendance &amp; Stand-In Tracking</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> toggle partner presence, record stand-in delegates, and see "New" badges during the Greeting agenda item,<br>
+      <strong>So that</strong> attendance is captured accurately with zero ceremony.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the Greeting/Attendance agenda item is active in Presenter Mode<br>
+      <span class="kw">When</span> I see the partner gallery grid<br>
+      <span class="kw">Then</span> each partner company shows: logo, delegate name, photo (enriched via Company/User service)<br>
+      <span class="kw">And</span> pre-meeting RSVP status is reflected as initial state</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the gallery is displayed<br>
+      <span class="kw">When</span> I click a partner card<br>
+      <span class="kw">Then</span> their presence toggles (present/absent) with a green "Present" badge or dimmed state<br>
+      <span class="kw">And</span> the change auto-saves within 2 seconds</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a partner company sent a delegate instead<br>
+      <span class="kw">When</span> I click "Add Stand-in" on that company's card and enter a free-text name<br>
+      <span class="kw">Then</span> the card shows "Represented by [name]" with a stand-in badge<br>
+      <span class="kw">And</span> the delegating partner's name is recorded</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a partner company is in their first year<br>
+      <span class="kw">When</span> the gallery renders<br>
+      <span class="kw">Then</span> a purple "New" badge appears on their card</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.2.3: Per-Item Note Taking with Auto-Save</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want</strong> a persistent note panel at the bottom of every agenda item that auto-saves,<br>
+      <strong>So that</strong> I can capture discussion points without worrying about losing them.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on any agenda item in Presenter Mode<br>
+      <span class="kw">When</span> I type in the note panel<br>
+      <span class="kw">Then</span> the content auto-saves within 2 seconds of the last keystroke (debounced PATCH)<br>
+      <span class="kw">And</span> a "Saved" indicator appears and fades after 2 seconds</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I press N on the keyboard<br>
+      <span class="kw">When</span> I am in Presenter Mode<br>
+      <span class="kw">Then</span> the note panel text area receives focus</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I navigate to a different agenda item and back<br>
+      <span class="kw">When</span> I return to an item<br>
+      <span class="kw">Then</span> my previous notes are preserved</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the browser crashes during the meeting<br>
+      <span class="kw">When</span> I re-enter Presenter Mode<br>
+      <span class="kw">Then</span> all previously auto-saved notes are intact</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.2.4: Document Upload &amp; Embedded Viewer</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> upload PDFs and spreadsheets to agenda items and view them inline during the meeting,<br>
+      <strong>So that</strong> audit reports and budget documents are presented and permanently attached to the record.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on the meeting detail page (pre-meeting or during)<br>
+      <span class="kw">When</span> I upload a PDF or spreadsheet (up to 20MB) to an agenda item<br>
+      <span class="kw">Then</span> the file is uploaded via S3 presigned URL and attached to the agenda item permanently</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a document is attached to the active agenda item in Presenter Mode<br>
+      <span class="kw">When</span> the item renders<br>
+      <span class="kw">Then</span> the document displays in an embedded viewer (browser-native PDF rendering)<br>
+      <span class="kw">And</span> the viewer has dark chrome matching the presenter theme</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the embedded viewer fails to render<br>
+      <span class="kw">When</span> the fallback activates<br>
+      <span class="kw">Then</span> a download link is shown instead</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.2.5: Proxied Voting with Attribution</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> conduct approve/decline votes on behalf of each present partner during audit and budget items,<br>
+      <strong>So that</strong> formal decisions are recorded with per-partner attribution and a traceable governance trail.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on a votable agenda item (Audit Sign-off or Budget Approval) in Presenter Mode<br>
+      <span class="kw">When</span> I press V or click "Start Vote"<br>
+      <span class="kw">Then</span> a vote panel appears listing all present partners with approve/decline buttons</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the vote panel is open<br>
+      <span class="kw">When</span> I click approve or decline for a partner<br>
+      <span class="kw">Then</span> their vote is recorded with attribution: companyName, decision, voterType (PARTNER)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a stand-in is attending for a company<br>
+      <span class="kw">When</span> I cast their vote<br>
+      <span class="kw">Then</span> the record shows: companyName, decision, voterType (STAND_IN), standInName, delegatedBy</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the vote is still in progress<br>
+      <span class="kw">When</span> I change a partner's vote<br>
+      <span class="kw">Then</span> the vote updates (reversible before completion)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> all present partners have voted<br>
+      <span class="kw">When</span> I click "Complete Vote"<br>
+      <span class="kw">Then</span> a result banner animates: "{Document Title} &mdash; Approved (8/8)" or "Declined (3/8)"<br>
+      <span class="kw">And</span> vote records become immutable<br>
+      <span class="kw">And</span> the result auto-saves to the meeting record</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.2.6: Analytics Snapshot Capture</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> view the existing analytics dashboard during the Analytics Review item and capture an immutable snapshot,<br>
+      <strong>So that</strong> what was presented is historized as part of the meeting record.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the Analytics Review agenda item is active in Presenter Mode<br>
+      <span class="kw">When</span> the item renders<br>
+      <span class="kw">Then</span> the existing analytics dashboard embeds in the main area</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the analytics dashboard is visible<br>
+      <span class="kw">When</span> I click "Capture Snapshot"<br>
+      <span class="kw">Then</span> the current analytics data is frozen as an immutable JSONB record attached to this meeting<br>
+      <span class="kw">And</span> a confirmation message appears: "Analytics snapshot captured"</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.2.7: Action Item Creation During Meeting</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> create action items at any agenda point with an assigned owner and deadline,<br>
+      <strong>So that</strong> decisions and follow-ups are captured in context as they arise.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on any agenda item in Presenter Mode<br>
+      <span class="kw">When</span> I click "Add Action Item" (or use a quick-add button)<br>
+      <span class="kw">Then</span> a form appears with: title, description (optional), assigned owner (dropdown of partners + organizer usernames), optional deadline</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I fill in the action item form and submit<br>
+      <span class="kw">When</span> the item is saved<br>
+      <span class="kw">Then</span> it is linked to the current meeting and agenda item<br>
+      <span class="kw">And</span> it appears in the action items list for this meeting</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.2.8: End Meeting &amp; Transition to Minutes</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> end the meeting from Presenter Mode and transition to the minutes review,<br>
+      <strong>So that</strong> the live phase concludes cleanly and I can review what was captured.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on the last agenda item in Presenter Mode<br>
+      <span class="kw">When</span> I click "End Meeting"<br>
+      <span class="kw">Then</span> a confirmation dialog appears: "End meeting and proceed to minutes review?"</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I confirm ending the meeting<br>
+      <span class="kw">When</span> the transition executes<br>
+      <span class="kw">Then</span> the meeting status changes to COMPLETED<br>
+      <span class="kw">And</span> presenterSession fields are cleared<br>
+      <span class="kw">And</span> I am navigated to the Minutes Review page</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I skipped some agenda items during the meeting<br>
+      <span class="kw">When</span> the meeting ends<br>
+      <span class="kw">Then</span> skipped items are marked as "Skipped" in the meeting record</p>
+    </div>
+  </div>
+</details>
+
+<hr>
+
+<!-- EPIC 8.3 STORIES -->
+<h2 id="epic-8-3">Epic 8.3: Meeting Minutes &amp; Publication</h2>
+<p>Auto-assembled minutes with review, editing, action item management, and publication to all partners. The meeting documents itself &mdash; organizer reviews, publishes, everyone gets the record.</p>
+<p><strong>FRs covered:</strong> FR6.1&ndash;FR6.8, FR9.2, FR9.4, FR9.5</p>
+
+<details>
+  <summary>Story 8.3.1: Minutes Auto-Assembly from Meeting Data</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want</strong> the system to auto-assemble meeting minutes from all the data captured during the meeting,<br>
+      <strong>So that</strong> I see a near-complete document without manually compiling anything.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the meeting status is COMPLETED and I navigate to the Minutes Review page<br>
+      <span class="kw">When</span> the page loads<br>
+      <span class="kw">Then</span> the system assembles minutes by querying all meeting entities into a structured JSONB document containing:</p>
+      <ul>
+        <li>Attendance section (present, absent, stand-ins &mdash; from MeetingAttendance)</li>
+        <li>A section per agenda item (sorted by sortOrder) with item-specific content:
+          <ul>
+            <li>Vote results and per-partner records (for votable items)</li>
+            <li>Uploaded documents as attachments</li>
+            <li>Analytics snapshot data (for analytics item)</li>
+            <li>Organizer notes</li>
+            <li>Custom/passive agenda items with their title, description, and organizer notes</li>
+          </ul>
+        </li>
+        <li>Action items section (all items created during the meeting)</li>
+      </ul>
+      <p><span class="kw">And</span> a MeetingMinutes entity is created in DRAFT status</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the meeting had custom passive agenda items (e.g., "Venue proposal for 2027")<br>
+      <span class="kw">When</span> the minutes are assembled<br>
+      <span class="kw">Then</span> each custom item appears as its own section with the item title as the heading and the organizer's notes as the content</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> the minutes have been assembled<br>
+      <span class="kw">When</span> I view the document<br>
+      <span class="kw">Then</span> it renders as a clean, structured document with section headers per agenda item</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.3.2: Minutes Review, Editing &amp; Action Item Management</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> review and edit the auto-assembled minutes and manage action items before publishing,<br>
+      <strong>So that</strong> I can add clarifications, fix typos, and ensure action items are complete.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on the Minutes Review page with DRAFT minutes<br>
+      <span class="kw">When</span> I click on any section<br>
+      <span class="kw">Then</span> I can edit the text content (notes, additional context)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am reviewing minutes<br>
+      <span class="kw">When</span> I view the action items section<br>
+      <span class="kw">Then</span> I see all action items from this meeting with title, owner, deadline, status<br>
+      <span class="kw">And</span> I can add new action items I forgot during the meeting<br>
+      <span class="kw">And</span> I can edit or remove existing action items</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> action items were carried forward from previous meetings<br>
+      <span class="kw">When</span> they appear in the action items section<br>
+      <span class="kw">Then</span> each shows its carry-forward count and urgency indicator (highlighted if 2+ carry-overs)<br>
+      <span class="kw">And</span> I can mark them as done, extend deadline, or carry forward</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I make edits to the minutes<br>
+      <span class="kw">When</span> I save<br>
+      <span class="kw">Then</span> the JSONB content updates and persists in DRAFT status</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.3.3: Publish Minutes &amp; Distribute to Partners</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> publish the minutes and send them to all partners,<br>
+      <strong>So that</strong> everyone (present and absent) has the complete meeting record.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am on the Minutes Review page with finalized DRAFT minutes<br>
+      <span class="kw">When</span> I click "Publish &amp; Send"<br>
+      <span class="kw">Then</span> a confirmation dialog appears: "Send minutes to all [N] partners?"</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I confirm publication<br>
+      <span class="kw">When</span> the publish executes<br>
+      <span class="kw">Then</span> the minutes status changes from DRAFT to PUBLISHED (immutable after this)<br>
+      <span class="kw">And</span> an email notification with a portal link is sent to all invited partners (present + absent)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> minutes are PUBLISHED<br>
+      <span class="kw">When</span> I try to edit them<br>
+      <span class="kw">Then</span> editing is disabled &mdash; published minutes are the permanent record</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.3.4: Partner Minutes Viewing (Mobile-Friendly)</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As a</strong> partner,<br>
+      <strong>I want to</strong> view published meeting minutes in a mobile-friendly format in the partner portal,<br>
+      <strong>So that</strong> I can review everything that was discussed and decided, even from my phone.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am a partner who was invited to a meeting<br>
+      <span class="kw">When</span> I click the portal link from the minutes notification email<br>
+      <span class="kw">Then</span> I see the published minutes with collapsible sections per agenda item</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am viewing minutes on a mobile device (iPhone Safari, Android Chrome)<br>
+      <span class="kw">When</span> the page renders<br>
+      <span class="kw">Then</span> the layout is responsive with readable text, touch-friendly collapsible sections, and downloadable document attachments</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am a partner who was NOT invited to this meeting<br>
+      <span class="kw">When</span> I try to access the minutes<br>
+      <span class="kw">Then</span> I receive a 403 &mdash; access denied</p>
+    </div>
+  </div>
+</details>
+
+<hr>
+
+<!-- EPIC 8.4 STORIES -->
+<h2 id="epic-8-4">Epic 8.4: Post-Meeting Workflows &amp; Partner Engagement</h2>
+<p>Fee acceptance, feedback surveys, automated reminders, and organizer tracking dashboards. The meeting extends beyond the room &mdash; absent partners participate, fees get confirmed, feedback improves future meetings.</p>
+<p><strong>FRs covered:</strong> FR8.1&ndash;FR8.6</p>
+
+<details>
+  <summary>Story 8.4.1: Async Fee Acceptance for Partners</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As a</strong> partner,<br>
+      <strong>I want to</strong> review and accept or decline the new annual fee via the portal,<br>
+      <strong>So that</strong> I can participate in the fee decision even if I wasn't in the room.
+    </div>
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want</strong> fee acceptance requests to be triggered automatically after a budget vote with a fee decision,<br>
+      <strong>So that</strong> I don't have to manually chase each partner.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a budget approval vote was completed that includes a fee decision<br>
+      <span class="kw">When</span> the meeting minutes are published<br>
+      <span class="kw">Then</span> the system creates a FeeAcceptance record (PENDING) for every invited partner with the fee amount</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am a partner with a pending fee acceptance<br>
+      <span class="kw">When</span> I visit the portal or click the email link<br>
+      <span class="kw">Then</span> I see the fee acceptance widget showing: new fee amount, change from previous fee, and accept/decline buttons with an optional comment field</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I click "Accept" or "Decline"<br>
+      <span class="kw">When</span> the response is submitted<br>
+      <span class="kw">Then</span> my status updates (ACCEPTED or DECLINED with timestamp and optional comment)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> no budget approval vote occurred in this meeting<br>
+      <span class="kw">When</span> minutes are published<br>
+      <span class="kw">Then</span> no fee acceptance requests are triggered</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.4.2: Fee Acceptance Tracking &amp; Reminders</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> see who has responded to the fee acceptance and have the system send automatic reminders,<br>
+      <strong>So that</strong> I can ensure 100% partner response without manual follow-up.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> fee acceptance requests were sent<br>
+      <span class="kw">When</span> I view the meeting detail or a fee acceptance tracker page<br>
+      <span class="kw">Then</span> I see per-partner status: accepted / pending / declined, with timestamps and any comments</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a partner has not responded after 7 days<br>
+      <span class="kw">When</span> the daily scheduled task runs<br>
+      <span class="kw">Then</span> a reminder email is sent to that partner</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a partner has not responded after 14 days<br>
+      <span class="kw">When</span> the daily scheduled task runs<br>
+      <span class="kw">Then</span> a second reminder email is sent to the partner<br>
+      <span class="kw">And</span> the organizer is notified that this partner has not responded</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> a partner declines the fee<br>
+      <span class="kw">When</span> the organizer views the tracker<br>
+      <span class="kw">Then</span> the declined status is visible with the partner's comment</p>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Story 8.4.3: Feedback Pulse Survey &amp; Results</summary>
+  <div class="story-body">
+    <div class="user-story">
+      <strong>As a</strong> partner,<br>
+      <strong>I want to</strong> receive a short post-meeting survey and share my feedback,<br>
+      <strong>So that</strong> future meetings improve based on participant input.
+    </div>
+    <div class="user-story">
+      <strong>As an</strong> organizer,<br>
+      <strong>I want to</strong> see aggregated feedback with historical trends,<br>
+      <strong>So that</strong> I can measure whether meetings are getting better.
+    </div>
+    <h4>Acceptance Criteria</h4>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> meeting minutes were published<br>
+      <span class="kw">When</span> 24 hours have passed<br>
+      <span class="kw">Then</span> the daily scheduled task sends a feedback pulse email to all invited partners with a portal link</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I am a partner and click the feedback link<br>
+      <span class="kw">When</span> the form loads<br>
+      <span class="kw">Then</span> I see 3 questions: "Was the meeting productive? (1-5)" / "Topics we should have discussed?" (free text) / "Suggestions for next meeting?" (free text)</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> I submit the feedback<br>
+      <span class="kw">When</span> the response is saved<br>
+      <span class="kw">Then</span> my FeedbackPulse record is stored with my responses and submission timestamp</p>
+    </div>
+    <div class="ac-block">
+      <p><span class="kw">Given</span> feedback responses have been collected<br>
+      <span class="kw">When</span> the organizer views the feedback results page<br>
+      <span class="kw">Then</span> they see aggregated scores (average productivity rating) and individual text responses<br>
+      <span class="kw">And</span> historical trends across previous meetings (if prior feedback data exists)</p>
+    </div>
+  </div>
+</details>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

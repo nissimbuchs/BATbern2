@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organizzatore",
+      "speaker": "Relatore",
+      "partner": "Partner",
+      "attendee": "Partecipante"
+    }
   },
   "public": {
     "login": "Accedi",
@@ -74,13 +80,13 @@
     "close": "Chiudi",
     "sending": "Invio...",
     "loading": "Caricamento...",
-    "retry": "Retry",
-    "back": "Back",
-    "confirm": "Confirm",
-    "clearFilters": "Clear filters",
-    "previous": "Previous",
-    "next": "Next",
-    "deleting": "Deleting..."
+    "retry": "Riprova",
+    "back": "Indietro",
+    "confirm": "Conferma",
+    "clearFilters": "Cancella filtri",
+    "previous": "Precedente",
+    "next": "Avanti",
+    "deleting": "Eliminazione in corso..."
   },
   "language": {
     "select": "Seleziona lingua",
@@ -493,7 +499,7 @@
       "emailReadOnly": "Email (sola lettura)",
       "bio": "Biografia",
       "bioPlaceholder": "Raccontaci di te...",
-      "bioExceeds": "La biografia non deve superare 500 caratteri",
+      "bioExceeds": "La biografia non deve superare 5000 caratteri",
       "maxExpertiseAreas": "Massimo 10 aree di competenza consentite",
       "maxSpeakingTopics": "Massimo 10 argomenti di presentazione consentiti",
       "socialLinks": "Link social",
@@ -509,12 +515,12 @@
       "saveFailed": "Salvataggio profilo non riuscito"
     },
     "photo": {
-      "invalidFileType": "Tipo file non valido. Formati accettati: JPEG, PNG, WebP",
+      "invalidFileType": "Tipo file non valido. Formati accettati: JPEG, PNG, SVG",
       "fileTooLarge": "Il file deve essere inferiore a 5 MB",
       "changePhoto": "Cambia foto",
       "dragDropHere": "Trascina qui una foto",
       "orClickBrowse": "o clicca per sfogliare",
-      "supportedFormats": "JPEG, PNG, WebP (max 5 MB)",
+      "supportedFormats": "JPEG, PNG, SVG (max 5 MB)",
       "uploading": "Caricamento...",
       "cancel": "Annulla",
       "uploadAria": "Carica foto profilo"
@@ -554,6 +560,11 @@
     "detail": {
       "backToArchive": "← Torna all'archivio",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "Più recenti",
+      "oldest": "Più vecchi",
+      "mostAttended": "Più frequentati"
     }
   },
   "notifications": {
@@ -588,7 +599,8 @@
       "SPEAKER": "Relatori",
       "REGISTRATION": "Iscrizione",
       "TASK_REMINDER": "Promemoria attività",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Sede & Catering"
     },
     "layoutKey": "Layout",
     "standalone": "Nessuno (autonomo)",
@@ -693,25 +705,25 @@
     }
   },
   "labels": {
-    "status": "Status",
-    "title": "Title",
-    "date": "Date",
-    "overview": "Overview",
-    "sortBy": "Sort by",
-    "actions": "Actions",
-    "company": "Company",
+    "status": "Stato",
+    "title": "Titolo",
+    "date": "Data",
+    "overview": "Panoramica",
+    "sortBy": "Ordina per",
+    "actions": "Azioni",
+    "company": "Azienda",
     "email": "Email",
-    "dueDate": "Due Date",
-    "emailAddress": "Email Address",
-    "name": "Name",
-    "description": "Description",
-    "notes": "Notes",
-    "event": "Event",
-    "viewMode": "View mode",
-    "gridView": "Grid view",
-    "listView": "List view",
-    "sessions": "Sessions",
-    "topics": "Topics",
+    "dueDate": "Data di scadenza",
+    "emailAddress": "Indirizzo email",
+    "name": "Nome",
+    "description": "Descrizione",
+    "notes": "Note",
+    "event": "Evento",
+    "viewMode": "Modalità di visualizzazione",
+    "gridView": "Vista a griglia",
+    "listView": "Vista a elenco",
+    "sessions": "Sessioni",
+    "topics": "Argomenti",
     "firstName": "Nome",
     "lastName": "Cognome"
   },
@@ -763,5 +775,27 @@
   },
   "releaseNotes": {
     "title": "Release Notes"
+  },
+  "profile": {
+    "pageTitle": "Il tuo profilo",
+    "pageSubtitle": "Gestisci i tuoi dati personali, il consenso e la newsletter",
+    "tabs": {
+      "profile": "Profilo",
+      "consent": "Consenso & Newsletter"
+    },
+    "companyLabel": "Azienda",
+    "companyInvalid": "L'ID azienda deve contenere da 1 a 12 lettere o cifre",
+    "onboardingNotice": "Completa il tuo profilo per continuare: accetta qui sotto i termini di servizio e l’informativa sulla privacy.",
+    "consentTitle": "Termini di servizio & informativa sulla privacy",
+    "consentLabelPrefix": "Accetto i",
+    "consentLabelAnd": "e l’",
+    "termsOfService": "termini di servizio",
+    "privacyPolicy": "informativa sulla privacy",
+    "consentAcceptedOn": "Accettato il {{date}}",
+    "consentSave": "Accetta e salva",
+    "consentSaveError": "Il salvataggio del consenso non è riuscito. Riprova.",
+    "newsletterTitle": "Newsletter",
+    "newsletterDescription": "Ricevi inviti e aggiornamenti sui prossimi eventi BATbern.",
+    "newsletterLabel": "Iscriviti alla newsletter BATbern"
   }
 }

@@ -48,10 +48,11 @@ import type { User } from '@/types/user.types';
 
 // ─── Partner Contacts Panel ────────────────────────────────────────────────────
 
-const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }> = ({
-  companyName,
-  isMobile,
-}) => {
+const PartnerContactsPanel: React.FC<{
+  companyName: string;
+  isMobile: boolean;
+  isOrganizer: boolean;
+}> = ({ companyName, isMobile, isOrganizer }) => {
   const { t: tPartners } = useTranslation('partners');
   const navigate = useNavigate();
   const location = useLocation();
@@ -108,6 +109,7 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
                 state: { from: location.pathname, fromLabel: companyName },
               });
           }}
+          showAdminActions={isOrganizer}
         />
       )}
       {paginationData && (
@@ -282,7 +284,11 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
 
           {/* Contacts Tab */}
           {effectiveTab === 1 && (
-            <PartnerContactsPanel companyName={partner.companyName} isMobile={isMobile} />
+            <PartnerContactsPanel
+              companyName={partner.companyName}
+              isMobile={isMobile}
+              isOrganizer={!isPartner}
+            />
           )}
 
           {/* Meetings Tab */}

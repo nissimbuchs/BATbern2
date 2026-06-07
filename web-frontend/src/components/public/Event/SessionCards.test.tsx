@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionCards } from './SessionCards';
-import type { Session } from '@/types/event.types';
+import type { SessionUI, SessionMaterial } from '@/types/event.types';
 
 // Mock API clients
 vi.mock('@/services/companyApiClient', () => ({
@@ -36,7 +36,7 @@ describe('SessionCards', () => {
     queryClient.clear();
   });
 
-  const mockSessions: Session[] = [
+  const mockSessions: SessionUI[] = [
     {
       sessionSlug: 'keynote-session',
       eventCode: 'BATbern142',
@@ -191,7 +191,7 @@ describe('SessionCards', () => {
   });
 
   it('should_displaySpeakerTBA_when_noSpeakersAssigned', () => {
-    const sessionsWithoutSpeakers: Session[] = [
+    const sessionsWithoutSpeakers: SessionUI[] = [
       {
         ...mockSessions[0],
         speakers: [],
@@ -210,5 +210,108 @@ describe('SessionCards', () => {
     const gridContainer = container.querySelector('.grid');
     expect(gridContainer).toBeInTheDocument();
     expect(gridContainer).toHaveClass('grid-cols-1', 'md:grid-cols-2');
+  });
+
+  it('should_excludeStructuralSessions_when_rendered', () => {
+    const sessionsWithStructural: SessionUI[] = [
+      ...mockSessions,
+      {
+        sessionSlug: 'lunch-break',
+        eventCode: 'BATbern142',
+        title: 'Lunch Break',
+        sessionType: 'lunch',
+        language: 'de',
+      },
+      {
+        sessionSlug: 'morning-break',
+        eventCode: 'BATbern142',
+        title: 'Coffee Break',
+        sessionType: 'break',
+        language: 'de',
+      },
+      {
+        sessionSlug: 'moderation-intro',
+        eventCode: 'BATbern142',
+        title: 'Opening Moderation',
+        sessionType: 'moderation',
+        language: 'de',
+      },
+    ];
+
+    renderWithProviders(<SessionCards sessions={sessionsWithStructural} />);
+
+    // Content sessions are shown
+    expect(screen.getByText('Opening Keynote')).toBeInTheDocument();
+    expect(screen.getByText('Sustainable Materials Workshop')).toBeInTheDocument();
+
+    // Structural sessions are hidden
+    expect(screen.queryByText('Lunch Break')).not.toBeInTheDocument();
+    expect(screen.queryByText('Coffee Break')).not.toBeInTheDocument();
+    expect(screen.queryByText('Opening Moderation')).not.toBeInTheDocument();
+  });
+
+  it('should_returnNull_when_allSessionsAreStructural', () => {
+    const structuralOnly: SessionUI[] = [
+      {
+        sessionSlug: 'lunch',
+        eventCode: 'BATbern142',
+        title: 'Lunch',
+        sessionType: 'lunch',
+        language: 'de',
+      },
+      {
+        sessionSlug: 'break',
+        eventCode: 'BATbern142',
+        title: 'Break',
+        sessionType: 'break',
+        language: 'de',
+      },
+    ];
+
+    const { container } = renderWithProviders(<SessionCards sessions={structuralOnly} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('should_showMaterials_when_showMaterialsTrue', () => {
+    const material: SessionMaterial = {
+      id: 'mat-1',
+      uploadId: 'up-1',
+      cloudFrontUrl: 'https://cdn.example.com/slides.pdf',
+      fileName: 'slides.pdf',
+      fileSize: 2097152, // 2 MB
+      materialType: 'PRESENTATION',
+      uploadedBy: 'john.doe',
+      createdAt: '2025-05-15T10:00:00Z',
+    };
+
+    const sessionsWithMaterials: SessionUI[] = [{ ...mockSessions[0], materials: [material] }];
+
+    renderWithProviders(
+      <SessionCards sessions={sessionsWithMaterials} showMaterials={true} eventCode="BATbern142" />
+    );
+
+    expect(screen.getByText('slides.pdf')).toBeInTheDocument();
+    expect(screen.getByText('2.0 MB')).toBeInTheDocument();
+  });
+
+  it('should_hideMaterials_when_showMaterialsFalse', () => {
+    const material: SessionMaterial = {
+      id: 'mat-1',
+      uploadId: 'up-1',
+      cloudFrontUrl: 'https://cdn.example.com/slides.pdf',
+      fileName: 'slides.pdf',
+      fileSize: 2097152,
+      materialType: 'PRESENTATION',
+      uploadedBy: 'john.doe',
+      createdAt: '2025-05-15T10:00:00Z',
+    };
+
+    const sessionsWithMaterials: SessionUI[] = [{ ...mockSessions[0], materials: [material] }];
+
+    renderWithProviders(
+      <SessionCards sessions={sessionsWithMaterials} showMaterials={false} eventCode="BATbern142" />
+    );
+
+    expect(screen.queryByText('slides.pdf')).not.toBeInTheDocument();
   });
 });

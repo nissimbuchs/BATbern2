@@ -165,7 +165,19 @@
       "actions": "Actions"
     },
     "error": "Impossible de charger les réunions",
-    "inviteSuccess": "L'invitation de calendrier est en cours d'envoi"
+    "inviteSuccess": "L'invitation de calendrier est en cours d'envoi",
+    "rsvp": {
+      "title": "Réponses des participants",
+      "loading": "Chargement des réponses...",
+      "error": "Impossible de charger les réponses RSVP",
+      "noResponses": "Aucune réponse pour l'instant",
+      "summary": "{{accepted}} Accepté · {{declined}} Refusé · {{tentative}} Provisoire",
+      "status": {
+        "accepted": "Accepté",
+        "declined": "Refusé",
+        "tentative": "Provisoire"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Votre compte n'est pas lié à une entreprise",

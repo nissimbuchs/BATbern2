@@ -1,0 +1,71 @@
+meta {
+  name: Fixture — create parent event for tasks-api tests
+  type: http
+  seq: 0.5
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const now = Date.now();
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000); // reserved test range (>=10000), swept by ems/events_by_number (event-fixture leak fix)
+
+  bru.setVar("testTimestamp", now);
+  bru.setVar("eventNumber", eventNumber);
+}
+
+body:json {
+  {
+    "title": "Tasks API Test Event {{testTimestamp}}",
+    "eventNumber": {{eventNumber}},
+    "date": "2026-03-15T09:00:00Z",
+    "registrationDeadline": "2026-03-01T23:59:59Z",
+    "venueName": "Tasks Test Venue",
+    "venueAddress": "Test Address 1, 3000 Bern",
+    "venueCapacity": 100,
+    "workflowState": "CREATED",
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Parent event for tasks-api tests (PR 6)",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("fixture event created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("testEventCode + testEventNumber published for downstream tests", function() {
+    const event = res.getBody();
+    bru.setVar("testEventCode", event.eventCode);
+    bru.setVar("testEventNumber", event.eventNumber);
+  });
+}
+
+docs {
+  PR 6 (plan §"Next: batched audit-pass closeout"): owns the parent event
+  for tests 03-08 (event-scoped task CRUD).
+
+  Server auto-generates eventCode as `BATbern<eventNumber>` — does NOT
+  match the BRUNO-TEST- canonical prefix the cleanup endpoint accepts.
+  Therefore 98-delete-fixture-event.bru explicitly DELETEs by eventCode
+  at the end of the run; 00-/99-pretest/posttest hooks are safety nets.
+
+  Audit-step 2 ("Normalize prefix") investigated and deferred —
+  CreateEventRequest has no eventCode field (verified against
+  services/event-management-service/.../dto/CreateEventRequest.java +
+  docs/api/events-api.openapi.yml). Filed in plan §"Risks to track".
+}

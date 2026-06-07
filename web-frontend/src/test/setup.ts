@@ -1,6 +1,26 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// Suppress JSDOM "Not implemented" warnings that go directly to process.stderr
+// (e.g., getComputedStyle with pseudo-elements, navigation to another Document)
+const originalStderrWrite = process.stderr.write.bind(process.stderr);
+process.stderr.write = (chunk: string | Uint8Array, ...rest: unknown[]) => {
+  const str = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString();
+  if (
+    str.includes('Not implemented:') ||
+    str.includes('getComputedStyle') ||
+    str.includes('act(') ||
+    str.includes('not wrapped in act') ||
+    str.includes('not configured to support act') ||
+    str.includes('anchorEl') ||
+    str.includes('out-of-range value') ||
+    str.includes('No event data available')
+  ) {
+    return true;
+  }
+  return (originalStderrWrite as (...a: unknown[]) => boolean)(chunk, ...rest);
+};
+
 // Mock localStorage before importing i18n (which uses localStorage for language detection)
 // This is needed because Node.js 22+ has built-in localStorage that conflicts with jsdom
 const localStorageMock = (() => {
@@ -200,22 +220,68 @@ vi.mock('framer-motion', () => {
   };
 });
 
-// Suppress JSDOM errors for CORS preflight requests to S3 and Network errors
-// These are expected in test environment where we mock XHR/fetch
+// Suppress known JSDOM/MUI/React environment warnings in tests.
+// These are not bugs — they are artifacts of running MUI components in JSDOM.
 vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+  const msg = args.map(String).join(' ');
   if (
-    typeof args[0] === 'string' &&
-    (args[0].includes('Response for preflight has invalid HTTP status code') ||
-      args[0].includes('CORS') ||
-      args[0].includes('Cross-Origin') ||
-      args[0].includes('Network error') ||
-      args[0].includes('Unauthorized') ||
-      args[0].includes('Forbidden') ||
-      args[0].includes('Server error') ||
-      args[0].includes('API error'))
+    // Network / CORS errors (expected with mocked fetch)
+    msg.includes('Response for preflight has invalid HTTP status code') ||
+    msg.includes('CORS') ||
+    msg.includes('Cross-Origin') ||
+    msg.includes('Network error') ||
+    msg.includes('Unauthorized') ||
+    msg.includes('Forbidden') ||
+    msg.includes('Server error') ||
+    msg.includes('API error') ||
+    // MUI: anchorEl invalid — JSDOM has no layout engine, getBoundingClientRect returns zeros
+    msg.includes('anchorEl') ||
+    // MUI: out-of-range Select value — mock data may not match MenuItem options
+    msg.includes('out-of-range value') ||
+    // MUI: disabled button child in Tooltip — JSDOM event limitation
+    (msg.includes('disabled') && msg.includes('Tooltip')) ||
+    // React 19 act() warnings — Vitest async state update artifacts
+    msg.includes('not wrapped in act') ||
+    msg.includes('not configured to support act') ||
+    msg.includes('inside a test was not wrapped') ||
+    // JSDOM: getComputedStyle, navigation, and other unimplemented features
+    msg.includes('Not implemented') ||
+    msg.includes('getComputedStyle') ||
+    // Event data lookup map (normal initial render state)
+    msg.includes('No event data available')
   ) {
-    return; // Suppress expected API and network errors in tests
+    return;
   }
   // For other errors, log them (important for debugging)
   console.warn(...args);
+});
+
+// Suppress known MUI/React warnings that go through console.warn or console.debug
+const suppressPatterns = [
+  'anchorEl',
+  'out-of-range value',
+  'Tooltip',
+  'not wrapped in act',
+  'not configured to support act',
+  'inside a test was not wrapped',
+  'Not implemented',
+  'No event data available',
+  'getComputedStyle',
+];
+
+function shouldSuppress(args: unknown[]): boolean {
+  const msg = args.map(String).join(' ');
+  return suppressPatterns.some((pattern) => msg.includes(pattern));
+}
+
+const originalWarn = console.warn.bind(console);
+vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+  if (shouldSuppress(args)) return;
+  originalWarn(...args);
+});
+
+const originalDebug = console.debug.bind(console);
+vi.spyOn(console, 'debug').mockImplementation((...args: unknown[]) => {
+  if (shouldSuppress(args)) return;
+  originalDebug(...args);
 });

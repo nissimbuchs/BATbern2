@@ -11,9 +11,10 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/public/ui/card';
 import { Badge } from '@/components/public/ui/badge';
 import { SpeakerDisplay } from './Event/SpeakerDisplay';
+import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
 import type { EventDetailUI, SessionUI } from '@/types/event.types';
 
-type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
 
 interface EventCardProps {
   event: EventDetailUI;
@@ -28,6 +29,7 @@ const STATUS_CHIP_STYLES: Record<RegistrationStatus, string> = {
   REGISTERED: 'bg-amber-400/20 text-amber-400 border-amber-400/30',
   WAITLIST: 'bg-blue-400/20 text-blue-400 border-blue-400/30',
   CANCELLED: 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30',
+  ATTENDED: 'bg-purple-400/20 text-purple-400 border-purple-400/30',
 };
 
 export function EventCard({
@@ -60,22 +62,37 @@ export function EventCard({
     <Link
       to={`${linkPrefix}${event.eventCode}`}
       className={`block ${viewMode === 'list' ? 'w-full' : ''}`}
+      data-testid="event-card"
     >
       <div
         className={viewMode === 'grid' ? 'grid-card' : 'list-card'}
         data-testid={`event-card-${event.eventCode}`}
         data-view-mode={viewMode}
       >
-        <Card className="group bg-zinc-800/60 border-zinc-700 hover:border-zinc-600 transition-colors h-full">
+        <Card className="group bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors h-full">
           {/* Theme Image */}
           {event.themeImageUrl && (
             <div
               className={`overflow-hidden ${viewMode === 'list' ? 'flex-shrink-0 w-48' : 'w-full h-48'}`}
             >
+              {/* Resize + WebP via the CDN Lambda — cards display at ~192px tall and are
+                  below the fold, so serve a small responsive image (lazy) instead of the
+                  full-resolution origin. A raw AI-theme PNG here was 2.7 MB on the homepage
+                  (Lighthouse 2026-06-02); buildCdnImageUrl drops it to a few tens of KB. */}
               <img
-                src={event.themeImageUrl}
+                src={
+                  buildCdnImageUrl(event.themeImageUrl, { w: 768, fit: 'cover' }) ??
+                  event.themeImageUrl
+                }
+                srcSet={
+                  buildCdnImageSrcSet(event.themeImageUrl, [384, 768], { fit: 'cover' }) ??
+                  undefined
+                }
+                sizes="(min-width: 1024px) 384px, (min-width: 768px) 50vw, 100vw"
                 alt={`${event.title} theme image`}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                data-testid="event-card-image"
               />
             </div>
           )}
@@ -92,7 +109,9 @@ export function EventCard({
 
               {/* Topic Badge */}
               {event.topic && typeof event.topic === 'object' && (
-                <Badge className="bg-zinc-800 text-zinc-300">{event.topic.name}</Badge>
+                <Badge className="bg-zinc-800 text-zinc-300" data-testid="event-card-topic">
+                  {event.topic.name}
+                </Badge>
               )}
 
               {/* Registration Status Chip (Story 10.10, AC5) */}
@@ -108,11 +127,15 @@ export function EventCard({
             </div>
 
             {/* Event Title */}
-            <CardTitle className="font-light text-xl text-zinc-100">{event.title}</CardTitle>
+            <CardTitle className="font-light text-xl text-zinc-100" data-testid="event-card-title">
+              {event.title}
+            </CardTitle>
 
             {/* Date and Venue */}
             <div className="space-y-1 mt-2">
-              <p className="text-sm text-zinc-400">{formattedDate}</p>
+              <p className="text-sm text-zinc-400" data-testid="event-card-date">
+                {formattedDate}
+              </p>
               {event.venueName && <p className="text-sm text-zinc-400">{event.venueName}</p>}
             </div>
           </CardHeader>

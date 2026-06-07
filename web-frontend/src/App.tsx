@@ -5,27 +5,36 @@
 
 import React, { useEffect, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import { Box } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from '@hooks/useAuth';
 import HomePage from '@pages/public/HomePage';
-import { BaseLayout } from '@components/shared/Layout/BaseLayout';
-import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
 import { ProtectedRoute, SpeakerRoute, PartnerRoute } from '@components/auth/ProtectedRoute';
-import { LoginForm } from '@components/auth/LoginForm';
-import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
-import { ResetPasswordForm } from '@components/auth/ResetPasswordForm';
-import { RegistrationWizard } from '@components/auth/RegistrationWizard';
-import { EmailVerification } from '@components/auth/EmailVerification';
 import { setNavigationCallback } from '@/services/api/apiClient';
-import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 import { LanguageSync } from '@components/shared/LanguageSync/LanguageSync';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { PartnerPortalLayout } from '@/components/partner/PartnerPortalLayout';
-import theme from '@/theme';
+
+// MUI is kept OUT of the eager entry chunk so the public homepage never downloads it
+// (~158 KB vendor-mui). The MUI theme provider, the MUI-using layouts, and the
+// language switcher are all lazy-loaded; they only arrive when a route under the
+// <MuiLayout> boundary (auth / organizer / speaker / partner / registration flow) is
+// visited. See MuiLayout.tsx. The public routes below are Tailwind-only siblings.
+const MuiLayout = React.lazy(() => import('@/MuiLayout'));
+const BaseLayout = React.lazy(() =>
+  import('@components/shared/Layout/BaseLayout').then((m) => ({ default: m.BaseLayout }))
+);
+const AuthPageLayout = React.lazy(() =>
+  import('@components/shared/Layout/AuthPageLayout').then((m) => ({ default: m.AuthPageLayout }))
+);
+const PartnerPortalLayout = React.lazy(() =>
+  import('@/components/partner/PartnerPortalLayout').then((m) => ({
+    default: m.PartnerPortalLayout,
+  }))
+);
+const LanguageSwitcher = React.lazy(
+  () => import('@components/shared/LanguageSwitcher/LanguageSwitcher')
+);
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -36,6 +45,31 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Auth forms — lazy-loaded so they stay out of the entry chunk (the public
+// homepage never needs them). Named exports, hence the default-interop wrapper.
+const LoginForm = React.lazy(() =>
+  import('@components/auth/LoginForm').then((m) => ({ default: m.LoginForm }))
+);
+const ForgotPasswordForm = React.lazy(() =>
+  import('@components/auth/ForgotPasswordForm').then((m) => ({ default: m.ForgotPasswordForm }))
+);
+const ResetPasswordForm = React.lazy(() =>
+  import('@components/auth/ResetPasswordForm').then((m) => ({ default: m.ResetPasswordForm }))
+);
+const RegistrationWizard = React.lazy(() =>
+  import('@components/auth/RegistrationWizard').then((m) => ({ default: m.RegistrationWizard }))
+);
+const EmailVerification = React.lazy(() =>
+  import('@components/auth/EmailVerification').then((m) => ({ default: m.EmailVerification }))
+);
+// Story 12.7 (SSO Phase 4): federated-login callback + logout routes.
+const AuthCallbackPage = React.lazy(() =>
+  import('@components/auth/AuthCallbackPage').then((m) => ({ default: m.AuthCallbackPage }))
+);
+const LogoutPage = React.lazy(() =>
+  import('@components/auth/LogoutPage').then((m) => ({ default: m.LogoutPage }))
+);
 
 // Route-level code splitting with React.lazy() (Task 13b)
 const Dashboard = React.lazy(() => import('@pages/Dashboard'));
@@ -60,6 +94,9 @@ const CompanyManagement = React.lazy(
 );
 const UserManagement = React.lazy(
   () => import('@components/organizer/UserManagement/UserManagement')
+);
+const NewsletterSubscribers = React.lazy(
+  () => import('@components/organizer/NewsletterSubscribers/NewsletterSubscribers')
 );
 const UserAccountPage = React.lazy(() => import('@pages/UserAccountPage/UserAccountPage'));
 
@@ -109,7 +146,8 @@ const InvitationResponsePage = React.lazy(
 );
 
 // Story 6.2b: Speaker Portal - Profile Update
-const ProfileUpdatePage = React.lazy(() => import('@pages/speaker-portal/ProfileUpdatePage'));
+// Story 12.11: role-neutral profile page (generalized from the speaker-portal ProfileUpdatePage)
+const ProfilePage = React.lazy(() => import('@pages/profile/ProfilePage'));
 
 // Story 6.3: Speaker Portal - Content Submission
 const ContentSubmissionPage = React.lazy(
@@ -119,13 +157,13 @@ const ContentSubmissionPage = React.lazy(
 // Story 6.4: Speaker Portal - Dashboard
 const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/SpeakerDashboardPage'));
 
-// Story 9.1: Speaker Portal - JWT Magic Login
-const SpeakerMagicLoginPage = React.lazy(
-  () => import('@pages/speaker-portal/SpeakerMagicLoginPage')
-);
-
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
+
+// Additional-email verification (v2): public token-credentialed verify page
+const VerifyAdditionalEmailPage = React.lazy(
+  () => import('@pages/public/VerifyAdditionalEmailPage')
+);
 
 // Story 10.12: Self-service deregistration page
 const DeregistrationPage = React.lazy(() => import('@pages/public/DeregistrationPage'));
@@ -141,16 +179,9 @@ const LiveControlPage = React.lazy(() => import('@pages/LiveControlPage/LiveCont
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
-  <Box
-    sx={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '50vh',
-    }}
-  >
+  <div className="flex min-h-[50vh] items-center justify-center">
     <BATbernLoader size={96} />
-  </Box>
+  </div>
 );
 
 // Layout wrapper for authenticated routes
@@ -210,12 +241,12 @@ const ResetPasswordPage: React.FC = () => {
 // Registration page (Story 1.2.3)
 const RegistrationPage: React.FC = () => {
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
+    <div className="flex min-h-screen flex-col">
+      <div className="flex justify-end p-4">
         <LanguageSwitcher />
-      </Box>
+      </div>
       <RegistrationWizard />
-    </Box>
+    </div>
   );
 };
 
@@ -236,18 +267,24 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
-        <ThemeProvider theme={theme}>
-          <AuthProvider>
-            <Router>
-              <NavigationSetup>
-                {/* Sync user language preferences after authentication */}
-                <LanguageSync />
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 5.7 */}
-                    <Route path="/" element={<HomePage />} />
-                    {/* Story 5.7: Public event page with preview mode support */}
-                    <Route path="/events/:eventCode" element={<HomePage />} />
+        <AuthProvider>
+          <Router>
+            <NavigationSetup>
+              {/* Sync user language preferences after authentication */}
+              <LanguageSync />
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  {/* All MUI-rendering routes live under this lazy ThemeProvider boundary, so
+                      @mui/material (~158 KB) is fetched only when one is visited — never for the
+                      public homepage. The Tailwind-only public routes are declared as siblings
+                      AFTER this boundary; React Router ranks by specificity, not source order. */}
+                  <Route
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <MuiLayout />
+                      </Suspense>
+                    }
+                  >
                     <Route path="/register/:eventCode" element={<PublicRegistrationPage />} />
                     <Route path="/registration-success" element={<RegistrationSuccessPage />} />
                     <Route
@@ -262,28 +299,59 @@ function App() {
                       path="/registration-confirmation/:confirmationCode"
                       element={<RegistrationConfirmationPage />}
                     />
-                    {/* Story 4.2: Archive browsing routes */}
-                    <Route path="/archive" element={<ArchivePage />} />
-                    {/* Story 4.2 / 10.21: Archive detail — reuses HomePage (dark-theme BATbern components) */}
-                    <Route path="/archive/:eventCode" element={<HomePage />} />
-
-                    {/* Story 6.2a: Speaker Portal - Invitation Response */}
-                    <Route path="/speaker-portal/respond" element={<InvitationResponsePage />} />
-
-                    {/* Story 6.2b: Speaker Portal - Profile Update */}
-                    <Route path="/speaker-portal/profile" element={<ProfileUpdatePage />} />
-
-                    {/* Story 6.3: Speaker Portal - Content Submission */}
-                    <Route path="/speaker-portal/content" element={<ContentSubmissionPage />} />
-
-                    {/* Story 6.4: Speaker Portal - Dashboard */}
-                    <Route path="/speaker-portal/dashboard" element={<SpeakerDashboardPage />} />
-
-                    {/* Story 9.1: Speaker Portal - JWT Magic Login */}
-                    <Route path="/speaker-portal/magic-login" element={<SpeakerMagicLoginPage />} />
+                    {/* Story 11.E.3: Speaker Portal routes — Cognito-authenticated.
+                        Wrapped in <SpeakerRoute> so unauthenticated callers redirect to /login.
+                        eventCode is a path parameter (Q#1 resolved 2026-05-17). */}
+                    <Route
+                      path="/speaker-portal/dashboard"
+                      element={
+                        <SpeakerRoute>
+                          <SpeakerDashboardPage />
+                        </SpeakerRoute>
+                      }
+                    />
+                    <Route
+                      path="/speaker-portal/respond/:eventCode"
+                      element={
+                        <SpeakerRoute>
+                          <InvitationResponsePage />
+                        </SpeakerRoute>
+                      }
+                    />
+                    <Route
+                      path="/speaker-portal/content/:eventCode"
+                      element={
+                        <SpeakerRoute>
+                          <ContentSubmissionPage />
+                        </SpeakerRoute>
+                      }
+                    />
+                    {/* Story 12.11 (AC5): the profile page is role-neutral at /profile.
+                        Old speaker-portal paths redirect there (bookmarks + old emails).
+                        Code review 2026-05-18 (D1): profile is user-level (CUMS), not
+                        per-event, so the /:eventCode form also collapses to /profile. */}
+                    <Route
+                      path="/speaker-portal/profile"
+                      element={<Navigate to="/profile" replace />}
+                    />
+                    <Route
+                      path="/speaker-portal/profile/:eventCode"
+                      element={<Navigate to="/profile" replace />}
+                    />
+                    {/* Code review 2026-05-18 (P15): backward-compat redirect for old email
+                        deep-links (`/speaker-portal/respond?token=...`) that no longer match
+                        the new `/speaker-portal/respond/:eventCode` route. Sends the user to
+                        the dashboard, where they can pick their pending invitation. */}
+                    <Route
+                      path="/speaker-portal/respond"
+                      element={<Navigate to="/speaker-portal/dashboard" replace />}
+                    />
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                    {/* Additional-email verification (v2): public token-credentialed verify */}
+                    <Route path="/verify-email" element={<VerifyAdditionalEmailPage />} />
 
                     {/* Story 10.12: Self-service deregistration (token-protected, no auth required) */}
                     <Route path="/deregister" element={<DeregistrationPage />} />
@@ -293,10 +361,6 @@ function App() {
 
                     {/* Dev tool: local email inbox — no auth, no layout */}
                     <Route path="/dev/emails" element={<DevEmailInboxPage />} />
-
-                    <Route path="/about" element={<AboutPage />} />
-                    <Route path="/privacy" element={<PrivacyPage />} />
-                    <Route path="/support" element={<SupportPage />} />
 
                     {/* Authentication routes */}
                     <Route
@@ -348,6 +412,12 @@ function App() {
                       }
                     />
 
+                    {/* Story 12.7 (SSO Phase 4): federated-login callback + logout.
+                        No AuthPageLayout wrapper — both are transient redirect targets
+                        that render only a text-free loader. */}
+                    <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                    <Route path="/logout" element={<LogoutPage />} />
+
                     {/* Protected routes with lazy-loaded components */}
                     <Route
                       path="/dashboard"
@@ -356,6 +426,17 @@ function App() {
                           <AuthLayout>
                             <Dashboard />
                           </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Story 12.11 (AC5): role-neutral profile page — any authenticated
+                        role. Also the onboarding-gate target (/profile?onboarding=1). */}
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <ProfilePage />
                         </ProtectedRoute>
                       }
                     />
@@ -616,9 +697,21 @@ function App() {
                       }
                     />
 
-                    {/* User Account Page - Story 2.6 */}
+                    {/* Newsletter Subscriber Management - Story 10.28 */}
                     <Route
-                      path="/account"
+                      path="/organizer/newsletter-subscribers"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <NewsletterSubscribers />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* User Account Page - Story 2.6; :tab? = profile (default) | settings */}
+                    <Route
+                      path="/account/:tab?"
                       element={
                         <ProtectedRoute>
                           <AuthLayout>
@@ -627,15 +720,27 @@ function App() {
                         </ProtectedRoute>
                       }
                     />
-
-                    {/* Catch all route - redirect to home */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
-              </NavigationSetup>
-            </Router>
-          </AuthProvider>
-        </ThemeProvider>
+                  </Route>
+                  {/* ── Public, Tailwind-only routes (no MUI) — siblings of the boundary ──
+                      Declared after the <MuiLayout> route on purpose: React Router ranks by
+                      path specificity, so these win for their exact paths without pulling MUI. */}
+                  <Route path="/" element={<HomePage />} />
+                  {/* Story 5.7: Public event page with preview mode support */}
+                  <Route path="/events/:eventCode" element={<HomePage />} />
+                  {/* Story 4.2: Archive browsing routes */}
+                  <Route path="/archive" element={<ArchivePage />} />
+                  {/* Story 4.2 / 10.21: Archive detail — reuses HomePage (dark-theme components) */}
+                  <Route path="/archive/:eventCode" element={<HomePage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/support" element={<SupportPage />} />
+                  {/* Catch all route - redirect to home (MUI-free) */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </NavigationSetup>
+          </Router>
+        </AuthProvider>
       </HelmetProvider>
     </QueryClientProvider>
   );

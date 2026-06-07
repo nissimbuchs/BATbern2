@@ -1,0 +1,131 @@
+name: Nightly E2E (full @gate suite)
+
+# docs/plans/playwright-staging-hardening.md §A9
+#
+# Where "everything gates" lives (OQ-1): the per-deploy gate stays the fast @smoke subset
+# (in deploy-staging.yml), while THIS scheduled run exercises the whole proven @gate suite
+# daily against deployed staging — non-blocking on deploys. It also re-tests @quarantine
+# specs so flakes that have settled can be promoted back to @gate.
+#
+# PR 1 state: near-empty. Only the single seed @smoke spec (also tagged @gate) exists, so
+# the gate run executes 1 test and the quarantine run executes 0. The suite fills out as
+# slices (PRs 2-14) tag their stable specs @gate.
+
+on:
+  schedule:
+    # 03:00 UTC daily — low-traffic window (BATbern runs ~3 events/year).
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Run scope: gate (proven suite) or quarantine (flake re-test)'
+        type: choice
+        options: [gate, quarantine]
+        default: gate
+        required: false
+
+env:
+  AWS_REGION: eu-central-1
+  # Staging Cognito app-client id (not a secret). Declared once instead of hardcoded in the
+  # token-fetch step — kept in lock-step with deploy-staging.yml (review #1, PR #691).
+  COGNITO_CLIENT_ID: 1b53lci6qpqsmdn0u3e8s4knvv
+
+jobs:
+  nightly-e2e:
+    name: Nightly Playwright (@gate + @quarantine re-test)
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Authenticate test users + write ~/.batbern token files
+        run: |
+          # Same token-file plumbing as the deploy-staging.yml `playwright-tests` job:
+          # global-setup.ts builds browser storage state from ~/.batbern/${env}-${role}.json.
+          REGION="eu-central-1"
+          CLIENT_ID="${COGNITO_CLIENT_ID}"
+          mkdir -p ~/.batbern
+
+          write_role_token() {
+            local email="$1"; local password="$2"; local role="$3"
+            if [ -z "$email" ] || [ -z "$password" ]; then
+              echo "::warning::No credentials for $role — skipping"
+              return 0
+            fi
+            local resp
+            resp=$(aws cognito-idp initiate-auth \
+              --region "$REGION" --auth-flow USER_PASSWORD_AUTH --client-id "$CLIENT_ID" \
+              --auth-parameters USERNAME="$email",PASSWORD="$password" --output json 2>&1) \
+              || { echo "::warning::Cognito auth failed for $role"; return 0; }
+            local id_token access_token refresh_token expires_in
+            id_token=$(echo "$resp" | jq -r '.AuthenticationResult.IdToken // empty')
+            access_token=$(echo "$resp" | jq -r '.AuthenticationResult.AccessToken // empty')
+            refresh_token=$(echo "$resp" | jq -r '.AuthenticationResult.RefreshToken // empty')
+            expires_in=$(echo "$resp" | jq -r '.AuthenticationResult.ExpiresIn // 3600')
+            if [ -z "$id_token" ] || [ -z "$access_token" ] || [ -z "$refresh_token" ]; then
+              echo "::warning::Incomplete token set for $role — skipping"; return 0
+            fi
+            echo "::add-mask::$id_token"; echo "::add-mask::$access_token"; echo "::add-mask::$refresh_token"
+            write_file() {
+              jq -n --arg env "staging" --arg role "$role" --arg email "$email" \
+                --arg id "$id_token" --arg access "$access_token" --arg refresh "$refresh_token" \
+                --argjson expires "$expires_in" --arg at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+                '{environment:$env, role:$role, email:$email, idToken:$id, accessToken:$access,
+                  refreshToken:$refresh, expiresIn:$expires, retrievedAt:$at}' > "$1"
+              chmod 600 "$1"
+            }
+            write_file ~/.batbern/staging-${role}.json
+            [ "$role" = "organizer" ] && write_file ~/.batbern/staging.json
+            echo "✅ Token files written for $role"
+          }
+
+          write_role_token \
+            "${{ secrets.STAGING_ORGANIZER_EMAIL || secrets.STAGING_TEST_USER_EMAIL }}" \
+            "${{ secrets.STAGING_ORGANIZER_PASSWORD || secrets.STAGING_TEST_USER_PASSWORD }}" \
+            "organizer"
+          write_role_token "${{ secrets.STAGING_SPEAKER_EMAIL }}" "${{ secrets.STAGING_SPEAKER_PASSWORD }}" "speaker"
+          write_role_token "${{ secrets.STAGING_PARTNER_EMAIL }}" "${{ secrets.STAGING_PARTNER_PASSWORD }}" "partner"
+
+      - name: Run full @gate suite
+        # Non-blocking: the nightly never gates a deploy. The whole proven suite runs here so
+        # the per-deploy gate can stay the fast @smoke subset (plan §A9, risk #6).
+        continue-on-error: true
+        env:
+          CI: 'true'
+        run: |
+          chmod +x scripts/ci/run-playwright-tests.sh
+          ./scripts/ci/run-playwright-tests.sh staging --scope "${{ github.event.inputs.scope || 'gate' }}"
+
+      - name: Re-test @quarantine specs (promotion check)
+        # Only on the scheduled run; surfaces flakes that have settled so they can be
+        # promoted back to @gate. Finds 0 tests until slices start quarantining specs.
+        if: ${{ github.event_name == 'schedule' }}
+        continue-on-error: true
+        env:
+          CI: 'true'
+        run: |
+          ./scripts/ci/run-playwright-tests.sh staging --scope quarantine
+
+      - name: Upload nightly Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightly-playwright-report
+          path: |
+            web-frontend/playwright-report/
+            web-frontend/test-results/
+          retention-days: 14

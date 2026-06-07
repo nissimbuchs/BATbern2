@@ -281,7 +281,9 @@ public interface SpeakerRepository extends JpaRepository<Speaker, UUID> {
 
 ### Domain Entity Design Patterns
 
-#### Speaker Entity (Refactored - ADR-003 Compliant)
+> **Speaker (per ADR-009 — supersedes the Speaker Entity subsection below):** SPEAKER is a role on `User` (`role_assignments.role = 'SPEAKER'`), **not** a domain entity. The `speakers` table has been **deleted**. Per-event speaker data lives on `speaker_pool` in event-management-service (cross-service reference via `username` per ADR-003); per-event content lives on `content_submissions` and `session_users`. The two user-level attributes a speaker needs — short CV (`User.bio`) and portrait (`User.profile_picture_url`) — are existing User fields and require no schema extension. The Speaker Entity subsection immediately below is preserved as historical context for the original ADR-004 decision; the entity it describes no longer exists.
+
+#### Speaker Entity (Refactored - ADR-003 Compliant) — REMOVED per ADR-009 (historical)
 
 **REMOVED Fields** (now in User):
 - ❌ `email`, `firstName`, `lastName`
@@ -289,17 +291,16 @@ public interface SpeakerRepository extends JpaRepository<Speaker, UUID> {
 - ❌ `profilePhotoUrl` (use User.profilePictureUrl)
 - ❌ `position` (removed entirely as redundant)
 
-**KEPT Fields** (domain-specific):
-- ✅ `id` (UUID primary key)
-- ✅ `username` (VARCHAR - meaningful ID, NOT userId UUID)
-- ✅ `availability` (available, busy, unavailable)
-- ✅ `workflowState` (open, contacted, ready, confirmed, cancelled)
-- ✅ `expertiseAreas` (array of expertise domains)
-- ✅ `speakingTopics` (array of topics)
-- ✅ `speakingHistory` (JSONB - past speaking engagements)
-- ✅ `linkedInUrl`, `twitterHandle` (speaker-specific social)
-- ✅ `certifications`, `languages` (speaker-specific)
-- ✅ `slotPreferences` (for speaker coordination workflow)
+**KEPT Fields** (domain-specific) — **all dropped per ADR-009 §0.3** (the Speaker entity itself is deleted; these fields were not migrated to `user_profiles` because the platform does not use them):
+- ~~`id` (UUID primary key)~~ — table deleted
+- ~~`username` (VARCHAR - meaningful ID, NOT userId UUID)~~ — references to User by `username` now live on `speaker_pool` in event-management-service
+- ~~`availability`~~ — dropped
+- ~~`workflowState`~~ — superseded by `speaker_pool.status` (the 8-state ADR-009 workflow)
+- ~~`expertiseAreas`, `speakingTopics`~~ — dropped
+- ~~`speakingHistory`~~ — dropped
+- ~~`linkedInUrl`, `twitterHandle`~~ — dropped
+- ~~`certifications`, `languages`~~ — dropped
+- ~~`slotPreferences`~~ — moved to `speaker_pool` (per-event scope)
 
 #### Attendee Entity (Refactored - ADR-003 Compliant)
 
@@ -400,6 +401,8 @@ public class SpeakerService {
 
 ### User Role Management
 
+> **Superseded by ADR-009 (for the SPEAKER role):** SPEAKER no longer triggers creation of a separate domain entity. The two sub-sections below ("User Role Management", "API Update Patterns") describe the **original ADR-004** model where SPEAKER co-existed as a domain entity. The current model, per ADR-009, is: SPEAKER is a role grant on `role_assignments`; there is no `Speaker` entity. Per-event speaker data is on `speaker_pool`; per-event content on `content_submissions`. Speaker-specific endpoints (`/speakers/me`, `/speakers/{username}`) are redesigned in Epic 11 Phase C around the User-as-identity model. The original text is retained as historical context for the ADR-004 decision.
+
 User roles remain in User service:
 
 ```java
@@ -415,22 +418,22 @@ public class User {
 
 **Important**: Having `roles = [SPEAKER]` does NOT automatically create a Speaker entity.
 
-**Workflow**:
+**Workflow** (original ADR-004 model — superseded by ADR-009 for SPEAKER):
 1. User registers → User entity created with `roles = [ATTENDEE]` (default)
 2. Organizer promotes user to Speaker → `roles += SPEAKER`
-3. Speaker Coordination Service creates Speaker entity → `Speaker(userId = user.id)` created
-4. Now user has both User profile + Speaker profile
+3. ~~Speaker Coordination Service creates Speaker entity → `Speaker(userId = user.id)` created~~ — REMOVED per ADR-009; no Speaker entity is created.
+4. ~~Now user has both User profile + Speaker profile~~ — REMOVED per ADR-009; SPEAKER is a role, not a profile.
 
 ### API Update Patterns
 
-**Reading Data** (GET requests):
+**Reading Data** (GET requests) — original ADR-004 model, superseded by ADR-009 for speaker endpoints:
 - Always join User + domain entity
 - Return flattened DTO to API consumers
-- Example: `GET /speakers/{username}` returns User fields + Speaker fields
+- ~~Example: `GET /speakers/{username}` returns User fields + Speaker fields~~ — endpoint redesigned in Epic 11 Phase C; no Speaker fields exist.
 
 **Updating User Fields** (PUT/PATCH):
 - User profile fields (name, bio, photo) → `/users/me` endpoint
-- Domain-specific fields → `/speakers/me` endpoint
+- ~~Domain-specific fields → `/speakers/me` endpoint~~ — REMOVED per ADR-009 (no Speaker entity); the speaker-relevant fields (`bio`, `profile_picture_url`) are updated via `/users/me`.
 
 **Example**:
 ```http
@@ -651,7 +654,7 @@ CREATE TABLE speakers (
 
 ### Future Phase: Code Implementation
 
-- [ ] Speaker entity implementation (speaker-coordination-service)
+- [ ] ~~Speaker entity implementation (speaker-coordination-service)~~ — WITHDRAWN per ADR-009 (no Speaker entity; SPEAKER is a User role; per-event data on `speaker_pool`)
 - [ ] Attendee entity implementation (attendee-experience-service)
 - [ ] Partner entity implementation (partner-coordination-service)
 - [ ] Integration tests with PostgreSQL (Testcontainers)
@@ -797,6 +800,7 @@ USER_SERVICE_URL=http://company-user-management-service:8080
 | 2025-11-02 | 1.0 | Initial ADR creation | Winston (Architect Agent) |
 | 2025-11-06 | 1.1 | Added API-based access evolution section | Claude Code (Story 1.15a.1b) |
 | 2025-11-08 | 1.2 | **CRITICAL CLARIFICATION**: Domain entities MUST store username (meaningful ID), NOT userId UUID for cross-service references. Updated all examples to use HTTP-based access with meaningful IDs (ADR-003 microservice isolation). | Claude Code |
+| 2026-05-15 | 1.3 | **Per ADR-009 (Unified Speaker Workflow):** SPEAKER role does not require additional User columns. `User.bio` serves as short CV and `User.profile_picture_url` serves as speaker portrait. The `speakers` table is deleted; `user_profiles` is **not extended**. Per-event speaker data lives on `speaker_pool`; per-event content on `content_submissions` + `session_users`. See ADR-009 §0.3. | Claude Code (Story 11.A.1) |
 
 ---
 

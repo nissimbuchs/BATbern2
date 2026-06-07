@@ -20,9 +20,18 @@
 import { PostAuthenticationTriggerEvent, PostAuthenticationTriggerHandler } from 'aws-lambda';
 import { getDbClient, executeTransaction } from './common/database';
 import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+import {
+  CognitoIdentityProviderClient,
+  AdminUpdateUserAttributesCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 
 // CloudWatch client for metrics
 const cloudWatchClient = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-central-1' });
+
+// Cognito client for the canonical-email restore (see restoreCanonicalEmailIfDrifted)
+const cognitoClient = new CognitoIdentityProviderClient({
+  region: process.env.AWS_REGION || 'eu-central-1',
+});
 
 /**
  * User attributes from Cognito event
@@ -128,6 +137,81 @@ async function linkAnonymousUserProfile(
 }
 
 /**
+ * Restore the canonical primary email onto the Cognito user when a federated
+ * sign-in has drifted it.
+ *
+ * Cognito re-syncs mapped IdP attributes (including `email`) into the LINKED
+ * destination user on EVERY federated sign-in. For accounts linked via a
+ * verified ADDITIONAL email (PR #745), that overwrites the native user's
+ * primary email with the Gmail address — breaking the email sign-in alias and
+ * redirecting password-reset mails (observed live 2026-06-06 on the first
+ * production link). Cognito has no per-attribute sync opt-out, so this trigger
+ * restores `user_profiles.email` (the canonical source of truth — primary-email
+ * change is not a platform feature) right after each authentication.
+ *
+ * No-ops when: no DB row for the sub (new federated user pre-JIT), or the
+ * emails already match case-insensitively (native sign-ins, primary-email
+ * links). Never throws — a failure here must not block the login.
+ */
+async function restoreCanonicalEmailIfDrifted(
+  userPoolId: string,
+  sub: string,
+  eventEmail: string
+): Promise<boolean> {
+  const client = await getDbClient();
+  try {
+    const result = await client.query(
+      `SELECT email FROM user_profiles WHERE cognito_user_id = $1 LIMIT 1`,
+      [sub]
+    );
+    if (result.rows.length === 0) {
+      return false;
+    }
+    const canonicalEmail: string = result.rows[0].email;
+    if (!canonicalEmail || canonicalEmail.toLowerCase() === eventEmail.toLowerCase()) {
+      return false;
+    }
+
+    await cognitoClient.send(
+      new AdminUpdateUserAttributesCommand({
+        UserPoolId: userPoolId,
+        Username: sub,
+        UserAttributes: [
+          { Name: 'email', Value: canonicalEmail },
+          { Name: 'email_verified', Value: 'true' },
+        ],
+      })
+    );
+
+    console.info('Restored canonical email after federated attribute sync drift', {
+      sub,
+      driftedEmail: eventEmail,
+      restoredEmail: canonicalEmail,
+    });
+    await publishMetric('FederatedEmailRestored');
+    return true;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Publish a simple count metric (never throws)
+ */
+async function publishMetric(metricName: string): Promise<void> {
+  try {
+    await cloudWatchClient.send(
+      new PutMetricDataCommand({
+        Namespace: 'BATbern/UserManagement',
+        MetricData: [{ MetricName: metricName, Value: 1, Unit: 'Count', Timestamp: new Date() }],
+      })
+    );
+  } catch (error) {
+    console.error('Failed to publish CloudWatch metric', { metricName, error });
+  }
+}
+
+/**
  * Publish CloudWatch metric for account linking
  */
 async function publishAccountLinkingMetric(durationMs: number): Promise<void> {
@@ -178,6 +262,21 @@ export const handler: PostAuthenticationTriggerHandler = async (event) => {
       email: userAttributes.email,
       emailVerified: userAttributes.email_verified,
     });
+
+    // Restore the canonical primary email if a federated sign-in drifted it
+    // (runs first: linkAnonymousUserProfile matches by the event email, which is
+    // exactly the value that may have drifted — but anonymous rows have no
+    // cognito_user_id, so the two concerns never overlap on the same row).
+    const restored = await restoreCanonicalEmailIfDrifted(
+      event.userPoolId,
+      userAttributes.sub,
+      userAttributes.email
+    );
+    if (restored) {
+      console.info('Canonical email restored for linked federated user', {
+        sub: userAttributes.sub,
+      });
+    }
 
     // Attempt to link anonymous user profile
     const linkResult = await linkAnonymousUserProfile(userAttributes.sub, userAttributes.email);

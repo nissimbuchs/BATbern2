@@ -2,12 +2,14 @@ package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.AttendanceSummaryDTO;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -91,6 +93,33 @@ public interface RegistrationRepository
      * @return List of registrations matching criteria
      */
     List<Registration> findByStatusAndCreatedAtBefore(String status, Instant threshold);
+
+    /**
+     * Find registrations eligible for an automated confirmation-email resend
+     * (used by {@code RegistrationResendService}).
+     *
+     * Eligible = still pending ("registered"), unconfirmed longer than the grace window
+     * ({@code createdAt <= eligibleBefore}), still within the active window
+     * ({@code createdAt > notExpiredAfter} — not already past the cleanup horizon), under the resend
+     * cap ({@code confirmationResendCount < maxAttempts}), and either never resent or last resent on
+     * or before {@code resentBefore} (enforces a minimum gap between resends).
+     *
+     * @param eligibleBefore registrations created at/after this instant are too new to nudge
+     * @param notExpiredAfter registrations created on/before this instant are effectively expired
+     * @param resentBefore   last-resend must be on/before this instant (or null)
+     * @param maxAttempts    resend cap
+     * @return matching registrations
+     */
+    @Query("SELECT r FROM Registration r WHERE r.status = 'registered' "
+            + "AND r.createdAt <= :eligibleBefore "
+            + "AND r.createdAt > :notExpiredAfter "
+            + "AND r.confirmationResendCount < :maxAttempts "
+            + "AND (r.confirmationResentAt IS NULL OR r.confirmationResentAt <= :resentBefore)")
+    List<Registration> findResendEligible(
+            @Param("eligibleBefore") Instant eligibleBefore,
+            @Param("notExpiredAfter") Instant notExpiredAfter,
+            @Param("resentBefore") Instant resentBefore,
+            @Param("maxAttempts") int maxAttempts);
 
     /**
      * Count registrations by status
@@ -180,6 +209,31 @@ public interface RegistrationRepository
      * T5.1 — Used for capacity enforcement in RegistrationService.createRegistration().
      */
     long countByEventIdAndStatusIn(UUID eventId, List<String> statuses);
+
+    /**
+     * Count *real* attendees for an event: active-status registrations that are NOT programmatic
+     * (i.e. carry no {@code autoRegisteredFrom} metadata marker). Programmatic enrollments —
+     * organizers/partners auto-enrolled at event creation and auto-registered speakers — are
+     * excluded. Drives EventResponse.realAttendeeCount and the deleteEvent 409 guard.
+     * <p>
+     * Native query: uses {@code jsonb_exists} (not the {@code ?} operator) to avoid clashing with
+     * JPA's positional-parameter placeholder. {@code metadata} is NOT NULL (V107 DEFAULT '{}'),
+     * but {@code coalesce} keeps it null-safe.
+     * <p>
+     * {@code flushMode=COMMIT} is REQUIRED: a native query has unknown query-spaces, so Hibernate's
+     * default auto-flush would flush the ENTIRE session before running it. {@code enrichWithRegistrationCounts}
+     * is called inside {@code createEvent} right after the new Event is saved-but-not-yet-validated;
+     * a full flush would prematurely run the Event's bean-validation and 400 a request that the
+     * JPQL-based count siblings (registrations-only query-space → no Event flush) let through. COMMIT
+     * defers the flush, matching those siblings. This count never needs to see un-flushed writes.
+     */
+    @QueryHints(@QueryHint(name = "org.hibernate.flushMode", value = "COMMIT"))
+    @Query(value = "SELECT count(*) FROM registrations "
+            + "WHERE event_id = :eventId "
+            + "AND status IN (:statuses) "
+            + "AND NOT jsonb_exists(coalesce(metadata, '{}'::jsonb), 'autoRegisteredFrom')",
+            nativeQuery = true)
+    long countRealAttendees(@Param("eventId") UUID eventId, @Param("statuses") List<String> statuses);
 
     /**
      * Find all waitlisted registrations for an event ordered by position (FIFO).

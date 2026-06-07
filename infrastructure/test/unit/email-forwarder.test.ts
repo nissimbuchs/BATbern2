@@ -1,0 +1,947 @@
+/**
+ * Email Forwarder Lambda Unit Tests (Story 10.26 — T6-T9)
+ *
+ * Tests cover:
+ *   T6: Header parsing, email address extraction
+ *   T7: Address resolution (role-based, event distribution, support contacts)
+ *   T8: Sender authorization with caching
+ *   T9: Email rewriting
+ */
+
+// ========================
+// T6: Header Parsing Tests
+// ========================
+
+import {
+  parseHeaders,
+  extractToAddress,
+  extractAllAddresses,
+  extractSenderEmail,
+  extractSenderName,
+  truncateEmail,
+  isCalendarReply,
+} from '../../lambda/email-forwarder/utils';
+
+describe('T6 — S3 event parsing and header extraction', () => {
+  const sampleEmail = [
+    'From: John Doe <john@example.com>',
+    'To: ok@batbern.ch',
+    'Subject: Test forwarding',
+    'Message-ID: <abc123@example.com>',
+    'Content-Type: text/plain',
+    '',
+    'Hello, this is a test email.',
+  ].join('\r\n');
+
+  test('should_parseHeaders_when_validMimeEmail', () => {
+    const headers = parseHeaders(sampleEmail);
+    expect(headers['from']).toBe('John Doe <john@example.com>');
+    expect(headers['to']).toBe('ok@batbern.ch');
+    expect(headers['subject']).toBe('Test forwarding');
+    expect(headers['message-id']).toBe('<abc123@example.com>');
+  });
+
+  test('should_handleFoldedHeaders_when_continuationLines', () => {
+    const folded = [
+      'From: Very Long Name',
+      ' <john@example.com>',
+      'To: ok@batbern.ch',
+      '',
+      'body',
+    ].join('\r\n');
+    const headers = parseHeaders(folded);
+    expect(headers['from']).toBe('Very Long Name <john@example.com>');
+  });
+
+  test('should_extractToAddress_when_angleBracketFormat', () => {
+    expect(extractToAddress('BATbern <ok@batbern.ch>')).toBe('ok@batbern.ch');
+  });
+
+  test('should_extractToAddress_when_plainFormat', () => {
+    expect(extractToAddress('ok@batbern.ch')).toBe('ok@batbern.ch');
+  });
+
+  test('should_returnUndefined_when_toMissing', () => {
+    expect(extractToAddress(undefined)).toBeUndefined();
+  });
+
+  test('should_extractSenderEmail_when_angleBracketFormat', () => {
+    expect(extractSenderEmail('John Doe <john@example.com>')).toBe('john@example.com');
+  });
+
+  test('should_extractSenderEmail_when_plainFormat', () => {
+    expect(extractSenderEmail('john@example.com')).toBe('john@example.com');
+  });
+
+  test('should_extractSenderName_when_displayNamePresent', () => {
+    expect(extractSenderName('John Doe <john@example.com>')).toBe('John Doe');
+  });
+
+  test('should_extractSenderName_when_quotedDisplayName', () => {
+    expect(extractSenderName('"John Doe" <john@example.com>')).toBe('John Doe');
+  });
+
+  test('should_extractAllAddresses_when_singlePlainAddress', () => {
+    expect(extractAllAddresses('ok@batbern.ch')).toEqual(['ok@batbern.ch']);
+  });
+
+  test('should_extractAllAddresses_when_singleAngleBracket', () => {
+    expect(extractAllAddresses('BATbern OK <ok@batbern.ch>')).toEqual(['ok@batbern.ch']);
+  });
+
+  test('should_extractAllAddresses_when_multipleAddresses', () => {
+    expect(extractAllAddresses('partner@batbern.ch, ok@batbern.ch')).toEqual([
+      'partner@batbern.ch',
+      'ok@batbern.ch',
+    ]);
+  });
+
+  test('should_extractAllAddresses_when_mixedFormats', () => {
+    expect(
+      extractAllAddresses('Partners <partner@batbern.ch>, OK Team <ok@batbern.ch>'),
+    ).toEqual(['partner@batbern.ch', 'ok@batbern.ch']);
+  });
+
+  test('should_extractAllAddresses_when_undefined', () => {
+    expect(extractAllAddresses(undefined)).toEqual([]);
+  });
+
+  test('should_extractAllAddresses_when_emptyString', () => {
+    expect(extractAllAddresses('')).toEqual([]);
+  });
+
+  test('should_truncateEmail_when_normalLength', () => {
+    expect(truncateEmail('john.doe@example.com')).toBe('john.***');
+  });
+
+  test('should_truncateEmail_when_shortEmail', () => {
+    expect(truncateEmail('ab@x')).toBe('ab@x***');
+  });
+});
+
+// ========================
+// T7: Address Resolution Tests
+// ========================
+
+describe('T7 — Address resolution', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    jest.resetModules();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  function mockFetch(responses: Record<string, { status: number; body: unknown }>): void {
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      for (const [pattern, resp] of Object.entries(responses)) {
+        if (urlStr.includes(pattern)) {
+          return {
+            ok: resp.status >= 200 && resp.status < 300,
+            status: resp.status,
+            json: async () => resp.body,
+          } as Response;
+        }
+      }
+      return { ok: false, status: 404, json: async () => ({}) } as Response;
+    });
+  }
+
+  test('should_resolveOrganizerEmails_when_okAddress', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org1@test.ch' }, { email: 'org2@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('ok@batbern.ch');
+    expect(result).toEqual(['org1@test.ch', 'org2@test.ch']);
+  });
+
+  test('should_resolveOrganizerEmails_when_infoAddress', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('info@batbern.ch');
+    expect(result).toEqual(['org@test.ch']);
+  });
+
+  test('should_resolveOrganizerEmails_when_eventsAddress', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('events@batbern.ch');
+    expect(result).toEqual(['org@test.ch']);
+  });
+
+  test('should_resolvePartnerEmails_when_partnerAddress', async () => {
+    mockFetch({
+      'role=PARTNER': {
+        status: 200,
+        body: { data: [{ email: 'partner@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('partner@batbern.ch');
+    expect(result).toEqual(['partner@test.ch']);
+  });
+
+  test('should_resolveSupportContacts_when_supportAddressAndConfigured', async () => {
+    mockFetch({
+      'admin/settings': {
+        status: 200,
+        body: { key: 'email-forwarding.support-contacts', value: 'sup1@test.ch, sup2@test.ch' },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('support@batbern.ch');
+    expect(result).toEqual(['sup1@test.ch', 'sup2@test.ch']);
+  });
+
+  test('should_fallbackToOrganizers_when_supportContactsEmpty', async () => {
+    mockFetch({
+      'admin/settings': {
+        status: 200,
+        body: { key: 'email-forwarding.support-contacts', value: '' },
+      },
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('support@batbern.ch');
+    expect(result).toEqual(['org@test.ch']);
+  });
+
+  test('should_resolveEventRegistrants_when_batbern58Address', async () => {
+    mockFetch({
+      'events/BATbern58/registrations': {
+        status: 200,
+        body: {
+          data: [{ attendeeEmail: 'att1@test.ch' }, { attendeeEmail: 'att2@test.ch' }],
+          pagination: { totalPages: 1, page: 0 },
+        },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern58@batbern.ch');
+    expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
+  });
+
+  test('should_paginateRegistrants_when_multiplePages', async () => {
+    mockFetch({
+      'page=0': {
+        status: 200,
+        body: {
+          data: [{ attendeeEmail: 'att1@test.ch' }],
+          pagination: { totalPages: 2, page: 0 },
+        },
+      },
+      'page=1': {
+        status: 200,
+        body: {
+          data: [{ attendeeEmail: 'att2@test.ch' }],
+          pagination: { totalPages: 2, page: 1 },
+        },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern58@batbern.ch');
+    expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
+  });
+
+  test('should_returnEmpty_when_eventNotFound', async () => {
+    mockFetch({
+      'events/BATbern999/registrations': { status: 404, body: {} },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern999@batbern.ch');
+    expect(result).toEqual([]);
+  });
+
+  test('should_returnEmpty_when_unknownAddress', async () => {
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('random@batbern.ch');
+    expect(result).toEqual([]);
+  });
+
+  test('should_resolveMultipleAddresses_when_calledForEach', async () => {
+    mockFetch({
+      'role=PARTNER': {
+        status: 200,
+        body: { data: [{ email: 'partner@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const partnerRecipients = await resolveRecipients('partner@batbern.ch');
+    const okRecipients = await resolveRecipients('ok@batbern.ch');
+    const combined = [...new Set([...partnerRecipients, ...okRecipients])];
+    expect(combined).toEqual(['partner@test.ch', 'org@test.ch']);
+  });
+
+  test('should_deduplicateRecipients_when_overlappingLists', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    // ok@ and info@ both resolve to organizers
+    const okRecipients = await resolveRecipients('ok@batbern.ch');
+    const infoRecipients = await resolveRecipients('info@batbern.ch');
+    const combined = [...new Set([...okRecipients, ...infoRecipients])];
+    expect(combined).toEqual(['org@test.ch']);
+  });
+
+  // ----- Story 10.32: fan-out to additional emails -----
+
+  test('should_fanOutToAdditionalEmails_when_organizerHasAdditional_10_32', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: {
+          data: [
+            {
+              email: 'nissim.buchs@elca.ch',
+              additionalEmails: [{ email: 'info@berner-architekten-treffen.ch' }],
+            },
+            { email: 'other.org@example.com' },
+          ],
+          pagination: { totalPages: 1, page: 0 },
+        },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('ok@batbern.ch');
+    expect(result).toEqual([
+      'nissim.buchs@elca.ch',
+      'info@berner-architekten-treffen.ch',
+      'other.org@example.com',
+    ]);
+  });
+
+  test('should_dedupCaseInsensitively_when_additionalEmailsFlattened_10_32', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: {
+          data: [
+            { email: 'a@x.ch', additionalEmails: [{ email: 'shared@example.com' }] },
+            { email: 'b@x.ch', additionalEmails: [{ email: 'SHARED@example.com' }] },
+          ],
+          pagination: { totalPages: 1, page: 0 },
+        },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('ok@batbern.ch');
+    // shared@example.com appears only once
+    expect(result.map(e => e.toLowerCase())).toEqual([
+      'a@x.ch',
+      'shared@example.com',
+      'b@x.ch',
+    ]);
+  });
+
+  test('should_handleMissingAdditionalEmails_when_oldApiResponse_10_32', async () => {
+    // Backwards-compat: old CUMS API without the additionalEmails field
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('ok@batbern.ch');
+    expect(result).toEqual(['org@test.ch']);
+  });
+
+  // ----- F2: per-event distribution-list aliases (-speaker, -moderator) -----
+
+  test('should_callSpeakersDistributionList_when_batbernNSpeakerAddress', async () => {
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          eventCode: 'BATbern99',
+          kind: 'speakers',
+          emails: ['alice@example.com', 'bob@example.com'],
+        }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-speaker@batbern.ch');
+
+    expect(result).toEqual(['alice@example.com', 'bob@example.com']);
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/speakers$/);
+  });
+
+  test('should_callModeratorDistributionList_when_batbernNModeratorAddress', async () => {
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          eventCode: 'BATbern99',
+          kind: 'moderator',
+          emails: ['organizer@batbern.ch'],
+        }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-moderator@batbern.ch');
+
+    expect(result).toEqual(['organizer@batbern.ch']);
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/moderator$/);
+  });
+
+  test('should_returnEmpty_when_distributionListEventUnknown_logsWarn', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      global.fetch = jest.fn(async () => ({
+        ok: false,
+        status: 404,
+        json: async () => ({}),
+      })) as jest.Mock;
+
+      const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+      const result = await resolveRecipients('batbern999-speaker@batbern.ch');
+
+      expect(result).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('BATbern999'));
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  test('should_returnEmpty_when_distributionListServerError_logsError', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      global.fetch = jest.fn(async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      })) as jest.Mock;
+
+      const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+      const result = await resolveRecipients('batbern99-moderator@batbern.ch');
+
+      expect(result).toEqual([]);
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('should_notMatchSpeakerAlias_when_localPartHasExtraSuffix', async () => {
+    // Anchored-regex negative case: batbern99-speaker-foo@ MUST NOT match
+    // either the -speaker or the bare batbern{N}@ branch — it should fall
+    // through to "Unknown forwarding address" and return [].
+    const fetchMock = jest.fn(async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+    })) as jest.Mock;
+    global.fetch = fetchMock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-speaker-foo@batbern.ch');
+
+    expect(result).toEqual([]);
+    // It should NOT have hit the distribution-list endpoint nor the registrants endpoint.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('should_notMatchModeratorAlias_when_localPartHasExtraSuffix', async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+    })) as jest.Mock;
+    global.fetch = fetchMock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-foo@batbern.ch');
+
+    expect(result).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('should_notFallThroughToRegistrants_when_localPartIsSpeakerAlias', async () => {
+    // Guard against branch-ordering regression: the -speaker alias MUST be
+    // evaluated before the bare batbern{N}@ registrant branch.
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ emails: ['speaker@example.com'] }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    await resolveRecipients('batbern57-speaker@batbern.ch');
+
+    // Exactly one URL hit, and it's the distribution-list endpoint (NOT /registrations).
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toContain('/distribution-list/speakers');
+    expect(calledUrls[0]).not.toContain('/registrations');
+  });
+});
+
+// ========================
+// T8: Sender Authorization Tests
+// ========================
+
+describe('T8 — Sender authorization', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    jest.resetModules();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  function mockOrganizerFetch(emails: string[]): void {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: emails.map((e) => ({ email: e })) }),
+    })) as jest.Mock;
+  }
+
+  test('should_allowOrganizer_when_sendingToOk', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('ok@batbern.ch', 'org@test.ch');
+    expect(result).toBe(true);
+  });
+
+  test('should_rejectNonOrganizer_when_sendingToOk', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('ok@batbern.ch', 'random@test.ch');
+    expect(result).toBe(false);
+  });
+
+  test('should_rejectNonOrganizer_when_sendingToPartner', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('partner@batbern.ch', 'random@test.ch');
+    expect(result).toBe(false);
+  });
+
+  test('should_rejectNonOrganizer_when_sendingToBatbern58', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern58@batbern.ch', 'random@test.ch');
+    expect(result).toBe(false);
+  });
+
+  test('should_allowAnyone_when_sendingToInfo', async () => {
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('info@batbern.ch', 'anyone@test.ch');
+    expect(result).toBe(true);
+  });
+
+  test('should_allowAnyone_when_sendingToEvents', async () => {
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('events@batbern.ch', 'anyone@test.ch');
+    expect(result).toBe(true);
+  });
+
+  test('should_allowAnyone_when_sendingToSupport', async () => {
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('support@batbern.ch', 'anyone@test.ch');
+    expect(result).toBe(true);
+  });
+
+  test('should_cacheOrganizerList_when_calledTwiceWithinTtl', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    await isAuthorizedSender('ok@batbern.ch', 'org@test.ch');
+    await isAuthorizedSender('ok@batbern.ch', 'org@test.ch');
+    // Should only call fetch once (cached)
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  // ----- Story 10.32: additional emails as authorised senders -----
+
+  /**
+   * Regression test for the 2026-05-22 incident: an organizer (Nissim,
+   * primary nissim.buchs@elca.ch) forwarded an email to ok@batbern.ch from
+   * his legacy Hostpoint shared mailbox info@berner-architekten-treffen.ch.
+   * The shared address was not in role_assignments → silently rejected.
+   * After Story 10.32 the shared address can be registered as an additional
+   * email on the organizer's profile, and the Lambda treats it as authorised.
+   */
+  test('should_authoriseSender_when_matchesAdditionalEmail_2026_05_20_regression', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          {
+            email: 'nissim.buchs@elca.ch',
+            additionalEmails: [{ email: 'info@berner-architekten-treffen.ch' }],
+          },
+        ],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('ok@batbern.ch', 'info@berner-architekten-treffen.ch');
+    expect(result).toBe(true);
+  });
+
+  test('should_authoriseSender_when_additionalEmailDeclaredAndMixedCase', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          { email: 'a@x.ch', additionalEmails: [{ email: 'Shared@Example.com' }] },
+        ],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    expect(await isAuthorizedSender('ok@batbern.ch', 'SHARED@example.COM')).toBe(true);
+  });
+
+  test('should_authoriseByPrimaryOnly_when_additionalEmailsFieldMissing', async () => {
+    // Backwards-compat: CUMS deployed without Story 10.32 returns no
+    // additionalEmails field. The Lambda must continue to work.
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [{ email: 'org@test.ch' }],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    expect(await isAuthorizedSender('ok@batbern.ch', 'org@test.ch')).toBe(true);
+    expect(await isAuthorizedSender('ok@batbern.ch', 'random@test.ch')).toBe(false);
+  });
+
+  // ----- F2: per-event alias auth (-speaker organizer-only, -moderator public) -----
+
+  test('should_allowAnyone_when_sendingToBatbernNModerator', async () => {
+    // -moderator follows the public-contact-address pattern (info@/events@/support@).
+    // No organizer fetch should be needed.
+    const fetchMock = jest.fn() as jest.Mock;
+    global.fetch = fetchMock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern99-moderator@batbern.ch', 'random@example.com');
+
+    expect(result).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('should_allowOrganizer_when_sendingToBatbernNSpeaker', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [{ email: 'org@test.ch' }],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern99-speaker@batbern.ch', 'org@test.ch');
+    expect(result).toBe(true);
+  });
+
+  test('should_rejectNonOrganizer_when_sendingToBatbernNSpeaker', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [{ email: 'org@test.ch' }],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern99-speaker@batbern.ch', 'random@test.ch');
+    expect(result).toBe(false);
+  });
+});
+
+// ========================
+// T9: Email Rewriting Tests
+// ========================
+
+import { rewriteEmail } from '../../lambda/email-forwarder/email-rewriter';
+
+describe('T9 — Email rewriting and forwarding', () => {
+  const sampleEmail = [
+    'From: John Doe <john@example.com>',
+    'To: ok@batbern.ch',
+    'Subject: Test forwarding',
+    'Content-Type: text/plain',
+    '',
+    'Hello, this is a test.',
+  ].join('\r\n');
+
+  const rewriteOptions = {
+    originalFrom: 'John Doe <john@example.com>',
+    senderName: 'John Doe',
+    senderEmail: 'john@example.com',
+    sesSender: 'noreply@batbern.ch',
+  };
+
+  test('should_rewriteFrom_when_forwarding', () => {
+    const result = rewriteEmail(sampleEmail, rewriteOptions);
+    expect(result).toContain('From: "John Doe via BATbern" <noreply@batbern.ch>');
+    expect(result).not.toContain('From: John Doe <john@example.com>');
+  });
+
+  test('should_addReplyTo_when_forwarding', () => {
+    const result = rewriteEmail(sampleEmail, rewriteOptions);
+    expect(result).toContain('Reply-To: john@example.com');
+  });
+
+  test('should_preserveSubject_when_forwarding', () => {
+    const result = rewriteEmail(sampleEmail, rewriteOptions);
+    expect(result).toContain('Subject: Test forwarding');
+  });
+
+  test('should_preserveBody_when_forwarding', () => {
+    const result = rewriteEmail(sampleEmail, rewriteOptions);
+    expect(result).toContain('Hello, this is a test.');
+  });
+
+  test('should_replaceExistingReplyTo_when_alreadyPresent', () => {
+    const emailWithReplyTo = sampleEmail.replace(
+      'Content-Type: text/plain',
+      'Reply-To: original@example.com\r\nContent-Type: text/plain',
+    );
+    const result = rewriteEmail(emailWithReplyTo, rewriteOptions);
+    expect(result).toContain('Reply-To: john@example.com');
+    expect(result).not.toContain('Reply-To: original@example.com');
+  });
+
+  test('should_stripReturnPath_when_forwarding', () => {
+    const emailWithReturnPath = 'Return-Path: <bounce@example.com>\r\n' + sampleEmail;
+    const result = rewriteEmail(emailWithReturnPath, rewriteOptions);
+    expect(result).not.toContain('Return-Path:');
+  });
+
+  test('should_stripDkimSignature_when_forwarding', () => {
+    const emailWithDkim = 'DKIM-Signature: v=1; a=rsa-sha256; d=example.com\r\n' + sampleEmail;
+    const result = rewriteEmail(emailWithDkim, rewriteOptions);
+    expect(result).not.toContain('DKIM-Signature:');
+  });
+});
+
+// ========================
+// T10: Sender Exclusion (bounce prevention)
+// ========================
+
+import { excludeSender } from '../../lambda/email-forwarder/utils';
+
+describe('T10 — Sender excluded from recipients to prevent bounce loops', () => {
+  test('should_excludeSender_when_senderIsInRecipientList', () => {
+    const recipients = ['org1@test.ch', 'org2@test.ch', 'org3@test.ch'];
+    const result = excludeSender(recipients, 'org1@test.ch');
+    expect(result).toEqual(['org2@test.ch', 'org3@test.ch']);
+  });
+
+  test('should_excludeSender_when_caseInsensitiveMatch', () => {
+    const recipients = ['org1@test.ch', 'org2@test.ch'];
+    const result = excludeSender(recipients, 'ORG1@TEST.CH');
+    expect(result).toEqual(['org2@test.ch']);
+  });
+
+  test('should_returnAllRecipients_when_senderNotInList', () => {
+    const recipients = ['org1@test.ch', 'org2@test.ch'];
+    const result = excludeSender(recipients, 'other@test.ch');
+    expect(result).toEqual(['org1@test.ch', 'org2@test.ch']);
+  });
+
+  test('should_returnEmpty_when_senderIsOnlyRecipient', () => {
+    const recipients = ['sender@test.ch'];
+    const result = excludeSender(recipients, 'sender@test.ch');
+    expect(result).toEqual([]);
+  });
+
+  test('should_handleEmptyRecipients', () => {
+    const result = excludeSender([], 'sender@test.ch');
+    expect(result).toEqual([]);
+  });
+});
+
+// ========================
+// T11: Calendar iMIP REPLY detection (drop auto-acceptances)
+// ========================
+
+describe('T11 — isCalendarReply suppresses iMIP acceptance fan-out', () => {
+  test('should_detectReply_when_topLevelTextCalendarMethodReply', () => {
+    const raw = [
+      'From: Daniele <daniele@example.com>',
+      'To: events@batbern.ch',
+      'Subject: Accepted: BATbern59',
+      'Content-Type: text/calendar; charset=utf-8; method=REPLY',
+      '',
+      'BEGIN:VCALENDAR',
+      'METHOD:REPLY',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_detectReply_when_multipartContainsCalendarReplyPart', () => {
+    const raw = [
+      'From: Daniele <daniele@example.com>',
+      'To: events@batbern.ch',
+      'Subject: Accepted: BATbern59',
+      'Content-Type: multipart/alternative; boundary="bnd"',
+      '',
+      '--bnd',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'I accept.',
+      '--bnd',
+      'Content-Type: text/calendar; charset="utf-8"; method=REPLY',
+      'Content-Transfer-Encoding: base64',
+      '',
+      'QkVHSU46VkNBTEVOREFSCk1FVEhPRDpSRVBMWQpFTkQ6VkNBTEVOREFSCg==',
+      '--bnd--',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_detectReply_when_methodOnContinuationLine', () => {
+    const raw = [
+      'From: Daniele <daniele@example.com>',
+      'To: events@batbern.ch',
+      'Content-Type: text/calendar;',
+      ' charset="utf-8";',
+      ' method=REPLY',
+      '',
+      'body',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_detectReply_when_methodValueIsQuoted', () => {
+    const raw = [
+      'From: x@y.com',
+      'To: events@batbern.ch',
+      'Content-Type: text/calendar; method="REPLY"',
+      '',
+      'body',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_detectReply_when_caseVariantMethodReply', () => {
+    const raw = [
+      'From: x@y.com',
+      'To: events@batbern.ch',
+      'content-type: TEXT/CALENDAR; METHOD=reply',
+      '',
+      'body',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_returnFalse_when_calendarRequestNotReply', () => {
+    const raw = [
+      'From: organizer@batbern.ch',
+      'To: attendee@example.com',
+      'Content-Type: text/calendar; charset=utf-8; method=REQUEST',
+      '',
+      'BEGIN:VCALENDAR',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(false);
+  });
+
+  test('should_returnFalse_when_calendarCancelNotReply', () => {
+    const raw = [
+      'From: organizer@batbern.ch',
+      'Content-Type: text/calendar; method=CANCEL',
+      '',
+      'body',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(false);
+  });
+
+  test('should_returnFalse_when_plainTextEmail', () => {
+    const raw = [
+      'From: user@example.com',
+      'To: events@batbern.ch',
+      'Subject: Question about BATbern59',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'When does the event start?',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(false);
+  });
+
+  test('should_returnFalse_when_subjectContainsWordReplyButNotCalendar', () => {
+    const raw = [
+      'From: user@example.com',
+      'To: events@batbern.ch',
+      'Subject: Re: REPLY needed',
+      'Content-Type: text/plain',
+      '',
+      'No method=REPLY here.',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(false);
+  });
+});

@@ -112,7 +112,7 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
     });
 
     return items;
-  }, [isLoading, includeAllOption, includeUnassigned, organizers]); // FIXED: Removed 't' - i18next creates new ref on every render
+  }, [isLoading, includeAllOption, includeUnassigned, organizers, t]);
 
   // Extract data-testid from formControlProps to avoid duplication
   const { 'data-testid': testId, ...restFormControlProps } = formControlProps as Record<
@@ -124,7 +124,7 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
     <FormControl size={size} disabled={disabled || isLoading} {...restFormControlProps}>
       <InputLabel>{labelText}</InputLabel>
       <Select
-        value={value || ''}
+        value={isLoading ? '' : value || ''}
         onChange={(e) => onChange(e.target.value)}
         label={labelText}
         data-testid={testId}

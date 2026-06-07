@@ -70,14 +70,14 @@ describe('RegistrationStatusBanner', () => {
     const banner = screen.getByTestId('registration-status-banner');
     expect(banner).toBeInTheDocument();
 
-    // MUI Alert severity="success" renders with class MuiAlert-colorSuccess
-    expect(banner.className).toMatch(/success/i);
+    // CONFIRMED renders the success variant (data-status is implementation-agnostic)
+    expect(banner).toHaveAttribute('data-status', 'CONFIRMED');
 
     // Shows status text
     expect(screen.getByText('registrationStatusBanner.confirmed')).toBeInTheDocument();
 
     // AC3: "Manage Registration" link to /register/{eventCode}
-    const link = screen.getByText('registrationStatusBanner.manageLink');
+    const link = screen.getByTestId('registration-manage-link');
     expect(link).toBeInTheDocument();
     expect(link.closest('a')).toHaveAttribute('href', '/register/BATbern999');
   });
@@ -88,10 +88,10 @@ describe('RegistrationStatusBanner', () => {
     );
 
     const banner = screen.getByTestId('registration-status-banner');
-    expect(banner.className).toMatch(/warning/i);
+    expect(banner).toHaveAttribute('data-status', 'REGISTERED');
     expect(screen.getByText('registrationStatusBanner.registered')).toBeInTheDocument();
 
-    const link = screen.getByText('registrationStatusBanner.manageLink');
+    const link = screen.getByTestId('registration-manage-link');
     expect(link.closest('a')).toHaveAttribute('href', '/register/BATbern999');
   });
 
@@ -99,10 +99,10 @@ describe('RegistrationStatusBanner', () => {
     render(<RegistrationStatusBanner status="WAITLIST" eventCode="BATbern999" isLoading={false} />);
 
     const banner = screen.getByTestId('registration-status-banner');
-    expect(banner.className).toMatch(/info/i);
+    expect(banner).toHaveAttribute('data-status', 'WAITLIST');
     expect(screen.getByText('registrationStatusBanner.waitlist')).toBeInTheDocument();
 
-    const link = screen.getByText('registrationStatusBanner.manageLink');
+    const link = screen.getByTestId('registration-manage-link');
     expect(link.closest('a')).toHaveAttribute('href', '/register/BATbern999');
   });
 
@@ -119,7 +119,7 @@ describe('RegistrationStatusBanner', () => {
     );
 
     const banner = screen.getByTestId('registration-status-banner');
-    expect(banner.className).toMatch(/info/i);
+    expect(banner).toHaveAttribute('data-status', 'WAITLIST');
     // t mock returns key; key used is waitlistWithPosition (not waitlist)
     expect(screen.getByText('registrationStatusBanner.waitlistWithPosition')).toBeInTheDocument();
     expect(screen.queryByText('registrationStatusBanner.waitlist')).not.toBeInTheDocument();
@@ -165,7 +165,7 @@ describe('RegistrationStatusBanner', () => {
       <RegistrationStatusBanner status="CONFIRMED" eventCode="BATbern142" isLoading={false} />
     );
 
-    const link = screen.getByText('registrationStatusBanner.manageLink');
+    const link = screen.getByTestId('registration-manage-link');
     expect(link.closest('a')).toHaveAttribute('href', '/register/BATbern142');
   });
 });

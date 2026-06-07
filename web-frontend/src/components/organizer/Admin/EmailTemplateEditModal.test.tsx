@@ -34,7 +34,8 @@ vi.mock('@monaco-editor/react', () => ({
   ),
 }));
 
-// TinyMCE — replace with a simple textarea for tests
+// TinyMCE React wrapper — replace with a simple textarea for tests
+// (TinyMCE itself is loaded at runtime via tinymceScriptSrc, so no module mocks needed)
 vi.mock('@tinymce/tinymce-react', () => ({
   Editor: ({ value, onEditorChange }: { value?: string; onEditorChange?: (v: string) => void }) => (
     <textarea
@@ -106,7 +107,9 @@ describe('EmailTemplateEditModal — layout mode', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useLayoutTemplates).mockReturnValue({ data: [] } as never);
+    vi.mocked(useLayoutTemplates).mockReturnValue({
+      data: [{ templateKey: 'batbern-default', locale: 'de', category: 'LAYOUT', isLayout: true }],
+    } as never);
     vi.mocked(useCreateEmailTemplate).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
@@ -235,7 +238,9 @@ describe('EmailTemplateEditModal — create mode (no template)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useLayoutTemplates).mockReturnValue({ data: [] } as never);
+    vi.mocked(useLayoutTemplates).mockReturnValue({
+      data: [{ templateKey: 'batbern-default', locale: 'de', category: 'LAYOUT', isLayout: true }],
+    } as never);
     vi.mocked(useCreateEmailTemplate).mockReturnValue({
       mutateAsync: mockCreateMutateAsync,
       isPending: false,

@@ -78,12 +78,10 @@ public class SessionUser {
     @Convert(converter = SpeakerRoleConverter.class)
     private SpeakerRole speakerRole;
 
-    /**
-     * Optional speaker-specific presentation title
-     * Used when speaker's title differs from the session title
-     */
-    @Column(name = "presentation_title", length = 255)
-    private String presentationTitle;
+    // Story 11.E.8 consolidation: dropped presentation_title (V102). BATbern's pattern is
+    // one talk per session; subtitles per co-speaker were never populated by the submit
+    // flow. If a future story needs per-speaker subtitle, add it back as an additive
+    // column at that time.
 
     /**
      * Confirmation status for speaker workflow

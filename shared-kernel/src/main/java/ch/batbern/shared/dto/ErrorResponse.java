@@ -18,6 +18,12 @@ public class ErrorResponse {
     private String path;
     private Integer status;
     private String error;
+    /**
+     * Stable machine-readable error code (e.g. {@code ADDITIONAL_EMAIL_DUPLICATE},
+     * {@code ADDITIONAL_EMAIL_LIMIT_REACHED}) — surfaces to clients for typed
+     * error handling. Aligns with the OpenAPI ErrorResponse schema.
+     */
+    private String errorCode;
     private String message;
     private String correlationId;
     private String severity;

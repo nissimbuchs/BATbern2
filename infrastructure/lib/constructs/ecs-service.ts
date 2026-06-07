@@ -21,6 +21,7 @@ export interface EcsServiceProps {
   secrets?: { [key: string]: ecs.Secret };
   repository?: ecr.IRepository;
   envName: string;
+  isProduction?: boolean;
 }
 
 /**
@@ -41,7 +42,7 @@ export class EcsService extends Construct {
   constructor(scope: Construct, id: string, props: EcsServiceProps) {
     super(scope, id);
 
-    const isProd = props.envName === 'production';
+    const isProd = props.isProduction ?? (props.envName === 'production');
 
     // Create task definition
     this.taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {

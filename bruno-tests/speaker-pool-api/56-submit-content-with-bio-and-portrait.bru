@@ -1,0 +1,60 @@
+meta {
+  name: Submit Content (organizer-on-behalf) — accepts bio + portrait (Story 11.D.4 AC8/AC9)
+  type: http
+  seq: 56
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/content
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "presentationTitle": "On-behalf Test Title",
+    "presentationAbstract": "Strict-shape body — no `username` field; bio + profilePictureUrl flow through to User.bio / User.profile_picture_url per Story 11.C.2 AR14.",
+    "bio": "Cloud architect with 10 years experience.",
+    "profilePictureUrl": "https://cdn.batbern.ch/portraits/test-speaker.jpg"
+  }
+}
+
+assert {
+  res.status: in [201, 404, 409, 422]
+}
+
+tests {
+  test("MUST NOT return 400 — bio + profilePictureUrl must be valid schema fields (Story 11.D.4 AC9)", function() {
+    // Review patch: the prior assertion `in [201, 400, 404, 409, 422]` allowed a
+    // 400 to pass — which silently masked schema regressions (a 400 with
+    // "Unknown field 'bio'" would have been a regression on AC9 but passed
+    // assertion). Tighten: 400 is now disallowed. If a 400 occurs, surface the
+    // response body so the failure points at the offending validation message.
+    const status = res.getStatus();
+    if (status === 400) {
+      const body = res.getBody();
+      throw new Error(
+        'Expected the schema to accept optional bio + profilePictureUrl, but got 400. ' +
+        'Response body: ' + JSON.stringify(body)
+      );
+    }
+    expect([201, 404, 409, 422]).to.include(status);
+  });
+
+  test("on success path, response should echo presentationTitle (Story 11.D.4 AC9)", function() {
+    if (res.getStatus() === 201) {
+      const body = res.getBody();
+      expect(body.presentationTitle).to.equal('On-behalf Test Title');
+    }
+  });
+}

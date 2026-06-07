@@ -188,6 +188,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [uploadFile, reset, onUploadError, multiple, maxFiles, uploadedFiles.length, t]
   );
 

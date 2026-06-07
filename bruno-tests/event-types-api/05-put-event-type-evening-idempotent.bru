@@ -1,0 +1,56 @@
+meta {
+  name: PUT EVENING with captured baseline (round-trip)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/events/types/EVENING
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "minSlots": {{eveningMinSlots}},
+    "maxSlots": {{eveningMaxSlots}},
+    "slotDuration": {{eveningSlotDuration}},
+    "theoreticalSlotsAM": {{eveningTheoreticalSlotsAM}},
+    "breakSlots": {{eveningBreakSlots}},
+    "lunchSlots": {{eveningLunchSlots}},
+    "defaultCapacity": {{eveningDefaultCapacity}}
+  }
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response echoes the captured baseline (round-trip integrity)", function() {
+    const body = res.getBody();
+    expect(body.type).to.equal("EVENING");
+    expect(body.minSlots).to.equal(Number(bru.getVar("eveningMinSlots")));
+    expect(body.maxSlots).to.equal(Number(bru.getVar("eveningMaxSlots")));
+    expect(body.slotDuration).to.equal(Number(bru.getVar("eveningSlotDuration")));
+    expect(body.theoreticalSlotsAM).to.equal(bru.getVar("eveningTheoreticalSlotsAM") === "true" || bru.getVar("eveningTheoreticalSlotsAM") === true);
+    expect(body.breakSlots).to.equal(Number(bru.getVar("eveningBreakSlots")));
+    expect(body.lunchSlots).to.equal(Number(bru.getVar("eveningLunchSlots")));
+    expect(body.defaultCapacity).to.equal(Number(bru.getVar("eveningDefaultCapacity")));
+  });
+}
+
+docs {
+  PR 2a: idempotent-PUT pattern, call #1. Replays the captured EVENING
+  config from test 04 and asserts the response reflects the same values.
+  Test 06 calls PUT a second time with the same body and asserts the
+  response is still identical — that's the idempotency invariant.
+
+  Story 5.1 AC3/AC8 guards: minSlots > 0, maxSlots >= minSlots,
+  slotDuration >= 15, defaultCapacity > 0. The captured baseline always
+  satisfies these (we just GET'd it), so this PUT never trips validation.
+}

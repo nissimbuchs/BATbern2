@@ -1,0 +1,44 @@
+meta {
+  name: Cleanup — delete workflow state-machine fixture event
+  type: http
+  seq: 97.1
+}
+
+delete {
+  url: {{baseUrl}}/events/{{workflowEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("workflow fixture event deleted", function() {
+    expect([204, 404, 409]).to.include(res.getStatus());
+  });
+
+  test("publish workflowDeletedEventCode + status for 97c-verify-workflow-event-deleted", function() {
+    // PR 6 (plan §D step 4): hand the eventCode + DELETE status to 97c.
+    // 97c asserts 404 ONLY when status was 204 or 404; skips when 409
+    // (state-machine forbade delete → event still exists by design).
+    bru.setVar("workflowDeletedEventCode", bru.getVar("workflowEventCode"));
+    bru.setVar("workflowDeleteStatus", res.getStatus());
+    bru.setVar("workflowEventCode", null);
+  });
+}
+
+docs {
+  PR 2b: cleanup for the 00c workflow event. After the 8-state walk
+  the event is in ARCHIVED. DELETE on an ARCHIVED event:
+    - returns 204 if state-machine allows hard-delete from ARCHIVED
+      (current behavior — needs verification),
+    - returns 409 if the state machine forbids the delete,
+    - returns 404 if eventArchivalCleanupService already removed it
+      (Story 10.18 archival cascade).
+  All three are accepted — the next run's 00-pretest-cleanup catches
+  any leftover via the BRUNO-TEST- prefix sweep (no-op for BATbern*
+  event_codes but a safety net once test data is normalized per
+  plan §D).
+}

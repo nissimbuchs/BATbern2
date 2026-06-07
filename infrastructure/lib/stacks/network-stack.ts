@@ -79,7 +79,7 @@ export class NetworkStack extends cdk.Stack {
     // Uses automatic DNS validation with hosted zone in same account
     if (props.config.domain?.apiDomain && props.config.domain?.hostedZoneId) {
       // Get domain name based on environment
-      const domainName = props.config.envName === 'production' ? 'batbern.ch' : `${props.config.envName}.batbern.ch`;
+      const domainName = props.config.domain?.zoneName ?? `${props.config.envName}.batbern.ch`;
 
       // Import hosted zone from same account
       const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
@@ -91,7 +91,7 @@ export class NetworkStack extends cdk.Stack {
       this.apiCertificate = new certificatemanager.Certificate(this, 'ApiCertificate', {
         domainName: props.config.domain.apiDomain,
         validation: certificatemanager.CertificateValidation.fromDns(hostedZone),
-      }) as certificatemanager.ICertificate;
+      });
 
       new cdk.CfnOutput(this, 'ApiCertificateArn', {
         value: this.apiCertificate.certificateArn,

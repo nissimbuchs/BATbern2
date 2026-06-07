@@ -1,12 +1,14 @@
 package ch.batbern.events.watch;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
-import ch.batbern.events.domain.Speaker;
+import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.exception.UserNotFoundException;
+import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SpeakerRepository;
 
 import ch.batbern.events.watch.dto.ActiveEventDetail;
 import ch.batbern.events.watch.dto.ActiveEventsResponse;
@@ -17,6 +19,7 @@ import ch.batbern.events.watch.dto.SpeakerArrivalBroadcast;
 import ch.batbern.events.watch.dto.SpeakerDetail;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -32,10 +35,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -44,7 +47,14 @@ import java.util.stream.Collectors;
  *
  * GET /api/v1/watch/organizers/me/active-events
  * Requires: JWT with ROLE_ORGANIZER
+ *
+ * Story 11.C.1: speaker enrichment (first/last/bio/profile_picture_url) is now
+ * resolved via UserApiClient (per-record HTTP enrichment per ADR-004) instead
+ * of the deleted Speaker entity. N round-trips are acceptable at this scale —
+ * an event detail loads 5-10 speakers and the UserApiClient cache (15-min TTL)
+ * absorbs repeats.
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/watch")
 @RequiredArgsConstructor
@@ -66,7 +76,7 @@ public class WatchEventController {
 
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
-    private final SpeakerRepository speakerRepository;
+    private final UserApiClient userApiClient;
     private final WatchSpeakerArrivalService arrivalService;
 
     /**
@@ -99,17 +109,34 @@ public class WatchEventController {
         sessions.sort(Comparator.comparing(
                 s -> s.getStartTime() != null ? s.getStartTime() : Instant.MIN));
 
-        // Batch-load all speakers for this event in one query to avoid N+1 (W2.3: NFR4)
+        // Resolve speaker identity via per-record UserApiClient lookup (Story 11.C.1).
+        // The UserApiClient implementation caches results (15-min TTL), so repeats
+        // across sessions are cheap. N round-trips are acceptable for 5-10 speakers per event.
         Set<String> speakerUsernames = sessions.stream()
                 .flatMap(s -> s.getSessionUsers().stream())
                 .map(SessionUser::getUsername)
                 .collect(Collectors.toSet());
-        Map<String, Speaker> speakerMap = speakerRepository.findAllByUsernameIn(speakerUsernames)
-                .stream()
-                .collect(Collectors.toMap(Speaker::getUsername, Function.identity()));
+        Map<String, UserResponse> userMap = new HashMap<>();
+        boolean userServiceDegraded = false;
+        for (String username : speakerUsernames) {
+            try {
+                userMap.put(username, userApiClient.getUserByUsername(username));
+            } catch (UserNotFoundException e) {
+                log.debug("Speaker user {} not found; falling back to session_users cache", username);
+            } catch (UserServiceException e) {
+                // user-management-service degraded — fall back to local session_users cache
+                // for all remaining usernames in this event detail load. Log once per request
+                // to avoid log spam.
+                if (!userServiceDegraded) {
+                    log.warn("user-management-service degraded for event {}: {}; using session_users cache fallback",
+                            event.getEventCode(), e.getMessage());
+                    userServiceDegraded = true;
+                }
+            }
+        }
 
         List<SessionDetail> sessionDetails = sessions.stream()
-                .map(session -> mapToSessionDetail(session, speakerMap))
+                .map(session -> mapToSessionDetail(session, userMap))
                 .collect(Collectors.toList());
 
         // Derive typical start/end time from sessions (HH:mm in Europe/Zurich)
@@ -142,9 +169,9 @@ public class WatchEventController {
         );
     }
 
-    private SessionDetail mapToSessionDetail(Session session, Map<String, Speaker> speakerMap) {
+    private SessionDetail mapToSessionDetail(Session session, Map<String, UserResponse> userMap) {
         List<SpeakerDetail> speakerDetails = session.getSessionUsers().stream()
-                .map(su -> mapToSpeakerDetail(su, speakerMap))
+                .map(su -> mapToSpeakerDetail(su, userMap))
                 .collect(Collectors.toList());
 
         String scheduledStart = session.getStartTime() != null
@@ -184,19 +211,20 @@ public class WatchEventController {
         );
     }
 
-    private SpeakerDetail mapToSpeakerDetail(SessionUser sessionUser, Map<String, Speaker> speakerMap) {
-        Speaker speaker = speakerMap.get(sessionUser.getUsername());
+    private SpeakerDetail mapToSpeakerDetail(SessionUser sessionUser, Map<String, UserResponse> userMap) {
+        UserResponse user = userMap.get(sessionUser.getUsername());
 
-        String firstName = speaker != null ? speaker.getFirstName() : sessionUser.getSpeakerFirstName();
-        String lastName = speaker != null ? speaker.getLastName() : sessionUser.getSpeakerLastName();
-        String bio = speaker != null ? speaker.getBio() : null;
-        String profilePictureUrl = speaker != null ? speaker.getProfilePictureUrl() : null;
+        String firstName = user != null ? user.getFirstName() : sessionUser.getSpeakerFirstName();
+        String lastName = user != null ? user.getLastName() : sessionUser.getSpeakerLastName();
+        String bio = user != null ? user.getBio() : null;
+        String profilePictureUrl = user != null && user.getProfilePictureUrl() != null
+                ? user.getProfilePictureUrl().toString() : null;
 
         return new SpeakerDetail(
                 sessionUser.getUsername(),
                 firstName,
                 lastName,
-                null,           // company — not in Speaker entity, cross-service call deferred
+                null,           // company — not in UserResponse, cross-service call deferred
                 null,           // companyLogoUrl — cross-service call deferred
                 profilePictureUrl,
                 bio,

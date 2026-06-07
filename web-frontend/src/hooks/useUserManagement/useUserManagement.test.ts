@@ -86,7 +86,13 @@ describe('useUserList', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockListUsers).toHaveBeenCalledWith(DEFAULT_FILTERS, DEFAULT_PAGINATION);
+    expect(mockListUsers).toHaveBeenCalledWith(
+      DEFAULT_FILTERS,
+      DEFAULT_PAGINATION,
+      undefined,
+      undefined,
+      undefined
+    );
     expect(result.current.data).toEqual(MOCK_USER_LIST);
   });
 

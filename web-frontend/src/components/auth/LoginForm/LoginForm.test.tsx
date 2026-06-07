@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { LoginForm } from './LoginForm';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
+import { MemoryRouter } from 'react-router-dom';
 import i18n from '@/i18n/config';
 import { ConfigProvider } from '@/contexts/ConfigContext';
 import type { AppConfig } from '@/config/runtime-config';
@@ -28,6 +29,14 @@ vi.mock('@hooks/useAuth', () => ({
   useAuth: () => mockUseAuth,
 }));
 
+// Mock authService (Story 12.9: the Google SSO button calls authService.signInWithFederated,
+// NOT Amplify directly — the component must use the service layer). vi.hoisted is required
+// because the mock factory references the fn eagerly (it's hoisted above normal consts).
+const mockSignInWithFederated = vi.hoisted(() => vi.fn());
+vi.mock('@/services/auth/authService', () => ({
+  authService: { signInWithFederated: mockSignInWithFederated },
+}));
+
 // Create theme for MUI components
 const theme = createTheme();
 
@@ -44,18 +53,34 @@ const mockConfig: AppConfig = {
     notifications: true,
     analytics: false,
     pwa: false,
+    turnstile: false,
+    sso: false,
   },
 };
 
-// Helper function to render with theme, i18n, and config
-const renderWithTheme = (component: React.ReactElement) => {
+// Helper function to render with theme, i18n, config, and router.
+// MemoryRouter is required because LoginForm reads ?reason=account_deactivated via
+// useSearchParams (Story 12.7 / G1); `initialEntries` lets tests drive that query.
+// `config` override (Story 12.9) lets a test toggle features.sso to exercise the gated button.
+const renderWithTheme = (
+  component: React.ReactElement,
+  { route = '/login', config = mockConfig }: { route?: string; config?: AppConfig } = {}
+) => {
   return render(
-    <ConfigProvider config={mockConfig}>
-      <I18nextProvider i18n={i18n}>
-        <ThemeProvider theme={theme}>{component}</ThemeProvider>
-      </I18nextProvider>
-    </ConfigProvider>
+    <MemoryRouter initialEntries={[route]}>
+      <ConfigProvider config={config}>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider theme={theme}>{component}</ThemeProvider>
+        </I18nextProvider>
+      </ConfigProvider>
+    </MemoryRouter>
   );
+};
+
+// Config with the SSO feature flag ON (Story 12.9).
+const ssoOnConfig: AppConfig = {
+  ...mockConfig,
+  features: { ...mockConfig.features, sso: true },
 };
 
 describe('LoginForm Component', () => {
@@ -244,6 +269,27 @@ describe('LoginForm Component', () => {
     expect(screen.getByText(/forgot password/i)).toBeInTheDocument();
   });
 
+  it('should_notClearError_when_errorAppearsWithoutUserTyping', async () => {
+    // Regression (2026-06-04): the clear-on-typing effect listed `error` in its
+    // dependency array and cleared unconditionally — the moment AuthContext set
+    // INVALID_CREDENTIALS after a wrong password, the effect wiped it before the
+    // Alert could ever render against the real (stateful) provider. The static
+    // mock here kept the Alert visible, so test 9.25 never caught it. Guard:
+    // with an error present and NO typing, clearError must NOT be invoked.
+    Object.assign(mockUseAuth, {
+      error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
+    });
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
+    });
+    expect(mockClearError).not.toHaveBeenCalled();
+  });
+
   it('should_clearErrorOnInputChange_when_userStartsTyping', async () => {
     // Test 9.28: should_clearErrorOnInputChange_when_userStartsTyping
     const user = userEvent.setup();
@@ -263,6 +309,105 @@ describe('LoginForm Component', () => {
 
     await waitFor(() => {
       expect(mockClearError).toHaveBeenCalled();
+    });
+  });
+
+  // Story 12.7 / G1: deactivated-account notice
+  it('should_showDeactivatedNotice_when_reasonQueryParamPresent', async () => {
+    await act(async () => {
+      renderWithTheme(<LoginForm />, { route: '/login?reason=account_deactivated' });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/has been deactivated/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should_notShowDeactivatedNotice_when_noReasonQueryParam', async () => {
+    await act(async () => {
+      renderWithTheme(<LoginForm />, { route: '/login' });
+    });
+
+    expect(screen.queryByText(/has been deactivated/i)).not.toBeInTheDocument();
+  });
+
+  it('should_showDeactivatedNotice_when_storedLogoutReasonPresent', async () => {
+    // Story 12.8 F5: a failed federated hydration lands on plain `/login` (no query param —
+    // AuthCallbackPage's replace navigation wipes it). The sessionStorage hand-off set by
+    // the apiClient 403 interceptor must still surface (and consume) the notice.
+    sessionStorage.setItem('batbern.logout-reason', 'account_deactivated');
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />, { route: '/login' });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/has been deactivated/i)).toBeInTheDocument();
+    });
+    // Consumed — a later unrelated visit must not re-show it.
+    expect(sessionStorage.getItem('batbern.logout-reason')).toBeNull();
+  });
+
+  it('should_dismissDeactivatedNotice_when_closeClicked', async () => {
+    const user = userEvent.setup();
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />, { route: '/login?reason=account_deactivated' });
+    });
+
+    const notice = await screen.findByText(/has been deactivated/i);
+    expect(notice).toBeInTheDocument();
+
+    // MUI Alert onClose renders a close button with aria-label "Close".
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /close/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/has been deactivated/i)).not.toBeInTheDocument();
+    });
+  });
+
+  // Story 12.9: "Continue with Google" button, gated on features.sso.
+  describe('Continue with Google button (features.sso)', () => {
+    it('should_renderGoogleButton_when_ssoFeatureEnabled', async () => {
+      await act(async () => {
+        renderWithTheme(<LoginForm />, { config: ssoOnConfig });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should_notRenderGoogleButton_when_ssoFeatureDisabled', async () => {
+      await act(async () => {
+        renderWithTheme(<LoginForm />); // default mockConfig has sso: false
+      });
+
+      // The email/password form is present...
+      await waitFor(() => {
+        expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+      });
+      // ...but the Google button is not.
+      expect(
+        screen.queryByRole('button', { name: /continue with google/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it('should_callSignInWithFederatedGoogle_when_googleButtonClicked', async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        renderWithTheme(<LoginForm />, { config: ssoOnConfig });
+      });
+
+      const googleButton = await screen.findByRole('button', {
+        name: /continue with google/i,
+      });
+      await user.click(googleButton);
+
+      expect(mockSignInWithFederated).toHaveBeenCalledTimes(1);
+      expect(mockSignInWithFederated).toHaveBeenCalledWith('Google');
     });
   });
 });

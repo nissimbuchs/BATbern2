@@ -7,9 +7,11 @@
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { authService } from '@/services/auth/authService';
+import { subscribe as subscribeToNewsletter } from '@/services/newsletterService';
 
 export interface RegistrationFormData {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -27,10 +29,11 @@ export const useRegistration = () => {
 
   return useMutation({
     mutationFn: async (data: RegistrationFormData): Promise<RegistrationResult> => {
-      // Split full name into first and last name
-      const nameParts = data.fullName.trim().split(/\s+/);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+      // Story 12.6a: names are captured in two clean fields — no more fragile
+      // fullName.split(/\s+/) heuristic that mis-split multi-word given names
+      // ("Anna Maria") and compound surnames ("von der Berg").
+      const firstName = data.firstName.trim();
+      const lastName = data.lastName.trim();
 
       // Call existing authService.signUp method (using existing SignUpData interface)
       const result = await authService.signUp({
@@ -48,6 +51,23 @@ export const useRegistration = () => {
 
       if (!result.success) {
         throw new Error(result.error?.code || 'SIGNUP_FAILED');
+      }
+
+      // Story 12.11 (Scope Revision #4): the newsletter checkbox used to be packed into
+      // custom:preferences and silently dropped (nothing consumed it). Newsletter consent
+      // lives in EMS `newsletter_subscribers` (Story 10.7), so subscribe via the existing
+      // public endpoint — same approach as NewsletterSubscribeWidget. Best-effort: a
+      // subscribe failure (or 409 already-subscribed) must never fail the registration.
+      if (data.newsletterOptIn) {
+        try {
+          await subscribeToNewsletter({
+            email: data.email,
+            firstName,
+            language: i18n.language?.startsWith('de') ? 'de' : 'en',
+          });
+        } catch (error) {
+          console.warn('[useRegistration] Newsletter subscribe failed (non-blocking)', error);
+        }
       }
 
       // PostConfirmation Lambda (Story 1.2.5) creates database record automatically

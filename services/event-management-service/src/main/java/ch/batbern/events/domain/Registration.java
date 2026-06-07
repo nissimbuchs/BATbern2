@@ -17,8 +17,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -69,6 +74,53 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Registration {
+
+    /**
+     * Statuses that count toward currentAttendeeCount (display purposes).
+     * Includes 'attended' which is the historical import status for past events.
+     * Excludes 'cancelled' to avoid inflating counts.
+     */
+    public static final List<String> ACTIVE_STATUSES =
+            List.of("registered", "confirmed", "waitlist", "attended");
+
+    /**
+     * Statuses that count as confirmed/attending (for confirmedCount and spotsRemaining).
+     * Excludes 'waitlist' (not yet confirmed) and 'cancelled'.
+     */
+    public static final List<String> CONFIRMED_STATUSES =
+            List.of("registered", "confirmed", "attended");
+
+    /**
+     * Statuses that occupy a capacity slot for new registration enforcement.
+     * Excludes 'waitlist' (pending), 'attended' (historical only), and 'cancelled'.
+     */
+    public static final List<String> CAPACITY_STATUSES =
+            List.of("registered", "confirmed");
+
+    /**
+     * Metadata key marking a registration as programmatic (auto-created by the system rather
+     * than self-registered by the attendee). Its value is the trigger source — one of the
+     * speaker triggers ({@code POOL_ACCEPTED}, {@code POOL_ACCEPTED_ON_BEHALF},
+     * {@code SESSION_PRIMARY_SPEAKER}, {@code SESSION_CO_SPEAKER}) or
+     * {@link #TRIGGER_STAKEHOLDER_ENROLLMENT}. A registration carrying this key is NOT counted
+     * as a real attendee and never blocks event deletion.
+     */
+    public static final String AUTO_REGISTERED_FROM_KEY = "autoRegisteredFrom";
+
+    /**
+     * {@code autoRegisteredFrom} value used by {@code RegistrationService.createInternalRegistration}
+     * when an organizer/partner is auto-enrolled at event creation (AutoEnrollmentListener).
+     */
+    public static final String TRIGGER_STAKEHOLDER_ENROLLMENT = "STAKEHOLDER_ENROLLMENT";
+
+    /**
+     * @return true if this registration was auto-created by the system (carries the
+     *     {@link #AUTO_REGISTERED_FROM_KEY} metadata marker), false if it is a real
+     *     self-registered attendee.
+     */
+    public boolean isProgrammatic() {
+        return metadata != null && metadata.containsKey(AUTO_REGISTERED_FROM_KEY);
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -152,11 +204,46 @@ public class Registration {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    /**
+     * Unconfirmed-resend job (link-validity hardening): timestamp of the most recent automated
+     * confirmation-email resend, and how many automated resends have been sent so far. Used by
+     * {@link ch.batbern.events.service.RegistrationResendService} to cap resends and enforce a gap
+     * between them. Null / 0 for registrations that were never auto-resent.
+     */
+    @Column(name = "confirmation_resent_at")
+    private Instant confirmationResentAt;
+
+    @Column(name = "confirmation_resend_count", nullable = false)
+    @Builder.Default
+    private Integer confirmationResendCount = 0;
+
+    /**
+     * JSONB audit metadata.
+     * <p>
+     * Auto-participant enrolment (spec
+     * {@code _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md})
+     * stores the trigger source here as {@code {"autoRegisteredFrom": "<trigger>"}} where trigger
+     * is one of {@code POOL_ACCEPTED}, {@code POOL_ACCEPTED_ON_BEHALF},
+     * {@code SESSION_PRIMARY_SPEAKER}, or {@code SESSION_CO_SPEAKER}.
+     * <p>
+     * Defaults to an empty map (matches the DB-side {@code DEFAULT '{}'} in V107).
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    @Builder.Default
+    private Map<String, Object> metadata = new HashMap<>();
+
     @PrePersist
     protected void onCreate() {
         // Story 10.12: auto-generate deregistration token if not set (covers test builders and legacy paths)
         if (deregistrationToken == null) {
             deregistrationToken = UUID.randomUUID();
+        }
+        if (confirmationResendCount == null) {
+            confirmationResendCount = 0;
+        }
+        if (metadata == null) {
+            metadata = new HashMap<>();
         }
         createdAt = Instant.now();
         updatedAt = Instant.now();

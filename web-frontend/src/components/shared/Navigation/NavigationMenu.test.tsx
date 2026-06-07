@@ -28,6 +28,11 @@ vi.mock('react-i18next', () => ({
         'navigation.myCompany': 'My Company',
         'navigation.topics': 'Topics',
         'navigation.mainNav': 'main navigation',
+        'navigation.companies': 'Companies',
+        'navigation.users': 'Users',
+        'navigation.newsletterSubscribers': 'Newsletter Subscribers',
+        'navigation.publicSite': 'Public Site',
+        'events:navigation.dashboard': 'Events',
       };
       return translations[key] || key;
     },
@@ -50,11 +55,12 @@ describe('NavigationMenu Component', () => {
     test('should_renderOrganizerMenuItems_when_roleIsOrganizer', () => {
       renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
-      // Organizer should see full menu: Events, Speakers, Partners, Analytics
+      // Organizer should see: Events, Partners, Companies, Users, Newsletter Subscribers, Analytics
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/partners/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/analytics/i)[0]).toBeInTheDocument();
+      expect(screen.getByText(/companies/i)).toBeInTheDocument();
+      expect(screen.getByText(/users/i)).toBeInTheDocument();
     });
 
     test('should_linkToEventsManagement_when_eventsClicked', () => {
@@ -64,11 +70,11 @@ describe('NavigationMenu Component', () => {
       expect(eventsLink).toHaveAttribute('href', '/organizer/events');
     });
 
-    test('should_linkToSpeakersManagement_when_speakersClicked', () => {
+    test('should_linkToUsersManagement_when_usersClicked', () => {
       renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
-      const speakersLink = screen.getAllByText(/speakers/i)[0].closest('a');
-      expect(speakersLink).toHaveAttribute('href', '/organizer/speakers');
+      const usersLink = screen.getByText(/users/i).closest('a');
+      expect(usersLink).toHaveAttribute('href', '/organizer/users');
     });
 
     test('should_showPartnersDropdown_when_partnersClicked', () => {
@@ -86,29 +92,21 @@ describe('NavigationMenu Component', () => {
     });
   });
 
+  // 2026-05-20 (Q#3 / Q#1b) — SPEAKER admin-nav entries removed. Speakers live in the
+  // public site (their dashboard at /speaker-portal/dashboard, profile at
+  // /speaker-portal/profile) and the public nav surfaces "My Sessions" + "My Profile".
+  // The role-based admin NavigationMenu therefore renders nothing for a speaker-only
+  // user; AppHeader hides the role-selector chip too (RoleSelector filter on
+  // getRolesWithNavEntries).
   describe('Speaker Navigation', () => {
-    test('should_renderSpeakerMenuItems_when_roleIsSpeaker', () => {
+    test('should_renderEmptyMenu_when_roleIsSpeaker', () => {
       renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
 
-      // Speaker should see: Dashboard, My Events, My Content, Profile
-      expect(screen.getAllByText(/dashboard/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/my events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/my content/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/profile/i)[0]).toBeInTheDocument();
-    });
-
-    test('should_notShowPartnersMenu_when_roleIsSpeaker', () => {
-      renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
-
-      // Speaker should NOT see Partners menu
+      // No admin-nav items for speakers — neither the old My Events / My Content nor
+      // Partners (the latter never applied) should appear.
+      expect(screen.queryByText(/^my events$/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/^my content$/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/^partners$/i)).not.toBeInTheDocument();
-    });
-
-    test('should_linkToMyEvents_when_myEventsClicked', () => {
-      renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
-
-      const myEventsLink = screen.getAllByText(/my events/i)[0].closest('a');
-      expect(myEventsLink).toHaveAttribute('href', '/speaker/events');
     });
   });
 
@@ -136,28 +134,15 @@ describe('NavigationMenu Component', () => {
     });
   });
 
+  // 2026-05-20 (Q#3 / Q#1b) — ATTENDEE admin-nav entries removed, same reasoning as
+  // the SPEAKER block above. Attendees consume the public website (event browse +
+  // registration + archive), not an admin-app surface.
   describe('Attendee Navigation', () => {
-    test('should_renderAttendeeMenuItems_when_roleIsAttendee', () => {
+    test('should_renderEmptyMenu_when_roleIsAttendee', () => {
       renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
 
-      // Attendee should see: Events, Speakers, My Registrations
-      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/my registrations/i)[0]).toBeInTheDocument();
-    });
-
-    test('should_notShowAnalytics_when_roleIsAttendee', () => {
-      renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
-
-      // Attendee should NOT see Analytics menu
+      expect(screen.queryByText(/my registrations/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/analytics/i)).not.toBeInTheDocument();
-    });
-
-    test('should_linkToEventsList_when_eventsClicked', () => {
-      renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
-
-      const eventsLink = screen.getAllByText(/events/i)[0].closest('a');
-      expect(eventsLink).toHaveAttribute('href', '/attendee/events');
     });
   });
 
@@ -178,8 +163,8 @@ describe('NavigationMenu Component', () => {
 
       renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
-      const speakersLink = screen.getAllByText(/speakers/i)[0].closest('a');
-      expect(speakersLink).not.toHaveClass(/active|selected/i);
+      const usersLink = screen.getByText(/users/i).closest('a');
+      expect(usersLink).not.toHaveClass(/active|selected/i);
     });
   });
 
@@ -205,18 +190,45 @@ describe('NavigationMenu Component', () => {
 
       // Organizer items present
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/partners/i)[0]).toBeInTheDocument();
       // Partner items also present
       expect(screen.getAllByText(/my company/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();
     });
 
-    test('should_deduplicatePublicSite_when_multipleRolesHaveSameItem', () => {
+    test('should_renderRoleSectionsWithDividersAndHeaders_when_multiRole', () => {
+      // Story 11.E.3 (cherry-pick 73d94688 / Story 9.5): each role's items appear in its
+      // own section, separated by a divider; vertical variant also gets per-section overline
+      // headers (horizontal variant uses dividers only — header pollutes the toolbar layout).
+      renderWithRouter(<NavigationMenu userRoles={['organizer', 'partner']} variant="vertical" />);
+
+      // The grouped <nav> root carries the regression marker (single-role path lacks it).
+      expect(screen.getByTestId('navigation-menu-grouped')).toBeInTheDocument();
+
+      // Section list landmarks land per role.
+      expect(screen.getByTestId('nav-section-organizer')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-section-partner')).toBeInTheDocument();
+
+      // A divider appears between roles (the second role gets a divider; the first doesn't).
+      expect(screen.queryByTestId('nav-section-divider-organizer')).not.toBeInTheDocument();
+      expect(screen.getByTestId('nav-section-divider-partner')).toBeInTheDocument();
+
+      // Vertical layout renders the overline section header (translated via i18n).
+      expect(screen.getByTestId('nav-section-header-organizer')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-section-header-partner')).toBeInTheDocument();
+    });
+
+    test('should_deduplicateSharedItems_when_multipleRolesHaveSameItem', () => {
+      // Code review 2026-05-18 (D4): shared items like "Public Site" exist in multiple
+      // roles' nav configs. Without dedup a dual-role user would see "Public Site" twice
+      // (once per section), which (a) clutters the menu and (b) creates duplicate accessible
+      // names for screen readers (WCAG 2.4.4). getGroupedNavigationForRoles dedups across
+      // the user's groups; the item ends up in whichever role-section appears first in the
+      // iteration order.
       renderWithRouter(<NavigationMenu userRoles={['organizer', 'partner']} />);
 
-      // "Public Site" nav item exists for both organizer and partner — should appear only once
       const publicLinks = screen.queryAllByRole('link', { name: /public site/i });
-      expect(publicLinks.length).toBeLessThanOrEqual(1);
+      expect(publicLinks).toHaveLength(1);
     });
   });
 

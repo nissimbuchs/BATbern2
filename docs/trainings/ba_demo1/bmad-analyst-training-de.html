@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Analyst Agent — Praxisnahe Trainingseinheit</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --accent4: #ffd166;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --user-bg: #1e2a45;
+    --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a;
+    --agent-border: #00d4aa;
+    --artifact-bg: #2a1e45;
+    --artifact-border: #6c63ff;
+    --note-bg: #2e2a1a;
+    --note-border: #ffd166;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* ── Navigation ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover, nav a.active { background: var(--accent); color: white; }
+
+  /* ── Layout ── */
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  /* ── Title ── */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 640px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+
+  /* ── Section headers ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .phase-1 { background: rgba(0,212,170,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(108,99,255,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-bridge { background: rgba(255,209,102,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* ── Overview cards ── */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .overview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .overview-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .overview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { color: var(--text-muted); font-size: 0.88rem; }
+  .overview-card.phase1 { border-color: rgba(0,212,170,.4); }
+  .overview-card.phase2 { border-color: rgba(108,99,255,.4); }
+  .overview-card.bridge { border-color: rgba(255,209,102,.4); }
+
+  /* ── Conversation turns ── */
+  .turn { margin-bottom: 20px; }
+
+  .turn-user {
+    background: var(--user-bg);
+    border: 1px solid var(--user-border);
+    border-left: 4px solid var(--user-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-agent {
+    background: var(--agent-bg);
+    border: 1px solid var(--agent-border);
+    border-left: 4px solid var(--agent-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-artifact {
+    background: var(--artifact-bg);
+    border: 1px solid var(--artifact-border);
+    border-left: 4px solid var(--artifact-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-note {
+    background: var(--note-bg);
+    border: 1px solid var(--note-border);
+    border-left: 4px solid var(--note-border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 0.88rem;
+  }
+
+  .turn-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .turn-label .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .label-user { color: var(--user-border); }
+  .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); }
+  .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); }
+  .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); }
+  .label-note .dot { background: var(--accent4); }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: var(--text-muted); }
+  .turn-content code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  /* ── Collapsible ── */
+  details {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 10px;
+  }
+  summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::before { content: '▶'; font-size: 10px; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { color: var(--text); }
+  .details-body { padding: 12px 14px; font-size: 0.87rem; border-top: 1px solid var(--border); }
+
+  /* ── Bullet lists ── */
+  .feature-list { list-style: none; padding: 0; }
+  .feature-list li {
+    padding: 5px 0 5px 20px;
+    position: relative;
+    font-size: 0.9rem;
+  }
+  .feature-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent2);
+    font-weight: bold;
+  }
+
+  /* ── Step flow ── */
+  .step-flow { display: flex; flex-direction: column; gap: 4px; }
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .step-item.done { border-color: rgba(0,212,170,.3); }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+  .step-item.done .step-num { background: rgba(0,212,170,.15); border-color: var(--accent2); color: var(--accent2); }
+  .step-info h4 { font-size: 0.9rem; font-weight: 700; }
+  .step-info p { font-size: 0.82rem; color: var(--text-muted); }
+
+  /* ── PRD section overview ── */
+  .prd-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+  }
+  .prd-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+  .prd-info h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 2px; }
+  .prd-info p { font-size: 0.82rem; color: var(--text-muted); }
+
+  /* ── Key takeaways ── */
+  .takeaway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .takeaway {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .takeaway h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .takeaway p { font-size: 0.87rem; color: var(--text-muted); }
+
+  /* ── Tags ── */
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .tag-green { background: rgba(0,212,170,.12); color: var(--accent2); border: 1px solid rgba(0,212,170,.3); }
+  .tag-purple { background: rgba(108,99,255,.12); color: var(--accent); border: 1px solid rgba(108,99,255,.3); }
+  .tag-yellow { background: rgba(255,209,102,.12); color: var(--accent4); border: 1px solid rgba(255,209,102,.3); }
+  .tag-red { background: rgba(255,107,107,.12); color: var(--accent3); border: 1px solid rgba(255,107,107,.3); }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+
+  /* ── Command pill ── */
+  .cmd {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.85rem;
+    padding: 2px 10px;
+    color: var(--accent4);
+  }
+
+  /* ── Timeline connector ── */
+  .connector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .connector::before, .connector::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#overview" class="active">Überblick</a>
+  <a href="#phase1">Phase 1 — Analyse</a>
+  <a href="#brainstorm-features">Feature-Brainstorming</a>
+  <a href="#brainstorm-invoice">Rechnungs-Brainstorming</a>
+  <a href="#bridge">→ PRD</a>
+  <a href="#phase2">Phase 2 — PRD</a>
+  <a href="#prd-steps">PRD-Schritte</a>
+  <a href="#artifacts">Artefakte</a>
+  <a href="#takeaways">Erkenntnisse</a>
+</nav>
+
+<main>
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="badge">BMAD Praxis-Training</div>
+    <h1>Analyst-Agent-Sitzung<br><span>Vom Brainstorming zum PRD</span></h1>
+    <p>Eine vollständige Anleitung einer echten BMAD-Sitzung — wie Business-Analysten mit dem Analyst Agent (Mary) interagieren, um Ideen zu entwickeln, Anforderungen zu erfassen und ein produktionsreifes Product Requirements Document zu erstellen.</p>
+    <div class="hero-meta">
+      <div><div class="label">Projekt</div><div class="value">BATbern</div></div>
+      <div><div class="label">Feature-Set</div><div class="value">Partner Mgmt Erweiterungen</div></div>
+      <div><div class="label">Sitzungsdatum</div><div class="value">2026-04-04</div></div>
+      <div><div class="label">Abgedeckte Phasen</div><div class="value">1 → 2</div></div>
+    </div>
+  </div>
+
+  <!-- ── OVERVIEW ── -->
+  <section id="overview">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">🗺</div>
+      <div class="section-header-text">
+        <h2>Sitzungsüberblick</h2>
+        <p>Welche BMAD-Phasen durchgeführt wurden und wie sie zusammenhängen</p>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-card phase1">
+        <div class="icon">📊</div>
+        <h3>Phase 1 — Analyse</h3>
+        <p>Den Analyst Agent (Mary) laden. Bestehende Funktionalität erkunden. Verbesserungsideen über verschiedene Themen hinweg brainstormen. Umfang eingrenzen. Detaillierte Analyse einer neuen Fähigkeit (Rechnungsmanagement).</p>
+        <div class="tags">
+          <span class="tag tag-green">Brainstorming</span>
+          <span class="tag tag-green">Erkundung</span>
+        </div>
+      </div>
+      <div class="overview-card bridge">
+        <div class="icon">🧭</div>
+        <h3>Übergang — /bmad-help</h3>
+        <p>Nach dem Brainstorming fragt der Analyst <em>was kommt als Nächstes?</em> BMAD-Help überprüft den Fortschritt und leitet zum nächsten erforderlichen Schritt weiter: PRD erstellen.</p>
+        <div class="tags">
+          <span class="tag tag-yellow">Navigation</span>
+        </div>
+      </div>
+      <div class="overview-card phase2">
+        <div class="icon">📋</div>
+        <h3>Phase 2 — PRD-Erstellung</h3>
+        <p>12-schrittiger strukturierter Workflow. Kollaborative Moderation durch Discovery, Vision, Erfolgskriterien, User Journeys, Scoping, funktionale und nicht-funktionale Anforderungen sowie Dokumentenverfeinerung.</p>
+        <div class="tags">
+          <span class="tag tag-purple">PRD</span>
+          <span class="tag tag-purple">30 FRs</span>
+          <span class="tag tag-purple">20 NFRs</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-note" style="margin-top:24px">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingshinweis</div>
+      <div class="turn-content">
+        Diese Sitzung verwendete Mary, den <strong>BMAD Analyst Agent</strong> (<span class="cmd">/bmad-agent-bmm-analyst</span>). Sie wurde aus <code>_bmad/bmm/agents/analyst.md</code> geladen und bezog die Konfiguration aus <code>_bmad/bmm/config.yaml</code> — so initialisieren sich alle BMAD-Agents. Die gesamte Sitzung lief in <strong>einem Kontextfenster</strong>. Best Practice: Den PRD-Workflow in einem <em>neuen</em> Kontextfenster ausführen, um Token-Druck zu vermeiden.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PHASE 1 ── -->
+  <section id="phase1">
+    <div class="section-header">
+      <div class="phase-badge phase-1">1</div>
+      <div class="section-header-text">
+        <h2>Phase 1 — Analyse: Agent-Aktivierung</h2>
+        <p>Den Analyst Agent laden und die Sitzung ausrichten</p>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Benutzereingabe</div>
+        <div class="turn-content"><span class="cmd">/bmad-agent-bmm-analyst</span></div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Was intern passiert</div>
+      <div class="turn-content">
+        1. Agent liest <code>_bmad/bmm/agents/analyst.md</code> — Persona, Menü, Aktivierungsschritte<br>
+        2. Lädt <code>_bmad/bmm/config.yaml</code> — extrahiert <code>user_name: Nissim</code>, <code>communication_language: English</code><br>
+        3. Ersetzt alle <code>{project-root}</code>-Variablen durch das tatsächliche Arbeitsverzeichnis<br>
+        4. Zeigt Begrüßung + nummeriertes Menü an
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Mary — Analyst-Agent-Antwort</div>
+        <div class="turn-content">
+          <strong>Hallo, Nissim!</strong> Ich bin Mary, deine strategische Business-Analystin — eine Schatzsucherin für Erkenntnisse. Hier ist, was ich für dich tun kann:<br><br>
+          <ul class="feature-list">
+            <li>[BP] Projekt brainstormen</li>
+            <li>[MR] Marktforschung</li>
+            <li>[DR] Domänenrecherche</li>
+            <li>[TR] Technische Recherche</li>
+            <li>[CB] Brief erstellen</li>
+            <li>[DP] Projekt dokumentieren</li>
+            <li>[PM] Party Mode</li>
+            <li>[DA] Agent beenden</li>
+          </ul>
+          <br>Du kannst jederzeit <code>/bmad-help</code> eingeben, um Rat zu bekommen, was als Nächstes zu tun ist.
+        </div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingspunkt: Menügesteuerte Agents</div>
+      <div class="turn-content">
+        BMAD-Agents zeigen ein <strong>nummeriertes Menü</strong> an und warten auf Eingabe. Der Analyst beginnt nie mit der Arbeit, bis der Benutzer eine Aufgabe auswählt. Dies ist das „HALT and wait"-Muster — entscheidend, um zu verhindern, dass Agents in die falsche Richtung loslaufen.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURE BRAINSTORM ── -->
+  <section id="brainstorm-features">
+    <div class="section-header">
+      <div class="phase-badge phase-1">1</div>
+      <div class="section-header-text">
+        <h2>Phase 1 — Brainstorming: Partner-Features</h2>
+        <p>Aktuellen Stand erkunden und Verbesserungsideen generieren</p>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Benutzereingabe (Spracheingabe)</div>
+        <div class="turn-content">
+          "I want to brainstorm with you about the partner management features. Please look at the current partner management for the partner himself and for organizers. Then come up with some ideas how we could enhance the functionality for partner management."
+        </div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Was intern passiert</div>
+      <div class="turn-content">
+        Mary nutzt den <strong>Explore-Sub-Agent</strong> für eine sehr gründliche Codebase-Analyse — liest Controller, Services, Domänenmodelle, DTOs, Frontend-Komponenten, User Stories (Epic 8) und OpenAPI-Spezifikationen. Dies verankert das Brainstorming in <em>tatsächlichem Code</em>, nicht in Annahmen.
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Mary — Ist-Zustand-Analyse + Verbesserungsideen</div>
+        <div class="turn-content">
+          <strong>Ist-Zustand:</strong> BATbern hat eine zweiseitige Partner-Plattform. Partner können Teilnahme-Analysen einsehen, über Themen abstimmen/vorschlagen und Kalendereinladungen erhalten. Organisatoren können den gesamten Partnerschafts-Lebenszyklus verwalten, Meetings erstellen, interne Notizen schreiben und RSVPs einsehen.<br><br>
+          <strong>Zentrale Beobachtung:</strong> Partner sind grösstenteils <em>passive Empfänger</em>. Sie erhalten Einladungen, sehen Daten, stimmen über Themen ab — haben aber kaum Möglichkeiten, selbst zu initiieren, zu kommunizieren oder sich selbst zu bedienen.<br><br>
+          <strong>Vorgeschlagene Verbesserungsthemen:</strong>
+          <ul class="feature-list">
+            <li>🟢 Thema 1: Partner-Self-Service-Empowerment (Kontaktverwaltung, RSVP-Sichtbarkeit, Meeting-Anfragen, Dokumenten-Vault)</li>
+            <li>🔵 Thema 2: Reichhaltigere Analysen &amp; Einblicke (Jahresvergleiche, Benchmarking, PDF-Bericht)</li>
+            <li>🟡 Thema 3: Intelligentere Meeting-Koordination (Agenda-Zusammenarbeit, Erinnerungen, Post-Meeting-Notizen-Sharing)</li>
+            <li>🟠 Thema 4: Lebenszyklus- &amp; Beziehungsmanagement (Verlängerungsbenachrichtigungen, Stufenworkflow, Onboarding-Checkliste)</li>
+            <li>🔴 Thema 5: Kommunikation &amp; Engagement (Messaging, Themen-Threads, Benachrichtigungszentrale)</li>
+          </ul>
+          <br><strong>Top 5 nach Wert/Aufwand:</strong> RSVP-Sichtbarkeit, Verlängerungsbenachrichtigungen, Notizen-Sharing, Jahresvergleichsindikatoren, PDF-Bericht
+        </div>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Benutzerantwort — Umfang eingrenzen</div>
+        <div class="turn-content">
+          "Ok. I like the RSVP visibility, the note and meeting minutes and attachments sharing. On analytics, we already have a top-level analytics page that organizers and partners can see with all you proposed. Remember them. But I also had another idea — I thought we could add functionality for the yearly invoice management. Can you help me brainstorm on this?"
+        </div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingspunkt: Gedächtnis + Themenwechsel</div>
+      <div class="turn-content">
+        Beachte zwei Dinge: (1) Der Benutzer <strong>korrigiert eine falsche Annahme</strong> (Analytics existiert bereits) — gute Analysten begrüssen Korrekturen; (2) Der Benutzer <strong>wechselt mitten im Brainstorming zu einer neuen Idee</strong>. Mary speichert die ausgewählten Features im persistenten Speicher, bevor sie zum neuen Thema wechselt, damit nichts verloren geht.
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-artifact">
+        <div class="turn-label label-artifact"><div class="dot"></div>Speicher geschrieben — Ausgewählte Features</div>
+        <div class="turn-content">
+          Datei: <code>memory/project_partner_enhancements.md</code><br><br>
+          ✅ RSVP-Sichtbarkeit im Portal<br>
+          ✅ Post-Meeting-Notizen-Sharing + Action Items<br>
+          ✅ Anhänge (Organisator lädt hoch, Partner lädt herunter)<br>
+          ❌ Analytics — <em>existiert bereits auf der übergeordneten Seite, keine neue Arbeit nötig</em>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── INVOICE BRAINSTORM ── -->
+  <section id="brainstorm-invoice">
+    <div class="section-header">
+      <div class="phase-badge phase-1">1</div>
+      <div class="section-header-text">
+        <h2>Phase 1 — Brainstorming: Rechnungsmanagement</h2>
+        <p>Detaillierte Analyse einer neuen Fähigkeit durch strukturierte Fragen und Antworten</p>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Mary — Rechnungs-Brainstorming (Themen A–D)</div>
+        <div class="turn-content">
+          <strong>Basis existiert bereits:</strong> <code>partnershipCost</code>-Feld auf der Partner-Entität — der finanzielle Grundstein ist gelegt.<br><br>
+          <strong>Schlüsselfragen vor dem Brainstorming:</strong>
+          <ul class="feature-list">
+            <li>Wer erstellt die Rechnung — BATbern-Plattform oder externes Tool (Bexio)?</li>
+            <li>Was ist der Abrechnungszyklus — jährlich, pro Event oder beides?</li>
+            <li>Schweizer QR-Rechnung erforderlich, oder reicht ein einfaches PDF?</li>
+            <li>Wer sieht die Rechnungen — nur Organisator, oder auch Partner?</li>
+          </ul>
+          <br><strong>Vorgeschlagene Themen:</strong> A) Rechnungsverfolgung (leichtgewichtig), B) PDF-Generierung, C) Zahlungsintegration (fortgeschritten), D) Finanzübersicht
+        </div>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Benutzer — Beantwortung der Schlüsselfragen</div>
+        <div class="turn-content">
+          "1: A simple PDF invoice is enough.<br>
+          2: No, we create them by hand. You could add functionality to create the invoice. The partner has a self-service tab to edit the invoice information (contact, address, order number if exists). Then you have all info to create the invoice.<br>
+          3: Pure annual fee. Would be great to have a small table for organizers to set the fee easily for each partner.<br>
+          Let's focus on core, make it shine, nice to have. Allow also for sending reminder mail on overdue invoices manually."
+        </div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingspunkt: Strukturierte Anforderungserhebung</div>
+      <div class="turn-content">
+        Mary stellte <strong>4 Scoping-Fragen, bevor sie eine einzige Lösung vorschlug</strong>. Das ist die Kernkompetenz des Analysten: Widerstehe dem Drang, in Lösungen einzutauchen, bis du die Rahmenbedingungen verstehst. Die Antworten des Benutzers eliminierten Schweizer QR-Rechnung, Bexio-Integration und komplexe Zahlungsabläufe in einem einzigen Austausch — das spart Stunden unnötiger Designarbeit.
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Mary — Kristallisierte Rechnungsspezifikation</div>
+        <div class="turn-content">
+          <strong>Vorgeschlagene neue Entitäten:</strong><br>
+          • <code>PartnerInvoice</code> — id, companyName, invoiceNumber (BAT-2026-ACME-001), billingYear, amount, dueDate, status (DRAFT→SENT→PAID→OVERDUE→CANCELLED), paidAt, reminderSentAt<br>
+          • <code>PartnerBillingInfo</code> — companyName (PK), billingContactName, billingContactEmail, billingAddress, vatNumber, purchaseOrderNumber<br><br>
+          <strong>Organisator-Gebührentabelle:</strong> Inline-editierbare Tabelle (Partner | Stufe | Jahresgebühr | Rechnungsstatus) mit Jahresumschalter + „Alle Entwürfe erstellen"-Massenaktion<br><br>
+          <strong>Rechnungslebenszyklus:</strong> DRAFT → [Senden] → SENT → [Als bezahlt markieren] → PAID / OVERDUE → [Erinnerung senden] → [Als bezahlt markieren]<br><br>
+          <strong>Partner-Self-Service:</strong> Rechnungsinformationen-Tab im Portal (Formular + Rechnungshistorie + PDF-Download)
+        </div>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Benutzer — Letzte Bestätigungen</div>
+        <div class="turn-content">
+          "1: configurable in the admin section [for the association address]<br>
+          2: that works [invoice number format BAT-2026-ACME-001]"
+        </div>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-artifact">
+        <div class="turn-label label-artifact"><div class="dot"></div>Speicher geschrieben — Rechnungsspezifikation</div>
+        <div class="turn-content">
+          Datei: <code>memory/project_invoice_management_spec.md</code><br><br>
+          Vollständiges Datenmodell, Lebenszyklus, Organisator-Gebührentabelle, PDF-Vorlage-Layout, Partner-Self-Service-Tab, E-Mail-Abläufe und Mahnungen (manueller Auslöser) — alles dokumentiert und im persistenten Speicher gespeichert.
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="turn">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Mary — Vollständige Feature-Zusammenfassung</div>
+        <div class="turn-content">
+          <strong>Gruppe A — Partner-Erlebnis:</strong><br>
+          A1: RSVP-Sichtbarkeit | A2: Veröffentlichte Meeting-Notizen | A3: Anhänge<br><br>
+          <strong>Gruppe B — Rechnungsmanagement:</strong><br>
+          B1: PartnerBillingInfo Self-Service | B2: PartnerInvoice Lebenszyklus | B3: Jahresgebührentabelle<br>
+          B4: PDF-Generierung | B5: Rechnung senden + Erinnerungs-E-Mails | B6: Auto-Überfällig-Erkennung | B7: Partner-Rechnungshistorie + Download
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── BRIDGE ── -->
+  <section id="bridge">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">→</div>
+      <div class="section-header-text">
+        <h2>Übergang — /bmad-help</h2>
+        <p>BMAD-Help nutzen, um vom Brainstorming zum nächsten erforderlichen Schritt zu navigieren</p>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Benutzereingabe</div>
+        <div class="turn-content"><span class="cmd">/bmad-help</span></div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Was intern passiert</div>
+      <div class="turn-content">
+        BMAD-Help lädt <code>_bmad/_config/bmad-help.csv</code> (den vollständigen Workflow-Katalog), erkennt das aktive Modul (bmm), analysiert, was gerade abgeschlossen wurde (Brainstorming in Phase 1-Analyse), und wendet Routing-Regeln an, um den korrekten nächsten Schritt vorzuschlagen.
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>BMAD-Help-Antwort</div>
+        <div class="turn-content">
+          <strong>Phase 1 — Analyse ✅ Abgeschlossen</strong><br><br>
+          <strong>Optional:</strong> Brief erstellen (CB) — überspringen, da das Brainstorming bereits ausführlich ist<br><br>
+          <strong>Erforderlich ⬅ Dein nächster Schritt:</strong><br>
+          <span class="cmd">/bmad-bmm-create-prd</span> — PRD erstellen mit 📋 John (Product Manager)<br>
+          <em>Dies ist erforderlich, bevor Architektur und Stories fortfahren können.</em><br><br>
+          Nach dem PRD: Architektur → Epics &amp; Stories → Umsetzungsbereitschaft
+        </div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingspunkt: /bmad-help ist dein Kompass</div>
+      <div class="turn-content">
+        Nutze <code>/bmad-help</code> immer, wenn du unsicher bist, was als Nächstes kommt. Es liest deine abgeschlossenen Schritte, prüft, was <strong>erforderlich</strong> vs. <strong>optional</strong> ist, und leitet dich korrekt weiter. Es verhindert den häufigen Fehler, zur Implementierung zu springen, bevor die Planungsartefakte vollständig sind.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PHASE 2 INTRO ── -->
+  <section id="phase2">
+    <div class="section-header">
+      <div class="phase-badge phase-2">2</div>
+      <div class="section-header-text">
+        <h2>Phase 2 — PRD-Erstellungs-Workflow</h2>
+        <p>12-schrittiger strukturierter Moderationsprozess von der Vision zum vollständigen Anforderungsdokument</p>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Benutzereingabe</div>
+        <div class="turn-content"><span class="cmd">/bmad-bmm-create-prd</span></div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Was intern passiert</div>
+      <div class="turn-content">
+        Der Workflow lädt <code>_bmad/bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md</code>, dann folgt er einer <strong>Step-File-Architektur</strong>: Jeder Schritt ist eine separate Datei, die einzeln nach Bedarf geladen wird (just-in-time). Der Agent liest nie voraus. Jeder Schritt aktualisiert die PRD-Frontmatter (<code>stepsCompleted</code>) vor dem Laden des nächsten Schritts. Dies stellt sicher, dass keine Schritte übersprungen werden und der Zustand immer wiederherstellbar ist.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRD STEPS ── -->
+  <section id="prd-steps">
+    <div class="section-header">
+      <div class="phase-badge phase-2">2</div>
+      <div class="section-header-text">
+        <h2>PRD-Schritte — Gesprächsverlauf</h2>
+        <p>Jeder Schritt im Detail: Was der Agent gefragt hat, was du geantwortet hast, was geschrieben wurde</p>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">1</div>
+      <div class="step-info">
+        <h4>Schritt 1 — Initialisierung</h4>
+        <p>PRD-Datei aus Vorlage erstellen, Eingabedokumente entdecken, Brownfield-Kontext bestätigen</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Agent</div>
+        <div class="turn-content">
+          Gefunden: 0 Briefs, 0 Recherchen, 2 Brainstorming-Sitzungen, 3 Projektdokumente (Brownfield). <code>docs/prd.md</code> aus Vorlage erstellt. Angemerkt, dass das aktuelle Sitzungs-Brainstorming im Speicher liegt.
+        </div>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Du</div>
+        <div class="turn-content"><strong>c</strong> — Weiter</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEP 2 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">2</div>
+      <div class="step-info">
+        <h4>Schritt 2 — Projekt-Discovery &amp; Klassifizierung</h4>
+        <p>Projekttyp, Domäne, Komplexität und Brownfield/Greenfield-Kontext klassifizieren</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Agent — Klassifizierung</div>
+        <div class="turn-content">
+          • <strong>Projekttyp:</strong> saas_b2b (Multi-Tenant, rollenbasiert, Dashboards)<br>
+          • <strong>Domäne:</strong> event_management (allgemein, keine regulierten Einschränkungen)<br>
+          • <strong>Komplexität:</strong> Mittel<br>
+          • <strong>Kontext:</strong> Brownfield — Erweiterung der Epics 1–8
+        </div>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Du</div>
+        <div class="turn-content"><strong>c</strong> — Klassifizierung bestätigt, weiter</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEP 2b -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">2b</div>
+      <div class="step-info">
+        <h4>Schritt 2b — Produktvisions-Erkundung</h4>
+        <p>Durch kollaboratives Gespräch entdecken, was dieses Produkt besonders macht</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Agent — Fragen</div>
+        <div class="turn-content">
+          Was ist der tiefere Schmerz? Was ist der Begeisterungsmoment des Partners? Was ist der Gewinn für den Organisator? Warum jetzt?
+        </div>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Du — Beantwortet</div>
+        <div class="turn-content">
+          1. Difficult to track invoicing, lots of manual steps, no Bexio — let's include invoice creation<br>
+          2. Seeing partner meeting notes and action items<br>
+          3. Having a clear overview of invoice status — paid vs outstanding<br>
+          4. Evolving BATbern into a professional tool
+        </div>
+      </div>
+    </div>
+    <div class="turn-note turn" style="margin-left:42px; border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingspunkt: Die Vision entsteht aus den Antworten</div>
+      <div class="turn-content">
+        Der Agent synthetisierte diese 4 Antworten zu einer prägnanten Visionserklärung: <em>„BATbern in das einzige massgebliche Tool für den gesamten Partner-Lebenszyklus verwandeln — kein Bexio, keine handgemachten PDFs."</em> Der Benutzer hat diesen Satz nie geschrieben — er entstand aus strukturierten Fragen.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEP 2c + 3 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">2c–3</div>
+      <div class="step-info">
+        <h4>Schritte 2c &amp; 3 — Zusammenfassung + Erfolgskriterien</h4>
+        <p>Entwurf und Überprüfung der einleitenden Abschnitte des PRD</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Agent — Entwurf erstellt, dann gefragt</div>
+        <div class="turn-content">
+          Zusammenfassung aus der Visions-Erkundung entworfen. Dann für die Erfolgskriterien nach Spezifischem gefragt:<br>
+          <em>„Wäre 100 % der Jahresrechnungen aus BATbern heraus erstellt — null handgemachte PDFs — das richtige Ziel? Alle aktiven Partner vervollständigen ihre Rechnungsinformationen innerhalb von 4 Wochen?"</em>
+        </div>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Du</div>
+        <div class="turn-content"><strong>c</strong> — "That's all ok, continue"</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEP 4 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">4</div>
+      <div class="step-info">
+        <h4>Schritt 4 — User-Journey-Mapping</h4>
+        <p>5 narrative Journeys mit Persona-Hintergrundgeschichten und Fähigkeits-Rückverfolgbarkeit</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Agent — 5 Journeys geschrieben</div>
+        <div class="turn-content">
+          <strong>J1:</strong> Lukas (Organisator) — Rechnungssaison. Happy Path, vollständiger Workflow.<br>
+          <strong>J2:</strong> Lukas — Post-Meeting-Notizen-Sharing + Anhänge.<br>
+          <strong>J3:</strong> Sandra (Partnerin, Acme AG) — Erster Login nach dem Meeting. Happy Path.<br>
+          <strong>J4:</strong> Sandra — Rechnungsverwirrung. Edge Case + Lösung.<br>
+          <strong>J5:</strong> Lukas — Neues Partner-Onboarding + Admin-Konfigurationspfad.
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEPS 5–6 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">5–6</div>
+      <div class="step-info">
+        <h4>Schritte 5 &amp; 6 — Domäne &amp; Innovation (Übersprungen)</h4>
+        <p>Diese optionalen Schritte wurden übersprungen — keine regulierte Domäne, keine Innovationssignale</p>
+      </div>
+    </div>
+    <div class="turn-note turn" style="margin-left:42px; border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingspunkt: Optionale Schritte bewusst überspringen</div>
+      <div class="turn-content">
+        BMAD PRD-Schritte 5 und 6 sind optional. Der Agent hat <strong>selbst bewertet</strong>: Die Domäne ist allgemein (kein HIPAA, PCI-DSS usw.), und das Produkt ist eine solide Umsetzung bekannter Muster — keine bahnbrechende Innovation. Das Überspringen sparte Zeit, ohne an Wert zu verlieren. Der Agent war transparent in seiner Begründung.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEP 7 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">7</div>
+      <div class="step-info">
+        <h4>Schritt 7 — SaaS-B2B-Projekttyp-Anforderungen</h4>
+        <p>Mandantenmodell, RBAC-Matrix, Integrationen, Compliance — verankert in der Brownfield-Codebasis</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Du — Anforderung hinzugefügt</div>
+        <div class="turn-content">
+          <strong>c, but add a note for the architect to analyse what PDF creator tool to use.</strong>
+        </div>
+      </div>
+    </div>
+    <div class="turn-note turn" style="margin-left:42px; border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingspunkt: Inline-Korrekturen vor dem Speichern</div>
+      <div class="turn-content">
+        Der Benutzer fügte eine Anforderung hinzu, bevor er den Schritt genehmigte. Der Agent hat sie eingearbeitet, bevor er das Dokument ergänzte. <strong>Immer die Agent-Ausgabe überprüfen, bevor du C drückst</strong> — das ist deine Chance, etwas hinzuzufügen, zu entfernen oder zu korrigieren, bevor es Teil des Artefakts wird.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEP 8 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">8</div>
+      <div class="step-info">
+        <h4>Schritt 8 — Scoping-Übung (MVP / Wachstum / Vision)</h4>
+        <p>Phasen-Roadmap definiert und das eine verschiebbare Element identifiziert</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Agent — Zentrale Scoping-Erkenntnis</div>
+        <div class="turn-content">
+          „Anhänge sind das am ehesten verschiebbare Element — sie bieten Mehrwert, liegen aber nicht auf dem kritischen Pfad einer der beiden Kern-Journeys. Der Rechnungscluster und das Notizen-Sharing sind für die genannten Ziele unverzichtbar."
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEP 9 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">9</div>
+      <div class="step-info">
+        <h4>Schritt 9 — Funktionale Anforderungen (30 FRs)</h4>
+        <p>Der Fähigkeitsvertrag — implementierungsunabhängig, testbar, nach Bereichen organisiert</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Agent — FR-Fähigkeitsbereiche</div>
+        <div class="turn-content">
+          Rechnungsmanagement (FR1–FR12) · Partner-Rechnungsinformationen (FR13–FR17) · Rechnungs-PDF-Generierung (FR18–FR19) · Meeting-Notizen &amp; Action Items (FR20–FR23) · Anhänge (FR24–FR26) · Meeting-RSVP-Sichtbarkeit (FR27–FR28) · Admin-Konfiguration (FR29–FR30)
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEP 10 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">10</div>
+      <div class="step-info">
+        <h4>Schritt 10 — Nicht-funktionale Anforderungen (20 NFRs)</h4>
+        <p>Performance, Sicherheit, Barrierefreiheit, Zuverlässigkeit — und i18n vom Benutzer hinzugefügt</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Du — Fehlende Anforderung hinzugefügt</div>
+        <div class="turn-content">
+          <strong>"Don't forget i18n for the frontend, but also for the invoice."</strong>
+        </div>
+      </div>
+    </div>
+    <div class="turn-note turn" style="margin-left:42px; border-radius:var(--radius); border:1px solid var(--note-border); background:var(--note-bg); padding:14px 18px; font-size:.88rem">
+      <div class="turn-label label-note"><div class="dot"></div>Trainingspunkt: Der Benutzer ist der Domänenexperte</div>
+      <div class="turn-content">
+        Der Agent hat i18n im initialen NFR-Entwurf übersehen — der Benutzer hat es bemerkt. Dies ist das natürliche Zusammenarbeitsmodell: <strong>Der Agent liefert Struktur und Abdeckung, der Benutzer liefert Domänenwissen und entdeckt Lücken</strong>. Der Agent fügte dann 5 spezifische i18n-NFRs hinzu, die sowohl UI-Strings als auch die Rechnungs-PDF-Lokalisierung abdecken.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- STEPS 11–12 -->
+    <div class="step-item done" style="margin-bottom:8px">
+      <div class="step-num">11–12</div>
+      <div class="step-info">
+        <h4>Schritte 11 &amp; 12 — Feinschliff + Abschluss</h4>
+        <p>Dokument überprüft, Duplikate entfernt, Sprache gestrafft, Workflow als abgeschlossen markiert</p>
+      </div>
+    </div>
+    <div class="turn" style="margin-left:42px">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Agent — Zusammenfassung der Feinschliff-Änderungen</div>
+        <div class="turn-content">
+          Doppelten Product-Scope-Abschnitt entfernt · Technical Success entfernt (durch NFRs abgedeckt) · „The system will allow..."-Antimuster eliminiert · Journey-Narrative gestrafft · Überbrückende Übergänge hinzugefügt · Abschnittstitel für Präzision umbenannt · Doppelte RBAC-Zeilen zusammengeführt
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ARTIFACTS ── -->
+  <section id="artifacts">
+    <div class="section-header">
+      <div class="phase-badge phase-2">📄</div>
+      <div class="section-header-text">
+        <h2>Erstellte Artefakte</h2>
+        <p>Was in dieser Sitzung produziert wurde</p>
+      </div>
+    </div>
+
+    <div class="prd-section">
+      <div class="prd-icon">🧠</div>
+      <div class="prd-info">
+        <h4>Speicher — Ausgewählte Features</h4>
+        <p><code>memory/project_partner_enhancements.md</code> — RSVP-Sichtbarkeit, Notizen-Sharing, Meeting-Protokolle, Anhänge; Analytics bereits abgedeckt</p>
+      </div>
+    </div>
+    <div class="prd-section">
+      <div class="prd-icon">🧠</div>
+      <div class="prd-info">
+        <h4>Speicher — Rechnungsmanagement-Spezifikation</h4>
+        <p><code>memory/project_invoice_management_spec.md</code> — Vollständiges Datenmodell, Lebenszyklus, Gebührentabelle, PDF-Vorlage, Partner-Self-Service, E-Mail-Abläufe</p>
+      </div>
+    </div>
+    <div class="prd-section">
+      <div class="prd-icon">📋</div>
+      <div class="prd-info">
+        <h4>PRD — Vollständig</h4>
+        <p><code>docs/prd.md</code> — 9 Abschnitte, 30 FRs, 20 NFRs, 5 User Journeys, RBAC-Matrix, Risikoregister, Phasen-Roadmap. Status: <strong>abgeschlossen</strong>.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
+      <h3 style="font-size:1rem; margin-bottom:16px; color:var(--text-muted)">PRD-Abschnittsübersicht</h3>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:8px">
+        <div class="prd-section"><div class="prd-icon">🎯</div><div class="prd-info"><h4>Zusammenfassung</h4><p>Vision, Differenzierung, Zielbenutzer, die zwei gelösten Probleme</p></div></div>
+        <div class="prd-section"><div class="prd-icon">🏷</div><div class="prd-info"><h4>Projektklassifizierung</h4><p>SaaS B2B, Brownfield, mittlere Komplexität</p></div></div>
+        <div class="prd-section"><div class="prd-icon">✅</div><div class="prd-info"><h4>Erfolgskriterien</h4><p>Benutzererfolg, Geschäftserfolg, messbare Ergebnistabelle</p></div></div>
+        <div class="prd-section"><div class="prd-icon">📦</div><div class="prd-info"><h4>Projektumfang</h4><p>MVP, Phase 2, Phase 3, Risikominderungstabelle</p></div></div>
+        <div class="prd-section"><div class="prd-icon">🗺</div><div class="prd-info"><h4>User Journeys</h4><p>5 narrative Journeys (Lukas + Sandra) mit Fähigkeits-Rückverfolgbarkeitstabelle</p></div></div>
+        <div class="prd-section"><div class="prd-icon">🏗</div><div class="prd-info"><h4>SaaS-B2B-Architektur</h4><p>Mandantenmodell, RBAC-Matrix, Integrationsverträge, Compliance, Architekten-ADR-Flag</p></div></div>
+        <div class="prd-section"><div class="prd-icon">⚙️</div><div class="prd-info"><h4>Funktionale Anforderungen</h4><p>30 FRs über 7 Fähigkeitsbereiche — der verbindliche Fähigkeitsvertrag</p></div></div>
+        <div class="prd-section"><div class="prd-icon">📐</div><div class="prd-info"><h4>Nicht-funktionale Anforderungen</h4><p>20 NFRs: Performance, Sicherheit, Barrierefreiheit, Zuverlässigkeit, i18n</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── BONUS: THIS PRESENTATION ── -->
+  <section id="meta">
+    <div class="section-header">
+      <div class="phase-badge" style="background:rgba(255,107,107,.15);color:var(--accent3);border:2px solid var(--accent3);">✨</div>
+      <div class="section-header-text">
+        <h2>Bonus: Wie diese Präsentation erstellt wurde</h2>
+        <p>Ein Prompt. Eine Minute. Das gesamte Trainingsdokument, das du gerade liest.</p>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-user">
+        <div class="turn-label label-user"><div class="dot"></div>Benutzereingabe — wörtlich, nach Abschluss des PRD</div>
+        <div class="turn-content" style="font-size:1rem; line-height:1.7">
+          "I want to use this session, as an example session for my hands on training to business analysts, on how to interact with BMAD analyst agent and brainstorm and create a spec (and later also continue with ux, architecture and pm), so phases 1-3 of BMAD. can you create a html presentation of it, showing exactly, what my input prompts where, what you answered, and how this then resulted in an updated brainstorming document and later prd.md."
+        </div>
+      </div>
+    </div>
+
+    <div class="turn">
+      <div class="turn-agent">
+        <div class="turn-label label-agent"><div class="dot"></div>Claude Code — Was es getan hat</div>
+        <div class="turn-content">
+          Die vollständige Sitzung aus dem Gesprächskontext rekonstruiert → eine dunkel-thematisierte HTML-Präsentation mit farbcodierten Gesprächsverläufen, Trainings-Hinweisboxen, fixierter Navigation und abschnittsweiser Anleitung entworfen → ca. 1.100 Zeilen eigenständiges HTML/CSS/JS geschrieben → unter <code>docs/presentation/bmad-analyst-training.html</code> gespeichert.<br><br>
+          <strong>Keine Vorlagen. Keine Frameworks. Keine manuelle Arbeit.</strong> Das gesamte Dokument, das du gerade liest, wurde aus einer einzigen natürlichsprachlichen Anfrage am Ende der Sitzung generiert.
+        </div>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="border-radius:var(--radius); border:2px solid var(--accent3); background:rgba(255,107,107,.06); padding:20px 24px; margin-top:4px">
+      <div class="turn-label" style="color:var(--accent3); margin-bottom:12px; font-size:13px"><div class="dot" style="background:var(--accent3); width:8px;height:8px;border-radius:50%"></div>DER META-PUNKT</div>
+      <div class="turn-content" style="font-size:0.95rem; line-height:1.7">
+        Dieselbe KI, die dir beim Brainstorming, der Anforderungserhebung und dem Schreiben eines PRD mit 30 funktionalen Anforderungen geholfen hat, hat auch dieses Trainingsdokument erstellt — aus einer einzigen Gesprächsanfrage, nur unter Nutzung des bereits vorhandenen Sitzungskontexts.<br><br>
+        Das ist der Zinseszins-Effekt von BMAD: <strong>Jedes Artefakt, das die Sitzung produziert, kann selbst als Eingabe verwendet werden, um das nächste Artefakt zu generieren</strong> — Dokumentation, Präsentationen, Architekturdiagramme, Testpläne und mehr. Die Sitzung endet nie wirklich; sie speist sich immer weiter fort.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TAKEAWAYS ── -->
+  <section id="takeaways">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">💡</div>
+      <div class="section-header-text">
+        <h2>Zentrale Trainingserkenntnisse</h2>
+        <p>Was diese Sitzung über effektive BMAD-Analyst-Zusammenarbeit zeigt</p>
+      </div>
+    </div>
+
+    <div class="takeaway-grid">
+      <div class="takeaway">
+        <h3>🎯 Zuerst in der Codebasis verankern</h3>
+        <p>Bevor Verbesserungen vorgeschlagen wurden, las Mary den tatsächlichen Code. Verbesserungsideen, die der bestehenden Architektur widersprechen, werden sofort erkannt — nicht erst während der Entwicklung.</p>
+      </div>
+      <div class="takeaway">
+        <h3>❓ Fragen vor Lösungen</h3>
+        <p>Als Rechnungsmanagement vorgeschlagen wurde, stellte Mary 4 Scoping-Fragen, bevor sie eine einzige Feature-Idee generierte. Dies eliminierte Schweizer QR-Rechnung, Bexio und Zahlungsintegrationen in einem Austausch.</p>
+      </div>
+      <div class="takeaway">
+        <h3>🧭 /bmad-help zur Navigation nutzen</h3>
+        <p>Nach dem Brainstorming wusste der Benutzer nicht, was als Nächstes kam. <code>/bmad-help</code> las die abgeschlossene Arbeit und verwies auf den nächsten erforderlichen Schritt (PRD) statt auf einen optionalen (Brief).</p>
+      </div>
+      <div class="takeaway">
+        <h3>✏️ Vor dem Weiter-Drücken immer prüfen</h3>
+        <p>Der Architekten-PDF-Hinweis und die i18n-NFRs wurden beide vom Benutzer hinzugefügt, bevor er C drückte. C drücken ohne zu prüfen — so gehen Anforderungen verloren. <em>Erst lesen, dann weiter.</em></p>
+      </div>
+      <div class="takeaway">
+        <h3>💾 Speicher bewahrt den Kontext</h3>
+        <p>Als der Benutzer von Features zum Rechnungsmanagement wechselte, speicherte Mary zuerst die ausgewählten Features im Speicher. Nichts ging beim Themenwechsel oder in zukünftigen Sitzungen verloren.</p>
+      </div>
+      <div class="takeaway">
+        <h3>📋 FRs sind der Vertrag</h3>
+        <p>Schritt 9 erzeugt den verbindlichen Fähigkeitsvertrag. Der Agent betonte: „Jede Funktion, die hier nicht aufgeführt ist, wird im Endprodukt nicht existieren." Dies erzwingt Vollständigkeit, bevor die Architektur beginnt.</p>
+      </div>
+      <div class="takeaway">
+        <h3>⏭ Optionale Schritte selbstbewusst überspringen</h3>
+        <p>Domänenanforderungen (Schritt 5) und Innovationsanalyse (Schritt 6) wurden übersprungen, weil der Agent feststellte, dass sie nicht zutreffen. Überspringen spart Zeit; der Agent erklärt seine Begründung transparent.</p>
+      </div>
+      <div class="takeaway">
+        <h3>🔄 Frischer Kontext für jede Phase</h3>
+        <p>Der PRD-Workflow lief hier in derselben Sitzung (Trainings-Demo). In der Produktion: Jeden grösseren Workflow in einem neuen Kontextfenster ausführen, um Token-Druck und Kontextdrift zu vermeiden.</p>
+      </div>
+    </div>
+
+    <div class="turn-note turn" style="margin-top:32px; border-radius:var(--radius); border:1px solid var(--accent); background:rgba(108,99,255,.08); padding:20px 24px">
+      <div class="turn-label" style="color:var(--accent); margin-bottom:12px"><div class="dot" style="background:var(--accent); width:8px;height:8px;border-radius:50%"></div>WAS ALS NÄCHSTES IN EINER VOLLSTÄNDIGEN BMAD-SITZUNG KOMMT (Phasen 3+)</div>
+      <div class="turn-content">
+        <strong>Phase 3 — Architektur:</strong> <span class="cmd">/bmad-bmm-create-architecture</span> mit Winston (Architekt). Er liest das PRD und erstellt die technische Architektur — einschliesslich des in Schritt 7 markierten PDF-Bibliothek-ADR.<br><br>
+        <strong>Phase 3 — Epics &amp; Stories:</strong> <span class="cmd">/bmad-bmm-create-epics-and-stories</span> mit John (PM). Er ordnet die 30 FRs in User Stories, organisiert nach Epic.<br><br>
+        <strong>Phase 3 — Bereitschaftsprüfung:</strong> <span class="cmd">/bmad-bmm-check-implementation-readiness</span> mit Winston. Validiert, dass PRD + Architektur + Epics aufeinander abgestimmt sind, bevor die Entwicklung beginnt.<br><br>
+        <strong>Phase 4 — Entwicklung:</strong> Sprint-Planung → Dev-Stories → Code-Review → Retrospektive
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id], div[id="overview"]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

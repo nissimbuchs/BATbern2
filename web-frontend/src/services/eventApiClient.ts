@@ -287,12 +287,14 @@ class EventApiClient {
    */
   async createRegistration(
     eventCode: string,
-    data: CreateRegistrationRequest
+    data: CreateRegistrationRequest,
+    turnstileToken?: string | null
   ): Promise<{ message: string; email: string }> {
     try {
       const response = await apiClient.post<{ message: string; email: string }>(
         `${EVENT_API_PATH}/${eventCode}/registrations`,
-        data
+        data,
+        { headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {} }
       );
       return response.data;
     } catch (error) {
@@ -528,15 +530,29 @@ class EventApiClient {
     }
   }
 
-  // ── Event Teaser Images (Story 10.22) ─────────────────────────────────────────
+  // ── Teaser Images (event-specific or global when eventCode is null/_global) ──
+
+  private teaserBasePath(eventCode?: string | null): string {
+    const code = eventCode != null && eventCode.length > 0 ? eventCode : '_global';
+    return `${EVENT_API_PATH}/${code}/teaser-images`;
+  }
+
+  async listTeaserImages(eventCode?: string | null): Promise<TeaserImageItem[]> {
+    try {
+      const response = await apiClient.get<TeaserImageItem[]>(this.teaserBasePath(eventCode));
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
 
   async requestTeaserImageUploadUrl(
-    eventCode: string,
+    eventCode: string | null | undefined,
     request: TeaserImageUploadUrlRequest
   ): Promise<TeaserImageUploadUrlResponse> {
     try {
       const response = await apiClient.post<TeaserImageUploadUrlResponse>(
-        `${EVENT_API_PATH}/${eventCode}/teaser-images/upload-url`,
+        `${this.teaserBasePath(eventCode)}/upload-url`,
         request
       );
       return response.data;
@@ -546,12 +562,12 @@ class EventApiClient {
   }
 
   async confirmTeaserImageUpload(
-    eventCode: string,
+    eventCode: string | null | undefined,
     request: TeaserImageConfirmRequest
   ): Promise<TeaserImageItem> {
     try {
       const response = await apiClient.post<TeaserImageItem>(
-        `${EVENT_API_PATH}/${eventCode}/teaser-images/confirm`,
+        `${this.teaserBasePath(eventCode)}/confirm`,
         request
       );
       return response.data;
@@ -561,13 +577,13 @@ class EventApiClient {
   }
 
   async updateTeaserImage(
-    eventCode: string,
+    eventCode: string | null | undefined,
     imageId: string,
     request: TeaserImageUpdateRequest
   ): Promise<TeaserImageItem> {
     try {
       const response = await apiClient.patch<TeaserImageItem>(
-        `${EVENT_API_PATH}/${eventCode}/teaser-images/${imageId}`,
+        `${this.teaserBasePath(eventCode)}/${imageId}`,
         request
       );
       return response.data;
@@ -576,9 +592,61 @@ class EventApiClient {
     }
   }
 
-  async deleteTeaserImage(eventCode: string, imageId: string): Promise<void> {
+  async deleteTeaserImage(eventCode: string | null | undefined, imageId: string): Promise<void> {
     try {
-      await apiClient.delete(`${EVENT_API_PATH}/${eventCode}/teaser-images/${imageId}`);
+      await apiClient.delete(`${this.teaserBasePath(eventCode)}/${imageId}`);
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Export event participants as XLSX name-badge spreadsheet (organizer-only).
+   *
+   * Backend: `GET /api/v1/events/{eventCode}/participants/export.xlsx`
+   * Returns a binary XLSX blob containing one row per organizer ∪ event speaker ∪
+   * registered attendee, with columns: Vorname, Name, Firma, Rolle.
+   *
+   * @param eventCode Event code identifier (ADR-003)
+   * @returns Blob containing the XLSX bytes
+   */
+  async exportParticipantsXlsx(eventCode: string): Promise<Blob> {
+    try {
+      const response = await apiClient.get(
+        `${EVENT_API_PATH}/${eventCode}/participants/export.xlsx`,
+        { responseType: 'blob' }
+      );
+      return new Blob([response.data as BlobPart], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Export event participants as a printable DOCX name-badge sheet
+   * (Avery L4784 + BAT logo) — organizer-only.
+   *
+   * Backend: `GET /api/v1/events/{eventCode}/participants/export.docx`.
+   * Returns a Microsoft Word document with one badge per participant — same
+   * source set, dedupe rules, and sort order as
+   * {@link exportParticipantsXlsx} (the two endpoints share
+   * `ParticipantsCollector` on the backend). Each badge renders three lines:
+   * Name (bold), Firma (next to the logo), Rolle (italic).
+   *
+   * @param eventCode Event code identifier (ADR-003)
+   * @returns Blob containing the DOCX bytes
+   */
+  async exportParticipantsDocx(eventCode: string): Promise<Blob> {
+    try {
+      const response = await apiClient.get(
+        `${EVENT_API_PATH}/${eventCode}/participants/export.docx`,
+        { responseType: 'blob' }
+      );
+      return new Blob([response.data as BlobPart], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
     } catch (error) {
       throw this.transformError(error);
     }
@@ -651,7 +719,12 @@ class EventApiClient {
     if (status === 401) {
       message = 'Unauthorized: Please log in';
     } else if (status === 403) {
-      message = 'Forbidden: You do not have permission to perform this action';
+      // Extract error code from body so callers can detect turnstile_required / turnstile_failed (AC10, Story 10.31)
+      const errorData = axiosError.response.data as { message?: string; error?: string };
+      message =
+        errorData?.error ||
+        errorData?.message ||
+        'Forbidden: You do not have permission to perform this action';
     } else if (status === 404) {
       message = 'Not Found: The requested event was not found';
     } else if (status === 409) {

@@ -97,7 +97,6 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
                 .session(testSession1)
                 .username("test-user")
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
-                .presentationTitle("Test Presentation")
                 .isConfirmed(false)
                 .build();
 

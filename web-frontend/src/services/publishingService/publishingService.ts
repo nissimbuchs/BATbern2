@@ -13,16 +13,10 @@
 import apiClient from '@/services/api/apiClient';
 import type {
   PublishingPhase,
-  PublishingMode,
-  PublishRequest,
   PublishPhaseResponse,
   UnpublishPhaseResponse,
   PublishPreviewResponse,
   PublishingStatusResponse,
-  VersionHistoryResponse,
-  RollbackRequest,
-  RollbackResponse,
-  ChangeLogResponse,
   AutoPublishScheduleRequest,
   AutoPublishScheduleResponse,
   CancelAutoPublishResponse,
@@ -33,7 +27,6 @@ import type {
  *
  * @param eventCode - Event code (e.g., "BATbern142")
  * @param phase - Publishing phase ('topic' | 'speakers' | 'agenda')
- * @param options - Publishing options (mode, notifySubscribers, approvalOverride)
  * @returns Publishing version with CDN invalidation status
  * @throws 422 if content validation fails
  * @throws 401 if not authenticated
@@ -41,10 +34,9 @@ import type {
  */
 async function publishPhase(
   eventCode: string,
-  phase: PublishingPhase,
-  options?: PublishRequest
+  phase: PublishingPhase
 ): Promise<PublishPhaseResponse> {
-  const response = await apiClient.post(`/events/${eventCode}/publish/${phase}`, options || {});
+  const response = await apiClient.post(`/events/${eventCode}/publish/${phase}`);
   return response.data;
 }
 
@@ -80,60 +72,13 @@ async function getPublishingStatus(eventCode: string): Promise<PublishingStatusR
  *
  * @param eventCode - Event code
  * @param phase - Phase to preview
- * @param mode - Publishing mode
  * @returns Preview with content and validation status
  */
 async function getPublishPreview(
   eventCode: string,
-  phase: PublishingPhase,
-  mode: PublishingMode
+  phase: PublishingPhase
 ): Promise<PublishPreviewResponse> {
-  const response = await apiClient.get(`/events/${eventCode}/publish/${phase}/preview`, {
-    params: { mode },
-  });
-  return response.data;
-}
-
-/**
- * Get version history for an event
- *
- * @param eventCode - Event code
- * @returns Array of publishing versions (newest first)
- */
-async function getVersionHistory(eventCode: string): Promise<VersionHistoryResponse> {
-  const response = await apiClient.get(`/events/${eventCode}/publish/versions`);
-  return response.data;
-}
-
-/**
- * Rollback to a previous publishing version
- *
- * @param eventCode - Event code
- * @param versionNumber - Version number to rollback to
- * @param options - Rollback options (reason required)
- * @returns New version created by rollback
- * @throws 404 if version not found
- */
-async function rollbackVersion(
-  eventCode: string,
-  versionNumber: number,
-  options: RollbackRequest
-): Promise<RollbackResponse> {
-  const response = await apiClient.post(
-    `/events/${eventCode}/publish/rollback/${versionNumber}`,
-    options
-  );
-  return response.data;
-}
-
-/**
- * Get change log for published content
- *
- * @param eventCode - Event code
- * @returns Change log entries
- */
-async function getChangeLog(eventCode: string): Promise<ChangeLogResponse> {
-  const response = await apiClient.get(`/events/${eventCode}/publish/changelog`);
+  const response = await apiClient.get(`/events/${eventCode}/publish/${phase}/preview`);
   return response.data;
 }
 
@@ -180,9 +125,6 @@ export const publishingService = {
   unpublishPhase,
   getPublishingStatus,
   getPublishPreview,
-  getVersionHistory,
-  rollbackVersion,
-  getChangeLog,
   scheduleAutoPublish,
   cancelAutoPublish,
 };
@@ -193,9 +135,6 @@ export {
   unpublishPhase,
   getPublishingStatus,
   getPublishPreview,
-  getVersionHistory,
-  rollbackVersion,
-  getChangeLog,
   scheduleAutoPublish,
   cancelAutoPublish,
 };

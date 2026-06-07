@@ -138,6 +138,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
             component="li"
             key={key}
             {...otherProps}
+            data-testid={`company-option-${option.name}`}
             sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
           >
             <Avatar

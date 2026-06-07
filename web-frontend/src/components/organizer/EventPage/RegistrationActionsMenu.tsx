@@ -17,15 +17,23 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  Snackbar,
+  Alert,
 } from '@mui/material';
-import { Cancel as CancelIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import {
+  Cancel as CancelIcon,
+  Delete as DeleteIcon,
+  Email as EmailIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   cancelRegistration,
   deleteRegistration,
+  resendConfirmationEmail,
 } from '../../../services/api/eventRegistrationService';
 import type { EventParticipant } from '../../../types/eventParticipant.types';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 interface RegistrationActionsMenuProps {
   participant: EventParticipant;
@@ -33,8 +41,11 @@ interface RegistrationActionsMenuProps {
 
 const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ participant }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
 
   // Cancel registration mutation
   const cancelMutation = useMutation({
@@ -43,6 +54,14 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ parti
       // Invalidate queries to refresh the list (use hyphenated key to match hook)
       queryClient.invalidateQueries({ queryKey: ['event-registrations', participant.eventCode] });
     },
+  });
+
+  // Resend confirmation email mutation
+  const resendMutation = useMutation({
+    mutationFn: () => resendConfirmationEmail(participant.eventCode, participant.registrationCode),
+    onSuccess: () => setResendSuccess(true),
+    onError: (err: Error) =>
+      setResendError(err.message || t('eventPage.participantTable.actions.resendError')),
   });
 
   // Delete registration mutation
@@ -75,10 +94,27 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ parti
 
   // Don't show cancel button if already cancelled
   const showCancelButton = participant.status !== 'CANCELLED';
+  // Only show resend for pending (REGISTERED) registrations
+  const showResendButton = participant.status === 'REGISTERED';
 
   return (
     <>
       <Box sx={{ display: 'flex', gap: 0.5 }}>
+        {showResendButton && (
+          <Tooltip title={t('eventPage.participantTable.actions.resendConfirmation')}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                resendMutation.mutate();
+              }}
+              disabled={resendMutation.isPending}
+              sx={{ color: 'info.main' }}
+            >
+              <EmailIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
         {showCancelButton && (
           <Tooltip title={t('eventPage.participantTable.actions.cancel')}>
             <IconButton
@@ -104,10 +140,33 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ parti
         </Tooltip>
       </Box>
 
+      {/* Resend success/error feedback */}
+      <Snackbar
+        open={resendSuccess}
+        autoHideDuration={4000}
+        onClose={() => setResendSuccess(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="success" onClose={() => setResendSuccess(false)}>
+          {t('eventPage.participantTable.actions.resendSuccess')}
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={!!resendError}
+        autoHideDuration={6000}
+        onClose={() => setResendError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setResendError(null)}>
+          {resendError}
+        </Alert>
+      </Snackbar>
+
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
+        fullScreen={isMobile}
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
       >

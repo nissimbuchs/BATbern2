@@ -160,12 +160,32 @@
     "columns": {
       "type": "Type",
       "date": "Date",
+      "time": "Time",
       "location": "Location",
       "inviteStatus": "Invite",
       "actions": "Actions"
     },
+    "edit": "Edit Meeting",
+    "delete": "Delete Meeting",
+    "deleteConfirm": {
+      "title": "Delete Meeting",
+      "message": "Are you sure you want to delete the meeting for {{eventCode}}?",
+      "messageWithInvite": "Are you sure you want to delete the meeting for {{eventCode}}? A cancellation notice will be sent to all partners and organizers."
+    },
     "error": "Could not load meetings",
-    "inviteSuccess": "Calendar invite is being sent"
+    "inviteSuccess": "Calendar invite is being sent",
+    "rsvp": {
+      "title": "Attendee Responses",
+      "loading": "Loading responses...",
+      "error": "Failed to load RSVP responses",
+      "noResponses": "No responses yet",
+      "summary": "{{accepted}} Accepted · {{declined}} Declined · {{tentative}} Tentative",
+      "status": {
+        "accepted": "Accepted",
+        "declined": "Declined",
+        "tentative": "Tentative"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Your account is not linked to a company",

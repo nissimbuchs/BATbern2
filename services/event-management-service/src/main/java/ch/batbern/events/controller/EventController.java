@@ -22,6 +22,7 @@ import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
+import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -58,6 +59,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.beans.factory.annotation.Value;
@@ -115,6 +117,7 @@ public class EventController {
     private final ch.batbern.events.service.SessionService sessionService;
     private final ch.batbern.events.service.WaitlistPromotionService waitlistPromotionService;
     private final ch.batbern.events.service.EventTeaserImageService eventTeaserImageService;
+    private final ch.batbern.events.service.EventTimeResolver eventTimeResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String appBaseUrl;
@@ -244,6 +247,7 @@ public class EventController {
             response = eventMapper.toDto(event);
             enrichWithRegistrationCounts(response, event.getId());
             enrichWithTeaserImages(response);
+            enrichWithEventTimes(response, event);
 
             // Apply resource expansions if requested
             if (include != null && !include.trim().isEmpty()) {
@@ -329,7 +333,8 @@ public class EventController {
             // Existing registrationRepository doesn't have a batch count; fall back to per-event
             // (registrations are rarely requested on archive list, so this is acceptable)
             for (int i = 0; i < events.size(); i++) {
-                long regCount = registrationRepository.countByEventId(events.get(i).getId());
+                long regCount = registrationRepository.countByEventIdAndStatusIn(
+                        events.get(i).getId(), Registration.ACTIVE_STATUSES);
                 responses.get(i).setCurrentAttendeeCount((int) regCount);
             }
         }
@@ -477,11 +482,13 @@ public class EventController {
                             su.getSpeakerLastName() != null ? su.getSpeakerLastName() : "");
                     sm.put("speakerRole",
                             su.getSpeakerRole() != null ? su.getSpeakerRole().name() : null);
-                    sm.put("presentationTitle", su.getPresentationTitle());
+                    // Story 11.E.8: session_users.presentation_title dropped (V102).
+                    sm.put("presentationTitle", null);
                     sm.put("isConfirmed", su.isConfirmed());
                     sm.put("profilePictureUrl", portrait != null ? portrait.getProfilePictureUrl() : null);
-                    sm.put("company",          portrait != null ? portrait.getCompanyId() : null);
-                    sm.put("companyLogoUrl",   portrait != null ? portrait.getCompanyLogoUrl() : null);
+                    sm.put("company",            portrait != null ? portrait.getCompanyId() : null);
+                    sm.put("companyDisplayName", portrait != null ? portrait.getCompanyDisplayName() : null);
+                    sm.put("companyLogoUrl",     portrait != null ? portrait.getCompanyLogoUrl() : null);
                     sm.put("bio", null); // Only needed on detail page
                     return sm;
                 })
@@ -517,9 +524,8 @@ public class EventController {
                     expandMetricsToDTO(event, response);
                     break;
                 case "registrations":
-                    // Active (non-cancelled) registrations only — cancelled ones must not inflate counts
                     long registrationCount = registrationRepository.countByEventIdAndStatusIn(
-                            event.getId(), java.util.List.of("registered", "confirmed", "waitlist"));
+                            event.getId(), Registration.ACTIVE_STATUSES);
                     response.setCurrentAttendeeCount((int) registrationCount);
                     break;
                 default:
@@ -536,25 +542,23 @@ public class EventController {
     private void expandMetricsToDTO(Event event, EventResponse response) {
         UUID eventId = event.getId();
 
-        // Count speakers who accepted invitation (ACCEPTED or higher in workflow)
+        // Count speakers along the content lifecycle (ADR-009 §0.1: CONFIRMED + SLOT_ASSIGNED
+        // are removed; the derived is_publishable predicate lands in 11.B.3).
         long acceptedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
         long contentSubmittedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
         long qualityReviewedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
-        long slotAssignedCount = speakerPoolRepository.countByEventIdAndStatus(
-                eventId, ch.batbern.shared.types.SpeakerWorkflowState.SLOT_ASSIGNED);
-        long confirmedCount = speakerPoolRepository.countByEventIdAndStatus(
-                eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED);
 
-        // Total confirmed speakers (accepted or higher)
-        long totalConfirmedSpeakers = acceptedCount + contentSubmittedCount
-                + qualityReviewedCount + slotAssignedCount + confirmedCount;
+        // Total committed speakers (ACCEPTED + later content-lifecycle states).
+        // NB: persisted via {@code response.setConfirmedSpeakersCount} for wire-format stability
+        // — the field name "confirmed" predates ADR-009's removal of CONFIRMED and is preserved
+        // here while OpenAPI changes are owned by Story 11.B.3.
+        long totalCommittedSpeakers = acceptedCount + contentSubmittedCount + qualityReviewedCount;
 
         // Speakers with complete info (submitted materials - CONTENT_SUBMITTED or higher)
-        long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount
-                + slotAssignedCount + confirmedCount;
+        long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount;
 
         // Pending materials = accepted but haven't submitted content yet
         long pendingMaterials = acceptedCount;
@@ -588,7 +592,7 @@ public class EventController {
                 .count();
 
         // Set metrics on EventResponse
-        response.setConfirmedSpeakersCount((int) totalConfirmedSpeakers);
+        response.setConfirmedSpeakersCount((int) totalCommittedSpeakers);
         response.setSpeakersWithCompleteInfoCount((int) speakersWithCompleteInfo);
         response.setPendingMaterialsCount((int) pendingMaterials);
         response.setMaxSpeakerSlots(maxSpeakerSlots);
@@ -597,7 +601,7 @@ public class EventController {
 
         log.debug("Event {} metrics - confirmed: {}, complete info: {}, "
                         + "pending materials: {}, max slots: {}, sessions with materials: {}/{}",
-                event.getEventCode(), totalConfirmedSpeakers, speakersWithCompleteInfo,
+                event.getEventCode(), totalCommittedSpeakers, speakersWithCompleteInfo,
                 pendingMaterials, maxSpeakerSlots, sessionsWithMaterials, totalSessions);
     }
 
@@ -702,7 +706,8 @@ public class EventController {
                     // Add SessionUser data (role, confirmation)
                     speakerMap.put("speakerRole", sessionUser.getSpeakerRole().name());
                     speakerMap.put("isConfirmed", sessionUser.isConfirmed());
-                    speakerMap.put("presentationTitle", sessionUser.getPresentationTitle());
+                    // Story 11.E.8: session_users.presentation_title dropped (V102).
+                    speakerMap.put("presentationTitle", null);
 
                     // Fetch and add enriched User data
                     try {
@@ -820,6 +825,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(currentEvent);
         enrichWithRegistrationCounts(response, currentEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, currentEvent);
 
         // Apply resource expansions if requested
         if (include != null && !include.trim().isEmpty()) {
@@ -917,6 +923,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(savedEvent);
         enrichWithRegistrationCounts(response, savedEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, savedEvent);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -1067,6 +1074,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(updatedEvent);
         enrichWithRegistrationCounts(response, updatedEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, updatedEvent);
 
         return ResponseEntity.ok(response);
     }
@@ -1170,6 +1178,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(patchedEvent);
         enrichWithRegistrationCounts(response, patchedEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, patchedEvent);
 
         return ResponseEntity.ok(response);
     }
@@ -1270,7 +1279,17 @@ public class EventController {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-        // Delete event
+        // Guard: only block deletion for *real* (self-registered) attendees. Programmatic
+        // registrations — organizers/partners auto-enrolled at creation and auto-registered
+        // speakers — never block deletion, otherwise no event would ever be deletable (every
+        // event auto-enrols ~15 stakeholders). Real attendees → 409, cancel the event instead.
+        long realAttendees = registrationRepository.countRealAttendees(
+                event.getId(), Registration.ACTIVE_STATUSES);
+        if (realAttendees > 0) {
+            throw new EventHasRealRegistrationsException(eventCode, realAttendees);
+        }
+
+        // Delete event (cascades programmatic registrations, sessions, etc. via FK ON DELETE CASCADE)
         eventRepository.deleteById(event.getId());
 
         return ResponseEntity.noContent().build();
@@ -1336,6 +1355,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(publishedEvent);
         enrichWithRegistrationCounts(response, publishedEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, publishedEvent);
 
         return ResponseEntity.ok(response);
     }
@@ -1385,10 +1405,15 @@ public class EventController {
      */
     private void enrichWithRegistrationCounts(EventResponse response, java.util.UUID eventId) {
         long confirmed = registrationRepository.countByEventIdAndStatusIn(
-                eventId, java.util.List.of("registered", "confirmed"));
+                eventId, Registration.CONFIRMED_STATUSES);
         long waitlisted = registrationRepository.countByEventIdAndStatus(eventId, "waitlist");
+        // Real attendees exclude programmatic enrollments (organizers/partners/speakers); drives
+        // the organizer Delete-button enable-state and mirrors the deleteEvent 409 guard.
+        long realAttendees = registrationRepository.countRealAttendees(
+                eventId, Registration.ACTIVE_STATUSES);
         response.setConfirmedCount((int) confirmed);
         response.setWaitlistCount((int) waitlisted);
+        response.setRealAttendeeCount((int) realAttendees);
         if (response.getRegistrationCapacity() != null) {
             response.setSpotsRemaining((int) (response.getRegistrationCapacity() - confirmed));
         }
@@ -1402,6 +1427,15 @@ public class EventController {
         if (response.getEventCode() != null) {
             response.setTeaserImages(eventTeaserImageService.listByEventCode(response.getEventCode()));
         }
+    }
+
+    /**
+     * Enrich an EventResponse with resolved start/end times.
+     * Uses cascading priority: session times → event type config → fallback 16:00.
+     */
+    private void enrichWithEventTimes(EventResponse response, Event event) {
+        response.setTypicalStartTime(eventTimeResolver.formatStartTime(event));
+        response.setTypicalEndTime(eventTimeResolver.formatEndTime(event));
     }
 
     private void applyPatchUpdates(Event event, PatchEventRequest request) {
@@ -1518,6 +1552,94 @@ public class EventController {
     }
 
     /**
+     * Resend registration confirmation email
+     *
+     * POST /api/v1/events/{eventCode}/registrations/{registrationCode}/resend-confirmation
+     *
+     * Organizer-only: generates fresh JWT tokens and re-sends the confirmation email
+     * to the attendee. Only valid for registrations in "registered" (pending) status.
+     */
+    @PostMapping("/{eventCode}/registrations/{registrationCode}/resend-confirmation")
+    @Operation(
+            summary = "Resend Registration Confirmation Email",
+            description = "Organizer-only: resend the confirmation email to an attendee whose "
+                    + "registration is still pending (status=registered). Generates fresh tokens."
+    )
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Map<String, String>> resendConfirmationEmail(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode) {
+        log.info("POST /api/v1/events/{}/registrations/{}/resend-confirmation", eventCode, registrationCode);
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
+
+        if (!event.getId().equals(registration.getEventId())) {
+            throw new RegistrationNotFoundException(registrationCode);
+        }
+
+        if (!"registered".equalsIgnoreCase(registration.getStatus())) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Confirmation email can only be resent for pending registrations. "
+                            + "Current status: " + registration.getStatus()));
+        }
+
+        String confirmationToken = confirmationTokenService.generateConfirmationToken(
+                registration.getId(), eventCode);
+        String cancellationToken = confirmationTokenService.generateCancellationToken(
+                registration.getId(), eventCode);
+
+        ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                userApiClient.getUserByUsername(registration.getAttendeeUsername());
+
+        String deregistrationUrl = registration.getDeregistrationToken() != null
+                ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
+                : null;
+
+        registrationEmailService.sendRegistrationConfirmation(
+                registration,
+                userProfile,
+                event,
+                confirmationToken,
+                cancellationToken,
+                deregistrationUrl,
+                java.util.Locale.GERMAN
+        );
+
+        log.info("Confirmation email resent for registration {}: attendee={}", registrationCode,
+                userProfile.getEmail());
+
+        return ResponseEntity.ok(Map.of("message", "Confirmation email resent to " + userProfile.getEmail()));
+    }
+
+    /**
+     * Enroll all organizers and partners as confirmed participants for an existing event.
+     *
+     * POST /api/v1/events/{eventCode}/enroll-stakeholders
+     *
+     * Organizer-only action intended for events that predate the auto-enrollment feature.
+     * Idempotent: already-registered users are counted as skipped, not re-enrolled.
+     * Returns counts of enrolled and skipped users.
+     */
+    @PostMapping("/{eventCode}/enroll-stakeholders")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(
+            summary = "Enroll Stakeholders",
+            description = "Bulk-enroll all organizers and partners as confirmed participants. "
+                    + "Idempotent — already-registered users are skipped. Requires ORGANIZER role."
+    )
+    public ResponseEntity<Map<String, Integer>> enrollStakeholders(@PathVariable String eventCode) {
+        log.info("POST /api/v1/events/{}/enroll-stakeholders", eventCode);
+        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        ch.batbern.events.service.RegistrationService.EnrollmentSummary result =
+                registrationService.enrollStakeholders(event);
+        return ResponseEntity.ok(Map.of("enrolled", result.enrolled(), "skipped", result.skipped()));
+    }
+
+    /**
      * Get Event Analytics (AC13)
      *
      * GET /api/v1/events/{id}/analytics?metrics=attendance,registrations,engagement&timeframe=start,end
@@ -1597,6 +1719,90 @@ public class EventController {
         String username = securityContextHelper.getCurrentUsername();
 
         return ResponseEntity.ok(registrationService.getMyRegistration(eventCode, username));
+    }
+
+    /**
+     * Quick Registration for Authenticated Attendee
+     *
+     * POST /api/v1/events/{eventCode}/my-registration
+     *
+     * Creates a confirmed registration for the currently authenticated user without
+     * requiring form input or email confirmation. Profile data is read from the JWT
+     * and the User Management Service. No email is sent.
+     *
+     * @param eventCode Event code to register for
+     * @return 201 Created with minimal response
+     */
+    @PostMapping("/{eventCode}/my-registration")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Quick Registration for Authenticated Attendee",
+            description = "Creates a confirmed registration for the logged-in user. "
+                    + "No request body required — profile is read from the JWT session. "
+                    + "No confirmation email is sent. Requires authentication."
+    )
+    public ResponseEntity<CreateRegistrationResponse> createMyRegistration(
+            @PathVariable String eventCode) {
+        log.debug("POST /api/v1/events/{}/my-registration", eventCode);
+
+        String username = securityContextHelper.getCurrentUsername();
+        // Use SecurityContextHelper to extract the email claim — consistent with
+        // other endpoints in this service (e.g. NewsletterController) and handles
+        // both real JWT and @WithMockUser in tests.
+        String email = securityContextHelper.getCurrentUserEmail();
+
+        Registration registration = registrationService.createRegistrationForAuthenticatedUser(
+                eventCode, username, email);
+
+        String message = "waitlist".equals(registration.getStatus())
+                ? "You have been added to the waitlist for this event."
+                : "Registration confirmed.";
+
+        CreateRegistrationResponse response = CreateRegistrationResponse.builder()
+                .message(message)
+                .email(email)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Cancel My Registration (Authenticated Attendee)
+     *
+     * DELETE /api/v1/events/{eventCode}/my-registration
+     *
+     * Immediately cancels the authenticated user's registration for the given event.
+     * No email is sent. Triggers waitlist promotion if applicable.
+     *
+     * @param eventCode Event code whose registration to cancel
+     * @return 204 No Content on success
+     */
+    @DeleteMapping("/{eventCode}/my-registration")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Cancel My Registration",
+            description = "Immediately cancels the authenticated user's registration. "
+                    + "No email sent. Triggers waitlist promotion. Requires authentication."
+    )
+    public ResponseEntity<Void> deleteMyRegistration(@PathVariable String eventCode) {
+        log.debug("DELETE /api/v1/events/{}/my-registration", eventCode);
+
+        String username = securityContextHelper.getCurrentUsername();
+
+        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+
+        Registration registration = registrationRepository
+                .findByEventIdAndAttendeeUsername(event.getId(), username)
+                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
+                .orElseThrow(() -> new NoSuchElementException(
+                        "No active registration found for user " + username + " at event " + eventCode));
+
+        registrationService.cancelRegistration(registration);
+        log.info("Authenticated cancellation: registration {} cancelled for user {} at event {}",
+                registration.getRegistrationCode(), username, eventCode);
+
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -1805,9 +2011,9 @@ public class EventController {
     /**
      * List User Registrations - Story BAT-15
      *
-     * GET /api/v1/events/registrations?attendeeUsername={username}
+     * GET /api/v1/events/registrations (X-Attendee-Username header)
      *
-     * @param attendeeUsername Username to list registrations for
+     * @param attendeeUsername Username to list registrations for (passed as header to avoid URL exposure)
      * @return List of registrations enriched with event data
      */
     @GetMapping("/registrations")
@@ -1816,8 +2022,8 @@ public class EventController {
             description = "Retrieve all registrations for a specific user across all events"
     )
     public ResponseEntity<List<RegistrationResponse>> listUserRegistrations(
-            @RequestParam String attendeeUsername) {
-        log.debug("GET /api/v1/events/registrations?attendeeUsername={}", attendeeUsername);
+            @RequestHeader("X-Attendee-Username") String attendeeUsername) {
+        log.debug("GET /api/v1/events/registrations for user={}", attendeeUsername);
 
         // Fetch registrations for this user
         List<Registration> registrations = registrationRepository.findByAttendeeUsername(attendeeUsername);
@@ -2361,6 +2567,27 @@ public class EventController {
         speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Partial update of a speaker pool entry (e.g. reassign organizer).
+     *
+     * PATCH /api/v1/events/{eventCode}/speakers/pool/{speakerId}
+     */
+    @PatchMapping("/{eventCode}/speakers/pool/{speakerId}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(summary = "Patch speaker pool entry",
+            description = "Partial update of a speaker pool entry (assigned organizer, notes). "
+                    + "Story 11.D.1 (AR23): email may NOT be updated through this endpoint — "
+                    + "use POST /speakers/{speakerId}/promote. Unknown fields return HTTP 400.")
+    public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> patchSpeakerPoolEntry(
+            @PathVariable String eventCode,
+            @PathVariable String speakerId,
+            @RequestBody ch.batbern.events.dto.PatchSpeakerPoolRequest request) {
+
+        ch.batbern.events.dto.SpeakerPoolResponse response = speakerPoolService.patchEntry(
+                eventCode, speakerId, request);
+        return ResponseEntity.ok(response);
     }
 
     // ================================

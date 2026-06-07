@@ -87,7 +87,7 @@ public class PublishingScheduledService {
 
                         if (autoPublishEnabled) {
                             log.info("Auto-publishing speakers for event: {}", event.getEventCode());
-                            publishingService.publishPhase(event.getEventCode(), "speakers", "system-scheduler");
+                            publishingService.publishPhase(event.getEventCode(), "speakers");
                             log.info("Successfully auto-published speakers for event: {}", event.getEventCode());
                         } else {
                             log.debug("Auto-publish speakers disabled for event: {}", event.getEventCode());
@@ -151,7 +151,7 @@ public class PublishingScheduledService {
 
                         if (autoPublishEnabled) {
                             log.info("Auto-publishing agenda for event: {}", event.getEventCode());
-                            publishingService.publishPhase(event.getEventCode(), "agenda", "system-scheduler");
+                            publishingService.publishPhase(event.getEventCode(), "agenda");
                             log.info("Successfully auto-published agenda for event: {}", event.getEventCode());
                         } else {
                             log.debug("Auto-publish agenda disabled for event: {}", event.getEventCode());

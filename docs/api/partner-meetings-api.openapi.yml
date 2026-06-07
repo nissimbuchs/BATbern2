@@ -120,6 +120,32 @@ paths:
       security:
         - bearerAuth: []
 
+    delete:
+      summary: "Delete a partner meeting"
+      description: |
+        Deletes a partner meeting. If a calendar invite was already sent, a METHOD:CANCEL
+        ICS is dispatched asynchronously to all partners and organizers so their calendar
+        clients remove the entry. RSVPs are cascade-deleted (V9 ON DELETE CASCADE).
+        ORGANIZER role required.
+      operationId: "deletePartnerMeeting"
+      tags: ["Partner Meetings"]
+      parameters:
+        - name: meetingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: "Meeting deleted"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Meeting not found"
+      security:
+        - bearerAuth: []
+
   /partner-meetings/{meetingId}/send-invite:
     post:
       summary: "Send calendar invite to all partner contacts"

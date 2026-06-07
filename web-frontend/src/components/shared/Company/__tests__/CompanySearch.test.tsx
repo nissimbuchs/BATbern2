@@ -161,7 +161,7 @@ describe('CompanySearch Component', () => {
         expect(searchInput).toHaveValue('Test Company');
       });
 
-      const clearButton = screen.getByRole('button', { name: /clear/i });
+      const clearButton = screen.getByRole('button', { name: /clear search/i });
       expect(clearButton).toBeInTheDocument();
 
       await user.click(clearButton);

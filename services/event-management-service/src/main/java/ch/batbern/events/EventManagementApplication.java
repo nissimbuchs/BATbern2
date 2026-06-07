@@ -7,6 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+// Build alignment: 2026-04-05
 @SpringBootApplication
 @EnableScheduling
 @ComponentScan(basePackages = {"ch.batbern.events", "ch.batbern.shared"})

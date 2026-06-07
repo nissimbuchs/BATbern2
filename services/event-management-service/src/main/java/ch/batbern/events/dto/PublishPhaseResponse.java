@@ -27,9 +27,6 @@ public class PublishPhaseResponse {
     @JsonProperty("publishedAt")
     private Instant publishedAt;
 
-    @JsonProperty("version")
-    private Integer version;
-
     @JsonProperty("cdnInvalidated")
     private Boolean cdnInvalidated;
 }

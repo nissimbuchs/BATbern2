@@ -1,6 +1,6 @@
 # Story 10.7: Newsletter Subscription & Sending
 
-Status: review
+Status: done
 
 ## Story
 
@@ -435,6 +435,74 @@ For organizer EventPage newsletter tab, add under `eventPage.newsletter.*`:
 
 ---
 
+## Robustness Addendum (2026-03-10): Async Background Job + Progress Tracking
+
+### Problem
+
+With 3000+ planned subscribers, the original `sendNewsletter()` implementation had a critical P0 bug:
+`@Async` tasks were dispatched one per subscriber into a `ThreadPoolTaskExecutor` (core=5, max=10, queue=100).
+After ~110 submissions, `TaskRejectedException` was thrown and caught as "failed" — meaning ~2890 emails were **never sent**.
+
+Additional gaps: duplicate-send risk, no progress visibility, SES rate limit not respected, HTTP timeout risk.
+
+### Fix: Fire-and-Forget + Background Job + Polling
+
+**Migration V87** (`V87__add_newsletter_send_status.sql`): adds `status`, `sent_count`, `failed_count`, `started_at`, `completed_at` to `newsletter_sends`. Backfills existing rows as `COMPLETED`.
+
+**`sendNewsletter()`** now:
+1. Checks for IN_PROGRESS send on this event → 409 if duplicate
+2. Creates PENDING audit record (committed immediately)
+3. Launches single `@Async` background job
+4. Returns immediately with `{sendId, status=PENDING}`
+
+**`executeNewsletterSendAsync()` (background job)**:
+- Paginates subscribers 50/page (`findByUnsubscribedAtIsNull(Pageable)`)
+- Calls `emailService.sendHtmlEmailSync()` (new non-`@Async` method on shared-kernel `EmailService`)
+- Sleeps 70ms between emails (≈14/s — SES default rate limit)
+- Updates `sent_count`/`failed_count` after each page
+- Terminal status: all OK → `COMPLETED`, some failed → `PARTIAL`, all failed → `FAILED`
+
+**Retry**: `POST /sends/{sendId}/retry` re-sends only to `delivery_status='failed'` recipients,
+updates the same send row (no duplicate history entries).
+
+**Frontend polling**: `useSendStatus()` polls `GET /sends/{sendId}/status` every 3s while PENDING/IN_PROGRESS.
+Shows `LinearProgress` bar with `sentCount / totalCount (percentComplete%)`.
+On COMPLETED/PARTIAL/FAILED: shows appropriate Alert. Retry button on PARTIAL/FAILED history rows.
+
+### New Files (Robustness Addendum)
+- `V87__add_newsletter_send_status.sql`
+- `services/.../dto/NewsletterSendStatusResponse.java`
+- `services/.../exception/DuplicateNewsletterSendException.java`
+
+### Modified Files (Robustness Addendum)
+- `shared-kernel/.../EmailService.java` — added `sendHtmlEmailSync()`
+- `services/.../domain/NewsletterSend.java` — added status/sentCount/failedCount/startedAt/completedAt fields
+- `services/.../repository/NewsletterSendRepository.java` — added `findFirstByEventIdAndStatus`, `findByIdAndEventId`
+- `services/.../repository/NewsletterSubscriberRepository.java` — added paginated `findByUnsubscribedAtIsNull(Pageable)`
+- `services/.../repository/NewsletterRecipientRepository.java` — added `findByIdSendIdAndDeliveryStatus`
+- `services/.../service/NewsletterEmailService.java` — redesigned `sendNewsletter()` + `executeNewsletterSendAsync()` + `retryFailedRecipients()` + `executeRetryAsync()` + `updateSendProgress()`
+- `services/.../dto/NewsletterSendResponse.java` — added status/sentCount/failedCount/startedAt/completedAt
+- `services/.../controller/NewsletterController.java` — added GET `/sends/{sendId}/status` + POST `/sends/{sendId}/retry`
+- `services/.../exception/GlobalExceptionHandler.java` — added handler for `DuplicateNewsletterSendException` → 409
+- `docs/api/events-api.openapi.yml` — added `NewsletterSendStatusResponse` schema, updated `NewsletterSendResponse`, added 2 new paths
+- `web-frontend/src/types/generated/events-api.types.ts` — regenerated (includes new schemas/endpoints)
+- `web-frontend/src/services/newsletterService.ts` — added `NewsletterSendStatusResponse`, `getSendStatus()`, `retryFailedRecipients()`, status fields on `NewsletterSendHistoryItem`
+- `web-frontend/src/hooks/useNewsletter/useNewsletter.ts` — added `useSendStatus()` (3s polling), `useRetryFailedRecipients()`
+- `web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx` — progress bar, retry buttons, status column
+- `web-frontend/public/locales/en/events.json` + `de/events.json` — added progress/retry i18n keys
+- `services/.../controller/NewsletterControllerIntegrationTest.java` — added 4 auth/404 tests for new endpoints
+- `web-frontend/src/components/organizer/EventPage/__tests__/EventNewsletterTab.test.tsx` — added 5 progress/retry/status tests
+
+### Test Results (Robustness Addendum)
+- `NewsletterEmailServiceTest`: 19/19 PASSED
+- `NewsletterControllerIntegrationTest`: 26/26 PASSED
+- `EventNewsletterTab.test.tsx`: 15/15 PASSED
+- Checkstyle: 0 violations
+- TypeScript type-check: 0 errors
+- Frontend lint: 0 warnings
+
+---
+
 ## Tasks / Subtasks
 
 ### Task 1: OpenAPI Spec — Add newsletter endpoints (AC11) [ADR-006: spec before code]
@@ -535,6 +603,27 @@ For organizer EventPage newsletter tab, add under `eventPage.newsletter.*`:
 - [x] 19.1 `NewsletterSubscribeWidget.test.tsx`: success / 409 / error states
 - [x] 19.2 `UnsubscribePage.test.tsx`: verify + confirm flow, invalid token state
 - [x] 19.3 `EventNewsletterTab.test.tsx`: count display, history table, send confirmation dialog
+
+### Task 20: Robustness — Async background job + progress tracking (2026-03-10)
+- [x] 20.1 V87 migration: add status/sent_count/failed_count/started_at/completed_at to newsletter_sends
+- [x] 20.2 `EmailService.java` (shared-kernel): add `sendHtmlEmailSync()` non-@Async method
+- [x] 20.3 `NewsletterSend.java`: add new status fields
+- [x] 20.4 `NewsletterSendResponse.java`: extend with new fields
+- [x] 20.5 `NewsletterSendStatusResponse.java`: NEW DTO for polling endpoint
+- [x] 20.6 `DuplicateNewsletterSendException.java`: NEW 409 exception
+- [x] 20.7 `NewsletterSendRepository.java`: add findFirstByEventIdAndStatus, findByIdAndEventId
+- [x] 20.8 `NewsletterSubscriberRepository.java`: add paginated findByUnsubscribedAtIsNull
+- [x] 20.9 `NewsletterRecipientRepository.java`: add findByIdSendIdAndDeliveryStatus
+- [x] 20.10 `NewsletterEmailService.java`: redesign sendNewsletter + executeNewsletterSendAsync + retryFailedRecipients + executeRetryAsync + updateSendProgress
+- [x] 20.11 `NewsletterController.java`: add GET /sends/{sendId}/status + POST /sends/{sendId}/retry
+- [x] 20.12 `GlobalExceptionHandler.java`: add handler for DuplicateNewsletterSendException → 409
+- [x] 20.13 OpenAPI spec: add NewsletterSendStatusResponse schema, update NewsletterSendResponse, add 2 new paths
+- [x] 20.14 Frontend: regenerate TypeScript types
+- [x] 20.15 `newsletterService.ts`: add getSendStatus, retryFailedRecipients, status fields on HistoryItem
+- [x] 20.16 `useNewsletter.ts`: add useSendStatus (3s polling), useRetryFailedRecipients
+- [x] 20.17 `EventNewsletterTab.tsx`: progress bar, retry buttons, status column
+- [x] 20.18 i18n: add progress/retry keys to en/de events.json
+- [x] 20.19 Tests: 4 new integration tests, 5 new frontend tests, verify all pass
 
 ---
 
@@ -648,6 +737,15 @@ Completed in 2 sessions (2026-02-25):
 ---
 
 ## Change Log
+- 2026-03-10: Robustness addendum implemented (Amelia / dev agent):
+  - P0 bug fix: replaced per-subscriber @Async dispatch (pool overflow → ~2890 of 3000 emails silently dropped) with single @Async background job + paginated processing
+  - V87 migration adds status tracking columns to newsletter_sends; backfills existing rows as COMPLETED
+  - Added sendHtmlEmailSync() to shared-kernel EmailService for use within background threads
+  - Added duplicate-send prevention (409 on IN_PROGRESS), SES rate limiting (70ms/email), paginated processing (50/page)
+  - Added retry capability for PARTIAL/FAILED sends (POST /sends/{sendId}/retry)
+  - Added progress polling endpoint (GET /sends/{sendId}/status) + frontend LinearProgress UI
+  - All tests green: 19/19 unit, 26/26 integration, 15/15 frontend; 0 checkstyle/typecheck errors
+  - Plan saved to docs/plans/newsletter-robustness-v87-plan.md
 - 2026-02-25: Story picked up for development (Amelia / dev agent)
 - 2026-02-28: Code review fixes applied (Amelia / dev agent — CR session):
   - C1: Created NewsletterRecipientId.java + NewsletterRecipient.java + NewsletterRecipientRepository.java; wired recipientRepository into NewsletterEmailService.sendNewsletter() to populate newsletter_recipients per AC10

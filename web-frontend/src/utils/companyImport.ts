@@ -86,7 +86,9 @@ export function parseCompanyJson(jsonContent: string): SourceCompany[] {
   try {
     parsed = JSON.parse(jsonContent);
   } catch (error) {
-    throw new Error(`Invalid JSON: ${error instanceof Error ? error.message : 'Parse error'}`);
+    throw new Error(`Invalid JSON: ${error instanceof Error ? error.message : 'Parse error'}`, {
+      cause: error,
+    });
   }
 
   if (!Array.isArray(parsed)) {

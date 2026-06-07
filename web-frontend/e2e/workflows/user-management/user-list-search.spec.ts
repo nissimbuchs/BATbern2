@@ -1,176 +1,74 @@
 /**
- * E2E Tests for User List and Search Workflow
- * Story 2.5.2: User Management Frontend
+ * E2E: User List & Search — slice 3 / users (plan §C)
+ * docs/plans/playwright-staging-hardening.md
  *
- * Tests the user list display, search functionality, and filtering
+ * Rewritten 2026-05-30 to reality + the quality bar (testid-only locators, factory data,
+ * no empty tests). Story 2.5.2.
  *
- * Requirements:
- * 1. User Management Service deployed with user endpoints
- * 2. PostgreSQL database with users table
- * 3. Authenticated organizer user
- * 4. Test users in database
+ * A `bruno.test` fixture user is seeded via the API in `beforeAll` so search has a
+ * DETERMINISTIC target (its keyed row `user-table-row-<username>`), instead of the old
+ * spec's `searchInput.fill('test')` + `.catch(() => console.log(...))` non-assertions. The
+ * fixture is deleted in `afterAll` (`cleanupById`).
  *
- * Setup Instructions:
- * 1. Run: npx playwright test e2e/workflows/user-management/user-list-search.spec.ts
+ * Deleted from the old spec (assertion-free / data-dependent / Bruno-covered):
+ *   • `should_sortTable…` and `should_displayPagination…` — logged before/after but asserted
+ *     nothing; sort order + pagination presence are data-dependent and not gate-worthy.
+ *   • `should_filterUsers_when_selectingRoleFilter` / role-filter UI — role filtering is
+ *     covered at the API by Bruno (`15/20-list-users-filter-by-role.bru`); the MUI Autocomplete
+ *     option-pick is flaky and adds no gate value over the API contract.
+ *   • `text=`/`tbody tr`/`input[placeholder]` locators → testids; `waitForTimeout` → expect().
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { createTestUser, readOrganizerToken, type TestUser } from '../../helpers/user-fixture';
+import { cleanupById } from '../../helpers/test-fixtures-cleanup';
 
-/**
- * Helper: Navigate to User Management page
- */
-async function navigateToUserManagement(page: Page) {
-  // Direct navigation is more reliable than clicking nav links
-  await page.goto('/organizer/users');
+test.describe('User List & Search', { tag: '@gate' }, () => {
+  let token: string;
+  let user: TestUser;
 
-  // Wait for user list to load
-  await page.waitForSelector('[data-testid="user-table"]', { timeout: 10000 });
-}
+  test.beforeAll(async () => {
+    token = readOrganizerToken();
+    user = await createTestUser(token);
+  });
 
-test.describe('User List and Search Workflow', () => {
+  test.afterAll(async () => {
+    await cleanupById(token, 'users', user.username);
+  });
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/organizer/events');
+    await page.goto('/organizer/users');
+    await expect(page.getByTestId('user-table')).toBeVisible({ timeout: 15_000 });
   });
 
-  test('should_displayUserList_when_navigatingToUsersPage', async ({ page }) => {
-    await navigateToUserManagement(page);
+  test('should_displayUserListWithControls_when_pageLoads', async ({ page }) => {
+    // Sortable column headers + the add-user action render.
+    await expect(page.getByTestId('user-sort-name')).toBeVisible();
+    await expect(page.getByTestId('user-sort-email')).toBeVisible();
+    await expect(page.getByTestId('user-sort-company')).toBeVisible();
+    await expect(page.getByTestId('user-add-button')).toBeVisible();
 
-    // Verify page title
-    await expect(page.locator('h1, h4')).toContainText(/user/i);
-
-    // Verify user table is visible
-    const table = page.locator('[data-testid="user-table"]');
-    await expect(table).toBeVisible();
-
-    // Verify table headers by checking for table sort labels (more specific than text)
-    await expect(page.getByRole('button', { name: /Name/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Email/i })).toBeVisible();
-    // Roles column is not sortable, just verify the table has role chips
-    await expect(table.locator('tbody tr').first()).toBeVisible();
-
-    // Verify at least one user row exists
-    const rows = page.locator('tbody tr');
-    const rowCount = await rows.count();
-    expect(rowCount).toBeGreaterThan(0);
+    // At least one user row is present (the table is populated on staging = prod).
+    expect(await page.locator('[data-testid^="user-table-row-"]').count()).toBeGreaterThan(0);
   });
 
-  test('should_filterUsers_when_searchingByName', async ({ page }) => {
-    await navigateToUserManagement(page);
+  test('should_findUser_when_searchingByEmail', async ({ page }) => {
+    await page.getByTestId('user-search-input').fill(user.email);
 
-    // Get initial row count
-    const initialRows = await page.locator('tbody tr').count();
-    expect(initialRows).toBeGreaterThan(0);
-
-    // Enter search query
-    const searchInput = page.locator('input[placeholder*="Search" i]');
-    await expect(searchInput).toBeVisible();
-    await searchInput.fill('test');
-
-    // Wait for debouncing (300ms + buffer)
-    await page.waitForTimeout(500);
-
-    // Verify filtered results
-    const filteredRows = page.locator('tbody tr');
-
-    // Results should be filtered (could be 0 or more depending on data)
-    // At minimum, search should have executed
-    await expect(filteredRows.first())
-      .toBeVisible({ timeout: 5000 })
-      .catch(() => {
-        // If no results, that's okay - search still worked
-        console.log('No search results found for "test"');
-      });
+    // Debounced server search → only the seeded fixture row matches; expect() retries the refetch.
+    await expect(page.getByTestId(`user-table-row-${user.username}`)).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
-  test('should_filterUsers_when_selectingRoleFilter', async ({ page }) => {
-    await navigateToUserManagement(page);
+  test('should_clearSearch_when_clearFiltersClicked', async ({ page }) => {
+    const search = page.getByTestId('user-search-input');
+    await search.fill(user.email);
+    await expect(page.getByTestId(`user-table-row-${user.username}`)).toBeVisible({
+      timeout: 10_000,
+    });
 
-    // Click role filter (could be a dropdown, checkboxes, or chips)
-    const roleFilterLabel = page.locator('text=/Role/i').first();
-    await expect(roleFilterLabel).toBeVisible();
-
-    // Select ORGANIZER role filter
-    const organizerCheckbox = page.locator('input[type="checkbox"][value="ORGANIZER"]');
-    if (await organizerCheckbox.isVisible()) {
-      await organizerCheckbox.check();
-
-      // Wait for filter to apply
-      await page.waitForTimeout(500);
-
-      // Verify filtered results show ORGANIZER badge
-      const roleBadges = page.locator('[data-testid*="role-badge"]');
-      const firstBadge = roleBadges.first();
-      await expect(firstBadge).toContainText(/organizer/i, { timeout: 5000 });
-    }
-  });
-
-  test('should_clearFilters_when_clearButtonClicked', async ({ page }) => {
-    await navigateToUserManagement(page);
-
-    // Apply search filter
-    const searchInput = page.locator('input[placeholder*="Search" i]');
-    await searchInput.fill('test');
-    await page.waitForTimeout(500);
-
-    // Click clear filters button
-    const clearButton = page.locator('button:has-text("Clear")').first();
-    if (await clearButton.isVisible()) {
-      await clearButton.click();
-
-      // Wait for filters to clear
-      await page.waitForTimeout(500);
-
-      // Verify search input is cleared
-      await expect(searchInput).toHaveValue('');
-    }
-  });
-
-  test('should_showAddUserButton_when_onUsersPage', async ({ page }) => {
-    await navigateToUserManagement(page);
-
-    // Verify "Add User" button exists
-    const addUserButton = page.locator('button:has-text("Add User")');
-    await expect(addUserButton).toBeVisible();
-  });
-
-  test('should_displayPagination_when_multiplePages', async ({ page }) => {
-    await navigateToUserManagement(page);
-
-    // Wait for page load
-    await page.waitForSelector('[data-testid="user-table"]');
-
-    // Check if pagination controls exist
-    const pagination = page
-      .locator('[aria-label*="pagination" i]')
-      .or(page.locator('button:has-text("Next")'));
-
-    // Pagination might not exist if only one page of results
-    const paginationExists = (await pagination.count()) > 0;
-    if (paginationExists) {
-      console.log('Pagination controls found');
-    } else {
-      console.log('Single page of results - pagination not displayed');
-    }
-  });
-
-  test('should_sortTable_when_columnHeaderClicked', async ({ page }) => {
-    await navigateToUserManagement(page);
-
-    // Get first row name before sort
-    const firstRowBefore = await page.locator('tbody tr').first().textContent();
-
-    // Click Name column header to sort
-    const nameHeader = page.locator('th:has-text("Name")');
-    await nameHeader.click();
-
-    // Wait for sort to complete
-    await page.waitForTimeout(500);
-
-    // Get first row name after sort
-    const firstRowAfter = await page.locator('tbody tr').first().textContent();
-
-    // Verify rows changed (name may be same if already sorted)
-    console.log('Before sort:', firstRowBefore?.substring(0, 50));
-    console.log('After sort:', firstRowAfter?.substring(0, 50));
+    await page.getByTestId('user-clear-filters').click();
+    await expect(search).toHaveValue('');
   });
 });

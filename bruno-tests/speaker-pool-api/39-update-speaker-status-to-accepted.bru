@@ -1,0 +1,53 @@
+meta {
+  name: Update Speaker Status To Accepted
+  type: http
+  seq: 39
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "ACCEPTED",
+    "reason": "Speaker officially accepted invitation and signed speaker agreement"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentStatus: eq ACCEPTED
+  res.body.previousStatus: eq INVITED
+}
+
+tests {
+  test("should return 200 status - Story 5.4 AC1", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update speaker status to ACCEPTED (ADR-009 §0.1: INVITED → ACCEPTED)", function() {
+    const response = res.getBody();
+    expect(response.currentStatus).to.equal('ACCEPTED');
+    expect(response.previousStatus).to.equal('INVITED');
+    expect(response.changedByUsername).to.equal(bru.getEnvVar("organizerUsername"));
+  });
+}
+
+docs {
+  PR 11 (Epic 11 redesign per ADR-009 §0.1): previousStatus is now INVITED, not READY.
+  The legacy "READY → ACCEPTED direct" path was removed in Story 11.B.2 — every speaker
+  who reaches ACCEPTED via the natural flow goes through INVITED first (the
+  organizer-on-behalf READY → ACCEPTED bypass is a separate path with required reason,
+  not exercised in this chain).
+
+  The "overflow detection" assertion from the pre-Epic-11 version was removed:
+  OVERFLOW state no longer exists (replaced by slot-capacity gate at the READY → INVITED
+  transition; see test 38a).
+}

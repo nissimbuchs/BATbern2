@@ -1,7 +1,7 @@
 buildscript {
     dependencies {
         // Flyway PostgreSQL database plugin required for Flyway 11.x
-        classpath 'org.flywaydb:flyway-database-postgresql:12.0.3'
+        classpath 'org.flywaydb:flyway-database-postgresql:12.5.0'
     }
 }
 
@@ -17,7 +17,7 @@ plugins {
 }
 
 group = 'ch.batbern'
-version = '1.0.0'
+version = '1.0.1'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -45,7 +45,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // AWS SDK for EventBridge, CloudWatch, Cognito, and SES
-    implementation platform('software.amazon.awssdk:bom:2.42.4')
+    implementation platform('software.amazon.awssdk:bom:2.43.2')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
@@ -53,14 +53,14 @@ dependencies {
     implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
 
     // Resilience4j for circuit breaker, bulkhead, and retry patterns
-    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-bulkhead:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-retry:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-reactor:2.3.0'
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-bulkhead:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-reactor:2.4.0'
 
     // ThreadFactoryBuilder for bounded thread pools
-    implementation 'com.google.guava:guava:33.5.0-jre'
+    implementation 'com.google.guava:guava:33.6.0-jre'
 
     // Jakarta Mail for email MIME message creation (Story 2.2a Task B12)
     implementation 'org.eclipse.angus:angus-mail:2.0.3'
@@ -79,7 +79,7 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic'
 
     // Database
-    implementation 'org.postgresql:postgresql:42.7.10'
+    implementation 'org.postgresql:postgresql:42.7.11'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
 
@@ -182,13 +182,8 @@ jacocoTestCoverageVerification {
 // Coverage verification runs only during explicit test tasks, not during build
 // check.dependsOn jacocoTestCoverageVerification
 
-// Checkstyle configuration
-checkstyle {
-    toolVersion = '10.12.5'
-    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
-    ignoreFailures = true  // Allow build to succeed while generating quality reports
-    maxWarnings = 0
-}
+// Checkstyle is configured centrally in the root build.gradle
+// (subprojects { plugins.withId('checkstyle') }) so settings can't drift.
 
 // Disable Spring Boot executable jar creation for library module
 bootJar {

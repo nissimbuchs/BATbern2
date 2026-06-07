@@ -1,11 +1,17 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Select, MenuItem, Box, SelectChangeEvent } from '@mui/material';
-import LanguageIcon from '@mui/icons-material/Language';
+import { Globe } from 'lucide-react';
 import { updateUserPreferences } from '../../../services/api/userApi';
 import { useAuth } from '../../../hooks/useAuth';
 import type { UpdatePreferencesRequest } from '../../../types/user';
 
+/**
+ * Language selector. Tailwind + a native <select> (no MUI): this control sits in the
+ * public navigation, which is part of the eager homepage graph, so keeping it MUI-free
+ * is what stops @mui/material from being pulled into the public entry chunk. Styling is
+ * neutral (transparent bg, inherited text colour) so it reads correctly on both the
+ * dark public nav and the light auth pages where it is also used.
+ */
 const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
@@ -22,7 +28,7 @@ const LanguageSwitcher: React.FC = () => {
     { code: 'ja', label: 'JA — 日本語' },
   ];
 
-  const handleLanguageChange = async (event: SelectChangeEvent<string>) => {
+  const handleLanguageChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newLang = event.target.value;
     await i18n.changeLanguage(newLang);
     document.documentElement.lang = newLang;
@@ -43,22 +49,22 @@ const LanguageSwitcher: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <LanguageIcon fontSize="small" />
-      <Select
+    <div className="flex items-center gap-2">
+      <Globe className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+      <select
         value={i18n.language}
         onChange={handleLanguageChange}
-        size="small"
-        sx={{ minWidth: 160 }}
-        inputProps={{ 'aria-label': 'Language selector' }}
+        aria-label="Language selector"
+        data-testid="language-selector"
+        className="min-w-[160px] cursor-pointer rounded-md border border-current/20 bg-transparent px-3 py-1.5 text-sm text-inherit focus:outline-none focus:ring-2 focus:ring-ring/50"
       >
         {languages.map(({ code, label }) => (
-          <MenuItem key={code} value={code}>
+          <option key={code} value={code} className="bg-zinc-800 text-zinc-100">
             {label}
-          </MenuItem>
+          </option>
         ))}
-      </Select>
-    </Box>
+      </select>
+    </div>
   );
 };
 

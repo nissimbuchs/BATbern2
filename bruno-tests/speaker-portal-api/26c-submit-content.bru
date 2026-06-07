@@ -1,0 +1,38 @@
+meta {
+  name: Bridge — ACCEPTED → CONTENT_SUBMITTED for content-review flow (PR 11)
+  type: http
+  seq: 26.7
+}
+
+put {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/{{invitedSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "CONTENT_SUBMITTED",
+    "reason": "PR 11 — bridge to CONTENT_SUBMITTED via PUT /status (no real content payload)"
+  }
+}
+
+tests {
+  test("advances invited speaker ACCEPTED → CONTENT_SUBMITTED", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().currentStatus).to.equal('CONTENT_SUBMITTED');
+  });
+}
+
+docs {
+  PR 11 cascade fix paired with 26b. PUT /status to CONTENT_SUBMITTED is the
+  state-machine-only path (no actual content persistence — that's
+  ContentSubmissionService.submit's job per SpeakerWorkflowService§runSideEffectHook
+  "No-op: content persistence is owned by ContentSubmissionService"). For the Bruno
+  contract test of /review approve, we just need the speaker to be in
+  CONTENT_SUBMITTED — the review endpoint only cares about state.
+}

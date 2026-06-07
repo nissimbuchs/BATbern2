@@ -5,6 +5,9 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as kms from 'aws-cdk-lib/aws-kms';
+import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as path from 'path';
@@ -18,6 +21,13 @@ export interface CognitoStackProps extends cdk.StackProps {
   lambdaTriggersSecurityGroup?: ec2.ISecurityGroup; // For Lambda triggers
   databaseSecret?: secretsmanager.ISecret; // For Lambda triggers to access database
   databaseEndpoint?: string; // For Lambda triggers to access database
+  // Story 12.9 DF-1: us-east-1 cert (from DnsStack — a pre-created literal ARN per the
+  // repo's cert practice, so no cross-region export machinery) + the hosted zone for the
+  // `auth.<zone>` hosted-UI custom domain. Mirrors the StorageStack cdnCertificate/
+  // hostedZone prop pattern. Optional — when absent (local dev / no DNS), only the default
+  // prefix domain exists.
+  authCertificate?: certificatemanager.ICertificate;
+  hostedZone?: route53.IHostedZone; // Route53 hosted zone for the auth.<zone> alias record
 }
 
 /**
@@ -32,51 +42,20 @@ export class CognitoStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
   public readonly userPoolDomain: cognito.UserPoolDomain;
+  /** Story 12.9 DF-1: `auth.<zone>` hosted-UI custom domain (only when DNS is configured). */
+  public readonly customUserPoolDomain?: cognito.UserPoolDomain;
 
   constructor(scope: Construct, id: string, props: CognitoStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
     const envName = props.config.envName;
 
-    // Create stable log group for Pre-Signup Lambda Trigger
-    const preSignupLogGroup = new logs.LogGroup(this, 'PreSignupLogGroup', {
-      logGroupName: `/aws/lambda/BATbern-${envName}/presignup-trigger`,
-      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    // Create Pre-Signup Lambda Trigger for validation
-    const preSignupLambda = new lambda.Function(this, 'PreSignupTrigger', {
-      functionName: `batbern-${envName}-presignup-trigger`,
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'index.handler',
-      logGroup: preSignupLogGroup,
-      code: lambda.Code.fromInline(`
-        exports.handler = async (event) => {
-          console.log('Pre-signup trigger:', JSON.stringify(event));
-
-          // Validate company ID if provided
-          const companyId = event.request.userAttributes['custom:companyId'];
-          if (companyId && !companyId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            throw new Error('Invalid company ID format. Must be a valid UUID.');
-          }
-
-          // Role validation removed - Story 1.2.6: ADR-001 database-centric architecture
-          // Roles are managed in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
-          // Self-registered users receive ATTENDEE role (assigned by PostConfirmation trigger)
-
-          // Auto-verification disabled to test email verification flow
-          // Users must verify their email via CustomEmailSender Lambda
-
-          return event;
-        };
-      `),
-      environment: {
-        ENVIRONMENT: envName,
-      },
-      timeout: cdk.Duration.seconds(5),
-    });
+    // Story 12.6 (SSO Phase 2): the PreSignUp trigger is no longer an inline Lambda here.
+    // It moved into the CognitoUserSyncTriggers construct (below) as a VPC + DB-secret
+    // NodejsFunction (lib/lambda/triggers/pre-signup.ts) so it can do an email lookup for
+    // federated account-linking (AdminLinkProviderForUser) while preserving the native
+    // company-UUID validation verbatim. See infrastructure/lib/constructs/cognito-user-sync-triggers.ts.
 
     // Create KMS key for Cognito code encryption (CustomEmailSender trigger)
     // Story 1.2.2: Implement Forgot Password Flow - Task 1a
@@ -106,18 +85,17 @@ export class CognitoStack extends cdk.Stack {
     });
 
     // Determine frontend domain based on environment
-    const frontendDomain =
-      envName === 'production'
-        ? 'https://www.batbern.ch'
-        : envName === 'staging'
-        ? 'https://staging.batbern.ch'
-        : 'http://localhost:3000';
+    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const frontendDomain = isProdTraffic
+      ? `https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`
+      : envName === 'staging'
+      ? 'https://www.batbern.ch'
+      : 'http://localhost:3000';
 
     // FROM address must use a domain verified in SES for the environment
-    const fromEmail =
-      envName === 'production'
-        ? 'BATbern <noreply@batbern.ch>'
-        : 'BATbern <noreply@berner-architekten-treffen.ch>';
+    const fromEmail = isProdTraffic
+      ? 'BATbern <noreply@batbern.ch>'
+      : 'BATbern <noreply@berner-architekten-treffen.ch>';
 
     const customEmailSenderLambda = new NodejsFunction(this, 'CustomEmailSenderTrigger', {
       functionName: `batbern-${envName}-custom-email-sender-trigger`,
@@ -172,6 +150,14 @@ export class CognitoStack extends cdk.Stack {
           required: true,
           mutable: true,
         },
+        // Story 12.5: do NOT declare givenName/familyName here. They are built-in OIDC
+        // standard attributes that every Cognito pool already has (verified on the live
+        // pool: given_name/family_name present, Required:false/Mutable:true by default),
+        // so the Google IdP attributeMapping below maps onto them directly. Declaring
+        // them is unnecessary AND breaks deploy: UpdateUserPool rejects standard-attribute
+        // schema additions on an existing pool with "Invalid AttributeDataType input"
+        // (observed on PR #735 — UPDATE_FAILED + rollback). The mapping target exists
+        // without the declaration.
       },
       customAttributes: {
         // Story 1.16.2: Public meaningful username (e.g., "john.doe")
@@ -202,7 +188,7 @@ export class CognitoStack extends cdk.Stack {
         requireUppercase: true,
         requireDigits: true,
         requireSymbols: true,
-        tempPasswordValidity: cdk.Duration.days(7),
+        tempPasswordValidity: cdk.Duration.days(14),  // Story 11.E.1 / Resolved Q#4 — 14-day window for invitation→first-login (was 7)
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       mfa: cognito.Mfa.OPTIONAL,
@@ -211,24 +197,75 @@ export class CognitoStack extends cdk.Stack {
         otp: true,
       },
       lambdaTriggers: {
-        preSignUp: preSignupLambda,
+        // preSignUp is wired in CognitoUserSyncTriggers (Story 12.6) via addTrigger,
+        // alongside the other VPC/DB-backed triggers.
         customEmailSender: customEmailSenderLambda,
       },
       customSenderKmsKey: cognitoEmailKmsKey,
       removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
+    // Story 12.5 (SSO Phase 1): Google OIDC identity provider, brokered by Cognito.
+    // The client id/secret live ONLY in Secrets Manager (created by Story 12.4 runbook,
+    // name `batbern/staging/sso/google-oauth`, JSON {clientId, clientSecret}). The single
+    // real pool is in the staging account (= production), so the secret name is the literal
+    // staging path — matching where 12.4 stored it. fromSecretNameV2 resolves to a CFN
+    // reference (NOT the value) at synth time, so the plaintext never enters the template
+    // or git (CLAUDE.md security).
+    const googleOAuthSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'GoogleOAuthSecret',
+      'batbern/staging/sso/google-oauth'
+    );
+
+    const googleIdp = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdp', {
+      userPool: this.userPool,
+      // clientId prop is a plain `string`, so it must be unwrapped. The Google client id
+      // is NOT sensitive (it ends in `.apps.googleusercontent.com` and is public).
+      clientId: googleOAuthSecret.secretValueFromJson('clientId').unsafeUnwrap(),
+      // clientSecretValue accepts a SecretValue directly — keep it as a SecretValue (do
+      // NOT unwrap) so it synths to a {{resolve:secretsmanager:...}} dynamic reference and
+      // the secret stays out of the CloudFormation template.
+      clientSecretValue: googleOAuthSecret.secretValueFromJson('clientSecret'),
+      scopes: ['openid', 'email', 'profile'],
+      attributeMapping: {
+        // email is REQUIRED: it keys the Phase-2 account-linking (AdminLinkProviderForUser)
+        // and resolves the email sign-in alias.
+        email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+        // email_verified MUST be mapped explicitly — without this mapping Cognito defaults
+        // the federated user's email_verified to "false" even though Google asserts true,
+        // which blocks the PreSignUp verified-additional-email linking gate (found live
+        // 2026-06-06: orphan Google_* shell user + JIT duplicate-guard wedge → blank
+        // dashboard). Applied to the live pool via update-identity-provider the same day;
+        // this line makes CDK converge with that state.
+        emailVerified: cognito.ProviderAttribute.GOOGLE_EMAIL_VERIFIED,
+        // Names fold to standard attributes (see standardAttributes above). The canonical
+        // JIT path (Story 12.3) reads these for federated users — the federated counterpart
+        // of how post-confirmation.ts reads firstName/lastName from custom:preferences for
+        // native sign-ups. There is NO Cognito mapping into a custom:preferences JSON field.
+        givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+        familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+        // Story 12.12: Google's OIDC `picture` claim (a googleusercontent.com photo URL)
+        // maps onto the built-in standard `picture` attribute (no Schema declaration —
+        // same PR #735 rule as the names above). CUMS reads it from the ID token and
+        // imports the photo into our own S3 ONCE; the URL itself is never hotlinked
+        // (googleusercontent URLs rotate/expire). Requires read+write on the client
+        // below or Cognito silently drops it (12.8-F1b lesson).
+        profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE,
+      },
+    });
+
     // Determine callback URLs based on environment
-    const callbackUrls = envName === 'production'
-      ? ['https://www.batbern.ch/auth/callback']
+    const callbackUrls = isProdTraffic
+      ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/auth/callback`]
       : envName === 'staging'
-      ? ['https://staging.batbern.ch/auth/callback']
+      ? ['https://www.batbern.ch/auth/callback']
       : ['http://localhost:3000/auth/callback'];
 
-    const logoutUrls = envName === 'production'
-      ? ['https://www.batbern.ch/logout']
+    const logoutUrls = isProdTraffic
+      ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/logout`]
       : envName === 'staging'
-      ? ['https://staging.batbern.ch/logout']
+      ? ['https://www.batbern.ch/logout']
       : ['http://localhost:3000/logout'];
 
     // Create User Pool Client
@@ -239,6 +276,7 @@ export class CognitoStack extends cdk.Stack {
         userPassword: true,
         custom: true,
         userSrp: true, // Enable SRP authentication for secure password flow
+        adminUserPassword: true,  // Story 11.E.1 / AR29 / cherry-pick d5cf0fcc — enables AdminInitiateAuth for the temp-password flow used at speaker provisioning (Story 11.E.2)
       },
       generateSecret: false,
       refreshTokenValidity: cdk.Duration.days(3650), // 10 years for long-lived test tokens
@@ -256,16 +294,41 @@ export class CognitoStack extends cdk.Stack {
         callbackUrls,
         logoutUrls,
       },
+      // Story 12.5 AC5: GOOGLE added so the hosted-UI can broker Google OIDC sign-in.
+      // COGNITO MUST stay so email/password auth keeps working. Rollback = drop GOOGLE.
       supportedIdentityProviders: [
         cognito.UserPoolClientIdentityProvider.COGNITO,
+        cognito.UserPoolClientIdentityProvider.GOOGLE,
       ],
+      // Story 12.1 AC5: 'role' dropped from client readAttributes so the STORED (fossil)
+      // custom:role attribute stops flowing into issued tokens. The schema attribute
+      // (customAttributes.role above) stays — Cognito custom attributes are permanent —
+      // and the DB-projected custom:role authorization claim from the PreTokenGeneration
+      // Lambda is unaffected (it injects claimsToAddOrOverride, independent of this list).
+      // Story 12.12: profilePicture readable so the IdP-mapped `picture` claim lands in
+      // issued ID tokens, where CUMS' avatar-import hook reads it.
       readAttributes: new cognito.ClientAttributes()
-        .withStandardAttributes({ email: true, emailVerified: true })
-        .withCustomAttributes('companyId', 'preferences', 'role'),
+        .withStandardAttributes({ email: true, emailVerified: true, givenName: true, familyName: true, profilePicture: true })
+        .withCustomAttributes('companyId', 'preferences'),
+      // Story 12.8 F1b fix: givenName/familyName MUST be writable here. AWS Cognito only
+      // populates IdP-mapped attributes that the federating app client has WRITE access to
+      // ("the WriteAttributes array must include all attributes that you have mapped to IdP
+      // attributes" — Cognito docs). The Google IdP maps given_name/family_name (Story 12.5)
+      // and Google sends them (consent grants "Name"), but with only `email` writable here
+      // Cognito silently dropped the mapped names → federated users provisioned as "User
+      // User" (verified 2026-06-03: names absent at PreSignUp + PostConfirmation despite a
+      // full-consent first-time federation). `email` worked only because it was writable.
+      // Story 12.12: profilePicture writable for the same F1b reason — Cognito only
+      // populates IdP-mapped attributes the federating app client has WRITE access to.
       writeAttributes: new cognito.ClientAttributes()
-        .withStandardAttributes({ email: true })
+        .withStandardAttributes({ email: true, givenName: true, familyName: true, profilePicture: true })
         .withCustomAttributes('companyId', 'preferences'),
     });
+
+    // Story 12.5 AC5: ensure CloudFormation creates the Google IdP BEFORE the client that
+    // lists it in supportedIdentityProviders (the standard CDK IdP-before-client gotcha;
+    // otherwise deploy fails with "the provider does not exist").
+    this.userPoolClient.node.addDependency(googleIdp);
 
     // Create User Pool Domain
     this.userPoolDomain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
@@ -274,6 +337,43 @@ export class CognitoStack extends cdk.Stack {
         domainPrefix: `batbern-${envName}-auth`,
       },
     });
+
+    // Story 12.9 DF-1 (2026-06-04): CUSTOM hosted-UI domain `auth.<zone>` (auth.batbern.ch).
+    // Google's consent screen displays the OAuth redirect domain — previously the ugly
+    // default `batbern-staging-auth.auth.eu-central-1.amazoncognito.com`; with this domain
+    // it shows batbern.ch. A pool may carry BOTH a prefix domain AND a custom domain, so the
+    // prefix domain above is deliberately KEPT (zero-downtime: the already-deployed frontend
+    // and the existing Google redirect URI keep working until the FE + Google client switch).
+    // Requirements satisfied: us-east-1 cert (DnsStack, crossRegionReferences) + an A record
+    // on the parent zone apex (batbern.ch has one). NOTE (manual, one-time): the Google
+    // OAuth client `batbern-cognito-web` needs `https://auth.<zone>/oauth2/idpresponse`
+    // ADDED to its authorized redirect URIs (keep the old amazoncognito one during
+    // transition). JWT validation is unaffected (issuer stays cognito-idp.<region>/<poolId>).
+    if (props.authCertificate && props.hostedZone && props.config.domain) {
+      const authDomainName = `auth.${props.config.domain.zoneName}`;
+      this.customUserPoolDomain = new cognito.UserPoolDomain(this, 'CustomUserPoolDomain', {
+        userPool: this.userPool,
+        customDomain: {
+          domainName: authDomainName,
+          certificate: props.authCertificate,
+        },
+      });
+      // Cognito custom domains front an internal CloudFront distribution — alias to it
+      // (mirrors StorageStack's CdnAliasRecord: zone from props, full-domain recordName).
+      new route53.ARecord(this, 'AuthDomainAliasRecord', {
+        zone: props.hostedZone,
+        recordName: authDomainName,
+        target: route53.RecordTarget.fromAlias(
+          new route53targets.UserPoolDomainTarget(this.customUserPoolDomain)
+        ),
+      });
+
+      new cdk.CfnOutput(this, 'CustomUserPoolDomainUrl', {
+        value: `https://${authDomainName}`,
+        description: 'Cognito hosted-UI CUSTOM domain (Story 12.9 DF-1)',
+        exportName: `${envName}-CustomUserPoolDomainUrl`,
+      });
+    }
 
     // REMOVED: Cognito Groups (Story 1.2.6: ADR-001 Database-centric architecture)
     // Roles are now managed exclusively in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
@@ -292,6 +392,7 @@ export class CognitoStack extends cdk.Stack {
         databaseSecret: props.databaseSecret,
         databaseEndpoint: props.databaseEndpoint,
         envName: props.config.envName,
+        isProduction: props.config.isProduction,
       });
       // Note: Lambda security group and database ingress rule are created in NetworkStack
       // Tables are created by CompanyManagementStack Flyway migrations at runtime

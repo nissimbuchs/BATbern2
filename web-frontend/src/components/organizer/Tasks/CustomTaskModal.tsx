@@ -77,7 +77,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
   const { t } = useTranslation('events');
   const queryClient = useQueryClient();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const isEditMode = !!existingTask;
 
@@ -109,6 +109,14 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
       setNotes(existingTask.notes ?? '');
       setSaveAsTemplate(false);
       setErrors({});
+      // Pre-populate due date from existing task
+      if (existingTask.dueDate) {
+        setAbsoluteDueDate(existingTask.dueDate.slice(0, 10));
+        setDueDateType('absolute');
+      } else {
+        setAbsoluteDueDate('');
+        setDueDateType('relative_to_event');
+      }
     } else if (open && !isEditMode) {
       // Reset to defaults for create mode
       setTaskName('');
@@ -191,10 +199,8 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
       const request: UpdateEventTaskRequest = {
         notes: notes || null,
         assignedOrganizerUsername: assignedOrganizer || null,
+        dueDate: absoluteDueDate ? new Date(absoluteDueDate).toISOString() : null,
       };
-      if (dueDateType === 'absolute' && absoluteDueDate) {
-        request.dueDate = new Date(absoluteDueDate).toISOString();
-      }
       updateTaskMutation.mutate({ taskId: existingTask.id, request });
       return;
     }
@@ -250,7 +256,14 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
       : t('tasks.createTask');
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      fullScreen={isMobile}
+      data-testid="custom-task-modal"
+    >
       <DialogTitle>{isEditMode ? t('tasks.editTask') : t('tasks.addCustomTask')}</DialogTitle>
 
       <DialogContent>
@@ -279,6 +292,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
               required
               fullWidth
               placeholder={t('tasks.taskNamePlaceholder')}
+              inputProps={{ 'data-testid': 'custom-task-name-input' }}
             />
           )}
 
@@ -361,8 +375,8 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
             />
           )}
 
-          {/* Absolute Date picker (absolute due date type) */}
-          {dueDateType === 'absolute' && (
+          {/* Absolute Date picker — always shown in edit mode, or when type is absolute in create mode */}
+          {(isEditMode || dueDateType === 'absolute') && (
             <TextField
               label={t('tasks.absoluteDueDate')}
               type="date"
@@ -401,6 +415,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
                 <Checkbox
                   checked={saveAsTemplate}
                   onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                  data-testid="custom-task-save-as-template"
                 />
               }
               label={t('tasks.saveAsTemplate')}
@@ -413,7 +428,12 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
         <Button onClick={handleClose} disabled={isLoading}>
           {t('common:actions.cancel')}
         </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={isLoading}
+          data-testid="custom-task-submit"
+        >
           {isLoading ? <CircularProgress size={20} /> : submitLabel}
         </Button>
       </DialogActions>

@@ -15,6 +15,9 @@ import * as partnerApi from './partnerApi';
 import {
   getPartnerDetail,
   getPartnerVotes,
+  createPartner,
+  updatePartner,
+  getPartnerContacts,
   // TODO: Uncomment when implemented in partnerApi.ts
   // getPartnerMeetings,
   // getPartnerActivity,
@@ -507,6 +510,7 @@ describe('Partner API Client - Story 2.8.3 (Partner Create/Edit)', () => {
     vi.spyOn(apiClient, 'get').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
     vi.spyOn(apiClient, 'post').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
     vi.spyOn(apiClient, 'put').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
+    vi.spyOn(apiClient, 'patch').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
     vi.spyOn(apiClient, 'delete').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
   });
 
@@ -588,12 +592,102 @@ describe('Partner API Client - Story 2.8.3 (Partner Create/Edit)', () => {
     });
   });
 
+  describe('createPartner - success path', () => {
+    it('should_returnCreatedPartner_when_apiReturnsSuccess', async () => {
+      const request = {
+        companyName: 'new-partner',
+        partnershipLevel: 'GOLD' as const,
+        partnershipStartDate: '2025-01-01',
+      };
+
+      const mockResponse = {
+        companyName: 'new-partner',
+        partnershipLevel: 'GOLD',
+        partnershipStartDate: '2025-01-01',
+        isActive: true,
+      };
+
+      vi.mocked(apiClient.post).mockResolvedValueOnce({ data: mockResponse });
+
+      const result = await createPartner(request);
+
+      expect(result).toEqual(mockResponse);
+      expect(apiClient.post).toHaveBeenCalledWith('/partners', request);
+    });
+  });
+
+  describe('updatePartner - success path', () => {
+    it('should_returnUpdatedPartner_when_apiReturnsSuccess', async () => {
+      const companyName = 'existing-partner';
+      const request = {
+        partnershipLevel: 'PLATINUM' as const,
+        isActive: true,
+      };
+
+      const mockResponse = {
+        companyName: 'existing-partner',
+        partnershipLevel: 'PLATINUM',
+        isActive: true,
+      };
+
+      vi.mocked(apiClient.patch).mockResolvedValueOnce({ data: mockResponse });
+
+      const result = await updatePartner(companyName, request);
+
+      expect(result).toEqual(mockResponse);
+      expect(apiClient.patch).toHaveBeenCalledWith('/partners/existing-partner', request);
+    });
+  });
+
+  describe('getPartnerContacts', () => {
+    it('should_fetchContacts_when_companyNameProvided', async () => {
+      const companyName = 'GoogleZH';
+      const mockContacts = [
+        { id: 'contact-1', firstName: 'John', lastName: 'Doe', email: 'john@google.ch' },
+        { id: 'contact-2', firstName: 'Jane', lastName: 'Smith', email: 'jane@google.ch' },
+      ];
+
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockContacts });
+
+      const result = await getPartnerContacts(companyName);
+
+      expect(result).toEqual(mockContacts);
+      expect(result).toHaveLength(2);
+      expect(apiClient.get).toHaveBeenCalledWith('/partners/GoogleZH/contacts');
+    });
+
+    it('should_returnEmptyArray_when_noContactsFound', async () => {
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [] });
+
+      const result = await getPartnerContacts('no-contacts-company');
+
+      expect(result).toEqual([]);
+      expect(apiClient.get).toHaveBeenCalledWith('/partners/no-contacts-company/contacts');
+    });
+
+    it('should_throwError_when_partnerNotFound', async () => {
+      vi.mocked(apiClient.get).mockRejectedValueOnce(
+        new AxiosError('Not Found', 'ERR_BAD_REQUEST', undefined, undefined, {
+          status: 404,
+          data: { message: 'Partner not found' },
+          statusText: 'Not Found',
+          headers: {},
+          config: {} as never,
+        })
+      );
+
+      await expect(getPartnerContacts('NonExistentCompany')).rejects.toThrow();
+    });
+  });
+
   describe('API Structure', () => {
     it('should have all required mutation methods', () => {
       expect(partnerApi.createPartner).toBeDefined();
       expect(typeof partnerApi.createPartner).toBe('function');
       expect(partnerApi.updatePartner).toBeDefined();
       expect(typeof partnerApi.updatePartner).toBe('function');
+      expect(partnerApi.getPartnerContacts).toBeDefined();
+      expect(typeof partnerApi.getPartnerContacts).toBe('function');
     });
   });
 });

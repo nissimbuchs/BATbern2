@@ -48,6 +48,9 @@ class SessionUserServiceTest {
     @Mock
     private UserApiClient userApiClient;
 
+    @Mock
+    private SpeakerAutoRegistrationService speakerAutoRegistrationService;
+
     @InjectMocks
     private SessionUserService sessionUserService;
 
@@ -94,7 +97,6 @@ class SessionUserServiceTest {
                 .session(testSession)
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
-                .presentationTitle("Test Presentation")
                 .isConfirmed(false)
                 .build();
         when(sessionUserRepository.save(any(SessionUser.class))).thenReturn(savedSessionUser);
@@ -115,7 +117,6 @@ class SessionUserServiceTest {
         assertThat(captured.getSession()).isEqualTo(testSession);
         assertThat(captured.getUsername()).isEqualTo(username);
         assertThat(captured.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
-        assertThat(captured.getPresentationTitle()).isEqualTo("Test Presentation");
         assertThat(captured.isConfirmed()).isFalse();
 
         // And: Response should contain enriched user data
@@ -124,6 +125,38 @@ class SessionUserServiceTest {
         assertThat(response.getLastName()).isEqualTo("Doe");
         assertThat(response.getCompany()).isEqualTo("GoogleZH");
         assertThat(response.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
+    }
+
+    @Test
+    void should_resolveCompanyDisplayName_when_companyHasDisplayName() {
+        // Given: the company slug resolves to a human-readable display name
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
+        when(userApiClient.getCompanyDisplayName("GoogleZH")).thenReturn("Google Zürich");
+        when(sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)).thenReturn(false);
+        when(sessionUserRepository.save(any(SessionUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+                sessionId, username, SpeakerRole.PRIMARY_SPEAKER, null);
+
+        // Then: slug retained as the stable key, display name resolved for the UI
+        assertThat(response.getCompany()).isEqualTo("GoogleZH");
+        assertThat(response.getCompanyDisplayName()).isEqualTo("Google Zürich");
+    }
+
+    @Test
+    void should_fallBackToSlug_when_companyHasNoDisplayName() {
+        // Given: the company slug is absent from the display-name map
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
+        when(userApiClient.getCompanyDisplayName("GoogleZH")).thenReturn(null);
+        when(sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)).thenReturn(false);
+        when(sessionUserRepository.save(any(SessionUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+                sessionId, username, SpeakerRole.PRIMARY_SPEAKER, null);
+
+        assertThat(response.getCompanyDisplayName()).isEqualTo("GoogleZH");
     }
 
     @Test
@@ -365,7 +398,6 @@ class SessionUserServiceTest {
                 .session(testSession)
                 .username(username)
                 .speakerRole(SpeakerRole.MODERATOR)
-                .presentationTitle(null)
                 .isConfirmed(false)
                 .build();
         when(sessionUserRepository.save(any(SessionUser.class))).thenReturn(savedSessionUser);
@@ -379,7 +411,6 @@ class SessionUserServiceTest {
         );
 
         // Then: Should succeed with null presentationTitle
-        assertThat(response.getPresentationTitle()).isNull();
         assertThat(response.getSpeakerRole()).isEqualTo(SpeakerRole.MODERATOR);
     }
 }
