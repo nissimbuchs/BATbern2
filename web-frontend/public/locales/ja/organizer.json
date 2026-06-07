@@ -563,6 +563,7 @@
   "speakerDrawer": {
     "secondaryActions": {
       "decline": "Decline with reason",
+      "acceptOnBehalf": "登壇者に代わって承諾（招待をスキップ）",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
       "overrideState": "Override state"

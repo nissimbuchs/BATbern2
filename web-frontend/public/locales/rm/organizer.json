@@ -563,6 +563,7 @@
   "speakerDrawer": {
     "secondaryActions": {
       "decline": "Decline with reason",
+      "acceptOnBehalf": "Acceptar en num dal referent (senza invitaziun)",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
       "overrideState": "Override state"
