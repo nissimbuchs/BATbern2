@@ -268,7 +268,7 @@ public class SpeakerInvitationEmailService {
         variables.put("eventUrl", deriveHostBase(loginUrl) + "/events/" + event.getEventCode());
         variables.put("supportUrl", deriveHostBase(loginUrl) + "/support");
         variables.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
-        variables.put("logoUrl", deriveHostBase(loginUrl) + "/BATbern_white_logo.svg");
+        variables.put("logoUrl", deriveHostBase(loginUrl) + "/BATbern_white_logo.png");
 
         String html = emailService.replaceVariables(template, variables);
         String subject = emailTemplateService.resolveSubject("speaker-invitation", localeStr)
