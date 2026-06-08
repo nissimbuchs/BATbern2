@@ -705,10 +705,14 @@ Two distinct confirmation flows exist, with **different** token mechanics — a 
 | **Cognito account** confirmation (sign-up email verification) | Cognito's native sign-up code | **24h, fixed** | ❌ no — Cognito limitation |
 
 **Coupling invariant (registration):** `RegistrationCleanupService` deletes still-`registered` rows
-after `app.registration.cleanup-after-hours` (default 120h / 5 days). This window **must exceed** the
-confirmation-token validity, otherwise a still-valid 4-day link could point at an already-deleted row.
-The service enforces this defensively (`effectiveCleanupHours() = max(configured, tokenValidity + 24h)`)
-and warns at startup if misconfigured.
+whose **most-recent confirmation link** is older than `app.registration.cleanup-after-hours`
+(default 120h / 5 days). The deletion clock is keyed off `COALESCE(confirmation_resent_at, created_at)`
+— i.e. the last time a link was minted — **not** `created_at` alone. This is required because the
+resend job (below) issues a *fresh* full-validity token on each nudge: keying cleanup off `created_at`
+would orphan a just-resent, still-valid link (the 2026-06-08 "Confirmation Failed" incident). The
+window **must exceed** the confirmation-token validity, otherwise a still-valid 4-day link could point
+at an already-deleted row; the service enforces this defensively
+(`effectiveCleanupHours() = max(configured, tokenValidity + 24h)`) and warns at startup if misconfigured.
 
 **Daily auto-resend jobs** (both Spring `@Scheduled` + `@SchedulerLock`/ShedLock):
 

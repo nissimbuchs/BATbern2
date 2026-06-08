@@ -57,7 +57,7 @@ class RegistrationCleanupServiceTest {
         );
 
         when(registrationRepository
-                .findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class)))
+                .findUnconfirmedForCleanup(eq("registered"), any(Instant.class)))
                 .thenReturn(List.of(unconfirmedReg));
 
         // Act
@@ -72,7 +72,7 @@ class RegistrationCleanupServiceTest {
     void shouldNotDeleteUnconfirmedRegistrations_whenNewerThan48Hours() {
         // Arrange
         when(registrationRepository
-                .findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class)))
+                .findUnconfirmedForCleanup(eq("registered"), any(Instant.class)))
                 .thenReturn(Collections.emptyList());
 
         // Act
@@ -93,7 +93,7 @@ class RegistrationCleanupServiceTest {
         Registration reg3 = createRegistration("REG-003", "registered", expiredTime);
 
         when(registrationRepository
-                .findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class)))
+                .findUnconfirmedForCleanup(eq("registered"), any(Instant.class)))
                 .thenReturn(List.of(reg1, reg2, reg3));
 
         // Simulate failure on second registration
@@ -115,14 +115,14 @@ class RegistrationCleanupServiceTest {
     void shouldNotDeleteConfirmedRegistrations() {
         // Arrange
         when(registrationRepository
-                .findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class)))
+                .findUnconfirmedForCleanup(eq("registered"), any(Instant.class)))
                 .thenReturn(Collections.emptyList());
 
         // Act
         cleanupService.cleanupUnconfirmedRegistrations();
 
         // Assert - only searches for 'registered' status
-        verify(registrationRepository).findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class));
+        verify(registrationRepository).findUnconfirmedForCleanup(eq("registered"), any(Instant.class));
         verify(registrationRepository, never()).delete(any(Registration.class));
     }
 
@@ -137,7 +137,7 @@ class RegistrationCleanupServiceTest {
         when(registrationRepository.countByStatus("confirmed")).thenReturn(100L);
         when(registrationRepository.countByStatus("cancelled")).thenReturn(10L);
         when(registrationRepository
-                .findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class)))
+                .findUnconfirmedForCleanup(eq("registered"), any(Instant.class)))
                 .thenReturn(List.of(expiredReg));
 
         // Act
@@ -155,14 +155,14 @@ class RegistrationCleanupServiceTest {
     void shouldExecuteCleanup_whenManuallyTriggered() {
         // Arrange
         when(registrationRepository
-                .findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class)))
+                .findUnconfirmedForCleanup(eq("registered"), any(Instant.class)))
                 .thenReturn(Collections.emptyList());
 
         // Act
         cleanupService.triggerManualCleanup();
 
         // Assert
-        verify(registrationRepository).findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class));
+        verify(registrationRepository).findUnconfirmedForCleanup(eq("registered"), any(Instant.class));
     }
 
     @Test
@@ -185,13 +185,13 @@ class RegistrationCleanupServiceTest {
     @DisplayName("Deletion threshold reflects the effective cleanup window, not the legacy 48h")
     void deletesUsingEffectiveWindow() {
         RegistrationCleanupService svc = new RegistrationCleanupService(registrationRepository, 120, 96);
-        when(registrationRepository.findByStatusAndCreatedAtBefore(eq("registered"), any(Instant.class)))
+        when(registrationRepository.findUnconfirmedForCleanup(eq("registered"), any(Instant.class)))
                 .thenReturn(Collections.emptyList());
 
         svc.cleanupUnconfirmedRegistrations();
 
         ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
-        verify(registrationRepository).findByStatusAndCreatedAtBefore(eq("registered"), captor.capture());
+        verify(registrationRepository).findUnconfirmedForCleanup(eq("registered"), captor.capture());
         // Threshold should be ~120h ago (allow a small clock delta around the boundary)
         assertThat(captor.getValue()).isBeforeOrEqualTo(Instant.now().minus(119, ChronoUnit.HOURS));
         assertThat(captor.getValue()).isAfter(Instant.now().minus(122, ChronoUnit.HOURS));
