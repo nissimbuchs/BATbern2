@@ -19,15 +19,20 @@ import java.util.List;
  * Story 4.1.5c: Automatic cleanup of registrations that were never email-confirmed
  *
  * Cleanup Rules:
- * - 'registered' status registrations older than the cleanup window are deleted (email
- *   confirmation never completed). Window is configurable via
- *   {@code app.registration.cleanup-after-hours} (default 120h / 5 days).
+ * - 'registered' status registrations whose most-recent confirmation link is older than the cleanup
+ *   window are deleted (email confirmation never completed). Window is configurable via
+ *   {@code app.registration.cleanup-after-hours} (default 120h / 5 days). "Most-recent link" =
+ *   {@code confirmationResentAt} if the row was ever auto-resent, otherwise {@code createdAt}.
  *
  * INVARIANT: the cleanup window MUST exceed the confirmation-token validity
  * ({@code app.registration.confirmation-token-validity-hours}, default 96h / 4 days) — otherwise a
  * still-valid confirmation link could point at an already-deleted row. This service enforces the
  * invariant defensively at runtime via {@link #effectiveCleanupHours()} (it never deletes a row
  * whose link could still be valid) and warns at startup if the configured window is too small.
+ * Because {@code RegistrationResendService} mints a fresh full-validity token on each nudge, the
+ * window is measured from the last resend (not {@code createdAt}); otherwise a just-resent link
+ * would be orphaned before the attendee could click it (the 2026-06-08 "Confirmation Failed"
+ * incident).
  *
  * Runs daily at 3 AM to minimize impact on production traffic
  * (Uses 3 AM to avoid collision with other scheduled jobs at 2 AM)
@@ -101,8 +106,11 @@ public class RegistrationCleanupService {
     }
 
     /**
-     * Delete 'registered' status registrations older than the effective cleanup window.
-     * These are registrations where the user never clicked the email confirmation link.
+     * Delete 'registered' status registrations whose most-recent confirmation link is older than the
+     * effective cleanup window. These are registrations where the user never clicked the email
+     * confirmation link. Eligibility is keyed off the last resend ({@code confirmationResentAt}, else
+     * {@code createdAt}) — not {@code createdAt} alone — so a freshly auto-resent link always still
+     * has a row to confirm (the 2026-06-08 orphaned-link incident).
      *
      * @param now Current timestamp
      * @return Number of registrations deleted
@@ -112,7 +120,7 @@ public class RegistrationCleanupService {
         Instant expiryThreshold = now.minus(windowHours, ChronoUnit.HOURS);
 
         List<Registration> unconfirmedRegistrations = registrationRepository
-                .findByStatusAndCreatedAtBefore("registered", expiryThreshold);
+                .findUnconfirmedForCleanup("registered", expiryThreshold);
 
         if (unconfirmedRegistrations.isEmpty()) {
             log.info("No unconfirmed registrations found older than {} hours", windowHours);
@@ -170,7 +178,7 @@ public class RegistrationCleanupService {
         long cancelledCount = registrationRepository.countByStatus("cancelled");
 
         long deletableUnconfirmed = registrationRepository
-                .findByStatusAndCreatedAtBefore("registered", expiryThreshold).size();
+                .findUnconfirmedForCleanup("registered", expiryThreshold).size();
 
         return new CleanupStatistics(
                 registeredCount,

@@ -7,6 +7,8 @@ import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import jakarta.persistence.EntityManager;
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.core.SimpleLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -14,16 +16,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Integration tests for RegistrationCleanupService
@@ -34,6 +41,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @Transactional
 class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest {
+
+    /**
+     * Replace the real ShedLock {@link LockProvider} with an always-grant mock. The real provider
+     * writes the {@code shedlock} row on a separate, committed JDBC connection (it survives the
+     * per-test transaction rollback); with {@code lockAtLeastFor=1m} on
+     * {@code cleanupUnconfirmedRegistrations}, the first test in the class holds the lock for a
+     * minute and every later {@code cleanup()} call is silently skipped — making delete-expecting
+     * tests pass or fail purely by execution order. {@code @MockBean} is scoped to this test class's
+     * context only (it does not leak into other test contexts the way a component-scanned
+     * {@code @TestConfiguration} would), so each test here exercises a real cleanup run.
+     */
+    @MockBean
+    private LockProvider lockProvider;
 
     @Autowired
     private RegistrationCleanupService cleanupService;
@@ -66,6 +86,10 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
 
     @BeforeEach
     void setUp() {
+        // Always grant the ShedLock lock (no-op unlock) so cleanup runs on every call, regardless
+        // of test order — see the field-level note on why the real provider breaks this class.
+        when(lockProvider.lock(any())).thenReturn(Optional.of(mock(SimpleLock.class)));
+
         // Clean up any existing data
         registrationRepository.deleteAll();
         eventRepository.deleteAll();
@@ -135,6 +159,44 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
     }
 
     @Test
+    @DisplayName("Should NOT delete an unconfirmed registration whose confirmation link was recently resent")
+    void shouldNotDeleteOldRegistration_whenConfirmationRecentlyResent() {
+        // Reproduces the 2026-06-08 orphaned-link incident: the resend job mints a fresh
+        // full-validity confirmation token, so a row created long ago can still hold a link that
+        // is valid for days. Cleanup must key off the last resend, not createdAt — otherwise it
+        // deletes a row whose freshly-emailed link is still valid (→ "Confirmation Failed").
+        Instant createdLongAgo = Instant.now().minus(6, ChronoUnit.DAYS);   // past the 5-day window
+        Instant resentRecently = Instant.now().minus(1, ChronoUnit.HOURS);  // link still valid
+        Registration resent = createAndSaveRegistration(
+                "REG-RESENT-001", "registered", createdLongAgo, resentRecently);
+
+        // Act
+        cleanupService.cleanupUnconfirmedRegistrations();
+        entityManager.flush();
+        entityManager.clear();
+
+        // Assert - kept, because its last confirmation link is still within the window
+        assertThat(registrationRepository.findById(resent.getId())).isPresent();
+    }
+
+    @Test
+    @DisplayName("Should delete an unconfirmed registration whose last resend is also past the window")
+    void shouldDeleteOldRegistration_whenLastResendAlsoExpired() {
+        // Old creation AND old last-resend: every link this row ever had is expired → safe to delete.
+        Instant longAgo = Instant.now().minus(8, ChronoUnit.DAYS);
+        Registration stale = createAndSaveRegistration(
+                "REG-RESENT-STALE-001", "registered", longAgo, longAgo);
+
+        // Act
+        cleanupService.cleanupUnconfirmedRegistrations();
+        entityManager.flush();
+        entityManager.clear();
+
+        // Assert
+        assertThat(registrationRepository.findById(stale.getId())).isEmpty();
+    }
+
+    @Test
     @DisplayName("Should NOT delete confirmed registrations regardless of age")
     void shouldNotDeleteConfirmedRegistrations() {
         // Arrange - Create old confirmed registration (should NOT be deleted)
@@ -157,7 +219,11 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
 
     @Test
     @DisplayName("Should handle mixed scenario: delete old unconfirmed, keep recent and confirmed")
-    @Disabled("TODO: Fix test isolation issue - cleanup service not deleting in multi-entity scenarios due to JPA/transaction management complexity")
+    @Disabled("Pre-existing multi-entity failure (cleanup deletes 0 when the test pre-clears the "
+            + "persistence context with entityManager.clear()); orthogonal to the resend/cleanup "
+            + "window fix. The ShedLock cross-test lock that previously also broke this class is now "
+            + "neutralised by NoOpLockConfig — single-entity cases (incl. the resend-orphan regression) "
+            + "run deterministically. Re-enabling this needs a separate look at the clear()+delete flow.")
     void shouldHandleMixedScenario() {
         // Arrange
         Instant oldTime = Instant.now().minus(6, ChronoUnit.DAYS);
@@ -195,7 +261,8 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
 
     @Test
     @DisplayName("Should return accurate statistics after cleanup")
-    @Disabled("TODO: Fix test isolation issue - cleanup service not deleting in multi-entity scenarios due to JPA/transaction management complexity")
+    @Disabled("Pre-existing multi-entity failure (same entityManager.clear()+delete flow as "
+            + "shouldHandleMixedScenario); orthogonal to the resend/cleanup window fix.")
     void shouldReturnAccurateStatistics() {
         // Arrange
         Instant oldTime = Instant.now().minus(6, ChronoUnit.DAYS);
@@ -249,6 +316,12 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
 
     // Helper method to create and save registration with specific createdAt timestamp
     Registration createAndSaveRegistration(String code, String status, Instant createdAt) {
+        return createAndSaveRegistration(code, status, createdAt, null);
+    }
+
+    // Helper overload: also sets confirmation_resent_at (null = never resent)
+    Registration createAndSaveRegistration(
+            String code, String status, Instant createdAt, Instant confirmationResentAt) {
         // Use native SQL INSERT to completely bypass JPA lifecycle callbacks (@PrePersist)
         UUID id = UUID.randomUUID();
         String username = "test.user." + UUID.randomUUID();
@@ -256,9 +329,9 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
         entityManager.createNativeQuery(
                 "INSERT INTO registrations "
                 + "(id, registration_code, event_id, attendee_username, status, "
-                + "registration_date, created_at, updated_at) "
+                + "registration_date, created_at, updated_at, confirmation_resent_at) "
                 + "VALUES (:id, :code, :eventId, :username, :status, "
-                + ":regDate, :createdAt, :updatedAt)")
+                + ":regDate, :createdAt, :updatedAt, :resentAt)")
                 .setParameter("id", id)
                 .setParameter("code", code)
                 .setParameter("eventId", testEvent.getId())
@@ -267,6 +340,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
                 .setParameter("regDate", createdAt)
                 .setParameter("createdAt", createdAt)
                 .setParameter("updatedAt", createdAt)
+                .setParameter("resentAt", confirmationResentAt)
                 .executeUpdate();
 
         entityManager.flush();

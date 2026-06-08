@@ -114,6 +114,13 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             systemProperty 'junit.jupiter.execution.timeout.default', '5m'
             systemProperty 'junit.jupiter.execution.timeout.testable.method.default', '5m'
             jvmArgs '-XX:+EnableDynamicAgentLoading'
+            // Heavy services (event-management) cache many @SpringBootTest contexts alongside
+            // Testcontainers; the JVM default heap (~512m) leaves the suite one extra context away
+            // from OutOfMemoryError (CI run 27146950337: OOM during WatchSpeakerArrivalWebSocketTest
+            // context load, surfacing as a JaCoCo agent "can't create name string" assertion). Give
+            // the forked test JVM real headroom — GitHub runners have ~16 GB and each service builds
+            // in its own job.
+            maxHeapSize = '2g'
         }
         
         // Jacoco configuration

@@ -85,14 +85,25 @@ public interface RegistrationRepository
     void deleteByEventId(UUID eventId);
 
     /**
-     * Find registrations by status and created before threshold
-     * Used for cleanup of unconfirmed registrations
+     * Find unconfirmed registrations whose most-recently-minted confirmation link is older than the
+     * threshold. The link timestamp is the last resend ({@code confirmationResentAt}) if the row was
+     * ever auto-resent, otherwise the original {@code createdAt}.
      *
-     * @param status Registration status (e.g., "registered")
-     * @param threshold Instant threshold (e.g., 48 hours ago)
-     * @return List of registrations matching criteria
+     * <p>Keying cleanup off the last resend — not {@code createdAt} — is required because
+     * {@code RegistrationResendService} mints a <em>fresh</em> full-validity confirmation token on
+     * each nudge. Deleting purely by {@code createdAt} can orphan a link that was just emailed and is
+     * still valid for days (the 2026-06-08 "Confirmation Failed" incident). This query keeps the
+     * cleanup-window invariant intact relative to the actual link lifetime.
+     *
+     * @param status    registration status to scan (e.g. "registered")
+     * @param threshold rows whose last link predates this instant are eligible for deletion
+     * @return matching registrations
      */
-    List<Registration> findByStatusAndCreatedAtBefore(String status, Instant threshold);
+    @Query("SELECT r FROM Registration r WHERE r.status = :status "
+            + "AND COALESCE(r.confirmationResentAt, r.createdAt) < :threshold")
+    List<Registration> findUnconfirmedForCleanup(
+            @Param("status") String status,
+            @Param("threshold") Instant threshold);
 
     /**
      * Find registrations eligible for an automated confirmation-email resend
