@@ -167,6 +167,36 @@ Workflow documentation uses color-coded phases:
 - **Security Concerns**: security@berner-architekten-treffen.ch
 - **General Questions**: info@berner-architekten-treffen.ch
 
+## Credits — Swiss German speech synthesis & subtitles
+
+The training videos carry narration in German and English and subtitles in 10 languages, plus an
+experimental **Bernese Swiss German (Bärndütsch)** narration track. The Swiss German work builds
+on research and tools from the Swiss NLP community — with thanks to:
+
+- **ETH Zürich — Media Technology Center, "SwissVoice"** — text-to-speech for Swiss German
+  dialects (High German → dialect audio, 8 dialects incl. Bern):
+  <https://mtc.ethz.ch/research/natural-language-processing/swiss-voice.html>
+- **SwissDial** — annotated multi-dialect Swiss German corpus (ETH Zürich), paper:
+  <https://arxiv.org/abs/2103.11401>
+- **FHNW — Swiss German TTS demo (STT4SG)** — used to synthesize the Bärndütsch track:
+  demo <https://stt4sg.fhnw.ch/tts/> · project
+  <https://www.fhnw.ch/en/about-fhnw/schools/school-of-engineering/institutes/research-projects/speech-recognition-for-swiss-german>
+- **STT4SG-350** — Swiss German speech corpus for all dialect regions (ZHAW · FHNW · UZH):
+  <https://arxiv.org/abs/2305.18855>
+- **ZHAW — "Text-to-Speech Pipeline for Swiss German: A comparison"** (Stucki, Deriu, Cieliebak):
+  <https://arxiv.org/abs/2305.19750>
+- **ZHAW — "Voice Adaptation for Swiss German"**: <https://arxiv.org/abs/2505.22054>
+- **SwissDial-TTS** — open ESPnet model on HuggingFace (self-hostable):
+  <https://huggingface.co/swordi/SwissDial-TTS>
+- **SlowSoft GmbH — Slang TTS** — Swiss German & Romansh dialect TTS, incl. a Bern voice
+  (company ceased operations March 2026): <https://slowsoft.ch>
+- **Plapperi (Noxenum + SwissNLP)** — Swiss German dialect TTS API: <https://plapperi.ch>
+
+German and English narration voices: **ElevenLabs** (<https://elevenlabs.io>).
+
+> The Bärndütsch track is an experimental, research-grade proof of concept (16 kHz, machine
+> translation) — not production quality. See the screencast pipeline README for details.
+
 ## Copyright
 
 © 2025 Berner Architekten Treffen (BATbern). All rights reserved.
