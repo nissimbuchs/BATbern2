@@ -355,7 +355,10 @@
       "lunchDuration": "Mittagessedauer (Min)",
       "saveFailed": "Konfiguration chöne nid gspycheret werde",
       "accessDenied": "Zuegriff verweigeret",
-      "organizerOnly": "Nur Organisatore chöne uf die Syte zuegriffe"
+      "organizerOnly": "Nur Organisatore chöne uf die Syte zuegriffe",
+      "typicalStartTime": "Üblechi Startziit",
+      "typicalEndTime": "Üblechi Ändziit",
+      "typicalEndTimeHint": "Automatisch usem Zytplan brächnet"
     },
     "themeImage": "Veranstautigsthemenbild",
     "themeImageHelp": "Es Themenbild für die Veranstatig ufelade (PNG, JPEG oder SVG, max 5MB). Empfohleui Grösse: 1920x400px.",

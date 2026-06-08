@@ -349,7 +349,10 @@
       "lunchDuration": "Lunchduur (min)",
       "saveFailed": "Configuratie opslaan mislukt",
       "accessDenied": "Toegang geweigerd",
-      "organizerOnly": "Alleen organisatoren hebben toegang tot deze pagina"
+      "organizerOnly": "Alleen organisatoren hebben toegang tot deze pagina",
+      "typicalStartTime": "Gebruikelijke starttijd",
+      "typicalEndTime": "Gebruikelijke eindtijd",
+      "typicalEndTimeHint": "Automatisch berekend op basis van het schema"
     },
     "themeImage": "Evenementthema-afbeelding",
     "themeImageHelp": "Upload een thema-afbeelding voor dit evenement (PNG, JPEG of SVG, max 5 MB). Aanbevolen formaat: 1920x400px.",

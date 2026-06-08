@@ -7,16 +7,25 @@
  * Differences from complete-event-workflow.spec.ts:
  * - All 6 phases (A-E) merged into ONE continuous test
  * - NO screenshot captures (video recording only)
- * - Console timing markers for subtitle synchronization
+ * - Narration synchronized via per-segment audio durations (timing-helper v2)
  * - Strategic pauses for narration pacing
  *
- * Workflow Coverage:
- * - Phase A: Setup (Event creation, task assignment, topic selection, speaker brainstorming)
- * - Phase B: Outreach (Speaker contact, kanban workflow)
- * - Phase B.5: Content Submission
- * - Phase C: Quality Review
- * - Phase D: Slot Assignment & Publishing
- * - Phase E: Archival
+ * Speaker workflow (ADR-009, button-driven — NO drag-and-drop):
+ * - IDENTIFIED → CONTACTED   card primary action "Kontakt erfassen" (MarkContactedModal)
+ * - CONTACTED → READY        card primary action "Zum Speaker befördern" (drawer promote,
+ *                            creates SPEAKER user — provisions Cognito out-of-band)
+ * - READY → ACCEPTED         drawer "Zusage im Namen erfassen" (reason; NO invitation email)
+ * - CONTACTED → DECLINED     drawer "Mit Grund absagen" (Daniel — not promoted, no orphan session)
+ * - ACCEPTED → CONTENT_SUBMITTED   card primary action "Inhalt erfassen"
+ * - CONTENT_SUBMITTED → QUALITY_REVIEWED   card primary action "Inhalt prüfen" → approve
+ *
+ * Narration pipeline (see screencast/README.md):
+ *   1. npm run screencast:narration [-- --fake]   generate per-segment audio + timings
+ *   2. npm run test:e2e:screencast                record video; writes narration-timeline JSON
+ *   3. npm run screencast:assemble                place audio at recorded offsets + SRT
+ *
+ * Narration texts live in screencast/narration-manifest-de.json (single source of truth);
+ * the comments above each marker are convenience copies.
  *
  * Run:
  *   npm run test:e2e:screencast
@@ -24,12 +33,21 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { testConfig, getPresentation } from './test-data.config';
+import { testConfig } from './test-data.config';
 import { cleanupAfterTests } from './helpers/cleanup-helpers';
 import { EventWorkflowPage } from './page-objects/EventWorkflowPage';
 import { SpeakerManagementPage } from './page-objects/SpeakerManagementPage';
 import { TopicSelectionPage } from './page-objects/TopicSelectionPage';
-import { waitForNarration, logNarration, startTimer } from './screencast/timing-helper';
+import { email as factoryEmail } from '../../helpers/test-data-factory';
+import {
+  assertNarrationTimings,
+  waitForNarration,
+  logNarration,
+  paceWithinNarration,
+  startTimer,
+  flushTimeline,
+  SCREENCAST_LANG,
+} from './screencast/timing-helper';
 
 /**
  * Continuous Event Workflow Screencast
@@ -41,12 +59,23 @@ test.describe('Event Workflow Screencast for Training Video', () => {
 
   test.beforeAll(async () => {
     console.log('\n🎬 Starting Event Workflow Screencast Recording\n');
+    // Fail fast when the narration audio has not been generated yet.
+    assertNarrationTimings();
     authToken = process.env.AUTH_TOKEN || '';
   });
 
   test.afterAll(async () => {
+    // Flush the narration timeline even when the run fails mid-way — a partial timeline
+    // still lets screencast:assemble produce audio for the recorded part.
+    flushTimeline();
     console.log('\n🧹 Cleaning up test data...\n');
     if (authToken) {
+      // Promoted speakers use REAL names (for the video) but their emails are factory
+      // `@e2e.batbern.invalid` addresses — Playwright global-teardown's
+      // `cums/users_by_email prefix=@e2e.batbern.invalid` sweep deletes their CUMS rows
+      // regardless of name (verified: 3 user_profiles removed). So no per-user delete is
+      // needed here; just delete the event (cascades pool + sessions). The Cognito accounts
+      // still leak (CUMS delete is DB-only) — documented manual sweep.
       await cleanupAfterTests(authToken, testEventCode);
     }
     console.log('\n✅ Screencast Recording Complete\n');
@@ -83,10 +112,12 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        * NARRATION_01: [excited] Willkommen zur BATbern Event-Management-Plattform! [playful] Heute zeige ich Ihnen, wie man ein Event plant, ohne dabei den Verstand zu verlieren. [chuckling] Wir durchlaufen den kompletten Event-Lebenszyklus, von "Oh Gott, wir brauchen ein Event" bis zu "Endlich vorbei, ab ins Archiv damit!" [pause] Sie sehen in diesem Video alle wichtigen Schritte, die ein Organisator durchführt, um ein Berner Architekten Treffen zu planen, ohne dabei in Panik zu geraten.
        */
       logNarration('NARRATION_01', 'Willkommen zur BATbern Event-Management-Plattform');
-      // Show public homepage first (display while NARRATION_01 plays)
+      // Show public homepage first (display while NARRATION_01 plays).
+      // NOTE: never wait for 'networkidle' here — Cloudflare Turnstile polls continuously on
+      // the public homepage, so networkidle NEVER fires (observed 30-minute hang).
       console.log('\n🌐 Navigating to public homepage...\n');
-      await page.goto('https://www.batbern.ch/');
-      await page.waitForLoadState('networkidle');
+      await page.goto('https://www.batbern.ch/', { waitUntil: 'load' });
+      await page.waitForTimeout(2000);
       await waitForNarration('NARRATION_01', page);
       console.log('    ✓ Homepage displayed\n');
 
@@ -100,24 +131,48 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        */
       logNarration('NARRATION_02', 'Dashboard und Authentifizierung');
       await eventPage.navigateToDashboard();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(eventPage.createEventButton).toBeVisible({ timeout: 10000 });
       console.log('    ✓ Dashboard loaded - authentication successful');
       await waitForNarration('NARRATION_02', page);
 
-      const abbrechen = page.locator('button:has-text("ABBRECHEN")');
-      if (await abbrechen.isVisible()) {
-        await abbrechen.click();
+      // Close any leftover event-form dialog via stable testid (language-agnostic — works in
+      // English UI too, where the button reads "Cancel" not "ABBRECHEN").
+      const leftoverCancel = page.getByTestId('close-edit-modal-button');
+      if (await leftoverCancel.isVisible().catch(() => false)) {
+        await leftoverCancel.click();
         await page.waitForTimeout(500);
       }
+
+      /*
+       * NARRATION_02L (idea #1): Language showcase. Open the user menu → language selector to
+       * reveal all 10 supported locales, then switch the whole UI to the screencast's language
+       * (English for the EN run; German stays German). The rest of the recording runs in that
+       * language; the switch persists to localStorage + the user's backend preference.
+       */
+      logNarration('NARRATION_02L', 'Sprachauswahl — alle 10 Sprachen / language showcase');
+      await page.getByTestId('user-menu-button').click();
+      await page.waitForTimeout(500);
+      await page.getByTestId('language-select').click();
+      // Menu open ⇢ the locale options are visible (the option testids are language-agnostic).
+      await expect(page.getByTestId(`language-option-${SCREENCAST_LANG}`)).toBeVisible({
+        timeout: 5000,
+      });
+      // Hold the open list on screen for most of the narration so the viewer sees all locales,
+      // then switch language near the end of the segment.
+      await paceWithinNarration('NARRATION_02L', 0, 1, page);
+      await page.getByTestId(`language-option-${SCREENCAST_LANG}`).click();
+      await page.waitForTimeout(800);
+      await page.keyboard.press('Escape'); // close the user menu
+      await page.waitForTimeout(500);
+      console.log(`    ✓ UI language set to ${SCREENCAST_LANG}`);
+      await waitForNarration('NARRATION_02L', page);
 
       /*
        * NARRATION_03: [enthusiastic] Jetzt erstellen wir ein brandneues Event! [excited] Klicken Sie auf den Button "Neue Veranstaltung" oben rechts. [pause] Boom! Ein modales Formular erscheint. [playful] Keine Sorge, es sieht nach viel aus, aber wir füllen das gemeinsam aus.
        */
       logNarration('NARRATION_03', 'Neues Event erstellen');
       await eventPage.clickCreateEvent();
-      // await expect(eventPage.eventNumberField).toBeVisible({ timeout: 10000 });
-      // await page.waitForTimeout(1000);
       await waitForNarration('NARRATION_03', page);
 
       const uniqueEventNumber = testConfig.event.eventNumber + Math.floor(Math.random() * 1000);
@@ -178,7 +233,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
 
       testEventCode = `BATbern${uniqueEventNumber}`;
       console.log(`    → Waiting for event creation to complete...`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(2000);
 
       const modalStillOpen = await eventPage.eventNumberField
@@ -193,17 +248,18 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         throw new Error(`Event creation failed: ${errorText}`);
       }
 
-      // await expect(eventPage.createEventButton).toBeVisible({ timeout: 5000 });
       console.log(`    ✓ Event created: ${testEventCode}`);
       await waitForNarration('NARRATION_10', page);
+
+      const eventUrl = `http://localhost:8100/organizer/events/${testEventCode}`;
+      const kanbanUrl = `${eventUrl}?tab=speakers&view=kanban`;
 
       /*
        * NARRATION_11: [pause] Nach der Event-Erstellung navigieren wir zur Event-Detailseite. [professional] Hier können wir Aufgaben an Teammitglieder zuweisen. [playful] Denn warum sollten Sie alles alleine machen, wenn Sie ein ganzes Team haben? [chuckling] Klicken Sie auf "Bearbeiten" um das Event-Formular erneut zu öffnen.
        */
       logNarration('NARRATION_11', 'Zur Event-Detailseite navigieren');
-      const eventUrl = `http://localhost:8100/organizer/events/${testEventCode}`;
       await page.goto(eventUrl);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
 
       const editButton = page.getByTestId('edit-event-button');
@@ -225,24 +281,32 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       const taskAssignments = [
         { taskName: 'Venue Booking', assignee: 'Nissim Buchs' },
         { taskName: 'Partner Meeting', assignee: 'Daniel Kühni' },
-        { taskName: 'Moderator Assignment', assignee: 'Andreas Grütter' },
+        { taskName: 'Moderator Assignment', assignee: 'Vanessa Deubel' },
         { taskName: 'Newsletter: Topic', assignee: 'Baltisar Oswald' },
-        { taskName: 'Newsletter: Speaker', assignee: 'Baltisar Oswald' },
-        { taskName: 'Newsletter: Final', assignee: 'Baltisar Oswald' },
+        { taskName: 'Newsletter: Speaker', assignee: 'Andreas Grütter' },
+        { taskName: 'Newsletter: Final', assignee: 'Vanessa Deubel' },
       ];
 
       for (let i = 0; i < taskAssignments.length; i++) {
         const { taskName, assignee } = taskAssignments[i];
+        await paceWithinNarration('NARRATION_12', i, taskAssignments.length, page);
         console.log(`    → Assigning "${taskName}" to ${assignee}`);
 
         const taskRow = page.getByRole('listitem').filter({ hasText: taskName });
         const assigneeSelect = taskRow.getByRole('combobox');
         await assigneeSelect.scrollIntoViewIfNeeded();
         await assigneeSelect.click();
-        await page.waitForTimeout(400);
 
-        await page.getByRole('option', { name: assignee }).first().click();
-        await page.waitForTimeout(400);
+        // Wait for the MUI menu, then scroll the target option into view INSIDE the listbox
+        // before clicking. Adding Vanessa lengthened the assignee list, so options below the
+        // fold are not actionable until scrolled — a plain click would otherwise wait forever.
+        const listbox = page.getByRole('listbox');
+        await expect(listbox).toBeVisible();
+        const option = listbox.getByRole('option', { name: assignee }).first();
+        await option.scrollIntoViewIfNeeded();
+        await option.click();
+        await expect(listbox).toBeHidden();
+        await page.waitForTimeout(300);
       }
 
       console.log(`    ✓ All ${taskAssignments.length} tasks assigned`);
@@ -266,7 +330,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_14', 'Aufgabenliste überprüfen');
       const tasksButton = page.getByTestId('tasks-button');
       await tasksButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       const filterCombobox = page.getByRole('combobox', {
@@ -276,12 +340,13 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.waitForTimeout(400);
 
       await page.getByRole('option', { name: /Alle Aufgaben|All Tasks/i }).click();
-      await page.waitForTimeout(5000);
+      // Stay on the task list until the narration about it has finished — navigating away
+      // mid-segment would show the event page while the voice still describes the tasks.
+      await waitForNarration('NARRATION_14', page);
 
       await page.goto(eventUrl);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
-      await waitForNarration('NARRATION_14', page);
 
       const topicButton = page.getByTestId('select-topic-button');
       await topicButton.scrollIntoViewIfNeeded({ timeout: 10000 });
@@ -319,7 +384,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.waitForTimeout(500);
 
       await topicPage.confirmSelection();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       await expect(page.getByTestId('speaker-name-field')).toBeVisible({
@@ -340,7 +405,10 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       }));
 
       console.log(`    → Adding ${candidates.length} speaker candidates`);
-      await speakerPage.addMultipleSpeakers(candidates);
+      for (const [i, candidate] of candidates.entries()) {
+        await paceWithinNarration('NARRATION_19', i, candidates.length, page);
+        await speakerPage.addSpeakerCandidate(candidate);
+      }
       await page.waitForTimeout(1000);
       console.log(`    ✓ All ${candidates.length} speakers added to pool`);
       await waitForNarration('NARRATION_19', page);
@@ -351,143 +419,100 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_20', 'Zur Kontaktierung übergehen');
       await expect(speakerPage.proceedToOutreachButton).toBeVisible({ timeout: 5000 });
       await speakerPage.proceedToOutreach();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
 
-      await expect(page.locator('text=/N.*Nissim.*ELCA/i').first()).toBeVisible({ timeout: 10000 });
+      await expect(speakerPage.getCardByName('Nissim')).toBeVisible({ timeout: 10000 });
       console.log('    ✓ Proceeded to outreach phase');
       console.log('\n✅ Phase A Complete\n');
       await waitForNarration('NARRATION_20', page);
 
       // ========================================
-      // PHASE B: SPEAKER OUTREACH
+      // PHASE B: SPEAKER OUTREACH (button-driven kanban, ADR-009)
       // ========================================
       console.log('\n📋 Phase B: Referenten-Kontaktierung\n');
 
       /*
-       * NARRATION_21: [professional] Wir befinden uns jetzt in der Referenten-Kontaktierungs-Phase. [informative] Das Kanban-Board zeigt mehrere Spalten, die den Workflow abbilden. [playful] Von "Wer ist das?" über "Angefragt" bis "Hurra, zugesagt!" [helpful] Diese Visualisierung gibt einen schnellen Überblick über den Fortschritt der Referenten-Gewinnung.
+       * NARRATION_21: [professional] Wir befinden uns jetzt in der Referenten-Kontaktierungs-Phase. [informative] Das Kanban-Board zeigt den Workflow in Spalten — von "Identifiziert" über "Kontaktiert" und "Bereit" bis "Zugesagt". [playful] Von "Wer ist das?" bis "Hurra, zugesagt!" [helpful] Und das Beste: Jede Karte hat einen Aktions-Button, der Ihnen immer genau den nächsten sinnvollen Schritt anbietet. [satisfied] Kein Rätselraten mehr, was als Nächstes zu tun ist.
        */
-      logNarration('NARRATION_21', 'Kanban-Board für Referenten-Kontaktierung');
+      logNarration('NARRATION_21', 'Kanban-Board mit Aktions-Buttons');
+      await expect(page.getByTestId('status-lane-identified')).toBeVisible({ timeout: 10000 });
       await waitForNarration('NARRATION_21', page);
 
       /*
-       * NARRATION_22: [methodical] Jetzt kontaktieren wir systematisch alle Referenten-Kandidaten. [instructional] Für jeden Kandidaten klicken wir auf die Karte und öffnen den Kontakt-Dialog. [professional] Diese Dokumentation ist wichtig für die Nachverfolgung und für andere Teammitglieder, die den Status einsehen müssen. [playful] Sonst fragt nächste Woche jemand: "Haben wir den schon kontaktiert?" Und niemand weiß es. [chuckling] Chaos vermieden!
+       * NARRATION_22: [methodical] Jetzt kontaktieren wir systematisch alle Referenten-Kandidaten. [instructional] Für jeden Kandidaten klicken wir auf der Karte auf "Kontakt erfassen". [professional] Im Dialog wählen wir die Kontaktmethode, zum Beispiel E-Mail oder Telefon, und halten Notizen zur Antwort fest. [playful] Sonst fragt nächste Woche jemand: "Haben wir den schon kontaktiert?" Und niemand weiß es. [chuckling] Chaos vermieden! [satisfied] Die Karten wandern dabei automatisch in die Spalte "Kontaktiert".
        */
-      logNarration('NARRATION_22', 'Referenten kontaktieren');
-      for (let i = 0; i < testConfig.speakerOutreach.length; i++) {
-        const contact = testConfig.speakerOutreach[i];
-        console.log(`    → Contacting speaker ${i + 1}: ${contact.displayName}`);
-
-        await speakerPage.contactSpeaker(contact.displayName, contact.contactMethod, contact.notes);
+      logNarration('NARRATION_22', 'Referenten kontaktieren (Kontakt erfassen)');
+      for (const [i, contact] of testConfig.speakerOutreach.entries()) {
+        await paceWithinNarration('NARRATION_22', i, testConfig.speakerOutreach.length, page);
+        console.log(`    → Logging outreach for ${contact.cardName} (${contact.contactMethod})`);
+        await speakerPage.logOutreach(
+          contact.cardName,
+          contact.contactMethod === 'in_person' ? 'in-person' : contact.contactMethod,
+          contact.notes
+        );
         await page.waitForTimeout(500);
-        console.log(`    ✓ Speaker ${i + 1} contacted via ${contact.contactMethod}`);
+        console.log(`    ✓ ${contact.cardName} contacted`);
       }
-
       console.log(`    ✓ All ${testConfig.speakerOutreach.length} contacts recorded`);
       await waitForNarration('NARRATION_22', page);
 
       /*
-       * NARRATION_23: [positive] Nachdem wir positive Rückmeldungen erhalten haben, [excited] verschieben wir Referenten durch den Workflow! [playful] Das ist wie Tetris, nur mit Menschen. [instructional] Wir nutzen Drag-and-Drop, um Karten zwischen den Spalten zu verschieben. [clear] Wir verschieben vier Referenten in die "READY"-Spalte.
+       * NARRATION_23: [positive] Drei Kandidaten haben positiv reagiert. [excited] Zeit, sie zu richtigen Referenten zu befördern! [instructional] Ein Klick auf "Zum Speaker befördern" öffnet die Detail-Ansicht. Dort legen wir für jeden Referenten ein Benutzerkonto mit Name und E-Mail-Adresse an. [informative] Damit erhält der Referent später Zugang zum Referenten-Portal. [playful] Das System erledigt die ganze Bürokratie im Hintergrund. [satisfied] Die Karten wandern in die Spalte "Bereit".
        */
-      logNarration('NARRATION_23', 'Referenten zu READY verschieben');
-      await page.waitForTimeout(1000);
-
-      const readyColumn = page.getByTestId('status-lane-READY');
-      const speakersToMove = [
-        { name: 'N Nissim ELCA AI', label: 'Nissim' },
-        { name: 'B Balti Galenica AI', label: 'Balti' },
-        { name: 'A Andreas Mobiliar AI', label: 'Andreas' },
-        { name: 'D Daniel BKW AI', label: 'Daniel' },
-      ];
-
-      for (const speaker of speakersToMove) {
-        console.log(`    → Dragging ${speaker.label} to READY`);
-        const speakerCard = page.getByRole('button', { name: speaker.name });
-
-        await expect(speakerCard).toBeVisible({ timeout: 5000 });
-        await page.waitForTimeout(200);
-
-        const cardBox = await speakerCard.boundingBox();
-        const columnBox = await readyColumn.boundingBox();
-
-        if (!cardBox || !columnBox) continue;
-
-        await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
-        await page.mouse.down();
-        await page.waitForTimeout(100);
-
-        await page.mouse.move(
-          columnBox.x + columnBox.width / 2,
-          columnBox.y + columnBox.height / 2,
-          {
-            steps: 10,
-          }
-        );
-        await page.waitForTimeout(100);
-
-        await page.mouse.up();
-        await page.waitForTimeout(200);
-
-        const confirmButton = page.getByTestId('status-change-confirm');
-        if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await confirmButton.click();
-          await page.waitForTimeout(200);
-        }
+      logNarration('NARRATION_23', 'Referenten befördern (CONTACTED → READY)');
+      for (const [i, promoted] of testConfig.promotedSpeakers.entries()) {
+        await paceWithinNarration('NARRATION_23', i, testConfig.promotedSpeakers.length, page);
+        console.log(`    → Promoting ${promoted.cardName} to READY`);
+        await page.goto(kanbanUrl);
+        await page.waitForLoadState('domcontentloaded');
+        await speakerPage.promoteCreatingNewUser(promoted.cardName, {
+          ...promoted.user,
+          email: factoryEmail(),
+        });
+        console.log(`    ✓ ${promoted.cardName} promoted (SPEAKER user created)`);
       }
-
-      await page.waitForTimeout(2000);
-      console.log('    ✓ All speakers moved to READY');
+      await page.waitForTimeout(1000);
       await waitForNarration('NARRATION_23', page);
 
       /*
-       * NARRATION_24: [confident] Im nächsten Schritt verschieben wir Referenten von "READY" zu "ACCEPTED". [satisfied] Alle vier READY-Referenten werden zu ACCEPTED verschoben. [excited] Das läuft wie geschmiert!
+       * Each accept gets its OWN narration segment (NARRATION_24/24B/24C) so the voice talks
+       * through every accept — a single segment left ~55s of silent UI while accepts 2-3 ran.
+       * NARRATION_24:  [confident] Jetzt erfassen wir die Zusagen. [informative] Normalerweise erhalten Referenten eine Einladung und antworten selbst im Referenten-Portal. [casual] Haben sie aber bereits mündlich zugesagt, erfassen wir das direkt. [instructional] Wir öffnen Nissims Karte, wählen "Zusage im Namen erfassen" und geben eine kurze Begründung an. [satisfied] Nissim ist dabei!
+       * NARRATION_24B: [cheerful] Weiter mit Baltisar von Galenica. [instructional] Auch seine Karte öffnen wir, wählen erneut "Zusage im Namen erfassen" und bestätigen mit einer kurzen Notiz. [playful] Zwei von drei — läuft wie geschmiert!
+       * NARRATION_24C: [enthusiastic] Und Andreas von der Mobiliar? [satisfied] Ebenfalls mit an Bord! [instructional] Auch seine Zusage erfassen wir im Namen, wieder mit kurzer Begründung. [excited] Damit haben wir drei zugesagte Referenten — genug, um den Abend zu füllen.
        */
-      logNarration('NARRATION_24', 'Referenten zu ACCEPTED verschieben');
-      await page.waitForTimeout(200);
-
-      const acceptedColumn = page.getByTestId('status-lane-ACCEPTED');
-      await expect(acceptedColumn).toBeVisible({ timeout: 5000 });
-
-      for (const speaker of speakersToMove) {
-        console.log(`    → Dragging ${speaker.label} to ACCEPTED`);
-        await page.waitForTimeout(500);
-
-        const speakerCard = page.getByRole('button', { name: speaker.name });
-        await expect(speakerCard).toBeVisible({ timeout: 5000 });
-        await page.waitForTimeout(500);
-
-        const cardBox = await speakerCard.boundingBox();
-        const columnBox = await acceptedColumn.boundingBox();
-
-        if (!cardBox || !columnBox) continue;
-
-        await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
-        await page.mouse.down();
-        await page.waitForTimeout(100);
-
-        await page.mouse.move(
-          columnBox.x + columnBox.width / 2,
-          columnBox.y + columnBox.height / 2,
-          {
-            steps: 10,
-          }
+      for (const promoted of testConfig.promotedSpeakers) {
+        logNarration(promoted.marker, `Zusage erfassen: ${promoted.cardName}`);
+        console.log(`    → Accepting on behalf: ${promoted.cardName}`);
+        await page.goto(kanbanUrl);
+        await page.waitForLoadState('domcontentloaded');
+        await speakerPage.drawerStatusChange(
+          promoted.cardName,
+          'accept-on-behalf',
+          testConfig.acceptOnBehalfReason
         );
-        await page.waitForTimeout(100);
-
-        await page.mouse.up();
-        await page.waitForTimeout(300);
-
-        const confirmButton = page.getByTestId('status-change-confirm');
-        if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await confirmButton.click();
-          await page.waitForTimeout(800);
-        }
+        console.log(`    ✓ ${promoted.cardName} ACCEPTED`);
+        await waitForNarration(promoted.marker, page);
       }
 
-      await page.waitForTimeout(200);
-      console.log('    ✓ All speakers moved to ACCEPTED');
+      /*
+       * NARRATION_24D: [playful] Und Daniel? [dramatic] Daniel hat leider keine Zeit. [casual] Ihn lehnen wir mit "Mit Grund absagen" ab — natürlich ebenfalls mit Begründung. [informative] Vanessa lassen wir bewusst noch als Kandidatin im Pool, falls wir später doch noch jemanden brauchen. [chuckling] Referenten sind eben wie Katzen.
+       */
+      logNarration('NARRATION_24D', 'Daniels Absage + Vanessa bleibt im Pool');
+      console.log(`    → Declining ${testConfig.declinedSpeaker.cardName}`);
+      await page.goto(kanbanUrl);
+      await page.waitForLoadState('domcontentloaded');
+      await speakerPage.drawerStatusChange(
+        testConfig.declinedSpeaker.cardName,
+        'decline',
+        testConfig.declinedSpeaker.reason
+      );
+      console.log(
+        `    ✓ ${testConfig.declinedSpeaker.cardName} DECLINED (Vanessa stays CONTACTED)`
+      );
       console.log('\n✅ Phase B Complete\n');
-      await waitForNarration('NARRATION_24', page);
+      await waitForNarration('NARRATION_24D', page);
 
       // ========================================
       // PHASE B.5: CONTENT SUBMISSION
@@ -498,62 +523,30 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        * NARRATION_25: [important] Bevor Referenten ihre Inhalte einreichen können, müssen wir das Thema veröffentlichen. [instructional] Wir navigieren zum Tab "Veröffentlichung" und klicken auf "Thema veröffentlichen". [informative] Im unteren Bereich ist ein Preview des Events auf der öffentlichen Seite ersichtlich. [satisfied] Schön, oder?
        */
       logNarration('NARRATION_25', 'Thema veröffentlichen');
-      await page.goto(`http://localhost:8100/organizer/events/${testEventCode}?tab=publishing`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${eventUrl}?tab=publishing`);
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(500);
 
       await page.getByTestId('publish-topic-button').click();
       await page.waitForTimeout(2000);
       console.log('    ✓ Topic published');
-
       await waitForNarration('NARRATION_25', page);
 
-      await page.getByTestId('event-tab-speakers').click();
-      await page.waitForTimeout(1000);
-
       /*
-       * NARRATION_26: [professional] Zurück im Referenten-Tab reichen wir nun für jeden Referenten die Präsentations-Inhalte ein. [casual] Titel, Abstract, die üblichen Verdächtigen. [methodical] Wir wiederholen diesen Prozess für alle drei Referenten mit zugesagten Präsentationen. [playful] Copy, paste, repeat. [chuckling] Nein, Spaß, jeder Referent hat natürlich einzigartige Inhalte!
+       * NARRATION_26: [professional] Zurück im Kanban erfassen wir nun für jeden zugesagten Referenten die Präsentations-Inhalte. [instructional] Der Aktions-Button heißt jetzt "Inhalt erfassen". [casual] Titel, Abstract, die üblichen Verdächtigen. Der Referent ist bereits automatisch verknüpft. [methodical] Wir wiederholen diesen Prozess für alle drei Referenten. [playful] Copy, paste, repeat. [chuckling] Nein, Spaß, jeder Referent hat natürlich einzigartige Inhalte!
        */
       logNarration('NARRATION_26', 'Präsentations-Inhalte einreichen');
-      for (let i = 0; i < testConfig.presentations.length; i++) {
-        const presentation = getPresentation(i);
-        const speakerCandidate = testConfig.speakerCandidates[presentation.speakerIndex];
-
-        console.log(`    → Submitting content for ${speakerCandidate.firstName}`);
-
-        const cardPattern = new RegExp(
-          `${speakerCandidate.firstName.charAt(0)} ${speakerCandidate.firstName}.*${speakerCandidate.company}`,
-          'i'
-        );
-
-        const speakerCard = page.getByRole('button', { name: cardPattern });
-        await speakerCard.waitFor({ state: 'visible', timeout: 5000 });
-        await speakerCard.click();
-        await page.waitForTimeout(1000);
-
-        if (presentation.speakerSearchTerm) {
-          const searchField = page.getByTestId('speaker-search-field');
-          await searchField.click();
-          await searchField.fill(presentation.speakerSearchTerm);
-          await page.waitForTimeout(1000);
-
-          await page.getByText(presentation.actualSpeakerName).first().click();
-          await page.waitForTimeout(500);
-        }
-
-        await page.getByTestId('presentation-title-field').click();
-        await page.getByTestId('presentation-title-field').fill(presentation.title);
-
-        await page.getByTestId('presentation-abstract-field').click();
-        await page.getByTestId('presentation-abstract-field').fill(presentation.abstract);
-
-        await page.getByTestId('submit-speaker-content-button').click();
-        await page.waitForTimeout(2000);
-        await page.waitForLoadState('networkidle');
-
-        console.log(`    ✓ Content submitted for ${speakerCandidate.firstName}`);
+      for (const [i, presentation] of testConfig.presentations.entries()) {
+        await paceWithinNarration('NARRATION_26', i, testConfig.presentations.length, page);
+        console.log(`    → Submitting content for ${presentation.cardName}`);
+        await page.goto(kanbanUrl);
+        await page.waitForLoadState('domcontentloaded');
+        await speakerPage.enterContent(presentation.cardName, {
+          title: presentation.title,
+          abstract: presentation.abstract,
+        });
+        console.log(`    ✓ Content submitted for ${presentation.cardName}`);
       }
-
       console.log('\n✅ Phase B.5 Complete\n');
       await waitForNarration('NARRATION_26', page);
 
@@ -562,44 +555,31 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       // ========================================
       console.log('\n📋 Phase C: Qualitätsprüfung\n');
 
-      await page.goto(`http://localhost:8100/organizer/events/${testEventCode}`);
-      await page.waitForLoadState('networkidle');
-
-      await page.getByRole('tab', { name: /Veröffentlichung|Publishing/i }).click();
-      await page.waitForTimeout(500);
-
       /*
        * NARRATION_27: [pause] Nach der Inhaltseinreichung folgt die Qualitätsprüfung. [professional] Da wir jetzt die Inhalte haben, können wir die Referenten veröffentlichen. [instructional] Wir klicken auf "Referenten veröffentlichen". [excited] Und jetzt kommt's! [satisfied] Nun sind auf der öffentlichen Webseite nicht nur das Thema, sondern auch die zugesagten Referenten mit ihrem Thema ersichtlich. [cheerful] Die Welt kann es sehen!
        */
       logNarration('NARRATION_27', 'Referenten veröffentlichen');
+      await page.goto(`${eventUrl}?tab=publishing`);
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(500);
+
       await page.getByTestId('publish-speakers-button').click();
       await page.waitForTimeout(1000);
       console.log('    ✓ Speakers published');
-
-      await page.getByTestId('event-tab-speakers').click();
-      await page.waitForTimeout(500);
       await waitForNarration('NARRATION_27', page);
 
       /*
-       * NARRATION_28: [professional] Zurück im Referenten-Tab prüfen und genehmigen wir nun jede eingereichte Präsentation. [playful] Wir spielen jetzt Qualitätskontrolle. [pause] Sieht gut aus, sieht gut aus, das auch. [confident] Wir genehmigen alle drei Präsentationen. [satisfied] Grünes Licht für alle!
+       * NARRATION_28: [professional] Zurück im Kanban prüfen wir nun jede eingereichte Präsentation. [instructional] Der Aktions-Button heißt diesmal "Inhalt prüfen". [playful] Wir spielen jetzt Qualitätskontrolle. [pause] Sieht gut aus, sieht gut aus, das auch. [confident] Wir genehmigen alle drei Präsentationen. [satisfied] Grünes Licht für alle!
        */
-      logNarration('NARRATION_28', 'Präsentationen genehmigen');
-      for (let i = 0; i < testConfig.presentations.length; i++) {
-        const presentation = getPresentation(i);
-        console.log(`    → Approving ${presentation.title}`);
-
-        const presentationCard = page.getByRole('button', {
-          name: new RegExp(presentation.title),
-        });
-        await presentationCard.click();
-        await page.waitForTimeout(500);
-
-        await page.getByTestId('approve-content-button').click();
-        await page.waitForTimeout(1500);
-
-        console.log(`    ✓ Content approved`);
+      logNarration('NARRATION_28', 'Präsentationen prüfen und genehmigen');
+      for (const [i, presentation] of testConfig.presentations.entries()) {
+        await paceWithinNarration('NARRATION_28', i, testConfig.presentations.length, page);
+        console.log(`    → Approving content of ${presentation.cardName}`);
+        await page.goto(kanbanUrl);
+        await page.waitForLoadState('domcontentloaded');
+        await speakerPage.approveContent(presentation.cardName);
+        console.log(`    ✓ Content approved for ${presentation.cardName}`);
       }
-
       console.log('\n✅ Phase C Complete\n');
       await waitForNarration('NARRATION_28', page);
 
@@ -608,7 +588,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       // ========================================
       console.log('\n📋 Phase D: Slot-Zuweisung und Veröffentlichung\n');
 
-      await page.goto(`http://localhost:8100/organizer/events/${testEventCode}`);
+      await page.goto(eventUrl);
       await page.waitForTimeout(1000);
 
       /*
@@ -659,7 +639,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         await backButton.click();
         await page.waitForTimeout(2000);
       } else {
-        await page.goto(`http://localhost:8100/organizer/events/${testEventCode}`);
+        await page.goto(eventUrl);
         await page.waitForTimeout(2000);
       }
 
@@ -684,6 +664,31 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       console.log('\n✅ Phase D Complete\n');
       await waitForNarration('NARRATION_32', page);
 
+      /*
+       * NARRATION_32B (idea #3): the event is now LIVE on the public website. Open the public
+       * event page and slowly scroll down so the viewer sees the published result — hero, speakers,
+       * and the agenda/timeline — exactly as a visitor would.
+       */
+      logNarration('NARRATION_32B', 'Öffentliche Event-Seite — live');
+      await page.goto(`http://localhost:8100/events/${testEventCode}`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForTimeout(2500); // let the hero + sections render
+      // Smooth slow scroll spread across the narration window (~5s of gentle downward scroll).
+      const scrollSteps = 12;
+      for (let i = 0; i < scrollSteps; i++) {
+        await page.evaluate(
+          (frac) => {
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            window.scrollTo({ top: max * frac, behavior: 'smooth' });
+          },
+          (i + 1) / scrollSteps
+        );
+        await paceWithinNarration('NARRATION_32B', i, scrollSteps, page);
+      }
+      console.log('    ✓ Public event page shown (slow scroll)');
+      await waitForNarration('NARRATION_32B', page);
+
       // ========================================
       // PHASE E: ARCHIVAL
       // ========================================
@@ -693,7 +698,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        * NARRATION_33: [pause] Nach der Durchführung des Events archivieren wir es für die Historie. [professional] Wechseln Sie zum Tab "Übersicht" und klicken Sie auf "Bearbeiten". [playful] Zeit, das Event in Rente zu schicken.
        */
       logNarration('NARRATION_33', 'Event archivieren');
-      await page.goto(`http://localhost:8100/organizer/events/${testEventCode}`);
+      await page.goto(eventUrl);
       await page.waitForTimeout(2000);
 
       await page.getByRole('tab', { name: /Übersicht|Overview/i }).click();
@@ -738,14 +743,17 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_35', 'Workflow-Validierung überschreiben');
       const overrideCheckbox = page.getByTestId('override-workflow-validation-checkbox');
       await overrideCheckbox.waitFor({ state: 'visible', timeout: 5000 });
+      // Let the voice introduce the override ("Aktivieren Sie die Checkbox …") BEFORE we tick
+      // it, then leave the checked box on screen a moment so the viewer connects word to action.
+      await page.waitForTimeout(5000);
       await overrideCheckbox.check();
-      await page.waitForTimeout(500);
       console.log('    ✓ Override checkbox enabled');
+      await page.waitForTimeout(2500);
 
+      // Let the rest of NARRATION_35 (the "Notausgang" remark) play with the checked box still
+      // visible, THEN save — so the modal closes only after the explanation is complete.
+      await waitForNarration('NARRATION_35', page);
       await saveButtonFinal.click();
-      await page.waitForTimeout(2000);
-
-      // Wait for modal to close
       await page.waitForTimeout(2000);
 
       console.log('    ✓ Event archived successfully');
@@ -755,8 +763,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       console.log('    ✓ ARCHIVED badge visible');
 
       console.log('\n✅ Phase E Complete: Event archived successfully\n');
-      await page.waitForTimeout(2000);
-      await waitForNarration('NARRATION_35', page);
+      await page.waitForTimeout(1500);
 
       /*
        * NARRATION_36: [triumphant] Damit ist der vollständige Event-Workflow abgeschlossen! [excited] Von der ersten Idee bis zum Archiv, wir haben die ganze Reise gemeinsam gemacht! [satisfied] Sie sind jetzt ein Event-Management-Profi! [cheerful] Vielen Dank für Ihre Aufmerksamkeit! [playful] Und denken Sie daran: Events planen macht Spaß, [chuckling] zumindest mit der richtigen Software! [laughing] Tschüss!

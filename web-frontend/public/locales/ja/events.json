@@ -349,7 +349,10 @@
       "lunchDuration": "昼食時間（分）",
       "saveFailed": "設定の保存に失敗しました",
       "accessDenied": "アクセス拒否",
-      "organizerOnly": "このページにアクセスできるのはオーガナイザーのみです"
+      "organizerOnly": "このページにアクセスできるのはオーガナイザーのみです",
+      "typicalStartTime": "通常の開始時刻",
+      "typicalEndTime": "通常の終了時刻",
+      "typicalEndTimeHint": "スケジュールから自動計算されます"
     },
     "themeImage": "イベントテーマ画像",
     "themeImageHelp": "このイベントのテーマ画像をアップロードしてください（PNG、JPEG、またはSVG、最大5MB）。推奨サイズ：1920x400px。",

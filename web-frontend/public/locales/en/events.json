@@ -363,7 +363,10 @@
       "lunchDuration": "Lunch Duration (min)",
       "saveFailed": "Failed to save configuration",
       "accessDenied": "Access Denied",
-      "organizerOnly": "Only organizers can access this page"
+      "organizerOnly": "Only organizers can access this page",
+      "typicalStartTime": "Typical Start Time",
+      "typicalEndTime": "Typical End Time",
+      "typicalEndTimeHint": "Calculated automatically from the schedule"
     },
     "themeImage": "Event Theme Image",
     "themeImageHelp": "Upload a theme image for this event (PNG, JPEG, or SVG, max 5MB). Recommended size: 1920x400px.",

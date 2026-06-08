@@ -349,7 +349,10 @@
       "lunchDuration": "Durée du déjeuner (min)",
       "saveFailed": "Échec de la sauvegarde de la configuration",
       "accessDenied": "Accès refusé",
-      "organizerOnly": "Seuls les organisateurs peuvent accéder à cette page"
+      "organizerOnly": "Seuls les organisateurs peuvent accéder à cette page",
+      "typicalStartTime": "Heure de début habituelle",
+      "typicalEndTime": "Heure de fin habituelle",
+      "typicalEndTimeHint": "Calculé automatiquement à partir du programme"
     },
     "themeImage": "Image du thème de l'événement",
     "themeImageHelp": "Téléversez une image de thème pour cet événement (PNG, JPEG ou SVG, max 5 Mo). Taille recommandée : 1920x400px.",

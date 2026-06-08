@@ -1,0 +1,214 @@
+{
+  "lang": "en",
+  "voiceId": "5l5f8iK3YPeGga21rQIX",
+  "voiceName": "Adeline - Friendly & Motivating",
+  "modelId": "eleven_v3",
+  "comment": "Single source of truth for the EN screencast narration. Emotion tags ([excited], [pause], ...) are ElevenLabs v3 audio tags and are stripped for subtitles. Voice/model live here (not secrets); ELEVENLABS_VOICE_ID_EN / ELEVENLABS_MODEL_ID env vars override. First-class English copy translated from narration-manifest-de.json; same 39 markers, identical emotion tags. Segments 21-24, 26, 28 follow the button-driven kanban workflow (ADR-009) — no drag-and-drop.",
+  "segments": [
+    {
+      "marker": "NARRATION_01",
+      "description": "Welcome to the BATbern event management platform",
+      "text": "[excited] Welcome to the BATbern event management platform! [playful] Today I'll show you how to plan an event without losing your mind. [chuckling] We'll walk through the complete event lifecycle, from \"Oh no, we need an event\" all the way to \"Finally over, straight into the archive with it!\" [pause] In this video you'll see all the key steps an organizer takes to plan a Berner Architekten Treffen, without breaking into a panic."
+    },
+    {
+      "marker": "NARRATION_02",
+      "description": "Dashboard and authentication",
+      "text": "[cheerful] We start at the event dashboard. [playful] Think of it as your command center, where you keep an overview of every event you've ever organized or ever will. [pause] Authentication via AWS Cognito is already taken care of. [satisfied] You can see your username in the top right corner, and with it you have the power to use every organizer feature. [dramatic] With great power comes great responsibility!"
+    },
+    {
+      "marker": "NARRATION_02L",
+      "description": "Language showcase — all 10 languages",
+      "text": "[cheerful] By the way, the platform speaks many languages! [playful] Top right, in the user menu, you'll find the language selector. [excited] A full ten languages are available — from German, English, French and Italian all the way to Romansh and even Bernese German! [satisfied] For this video, let's switch the whole platform to English."
+    },
+    {
+      "marker": "NARRATION_03",
+      "description": "Create a new event",
+      "text": "[enthusiastic] Now let's create a brand new event! [excited] Click the \"New Event\" button in the top right. [pause] Boom! A modal form appears. [playful] Don't worry, it looks like a lot, but we'll fill it out together."
+    },
+    {
+      "marker": "NARRATION_04",
+      "description": "Enter the event number",
+      "text": "[professional] Event number. [casual] A unique identifier for this event. Internally the system uses the format \"BATbern\" followed by the number. [playful] Think of it as your event's birth certificate. It's used for identification in the database and in URLs."
+    },
+    {
+      "marker": "NARRATION_05",
+      "description": "Enter the title",
+      "text": "[short pause] Title. [cheerful] This is the name that's supposed to wow your attendees! [playful] \"Boring Architecture Event Number 47\" would be honest, but maybe not the best choice. [chuckling] Pick something compelling that people will see on the public website."
+    },
+    {
+      "marker": "NARRATION_06",
+      "description": "Enter the description",
+      "text": "[short pause] Description. [casual] A brief explanation of the event topic. [helpful] This information helps prospects understand why they absolutely must sign up. [playful] Or at least what it's all about."
+    },
+    {
+      "marker": "NARRATION_07",
+      "description": "Select the event type",
+      "text": "[pause] Event type. [professional] Choose between three formats: [clear] \"Evening\" for after-work events, [cheerful] where you can do a bit of networking once the workday is done. \"Afternoon\" for afternoon events, [playful] perfect for anyone who'd rather be on the couch in the evening. [pause] Or \"Full day\" for all-day conferences. [dramatic] You'll need a lot of coffee for those! [short pause] This affects scheduling and slot management."
+    },
+    {
+      "marker": "NARRATION_08",
+      "description": "Date and registration deadline",
+      "text": "[professional] Date and registration deadline. [clear] The event date sets when the event takes place. [playful] Please pick a date in the future, we don't support time travel just yet. [chuckling] The registration deadline is important for managing attendees."
+    },
+    {
+      "marker": "NARRATION_09",
+      "description": "Enter the venue",
+      "text": "[short pause] Venue. [casual] The name and address of the venue. [playful] So not \"in my basement\", but a real place with an actual address. [cheerful] This information is shown on the public website, so people can actually find their way there."
+    },
+    {
+      "marker": "NARRATION_10",
+      "description": "Event created successfully",
+      "text": "[satisfied] We click \"Save\" and the event is created. [excited] Ta-da! [pause] The system automatically returns to the dashboard, and there it is! Your brand new event in the list. [playful] Your baby is born!"
+    },
+    {
+      "marker": "NARRATION_11",
+      "description": "Navigate to the event detail page",
+      "text": "[pause] After creating the event, we navigate to the event detail page. [professional] Here we can assign tasks to team members. [playful] Because why would you do everything yourself when you have a whole team? [chuckling] Click \"Edit\" to reopen the event form."
+    },
+    {
+      "marker": "NARRATION_12",
+      "description": "Assign tasks",
+      "text": "[clear] Switch to the \"Tasks\" tab. [professional] Here you'll see a predefined list of standard tasks that come up for every event. [playful] The system knows its stuff, it knows everything that needs doing. [pause] For each task we pick a responsible organizer from the dropdown menu. [helpful] This makes sure every important activity is clearly assigned and nothing gets forgotten. [dramatic] Because forgotten tasks lead to chaos, and chaos leads to... well, more chaos."
+    },
+    {
+      "marker": "NARRATION_13",
+      "description": "Save tasks",
+      "text": "[confident] After assigning, we click \"Save\". [satisfied] The system saves all the tasks and returns to the event detail page. [cheerful] Perfect!"
+    },
+    {
+      "marker": "NARRATION_14",
+      "description": "Review the task list",
+      "text": "[pause] To review the tasks, we navigate to the task list. [informative] At first you see the default \"My Tasks\" filter, which shows only your own tasks. [playful] But we're curious and want to know what everyone else is up to. [chuckling] We switch the filter to \"All Tasks\" to see every assignment. This gives an overview of responsibilities across the whole team. [whispers] And who might just have nothing to do right now."
+    },
+    {
+      "marker": "NARRATION_15",
+      "description": "Begin topic selection",
+      "text": "[excited] Back on the event detail page, we begin the content planning! [enthusiastic] The first step is topic selection. Click \"Select Topic\"."
+    },
+    {
+      "marker": "NARRATION_16",
+      "description": "Open the heat map",
+      "text": "[cheerful] A view opens with various topic categories. The default view shows a list, [excited] but we'll use the heat map for a better overview. [playful] Because who doesn't love a good heat map?"
+    },
+    {
+      "marker": "NARRATION_17",
+      "description": "Explain the heat map",
+      "text": "[curious] The heat map is a two-dimensional matrix that visualizes topics by their popularity and timeliness. [excited] Bright colors show popular topics, [casual] basically the rock stars among architecture topics. [pause] Darker colors show less frequently chosen topics. [playful] The underdogs, who deserve a chance too. [helpful] This helps with strategic topic planning based on the interests of the attendees."
+    },
+    {
+      "marker": "NARRATION_18",
+      "description": "Select and confirm a topic",
+      "text": "[instructional] We pick a topic from the heat map by clicking a cell. [satisfied] The system marks the selection and shows details. [excited] After confirming, the system saves the chosen topic and automatically opens the speaker brainstorming view. [playful] The system is like a good assistant, it always knows what comes next!"
+    },
+    {
+      "marker": "NARRATION_19",
+      "description": "Add speaker candidates",
+      "text": "[enthusiastic] Now we gather potential speakers for the chosen topic! [professional] In this phase we build a pool of candidates we'll contact later. [pause] We add five speaker candidates. [strategic] This gives us plenty of options for reaching out, in case not everyone says yes. [playful] Because speakers are like cats, sometimes they just say no, for no reason at all."
+    },
+    {
+      "marker": "NARRATION_20",
+      "description": "Move on to contacting",
+      "text": "[confident] After adding all the candidates, we click \"Continue to Contacting\". [satisfied] The system automatically switches to the kanban view, where we can track contact status. [excited] Kanban! That sounds important and organized!"
+    },
+    {
+      "marker": "NARRATION_21",
+      "description": "Kanban board with action buttons",
+      "text": "[professional] We're now in the speaker contacting phase. [informative] The kanban board shows the workflow in columns — from \"Identified\" through \"Contacted\" and \"Ready\" to \"Accepted\". [playful] From \"Who's that?\" to \"Hooray, they said yes!\" [helpful] And the best part: every card has an action button that always offers you exactly the next sensible step. [satisfied] No more guessing what to do next."
+    },
+    {
+      "marker": "NARRATION_22",
+      "description": "Contact speakers (log contact)",
+      "text": "[methodical] Now we systematically contact all five speaker candidates. [instructional] For each candidate we click \"Log Contact\" on the card. [professional] In the dialog we choose the contact method, for example email or phone, and capture notes about the response. [playful] Otherwise next week someone asks: \"Did we already contact this person?\" And nobody knows. [chuckling] Chaos avoided! [satisfied] The cards automatically move into the \"Contacted\" column."
+    },
+    {
+      "marker": "NARRATION_23",
+      "description": "Promote speakers (CONTACTED → READY)",
+      "text": "[positive] Three candidates responded positively. [excited] Time to promote them to actual speakers! [instructional] A click on \"Promote to Speaker\" opens the detail view. There we create a user account for Nissim, Baltisar and Andreas, each with a name and an email address. [informative] This gives them access to the speaker portal later. [playful] The system handles all the paperwork in the background. [satisfied] The three cards move into the \"Ready\" column."
+    },
+    {
+      "marker": "NARRATION_24",
+      "description": "Acceptance Nissim (READY → ACCEPTED)",
+      "text": "[confident] Now we record the acceptances. [informative] Normally speakers receive an invitation and respond themselves in the speaker portal. [casual] But if they've already agreed verbally, we record that directly. [instructional] We open Nissim's card, choose \"Record Acceptance on Behalf\" and give a short reason. [satisfied] Nissim is on board!"
+    },
+    {
+      "marker": "NARRATION_24B",
+      "description": "Acceptance Baltisar (READY → ACCEPTED)",
+      "text": "[cheerful] On to Baltisar from Galenica. [instructional] We open his card too, again choose \"Record Acceptance on Behalf\" and confirm with a short note. [playful] Two out of three — running like clockwork!"
+    },
+    {
+      "marker": "NARRATION_24C",
+      "description": "Acceptance Andreas (READY → ACCEPTED)",
+      "text": "[enthusiastic] And Andreas from Mobiliar? [satisfied] On board as well! [instructional] We record his acceptance on his behalf too, again with a short reason. [excited] That gives us three confirmed speakers — enough to fill the evening."
+    },
+    {
+      "marker": "NARRATION_24D",
+      "description": "Daniel declines + Vanessa stays in pool",
+      "text": "[playful] And Daniel? [dramatic] Daniel unfortunately doesn't have time. [casual] We decline him with \"Decline with Reason\" — with a reason too, of course. [informative] We deliberately leave Vanessa in the pool as a candidate, in case we end up needing someone later after all. [chuckling] Speakers really are like cats."
+    },
+    {
+      "marker": "NARRATION_25",
+      "description": "Publish the topic",
+      "text": "[important] Before speakers can submit their content, we need to publish the topic. [instructional] We navigate to the \"Publishing\" tab and click \"Publish Topic\". [informative] At the bottom you can see a preview of the event on the public page. [satisfied] Nice, isn't it?"
+    },
+    {
+      "marker": "NARRATION_26",
+      "description": "Submit presentation content",
+      "text": "[professional] Back in the kanban, we now capture the presentation content for each confirmed speaker. [instructional] The action button is now called \"Add Content\". [casual] Title, abstract, the usual suspects. The speaker is already linked automatically. [methodical] We repeat this process for all three speakers. [playful] Copy, paste, repeat. [chuckling] No, just kidding, every speaker has unique content, of course!"
+    },
+    {
+      "marker": "NARRATION_27",
+      "description": "Publish speakers",
+      "text": "[professional] The content is submitted. [instructional] Next we make the speakers public: we click \"Publish Speakers\". [excited] And here it comes! [satisfied] Now the public website shows not just the topic, but also the confirmed speakers with their talks. [cheerful] The whole world can see it!"
+    },
+    {
+      "marker": "NARRATION_28",
+      "description": "Review and approve presentations",
+      "text": "[pause] And now comes the actual quality review. [professional] Back in the kanban, we review each submitted presentation. [instructional] This time the action button is called \"Review Content\". [playful] Now we're playing quality control. [pause] Looks good, looks good, that one too. [confident] We approve all three presentations. [satisfied] Green light for everyone!"
+    },
+    {
+      "marker": "NARRATION_29",
+      "description": "Switch to the sessions view",
+      "text": "[instructional] For slot assignment we switch to the sessions view. Click \"Manage Slot Assignments\". [pause] Now it's about timing!"
+    },
+    {
+      "marker": "NARRATION_30",
+      "description": "Auto-assign speakers",
+      "text": "[enthusiastic] For a quick initial plan we use the auto-assign function. [excited] The system performs the automatic assignment. [playful] Magic! The system does the work. [informative] Manual assignment via drag-and-drop is also possible here. [casual] In case you don't trust the computer, or just enjoy moving things around."
+    },
+    {
+      "marker": "NARRATION_31",
+      "description": "Back to the event",
+      "text": "[calm] After the slot assignment, we click \"Back to Event\"."
+    },
+    {
+      "marker": "NARRATION_32",
+      "description": "Publish the agenda",
+      "text": "[dramatic] The final step is publishing the agenda! [enthusiastic] The grand finale! [instructional] Click \"Publish Agenda\". [triumphant] And... [excited] The event is now fully planned and publicly accessible, including a detailed agenda! [cheerful] Confetti! Fireworks! Okay, maybe just in our heads, but still! [satisfied] We made it!"
+    },
+    {
+      "marker": "NARRATION_32B",
+      "description": "Public event page — live",
+      "text": "[excited] And there's our event — live on the public website! [satisfied] Let's slowly scroll through the page. [cheerful] At the very top the title with date and location, below it the speakers with their talks, and finally the complete agenda with every time slot. [playful] This is exactly what your attendees see when they register. [satisfied] Looks fantastic, doesn't it?"
+    },
+    {
+      "marker": "NARRATION_33",
+      "description": "Archive the event",
+      "text": "[pause] After running the event, we archive it for the records. [professional] Switch to the \"Overview\" tab and click \"Edit\". [playful] Time to send the event into retirement."
+    },
+    {
+      "marker": "NARRATION_34",
+      "description": "Change status to ARCHIVED",
+      "text": "[clear] In the form, select \"ARCHIVED\" as the status. [casual] The event was great, but now it's history."
+    },
+    {
+      "marker": "NARRATION_35",
+      "description": "Override workflow validation",
+      "text": "[informative] For testing purposes you can override the workflow validation. [instructional] Tick the \"Override Workflow Validation\" checkbox and click \"Save\". [playful] Think of it as the emergency exit, for when things don't quite go to plan."
+    },
+    {
+      "marker": "NARRATION_36",
+      "description": "Workflow complete - thank you",
+      "text": "[triumphant] And that completes the full event workflow! [excited] From the first idea to the archive, we made the whole journey together! [satisfied] You're now an event management pro! [cheerful] Thank you so much for your attention! [playful] And remember: planning events is fun, [chuckling] at least with the right software! [laughing] Bye!"
+    }
+  ]
+}
