@@ -146,10 +146,9 @@ export class EventWorkflowPage {
    * Clicks the Create Event button
    */
   async clickCreateEvent(): Promise<void> {
-    // Close any existing dialogs first
-    const closeButtons = this.page.locator(
-      'button:has-text("ABBRECHEN"), button:has-text("Schließen")'
-    );
+    // Close any existing event-form dialog first. Use the stable testid (language-agnostic)
+    // rather than German button text so the screencast works in English UI too.
+    const closeButtons = this.page.getByTestId('close-edit-modal-button');
     if ((await closeButtons.count()) > 0) {
       await closeButtons.first().click();
       await this.page.waitForTimeout(300);

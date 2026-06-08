@@ -46,6 +46,7 @@ import {
   paceWithinNarration,
   startTimer,
   flushTimeline,
+  SCREENCAST_LANG,
 } from './screencast/timing-helper';
 
 /**
@@ -135,11 +136,34 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       console.log('    ✓ Dashboard loaded - authentication successful');
       await waitForNarration('NARRATION_02', page);
 
-      const abbrechen = page.locator('button:has-text("ABBRECHEN")');
-      if (await abbrechen.isVisible()) {
-        await abbrechen.click();
+      // Close any leftover event-form dialog via stable testid (language-agnostic — works in
+      // English UI too, where the button reads "Cancel" not "ABBRECHEN").
+      const leftoverCancel = page.getByTestId('close-edit-modal-button');
+      if (await leftoverCancel.isVisible().catch(() => false)) {
+        await leftoverCancel.click();
         await page.waitForTimeout(500);
       }
+
+      /*
+       * NARRATION_02L (idea #1): Language showcase. Open the user menu → language selector to
+       * reveal all 10 supported locales, then switch the whole UI to the screencast's language
+       * (English for the EN run; German stays German). The rest of the recording runs in that
+       * language; the switch persists to localStorage + the user's backend preference.
+       */
+      logNarration('NARRATION_02L', 'Sprachauswahl — alle 10 Sprachen / language showcase');
+      await page.getByTestId('user-menu-button').click();
+      await page.waitForTimeout(500);
+      await page.getByTestId('language-select').click();
+      await expect(page.getByTestId('language-select-menu')).toBeVisible({ timeout: 5000 });
+      // Hold the open list on screen for most of the narration so the viewer sees all locales,
+      // then switch language near the end of the segment.
+      await paceWithinNarration('NARRATION_02L', 0, 1, page);
+      await page.getByTestId(`language-option-${SCREENCAST_LANG}`).click();
+      await page.waitForTimeout(800);
+      await page.keyboard.press('Escape'); // close the user menu
+      await page.waitForTimeout(500);
+      console.log(`    ✓ UI language set to ${SCREENCAST_LANG}`);
+      await waitForNarration('NARRATION_02L', page);
 
       /*
        * NARRATION_03: [enthusiastic] Jetzt erstellen wir ein brandneues Event! [excited] Klicken Sie auf den Button "Neue Veranstaltung" oben rechts. [pause] Boom! Ein modales Formular erscheint. [playful] Keine Sorge, es sieht nach viel aus, aber wir füllen das gemeinsam aus.
@@ -636,6 +660,31 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       console.log('    ✓ Agenda published');
       console.log('\n✅ Phase D Complete\n');
       await waitForNarration('NARRATION_32', page);
+
+      /*
+       * NARRATION_32B (idea #3): the event is now LIVE on the public website. Open the public
+       * event page and slowly scroll down so the viewer sees the published result — hero, speakers,
+       * and the agenda/timeline — exactly as a visitor would.
+       */
+      logNarration('NARRATION_32B', 'Öffentliche Event-Seite — live');
+      await page.goto(`http://localhost:8100/events/${testEventCode}`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForTimeout(2500); // let the hero + sections render
+      // Smooth slow scroll spread across the narration window (~5s of gentle downward scroll).
+      const scrollSteps = 12;
+      for (let i = 0; i < scrollSteps; i++) {
+        await page.evaluate(
+          (frac) => {
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            window.scrollTo({ top: max * frac, behavior: 'smooth' });
+          },
+          (i + 1) / scrollSteps
+        );
+        await paceWithinNarration('NARRATION_32B', i, scrollSteps, page);
+      }
+      console.log('    ✓ Public event page shown (slow scroll)');
+      await waitForNarration('NARRATION_32B', page);
 
       // ========================================
       // PHASE E: ARCHIVAL

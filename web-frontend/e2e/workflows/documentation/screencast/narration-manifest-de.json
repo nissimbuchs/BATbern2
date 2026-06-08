@@ -16,6 +16,11 @@
       "text": "[cheerful] Wir beginnen am Event-Dashboard. [playful] Das ist sozusagen Ihre Kommandozentrale, von der aus Sie den Überblick über alle Events behalten, die Sie jemals organisiert haben oder noch organisieren werden. [pause] Die Authentifizierung über AWS Cognito ist bereits erledigt. [satisfied] Sie sehen oben rechts Ihren Benutzernamen, und damit haben Sie die Macht, alle Funktionen als Organisator zu nutzen. [dramatic] Mit großer Macht kommt große Verantwortung!"
     },
     {
+      "marker": "NARRATION_02L",
+      "description": "Sprachauswahl — alle 10 Sprachen",
+      "text": "[cheerful] Übrigens, die Plattform spricht viele Sprachen! [playful] Oben rechts im Benutzermenü finden Sie die Sprachauswahl. [excited] Ganze zehn Sprachen stehen zur Verfügung — von Deutsch über Englisch, Französisch und Italienisch bis hin zu Rätoromanisch und sogar Bärndütsch! [satisfied] Für dieses Video bleiben wir bei Deutsch."
+    },
+    {
       "marker": "NARRATION_03",
       "description": "Neues Event erstellen",
       "text": "[enthusiastic] Jetzt erstellen wir ein brandneues Event! [excited] Klicken Sie auf den Button \"Neue Veranstaltung\" oben rechts. [pause] Boom! Ein modales Formular erscheint. [playful] Keine Sorge, es sieht nach viel aus, aber wir füllen das gemeinsam aus."
@@ -179,6 +184,11 @@
       "marker": "NARRATION_32",
       "description": "Agenda veröffentlichen",
       "text": "[dramatic] Der finale Schritt ist die Agenda-Veröffentlichung! [enthusiastic] Das große Finale! [instructional] Klicken Sie auf \"Agenda veröffentlichen\". [triumphant] Und... [excited] Der Event ist jetzt vollständig geplant und öffentlich inklusive detaillierter Agenda zugänglich! [cheerful] Konfetti! Feuerwerk! Okay, vielleicht nur in Gedanken, aber trotzdem! [satisfied] Wir haben es geschafft!"
+    },
+    {
+      "marker": "NARRATION_32B",
+      "description": "Öffentliche Event-Seite — live",
+      "text": "[excited] Und da ist unsere Veranstaltung — live auf der öffentlichen Webseite! [satisfied] Scrollen wir langsam durch die Seite. [cheerful] Ganz oben der Titel mit Datum und Ort, darunter die Referenten mit ihren Vorträgen und schließlich die komplette Agenda mit allen Zeitfenstern. [playful] Genau das sehen Ihre Teilnehmer, wenn sie sich anmelden. [satisfied] Sieht doch fantastisch aus!"
     },
     {
       "marker": "NARRATION_33",

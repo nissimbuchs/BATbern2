@@ -16,6 +16,11 @@
       "text": "[cheerful] We start at the event dashboard. [playful] Think of it as your command center, where you keep an overview of every event you've ever organized or ever will. [pause] Authentication via AWS Cognito is already taken care of. [satisfied] You can see your username in the top right corner, and with it you have the power to use every organizer feature. [dramatic] With great power comes great responsibility!"
     },
     {
+      "marker": "NARRATION_02L",
+      "description": "Language showcase — all 10 languages",
+      "text": "[cheerful] By the way, the platform speaks many languages! [playful] Top right, in the user menu, you'll find the language selector. [excited] A full ten languages are available — from German, English, French and Italian all the way to Romansh and even Bernese German! [satisfied] For this video, let's switch the whole platform to English."
+    },
+    {
       "marker": "NARRATION_03",
       "description": "Create a new event",
       "text": "[enthusiastic] Now let's create a brand new event! [excited] Click the \"New Event\" button in the top right. [pause] Boom! A modal form appears. [playful] Don't worry, it looks like a lot, but we'll fill it out together."
@@ -179,6 +184,11 @@
       "marker": "NARRATION_32",
       "description": "Publish the agenda",
       "text": "[dramatic] The final step is publishing the agenda! [enthusiastic] The grand finale! [instructional] Click \"Publish Agenda\". [triumphant] And... [excited] The event is now fully planned and publicly accessible, including a detailed agenda! [cheerful] Confetti! Fireworks! Okay, maybe just in our heads, but still! [satisfied] We made it!"
+    },
+    {
+      "marker": "NARRATION_32B",
+      "description": "Public event page — live",
+      "text": "[excited] And there's our event — live on the public website! [satisfied] Let's slowly scroll through the page. [cheerful] At the very top the title with date and location, below it the speakers with their talks, and finally the complete agenda with every time slot. [playful] This is exactly what your attendees see when they register. [satisfied] Looks fantastic, doesn't it?"
     },
     {
       "marker": "NARRATION_33",
