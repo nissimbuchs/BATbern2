@@ -1,20 +1,28 @@
 /**
- * CompanyAutocomplete Component (Story 4.1.5 - Enhancement)
+ * CompanyAutocomplete Component (Story 4.1.5 — reworked into a selection-locked combobox)
  *
- * Public-facing autocomplete for company search using shadcn components.
- * Features:
- * - Free-form text input (allows creating new companies)
- * - Debounced search (300ms)
- * - Min 2 characters to trigger search
- * - Dark theme styling consistent with public website
- * - Loading and error states
- * - Company logo and industry display
+ * A controlled company picker that decouples the three things the old free-text
+ * field conflated — the search query, the human display label, and the stored
+ * company id (ADR-003 slug):
+ *
+ *  - While searching, the input is a SEARCH BOX only. Typing never becomes the
+ *    submitted value; results show each company's display name + logo + industry.
+ *  - Once a company is chosen it renders as a LOCKED CHIP (display name + clear ✕).
+ *    There is nothing editable, so the "edit the slug → format error" trap is gone.
+ *  - When no existing company matches, an explicit "Create …" row lets the user
+ *    deliberately create a new company instead of silently producing a duplicate.
+ *
+ * Contract: fully controlled. `value` is the stored identifier (the company slug
+ * for the profile; the display name for anonymous registration), `valueLabel` is
+ * the human label to show in the chip. Selection changes are reported via
+ * `onCompanySelect(selection | null)`; the parent owns materialisation of a
+ * brand-new company (slug === '' until it calls the get-or-create endpoint).
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Check } from 'lucide-react';
+import { Check, Plus, X, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/public/ui/input';
 import {
@@ -25,18 +33,37 @@ import {
   CommandList,
 } from '@/components/public/ui/command';
 import { Popover, PopoverContent, PopoverAnchor } from '@/components/public/ui/popover';
-import { searchCompanies } from '@/services/api/companyApi';
+import { searchCompanies, getCompany } from '@/services/api/companyApi';
 import type { components } from '@/types/generated/company-api.types';
 import { Loader2 } from 'lucide-react';
 
 type Company = components['schemas']['CompanyResponse'];
 
+/** A resolved company selection. `name` is the ADR-003 slug; '' means a brand-new,
+ * not-yet-materialised company that the parent will create from `displayName`. */
+export interface SelectedCompany {
+  name: string;
+  displayName: string;
+}
+
 interface CompanyAutocompleteProps {
+  /** Stored identifier of the current selection (slug for profile, display name for registration). */
   value: string;
-  onCompanySelect: (companyName: string) => void;
+  /** Human label for the current selection, shown in the chip. Defaults to `value`. */
+  valueLabel?: string;
+  /** Reports a selection (existing or new) or `null` when the selection is cleared. */
+  onCompanySelect: (selection: SelectedCompany | null) => void;
   error?: string;
   disabled?: boolean;
   placeholder?: string;
+  /** Show the explicit "Create …" row when no existing company matches (default true). */
+  allowCreate?: boolean;
+  /**
+   * Set when `value` is the company slug (ADR-003 id), not a free-form display name —
+   * e.g. the profile page. Enables resolving the chip's logo via GET /companies/{slug}.
+   * Leave false for the registration flow where `value` holds the display name.
+   */
+  valueIsSlug?: boolean;
 }
 
 // Debounce hook
@@ -58,68 +85,147 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   value,
+  valueLabel,
   onCompanySelect,
   error,
   disabled = false,
   placeholder = 'TechCorp AG',
+  allowCreate = true,
+  valueIsSlug = false,
 }) => {
   const { t } = useTranslation(['registration', 'common']);
   const [open, setOpen] = useState(false);
-  const [inputValue, setInputValue] = useState(value);
+  const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const debouncedInputValue = useDebounce(inputValue, 300);
+  // Fully controlled: a selection exists whenever the parent holds a value or label.
+  const selected: SelectedCompany | null =
+    value || valueLabel ? { name: value, displayName: valueLabel || value } : null;
 
-  // Sync inputValue when value prop changes externally
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
+  const debouncedQuery = useDebounce(query, 300);
+  const shouldSearch = debouncedQuery.trim().length >= 2;
 
-  // Only search if input is at least 2 characters
-  const shouldSearch = debouncedInputValue.length >= 2;
-
-  // Query for company search
   const {
     data: companies = [],
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['companies', 'search', debouncedInputValue],
-    queryFn: () => searchCompanies(debouncedInputValue, 10),
-    enabled: shouldSearch && open,
+    queryKey: ['companies', 'search', debouncedQuery],
+    queryFn: () => searchCompanies(debouncedQuery, 10, { expand: ['logo'] }),
+    enabled: shouldSearch && open && !selected,
   });
 
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setInputValue(newValue);
-      onCompanySelect(newValue); // Always sync free-form text to parent
-      setOpen(true); // Open suggestions when typing
-    },
-    [onCompanySelect]
+  // Resolve the selected company's logo for the chip via GET /companies/{slug}
+  // (which includes the logo). Only meaningful when `value` is a real slug — i.e.
+  // the profile page; registration holds a display name, so it is skipped there.
+  const { data: chipCompany } = useQuery({
+    queryKey: ['company', 'detail', value],
+    queryFn: () => getCompany(value, { expand: ['logo'] }),
+    enabled: !!selected && valueIsSlug && value.length > 0,
+  });
+  const chipLogoUrl = chipCompany?.logo?.url ?? null;
+
+  // An exact (case-insensitive) display-name/slug match means the company already
+  // exists — suppress the "Create" row so the user picks it instead of duplicating.
+  const trimmedQuery = query.trim();
+  const hasExactMatch = companies.some(
+    (c) =>
+      (c.displayName || c.name).toLowerCase() === trimmedQuery.toLowerCase() ||
+      c.name.toLowerCase() === trimmedQuery.toLowerCase()
   );
+  const showCreate = allowCreate && trimmedQuery.length >= 2 && !isLoading && !hasExactMatch;
 
   const handleSelectCompany = useCallback(
     (company: Company) => {
-      const companyName = company.name;
-      setInputValue(companyName);
-      onCompanySelect(companyName);
+      onCompanySelect({ name: company.name, displayName: company.displayName || company.name });
+      setQuery('');
       setOpen(false);
     },
     [onCompanySelect]
   );
 
+  const handleCreate = useCallback(() => {
+    const displayName = query.trim();
+    if (!displayName) {
+      return;
+    }
+    // name === '' signals "new, not yet materialised" — the parent resolves the
+    // canonical slug (profile via get-or-create; registration server-side on submit).
+    onCompanySelect({ name: '', displayName });
+    setQuery('');
+    setOpen(false);
+  }, [query, onCompanySelect]);
+
+  const handleClear = useCallback(() => {
+    onCompanySelect(null);
+    setQuery('');
+    setOpen(false);
+    // Return focus to the freshly-revealed search box.
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, [onCompanySelect]);
+
+  const handleQueryChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    setOpen(true);
+  }, []);
+
   const handleInputFocus = useCallback(() => {
-    if (inputValue.length >= 2) {
+    if (query.trim().length >= 2) {
       setOpen(true);
     }
-  }, [inputValue]);
+  }, [query]);
 
   const handleInputBlur = useCallback(() => {
-    // Delay to allow click on suggestion
+    // Delay so a click on a suggestion registers before the popover closes.
     setTimeout(() => setOpen(false), 200);
   }, []);
 
+  // ── Selected: locked chip ───────────────────────────────────────────────
+  if (selected) {
+    return (
+      <div className="relative">
+        <div
+          data-testid="registration-company-chip"
+          className={cn(
+            'flex items-center gap-3 rounded-md border bg-zinc-900 px-3 py-2 min-h-[44px]',
+            error ? 'border-red-500' : 'border-zinc-800'
+          )}
+        >
+          {/* Avatar: company logo if it exists, else the display-name initial */}
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800">
+            {chipLogoUrl ? (
+              <img
+                src={chipLogoUrl}
+                alt={selected.displayName}
+                className="h-full w-full object-cover"
+              />
+            ) : selected.displayName ? (
+              <span className="text-sm font-medium text-zinc-400">
+                {selected.displayName.charAt(0).toUpperCase()}
+              </span>
+            ) : (
+              <Building2 className="h-4 w-4 text-zinc-500" />
+            )}
+          </div>
+          <span className="flex-1 truncate text-zinc-100">{selected.displayName}</span>
+          {!disabled && (
+            <button
+              type="button"
+              data-testid="registration-company-clear"
+              onClick={handleClear}
+              aria-label={t('companySearch.clear')}
+              className="shrink-0 rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      </div>
+    );
+  }
+
+  // ── Unselected: search box + suggestions ────────────────────────────────
   return (
     <div className="relative">
       <Popover open={open} onOpenChange={setOpen}>
@@ -128,8 +234,8 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
             <Input
               ref={inputRef}
               data-testid="registration-company-input"
-              value={inputValue}
-              onChange={handleInputChange}
+              value={query}
+              onChange={handleQueryChange}
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
               disabled={disabled}
@@ -150,7 +256,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
           align="start"
           onOpenAutoFocus={(e: Event) => e.preventDefault()}
         >
-          <Command className="bg-zinc-900">
+          <Command className="bg-zinc-900" shouldFilter={false}>
             <CommandList>
               {isLoading && (
                 <div className="py-6 text-center text-sm text-zinc-500 flex items-center justify-center gap-2">
@@ -159,22 +265,13 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
                 </div>
               )}
 
-              {!isLoading && shouldSearch && companies.length === 0 && (
+              {!isLoading && shouldSearch && companies.length === 0 && !showCreate && (
                 <CommandEmpty className="text-zinc-500 py-6 text-center text-sm">
-                  {isError ? (
-                    t('companySearch.error')
-                  ) : (
-                    <div className="space-y-1">
-                      <div>{t('companySearch.noResults')}</div>
-                      <div className="text-xs text-zinc-600">
-                        {t('companySearch.createNew', { value: inputValue })}
-                      </div>
-                    </div>
-                  )}
+                  {isError ? t('companySearch.error') : t('companySearch.noResults')}
                 </CommandEmpty>
               )}
 
-              {!isLoading && !shouldSearch && inputValue.length > 0 && (
+              {!isLoading && !shouldSearch && query.length > 0 && (
                 <div className="py-6 text-center text-sm text-zinc-500">
                   {t('companySearch.minChars')}
                 </div>
@@ -204,7 +301,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
                         )}
                       </div>
 
-                      {/* Company Info */}
+                      {/* Company Info — display name, never the slug */}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-zinc-100 truncate">
                           {company.displayName || company.name}
@@ -214,15 +311,34 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
                         )}
                       </div>
 
-                      {/* Check icon for selected */}
                       <Check
                         className={cn(
                           'ml-auto h-4 w-4',
-                          inputValue === company.name ? 'opacity-100' : 'opacity-0'
+                          value === company.name ? 'opacity-100' : 'opacity-0'
                         )}
                       />
                     </CommandItem>
                   ))}
+                </CommandGroup>
+              )}
+
+              {/* Explicit, deliberate "create new company" affordance */}
+              {showCreate && (
+                <CommandGroup>
+                  <CommandItem
+                    key="__create__"
+                    value={`__create__${trimmedQuery}`}
+                    data-testid="registration-company-create-option"
+                    onSelect={handleCreate}
+                    className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-zinc-800 aria-selected:bg-zinc-800"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800">
+                      <Plus className="h-4 w-4 text-zinc-300" />
+                    </div>
+                    <span className="text-sm text-zinc-100 truncate">
+                      {t('companySearch.createOption', { value: trimmedQuery })}
+                    </span>
+                  </CommandItem>
                 </CommandGroup>
               )}
             </CommandList>
@@ -230,11 +346,9 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
         </PopoverContent>
       </Popover>
 
-      {/* Error message */}
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
 
-      {/* Helper text */}
-      {!error && inputValue.length > 0 && inputValue.length < 2 && (
+      {!error && query.length > 0 && query.length < 2 && (
         <p className="text-xs text-zinc-500 mt-1">{t('companySearch.minChars')}</p>
       )}
     </div>

@@ -3,6 +3,8 @@ package ch.batbern.companyuser.repository;
 import ch.batbern.companyuser.domain.Company;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -35,6 +37,26 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
      * @return List of matching companies
      */
     List<Company> findByNameContainingIgnoreCase(String name);
+
+    /**
+     * Find companies whose meaningful name (slug) OR human-readable display name
+     * contains the query, case-insensitively.
+     *
+     * <p>Autocomplete must match what the user actually typed. Users type the
+     * <em>display name</em> ("Infowell GmbH"), but the {@code name} column holds
+     * the ADR-003 slug ("infowellgmbh") — so matching {@code name} alone returns
+     * nothing for a spaced/cased display name and pushes the user into creating a
+     * duplicate company. Matching both columns surfaces the existing company.
+     *
+     * @param query Partial company name or display name (case-insensitive)
+     * @return List of matching companies
+     */
+    @Query("""
+            SELECT c FROM Company c
+            WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%'))
+               OR LOWER(c.displayName) LIKE LOWER(CONCAT('%', :query, '%'))
+            """)
+    List<Company> searchByNameOrDisplayName(@Param("query") String query);
 
     /**
      * Find company by Swiss UID

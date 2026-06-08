@@ -193,6 +193,25 @@ class CompanyApiClient {
   }
 
   /**
+   * Get an existing company or create one from a display name (idempotent).
+   *
+   * Materialises a brand-new company picked in the autocomplete and returns its
+   * canonical slug (`name`) so callers store a real company reference instead of
+   * a free-typed string (ADR-003). Safe to call repeatedly — the backend resolves
+   * the slug and returns the existing company if it already exists.
+   */
+  async getOrCreateCompany(displayName: string): Promise<Company> {
+    try {
+      const response = await apiClient.post<Company>(`${COMPANY_API_PATH}:get-or-create`, {
+        displayName,
+      });
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Update existing company
    * Story 1.16.2: Uses company name as identifier instead of UUID
    */
@@ -289,3 +308,7 @@ export const {
   updateCompany,
   deleteCompany,
 } = companyApiClient;
+
+// Bound separately so the profile "create new company" flow keeps `this` when the
+// method's catch path calls this.transformError (destructured methods lose binding).
+export const getOrCreateCompany = companyApiClient.getOrCreateCompany.bind(companyApiClient);

@@ -796,6 +796,7 @@
     "consentSaveError": "L'enregistrement de votre consentement a échoué. Veuillez réessayer.",
     "newsletterTitle": "Newsletter",
     "newsletterDescription": "Recevez des invitations et des nouvelles des prochains événements BATbern.",
-    "newsletterLabel": "S’abonner à la newsletter BATbern"
+    "newsletterLabel": "S’abonner à la newsletter BATbern",
+    "companySaveError": "Impossible d’enregistrer l’entreprise. Veuillez réessayer."
   }
 }

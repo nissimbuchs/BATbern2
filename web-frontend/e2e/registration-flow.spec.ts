@@ -104,7 +104,14 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
     });
   });
 
-  /** Fill step 1 (testid-only). Company typing opens an autocomplete popover — dismiss it. */
+  /**
+   * Fill step 1 (testid-only). The company field is a selection-locked combobox: typing
+   * only drives the search — a company is committed to the form only by picking a result
+   * or the explicit "Create …" row. Tests use a unique generated name, so no existing
+   * company matches and the Create row is always offered; clicking it locks the value
+   * (rendered as a chip). Without this, `company` stays empty and step-1 validation blocks
+   * the wizard from advancing to step 2.
+   */
   async function fillStep1(page: Page, f: Step1Fields): Promise<void> {
     if (f.firstName !== undefined)
       await page.getByTestId('registration-first-name-input').fill(f.firstName);
@@ -114,7 +121,8 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
     if (f.role !== undefined) await page.getByTestId('registration-role-input').fill(f.role);
     if (f.company !== undefined) {
       await page.getByTestId('registration-company-input').fill(f.company);
-      await page.keyboard.press('Escape'); // close the popover so it can't eat the Next click
+      await page.getByTestId('registration-company-create-option').click();
+      await expect(page.getByTestId('registration-company-chip')).toBeVisible();
     }
   }
 

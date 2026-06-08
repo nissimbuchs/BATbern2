@@ -652,7 +652,7 @@ public class NewsletterEmailService {
         vars.put("upcomingEventsSection", buildUpcomingEventsSection(event.getId(), isDe));
         vars.put("unsubscribeLink", unsubscribeLink);
         vars.put("preferencesLink", baseUrl + "/account");
-        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.svg");
+        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
         return vars;
     }
 

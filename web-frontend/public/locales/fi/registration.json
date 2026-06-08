@@ -189,7 +189,9 @@
     "error": "Virhe yritysten lataamisessa",
     "noResults": "Olemassa olevaa yritystä ei löydy",
     "createNew": "Voit jatkaa \"{{value}}\" uutena yrityksenä",
-    "minChars": "Kirjoita vähintään 2 merkkiä hakua varten"
+    "minChars": "Kirjoita vähintään 2 merkkiä hakua varten",
+    "createOption": "Luo uusi yritys ”{{value}}”",
+    "clear": "Poista valittu yritys"
   },
   "registrationStatusBanner": {
     "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",

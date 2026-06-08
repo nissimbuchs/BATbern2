@@ -189,7 +189,9 @@
     "error": "Errur durant il cargament da las cumpagnias",
     "noResults": "Nagina cumpagnia existenta chattada",
     "createNew": "Pudais cuntinuar cun \"{{value}}\" sco nova cumpagnia",
-    "minChars": "Endatai almain 2 segns per tschertgar"
+    "minChars": "Endatai almain 2 segns per tschertgar",
+    "createOption": "Crear la nova interpresa «{{value}}»",
+    "clear": "Allontanar l’interpresa tschernida"
   },
   "registrationStatusBanner": {
     "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",

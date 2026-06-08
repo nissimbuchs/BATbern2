@@ -7,6 +7,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RegistrationWizard } from '../RegistrationWizard';
@@ -18,6 +19,13 @@ vi.mock('@/services/eventApiClient', () => ({
     createRegistration: vi.fn(),
   },
 }));
+
+// Mock companyApi — the company field is now a selection-locked combobox
+// (CompanyAutocomplete) that calls searchCompanies; no real results are needed because
+// the tests select via the always-available "Create …" row. (Story 4.1.5 combobox rework)
+vi.mock('@/services/api/companyApi');
+import * as companyApi from '@/services/api/companyApi';
+const mockSearchCompanies = vi.mocked(companyApi.searchCompanies);
 
 // Mock useMyRegistration — vi.fn() so guard tests can override per test (Story 10.10, T11)
 vi.mock('@/hooks/useMyRegistration');
@@ -153,8 +161,22 @@ describe('RegistrationWizard Component', () => {
     );
   };
 
+  /**
+   * Select a company through the reworked combobox. Typing alone never sets the value
+   * (the field is selection-locked); the user must pick a result or the "Create …" row.
+   * With searchCompanies mocked to [], the Create row is always offered for a ≥2-char query.
+   */
+  const selectCompany = async (name: string) => {
+    await userEvent.type(screen.getByPlaceholderText('Search for your company...'), name);
+    const createOption = await screen.findByTestId('registration-company-create-option');
+    fireEvent.click(createOption);
+    await screen.findByTestId('registration-company-chip');
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // Company search returns nothing → the combobox offers the "Create …" row.
+    mockSearchCompanies.mockResolvedValue([]);
     // Default: not registered → guard doesn't show, wizard renders normally
     mockUseMyRegistration.mockReturnValue({ data: null, isLoading: false });
     // Default: anonymous user, no profile
@@ -216,9 +238,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -243,9 +263,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -265,9 +283,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -298,9 +314,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -323,9 +337,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -346,9 +358,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -380,9 +390,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -437,9 +445,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -474,9 +480,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
@@ -520,9 +524,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Dev' },
       });
@@ -566,9 +568,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Dev' },
       });
@@ -606,9 +606,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
-        target: { value: 'Acme Inc' },
-      });
+      await selectCompany('Acme Inc');
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });

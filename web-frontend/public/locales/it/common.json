@@ -796,6 +796,7 @@
     "consentSaveError": "Il salvataggio del consenso non è riuscito. Riprova.",
     "newsletterTitle": "Newsletter",
     "newsletterDescription": "Ricevi inviti e aggiornamenti sui prossimi eventi BATbern.",
-    "newsletterLabel": "Iscriviti alla newsletter BATbern"
+    "newsletterLabel": "Iscriviti alla newsletter BATbern",
+    "companySaveError": "Impossibile salvare l’azienda. Riprova."
   }
 }

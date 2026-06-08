@@ -160,7 +160,9 @@
     "error": "Error loading companies",
     "noResults": "No existing company found",
     "createNew": "You can continue with \"{{value}}\" as a new company",
-    "minChars": "Type at least 2 characters to search"
+    "minChars": "Type at least 2 characters to search",
+    "createOption": "Create new company \"{{value}}\"",
+    "clear": "Remove selected company"
   },
   "confirmation": {
     "loading": {

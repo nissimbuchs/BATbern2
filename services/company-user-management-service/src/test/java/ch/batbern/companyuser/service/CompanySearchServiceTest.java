@@ -98,7 +98,7 @@ class CompanySearchServiceTest {
         // Given
         String query = "acme";
         List<Company> companies = Arrays.asList(testCompany1, testCompany2);
-        when(companyRepository.findByNameContainingIgnoreCase(query)).thenReturn(companies);
+        when(companyRepository.searchByNameOrDisplayName(query)).thenReturn(companies);
 
         // When
         List<CompanySearchResponse> results = companySearchService.searchCompanies(query);
@@ -107,7 +107,7 @@ class CompanySearchServiceTest {
         assertThat(results).hasSize(2);
         assertThat(results.get(0).getName()).isEqualTo("Acme Corporation");
         assertThat(results.get(1).getName()).isEqualTo("Acme Industries");
-        verify(companyRepository).findByNameContainingIgnoreCase(query);
+        verify(companyRepository).searchByNameOrDisplayName(query);
     }
 
     @Test
@@ -116,7 +116,7 @@ class CompanySearchServiceTest {
         // Given
         String partialQuery = "acm";
         List<Company> companies = Arrays.asList(testCompany1, testCompany2);
-        when(companyRepository.findByNameContainingIgnoreCase(partialQuery)).thenReturn(companies);
+        when(companyRepository.searchByNameOrDisplayName(partialQuery)).thenReturn(companies);
 
         // When
         List<CompanySearchResponse> results = companySearchService.searchCompanies(partialQuery);
@@ -124,7 +124,7 @@ class CompanySearchServiceTest {
         // Then
         assertThat(results).hasSize(2);
         assertThat(results).allMatch(r -> r.getName().toLowerCase().contains(partialQuery));
-        verify(companyRepository).findByNameContainingIgnoreCase(partialQuery);
+        verify(companyRepository).searchByNameOrDisplayName(partialQuery);
     }
 
     @Test
@@ -154,14 +154,14 @@ class CompanySearchServiceTest {
                 createCompany("Company 21"),
                 createCompany("Company 22")
         );
-        when(companyRepository.findByNameContainingIgnoreCase(query)).thenReturn(manyCompanies);
+        when(companyRepository.searchByNameOrDisplayName(query)).thenReturn(manyCompanies);
 
         // When
         List<CompanySearchResponse> results = companySearchService.searchCompanies(query);
 
         // Then - Max 20 autocomplete results per design
         assertThat(results).hasSizeLessThanOrEqualTo(20);
-        verify(companyRepository).findByNameContainingIgnoreCase(query);
+        verify(companyRepository).searchByNameOrDisplayName(query);
     }
 
     @Test
@@ -169,14 +169,14 @@ class CompanySearchServiceTest {
     void should_returnEmptyList_when_noMatchesFound() {
         // Given
         String query = "nonexistent";
-        when(companyRepository.findByNameContainingIgnoreCase(query)).thenReturn(Collections.emptyList());
+        when(companyRepository.searchByNameOrDisplayName(query)).thenReturn(Collections.emptyList());
 
         // When
         List<CompanySearchResponse> results = companySearchService.searchCompanies(query);
 
         // Then
         assertThat(results).isEmpty();
-        verify(companyRepository).findByNameContainingIgnoreCase(query);
+        verify(companyRepository).searchByNameOrDisplayName(query);
     }
 
     // AC9 Tests: Caffeine Caching
@@ -187,7 +187,7 @@ class CompanySearchServiceTest {
         // Given
         String query = "acme";
         List<Company> companies = Arrays.asList(testCompany1, testCompany2);
-        when(companyRepository.findByNameContainingIgnoreCase(query)).thenReturn(companies);
+        when(companyRepository.searchByNameOrDisplayName(query)).thenReturn(companies);
 
         // When
         List<CompanySearchResponse> firstCall = companySearchService.searchCompanies(query);
@@ -200,7 +200,7 @@ class CompanySearchServiceTest {
         assertThat(secondCall).hasSize(2);
         // Note: In unit tests without Spring context, cache annotations don't work
         // We verify the method returns correct results - caching verified in integration tests
-        verify(companyRepository, atLeastOnce()).findByNameContainingIgnoreCase(query);
+        verify(companyRepository, atLeastOnce()).searchByNameOrDisplayName(query);
     }
 
     @Test
@@ -226,8 +226,8 @@ class CompanySearchServiceTest {
         List<Company> acmeCompanies = Arrays.asList(testCompany1, testCompany2);
         List<Company> swissCompanies = Collections.singletonList(testCompany3);
 
-        when(companyRepository.findByNameContainingIgnoreCase(query1)).thenReturn(acmeCompanies);
-        when(companyRepository.findByNameContainingIgnoreCase(query2)).thenReturn(swissCompanies);
+        when(companyRepository.searchByNameOrDisplayName(query1)).thenReturn(acmeCompanies);
+        when(companyRepository.searchByNameOrDisplayName(query2)).thenReturn(swissCompanies);
 
         // When
         List<CompanySearchResponse> results1 = companySearchService.searchCompanies(query1);
@@ -236,8 +236,8 @@ class CompanySearchServiceTest {
         // Then - Each query should hit the repository once
         assertThat(results1).hasSize(2);
         assertThat(results2).hasSize(1);
-        verify(companyRepository).findByNameContainingIgnoreCase(query1);
-        verify(companyRepository).findByNameContainingIgnoreCase(query2);
+        verify(companyRepository).searchByNameOrDisplayName(query1);
+        verify(companyRepository).searchByNameOrDisplayName(query2);
     }
 
     @Test
@@ -248,7 +248,7 @@ class CompanySearchServiceTest {
         List<Company> initialCompanies = Arrays.asList(testCompany1);
         List<Company> updatedCompanies = Arrays.asList(testCompany1, testCompany2);
 
-        when(companyRepository.findByNameContainingIgnoreCase(query))
+        when(companyRepository.searchByNameOrDisplayName(query))
                 .thenReturn(initialCompanies)
                 .thenReturn(updatedCompanies);
         when(cacheManager.getCache("companySearch")).thenReturn(cache);
@@ -261,7 +261,7 @@ class CompanySearchServiceTest {
         // Then
         assertThat(firstCall).hasSize(1);
         assertThat(secondCall).hasSize(2); // Fresh data after cache invalidation
-        verify(companyRepository, times(2)).findByNameContainingIgnoreCase(query);
+        verify(companyRepository, times(2)).searchByNameOrDisplayName(query);
     }
 
     // AC11 Tests: Advanced Search with Limit
@@ -272,7 +272,7 @@ class CompanySearchServiceTest {
         // Given
         String query = "swiss";
         List<Company> companies = Collections.singletonList(testCompany3);
-        when(companyRepository.findByNameContainingIgnoreCase(query)).thenReturn(companies);
+        when(companyRepository.searchByNameOrDisplayName(query)).thenReturn(companies);
 
         // When
         List<CompanySearchResponse> results = companySearchService.searchCompanies(query);
@@ -280,7 +280,7 @@ class CompanySearchServiceTest {
         // Then
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getName()).isEqualTo("Swiss Tech AG");
-        verify(companyRepository).findByNameContainingIgnoreCase(query);
+        verify(companyRepository).searchByNameOrDisplayName(query);
     }
 
     @Test
@@ -296,14 +296,14 @@ class CompanySearchServiceTest {
                 createCompany("Company 6"),
                 createCompany("Company 7")
         );
-        when(companyRepository.findByNameContainingIgnoreCase(query)).thenReturn(manyCompanies);
+        when(companyRepository.searchByNameOrDisplayName(query)).thenReturn(manyCompanies);
 
         // When
         List<CompanySearchResponse> results = companySearchService.searchCompanies(query, limit);
 
         // Then
         assertThat(results).hasSize(5);
-        verify(companyRepository).findByNameContainingIgnoreCase(query);
+        verify(companyRepository).searchByNameOrDisplayName(query);
     }
 
     @Test
@@ -312,14 +312,43 @@ class CompanySearchServiceTest {
         // Given
         String query = "acme";
         List<Company> companies = Arrays.asList(testCompany1, testCompany2);
-        when(companyRepository.findByNameContainingIgnoreCase(query)).thenReturn(companies);
+        when(companyRepository.searchByNameOrDisplayName(query)).thenReturn(companies);
 
         // When
         List<CompanySearchResponse> results = companySearchService.searchCompanies(query);
 
         // Then
         assertThat(results).hasSize(2);
-        verify(companyRepository).findByNameContainingIgnoreCase(query);
+        verify(companyRepository).searchByNameOrDisplayName(query);
+    }
+
+    @Test
+    @DisplayName("Test 5.4: should_matchByDisplayName_when_querySpacedAndCased")
+    void should_matchByDisplayName_when_querySpacedAndCased() {
+        // Given — user types the human display name ("Infowell GmbH"), whose slug
+        // would be "infowellgmbh". The both-column search must surface the company
+        // so the user picks it instead of creating a duplicate.
+        String query = "Infowell GmbH";
+        Company infowell = Company.builder()
+                .id(UUID.randomUUID())
+                .name("infowellgmbh")
+                .displayName("Infowell GmbH")
+                .isVerified(false)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .createdBy("test-user")
+                .build();
+        when(companyRepository.searchByNameOrDisplayName(query))
+                .thenReturn(List.of(infowell));
+
+        // When
+        List<CompanySearchResponse> results = companySearchService.searchCompanies(query);
+
+        // Then — the existing company is returned, matched via its display name
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getName()).isEqualTo("infowellgmbh");
+        assertThat(results.get(0).getDisplayName()).isEqualTo("Infowell GmbH");
+        verify(companyRepository).searchByNameOrDisplayName(query);
     }
 
     // Helper Methods

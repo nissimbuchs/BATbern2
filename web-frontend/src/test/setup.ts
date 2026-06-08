@@ -95,6 +95,11 @@ global.ResizeObserver = class ResizeObserver {
 // Mock window.scrollTo
 global.window.scrollTo = vi.fn();
 
+// Mock Element.scrollIntoView — jsdom does not implement it. cmdk (Command/combobox)
+// calls it on the active item during keyboard navigation, which otherwise throws
+// "scrollIntoView is not a function" in any test rendering a command palette.
+global.Element.prototype.scrollIntoView = vi.fn();
+
 // Mock HTMLCanvasElement for axe-core accessibility tests
 HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   measureText: vi.fn(() => ({ width: 0 })),

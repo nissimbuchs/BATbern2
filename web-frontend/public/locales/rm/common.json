@@ -796,6 +796,7 @@
     "consentSaveError": "Memorisar voss consentiment n’è betg reussì. Empruvai anc ina giada.",
     "newsletterTitle": "Newsletter",
     "newsletterDescription": "Retschavai invitaziuns e novitads davart ils proxims eveniments BATbern.",
-    "newsletterLabel": "Abunar il newsletter da BATbern"
+    "newsletterLabel": "Abunar il newsletter da BATbern",
+    "companySaveError": "I n’è betg reussì da memorisar l’interpresa. Empruvai anc ina giada."
   }
 }

@@ -189,7 +189,9 @@
     "error": "Fout bij laden bedrijven",
     "noResults": "Geen bestaand bedrijf gevonden",
     "createNew": "U kunt doorgaan met \"{{value}}\" als nieuw bedrijf",
-    "minChars": "Typ minstens 2 tekens om te zoeken"
+    "minChars": "Typ minstens 2 tekens om te zoeken",
+    "createOption": "Nieuw bedrijf \"{{value}}\" aanmaken",
+    "clear": "Geselecteerd bedrijf verwijderen"
   },
   "registrationStatusBanner": {
     "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",

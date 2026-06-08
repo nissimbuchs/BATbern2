@@ -33,6 +33,14 @@ vi.mock('@/components/speaker-portal/ProfilePhotoUpload', () => ({
   default: () => <div data-testid="photo-upload-stub" />,
 }));
 
+// Company picker hits the company API (chip logo lookup via getCompany, search,
+// and get-or-create on save) — stub it so no real network calls fire.
+vi.mock('@/services/api/companyApi', () => ({
+  getCompany: vi.fn().mockResolvedValue({ name: 'elca', displayName: 'ELCA', logo: null }),
+  searchCompanies: vi.fn().mockResolvedValue([]),
+  getOrCreateCompany: vi.fn().mockResolvedValue({ name: 'elca', displayName: 'ELCA' }),
+}));
+
 import { getUserProfile, updateUserProfile } from '@/services/api/userAccountApi';
 import { getMySubscription, patchMySubscription } from '@/services/newsletterService';
 import { useAuth } from '@/hooks/useAuth';
