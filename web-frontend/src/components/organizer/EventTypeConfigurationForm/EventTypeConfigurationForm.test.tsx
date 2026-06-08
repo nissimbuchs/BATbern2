@@ -22,6 +22,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventTypeConfigurationForm } from './EventTypeConfigurationForm';
+import { computeScheduleEndTime } from './scheduleTimeline';
 import type { components } from '@/types/generated/events-api.types';
 
 type EventType = components['schemas']['EventType'];
@@ -98,6 +99,103 @@ describe('EventTypeConfigurationForm Component', () => {
     expect(screen.getByLabelText(/break slots/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/lunch slots/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/default capacity/i)).toBeInTheDocument();
+  });
+
+  /**
+   * Test 7.5a-bis: should_displayStartAndEndTimeFields_when_formRendered
+   * Regression: the modal previously omitted the start/end time inputs, so editing
+   * any other field round-tripped the times as undefined and the mapper nulled them.
+   */
+  it('should_displayStartAndEndTimeFields_when_formRendered', () => {
+    render(
+      <EventTypeConfigurationForm
+        eventType={mockEventType}
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    const startInput = screen.getByLabelText(/start time/i) as HTMLInputElement;
+    const endInput = screen.getByLabelText(/end time/i) as HTMLInputElement;
+    expect(startInput).toBeInTheDocument();
+    expect(endInput).toBeInTheDocument();
+    // Start time is editable and pre-populated from the current configuration.
+    expect(startInput.value).toBe('09:00');
+    expect(startInput.readOnly).toBe(false);
+    // End time is read-only and derived from the computed timetable (NOT the stored 17:00).
+    expect(endInput.readOnly).toBe(true);
+    expect(endInput.value).toBe(computeScheduleEndTime(mockEventTypeData));
+  });
+
+  /**
+   * Test 7.5a-ter: should_preserveStartTime_and_recomputeEnd_when_otherFieldEdited
+   * Regression guard for the data trap: editing slot count must NOT drop the start time;
+   * the end time follows the recomputed timetable.
+   */
+  it('should_preserveStartTime_and_recomputeEnd_when_otherFieldEdited', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <EventTypeConfigurationForm
+        eventType={mockEventType}
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    await user.clear(screen.getByLabelText(/maximum slots/i));
+    await user.type(screen.getByLabelText(/maximum slots/i), '7');
+
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maxSlots: 7,
+          typicalStartTime: '09:00',
+          typicalEndTime: computeScheduleEndTime({ ...mockEventTypeData, maxSlots: 7 }),
+        })
+      );
+    });
+  });
+
+  /**
+   * Test 7.5a-quater: should_recomputeEndTime_when_startTimeChanged
+   * Start time is the only editable timing input; the end time shifts with it.
+   */
+  it('should_recomputeEndTime_when_startTimeChanged', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <EventTypeConfigurationForm
+        eventType={mockEventType}
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    const startInput = screen.getByLabelText(/start time/i) as HTMLInputElement;
+    // time inputs: set via fireEvent.change (userEvent.type is unreliable for type=time)
+    fireEvent.change(startInput, { target: { value: '16:00' } });
+
+    // The read-only end field reflects the recomputed end immediately.
+    const endInput = screen.getByLabelText(/end time/i) as HTMLInputElement;
+    const expectedEnd = computeScheduleEndTime({ ...mockEventTypeData, typicalStartTime: '16:00' });
+    await waitFor(() => expect(endInput.value).toBe(expectedEnd));
+
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          typicalStartTime: '16:00',
+          typicalEndTime: expectedEnd,
+        })
+      );
+    });
   });
 
   /**

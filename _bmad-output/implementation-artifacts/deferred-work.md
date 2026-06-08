@@ -188,3 +188,6 @@ Everything else: test-hardening, kanban/modal UX papercuts, sprint-status YAML h
 ### Cross-references retained (not removed, but tracked under their new owner)
 - **`runInvitedHook` Cognito-mutation-inside-`@Transactional`** — kept in Cluster B; spun out as Story 11.F.2 (AFTER_COMMIT listener refactor), still open. The `runInvitedHook` email-only AFTER_COMMIT discussion (11.B.2 deferred item) folds into the same 11.F.2 work.
 - **Three Playwright `test.fixme` specs + `speaker_jwt` cookie-audit `test.skip`** — kept in Cluster D; deferred per Story 11.F.1 RD4, awaiting the ops-side staging-Cognito test-speaker seed + `SPEAKER_AUTH_TOKEN` secret.
+
+## 2026-06-07 — from spec-screencast-new-workflow-elevenlabs review
+- **i18n: untranslated `speakerDrawer.secondaryActions` siblings in 8 non-DE/EN locales** — `decline`, `reassignOrganizer`, `editDetails`, `overrideState` are English in es/fi/fr/it/ja/nl/rm/gsw-BE while the newly added `acceptOnBehalf` is translated, producing a mixed-language drawer menu. Pre-existing gap (10-locale rule applies to UI keys); translate the siblings.

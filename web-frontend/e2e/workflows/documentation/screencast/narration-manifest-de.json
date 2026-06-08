@@ -1,0 +1,214 @@
+{
+  "lang": "de",
+  "voiceId": "WHaUUVTDq47Yqc9aDbkH",
+  "voiceName": "ENNIAH - Friendly & Motivating",
+  "modelId": "eleven_v3",
+  "comment": "Single source of truth for the screencast narration. Emotion tags ([excited], [pause], ...) are ElevenLabs v3 audio tags and are stripped for subtitles. Voice/model live here (not secrets); ELEVENLABS_VOICE_ID_DE / ELEVENLABS_MODEL_ID env vars override. EN manifest: voice Adeline = 5l5f8iK3YPeGga21rQIX. Segments 21-24, 26, 28 rewritten 2026-06-07 for the button-driven kanban workflow (ADR-009) — no drag-and-drop.",
+  "segments": [
+    {
+      "marker": "NARRATION_01",
+      "description": "Willkommen zur BATbern Event-Management-Plattform",
+      "text": "[excited] Willkommen zur BATbern Event-Management-Plattform! [playful] Heute zeige ich Ihnen, wie man ein Event plant, ohne dabei den Verstand zu verlieren. [chuckling] Wir durchlaufen den kompletten Event-Lebenszyklus, von \"Oh Gott, wir brauchen ein Event\" bis zu \"Endlich vorbei, ab ins Archiv damit!\" [pause] Sie sehen in diesem Video alle wichtigen Schritte, die ein Organisator durchführt, um ein Berner Architekten Treffen zu planen, ohne dabei in Panik zu geraten."
+    },
+    {
+      "marker": "NARRATION_02",
+      "description": "Dashboard und Authentifizierung",
+      "text": "[cheerful] Wir beginnen am Event-Dashboard. [playful] Das ist sozusagen Ihre Kommandozentrale, von der aus Sie den Überblick über alle Events behalten, die Sie jemals organisiert haben oder noch organisieren werden. [pause] Die Authentifizierung über AWS Cognito ist bereits erledigt. [satisfied] Sie sehen oben rechts Ihren Benutzernamen, und damit haben Sie die Macht, alle Funktionen als Organisator zu nutzen. [dramatic] Mit großer Macht kommt große Verantwortung!"
+    },
+    {
+      "marker": "NARRATION_02L",
+      "description": "Sprachauswahl — alle 10 Sprachen",
+      "text": "[cheerful] Übrigens, die Plattform spricht viele Sprachen! [playful] Oben rechts im Benutzermenü finden Sie die Sprachauswahl. [excited] Ganze zehn Sprachen stehen zur Verfügung — von Deutsch über Englisch, Französisch und Italienisch bis hin zu Rätoromanisch und sogar Bärndütsch! [satisfied] Für dieses Video bleiben wir bei Deutsch."
+    },
+    {
+      "marker": "NARRATION_03",
+      "description": "Neues Event erstellen",
+      "text": "[enthusiastic] Jetzt erstellen wir ein brandneues Event! [excited] Klicken Sie auf den Button \"Neue Veranstaltung\" oben rechts. [pause] Boom! Ein modales Formular erscheint. [playful] Keine Sorge, es sieht nach viel aus, aber wir füllen das gemeinsam aus."
+    },
+    {
+      "marker": "NARRATION_04",
+      "description": "Event-Nummer eingeben",
+      "text": "[professional] Event-Nummer. [casual] Eine eindeutige Kennung für dieses Event. Das System verwendet intern das Format \"BATbern\" gefolgt von der Nummer. [playful] Sozusagen die Geburtsurkunde Ihres Events. Dies dient der Identifikation in der Datenbank und in URLs."
+    },
+    {
+      "marker": "NARRATION_05",
+      "description": "Titel eingeben",
+      "text": "[short pause] Titel. [cheerful] Hier kommt der Name, der Ihre Teilnehmer begeistern soll! [playful] \"Langweiliges Architektur-Event Nummer 47\" wäre zwar ehrlich, aber vielleicht nicht die beste Wahl. [chuckling] Wählen Sie etwas Aussagekräftiges, das die Leute auf der öffentlichen Website sehen werden."
+    },
+    {
+      "marker": "NARRATION_06",
+      "description": "Beschreibung eingeben",
+      "text": "[short pause] Beschreibung. [casual] Eine kurze Erläuterung des Event-Themas. [helpful] Diese Information hilft Interessenten zu verstehen, warum sie sich unbedingt anmelden sollten. [playful] Oder zumindest, worum es geht."
+    },
+    {
+      "marker": "NARRATION_07",
+      "description": "Event-Typ auswählen",
+      "text": "[pause] Event-Typ. [professional] Wählen Sie zwischen drei Formaten: [clear] \"Abend\" für Feierabend-Events, [cheerful] bei denen man nach der Arbeit noch ein bisschen netzwerken kann. \"Nachmittag\" für Nachmittagsveranstaltungen, [playful] perfekt für alle, die abends lieber auf dem Sofa sitzen. [pause] Oder \"Ganztag\" für ganztägige Konferenzen. [dramatic] Da brauchen Sie dann viel Kaffee! [short pause] Dies beeinflusst die Zeitplanung und Slot-Verwaltung."
+    },
+    {
+      "marker": "NARRATION_08",
+      "description": "Datum und Anmeldefrist",
+      "text": "[professional] Datum und Anmeldefrist. [clear] Das Event-Datum legt fest, wann die Veranstaltung stattfindet. [playful] Bitte wählen Sie ein Datum in der Zukunft, Zeitreisen unterstützen wir noch nicht. [chuckling] Die Anmeldefrist ist wichtig für die Teilnehmer-Verwaltung."
+    },
+    {
+      "marker": "NARRATION_09",
+      "description": "Veranstaltungsort eingeben",
+      "text": "[short pause] Veranstaltungsort. [casual] Name und Adresse des Veranstaltungsortes. [playful] Also nicht \"bei mir im Keller\", sondern ein richtiger Ort mit Adresse. [cheerful] Diese Informationen werden auf der öffentlichen Website angezeigt, damit die Leute auch wirklich hingehen können."
+    },
+    {
+      "marker": "NARRATION_10",
+      "description": "Event erfolgreich erstellt",
+      "text": "[satisfied] Wir klicken auf \"Speichern\" und das Event wird erstellt. [excited] Tada! [pause] Das System kehrt automatisch zum Dashboard zurück, und da ist es! Ihr brandneues Event in der Liste. [playful] Ihr Baby ist geboren!"
+    },
+    {
+      "marker": "NARRATION_11",
+      "description": "Zur Event-Detailseite navigieren",
+      "text": "[pause] Nach der Event-Erstellung navigieren wir zur Event-Detailseite. [professional] Hier können wir Aufgaben an Teammitglieder zuweisen. [playful] Denn warum sollten Sie alles alleine machen, wenn Sie ein ganzes Team haben? [chuckling] Klicken Sie auf \"Bearbeiten\" um das Event-Formular erneut zu öffnen."
+    },
+    {
+      "marker": "NARRATION_12",
+      "description": "Aufgaben zuweisen",
+      "text": "[clear] Wechseln Sie zum Tab \"Aufgaben\". [professional] Hier sehen Sie eine vordefinierte Liste von Standard-Aufgaben, die bei jedem Event anfallen. [playful] Das System kennt sich aus, es weiß, was alles zu tun ist. [pause] Für jede Aufgabe wählen wir einen verantwortlichen Organisator aus dem Dropdown-Menü. [helpful] Dies stellt sicher, dass alle wichtigen Tätigkeiten klar zugeordnet sind und nichts vergessen wird. [dramatic] Denn vergessene Aufgaben führen zu Chaos, und Chaos führt zu... naja, mehr Chaos."
+    },
+    {
+      "marker": "NARRATION_13",
+      "description": "Aufgaben speichern",
+      "text": "[confident] Nach der Zuweisung klicken wir auf \"Speichern\". [satisfied] Das System speichert alle Aufgaben und kehrt zur Event-Detailseite zurück. [cheerful] Perfekt!"
+    },
+    {
+      "marker": "NARRATION_14",
+      "description": "Aufgabenliste überprüfen",
+      "text": "[pause] Um die Aufgaben zu überprüfen, navigieren wir zur Aufgabenliste. [informative] Zunächst sehen Sie die Standard-Filterung \"Meine Aufgaben\", die nur Ihre eigenen Aufgaben anzeigt. [playful] Aber wir sind neugierig und wollen wissen, was die anderen so machen. [chuckling] Wir ändern den Filter auf \"Alle Aufgaben\", um alle Zuweisungen zu sehen. Dies gibt einen Überblick über die Verantwortlichkeiten im gesamten Team. [whispers] Und wer vielleicht gerade nichts zu tun hat."
+    },
+    {
+      "marker": "NARRATION_15",
+      "description": "Themenauswahl beginnen",
+      "text": "[excited] Zurück auf der Event-Detailseite beginnen wir mit der inhaltlichen Planung! [enthusiastic] Der erste Schritt ist die Themenauswahl. Klicken Sie auf \"Thema auswählen\"."
+    },
+    {
+      "marker": "NARRATION_16",
+      "description": "Heat Map öffnen",
+      "text": "[cheerful] Es öffnet sich eine Ansicht mit verschiedenen Themen-Kategorien. Die Standardansicht zeigt eine Liste, [excited] aber wir nutzen die Heat Map für eine bessere Übersicht. [playful] Denn wer liebt nicht eine gute Heat Map?"
+    },
+    {
+      "marker": "NARRATION_17",
+      "description": "Heat Map erklären",
+      "text": "[curious] Die Heat Map ist eine Zwei-Dimensionale Matrix, die Themen nach ihrer Popularität und Aktualität visualisiert. [excited] Helle Farben zeigen beliebte Themen, [casual] sozusagen die Rockstars unter den Architektur-Themen. [pause] Dunklere Farben zeigen weniger häufig gewählte Themen. [playful] Die Außenseiter, die auch eine Chance verdienen. [helpful] Dies hilft bei der strategischen Themenplanung basierend auf den Interessen der Teilnehmer."
+    },
+    {
+      "marker": "NARRATION_18",
+      "description": "Thema auswählen und bestätigen",
+      "text": "[instructional] Wir wählen ein Thema aus der Heat Map, indem wir auf eine Zelle klicken. [satisfied] Das System markiert die Auswahl und zeigt Details an. [excited] Nach der Bestätigung speichert das System das gewählte Thema und öffnet automatisch die Referenten-Brainstorming-Ansicht. [playful] Das System ist wie ein guter Assistent, es weiß immer, was als Nächstes kommt!"
+    },
+    {
+      "marker": "NARRATION_19",
+      "description": "Referenten-Kandidaten hinzufügen",
+      "text": "[enthusiastic] Jetzt sammeln wir potenzielle Referenten für das gewählte Thema! [professional] In dieser Phase erstellen wir einen Pool von Kandidaten, die wir später kontaktieren werden. [pause] Wir fügen fünf Referenten-Kandidaten hinzu. [strategic] Dies gibt uns ausreichend Optionen für die Kontaktaufnahme, falls nicht alle zusagen. [playful] Denn Referenten sind wie Katzen, manchmal sagen sie einfach nein, ohne Grund."
+    },
+    {
+      "marker": "NARRATION_20",
+      "description": "Zur Kontaktierung übergehen",
+      "text": "[confident] Nach dem Hinzufügen aller Kandidaten klicken wir auf \"Weiter zur Kontaktierung\". [satisfied] Das System wechselt automatisch zur Kanban-Ansicht, wo wir den Kontaktstatus verfolgen können. [excited] Kanban! Das klingt wichtig und organisiert!"
+    },
+    {
+      "marker": "NARRATION_21",
+      "description": "Kanban-Board mit Aktions-Buttons",
+      "text": "[professional] Wir befinden uns jetzt in der Referenten-Kontaktierungs-Phase. [informative] Das Kanban-Board zeigt den Workflow in Spalten — von \"Identifiziert\" über \"Kontaktiert\" und \"Bereit\" bis \"Zugesagt\". [playful] Von \"Wer ist das?\" bis \"Hurra, zugesagt!\" [helpful] Und das Beste: Jede Karte hat einen Aktions-Button, der Ihnen immer genau den nächsten sinnvollen Schritt anbietet. [satisfied] Kein Rätselraten mehr, was als Nächstes zu tun ist."
+    },
+    {
+      "marker": "NARRATION_22",
+      "description": "Referenten kontaktieren (Kontakt erfassen)",
+      "text": "[methodical] Jetzt kontaktieren wir systematisch alle fünf Referenten-Kandidaten. [instructional] Für jeden Kandidaten klicken wir auf der Karte auf \"Kontakt erfassen\". [professional] Im Dialog wählen wir die Kontaktmethode, zum Beispiel E-Mail oder Telefon, und halten Notizen zur Antwort fest. [playful] Sonst fragt nächste Woche jemand: \"Haben wir den schon kontaktiert?\" Und niemand weiß es. [chuckling] Chaos vermieden! [satisfied] Die Karten wandern dabei automatisch in die Spalte \"Kontaktiert\"."
+    },
+    {
+      "marker": "NARRATION_23",
+      "description": "Referenten befördern (CONTACTED → READY)",
+      "text": "[positive] Drei Kandidaten haben positiv reagiert. [excited] Zeit, sie zu richtigen Referenten zu befördern! [instructional] Ein Klick auf \"Zum Speaker befördern\" öffnet die Detail-Ansicht. Dort legen wir für Nissim, Baltisar und Andreas je ein Benutzerkonto mit Name und E-Mail-Adresse an. [informative] Damit erhalten sie später Zugang zum Referenten-Portal. [playful] Das System erledigt die ganze Bürokratie im Hintergrund. [satisfied] Die drei Karten wandern in die Spalte \"Bereit\"."
+    },
+    {
+      "marker": "NARRATION_24",
+      "description": "Zusage Nissim (READY → ACCEPTED)",
+      "text": "[confident] Jetzt erfassen wir die Zusagen. [informative] Normalerweise erhalten Referenten eine Einladung und antworten selbst im Referenten-Portal. [casual] Haben sie aber bereits mündlich zugesagt, erfassen wir das direkt. [instructional] Wir öffnen Nissims Karte, wählen \"Zusage im Namen erfassen\" und geben eine kurze Begründung an. [satisfied] Nissim ist dabei!"
+    },
+    {
+      "marker": "NARRATION_24B",
+      "description": "Zusage Baltisar (READY → ACCEPTED)",
+      "text": "[cheerful] Weiter mit Baltisar von Galenica. [instructional] Auch seine Karte öffnen wir, wählen erneut \"Zusage im Namen erfassen\" und bestätigen mit einer kurzen Notiz. [playful] Zwei von drei — läuft wie geschmiert!"
+    },
+    {
+      "marker": "NARRATION_24C",
+      "description": "Zusage Andreas (READY → ACCEPTED)",
+      "text": "[enthusiastic] Und Andreas von der Mobiliar? [satisfied] Ebenfalls mit an Bord! [instructional] Auch seine Zusage erfassen wir im Namen, wieder mit kurzer Begründung. [excited] Damit haben wir drei zugesagte Referenten — genug, um den Abend zu füllen."
+    },
+    {
+      "marker": "NARRATION_24D",
+      "description": "Daniels Absage + Vanessa bleibt im Pool",
+      "text": "[playful] Und Daniel? [dramatic] Daniel hat leider keine Zeit. [casual] Ihn lehnen wir mit \"Mit Grund absagen\" ab — natürlich ebenfalls mit Begründung. [informative] Vanessa lassen wir bewusst noch als Kandidatin im Pool, falls wir später doch noch jemanden brauchen. [chuckling] Referenten sind eben wie Katzen."
+    },
+    {
+      "marker": "NARRATION_25",
+      "description": "Thema veröffentlichen",
+      "text": "[important] Bevor Referenten ihre Inhalte einreichen können, müssen wir das Thema veröffentlichen. [instructional] Wir navigieren zum Tab \"Veröffentlichung\" und klicken auf \"Thema veröffentlichen\". [informative] Im unteren Bereich ist ein Preview des Events auf der öffentlichen Seite ersichtlich. [satisfied] Schön, oder?"
+    },
+    {
+      "marker": "NARRATION_26",
+      "description": "Präsentations-Inhalte einreichen",
+      "text": "[professional] Zurück im Kanban erfassen wir nun für jeden zugesagten Referenten die Präsentations-Inhalte. [instructional] Der Aktions-Button heißt jetzt \"Inhalt erfassen\". [casual] Titel, Abstract, die üblichen Verdächtigen. Der Referent ist bereits automatisch verknüpft. [methodical] Wir wiederholen diesen Prozess für alle drei Referenten. [playful] Copy, paste, repeat. [chuckling] Nein, Spaß, jeder Referent hat natürlich einzigartige Inhalte!"
+    },
+    {
+      "marker": "NARRATION_27",
+      "description": "Referenten veröffentlichen",
+      "text": "[professional] Die Inhalte sind eingereicht. [instructional] Als Nächstes schalten wir die Referenten öffentlich: Wir klicken auf \"Referenten veröffentlichen\". [excited] Und jetzt kommt's! [satisfied] Nun sind auf der öffentlichen Webseite nicht nur das Thema, sondern auch die zugesagten Referenten mit ihrem Vortrag ersichtlich. [cheerful] Die Welt kann es sehen!"
+    },
+    {
+      "marker": "NARRATION_28",
+      "description": "Präsentationen prüfen und genehmigen",
+      "text": "[pause] Und jetzt folgt die eigentliche Qualitätsprüfung. [professional] Zurück im Kanban prüfen wir jede eingereichte Präsentation. [instructional] Der Aktions-Button heißt diesmal \"Inhalt prüfen\". [playful] Wir spielen jetzt Qualitätskontrolle. [pause] Sieht gut aus, sieht gut aus, das auch. [confident] Wir genehmigen alle drei Präsentationen. [satisfied] Grünes Licht für alle!"
+    },
+    {
+      "marker": "NARRATION_29",
+      "description": "Zur Sessions-Ansicht wechseln",
+      "text": "[instructional] Für die Slot-Zuweisung wechseln wir zur Sessions-Ansicht. Klicken Sie auf \"Slot-Zuweisungen verwalten\". [pause] Jetzt wird's zeitlich!"
+    },
+    {
+      "marker": "NARRATION_30",
+      "description": "Referenten automatisch zuweisen",
+      "text": "[enthusiastic] Für eine schnelle initiale Planung nutzen wir die Auto-Assign-Funktion. [excited] Das System führt die automatische Zuweisung durch. [playful] Magie! Das System übernimmt die Arbeit. [informative] Durch Drag-und-Drop ist hier auch eine manuelle Zuweisung möglich. [casual] Falls Sie dem Computer nicht vertrauen oder einfach gerne Dinge herumschieben."
+    },
+    {
+      "marker": "NARRATION_31",
+      "description": "Zurück zur Veranstaltung",
+      "text": "[calm] Nach der Slot-Zuweisung klicken wir auf \"Zurück zur Veranstaltung\"."
+    },
+    {
+      "marker": "NARRATION_32",
+      "description": "Agenda veröffentlichen",
+      "text": "[dramatic] Der finale Schritt ist die Agenda-Veröffentlichung! [enthusiastic] Das große Finale! [instructional] Klicken Sie auf \"Agenda veröffentlichen\". [triumphant] Und... [excited] Der Event ist jetzt vollständig geplant und öffentlich inklusive detaillierter Agenda zugänglich! [cheerful] Konfetti! Feuerwerk! Okay, vielleicht nur in Gedanken, aber trotzdem! [satisfied] Wir haben es geschafft!"
+    },
+    {
+      "marker": "NARRATION_32B",
+      "description": "Öffentliche Event-Seite — live",
+      "text": "[excited] Und da ist unsere Veranstaltung — live auf der öffentlichen Webseite! [satisfied] Scrollen wir langsam durch die Seite. [cheerful] Ganz oben der Titel mit Datum und Ort, darunter die Referenten mit ihren Vorträgen und schließlich die komplette Agenda mit allen Zeitfenstern. [playful] Genau das sehen Ihre Teilnehmer, wenn sie sich anmelden. [satisfied] Sieht doch fantastisch aus!"
+    },
+    {
+      "marker": "NARRATION_33",
+      "description": "Event archivieren",
+      "text": "[pause] Nach der Durchführung des Events archivieren wir es für die Historie. [professional] Wechseln Sie zum Tab \"Übersicht\" und klicken Sie auf \"Bearbeiten\". [playful] Zeit, das Event in Rente zu schicken."
+    },
+    {
+      "marker": "NARRATION_34",
+      "description": "Status auf ARCHIVIERT ändern",
+      "text": "[clear] Im Formular wählen Sie \"ARCHIVIERT\" als Status. [casual] Das Event war toll, aber jetzt ist es Geschichte."
+    },
+    {
+      "marker": "NARRATION_35",
+      "description": "Workflow-Validierung überschreiben",
+      "text": "[informative] Für Test-Zwecke können Sie die Workflow-Validierung überschreiben. [instructional] Aktivieren Sie die Checkbox \"Workflow-Validierung überschreiben\" und klicken Sie auf \"Speichern\". [playful] Das ist sozusagen der Notausgang, falls mal was nicht nach Plan läuft."
+    },
+    {
+      "marker": "NARRATION_36",
+      "description": "Workflow abgeschlossen - Vielen Dank",
+      "text": "[triumphant] Damit ist der vollständige Event-Workflow abgeschlossen! [excited] Von der ersten Idee bis zum Archiv, wir haben die ganze Reise gemeinsam gemacht! [satisfied] Sie sind jetzt ein Event-Management-Profi! [cheerful] Vielen Dank für Ihre Aufmerksamkeit! [playful] Und denken Sie daran: Events planen macht Spaß, [chuckling] zumindest mit der richtigen Software! [laughing] Tschüss!"
+    }
+  ]
+}

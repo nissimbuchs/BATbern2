@@ -91,79 +91,136 @@ export const testConfig = {
       contactMethod: 'Persönlich',
       contactNotes: 'OK.',
     },
+    {
+      // 5th candidate — contacted but deliberately NOT promoted; stays CONTACTED in the pool
+      // to show a realistic "still open" card at the end (see declinedSpeaker / NARRATION_24D).
+      firstName: 'Vanessa Deubel',
+      lastName: '',
+      company: 'BKW',
+      expertise: 'SAP',
+      assignedUserId: null,
+      assignedUserName: 'Vanessa Deubel',
+      contactMethod: 'E-Mail',
+      contactNotes: 'Angefragt — überlegt es sich noch.',
+    },
   ],
 
   /**
    * Speaker Outreach Tracking
-   * Records contact interactions with speakers
-   * Based on recording lines 90-123
-   * Note: Nissim is contacted twice (first via Telefon, then Persönlich)
+   * One "Kontakt erfassen" (log outreach) per candidate via the card primary action (ADR-009).
+   * cardName: visible-name fragment that uniquely identifies the kanban card (screencast).
+   * displayName: legacy full card label (still used by complete-event-workflow.spec.ts).
    */
   speakerOutreach: [
     {
+      cardName: 'Nissim',
       displayName: 'N Nissim ELCA AI',
       contactMethod: 'phone' as const,
       notes: 'Hab mit ihm gesprochen. er überlegt es sich,',
       speakerIndex: 0,
     },
     {
+      cardName: 'Balti',
       displayName: 'B Balti Galenica AI',
       contactMethod: 'in_person' as const,
       notes: 'Ja, ich machs',
       speakerIndex: 1,
     },
     {
+      cardName: 'Andreas',
       displayName: 'A Andreas Mobiliar AI',
       contactMethod: 'email' as const,
       notes: 'Hab mal ein eMail gesendet.\nSeine antwort war:\nIpsum larum lirum',
       speakerIndex: 2,
     },
     {
+      cardName: 'Daniel',
       displayName: 'D Daniel BKW AI',
       contactMethod: 'in_person' as const,
-      notes: 'OK.',
+      notes: 'Leider keine Zeit dieses Mal.',
       speakerIndex: 3,
     },
     {
-      displayName: 'N Nissim ELCA AI',
-      contactMethod: 'in_person' as const,
-      notes: 'OK. Er machts',
-      speakerIndex: 0, // Same speaker as first interaction
+      cardName: 'Vanessa',
+      displayName: 'V Vanessa Deubel BKW SAP',
+      contactMethod: 'email' as const,
+      notes: 'Angefragt — überlegt es sich noch.',
+      speakerIndex: 4,
     },
   ],
 
   /**
-   * Presentation Details
-   * Used when submitting speaker content
-   * Based on actual recording (only 3 speakers got content submitted)
+   * Speakers promoted CONTACTED → READY (creates a SPEAKER user account; provisions
+   * Cognito out-of-band — Pattern N).
    *
-   * IMPORTANT: speakerIndex maps to testConfig.speakerCandidates array:
-   * - Index 0 = Nissim (ELCA, AI)
-   * - Index 1 = Balti (Galenica, AI)
-   * - Index 2 = Andreas (Mobiliar, AI)
-   * - Index 3 = Daniel (BKW, AI)
+   * Real names are used so the tutorial video reads authentically (the kanban card shows
+   * the linked user's name once promoted). The created CUMS rows do NOT match the
+   * `bruno.test%` global sweep, so the spec's afterAll deletes them explicitly via
+   * `DELETE /api/v1/users/{username}` (organizer-authorized) — see the spec's afterAll.
+   * The Cognito accounts still leak (CUMS delete is DB-only) — documented manual sweep.
+   * Each `marker` is the per-speaker accept narration (NARRATION_24/24B/24C), so the
+   * voice talks through every accept instead of one segment covering all three.
+   *
+   * Daniel and Vanessa are NOT promoted — Daniel declines from CONTACTED, Vanessa stays
+   * CONTACTED — so neither creates an orphan placeholder session that blocks agenda publishing.
+   */
+  promotedSpeakers: [
+    {
+      cardName: 'Nissim',
+      marker: 'NARRATION_24',
+      user: { firstName: 'Nissim', lastName: 'Buchs' },
+    },
+    {
+      cardName: 'Balti',
+      marker: 'NARRATION_24B',
+      user: { firstName: 'Baltisar', lastName: 'Oswald' },
+    },
+    {
+      cardName: 'Andreas',
+      marker: 'NARRATION_24C',
+      user: { firstName: 'Andreas', lastName: 'Grütter' },
+    },
+  ],
+
+  /** READY → ACCEPTED via drawer "Accept on behalf" (reason required, no invitation email). */
+  acceptOnBehalfReason: 'Mündlich zugesagt (Screencast-Demo)',
+
+  /** Daniel declines from CONTACTED via the drawer "Decline with reason" action (NARRATION_24D). */
+  declinedSpeaker: {
+    cardName: 'Daniel',
+    reason: 'Hat dieses Mal leider keine Zeit (Screencast-Demo)',
+  },
+
+  /**
+   * Presentation Details — submitted via the card primary action "Inhalt erfassen".
+   * The speaker is auto-resolved from the promoted user (no picker), so the screencast only
+   * needs cardName + content. speakerIndex/speakerSearchTerm/actualSpeakerName are legacy
+   * fields still used by complete-event-workflow.spec.ts.
    */
   presentations: [
     {
+      cardName: 'Nissim',
       title: 'Presentation of Nissim',
       abstract: 'Description of Presentation',
-      speakerIndex: 0, // Nissim (first speaker in brainstorm) → Nissim Buchs (actual speaker)
-      speakerSearchTerm: null, // No search needed, auto-mapped to Nissim Buchs
+      speakerIndex: 0,
+      speakerSearchTerm: null,
       actualSpeakerName: 'Nissim Buchs',
     },
     {
+      cardName: 'Balti',
       title: 'Präsi von Balti',
       abstract: 'Seine Beschreibung',
-      speakerIndex: 1, // Balti (second speaker in brainstorm) → Baltisar Oswald (auto-assigned)
-      speakerSearchTerm: null, // No search needed, auto-mapped
+      speakerIndex: 1,
+      speakerSearchTerm: null,
       actualSpeakerName: 'Baltisar Oswald',
     },
     {
+      cardName: 'Andreas',
       title: 'Talk von Andreas',
       abstract: 'Seine Beschreibung',
-      speakerIndex: 2, // Andreas (brainstormed) → Andreas Spichiger (actual speaker)
-      speakerSearchTerm: 'and', // Search term from recording line 216
-      actualSpeakerName: 'Andreas Grütter', // From recording line 217
+      speakerIndex: 2,
+      speakerSearchTerm: 'and',
+      actualSpeakerName: 'Andreas Grütter',
     },
   ],
 

@@ -363,7 +363,10 @@
       "lunchDuration": "Mittagspausendauer (min)",
       "saveFailed": "Konfiguration konnte nicht gespeichert werden",
       "accessDenied": "Zugriff verweigert",
-      "organizerOnly": "Nur Organisatoren können auf diese Seite zugreifen"
+      "organizerOnly": "Nur Organisatoren können auf diese Seite zugreifen",
+      "typicalStartTime": "Übliche Startzeit",
+      "typicalEndTime": "Übliche Endzeit",
+      "typicalEndTimeHint": "Automatisch aus dem Zeitplan berechnet"
     },
     "themeImage": "Veranstaltungs-Themenbild",
     "themeImageHelp": "Laden Sie ein Themenbild für diese Veranstaltung hoch (PNG, JPEG oder SVG, max. 5MB). Empfohlene Größe: 1920x400px.",

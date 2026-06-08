@@ -2,13 +2,16 @@
  * Speaker Management Page Object
  *
  * Encapsulates interactions with speaker brainstorming, outreach, and content management screens.
- * Selectors extracted from playwright-recording.ts
  *
  * Responsibilities:
  * - Add speaker candidates (brainstorming)
- * - Track speaker outreach and contact
- * - Manage speaker status via kanban
+ * - Drive the BUTTON-BASED kanban workflow (ADR-009): log outreach, promote, accept on behalf,
+ *   decline, enter content, review content — locator patterns mirror
+ *   e2e/organizer/speaker-pool-golden-path.spec.ts (the hardened reference)
  * - Submit and approve speaker content
+ *
+ * Speaker cards are id-keyed (`speaker-card-{id}`) but screencast speakers are created through
+ * the UI (no API), so ids are resolved from the card's data-testid attribute by visible name.
  */
 
 import { Page, Locator } from '@playwright/test';
@@ -154,62 +157,181 @@ export class SpeakerManagementPage {
   }
 
   /**
-   * Gets speaker card by name
+   * Gets a kanban speaker card by a uniquely-identifying visible name fragment
+   * (e.g. the brainstormed first name). Cards carry `data-testid="speaker-card-{id}"`.
    */
-  getSpeakerCard(displayName: string): Locator {
-    return this.page.getByRole('button', { name: displayName });
+  getCardByName(name: string): Locator {
+    return this.page.locator('[data-testid^="speaker-card-"]').filter({ hasText: name }).first();
   }
 
   /**
-   * Contacts a speaker and records outreach
+   * Resolves the speaker-pool id for a card by name (UI-only — read from the testid attribute).
+   * Throws when the name fragment matches more than one card — a silent `.first()` on an
+   * ambiguous match would drive the wrong speaker through the workflow.
+   */
+  async resolveSpeakerId(name: string): Promise<string> {
+    const card = this.getCardByName(name);
+    await card.waitFor({ state: 'visible', timeout: 10000 });
+    const matches = await this.page
+      .locator('[data-testid^="speaker-card-"]')
+      .filter({ hasText: name })
+      .count();
+    if (matches > 1) {
+      throw new Error(
+        `Ambiguous speaker card name "${name}": ${matches} cards match — use a unique fragment`
+      );
+    }
+    const testId = await card.getAttribute('data-testid');
+    if (!testId) {
+      throw new Error(`Speaker card for "${name}" has no data-testid`);
+    }
+    return testId.replace('speaker-card-', '');
+  }
+
+  /** Clicks the card's primary-action button (bottom of card, id-keyed). */
+  private async clickPrimaryAction(name: string): Promise<void> {
+    const id = await this.resolveSpeakerId(name);
+    const button = this.page.getByTestId(`primary-action-button-${id}`);
+    await button.scrollIntoViewIfNeeded();
+    await button.click();
+  }
+
+  /**
+   * UI-only success signal for workflow transitions: the card has moved into the target lane
+   * (cards render inside the lane Paper carrying `status-lane-{status}`). Replaces the API
+   * status polling the golden-path spec uses — the screencast must stay frontend-only.
+   */
+  private async expectCardInLane(name: string, laneStatus: string): Promise<void> {
+    const card = this.page
+      .getByTestId(`status-lane-${laneStatus}`)
+      .locator('[data-testid^="speaker-card-"]')
+      .filter({ hasText: name })
+      .first();
+    await card.waitFor({ state: 'visible', timeout: 20000 });
+  }
+
+  /**
+   * IDENTIFIED → CONTACTED via the card primary action ("Kontakt erfassen") + MarkContactedModal.
+   */
+  async logOutreach(
+    name: string,
+    contactMethod: 'email' | 'phone' | 'in-person',
+    notes: string
+  ): Promise<void> {
+    await this.clickPrimaryAction(name);
+    const modal = this.page.getByTestId('mark-contacted-modal');
+    await modal.waitFor({ state: 'visible', timeout: 10000 });
+
+    await this.page.getByTestId('contact-method-select').click();
+    await this.page.getByTestId(`contact-method-option-${contactMethod}`).click();
+    await this.page.getByTestId('contact-notes').locator('textarea').first().fill(notes);
+
+    await this.page.getByTestId('save-button').click();
+    await modal.waitFor({ state: 'hidden', timeout: 15000 });
+  }
+
+  /**
+   * CONTACTED → READY via the card primary action ("Zum Speaker befördern") → drawer promote
+   * sub-view, creating a fresh SPEAKER user (provisions Cognito out-of-band — Pattern N).
+   */
+  async promoteCreatingNewUser(
+    name: string,
+    user: { firstName: string; lastName: string; email: string }
+  ): Promise<void> {
+    await this.clickPrimaryAction(name);
+    const submit = this.page.getByTestId('promote-submit-button');
+    await submit.waitFor({ state: 'visible', timeout: 10000 });
+
+    await this.page.getByTestId('promote-create-new-speaker-button').click();
+    const dialog = this.page.getByTestId('user-create-dialog');
+    await dialog.waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.getByTestId('user-create-firstName').locator('input').fill(user.firstName);
+    await this.page.getByTestId('user-create-lastName').locator('input').fill(user.lastName);
+    await this.page.getByTestId('user-create-email').locator('input').fill(user.email);
+    await this.page.getByTestId('user-create-role-SPEAKER').click();
+    await this.page.getByTestId('user-create-submit').click();
+    await dialog.waitFor({ state: 'hidden', timeout: 15000 });
+
+    // Created user is now the selected speaker → promote.
+    await submit.click();
+    await submit.waitFor({ state: 'hidden', timeout: 20000 });
+  }
+
+  /**
+   * Opens the drawer for a card (card click ≠ primary-action button) and runs a status-change
+   * dialog action with the required reason. accept-on-behalf: READY → ACCEPTED (no invitation
+   * email). decline: any state → DECLINED.
+   */
+  async drawerStatusChange(
+    name: string,
+    action: 'accept-on-behalf' | 'decline',
+    reason: string
+  ): Promise<void> {
+    await this.getCardByName(name).click();
+    const actionButton = this.page.getByTestId(`drawer-action-${action}`);
+    await actionButton.waitFor({ state: 'visible', timeout: 10000 });
+    await actionButton.click();
+
+    const dialog = this.page.getByTestId('status-change-dialog');
+    await dialog.waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.getByTestId('status-change-reason').locator('textarea').first().fill(reason);
+    await this.page.getByTestId('status-change-confirm').click();
+    await dialog.waitFor({ state: 'hidden', timeout: 15000 });
+
+    // Close the drawer so the kanban board is fully visible again.
+    await this.page.keyboard.press('Escape');
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * ACCEPTED → CONTENT_SUBMITTED via the card primary action ("Inhalt erfassen") → drawer
+   * content form. The speaker is auto-resolved from the promoted user (no picker).
+   */
+  async enterContent(name: string, content: { title: string; abstract: string }): Promise<void> {
+    await this.clickPrimaryAction(name);
+    await this.presentationTitleField.waitFor({ state: 'visible', timeout: 10000 });
+    await this.presentationTitleField.fill(content.title);
+    await this.presentationAbstractField.fill(content.abstract);
+    await this.submitContentButton.click();
+    // The drawer form stays open after a successful submit (POST .../content → 201), so the
+    // success signal is the card moving lanes — close the drawer and wait for containment.
+    await this.page.waitForTimeout(1500);
+    await this.page.keyboard.press('Escape');
+    await this.expectCardInLane(name, 'content_submitted');
+  }
+
+  /**
+   * CONTENT_SUBMITTED → QUALITY_REVIEWED via the card primary action ("Inhalt prüfen") →
+   * quality-review view → approve.
+   */
+  async approveContent(name: string): Promise<void> {
+    await this.clickPrimaryAction(name);
+    await this.approveButton.waitFor({ state: 'visible', timeout: 10000 });
+    await this.approveButton.click();
+    await this.page.waitForTimeout(1500);
+    // Close the drawer; the success signal is the card landing in QUALITY_REVIEWED.
+    await this.page.keyboard.press('Escape');
+    await this.expectCardInLane(name, 'quality_reviewed');
+  }
+
+  /**
+   * @deprecated Pre-ADR-009 card-click contact dialog — superseded by {@link logOutreach}.
+   * Kept only for the legacy complete-event-workflow.spec.ts; do not use in new code.
    */
   async contactSpeaker(
     displayName: string,
     contactMethod: 'phone' | 'email' | 'in_person',
     notes: string
   ): Promise<void> {
-    // Click speaker card to open contact dialog
-    await this.getSpeakerCard(displayName).click();
+    await this.page.getByRole('button', { name: displayName }).click();
     await this.page.waitForTimeout(300);
-
-    // Select contact method (language-independent testIds)
     await this.contactMethodSelect.click();
     await this.page.waitForTimeout(300);
     await this.page.getByTestId(`contact-method-${contactMethod}`).click();
-
-    // Add notes
     await this.contactNotesField.fill(notes);
-
-    // Mark as contacted
     await this.markAsContactedButton.click();
     await this.page.waitForTimeout(500);
-
-    // Close dialog
     await this.backdropClose.click();
-  }
-
-  /**
-   * Drags speaker from one kanban column to another
-   */
-  async dragSpeakerToColumn(
-    speakerDisplayName: string,
-    targetColumnName: 'Ready' | 'Bereit' | 'Accepted' | 'Akzeptiert'
-  ): Promise<void> {
-    const speakerCard = this.getSpeakerCard(speakerDisplayName);
-    const targetColumn = this.page
-      .getByRole('heading', { name: new RegExp(targetColumnName, 'i') })
-      .locator('..');
-
-    await speakerCard.dragTo(targetColumn);
-    await this.page.waitForTimeout(500);
-  }
-
-  /**
-   * Changes speaker status using the status button
-   */
-  async changeStatusBatch(): Promise<void> {
-    await this.changeStatusButton.click();
-    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -225,52 +347,6 @@ export class SpeakerManagementPage {
    */
   async switchToSessionsView(): Promise<void> {
     await this.sessionsViewButton.click();
-    await this.page.waitForTimeout(500);
-  }
-
-  /**
-   * Submits speaker content (presentation)
-   */
-  async submitSpeakerContent(
-    speakerDisplayName: string,
-    content: {
-      speakerSearchTerm?: string; // Search term to find speaker in dropdown
-      title: string;
-      abstract: string;
-    }
-  ): Promise<void> {
-    // Click speaker card to open content submission dialog
-    await this.getSpeakerCard(speakerDisplayName).click();
-    await this.page.waitForTimeout(300);
-
-    // Search for and select speaker if needed
-    if (content.speakerSearchTerm) {
-      await this.speakerSearchField.click();
-      await this.speakerSearchField.fill(content.speakerSearchTerm);
-      // Select first matching option
-      await this.page.waitForTimeout(300);
-      await this.page.keyboard.press('Enter');
-    }
-
-    // Fill presentation details
-    await this.presentationTitleField.fill(content.title);
-    await this.presentationAbstractField.fill(content.abstract);
-
-    // Submit content
-    await this.submitContentButton.click();
-    await this.page.waitForTimeout(500);
-  }
-
-  /**
-   * Approves a presentation by clicking on it and then approve button
-   */
-  async approvePresentation(presentationTitle: string): Promise<void> {
-    // Click presentation to open approval dialog
-    await this.page.getByRole('button', { name: new RegExp(presentationTitle) }).click();
-    await this.page.waitForTimeout(300);
-
-    // Approve
-    await this.approveButton.click();
     await this.page.waitForTimeout(500);
   }
 

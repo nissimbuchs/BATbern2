@@ -349,7 +349,10 @@
       "lunchDuration": "Lounaan kesto (min)",
       "saveFailed": "Määrityksen tallentaminen epäonnistui",
       "accessDenied": "Pääsy estetty",
-      "organizerOnly": "Vain järjestäjät voivat käyttää tätä sivua"
+      "organizerOnly": "Vain järjestäjät voivat käyttää tätä sivua",
+      "typicalStartTime": "Tavanomainen alkamisaika",
+      "typicalEndTime": "Tavanomainen päättymisaika",
+      "typicalEndTimeHint": "Laskettu automaattisesti aikataulusta"
     },
     "themeImage": "Tapahtuman teemakuva",
     "themeImageHelp": "Lataa teemakuva tälle tapahtumalle (PNG, JPEG tai SVG, enintään 5 Mt). Suositeltu koko: 1920x400px.",
