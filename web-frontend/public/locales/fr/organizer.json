@@ -575,6 +575,7 @@
   "speakerDrawer": {
     "secondaryActions": {
       "decline": "Decline with reason",
+      "acceptOnBehalf": "Accepter au nom de l'orateur (sans invitation)",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
       "overrideState": "Override state"

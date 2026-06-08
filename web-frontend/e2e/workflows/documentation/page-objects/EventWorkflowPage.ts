@@ -105,7 +105,7 @@ export class EventWorkflowPage {
    */
   async navigateToDashboard(): Promise<void> {
     await this.page.goto('http://localhost:8100/organizer/events?includeArchived=false');
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**
@@ -124,7 +124,7 @@ export class EventWorkflowPage {
 
     // Navigate to the app first
     await this.page.goto('http://localhost:8100/');
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
 
     // Inject auth token into localStorage
     if (authToken) {
@@ -146,10 +146,9 @@ export class EventWorkflowPage {
    * Clicks the Create Event button
    */
   async clickCreateEvent(): Promise<void> {
-    // Close any existing dialogs first
-    const closeButtons = this.page.locator(
-      'button:has-text("ABBRECHEN"), button:has-text("Schließen")'
-    );
+    // Close any existing event-form dialog first. Use the stable testid (language-agnostic)
+    // rather than German button text so the screencast works in English UI too.
+    const closeButtons = this.page.getByTestId('close-edit-modal-button');
     if ((await closeButtons.count()) > 0) {
       await closeButtons.first().click();
       await this.page.waitForTimeout(300);
@@ -276,7 +275,7 @@ export class EventWorkflowPage {
    */
   async submitEventForm(): Promise<void> {
     await this.saveAndCreateButton.click();
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
     await this.page.waitForTimeout(1000); // Wait for event to be created
   }
 
@@ -326,6 +325,6 @@ export class EventWorkflowPage {
     await this.navigateToTab('settings');
     await this.deleteEventButton.click();
     await this.confirmDeleteButton.click();
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
   }
 }

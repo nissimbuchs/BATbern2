@@ -26,6 +26,8 @@
     "test:e2e:docs:ui": "INCLUDE_DOCS_TESTS=true playwright test --project=documentation-screenshots --ui",
     "test:e2e:screencast": "INCLUDE_DOCS_TESTS=true playwright test --project=screencast-training",
     "test:e2e:screencast:headed": "INCLUDE_DOCS_TESTS=true playwright test --project=screencast-training --headed",
+    "screencast:narration": "node e2e/workflows/documentation/screencast/scripts/generate-narration-audio.mjs",
+    "screencast:assemble": "node e2e/workflows/documentation/screencast/scripts/assemble-narration.mjs",
     "lint": "eslint src --report-unused-disable-directives --max-warnings 50",
     "lint:ci": "eslint src --report-unused-disable-directives --max-warnings 50",
     "lint:fix": "eslint src --fix",

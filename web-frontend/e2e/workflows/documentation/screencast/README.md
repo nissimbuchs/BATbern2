@@ -1,237 +1,116 @@
-# Event Workflow Schulungsvideo Assets
+# Event Workflow Schulungsvideo — Screencast-Pipeline
 
 Dieses Verzeichnis enthält alle Assets für das BATbern Event-Workflow Schulungsvideo.
 
 ## Überblick
 
-- **Testdatei**: `../screencast-event-workflow.spec.ts`
-- **Dauer**: ~43 Minuten
-- **Abdeckung**: Kompletter Event-Lebenszyklus (Phasen A-E)
-- **Sprache**: Deutsch
+- **Testdatei**: `../screencast-event-workflow.spec.ts` (button-getriebener Kanban-Workflow, ADR-009 — kein Drag-and-Drop)
+- **Narration**: pro Segment via ElevenLabs API generiert (`eleven_v3`, Audio-Tags wie `[excited]`)
+- **Synchronisation**: Das Video führt, das Audio folgt — die Testlaufzeit bestimmt die Audio-Offsets. Keine manuellen Timing-Dateien mehr.
+- **Sprache**: Deutsch (`de`); Pipeline ist sprachparametrisiert (`SCREENCAST_LANG`), EN = neues Manifest, kein Code.
 - **Video-Qualität**: Full HD (1920x1080)
 
-## Assets
+## Die 3-Schritte-Pipeline
 
-- `script-de.md` - Vollständiges deutsches Narrationsskript (mit Timestamps)
-- `script-for-tts-de.txt` - TTS-bereites Skript (plain text, ohne Markdown)
-- `README.md` - Diese Dokumentation
+### Schritt 1: Narration generieren (Pre-Step)
 
-## Video generieren
-
-### Schritt 1: Test aufzeichnen
+Quelle der Wahrheit für alle Texte: `narration-manifest-de.json` (36 Segmente, Emotions-Tags).
 
 ```bash
-cd /Users/nissim/dev/bat/BATbern-feature/web-frontend
-npm run test:e2e:screencast
+cd web-frontend
+
+# Mit ElevenLabs API — nur der Key ist nötig (text_to_speech-Permission reicht):
+export ELEVENLABS_API_KEY=...
+# Voice + Modell stehen im Manifest (de: ENNIAH WHaUUVTDq47Yqc9aDbkH, eleven_v3;
+# en: Adeline 5l5f8iK3YPeGga21rQIX). Optionale Overrides:
+# ELEVENLABS_VOICE_ID_{DE|EN} > ELEVENLABS_VOICE_ID > manifest.voiceId,
+# ELEVENLABS_MODEL_ID > manifest.modelId.
+# Achtung: Library-Voices via API brauchen einen bezahlten Plan (Starter reicht).
+npm run screencast:narration                       # de (Default)
+npm run screencast:narration -- --lang en
+
+# Ohne API-Zugang (stille Platzhalter, für Dry-Runs der ganzen Pipeline):
+npm run screencast:narration -- --fake
 ```
 
-Das Video wird gespeichert in:
+Ergebnis:
 
-```
-test-results/screencast-event-workflow-screencast-training-chromium/video.webm
-```
+- `audio-cache/de/NARRATION_XX-{hash}.mp3` — ein MP3 pro Segment, **gecacht per Text-Hash**
+  (unveränderte Segmente kosten bei Re-Runs keine API-Credits; `--force` erzwingt Neugenerierung)
+- `narration-timings-de.json` — gemessene Dauern (ffprobe), vom Test konsumiert
 
-### Schritt 2: German Voice Narration generieren
+### Schritt 2: Screencast aufzeichnen
 
-⚠️ **WICHTIG**: macOS `say` Stimmen sind robotisch und nicht professionell genug!
-
-**Siehe**: `VOICE-GENERATION-GUIDE.md` für professionelle Optionen.
-
-**Empfohlene Optionen** (beste bis schlechteste Qualität):
-
-1. **ElevenLabs** (Best Quality) - $22/month
-   - Natural, menschlich klingende Stimme
-   - Deutsche Stimme "Freya" empfohlen
-   - https://elevenlabs.io/
-
-2. **Google Cloud Text-to-Speech** (Very Good) - ~$1 für 43 Minuten
-   - WaveNet-Stimmen sehr natürlich
-   - Stimme `de-DE-Wavenet-F` empfohlen
-
-3. **Amazon Polly** (Good) - KOSTENLOS (erstes Jahr)
-   - Neural-Stimmen, gute Qualität
-   - Stimme `Vicki` empfohlen
-
-4. **Manuelle Aufnahme** (Beste Qualität, aber zeitaufwendig)
-   - GarageBand + USB-Mikrofon
-   - 2-3 Stunden Aufnahme + Bearbeitung
-
-**Quick Start mit ElevenLabs** (Empfohlen):
+Voraussetzung: lokale Dev-Umgebung läuft (`make dev-native-up`) und Organizer-Token ist gesetzt.
 
 ```bash
-# 1. Registrieren auf https://elevenlabs.io/
-# 2. Creator Plan wählen ($22/month)
-# 3. Text aus script-for-tts-de.txt kopieren
-# 4. Stimme "Freya" wählen
-# 5. Generate klicken und MP3 herunterladen
-# 6. Konvertieren:
-cd /Users/nissim/dev/bat/BATbern-feature/web-frontend/e2e/workflows/documentation/screencast
-ffmpeg -i ~/Downloads/elevenlabs_*.mp3 -c:a aac -b:a 128k narration-raw-de.m4a
+npm run test:e2e:screencast          # oder :headed
 ```
 
-Detaillierte Anleitungen für alle Optionen: **siehe `VOICE-GENERATION-GUIDE.md`**
+Der Test wartet pro Segment exakt die gemessene Audio-Dauer (+ Atempause,
+`SCREENCAST_NARRATION_GAP_MS`, Default 700 ms) und schreibt am Ende
+`narration-timeline-de.json` mit den **tatsächlichen Start-Offsets** jedes Segments.
 
-### Schritt 3: Untertitel automatisch generieren (SRT)
+Video: `test-results/screencast-event-workflow-…-screencast-training/video.webm`
 
-**Automatische Generierung** (Empfohlen):
-
-Die SRT-Datei kann automatisch aus `timing-config.ts` und `NARRATION-MAPPING.md` generiert werden:
+### Schritt 3: Audio + Untertitel assemblieren (Post-Step)
 
 ```bash
-cd /Users/nissim/dev/bat/BATbern-feature/web-frontend/e2e/workflows/documentation/screencast/scripts
-npx ts-node generate-subtitles.ts
+npm run screencast:assemble
 ```
 
-Das Skript:
+Platziert jedes Segment-MP3 exakt am aufgezeichneten Offset (ffmpeg adelay+amix) und erzeugt:
 
-- Liest die exakten Timings aus `timing-config.ts`
-- Extrahiert den deutschen Text aus `NARRATION-MAPPING.md`
-- Entfernt Emotions-Marker (`[excited]`, `[playful]`, etc.)
-- Teilt lange Texte in lesbare Untertitel-Chunks auf
-- Generiert `subtitles-de.srt` mit 117 Einträgen (~12 Minuten)
+- `narration-de.m4a` — fertige, synchrone Tonspur
+- `subtitles-de.srt` — Untertitel aus dem Manifest (Tags entfernt, ≤120 Zeichen pro Cue)
 
-**Manuelle Erstellung** (falls Anpassungen nötig):
-
-Format:
-
-```srt
-1
-00:00:00,000 --> 00:00:10,333
-Willkommen zur BATbern Event-Management-Plattform!
-
-2
-00:00:10,333 --> 00:00:20,666
-Heute zeige ich Ihnen, wie man ein Event plant, ohne dabei den Verstand zu verlieren.
-```
-
-**Timing-Tipps**:
-
-- Schauen Sie das Video an und notieren Sie Zeitstempel
-- Max. 120 Zeichen pro Untertitel für gute Lesbarkeit
-- UTF-8 Encoding für deutsche Umlaute (ä, ö, ü, ß)
-
-### Schritt 4: Video + Audio + Untertitel kombinieren
-
-**Voraussetzung**: FFmpeg installieren
+### Schritt 4: Muxen
 
 ```bash
-brew install ffmpeg
-```
-
-**Kombinieren**:
-
-```bash
-# Erstelle Output-Verzeichnis
-mkdir -p /Users/nissim/dev/bat/BATbern-feature/docs/user-guide/assets/videos/workflow/raw
-
-cd /Users/nissim/dev/bat/BATbern-feature/docs/user-guide/assets/videos/workflow
-
-# Kopiere Quelldateien
-cp /Users/nissim/dev/bat/BATbern-feature/web-frontend/test-results/screencast-event-workflow-screencast-training-chromium/video.webm raw/
-cp /Users/nissim/dev/bat/BATbern-feature/web-frontend/e2e/workflows/documentation/screencast/narration-raw-de.m4a .
-cp /Users/nissim/dev/bat/BATbern-feature/web-frontend/e2e/workflows/documentation/screencast/subtitles-de.srt .
-
-# Kombiniere mit FFmpeg (Separate Subtitle Track)
-ffmpeg -i raw/video.webm \
-       -i raw/narration-raw-en.m4a \
-       -i raw/subtitles-en.srt \
-       -c:v libx264 \
-       -preset medium \
-       -crf 23 \
-       -c:a aac \
-       -b:a 128k \
-       -c:s mov_text \
-       -metadata:s:s:0 language=deu \
-       -metadata:s:s:0 title="Deutsch" \
+ffmpeg -i video.webm -i narration-de.m4a -i subtitles-de.srt \
+       -map 0:v -map 1:a -map 2:s \
+       -c:v libx264 -preset medium -crf 23 \
+       -c:a aac -b:a 128k -c:s mov_text \
+       -metadata:s:s:0 language=deu -metadata:s:s:0 title="Deutsch" \
        -movflags +faststart \
-       event-workflow-schulung-en.mp4
-
-ffmpeg -i raw/video.webm \
-         -i raw/narration-raw-en.m4a \
-         -i raw/subtitles-en-de.srt \
-         -i raw/subtitles-en.srt \
-         -map 0:v -map 1:a -map 2:s -map 3:s \
-         -c:v libx264 \
-         -preset medium \
-         -crf 23 \
-         -c:a aac \
-         -b:a 128k \
-         -c:s mov_text \
-         -metadata:s:s:0 language=deu \
-         -metadata:s:s:0 title="Deutsch" \
-         -metadata:s:s:1 language=eng \
-         -metadata:s:s:1 title="English" \
-         -disposition:s:0 default \
-         -movflags +faststart \
-         event-workflow-schulung-en.mp4
-
+       event-workflow-schulung-de.mp4
 ```
 
-**Überprüfen**:
+## Bei Workflow-Änderungen
 
-```bash
-# Video-Eigenschaften anzeigen
-ffmpeg -i event-workflow-schulung-de.mp4
+1. Text in `narration-manifest-de.json` anpassen (nur geänderte Segmente werden neu generiert)
+2. Test in `../screencast-event-workflow.spec.ts` anpassen (Narration-Kommentare = Kopien des Manifests)
+3. Pipeline-Schritte 1–3 erneut ausführen — Timing synchronisiert sich automatisch
 
-# In VLC Player öffnen (Untertitel einschalten: View → Subtitles → Track 1)
-open -a VLC event-workflow-schulung-de.mp4
-```
+## Wichtige Hinweise
+
+- **Keine echten E-Mails**: READY→ACCEPTED läuft über "Zusage im Namen erfassen" (keine
+  Einladung). Promote legt SPEAKER-User namens **Bruno Test** an (CUMS leitet den Username
+  aus `firstname.lastname` ab → `bruno.test*` wird vom Global-Teardown-Sweep aus der DB
+  entfernt; die Karte zeigt den Brainstorm-Namen weiter als Untertitel). E-Mail:
+  `@e2e.batbern.invalid` — nie zustellbar. Nur der **Cognito**-User (staging, Pattern N)
+  wird von keinem Sweep entfernt — gelegentlich manuell aufräumen.
+- **Generierte Artefakte** (`audio-cache/`, `narration-timings-*.json`,
+  `narration-timeline-*.json`, `narration-*.m4a`, `subtitles-*.srt`) sind in `.gitignore`.
+  Wer echte ElevenLabs-Audios versionieren will: `git add -f audio-cache/de`.
+  Fake-Audio landet getrennt in `audio-cache/{lang}-fake/` — ein `--fake`-Lauf kann
+  bezahlte ElevenLabs-MP3s nie überschreiben oder löschen.
+- `--fake`-Timings führen zu einem stummen, aber vollständig durchlaufenden Dry-Run —
+  der Test warnt laut, wenn er mit Fake-Timings läuft.
+
+## Legacy-Assets
+
+`ElevenLabs_BATbern_Workflow*.mp3`, `script-for-tts-*.txt`, `alignment-data.json`,
+`narration-raw-de.m4a` stammen aus der manuellen v1-Pipeline (Web-UI-Aufnahme +
+handgepflegte Timing-Configs) und sind nur noch Referenzmaterial. Die alten
+`subtitles-*.srt` wurden entfernt — Untertitel sind jetzt generierte Artefakte.
 
 ## Video-Spezifikationen
 
-- **Auflösung**: 1920x1080 (Full HD)
-- **Format**: MP4 (H.264 + AAC)
-- **Dauer**: ~43 Minuten
-- **Dateigröße**: ~150-300 MB
-- **Untertitel**: Separate Spur (ein-/ausschaltbar)
-- **Stimme**: Shelley (Deutsch, weiblich)
-
-## Video aktualisieren
-
-Bei Workflow-Änderungen:
-
-1. **Test anpassen**: `screencast-event-workflow.spec.ts` aktualisieren
-2. **Neu aufzeichnen**: `npm run test:e2e:screencast`
-3. **Skript anpassen**: `script-de.md` und `script-for-tts-de.txt` aktualisieren
-4. **Narration neu generieren**: `say -v Shelley -o narration.aiff -f script-for-tts-de.txt`
-5. **Untertitel anpassen**: `subtitles-de.srt` mit neuen Timestamps aktualisieren
-6. **FFmpeg wiederholen**: Video neu kombinieren
-
-## Troubleshooting
-
-### Video-Qualität schlecht
-
-- Stelle sicher, dass Playwright config `video.size: { width: 1920, height: 1080 }` hat
-- Verwende `--headed` Mode: `npm run test:e2e:screencast:headed`
-
-### Narration zu schnell/langsam
-
-- Passe `slowMo: 500` in `playwright.config.ts` an (höher = langsamer)
-- Oder bearbeite Audio mit Audacity (Tempo ändern ohne Pitch zu ändern)
-
-### Untertitel nicht synchron
-
-- Schaue Video + Audio zusammen an
-- Notiere exakte Zeitstempel für jeden Satz
-- Nutze Subtitle-Editor wie Aegisub für präzise Timing
-
-### FFmpeg-Fehler
-
-- Überprüfe, dass alle Input-Dateien existieren
-- Stelle sicher, dass SRT-Datei UTF-8 kodiert ist: `file -I subtitles-de.srt`
+- **Auflösung**: 1920x1080 (Full HD) · **Format**: MP4 (H.264 + AAC)
+- **Untertitel**: separate Spur (ein-/ausschaltbar)
 
 ## Distribution
 
-Das finale Video kann gehostet werden auf:
-
-- **Git Repository** (mit Git LFS für große Dateien)
-- **Vimeo** (professionelles Video-Hosting mit Analytics)
-- **YouTube** (unlisted/private, kostenlos, gute Embed-Optionen)
-- **AWS S3 + CloudFront** (vollständige Kontrolle, CDN-Delivery)
-
-## Kontakt
-
-Bei Fragen zur Video-Erstellung wenden Sie sich an das Development-Team oder konsultieren Sie:
-
-- `/docs/plans/screencast-training-video-plan.md` - Vollständiger Implementierungsplan
-- `/docs/user-guide/` - User Guide Dokumentation
+Git LFS, Vimeo, YouTube (unlisted) oder S3+CloudFront — siehe
+`/docs/plans/screencast-training-video-plan.md`.

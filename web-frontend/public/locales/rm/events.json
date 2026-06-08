@@ -349,7 +349,10 @@
       "lunchDuration": "Durada miedi (min)",
       "saveFailed": "Salvar configuraziun fallì",
       "accessDenied": "Access refusà",
-      "organizerOnly": "Mo ils organizaturs pon acceder a questa pagina"
+      "organizerOnly": "Mo ils organizaturs pon acceder a questa pagina",
+      "typicalStartTime": "Temp da cumenzament usità",
+      "typicalEndTime": "Temp da finiziun usità",
+      "typicalEndTimeHint": "Calculà automaticamain dal program"
     },
     "themeImage": "Maletg da tema dal eveniment",
     "themeImageHelp": "Chargiar in maletg da tema per quest eveniment (PNG, JPEG u SVG, max 5MB). Dimensiun recumandada: 1920x400px.",

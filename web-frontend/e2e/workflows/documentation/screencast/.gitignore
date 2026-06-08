@@ -1,0 +1,7 @@
+# Generated narration artifacts (regenerable via npm run screencast:narration / :assemble).
+# To version real ElevenLabs audio deliberately: git add -f audio-cache/<lang>
+audio-cache/
+narration-timings-*.json
+narration-timeline-*.json
+narration-*.m4a
+subtitles-*.srt
