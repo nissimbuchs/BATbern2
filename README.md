@@ -541,6 +541,29 @@ Scripts:
   - `scripts/auth/refresh-token.sh [env] [role]` — refresh a role's token
   - `.env.test.local.example` — credential template (copy to `.env.test.local`, gitignored)
 
+## Credits & Acknowledgments
+
+The organizer training video ships narration in German + English, subtitles in 10 languages, and
+an experimental **Bernese Swiss German (Bärndütsch)** narration track. The Swiss German speech work
+builds on research and tools from the Swiss NLP community — with thanks to:
+
+- **ETH Zürich — Media Technology Center, "SwissVoice"** — TTS for Swiss German dialects
+  (High German → dialect audio, 8 dialects incl. Bern):
+  <https://mtc.ethz.ch/research/natural-language-processing/swiss-voice.html>
+- **SwissDial** — annotated multi-dialect Swiss German corpus (ETH Zürich):
+  <https://arxiv.org/abs/2103.11401>
+- **FHNW — Swiss German TTS demo (STT4SG)**, used to synthesize the Bärndütsch track:
+  <https://stt4sg.fhnw.ch/tts/> · <https://www.fhnw.ch/en/about-fhnw/schools/school-of-engineering/institutes/research-projects/speech-recognition-for-swiss-german>
+- **STT4SG-350** — Swiss German speech corpus for all dialect regions (ZHAW · FHNW · UZH):
+  <https://arxiv.org/abs/2305.18855>
+- **ZHAW — "Text-to-Speech Pipeline for Swiss German: A comparison"**:
+  <https://arxiv.org/abs/2305.19750>
+- **ZHAW — "Voice Adaptation for Swiss German"**: <https://arxiv.org/abs/2505.22054>
+- **SwissDial-TTS** — open ESPnet model on HuggingFace: <https://huggingface.co/swordi/SwissDial-TTS>
+
+German and English narration voices: **ElevenLabs** (<https://elevenlabs.io>). The Bärndütsch track
+is a research-grade proof of concept (16 kHz, machine translation), not production quality.
+
 ## License
 
 Copyright © 2025 Berner Architekten Treffen (BATbern). All rights reserved.
