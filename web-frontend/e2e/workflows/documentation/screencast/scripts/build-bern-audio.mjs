@@ -28,7 +28,7 @@ const CHUNKS = path.join(CACHE, 'chunks');
 fs.mkdirSync(CHUNKS, { recursive: true });
 
 // Silence gap (ms) by the clause's trailing punctuation.
-const GAP = { '.': 550, '!': 550, '?': 550, '…': 450, ',': 300, ';': 350, ':': 350, '': 140 };
+const GAP = { '.': 550, '!': 550, '?': 550, '…': 450, ',': 100, ';': 250, ':': 250, '': 140 };
 const SR = 16000; // demo output: 16 kHz mono pcm_s16le
 
 const stripTags = (t) =>

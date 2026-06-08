@@ -154,9 +154,6 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
             sx={{ minWidth: 160 }}
             aria-label={t('language.select')}
             data-testid="language-select"
-            // Stable testid on each option so e2e (incl. the screencast) can open the
-            // menu and pick a locale without matching translated MUI option text.
-            MenuProps={{ slotProps: { paper: { 'data-testid': 'language-select-menu' } } }}
           >
             {Object.keys(i18n.options?.resources ?? {}).map((code) => (
               <MenuItem key={code} value={code} data-testid={`language-option-${code}`}>

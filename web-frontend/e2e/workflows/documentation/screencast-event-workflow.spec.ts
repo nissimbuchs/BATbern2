@@ -154,7 +154,10 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.getByTestId('user-menu-button').click();
       await page.waitForTimeout(500);
       await page.getByTestId('language-select').click();
-      await expect(page.getByTestId('language-select-menu')).toBeVisible({ timeout: 5000 });
+      // Menu open ⇢ the locale options are visible (the option testids are language-agnostic).
+      await expect(page.getByTestId(`language-option-${SCREENCAST_LANG}`)).toBeVisible({
+        timeout: 5000,
+      });
       // Hold the open list on screen for most of the narration so the viewer sees all locales,
       // then switch language near the end of the segment.
       await paceWithinNarration('NARRATION_02L', 0, 1, page);
