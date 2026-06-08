@@ -188,9 +188,6 @@ on research and tools from the Swiss NLP community — with thanks to:
 - **ZHAW — "Voice Adaptation for Swiss German"**: <https://arxiv.org/abs/2505.22054>
 - **SwissDial-TTS** — open ESPnet model on HuggingFace (self-hostable):
   <https://huggingface.co/swordi/SwissDial-TTS>
-- **SlowSoft GmbH — Slang TTS** — Swiss German & Romansh dialect TTS, incl. a Bern voice
-  (company ceased operations March 2026): <https://slowsoft.ch>
-- **Plapperi (Noxenum + SwissNLP)** — Swiss German dialect TTS API: <https://plapperi.ch>
 
 German and English narration voices: **ElevenLabs** (<https://elevenlabs.io>).
 
