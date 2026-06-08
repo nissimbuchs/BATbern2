@@ -1,0 +1,211 @@
+{
+  "dialect": "Bern",
+  "source": "https://stt4sg.fhnw.ch/tts",
+  "segments": [
+    {
+      "marker": "NARRATION_01",
+      "startMs": 1,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_01.wav"
+    },
+    {
+      "marker": "NARRATION_02",
+      "startMs": 30387,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_02.wav"
+    },
+    {
+      "marker": "NARRATION_02L",
+      "startMs": 59980,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_02L.wav"
+    },
+    {
+      "marker": "NARRATION_03",
+      "startMs": 83322,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_03.wav"
+    },
+    {
+      "marker": "NARRATION_04",
+      "startMs": 100266,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_04.wav"
+    },
+    {
+      "marker": "NARRATION_05",
+      "startMs": 119127,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_05.wav"
+    },
+    {
+      "marker": "NARRATION_06",
+      "startMs": 138232,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_06.wav"
+    },
+    {
+      "marker": "NARRATION_07",
+      "startMs": 153258,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_07.wav"
+    },
+    {
+      "marker": "NARRATION_08",
+      "startMs": 186045,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_08.wav"
+    },
+    {
+      "marker": "NARRATION_09",
+      "startMs": 203949,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_09.wav"
+    },
+    {
+      "marker": "NARRATION_10",
+      "startMs": 222650,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_10.wav"
+    },
+    {
+      "marker": "NARRATION_11",
+      "startMs": 237753,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_11.wav"
+    },
+    {
+      "marker": "NARRATION_12",
+      "startMs": 256858,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_12.wav"
+    },
+    {
+      "marker": "NARRATION_13",
+      "startMs": 293804,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_13.wav"
+    },
+    {
+      "marker": "NARRATION_14",
+      "startMs": 304187,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_14.wav"
+    },
+    {
+      "marker": "NARRATION_15",
+      "startMs": 336971,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_15.wav"
+    },
+    {
+      "marker": "NARRATION_16",
+      "startMs": 347832,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_16.wav"
+    },
+    {
+      "marker": "NARRATION_17",
+      "startMs": 361014,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_17.wav"
+    },
+    {
+      "marker": "NARRATION_18",
+      "startMs": 389155,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_18.wav"
+    },
+    {
+      "marker": "NARRATION_19",
+      "startMs": 410897,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_19.wav"
+    },
+    {
+      "marker": "NARRATION_20",
+      "startMs": 438810,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_20.wav"
+    },
+    {
+      "marker": "NARRATION_21",
+      "startMs": 455435,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_21.wav"
+    },
+    {
+      "marker": "NARRATION_22",
+      "startMs": 487580,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_22.wav"
+    },
+    {
+      "marker": "NARRATION_23",
+      "startMs": 519565,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_23.wav"
+    },
+    {
+      "marker": "NARRATION_24",
+      "startMs": 550431,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_24.wav"
+    },
+    {
+      "marker": "NARRATION_24B",
+      "startMs": 572896,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_24B.wav"
+    },
+    {
+      "marker": "NARRATION_24C",
+      "startMs": 587681,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_24C.wav"
+    },
+    {
+      "marker": "NARRATION_24D",
+      "startMs": 601986,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_24D.wav"
+    },
+    {
+      "marker": "NARRATION_25",
+      "startMs": 622611,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_25.wav"
+    },
+    {
+      "marker": "NARRATION_26",
+      "startMs": 641236,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_26.wav"
+    },
+    {
+      "marker": "NARRATION_27",
+      "startMs": 671219,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_27.wav"
+    },
+    {
+      "marker": "NARRATION_28",
+      "startMs": 692567,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_28.wav"
+    },
+    {
+      "marker": "NARRATION_29",
+      "startMs": 720885,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_29.wav"
+    },
+    {
+      "marker": "NARRATION_30",
+      "startMs": 732712,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_30.wav"
+    },
+    {
+      "marker": "NARRATION_31",
+      "startMs": 753977,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_31.wav"
+    },
+    {
+      "marker": "NARRATION_32",
+      "startMs": 758519,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_32.wav"
+    },
+    {
+      "marker": "NARRATION_32B",
+      "startMs": 784586,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_32B.wav"
+    },
+    {
+      "marker": "NARRATION_33",
+      "startMs": 808568,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_33.wav"
+    },
+    {
+      "marker": "NARRATION_34",
+      "startMs": 821992,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_34.wav"
+    },
+    {
+      "marker": "NARRATION_35",
+      "startMs": 830616,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_35.wav"
+    },
+    {
+      "marker": "NARRATION_36",
+      "startMs": 850832,
+      "wav": "/Users/nissim/dev/bat/BATbern-develop/web-frontend/e2e/workflows/documentation/screencast/audio-cache/bern/NARRATION_36.wav"
+    }
+  ]
+}
