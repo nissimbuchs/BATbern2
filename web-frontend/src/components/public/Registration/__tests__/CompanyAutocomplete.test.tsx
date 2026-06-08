@@ -110,6 +110,40 @@ describe('CompanyAutocomplete Component', () => {
       renderWithProvider({ value: 'infowellgmbh', valueLabel: 'Infowell GmbH', disabled: true });
       expect(screen.queryByTestId('registration-company-clear')).not.toBeInTheDocument();
     });
+
+    it('should_showLogoInChip_when_slugCompanyHasLogo', async () => {
+      vi.mocked(companyApi.getCompany).mockResolvedValue({
+        name: 'infowellgmbh',
+        displayName: 'Infowell GmbH',
+        logo: { url: 'https://cdn.batbern.ch/logos/infowell/logo.png' },
+      } as Company);
+      renderWithProvider({ value: 'infowellgmbh', valueLabel: 'Infowell GmbH', valueIsSlug: true });
+
+      const logo = await screen.findByAltText('Infowell GmbH');
+      expect(logo).toHaveAttribute('src', 'https://cdn.batbern.ch/logos/infowell/logo.png');
+      expect(companyApi.getCompany).toHaveBeenCalledWith('infowellgmbh', { expand: ['logo'] });
+    });
+
+    it('should_showInitialAvatar_when_slugCompanyHasNoLogo', async () => {
+      vi.mocked(companyApi.getCompany).mockResolvedValue({
+        name: 'infowellgmbh',
+        displayName: 'Infowell GmbH',
+      } as Company);
+      renderWithProvider({ value: 'infowellgmbh', valueLabel: 'Infowell GmbH', valueIsSlug: true });
+
+      // No logo image; the avatar falls back to the display-name initial.
+      await waitFor(() => expect(companyApi.getCompany).toHaveBeenCalled());
+      expect(screen.queryByAltText('Infowell GmbH')).not.toBeInTheDocument();
+      expect(screen.getByText('I')).toBeInTheDocument();
+    });
+
+    it('should_notLookUpLogo_when_valueIsNotSlug', async () => {
+      // Registration mode: value holds a display name, not a slug — no GET by slug.
+      renderWithProvider({ value: 'Acme Inc', valueLabel: 'Acme Inc' });
+      await new Promise((r) => setTimeout(r, 50));
+      expect(companyApi.getCompany).not.toHaveBeenCalled();
+      expect(screen.getByText('A')).toBeInTheDocument();
+    });
   });
 
   describe('Search behavior', () => {
@@ -127,7 +161,9 @@ describe('CompanyAutocomplete Component', () => {
     it('should_search_when_typingMinChars', async () => {
       renderWithProvider();
       await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'Tech');
-      await waitFor(() => expect(companyApi.searchCompanies).toHaveBeenCalledWith('Tech', 10));
+      await waitFor(() =>
+        expect(companyApi.searchCompanies).toHaveBeenCalledWith('Tech', 10, { expand: ['logo'] })
+      );
     });
 
     it('should_notSearch_when_inputLessThan2Chars', async () => {

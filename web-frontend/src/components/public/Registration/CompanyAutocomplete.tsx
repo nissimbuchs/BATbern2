@@ -33,7 +33,7 @@ import {
   CommandList,
 } from '@/components/public/ui/command';
 import { Popover, PopoverContent, PopoverAnchor } from '@/components/public/ui/popover';
-import { searchCompanies } from '@/services/api/companyApi';
+import { searchCompanies, getCompany } from '@/services/api/companyApi';
 import type { components } from '@/types/generated/company-api.types';
 import { Loader2 } from 'lucide-react';
 
@@ -58,6 +58,12 @@ interface CompanyAutocompleteProps {
   placeholder?: string;
   /** Show the explicit "Create …" row when no existing company matches (default true). */
   allowCreate?: boolean;
+  /**
+   * Set when `value` is the company slug (ADR-003 id), not a free-form display name —
+   * e.g. the profile page. Enables resolving the chip's logo via GET /companies/{slug}.
+   * Leave false for the registration flow where `value` holds the display name.
+   */
+  valueIsSlug?: boolean;
 }
 
 // Debounce hook
@@ -85,6 +91,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   disabled = false,
   placeholder = 'TechCorp AG',
   allowCreate = true,
+  valueIsSlug = false,
 }) => {
   const { t } = useTranslation(['registration', 'common']);
   const [open, setOpen] = useState(false);
@@ -104,9 +111,19 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
     isError,
   } = useQuery({
     queryKey: ['companies', 'search', debouncedQuery],
-    queryFn: () => searchCompanies(debouncedQuery, 10),
+    queryFn: () => searchCompanies(debouncedQuery, 10, { expand: ['logo'] }),
     enabled: shouldSearch && open && !selected,
   });
+
+  // Resolve the selected company's logo for the chip via GET /companies/{slug}
+  // (which includes the logo). Only meaningful when `value` is a real slug — i.e.
+  // the profile page; registration holds a display name, so it is skipped there.
+  const { data: chipCompany } = useQuery({
+    queryKey: ['company', 'detail', value],
+    queryFn: () => getCompany(value, { expand: ['logo'] }),
+    enabled: !!selected && valueIsSlug && value.length > 0,
+  });
+  const chipLogoUrl = chipCompany?.logo?.url ?? null;
 
   // An exact (case-insensitive) display-name/slug match means the company already
   // exists — suppress the "Create" row so the user picks it instead of duplicating.
@@ -170,11 +187,26 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
         <div
           data-testid="registration-company-chip"
           className={cn(
-            'flex items-center gap-2 rounded-md border bg-zinc-900 px-3 py-2 min-h-[44px]',
+            'flex items-center gap-3 rounded-md border bg-zinc-900 px-3 py-2 min-h-[44px]',
             error ? 'border-red-500' : 'border-zinc-800'
           )}
         >
-          <Building2 className="h-4 w-4 shrink-0 text-zinc-500" />
+          {/* Avatar: company logo if it exists, else the display-name initial */}
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800">
+            {chipLogoUrl ? (
+              <img
+                src={chipLogoUrl}
+                alt={selected.displayName}
+                className="h-full w-full object-cover"
+              />
+            ) : selected.displayName ? (
+              <span className="text-sm font-medium text-zinc-400">
+                {selected.displayName.charAt(0).toUpperCase()}
+              </span>
+            ) : (
+              <Building2 className="h-4 w-4 text-zinc-500" />
+            )}
+          </div>
           <span className="flex-1 truncate text-zinc-100">{selected.displayName}</span>
           {!disabled && (
             <button

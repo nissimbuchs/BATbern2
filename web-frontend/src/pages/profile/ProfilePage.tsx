@@ -430,6 +430,7 @@ const ProfilePage = () => {
                       <CompanyAutocomplete
                         value={companyId}
                         valueLabel={companyDisplayName}
+                        valueIsSlug
                         onCompanySelect={(selection) => {
                           setCompanyId(selection?.name ?? '');
                           setCompanyDisplayName(selection?.displayName ?? '');
