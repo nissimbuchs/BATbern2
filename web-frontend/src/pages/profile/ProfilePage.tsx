@@ -45,14 +45,12 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { getUserProfile, updateUserProfile } from '@/services/api/userAccountApi';
 import { useMySubscription, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
 import { CompanyAutocomplete } from '@/components/public/Registration/CompanyAutocomplete';
+import { getOrCreateCompany } from '@/services/api/companyApi';
 import type { User } from '@/types/userAccount.types';
 import { useAuth } from '@/hooks/useAuth';
 import ProfilePhotoUpload from '@/components/speaker-portal/ProfilePhotoUpload';
 
 type PageState = 'loading' | 'form' | 'error';
-
-/** UpdateUserRequest.companyId contract: alphanumeric, max 12 chars (ADR-003). */
-const COMPANY_ID_PATTERN = /^[a-zA-Z0-9]{1,12}$/;
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -73,7 +71,12 @@ const ProfilePage = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
+  // companyId = stored ADR-003 slug; companyDisplayName = human label shown in the
+  // picker chip. A new (not-yet-created) company has a display name but no slug until
+  // it is materialised via get-or-create on save.
   const [companyId, setCompanyId] = useState('');
+  const [companyDisplayName, setCompanyDisplayName] = useState('');
+  const [companyResolving, setCompanyResolving] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -132,6 +135,7 @@ const ProfilePage = () => {
       setLastName(user.lastName || '');
       setBio(user.bio || '');
       setCompanyId(user.companyId || '');
+      setCompanyDisplayName(user.company?.displayName || user.companyId || '');
       setPageState('form');
     }
   }, [user]);
@@ -183,20 +187,36 @@ const ProfilePage = () => {
     if (bio.length > 5000) {
       newErrors.bio = t('speakerPortal.profile.bioExceeds');
     }
-    if (companyId && !COMPANY_ID_PATTERN.test(companyId)) {
-      newErrors.companyId = t('profile.companyInvalid');
-    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
+
+    // A brand-new company picked in the autocomplete has a display name but no
+    // slug yet — materialise it via get-or-create so we store a real company
+    // reference (the canonical slug), never a free-typed string (ADR-003).
+    let resolvedCompanyId = companyId;
+    if (!companyId && companyDisplayName) {
+      setCompanyResolving(true);
+      try {
+        const company = await getOrCreateCompany(companyDisplayName);
+        resolvedCompanyId = company.name;
+        setCompanyId(company.name);
+      } catch {
+        setErrors((prev) => ({ ...prev, companyId: t('profile.companySaveError') }));
+        return;
+      } finally {
+        setCompanyResolving(false);
+      }
+    }
+
     updateMutation.mutate({
       firstName: firstName || undefined,
       lastName: lastName || undefined,
       bio: bio || undefined,
-      companyId: companyId || undefined,
+      companyId: resolvedCompanyId || undefined,
     });
   };
 
@@ -409,8 +429,10 @@ const ProfilePage = () => {
                       </label>
                       <CompanyAutocomplete
                         value={companyId}
-                        onCompanySelect={(name) => {
-                          setCompanyId(name);
+                        valueLabel={companyDisplayName}
+                        onCompanySelect={(selection) => {
+                          setCompanyId(selection?.name ?? '');
+                          setCompanyDisplayName(selection?.displayName ?? '');
                           markDirty();
                         }}
                         error={errors.companyId}
@@ -450,10 +472,10 @@ const ProfilePage = () => {
 
                   <Button
                     onClick={handleSubmit}
-                    disabled={updateMutation.isPending || !hasUnsavedChanges}
+                    disabled={updateMutation.isPending || companyResolving || !hasUnsavedChanges}
                     className="w-full sm:w-auto"
                   >
-                    {updateMutation.isPending ? (
+                    {updateMutation.isPending || companyResolving ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         {t('speakerPortal.profile.saving')}

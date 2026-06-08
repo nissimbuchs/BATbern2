@@ -162,6 +162,37 @@ class CompanyRepositoryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("should_matchByDisplayName_when_queryDoesNotMatchSlug")
+    void should_matchByDisplayName_when_queryDoesNotMatchSlug() {
+        // Given — slug "infowellgmbh" but display name "Infowell GmbH"
+        Company infowell = Company.builder()
+                .name("infowellgmbh")
+                .displayName("Infowell GmbH")
+                .isVerified(false)
+                .createdBy("test-user")
+                .build();
+        infowell.onCreate();
+        companyRepository.saveAndFlush(infowell);
+        createAndSaveCompany("German Bank");
+
+        // When — user types the spaced/cased display name, which the slug column
+        // alone (findByNameContainingIgnoreCase) would NOT match.
+        List<Company> bySpacedDisplayName = companyRepository.searchByNameOrDisplayName("Infowell GmbH");
+        // And the slug still matches
+        List<Company> bySlug = companyRepository.searchByNameOrDisplayName("infowell");
+
+        // Then
+        assertThat(bySpacedDisplayName)
+                .extracting(Company::getName)
+                .containsExactly("infowellgmbh");
+        assertThat(bySlug)
+                .extracting(Company::getName)
+                .containsExactly("infowellgmbh");
+        // Sanity: the legacy slug-only search would miss the spaced display name
+        assertThat(companyRepository.findByNameContainingIgnoreCase("Infowell GmbH")).isEmpty();
+    }
+
+    @Test
     @DisplayName("should_findBySwissUID_when_uidProvided")
     void should_findBySwissUID_when_uidProvided() {
         // Given

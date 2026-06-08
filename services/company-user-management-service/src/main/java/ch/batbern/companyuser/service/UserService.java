@@ -1136,13 +1136,7 @@ public class UserService {
             switch (resource.trim().toLowerCase()) {
                 case "company":
                     if (response.getCompanyId() != null) {
-                        // TODO: Fetch company details from Company Management Service in Task 14
-                        // For now, return minimal company info
-                        ch.batbern.companyuser.dto.generated.Company company =
-                            new ch.batbern.companyuser.dto.generated.Company()
-                                .id(response.getCompanyId())
-                                .name(response.getCompanyId());  // Placeholder
-                        response.setCompany(company);
+                        response.setCompany(expandCompany(response.getCompanyId()));
                     }
                     break;
                 case "preferences":
@@ -1170,6 +1164,34 @@ public class UserService {
         }
 
         return response;
+    }
+
+    /**
+     * Expand the embedded company for {@code ?include=company}.
+     *
+     * <p>Company and User live in the same service, so this resolves the real
+     * company (name + displayName + industry) directly via {@link CompanyService}
+     * — needed so the profile company picker can show the human display name
+     * rather than the ADR-003 slug. Falls back to a minimal placeholder if the
+     * stored {@code companyId} no longer resolves (e.g. a legacy free-typed
+     * reference) so a dangling reference never 500s the whole profile load.
+     */
+    private ch.batbern.companyuser.dto.generated.Company expandCompany(String companyId) {
+        try {
+            ch.batbern.companyuser.dto.CompanyResponse company =
+                companyService.getCompanyByName(companyId);
+            return new ch.batbern.companyuser.dto.generated.Company()
+                    .id(company.getName())
+                    .name(company.getName())
+                    .displayName(company.getDisplayName())
+                    .industry(company.getIndustry());
+        } catch (RuntimeException ex) {
+            log.warn("Could not resolve company '{}' for profile expansion: {}",
+                     companyId, ex.getMessage());
+            return new ch.batbern.companyuser.dto.generated.Company()
+                    .id(companyId)
+                    .name(companyId);
+        }
     }
 
     /**

@@ -796,6 +796,7 @@
     "consentSaveError": "同意の保存に失敗しました。もう一度お試しください。",
     "newsletterTitle": "ニュースレター",
     "newsletterDescription": "今後のBATbernイベントの招待状や最新情報をお届けします。",
-    "newsletterLabel": "BATbernニュースレターを購読する"
+    "newsletterLabel": "BATbernニュースレターを購読する",
+    "companySaveError": "会社を保存できませんでした。もう一度お試しください。"
   }
 }

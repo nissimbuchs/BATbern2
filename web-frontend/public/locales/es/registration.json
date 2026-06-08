@@ -189,7 +189,9 @@
     "error": "Error al cargar las empresas",
     "noResults": "No se encontró ninguna empresa existente",
     "createNew": "Puedes continuar con \"{{value}}\" como nueva empresa",
-    "minChars": "Escribe al menos 2 caracteres para buscar"
+    "minChars": "Escribe al menos 2 caracteres para buscar",
+    "createOption": "Crear nueva empresa \"{{value}}\"",
+    "clear": "Eliminar empresa seleccionada"
   },
   "registrationStatusBanner": {
     "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",

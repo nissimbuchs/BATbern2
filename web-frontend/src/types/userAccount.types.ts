@@ -16,6 +16,7 @@ export interface User {
   company?: {
     id: string;
     name: string;
+    displayName?: string;
     uid?: string;
   };
   roles: UserRole[];

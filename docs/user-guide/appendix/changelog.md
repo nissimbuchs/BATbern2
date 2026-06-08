@@ -50,6 +50,12 @@ Each release includes:
 - 📋 Story 10.3: Automated task scheduler integration (trigger reminders by due date/state)
 
 **Improvements (delivered)**:
+- ✅ Company picker rework — the company field on the profile and registration forms is now a
+  selection-locked combobox: it shows each company's **display name** (not the internal slug),
+  locks the chosen company into a removable chip (no more "Firmen-ID muss aus 1-12 Buchstaben…"
+  format error from editing the slug), and offers an explicit **"Create new company"** action
+  instead of silently creating duplicates. Company search now matches both the internal name and
+  the display name, so existing companies surface even when you type their spaced/cased name.
 - ✅ Event deletion now ignores programmatic registrations. Every new event auto-enrols all
   organizers and partners as participants, which previously left the **Delete Event** button
   permanently disabled. Deletion is now blocked only when an event has *real* (self-registered)

@@ -1,7 +1,9 @@
 /**
- * CompanyAutocomplete Component Tests (Story 4.1.5 - Enhancement)
+ * CompanyAutocomplete Component Tests
  *
- * Tests the public-facing company search autocomplete functionality
+ * Tests the reworked selection-locked combobox: search-only input, locked chip
+ * once a company is chosen, and an explicit "Create …" affordance. The component
+ * reports selections as { name, displayName } objects (or null when cleared).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -14,32 +16,20 @@ import type { components } from '@/types/generated/company-api.types';
 
 type Company = components['schemas']['CompanyResponse'];
 
-// Mock the company API
 vi.mock('@/services/api/companyApi');
-
-// Mock useDebounce to return value immediately for testing
-vi.mock('@/hooks/useDebounce', () => ({
-  useDebounce: (value: string) => value,
-}));
 
 describe('CompanyAutocomplete Component', () => {
   const mockCompanies: Company[] = [
     {
-      companyId: 'comp-1',
-      name: 'TechCorp AG',
-      shortName: 'TechCorp',
+      name: 'techcorpag',
+      displayName: 'TechCorp AG',
       industry: 'IT',
-      websiteUrl: 'https://techcorp.ch',
-      logoUrl: null,
-    },
+    } as Company,
     {
-      companyId: 'comp-2',
-      name: 'SwissData GmbH',
-      shortName: 'SwissData',
+      name: 'swissdatagmbh',
+      displayName: 'SwissData GmbH',
       industry: 'Data Analytics',
-      websiteUrl: 'https://swissdata.ch',
-      logoUrl: null,
-    },
+    } as Company,
   ];
 
   let queryClient: QueryClient;
@@ -47,12 +37,8 @@ describe('CompanyAutocomplete Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
+      defaultOptions: { queries: { retry: false } },
     });
-
-    // Mock searchCompanies to return results
     vi.mocked(companyApi.searchCompanies).mockResolvedValue(mockCompanies);
   });
 
@@ -61,7 +47,6 @@ describe('CompanyAutocomplete Component', () => {
       value: '',
       onCompanySelect: vi.fn(),
     };
-
     return render(
       <QueryClientProvider client={queryClient}>
         <CompanyAutocomplete {...defaultProps} {...props} />
@@ -69,263 +54,165 @@ describe('CompanyAutocomplete Component', () => {
     );
   };
 
-  describe('Basic Rendering', () => {
-    it('should_renderInput_when_mounted', () => {
+  describe('Basic Rendering (unselected)', () => {
+    it('should_renderSearchInput_when_noSelection', () => {
       renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      expect(input).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('TechCorp AG')).toBeInTheDocument();
     });
 
     it('should_displayCustomPlaceholder_when_provided', () => {
       renderWithProvider({ placeholder: 'Enter company name' });
-
       expect(screen.getByPlaceholderText('Enter company name')).toBeInTheDocument();
     });
 
     it('should_disableInput_when_disabled', () => {
       renderWithProvider({ disabled: true });
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      expect(input).toBeDisabled();
+      expect(screen.getByPlaceholderText('TechCorp AG')).toBeDisabled();
     });
 
     it('should_displayError_when_errorProvided', () => {
       renderWithProvider({ error: 'Company is required' });
-
       expect(screen.getByText('Company is required')).toBeInTheDocument();
     });
   });
 
-  describe('Input Handling', () => {
-    it('should_updateValue_when_userTypes', async () => {
+  describe('Selected: locked chip', () => {
+    it('should_renderChipWithDisplayName_when_valueLabelProvided', () => {
+      renderWithProvider({ value: 'infowellgmbh', valueLabel: 'Infowell GmbH' });
+
+      // Shows the human display name, NOT the slug — and no editable input.
+      expect(screen.getByTestId('registration-company-chip')).toBeInTheDocument();
+      expect(screen.getByText('Infowell GmbH')).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('TechCorp AG')).not.toBeInTheDocument();
+    });
+
+    it('should_fallBackToValue_when_noValueLabel', () => {
+      renderWithProvider({ value: 'someco' });
+      expect(screen.getByText('someco')).toBeInTheDocument();
+    });
+
+    it('should_showChip_when_newCompanyHasLabelButNoSlug', () => {
+      // A brand-new (not yet materialised) company: slug empty, display name set.
+      renderWithProvider({ value: '', valueLabel: 'Brand New Co' });
+      expect(screen.getByTestId('registration-company-chip')).toBeInTheDocument();
+      expect(screen.getByText('Brand New Co')).toBeInTheDocument();
+    });
+
+    it('should_clearSelection_when_clearClicked', async () => {
+      const onCompanySelect = vi.fn();
+      renderWithProvider({ value: 'infowellgmbh', valueLabel: 'Infowell GmbH', onCompanySelect });
+
+      fireEvent.click(screen.getByTestId('registration-company-clear'));
+      expect(onCompanySelect).toHaveBeenCalledWith(null);
+    });
+
+    it('should_hideClearButton_when_disabled', () => {
+      renderWithProvider({ value: 'infowellgmbh', valueLabel: 'Infowell GmbH', disabled: true });
+      expect(screen.queryByTestId('registration-company-clear')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Search behavior', () => {
+    it('should_notCallOnSelect_when_userTypes', async () => {
       const onCompanySelect = vi.fn();
       renderWithProvider({ onCompanySelect });
 
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'Tech');
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'Tech');
+      await waitFor(() => expect(companyApi.searchCompanies).toHaveBeenCalled());
 
-      expect(onCompanySelect).toHaveBeenCalledWith('Tech');
+      // Typing is search-only — it must NOT submit a value.
+      expect(onCompanySelect).not.toHaveBeenCalled();
     });
 
-    it('should_syncInputValue_when_valueChangesExternally', () => {
-      const { rerender } = renderWithProvider({ value: 'Initial' });
-
-      let input = screen.getByDisplayValue('Initial');
-      expect(input).toBeInTheDocument();
-
-      rerender(
-        <QueryClientProvider client={queryClient}>
-          <CompanyAutocomplete value="Updated" onCompanySelect={vi.fn()} />
-        </QueryClientProvider>
-      );
-
-      input = screen.getByDisplayValue('Updated');
-      expect(input).toBeInTheDocument();
-    });
-
-    it('should_openPopover_when_typingWithMinChars', async () => {
+    it('should_search_when_typingMinChars', async () => {
       renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'Tech');
-
-      // Popover should open when typing >= 2 chars - look for company results
-      await waitFor(() => {
-        expect(companyApi.searchCompanies).toHaveBeenCalled();
-      });
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'Tech');
+      await waitFor(() => expect(companyApi.searchCompanies).toHaveBeenCalledWith('Tech', 10));
     });
 
     it('should_notSearch_when_inputLessThan2Chars', async () => {
       renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'T');
-
-      // searchCompanies should not be called
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'T');
       expect(companyApi.searchCompanies).not.toHaveBeenCalled();
     });
-  });
 
-  describe('Company Selection', () => {
-    it('should_selectCompany_when_clicked', async () => {
-      const onCompanySelect = vi.fn();
-      renderWithProvider({ onCompanySelect });
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'Tech');
-
-      // Wait for companies to load
-      await waitFor(() => {
-        expect(screen.getByText('TechCorp AG')).toBeInTheDocument();
-      });
-
-      // Click on company
-      const companyOption = screen.getByText('TechCorp AG');
-      fireEvent.click(companyOption);
-
-      // Should update value and close popover
-      expect(onCompanySelect).toHaveBeenCalledWith('TechCorp AG');
-    });
-
-    it('should_displayIndustry_when_companyHasIndustry', async () => {
+    it('should_displayResultsByDisplayName_when_resultsLoaded', async () => {
       renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'Tech');
-
-      await waitFor(() => {
-        expect(screen.getByText('IT')).toBeInTheDocument();
-      });
-    });
-
-    it('should_displayMultipleCompanies_when_multipleResults', async () => {
-      renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'Swiss');
-
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'data');
       await waitFor(() => {
         expect(screen.getByText('TechCorp AG')).toBeInTheDocument();
         expect(screen.getByText('SwissData GmbH')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Search Behavior', () => {
-    it('should_debounceSearch_when_typing', async () => {
-      renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-
-      // Type multiple characters quickly
-      await userEvent.type(input, 'Tech');
-
-      // Due to mock, debounce returns immediately, so search should be called
-      await waitFor(() => {
-        expect(companyApi.searchCompanies).toHaveBeenCalled();
-      });
-    });
-
-    it('should_displayLoading_when_searching', async () => {
-      // Mock a delayed response
-      vi.mocked(companyApi.searchCompanies).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockCompanies), 100))
-      );
-
-      renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'Tech');
-
-      // Should show loading state
-      await waitFor(() => {
-        expect(screen.getByText(/loading/i)).toBeInTheDocument();
+        expect(screen.getByText('IT')).toBeInTheDocument();
       });
     });
 
     it('should_displayNoResults_when_noCompaniesFound', async () => {
       vi.mocked(companyApi.searchCompanies).mockResolvedValue([]);
-
-      renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'XYZ');
-
+      renderWithProvider({ allowCreate: false });
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'XYZ');
       await waitFor(() => {
         expect(screen.getByText(/No existing company found/i)).toBeInTheDocument();
       });
     });
+  });
 
-    it('should_displayError_when_searchFails', async () => {
-      vi.mocked(companyApi.searchCompanies).mockRejectedValue(new Error('Network error'));
+  describe('Company selection', () => {
+    it('should_reportSelection_when_companyClicked', async () => {
+      const onCompanySelect = vi.fn();
+      renderWithProvider({ onCompanySelect });
 
-      renderWithProvider();
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'Tech');
+      await waitFor(() => expect(screen.getByText('TechCorp AG')).toBeInTheDocument());
 
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'Tech');
+      fireEvent.click(screen.getByText('TechCorp AG'));
 
-      await waitFor(() => {
-        expect(screen.getByText(/Error loading companies/i)).toBeInTheDocument();
+      // Reports the slug as name + the display name — never echoes the slug into a box.
+      expect(onCompanySelect).toHaveBeenCalledWith({
+        name: 'techcorpag',
+        displayName: 'TechCorp AG',
       });
     });
   });
 
-  describe('Popover Behavior', () => {
-    it('should_searchCompanies_when_focusedWithMinChars', async () => {
-      renderWithProvider({ value: 'Tech' });
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      fireEvent.focus(input);
-
-      // Should search since value is >= 2 chars
-      await waitFor(() => {
-        expect(companyApi.searchCompanies).toHaveBeenCalledWith('Tech', 10);
-      });
-    });
-
-    it('should_notSearchCompanies_when_focusedWithLessThan2Chars', async () => {
-      renderWithProvider({ value: 'T' });
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      fireEvent.focus(input);
-
-      // Wait a bit to ensure search doesn't trigger
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Should not search since value is < 2 chars
-      expect(companyApi.searchCompanies).not.toHaveBeenCalled();
-    });
-
-    it('should_closePopover_when_blurred', async () => {
-      renderWithProvider({ value: 'Tech' });
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-
-      // Type to open popover
-      await userEvent.type(input, 'Corp');
-
-      await waitFor(() => {
-        expect(screen.getByText('TechCorp AG')).toBeInTheDocument();
-      });
-
-      // Blur the input
-      fireEvent.blur(input);
-
-      // Should close after delay (200ms)
-      await waitFor(
-        () => {
-          expect(screen.queryByText('TechCorp AG')).not.toBeInTheDocument();
-        },
-        { timeout: 400 }
+  describe('Create new company', () => {
+    it('should_showCreateOption_when_noExactMatch', async () => {
+      vi.mocked(companyApi.searchCompanies).mockResolvedValue([]);
+      renderWithProvider();
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'Newco GmbH');
+      await waitFor(() =>
+        expect(screen.getByTestId('registration-company-create-option')).toBeInTheDocument()
       );
     });
-  });
 
-  describe('Edge Cases', () => {
-    it('should_handleEmptyValue_when_cleared', async () => {
+    it('should_reportNewCompany_when_createClicked', async () => {
       const onCompanySelect = vi.fn();
-      renderWithProvider({ value: 'TechCorp', onCompanySelect });
+      vi.mocked(companyApi.searchCompanies).mockResolvedValue([]);
+      renderWithProvider({ onCompanySelect });
 
-      const input = screen.getByDisplayValue('TechCorp');
-      await userEvent.clear(input);
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'Newco GmbH');
+      await waitFor(() =>
+        expect(screen.getByTestId('registration-company-create-option')).toBeInTheDocument()
+      );
+      fireEvent.click(screen.getByTestId('registration-company-create-option'));
 
-      expect(onCompanySelect).toHaveBeenCalledWith('');
+      // New company: empty slug (parent materialises it), typed display name.
+      expect(onCompanySelect).toHaveBeenCalledWith({ name: '', displayName: 'Newco GmbH' });
     });
 
-    it('should_displayResults_when_opened', async () => {
+    it('should_notShowCreateOption_when_allowCreateFalse', async () => {
+      vi.mocked(companyApi.searchCompanies).mockResolvedValue([]);
+      renderWithProvider({ allowCreate: false });
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'Newco GmbH');
+      await waitFor(() => expect(companyApi.searchCompanies).toHaveBeenCalled());
+      expect(screen.queryByTestId('registration-company-create-option')).not.toBeInTheDocument();
+    });
+
+    it('should_suppressCreateOption_when_exactDisplayNameMatch', async () => {
       renderWithProvider();
-
-      const input = screen.getByPlaceholderText('TechCorp AG');
-      await userEvent.type(input, 'Tech');
-
-      // Wait for results to appear
-      await waitFor(() => {
-        expect(screen.getByText('TechCorp AG')).toBeInTheDocument();
-      });
-
-      // The PopoverContent displays results correctly
-      expect(screen.getByText('SwissData GmbH')).toBeInTheDocument();
+      // Exact (case-insensitive) match for an existing display name.
+      await userEvent.type(screen.getByPlaceholderText('TechCorp AG'), 'techcorp ag');
+      await waitFor(() => expect(screen.getByText('TechCorp AG')).toBeInTheDocument());
+      expect(screen.queryByTestId('registration-company-create-option')).not.toBeInTheDocument();
     });
   });
 });

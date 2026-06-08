@@ -47,6 +47,7 @@ export const getUserProfile = async (
         ? {
             id: userData.company.id || userData.companyId,
             name: userData.company.name,
+            displayName: userData.company.displayName,
             uid: userData.company.uid,
           }
         : undefined,

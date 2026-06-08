@@ -796,6 +796,7 @@
     "consentSaveError": "Het opslaan van je toestemming is mislukt. Probeer het opnieuw.",
     "newsletterTitle": "Nieuwsbrief",
     "newsletterDescription": "Ontvang uitnodigingen en updates over komende BATbern-evenementen.",
-    "newsletterLabel": "Abonneer je op de BATbern-nieuwsbrief"
+    "newsletterLabel": "Abonneer je op de BATbern-nieuwsbrief",
+    "companySaveError": "Kan het bedrijf niet opslaan. Probeer het opnieuw."
   }
 }

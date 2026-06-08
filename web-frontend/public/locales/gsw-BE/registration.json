@@ -69,5 +69,9 @@
     "registeredOn": "Aagemäldet am",
     "cancelButton": "Aamäldig behalte",
     "confirmButton": "Jo, abmäute"
+  },
+  "companySearch": {
+    "createOption": "Nöis Unternäme «{{value}}» erstelle",
+    "clear": "Usgwählts Unternäme entfärne"
   }
 }

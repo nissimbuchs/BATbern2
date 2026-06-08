@@ -48,7 +48,7 @@ public class CompanySearchService {
     public List<CompanySearchResponse> searchCompanies(String query) {
         log.debug("Searching companies with query: {}", query);
 
-        List<Company> companies = companyRepository.findByNameContainingIgnoreCase(query);
+        List<Company> companies = companyRepository.searchByNameOrDisplayName(query);
 
         // Limit to 20 autocomplete results
         return companies.stream()
@@ -68,7 +68,7 @@ public class CompanySearchService {
     public List<CompanySearchResponse> searchCompanies(String query, int limit) {
         log.debug("Searching companies with query: {} and limit: {}", query, limit);
 
-        List<Company> companies = companyRepository.findByNameContainingIgnoreCase(query);
+        List<Company> companies = companyRepository.searchByNameOrDisplayName(query);
 
         return companies.stream()
                 .limit(limit)
@@ -88,7 +88,7 @@ public class CompanySearchService {
     public List<CompanySearchResponse> searchCompanies(String query, int limit, String include) {
         log.debug("Searching companies with query: {}, limit: {}, include: {}", query, limit, include);
 
-        List<Company> companies = companyRepository.findByNameContainingIgnoreCase(query);
+        List<Company> companies = companyRepository.searchByNameOrDisplayName(query);
 
         boolean includeLogo = include != null && include.contains("logo");
 

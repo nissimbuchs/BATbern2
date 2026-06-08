@@ -796,6 +796,7 @@
     "consentSaveError": "No se pudo guardar tu consentimiento. Inténtalo de nuevo.",
     "newsletterTitle": "Boletín",
     "newsletterDescription": "Recibe invitaciones y novedades sobre los próximos eventos de BATbern.",
-    "newsletterLabel": "Suscribirse al boletín de BATbern"
+    "newsletterLabel": "Suscribirse al boletín de BATbern",
+    "companySaveError": "No se pudo guardar la empresa. Inténtalo de nuevo."
   }
 }

@@ -800,6 +800,7 @@
     "consentSaveError": "Ihre Einwilligung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
     "newsletterTitle": "Newsletter",
     "newsletterDescription": "Erhalten Sie Einladungen und Neuigkeiten zu kommenden BATbern-Anlässen.",
-    "newsletterLabel": "BATbern-Newsletter abonnieren"
+    "newsletterLabel": "BATbern-Newsletter abonnieren",
+    "companySaveError": "Unternehmen konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
   }
 }

@@ -2,6 +2,8 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.dto.CompanyResponse;
+import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
@@ -704,5 +706,72 @@ class UserServiceTest {
 
         verify(userRepository, never()).save(any());
         verify(eventPublisher, never()).publish(any());
+    }
+
+    // ── ?include=company expansion populates the real display name ────────────
+
+    @Test
+    void should_expandCompanyWithDisplayName_when_includeCompanyRequested() {
+        // Given — user belongs to slug "infowellgmbh" whose display name is "Infowell GmbH"
+        String username = "jane.doe";
+        when(securityContext.getCurrentUsername()).thenReturn(username);
+        User user = User.builder()
+                .username(username)
+                .email("jane.doe@infowell.ch")
+                .companyId("infowellgmbh")
+                .cognitoUserId("cognito-jane")
+                .build();
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+
+        UserResponse baseResponse = new UserResponse();
+        baseResponse.setId(username);
+        baseResponse.setCompanyId("infowellgmbh");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(baseResponse);
+
+        when(companyService.getCompanyByName("infowellgmbh")).thenReturn(
+                CompanyResponse.builder()
+                        .name("infowellgmbh")
+                        .displayName("Infowell GmbH")
+                        .industry("IT")
+                        .build());
+
+        // When
+        UserResponse response = userService.getCurrentUser("company");
+
+        // Then — the embedded company carries the human display name, not the slug
+        assertThat(response.getCompany()).isNotNull();
+        assertThat(response.getCompany().getName()).isEqualTo("infowellgmbh");
+        assertThat(response.getCompany().getDisplayName()).isEqualTo("Infowell GmbH");
+        assertThat(response.getCompany().getIndustry()).isEqualTo("IT");
+    }
+
+    @Test
+    void should_fallBackToPlaceholderCompany_when_companyIdDoesNotResolve() {
+        // Given — a dangling companyId (legacy free-typed reference) that no longer exists
+        String username = "old.user";
+        when(securityContext.getCurrentUsername()).thenReturn(username);
+        User user = User.builder()
+                .username(username)
+                .email("old.user@example.com")
+                .companyId("ghostco")
+                .cognitoUserId("cognito-old")
+                .build();
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+
+        UserResponse baseResponse = new UserResponse();
+        baseResponse.setId(username);
+        baseResponse.setCompanyId("ghostco");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(baseResponse);
+
+        when(companyService.getCompanyByName("ghostco"))
+                .thenThrow(new CompanyNotFoundException("ghostco"));
+
+        // When — must NOT throw; profile load is resilient to a dangling reference
+        UserResponse response = userService.getCurrentUser("company");
+
+        // Then — minimal placeholder so the page still renders
+        assertThat(response.getCompany()).isNotNull();
+        assertThat(response.getCompany().getName()).isEqualTo("ghostco");
+        assertThat(response.getCompany().getDisplayName()).isNull();
     }
 }

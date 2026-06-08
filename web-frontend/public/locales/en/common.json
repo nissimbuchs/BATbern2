@@ -799,6 +799,7 @@
     "consentSaveError": "Saving your consent failed. Please try again.",
     "newsletterTitle": "Newsletter",
     "newsletterDescription": "Receive invitations and updates about upcoming BATbern events.",
-    "newsletterLabel": "Subscribe to the BATbern newsletter"
+    "newsletterLabel": "Subscribe to the BATbern newsletter",
+    "companySaveError": "Could not save the company. Please try again."
   }
 }

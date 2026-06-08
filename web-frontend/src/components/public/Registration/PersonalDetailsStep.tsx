@@ -196,8 +196,10 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                     <FormControl>
                       <CompanyAutocomplete
                         value={field.value}
-                        onCompanySelect={(companyName) => {
-                          field.onChange(companyName);
+                        onCompanySelect={(selection) => {
+                          // Registration stores the display name; the backend resolves
+                          // (get-or-create) it to a company on submit.
+                          field.onChange(selection?.displayName ?? '');
                         }}
                         error={fieldState.error?.message}
                         placeholder={t('personalDetails.placeholders.company')}

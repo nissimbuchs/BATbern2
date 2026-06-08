@@ -796,6 +796,7 @@
     "consentSaveError": "Suostumuksen tallentaminen epäonnistui. Yritä uudelleen.",
     "newsletterTitle": "Uutiskirje",
     "newsletterDescription": "Saat kutsuja ja uutisia tulevista BATbern-tapahtumista.",
-    "newsletterLabel": "Tilaa BATbern-uutiskirje"
+    "newsletterLabel": "Tilaa BATbern-uutiskirje",
+    "companySaveError": "Yrityksen tallennus epäonnistui. Yritä uudelleen."
   }
 }

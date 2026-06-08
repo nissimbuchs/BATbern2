@@ -189,7 +189,9 @@
     "error": "Fehler beim Laden der Unternehmen",
     "noResults": "Kein bestehendes Unternehmen gefunden",
     "createNew": "Sie können mit \"{{value}}\" als neuem Unternehmen fortfahren",
-    "minChars": "Mindestens 2 Zeichen eingeben, um zu suchen"
+    "minChars": "Mindestens 2 Zeichen eingeben, um zu suchen",
+    "createOption": "Neues Unternehmen „{{value}}“ erstellen",
+    "clear": "Ausgewähltes Unternehmen entfernen"
   },
   "registrationStatusBanner": {
     "confirmed": "Ihre Anmeldung ist bestätigt. Wir freuen uns auf Sie!",

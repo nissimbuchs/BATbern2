@@ -189,7 +189,9 @@
     "error": "企業の読み込みエラー",
     "noResults": "既存の企業が見つかりません",
     "createNew": "「{{value}}」を新しい企業として続行できます",
-    "minChars": "検索するには2文字以上入力してください"
+    "minChars": "検索するには2文字以上入力してください",
+    "createOption": "新しい会社「{{value}}」を作成",
+    "clear": "選択した会社を削除"
   },
   "registrationStatusBanner": {
     "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",
