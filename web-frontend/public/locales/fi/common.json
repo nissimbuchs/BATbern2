@@ -743,7 +743,8 @@
   "companySearch": {
     "noOptions": "Yrityksiä ei löydy",
     "searchAriaLabel": "Etsi yrityksiä",
-    "clearSearchAriaLabel": "Tyhjennä haku"
+    "clearSearchAriaLabel": "Tyhjennä haku",
+    "createOption": "Luo uusi yritys \"{{value}}\""
   },
   "countdown": {
     "nextEvent": "Seuraava tapahtuma",

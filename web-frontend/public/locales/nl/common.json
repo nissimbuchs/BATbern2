@@ -743,7 +743,8 @@
   "companySearch": {
     "noOptions": "Geen bedrijven gevonden",
     "searchAriaLabel": "Bedrijven zoeken",
-    "clearSearchAriaLabel": "Zoekopdracht wissen"
+    "clearSearchAriaLabel": "Zoekopdracht wissen",
+    "createOption": "Nieuw bedrijf \"{{value}}\" aanmaken"
   },
   "countdown": {
     "nextEvent": "Volgend evenement",

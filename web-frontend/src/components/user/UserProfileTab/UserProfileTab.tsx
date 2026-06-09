@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Box, Button, Divider, Paper, TextField, Typography } from '@mui/material';
 import ProfileHeader from '../ProfileHeader/ProfileHeader';
 import { CompanyAutocomplete } from '@/components/organizer/PartnerManagement/CompanyAutocomplete';
+import CompanyLogo from '@/components/shared/Company/CompanyLogo';
 import WatchPairingSection from '@/features/profile/WatchPairingSection';
 import type { User, UserActivity } from '@/types/userAccount.types';
 import type { components } from '@/types/generated/company-api.types';
@@ -56,7 +57,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
       company: user.company
         ? {
             name: user.company.name,
-            displayName: user.company.name,
+            displayName: user.company.displayName || user.company.name,
             isVerified: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -109,7 +110,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
       company: user.company
         ? {
             name: user.company.name,
-            displayName: user.company.name,
+            displayName: user.company.displayName || user.company.name,
             isVerified: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -215,9 +216,12 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
               <strong>{t('profile.labelEmail')}</strong> {user.email}
             </Typography>
             {user.company && (
-              <Typography variant="body1" sx={{ mt: 1 }}>
-                <strong>{t('profile.labelCompany')}</strong> {user.company.name}
-              </Typography>
+              <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body1" component="span">
+                  <strong>{t('profile.labelCompany')}</strong>
+                </Typography>
+                <CompanyLogo companyName={user.company.name} variant="avatar" avatarSize={28} />
+              </Box>
             )}
             {user.bio && (
               <Typography variant="body1" sx={{ mt: 1 }}>

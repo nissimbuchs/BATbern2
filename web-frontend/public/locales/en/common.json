@@ -675,7 +675,8 @@
   "companySearch": {
     "noOptions": "No companies found",
     "searchAriaLabel": "Search companies",
-    "clearSearchAriaLabel": "Clear search"
+    "clearSearchAriaLabel": "Clear search",
+    "createOption": "Create new company \"{{value}}\""
   },
   "countdown": {
     "nextEvent": "Next Event",

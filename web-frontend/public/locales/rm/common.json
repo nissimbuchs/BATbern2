@@ -743,7 +743,8 @@
   "companySearch": {
     "noOptions": "Naginas cumpagnias chattadas",
     "searchAriaLabel": "Tschertgar cumpagnias",
-    "clearSearchAriaLabel": "Stizzar la tschertga"
+    "clearSearchAriaLabel": "Stizzar la tschertga",
+    "createOption": "Crear nova interpresa \"{{value}}\""
   },
   "countdown": {
     "nextEvent": "Proxim eveniment",
