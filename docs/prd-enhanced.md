@@ -209,11 +209,11 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 4**: Weeks 22-26 (Public Website & Content Discovery) - ✅ **100% COMPLETE**
 - **Epic 5**: Weeks 27-35 (Enhanced Organizer Workflows) - ✅ **100% COMPLETE** (including BAT-16)
 - **Epic 6**: Weeks 36-44 (Speaker Portal & Support) - ✅ **100% COMPLETE** (All stories deployed to staging, Story 6.4 QA passed)
-- **Epic 7**: Weeks 45+ (Attendee Experience Enhancements - 📦 DEFERRED to Phase 3)
+- **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - 📋 **READY FOR STORY DETAILING** (rewritten 2026-06-09; right-sized replacement for the deferred dashboards/PWA/recommendation-engine scope — five organizer-voted features composing onto existing machinery)
 - **Epic 8**: Weeks 45+ (Partner Coordination - ✅ **100% COMPLETE** 2026-02-22)
 - **Epic 11**: Weeks 46+ (Unified Speaker Workflow Refactor - 🔨 IN PROGRESS — Phase A doc alignment landing; Phases B–F per ADR-009 and `docs/plans/speaker-workflow-refactor.md`. Supersedes prior Epic 9 plan.)
 
-**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with 9-state workflow, per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 fully deployed with automated speaker invitation, self-service response portal, content submission, dashboard (WCAG 2.1 AA), and deadline reminders. Epic 8 complete with partner attendance analytics, topic voting, and meeting coordination with RFC 5545 calendar invites. Epic 7 deferred to Phase 3; the prior Epic 9 (JWT magic-link speaker authentication) is superseded by **Epic 11** per ADR-009, which adopts standard AWS Cognito with `FORCE_CHANGE_PASSWORD` first-login as the sole speaker auth path (no parallel JWT / magic-link stack).
+**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with 9-state workflow, per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 fully deployed with automated speaker invitation, self-service response portal, content submission, dashboard (WCAG 2.1 AA), and deadline reminders. Epic 8 complete with partner attendance analytics, topic voting, and meeting coordination with RFC 5545 calendar invites. Epic 7 was rewritten 2026-06-09 from its deferred over-scoped form (dashboards/PWA/recommendation engine) into a right-sized set of five organizer-voted attendee contribution & touchpoint features (see `prd/epic-7-attendee-experience-enhancements.md`); the prior Epic 9 (JWT magic-link speaker authentication) is superseded by **Epic 11** per ADR-009, which adopts standard AWS Cognito with `FORCE_CHANGE_PASSWORD` first-login as the sole speaker auth path (no parallel JWT / magic-link stack).
 
 ### 4.2 Content Management & Storage Architecture
 
@@ -339,8 +339,8 @@ The comprehensive epic breakdown follows a CRUD-first approach, prioritizing fun
 **Phase 2: Speaker Self-Service Portal (Weeks 36-44) - ✅ 100% COMPLETE**
 - **[Epic 6: Speaker Portal & Support](./prd/epic-6-speaker-portal-support.md)** - ✅ **100% COMPLETE** - Self-service speaker portal with automated invitations, response handling, content submission, deadline reminders, and speaker dashboard with full accessibility compliance (8 weeks, all 6 stories complete and deployed to staging)
 
-**Phase 3: Enhanced Experiences (Weeks 45+, DEFERRED)**
-- **[Epic 7: Attendee Experience Enhancements](./prd/epic-7-attendee-experience-enhancements.md)** - Personal engagement, mobile PWA, offline access (6 weeks, DEFERRED to Phase 3)
+**Phase 3: Enhanced Experiences**
+- **[Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints](./prd/epic-7-attendee-experience-enhancements.md)** - 📋 **READY FOR STORY DETAILING** - Five organizer-voted features (topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, time-boxed post-event Q&A) composing onto existing machinery with near-zero recurring organizer effort
 - **[Epic 8: Partner Coordination](./prd/epic-8-partner-coordination.md)** - Attendance dashboard (table + Excel export), topic suggestions & voting (simple toggle), partner meeting coordination with ICS calendar invites (🚧 IN PROGRESS)
 
 Each epic document contains:
@@ -420,14 +420,15 @@ Each epic document contains:
 - 📅 Communication hub with real-time messaging
 - 📅 Advanced material management with version control
 
-### Phase 3: Enhanced Experiences (Weeks 45+, DEFERRED)
+### Phase 3: Enhanced Experiences
 
-**Epic 7 Success Criteria (Attendee Experience Enhancements)** - 🔄 **DEFERRED to Phase 3**
-- Personal engagement dashboard with bookmarks and preferences
-- Mobile PWA with offline capabilities functional
-- Granular notification preferences respected across all channels
-- Content recommendation engine providing relevant suggestions
-- User satisfaction scores >4.5/5 for attendee experience
+**Epic 7 Success Criteria (Attendee Experience — Right-Sized Contribution & Touchpoints)** - 📋 **READY FOR STORY DETAILING**
+- Attendees can suggest topics into the existing topic pool and self-nominate as speakers (Contribution Loop adoption per event cycle > 0)
+- At least one self-nominated speaker promoted to READY and presenting within the first 3 event cycles
+- Event-triggered "slides are online" email measurably lifts post-event archive/session visits
+- Thank-the-organizers count per event > 0; the gratitude gap is closed
+- ≥ 1 frozen post-event Q&A thread attached per session, enriching the archive
+- Guardrail compliance: no feature alters the physical event character; organizer recurring effort unchanged
 
 **Epic 8 Success Criteria (Partner Coordination)** - 🚧 **IN PROGRESS**
 - Partners can view attendance table (company vs total per event) with Excel export

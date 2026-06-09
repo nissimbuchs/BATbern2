@@ -4,9 +4,9 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ## Project Status
 
-**Last Updated:** 2026-02-23
+**Last Updated:** 2026-06-09
 
-**Current Phase:** Post-MVP — Epics 1-6 and 8 complete; Epic 7 (Attendee Experience) deferred; Epic 9 (Speaker Auth) planned
+**Current Phase:** Post-MVP — Epics 1-6 and 8 complete; Epic 7 (Attendee Experience) rewritten 2026-06-09 as a right-sized contribution epic (ready for story detailing); Epic 9 (Speaker Auth) planned
 
 **MVP Status:** ✅ **PRODUCTION READY** — All 5 MVP epics (1-5) complete. Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented.
 
@@ -20,7 +20,7 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 | **Epic 4: Public Website & Content Discovery** | ✅ Complete | 100% | Event landing pages, 3-step registration wizard, archive browsing, SEO |
 | **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | 100% | 9-state workflow, speaker coordination, auto-publishing, lifecycle automation |
 | **Epic 6: Speaker Self-Service Portal** | ✅ Complete | 100% | All 6 stories (6.0-6.5) deployed — invitation, response portal, materials, dashboard, reminders |
-| **Epic 7: Attendee Experience** | 📦 Deferred | — | Phase 3 backlog — personal dashboard, bookmarks, PWA |
+| **Epic 7: Attendee Experience — Contribution & Touchpoints** | 📋 Ready for story detailing | — | Right-sized 2026-06-09 — topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, post-event Q&A |
 | **Epic 8: Partner Coordination** | ✅ Complete | 100% | Partner portal shell, attendance analytics, topic voting, meeting coordination with ICS invites |
 | **Epic 9: Speaker Authentication** | 🔨 In Progress | 20% | Story 9.1 (JWT magic link) complete; 9.2–9.5 (Cognito accounts, dual auth, migration, multi-role nav) planned |
 
@@ -34,7 +34,7 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 **Next Steps:**
 - Epic 9 Stories 9.2–9.5 — Cognito account creation on invitation accept, dual auth, staging migration, multi-role nav
 - Epic 3: Production data import (~1 day effort)
-- Epic 7 (Attendee Experience) — personal dashboard, bookmarks, PWA (Phase 3)
+- Epic 7 (Attendee Experience) — right-sized 2026-06-09; detail & build the 5 contribution/touchpoint stories (`docs/prd/epic-7-attendee-experience-enhancements.md`)
 
 ## Quick Start
 

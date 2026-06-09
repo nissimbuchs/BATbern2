@@ -1,292 +1,499 @@
-# Epic 7: Attendee Experience Enhancements - DEFERRED
+---
+stepsCompleted: [1, 2, 3]
+inputDocuments:
+  - _bmad-output/brainstorming/brainstorming-session-2026-06-06.md
+  - docs/prd-enhanced.md
+  - _bmad-output/project-context.md
+---
 
-**Status:** 📦 **DEFERRED TO PHASE 2** (Week 26+)
+# Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints
 
-**Reorganization Note:** This epic was formerly "Epic 5: Attendee Experience". Basic content search (Story 5.1) moved to Epic 4 (Public Website). This epic now focuses on personal engagement enhancements and mobile PWA.
+**Status:** 📋 **READY FOR STORY DETAILING** — rewritten 2026-06-09 (was: 📦 DEFERRED)
+**Last Updated:** 2026-06-09
 
-**Phase 1 Priority:** Epic 4 provides public content search and discovery. This epic adds personal dashboards, bookmarks, and offline PWA capabilities.
+**Right-sized (2026-06-09):** Epic 7 was originally scoped as "Attendee Experience Enhancements" — personal engagement dashboards, content bookmarking, granular notification preferences, and a mobile PWA with offline capabilities. A 2026-02 brainstorming round had already flagged that vision as far too ambitious for this community (a recommendation engine for 9–18 sessions/year). The 2026-06-06 brainstorming session ("Attendee experience improvements for a small, low-frequency community") generated 25 ideas; 20 living ideas were published as GitHub issues (`#746–#765`, label `idea-vote`) and the organizer committee voted with 👍 reactions. **This epic is the right-sized replacement: the five ideas that won 3 or 4 votes, each composing onto existing machinery with near-zero recurring organizer effort.** Same precedent as the Epic 8 simplification (QuickSight/MS Graph → a table + an `.ics` file).
+
+The old over-scoped scope (dashboards / bookmarks / PWA / recommendation engine) is captured in [What Was Cut from the Original Epic 7 Scope](#what-was-cut-from-the-original-epic-7-scope) and is not coming back.
 
 ---
 
 ## Epic Overview
 
-**Epic Goal**: Enhance attendee experience with personal engagement dashboards, content bookmarking, granular notification preferences, and mobile PWA with offline capabilities.
+**Epic Goal**: Give attendees a felt reason to log in — a *voice* and a *return channel* — by adding five organizer-voted features. The session thesis (ideas #10/#25): the login was pointless because it gated *consumption* (content is rightly free); instead, gate *participation* — and identity exists so a contribution can become a dialogue. Anonymous users lose nothing; logged-in users gain a voice and become reachable.
 
-**Deliverable**: Attendees can search 20+ years of content, manage preferences, and access everything via mobile PWA.
+**Deliverable**: Five focused features, no new backend service:
+1. Logged-in attendees suggest future topics into the existing topic pool.
+2. Logged-in attendees self-nominate as speakers into the existing speaker workflow.
+3. Registered attendees get a "slides are online" email when materials auto-publish.
+4. Logged-in attendees thank the volunteer organizers in one click.
+5. A time-boxed per-session Q&A after each event freezes into the archive forever.
+
+**The emergent architecture (session's structural insight)** — a three-layer engine that adds *zero* recurring organizer work: **attendees contribute → speakers structure → agent curates / organizers approve**. Everything compounds on machinery that already exists.
 
 **Architecture Context**:
-- **Core Service**: Attendee Experience Service (Java 21 + Spring Boot 3.2)
-- **Search**: PostgreSQL full-text search for content discovery
-- **Frontend**: React PWA with offline capabilities
-- **Infrastructure**: CloudFront CDN for global delivery
-- **Caching**: Caffeine in-memory cache for search optimization
+- **No new service.** Features land in existing services:
+  - 7.1 Topics From the Floor → `partner-coordination-service` (owns `topic_suggestions` / `topic_votes`, Story 2.7 / 8.2)
+  - 7.2 "I Could Speak on That" → `speaker-coordination-service` (`speaker_pool`, 8-state `SpeakerWorkflowService`)
+  - 7.3 Slides-Online Mail → `event-management-service` (auto-publishing) + AWS SES
+  - 7.4 Thank-the-Organizers → `event-management-service`
+  - 7.5 The Apéro Continues → `event-management-service` → archive
+- **Identity**: contributions are login-gated, riding on "Continue with Google" (Epic 12 / ADR-010, live). Default role `ATTENDEE` is sufficient for all contribution endpoints. **Exception:** Story 7.4 (Thank-the-Organizers) is intentionally anonymous-allowed with an abuse guard — see [Resolved Decisions](#resolved-decisions).
+- **Speaker workflow integrity (ADR-009)**: `speaker_pool.status` is written **only** via `SpeakerWorkflowService.transition`. Self-nominations enter at `IDENTIFIED` — never at `READY` (the provisioning gate).
+- **Email**: DE + EN templates only (email-localization rule); reuse the SES pattern from Story 6.5.
+- **Cross-service identity (ADR-003)**: meaningful IDs (`eventCode`, `username`), no UUID leakage, no cross-service FK constraints.
 
-**Duration**: 8 weeks (Weeks 39-46)
-
----
-
-## Story 5.1: Historical Content Search
-
-**User Story:**
-As an **attendee**, I want to search 20+ years of BATbern content with filtering capabilities, so that I can find relevant presentations and expertise.
-
-**Architecture Integration:**
-- **Search Engine**: PostgreSQL full-text search
-- **Database**: PostgreSQL for content metadata and search
-- **Frontend**: React search interface with facets
-- **Cache**: Caffeine in-memory cache for search results
-
-**Wireframe Context:**
-
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-- **Main Screen:** `docs/wireframes/story-5.1-content-discovery.md` ✅
-  - Content Discovery interface with search and filtering
-  - **Note:** AI-powered recommendations removed (FR13 moved to backlog)
-  - Basic non-AI recommendations only for MVP
-  - Search, browse, save content, rate & review
-
-### UI Components
-**Key interface elements:**
-- **Search Bar**: Prominent search input with autocomplete suggestions
-  - Search across presentations, speakers, topics, companies
-  - Real-time search suggestions as user types
-  - Voice search option (mobile)
-- **Filter Panel**: Multi-criteria filtering sidebar
-  - Year/date range slider (2000-2025)
-  - Topic category checkboxes
-  - Speaker dropdown with autocomplete
-  - Company filter
-  - Content type (presentation, video, photo)
-  - Rating filter (4+ stars, 3+ stars, etc.)
-- **Content Grid**: Search results display
-  - Content cards with thumbnail, title, speaker, date, rating
-  - Hover preview with abstract excerpt
-  - Save/bookmark icon
-  - [View] button → Content Viewer
-  - Sort controls (relevance, date, popularity, rating)
-- **Basic Recommendations Panel**: Non-AI content suggestions
-  - "Recently viewed"
-  - "Popular this month"
-  - "Related to your saved content"
-  - Note: AI-powered recommendations removed per FR13
-- **Content Actions**:
-  - Save to library
-  - Rate (1-5 stars)
-  - Review/comment
-  - Share
-  - Download
-
-### Wireframe Status
-- ✅ **EXISTS**: Content Discovery wireframe fully documented (`story-5.1-content-discovery.md`)
-  - Complete search and filtering interface
-  - AI features removed per FR13 (moved to backlog)
-  - Basic non-AI recommendations retained for MVP
-- ✅ **EXISTS**: Content Viewer Page (`story-5.1-content-viewer.md`)
-  - Core content consumption interface
-  - PDF/video/slides viewer with navigation
-  - Bookmarking and ratings system
-- ✅ **EXISTS**: Filter Modal (`story-5.1-filter-modal.md`)
-  - Mobile-responsive filtering across multiple contexts
-  - Multi-criteria filtering with real-time results
-
-### Navigation
-**Key navigation paths from this screen:**
-- → Content Viewer Page (click content card) ✅
-- → Filter Modal (mobile filter interface) ✅
-- → Speaker Profile (click speaker name)
-- → Full Library Management (view saved content)
-- ↔ Personal Attendee Dashboard (bidirectional)
-
-**Acceptance Criteria:**
-1. **Full-Text Search**: Search across titles, abstracts, speakers, topics
-2. **Advanced Filtering**: By year, topic, company, speaker
-3. **Content Preview**: View abstracts and speaker info
-4. **Download Access**: Download available presentations
-5. **Search Suggestions**: Auto-complete based on existing content
-6. **Sort Options**: Relevance, date, popularity
-
-**Definition of Done:**
-- [ ] Search returns results in <500ms
-- [ ] 20+ years of content indexed
-- [ ] Faceted filtering works intuitively
-- [ ] Download tracking implemented
-- [ ] Mobile-responsive search interface
-- [ ] Search accuracy validated with test queries
+**Prerequisites (all live):**
+- ✅ Topic pool + voting (`topic_suggestions`, `topic_votes`) — Story 2.7 / Epic 8.2
+- ✅ Unified speaker 8-state workflow + `promote` endpoint — Epic 11 / ADR-009
+- ✅ Auto-publishing (speakers @ 30d, agenda @ 14d, materials) — BAT-16 / Epic 5
+- ✅ SES email rendering with DE/EN locale chain — Story 6.5
+- ✅ Google SSO login — Epic 12 / ADR-010
+- ✅ Public archive with per-event/session pages — Epic 4
 
 ---
 
-## Story 5.2: Personal Engagement Management (Advanced Settings Only)
+## Requirements Inventory
 
-> **⚠️ SCOPE REDUCED - Basic Settings Moved to Epic 2 (Story 2.6)**
-> Basic account management features (profile info, email, password, basic notifications, basic privacy) have been moved to **Story 2.6: User Account Management Frontend** in Epic 2 as foundational features.
->
-> **Story 5.2 now focuses exclusively on ADVANCED attendee-specific features:**
-> - Content Preferences (interests, topics, experience level, content formats)
-> - Language & Accessibility (UI language, date/time formats, accessibility options)
-> - Data & Export (GDPR data export, account deactivation, account deletion)
-> - Personal Attendee Dashboard (bookmarks, learning progress, content recommendations)
+### Functional Requirements
+
+- **FR1**: A logged-in attendee can suggest a future event topic (title + short rationale).
+- **FR2**: Attendee suggestions flow into the existing `topic_suggestions` pool, tagged `source = community` to distinguish them from partner-sourced topics.
+- **FR3**: Organizers triage attendee topics in the existing topic-suggestion admin UI — no new admin surface.
+- **FR4**: Topic suggestion is login-gated, giving organizers a return channel to the suggester.
+- **FR5**: Once an event's topic is set and the event is published, a logged-in attendee can self-nominate as a speaker (session title + abstract).
+- **FR6**: A self-nomination creates a `speaker_pool` entry at `IDENTIFIED` via `SpeakerWorkflowService.transition` — never at `READY`, and never auto-provisioning a Cognito user / SPEAKER role.
+- **FR7**: Organizers triage self-nominations through the existing 8-state speaker workflow (promote path unchanged).
+- **FR8**: When an event's materials/slides auto-publish, registered attendees of that event receive a "slides are online" notification email.
+- **FR9**: The slides-online email is event-triggered (not a recurring feed), sent once per event, in DE or EN per the attendee's language preference.
+- **FR10**: After an event, any attendee (anonymous allowed) can send a one-click thank-you, optionally with a short note, to the volunteer organizers — protected by an abuse guard (rate-limit + Turnstile on anonymous submissions).
+- **FR11**: Thank-yous are surfaced as an aggregate counter / appreciation wall. Logged-in attendees are deduped to one thank-you per event; anonymous thank-yous are rate-limited (clap-style increment) to prevent inflation.
+- **FR12**: For a time-boxed window (~2 weeks) after an event, logged-in attendees can post open questions per session and answer others' questions asynchronously.
+- **FR13**: When the window closes, the Q&A freezes (read-only) and attaches permanently to that session in the archive.
+- **FR14**: The post-event Q&A is login-gated and is explicitly the *digital afterglow* — it never digitizes or intrudes on the physical apéro.
+
+### Non-Functional Requirements
+
+- **NFR1 (no new service)**: All features compose onto existing services. No new backend service is created.
+- **NFR2 (near-zero organizer effort)**: Each feature self-runs once built; the organizer role is review/approve at most. The binding constraint confirmed in the session is *volunteer organizer attention*.
+- **NFR3 (low-friction identity)**: Login-gated contributions ride on Google SSO (Epic 12); `ATTENDEE` role suffices.
+- **NFR4 (workflow integrity)**: `speaker_pool.status` written only via `SpeakerWorkflowService.transition` (ADR-009); meaningful cross-service IDs, no UUID leakage, no cross-service FK constraints (ADR-003).
+- **NFR5 (localization)**: Email templates DE + EN only; all new frontend UI i18n keys populated in all 10 locales.
+- **NFR6 (Sacred-Three guardrails, idea #18)**: (1) the physical apéro stays unstructured — no app intrusion into the in-person ritual; (2) topics stay lessons-learned-driven, never hype/vendor; (3) features that change the event's character are rejected by default.
+- **NFR7 (cadence-match, idea #24)**: only event-triggered communications — no always-on feed that a 3×/year cadence would make look abandoned.
+
+### Additional Requirements (Architecture)
+
+- New columns/tables are created only by the story that needs them (no upfront schema). New Flyway migrations are always forward-only and higher-numbered; never edit an applied migration.
+- Login-gated contribution endpoints must be permitted in **both** the api-gateway `SecurityConfig` and the owning service's `SecurityConfig` (all profile chains).
+- Login-gated contribution surfaces render behind the lazy `<MuiLayout>` boundary, so MUI usage there is fine. Any attendee-facing element that appears on a **public** (pre-login) page must remain Tailwind-only (no-MUI-on-public-pages bundle boundary).
+- Scheduled window-close (Story 7.5) uses the existing ShedLock-backed scheduler pattern; class-scoped `@MockBean LockProvider` in tests (committed lock rows survive rollback otherwise).
+
+---
+
+## Epic List
+
+### Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints
+Give attendees a voice and a return channel via five organizer-voted features that compose onto existing machinery with near-zero recurring organizer effort. Replaces the deferred dashboards/PWA/recommendation-engine scope.
+**FRs covered:** FR1–FR14
+
+### FR Coverage Map
+
+| FR | Story | Summary |
+|----|-------|---------|
+| FR1–FR4 | 7.1 | Login-gated attendee topic suggestions → existing topic pool (`source = community`) |
+| FR5–FR7 | 7.2 | Login-gated speaker self-nomination → `speaker_pool` at `IDENTIFIED` via `SpeakerWorkflowService.transition` |
+| FR8–FR9 | 7.3 | Event-triggered slides-online email (DE+EN), once per event, on materials auto-publish |
+| FR10–FR11 | 7.4 | One-click thank-you to organizers + aggregate appreciation counter |
+| FR12–FR14 | 7.5 | ~2-week per-session post-event Q&A that freezes into the archive |
+
+---
+
+## Epic 7 Stories
+
+### Story 7.1: Topics From the Floor
+
+**Story file**: `_bmad-output/implementation-artifacts/7-1-topics-from-the-floor.md` (to be created via `bmad-create-story`)
+**Status**: to-be-created
+**Source idea**: #05 "Topics From the Floor" — 4 votes (GitHub #750)
+**Service**: `partner-coordination-service`
 
 **User Story:**
-As an **attendee**, I want advanced personalization options and content management tools, so that I can optimize my BATbern learning experience with tailored content recommendations and accessibility preferences.
+As a **logged-in attendee**, I want to suggest a future event topic, so that the 200 practitioners in the room become a sensing network for what BATbern should cover next — and so an organizer can ask me *why*.
 
-**Architecture Integration:**
-- **Service**: Attendee Experience Service
-- **Database**: PostgreSQL user preferences, content bookmarks, learning progress
-- **Email**: AWS SES for data export notifications
-- **Frontend**: React advanced settings and personal dashboard
+**Scope (what it is):**
+- A "Suggest a topic" form (title + short rationale) on a login-gated attendee surface.
+- Suggestions write into the **existing** `topic_suggestions` table, tagged `source = community` (vs `partner`).
+- Organizers triage attendee topics in the **existing** topic-suggestion admin UI; the `source` tag shows provenance.
+- Login-gated (`ATTENDEE` role) — per thesis #10/#25, so organizers have a return channel.
+- Reuses the partner topic-voting machinery (builds on idea #05; #13 attendee-voting is a later, separate idea — out of scope here).
 
-**Wireframe Context:**
+**What's NOT in scope:**
+- Attendee *voting* on topics (idea #13, 0 votes — not in this epic).
+- A new admin surface or a separate community-topic moderation queue.
+- Notifying an attendee when "their" topic becomes the next event (that is idea #13's loop-closer — deferred).
 
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-
-1. **Personal Attendee Dashboard:** `docs/wireframes/story-5.2-personal-dashboard.md` ✅
-   - Attendee's main landing page after login
-   - Upcoming events, registrations, saved content
-   - Learning progress tracking
-   - Notification summary
-   - Quick access to all features
-
-2. **Advanced User Settings:** `docs/wireframes/story-5.2-user-settings.md` ✅ (Advanced features only)
-   - **Content Preferences**: Interests/topics, content language, experience level, format preferences
-   - **Language & Accessibility**: UI language, date/time formats, accessibility options
-   - **Data & Export**: GDPR data export, account deactivation/deletion
-   - **Note**: Basic settings (Account, Notifications, Privacy) moved to Story 2.6 in Epic 2
-
-### UI Components
-**Key interface elements:**
-
-> **Note**: Basic account settings (profile photo, name, email, password, basic notifications, basic privacy) are in Story 2.6 (Epic 2).
-> This story focuses on advanced features only.
-
-- **Personal Dashboard**:
-  - Upcoming Events cards (registered events with countdown)
-  - My Registrations list (current and past)
-  - Saved Content preview (recent bookmarks)
-  - Learning Progress widget (paths, achievements)
-  - Notification Center summary (unread count)
-  - Quick Actions (find content, register for event, view profile)
-
-- **Advanced Settings Tabs** (extends Story 2.6 basic settings):
-  - **Content Preferences**: Interests, topic subscriptions, content language, experience level, format preferences
-  - **Language & Accessibility**: UI language, date/time formats, high contrast mode, larger text, screen reader optimizations, keyboard shortcuts
-  - **Data & Export**: GDPR data export request, account deactivation (60-day retention), permanent account deletion
-
-- **Content Preferences Panel**:
-  - Interest topic multi-select (unlimited custom tags)
-  - Content language preferences (German, English, both)
-  - Experience level checkboxes (Beginner, Intermediate, Advanced)
-  - Content format preferences (Presentations, Workshops, Panels, Lightning talks)
-  - Default view mode (Grid vs List)
-
-- **Language & Accessibility Panel**:
-  - UI language selector (German, English)
-  - Date/time format preferences (DD.MM.YYYY, MM/DD/YYYY, YYYY-MM-DD)
-  - Time format (24-hour, 12-hour)
-  - Accessibility options: High contrast, larger text, reduce animations, focus indicators, keyboard shortcuts, screen reader optimizations
-  - [View Keyboard Shortcuts] link
-
-- **Data & Export Panel**:
-  - GDPR data export (JSON/CSV format)
-  - [Request Data Export] button (async, email notification when ready)
-  - Account deactivation (60-day retention, unregisters from all events)
-  - Permanent account deletion (immediate, irreversible)
-  - Account status display (Active, member since, events attended)
-
-- **Bookmark Management**:
-  - Saved content library with grid/list view
-  - Collections/folders for organization
-  - Quick filters (presentations, speakers, topics)
-  - Bulk actions (move to collection, remove)
-
-### Wireframe Status
-- ✅ **EXISTS**: Both wireframes fully documented
-  - Personal Attendee Dashboard (`story-5.2-personal-dashboard.md`)
-  - User Settings (`story-5.2-user-settings.md` - attendee version with notification preferences)
-- ✅ **EXISTS**: Event Details Page (Attendee View) (`story-5.2-event-details-attendee-view.md`)
-  - Attendee-specific event detail view
-  - Personal schedule management
-  - Registration status tracking
-
-### Navigation
-**Key navigation paths from these screens:**
-- **Personal Dashboard →**
-  - → Event Details Page (Attendee View) (click event card) ✅
-  - → Content Viewer (click saved content) ✅
-  - → User Settings (click settings icon) ✅
-  - → Notification Center (global navigation) ✅
-- **User Settings →**
-  - → Notification History (view past notifications)
-  - → Privacy Controls (GDPR export/delete from Story 1.11)
-  - → Email Preview Modal (preview notifications)
-  - ⤴ Personal Dashboard
+**Architecture:**
+```
+Logged-in attendee → "Suggest a topic" form (MuiLayout)
+       │  POST /api/v1/topics/suggestions  (ATTENDEE)
+       ▼
+partner-coordination-service
+  TopicSuggestionController → TopicSuggestionService
+       │  insert topic_suggestions (source = 'community',
+       │  suggested_by_username = <jwt username>)
+       ▼
+  Existing organizer topic-suggestion admin UI
+  shows community + partner suggestions, source-tagged
+```
 
 **Acceptance Criteria:**
 
-> **Note**: Basic profile, notifications, and privacy features (AC 1, 2, 6-12) are in Story 2.6 (Epic 2).
-> This story focuses on advanced personalization and GDPR features.
+**Given** a logged-in attendee on the topic-suggestion surface
+**When** they submit a valid topic (title + rationale)
+**Then** a `topic_suggestions` row is created with `source = community` and `suggested_by_username` = their username
+**And** the suggestion appears in the existing organizer topic-suggestion UI, visibly tagged as community-sourced.
 
-**Personal Dashboard:**
-1. **Bookmark Management**: Save and organize content in collections/folders
-2. **Download History**: Track downloaded presentations and materials
-3. **Learning Progress**: Display completed content, paths, achievements
+**Given** an anonymous (not logged-in) visitor
+**When** they attempt to POST a topic suggestion
+**Then** the request is rejected with 401 (login-gated at both api-gateway and service `SecurityConfig`).
 
-**Advanced Content Preferences:**
-4. **Interest Topics**: Select unlimited custom interest tags
-5. **Content Language**: Prefer German, English, or both for presentations
-6. **Experience Level**: Filter by Beginner, Intermediate, Advanced
-7. **Content Formats**: Prefer Presentations, Workshops, Panels, Lightning talks
-8. **View Mode**: Default to Grid or List view
+**Given** an organizer viewing the topic-suggestion admin UI
+**When** community and partner suggestions coexist
+**Then** each is distinguishable by `source`, and existing partner-suggestion behaviour is unchanged.
 
-**Language & Accessibility:**
-9. **UI Language**: Select German or English interface language
-10. **Date/Time Formats**: Choose date format (DD.MM.YYYY, MM/DD/YYYY, YYYY-MM-DD) and time format (24-hour, 12-hour)
-11. **Accessibility Options**: Enable high contrast, larger text, reduce animations, focus indicators, keyboard shortcuts, screen reader optimizations
-12. **Keyboard Shortcuts**: View and customize keyboard shortcuts
-
-**Data & Export (GDPR):**
-13. **Data Export**: Request complete data export (JSON/CSV) with email notification when ready (24h SLA)
-14. **Account Deactivation**: Temporarily disable account (60-day retention, auto-delete after, unregisters from all events)
-15. **Account Deletion**: Permanently delete all data immediately (irreversible, cascade delete across all services)
-16. **Export Content**: Include profile, event registrations, download history, bookmarks, preferences, settings, notification history
-
-**Definition of Done:**
-- [ ] Bookmarks synchronized across devices
-- [ ] Collections/folders for bookmark organization functional
-- [ ] Learning progress tracking displays completed content
-- [ ] Content preferences (interests, language, level, formats) working
-- [ ] UI language selection changes entire interface (i18n)
-- [ ] Date/time format preferences applied throughout app
-- [ ] All accessibility options functional (high contrast, larger text, etc.)
-- [ ] Keyboard shortcuts customizable and working
-- [ ] GDPR data export request triggers async job, email notification sent when ready
-- [ ] Data export includes all user data (profile, events, downloads, bookmarks, preferences, notifications)
-- [ ] Account deactivation unregisters from all events, hides profile, retains data 60 days
-- [ ] Account deletion cascades across all domain services (User, Event, Speaker, Attendee)
-- [ ] Deletion audit trail logged for compliance
-- [ ] All advanced features accessible from Story 2.6 basic settings (seamless UX)
+**Given** a submitted topic with an empty title or rationale exceeding the max length
+**When** validation runs
+**Then** the API returns 400 (via the explicit `MethodArgumentNotValidException` handler) and no row is created.
 
 ---
 
-## Epic 5 Success Metrics
+### Story 7.2: "I Could Speak on That"
 
-**Functional Success:**
-- ✅ 20+ years of content searchable
-- ✅ Personal preferences managed
-- ✅ Mobile access fully functional
-- ✅ Offline capabilities working
+**Story file**: `_bmad-output/implementation-artifacts/7-2-i-could-speak-on-that.md` (to be created via `bmad-create-story`)
+**Status**: to-be-created
+**Source idea**: #06 "I Could Speak on That" — 4 votes (GitHub #751)
+**Service**: `speaker-coordination-service`
+**Depends on**: 7.1 (extends the same login-gated contribution surface) — buildable independently if 7.1's surface is stubbed.
 
-**Technical Performance:**
-- **Search Speed**: <500ms response time
-- **Mobile Performance**: Lighthouse >90
-- **Offline Storage**: 100MB content cached
-- **System Availability**: >99.5% uptime
+**User Story:**
+As a **logged-in attendee**, once the next event's topic is set and the event is published, I want to raise my hand with a session title and abstract, so that BATbern's speaker pipeline becomes pull-and-push instead of only organizer-sourced — without me needing to know an organizer.
 
-**Business Value:**
-- **Content Access**: 200% increase in historical content downloads
-- **User Engagement**: 40% use mobile app
-- **Satisfaction**: >4/5 user rating
-- **Retention**: 50% return visitors
+**Self-nomination window opens** as soon as the event's topic is set and the event is published (the earliest public signal — maximizes the nomination window; organizers triage nominations against a still-forming program, which is acceptable). Window closes when the event starts.
 
-This epic transforms the attendee experience with modern content discovery and mobile capabilities.
+**Quality bar (MVP):** self-nominations land in the organizer pool **raw** — no agent pre-screen. Decoupled from the abstract-quality agent; add agent scoring later only if volume warrants.
+
+**Scope (what it is):**
+- Once the event's topic is set and the event is published, a logged-in attendee can self-nominate: session title + abstract.
+- Creates a `speaker_pool` entry at **`IDENTIFIED`** via `SpeakerWorkflowService.transition`, marked `source = self_nomination`.
+- Organizers triage self-nominations through the **existing** 8-state workflow exactly like organizer-sourced candidates; promotion to `READY` (with Cognito provisioning + SPEAKER role + `session_users`) remains organizer-only via the existing `promote` endpoint.
+- Self-nomination shares the contribution surface built in 7.1 ("suggest a topic" + "I could speak on that").
+
+**What's NOT in scope:**
+- Any auto-provisioning at nomination time (no Cognito user, no SPEAKER role, no `session_users` row).
+- Reserving a slot or guaranteeing a self-nominee gets on stage (idea #21 "Young Voices on Stage", 0 votes — separate).
+- A new state in the 8-state machine.
+
+> ⚠️ **Design correction to the brainstorming text.** Idea #06 said "→ speaker_pool at READY." Per ADR-009, `READY` is the **provisioning gate** reachable only via `POST /events/{code}/speakers/{id}/promote`. A self-nominee must enter at `IDENTIFIED` and be promoted by an organizer like any other candidate. This is a deliberate, recorded deviation.
+
+**Architecture:**
+```
+Logged-in attendee (event topic set + published)
+       │  POST /api/v1/events/{eventCode}/speakers/self-nominate  (ATTENDEE)
+       │     { sessionTitle, abstract }
+       ▼
+speaker-coordination-service
+  SelfNominationController → SpeakerWorkflowService.transition(→ IDENTIFIED)
+       │  speaker_pool row: status = identified, source = self_nomination,
+       │  proposed_by_username = <jwt username>
+       ▼
+  Existing organizer speaker-pool / brainstorming UI
+  organizer triages → (later) promote → READY  [unchanged path]
+```
+
+**Acceptance Criteria:**
+
+**Given** an event whose topic is set and which is published, and a logged-in attendee
+**When** they submit a self-nomination (title + abstract)
+**Then** a `speaker_pool` entry is created at status `IDENTIFIED` via `SpeakerWorkflowService.transition`, tagged `source = self_nomination` with their username recorded
+**And** no Cognito user, SPEAKER role, or `session_users` row is created
+**And** the abstract is stored raw, without agent pre-screening.
+
+**Given** a self-nominated `speaker_pool` entry
+**When** an organizer views the speaker pool
+**Then** the self-nomination appears alongside organizer-sourced candidates and can be promoted via the existing `promote` endpoint, with the standard provisioning happening only at the transition into `READY`.
+
+**Given** an attempt to self-nominate for an event whose topic is not yet set or which is not published
+**When** the request is processed
+**Then** it is rejected (409/422) and no `speaker_pool` row is created.
+
+**Given** an anonymous visitor
+**When** they attempt to self-nominate
+**Then** the request is rejected with 401.
+
+---
+
+### Story 7.3: "The Slides Are Online" Mail
+
+**Story file**: `_bmad-output/implementation-artifacts/7-3-slides-online-mail.md` (to be created via `bmad-create-story`)
+**Status**: to-be-created
+**Source idea**: #07 "The Slides Are Online" Mail — 3 votes (GitHub #752)
+**Service**: `event-management-service` + AWS SES
+
+**User Story:**
+As an **attendee who registered for an event**, I want an email the day the slides go online, so that I get the one post-event message I'll actually open — turning 3 website visits/year into 6 without asking more commitment of me.
+
+**Scope (what it is):**
+- When an event's materials/slides auto-publish (existing auto-publishing), enqueue a one-time "slides are online" email to that event's registered attendees.
+- DE + EN templates only; locale chosen from the attendee's language preference (any `de*` → German, else EN).
+- Sent **once per event** (idempotent); event-triggered, never a recurring digest (cadence-match #24).
+- Reuses the SES rendering pattern from Story 6.5.
+
+**What's NOT in scope:**
+- A general per-event newsletter or any recurring/scheduled feed.
+- Sending to non-registrants or newsletter-only subscribers.
+- Per-session granular notifications.
+
+**Architecture:**
+```
+Auto-publishing publishes event materials (event-management-service)
+       │  domain event: EventMaterialsPublished
+       ▼
+  SlidesOnlineNotificationService
+       │  guard: not already sent for this eventCode (idempotent)
+       │  recipients: registrations for eventCode
+       │  locale: attendee pref (de* → de, else en)
+       ▼
+  AWS SES (Story 6.5 pattern)  → DE/EN "slides are online" template
+```
+
+**Acceptance Criteria:**
+
+**Given** an event whose materials auto-publish for the first time
+**When** the publish completes
+**Then** each registered attendee receives exactly one "slides are online" email, in DE if their language preference starts with `de`, otherwise EN.
+
+**Given** an event whose materials publish event fires again (re-publish / retry)
+**When** the notification service runs
+**Then** no duplicate emails are sent (idempotent per `eventCode`).
+
+**Given** an attendee with no language preference set
+**When** the email is sent
+**Then** it falls back to EN.
+
+**Given** the SES send fails transiently for a recipient
+**When** the failure occurs
+**Then** it is retried per the existing retry pattern and logged, without blocking other recipients.
+
+---
+
+### Story 7.4: Thank-the-Organizers
+
+**Story file**: `_bmad-output/implementation-artifacts/7-4-thank-the-organizers.md` (to be created via `bmad-create-story`)
+**Status**: to-be-created
+**Source idea**: #02 Thank-the-Organizers Button — 3 votes (GitHub #747)
+**Service**: `event-management-service`
+
+**User Story:**
+As **any attendee** (logged in or not), I want to thank the volunteer organizers in one click after an event, so that the people who've run BATbern for 20 years — free, ad-free, on their own time — finally receive the gratitude attendees said they had no way to express.
+
+**Gating (Resolved Decision):** anonymous-allowed — a thank-you is the one contribution where friction hurts most, so it is deliberately NOT login-gated. Protected by an abuse guard: rate-limit + Turnstile on anonymous submissions.
+
+**Scope (what it is):**
+- After an event (live/completed), any attendee can send a one-click thank-you, with an optional short note.
+- Logged-in attendees are deduped to one thank-you per event; anonymous thank-yous increment a counter (clap-style), rate-limited per session/IP + Turnstile to prevent inflation.
+- Surfaced as an aggregate counter and an appreciation wall (notes shown; logged-in notes attributable, anonymous notes shown without identity).
+- Near-zero build; no new service.
+
+**What's NOT in scope:**
+- Per-organizer targeting or rating.
+- Public leaderboards / gamification.
+- Identity verification of anonymous senders beyond the abuse guard.
+
+**Architecture:**
+```
+Any attendee (event live/completed)
+       │  POST /api/v1/events/{eventCode}/thanks   (public)
+       │     { note? }  + Turnstile token (anonymous) ; JWT if logged in
+       ▼
+event-management-service
+  OrganizerThanksController → OrganizerThanksService
+       │  if logged in: upsert (unique: eventCode + username)
+       │  if anonymous: validate Turnstile + rate-limit → increment counter
+       ▼
+  Aggregate counter + appreciation wall
+  (organizer view; public count optional)
+```
+
+**Acceptance Criteria:**
+
+**Given** a logged-in attendee and an event that is live or completed
+**When** they tap "thank the organizers" (optionally with a note)
+**Then** a thank-you is recorded for that event and the aggregate counter increments by one.
+
+**Given** a logged-in attendee who has already thanked the organizers for an event
+**When** they submit again
+**Then** the count does not double-increment (one per attendee per event); an existing note may be updated.
+
+**Given** an anonymous visitor with a valid Turnstile token within the rate limit
+**When** they tap "thank the organizers"
+**Then** the aggregate counter increments (clap-style); a missing/invalid Turnstile token or exceeding the rate limit is rejected without incrementing.
+
+**Given** an organizer viewing the appreciation surface
+**When** thank-yous exist for an event
+**Then** they see the aggregate count and any submitted notes.
+
+---
+
+### Story 7.5: The Apéro Continues
+
+**Story file**: `_bmad-output/implementation-artifacts/7-5-the-apero-continues.md` (to be created via `bmad-create-story`)
+**Status**: to-be-created
+**Source idea**: #01 The Apéro Continues — 3 votes (GitHub #746)
+**Service**: `event-management-service` → archive
+
+**User Story:**
+As a **logged-in attendee**, I want a time-boxed Q&A per session after an event, so that the open questions that currently have nowhere to live get answered — and become part of the session's permanent record in the archive.
+
+**Window (Resolved Decision):** opens automatically when the event completes, default **14 days**; organizers may extend or close it early (optional override). Close is automatic via the ShedLock-backed scheduler.
+
+**Moderation floor (Resolved Decision):** ships on **login-accountability + organizer takedown** — every post is attributable to a logged-in user, and organizers can remove a post. Agent-assisted curation (idea #23) is a later layer, not a launch dependency.
+
+**Scope (what it is):**
+- A per-session Q&A that opens automatically when an event completes and stays open 14 days (organizer-overridable).
+- During the window, logged-in attendees post questions and answer others' questions asynchronously (attendees + speakers).
+- Organizers can remove any post (takedown) and extend/close the window early.
+- When the window closes (scheduled), the Q&A freezes to read-only and attaches permanently to that session in the public archive.
+- Window open/close is automatic (ShedLock-backed scheduler) — near-zero organizer effort.
+- It is the **digital afterglow**, explicitly distinct from the physical apéro (Sacred-Three #18).
+
+**What's NOT in scope:**
+- An always-on forum (would die at this scale — the time-box is the point).
+- Any feature touching or digitizing the in-person apéro.
+- Agent-assisted moderation/summarisation (idea #23, 2 votes — a later automation layer; MVP relies on login accountability + organizer takedown).
+
+**Architecture:**
+```
+Event completes (event-management EVENT_COMPLETED)
+       │  → open Q&A window for each session (opens_at, closes_at = +14d default)
+       ▼
+event-management-service
+  SessionQnaController → SessionQnaService   (window OPEN)
+       │  logged-in attendees post questions / answers
+       │  organizers: takedown post, extend / close-early
+       ▼
+  ShedLock scheduler closes window at closes_at
+       │  status → FROZEN (read-only)
+       ▼
+  Frozen Q&A rendered on the session's archive page (permanent)
+```
+
+**Acceptance Criteria:**
+
+**Given** an event transitions to completed
+**When** the completion is processed
+**Then** a Q&A window opens for each of its sessions with a close time 14 days out (default).
+
+**Given** an open Q&A window
+**When** an organizer extends it, closes it early, or removes a post
+**Then** the window close time / post visibility updates accordingly, and the change takes effect immediately.
+
+**Given** an open Q&A window and a logged-in attendee
+**When** they post a question or an answer
+**Then** it is stored and visible to other logged-in attendees within the window.
+
+**Given** an anonymous visitor
+**When** they attempt to post a question or answer
+**Then** the request is rejected with 401 (reading frozen Q&A in the archive remains public).
+
+**Given** a Q&A window whose close time has passed
+**When** the scheduled close job runs
+**Then** the window freezes to read-only, no further posts are accepted, and the frozen thread is attached to the session's archive page permanently.
+
+**Given** the scheduled close job and a test context
+**When** the job runs under test
+**Then** the `LockProvider` is mocked at class scope so committed lock rows do not leak across tests.
+
+---
+
+## What Was Cut from the Original Epic 7 Scope
+
+The pre-2026-06 Epic 7 ("Attendee Experience Enhancements") was deferred precisely because it was over-scoped for a community of ~200 attendees, ~3 events/year, ~3 website touchpoints/year. Explicitly cut and **not** part of this epic:
+
+- **Personal engagement dashboard** — no recurring engagement to display for a 3×/year audience.
+- **Content bookmarking** — content is free and findable; bookmarking solves a problem nobody stated.
+- **Granular notification preferences** — replaced by a single event-triggered email (7.3) that respects cadence-match.
+- **Mobile PWA with offline capabilities** — heavy infrastructure for a thrice-yearly visit.
+- **Recommendation engine** — the canonical over-scope (recommendations over 9–18 sessions/year).
+- **Advanced personal settings page** (former Story 5.2 / 7.2) — beyond profile edit, no demand.
+
+Also deliberately rejected in the 2026-06-06 session (not cut from old scope, but ruled out for this epic):
+- **"Who's coming" opt-in attendee list** (idea #09) — killed by user decision.
+- **Attendees as welcome-committee hosts** — regulars promote outward; they don't want assigned social duties.
+- **Instagram/TikTok community channels** (cadence-match #24) — a 3×/year feed looks abandoned and damages the brand; reach the young via people (ideas #20/#21), not feeds.
+
+---
+
+## Success Metrics
+
+- **Contribution Loop adoption (7.1 + 7.2):** ≥ N community topic suggestions and ≥ M self-nominations per event cycle (baseline established after the first event post-launch).
+- **Self-nomination → stage conversion (7.2):** at least one self-nominated speaker promoted to `READY` and presenting within the first 3 event cycles.
+- **Touchpoint lift (7.3):** measurable increase in post-event archive/session visits attributable to the slides-online email (open/click vs baseline newsletter).
+- **Gratitude signal (7.4):** thank-you count per event > 0; qualitative organizer feedback that the gratitude gap is closed.
+- **Archive enrichment (7.5):** ≥ 1 frozen Q&A thread attached per session per event; questions answered within the window.
+- **Guardrail compliance:** zero features that alter the physical event character; organizer recurring effort unchanged (no new standing tasks introduced).
+
+---
+
+## Technical Compliance
+
+- **No new service** (NFR1): all five stories extend existing services.
+- **ADR-009 (speaker workflow):** 7.2 writes `speaker_pool.status` only via `SpeakerWorkflowService.transition`; enters at `IDENTIFIED`; provisioning stays organizer-only at `promote`.
+- **ADR-003 (identifiers):** meaningful cross-service IDs (`eventCode`, `username`); no UUID leakage; no cross-service FK constraints.
+- **Auth:** contribution endpoints (7.1, 7.2, 7.5) role-gated in **both** api-gateway and owning-service `SecurityConfig` (all profile chains); `ATTENDEE` role suffices; rides Google SSO. **Exception:** 7.4 thank-you is a public (token-credential-free) endpoint — `permitAll` in both gateway + service configs, protected by rate-limit + Turnstile on anonymous submissions (Turnstile already wired for public submit flows).
+- **Email (Story 6.5 pattern):** 7.3 DE + EN templates only; `de*` → German else EN.
+- **i18n:** all new frontend UI keys populated in all 10 locales; EN + DE first-class.
+- **Bundle boundary:** contribution surfaces live behind `<MuiLayout>` (MUI OK); any pre-login public element stays Tailwind-only.
+- **Flyway:** new columns/tables only where a story needs them; forward-only, higher-numbered migrations; never edit an applied migration; exclude `**/db/migration/**` from repo-wide sweeps.
+- **Scheduler (7.5):** ShedLock pattern; class-scoped `@MockBean LockProvider` in tests.
+- **GlobalExceptionHandler:** explicit `MethodArgumentNotValidException` handler so validation failures return 400 not 500.
+- **Staging = production (test hygiene):** no Bruno/E2E test may trigger real outbound email (7.3) or leave contribution test data behind — always add cleanup.
+
+---
+
+## Guardrails (carried from the brainstorming session)
+
+- **Sacred Three (idea #18):** (1) the physical apéro stays unstructured — 7.5 is the *digital* afterglow only; (2) topics stay lessons-learned-driven, never hype/vendor; (3) reject by default any feature that changes the event's character.
+- **Cadence-Match (idea #24):** event-triggered communications only — no always-on feed.
+- **Login = reachability (thesis #10/#25):** contributions are gated not to restrict, but to enable dialogue (organizers can reply; a suggestion can become a conversation, a conversation a speaker).
+
+---
+
+## Provenance — Organizer Vote (2026-06-06)
+
+20 living ideas published as GitHub issues (`nissimbuchs/BATbern2`, label `idea-vote`), organizers voted with 👍. This epic implements the 3-and-4-vote winners:
+
+| Idea | GitHub | 👍 | Story |
+|------|--------|----|-------|
+| #05 Topics From the Floor | #750 | 4 | 7.1 |
+| #06 "I Could Speak on That" | #751 | 4 | 7.2 |
+| #07 "The Slides Are Online" Mail | #752 | 3 | 7.3 |
+| #02 Thank-the-Organizers | #747 | 3 | 7.4 |
+| #01 The Apéro Continues | #746 | 3 | 7.5 |
+
+Below-bar ideas (≤ 2 votes) are not in this epic and remain available for a future round: #04 Open Question at Registration (2), #16 One-Tap Forwarding Kit (2), #19 LinkedIn-Native (2), #20 Bring-Your-Junior (2), #23 Curation Agent (2), #15 Register-on-Topic (1), and the 0-vote ideas (#03, #08, #11, #12, #13, #14, #17, #21).
+
+---
+
+## Resolved Decisions
+
+_Resolved with the PM 2026-06-09; folded into the stories above._
+
+1. **7.4 Thank-the-Organizers — gating:** **Anonymous allowed.** A thank-you is the one contribution where friction hurts most, so it is deliberately not login-gated. Protected by an abuse guard (rate-limit + Turnstile on anonymous submissions). Logged-in attendees are deduped to one per event; anonymous submissions increment a rate-limited clap-style counter.
+
+2. **7.4 + 7.5 service home:** **`event-management-service`.** Both features are strongly event-lifecycle-bound (keyed by `eventCode`, triggered by event live/completed), so they live with the event lifecycle rather than spreading attendee features into `attendee-experience-service`.
+
+3. **7.2 self-nomination trigger:** **As soon as the event's topic is set and the event is published.** The earliest public signal, maximizing the nomination window; organizers triage nominations against a still-forming program, which is accepted. Window closes when the event starts.
+
+4. **7.5 Q&A window + moderation floor:** **14-day default, organizer-overridable** (extend / close early). Ships on **login-accountability + organizer takedown**; agent-assisted curation (idea #23) is a later layer, not a launch dependency.
+
+5. **7.2 self-nomination quality bar:** **Raw triage for the MVP** — no agent pre-screen. Keeps 7.2 decoupled from the abstract-quality agent; add agent scoring later only if nomination volume warrants.
