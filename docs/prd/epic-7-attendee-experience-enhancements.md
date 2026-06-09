@@ -33,7 +33,7 @@ The old over-scoped scope (dashboards / bookmarks / PWA / recommendation engine)
 **Architecture Context**:
 - **No new service.** Features land in existing services:
   - 7.1 Topics From the Floor → `partner-coordination-service` (owns `topic_suggestions` / `topic_votes`, Story 2.7 / 8.2)
-  - 7.2 "I Could Speak on That" → `speaker-coordination-service` (`speaker_pool`, 8-state `SpeakerWorkflowService`)
+  - 7.2 "I Could Speak on That" → `event-management-service` (`speaker_pool`, 8-state `SpeakerWorkflowService` — the speaker workflow was unified into event-management per Epic 11 / ADR-009; `events` + `speaker_pool` share one DB, so the topic-set/published check is a local read)
   - 7.3 Slides-Online Mail → `event-management-service` (auto-publishing) + AWS SES
   - 7.4 Thank-the-Organizers → `event-management-service`
   - 7.5 The Apéro Continues → `event-management-service` → archive
@@ -172,7 +172,7 @@ partner-coordination-service
 **Story file**: `_bmad-output/implementation-artifacts/7-2-i-could-speak-on-that.md` (to be created via `bmad-create-story`)
 **Status**: to-be-created
 **Source idea**: #06 "I Could Speak on That" — 4 votes (GitHub #751)
-**Service**: `speaker-coordination-service`
+**Service**: `event-management-service` (unified speaker workflow per Epic 11 / ADR-009 — NOT speaker-coordination-service)
 **Depends on**: 7.1 (extends the same login-gated contribution surface) — buildable independently if 7.1's surface is stubbed.
 
 **User Story:**
@@ -201,10 +201,11 @@ Logged-in attendee (event topic set + published)
        │  POST /api/v1/events/{eventCode}/speakers/self-nominate  (ATTENDEE)
        │     { sessionTitle, abstract }
        ▼
-speaker-coordination-service
-  SelfNominationController → SpeakerWorkflowService.transition(→ IDENTIFIED)
+event-management-service
+  SelfNominationController → create speaker_pool row (defaults to IDENTIFIED)
        │  speaker_pool row: status = identified, source = self_nomination,
        │  proposed_by_username = <jwt username>
+       │  (subsequent status changes ONLY via SpeakerWorkflowService.transition)
        ▼
   Existing organizer speaker-pool / brainstorming UI
   organizer triages → (later) promote → READY  [unchanged path]
