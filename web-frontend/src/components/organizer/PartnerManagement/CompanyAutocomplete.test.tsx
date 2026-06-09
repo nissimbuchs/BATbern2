@@ -80,7 +80,11 @@ describe('CompanyAutocomplete Component - Story 2.8.3 AC3', () => {
     await user.type(input, 'acme');
 
     await waitFor(() => {
-      expect(searchSpy).toHaveBeenCalledWith('acme', expect.any(Number));
+      expect(searchSpy).toHaveBeenCalledWith(
+        'acme',
+        expect.any(Number),
+        expect.objectContaining({ expand: ['logo'] })
+      );
     });
   });
 
@@ -233,8 +237,44 @@ describe('CompanyAutocomplete Component - Story 2.8.3 AC3', () => {
     });
   });
 
-  // Additional AC3 tests: Empty state
+  // Additional AC3 tests: Empty state (create disabled → falls back to "no companies found")
   it('should_showEmptyState_when_noCompaniesFound', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue([]);
+
+    await act(async () => {
+      render(
+        <TestWrapper>
+          <CompanyAutocomplete value={null} onChange={mockOnChange} allowCreate={false} />
+        </TestWrapper>
+      );
+    });
+
+    const input = screen.getByRole('combobox');
+    await user.type(input, 'nonexistent');
+
+    await waitFor(() => {
+      expect(screen.getByText(/no companies found/i)).toBeInTheDocument();
+    });
+  });
+
+  // Selection-locked combobox: the input shows the DISPLAY NAME, never the slug.
+  it('should_showDisplayName_when_companySelected', async () => {
+    await act(async () => {
+      render(
+        <TestWrapper>
+          <CompanyAutocomplete value={mockCompanies[0] as never} onChange={mockOnChange} />
+        </TestWrapper>
+      );
+    });
+
+    const input = screen.getByRole('combobox') as HTMLInputElement;
+    expect(input.value).toBe('Acme Corporation'); // displayName, not 'acme-corp'
+  });
+
+  // Create flow: when no existing company matches, an explicit "Create" row appears
+  // and selecting it materialises the company via get-or-create.
+  it('should_offerCreateOption_when_noExactMatch', async () => {
     const user = userEvent.setup();
     vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue([]);
 
@@ -247,10 +287,45 @@ describe('CompanyAutocomplete Component - Story 2.8.3 AC3', () => {
     });
 
     const input = screen.getByRole('combobox');
-    await user.type(input, 'nonexistent');
+    await user.type(input, 'Brand New Co');
 
     await waitFor(() => {
-      expect(screen.getByText(/no companies found/i)).toBeInTheDocument();
+      expect(screen.getByTestId('company-create-option')).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Create new company "Brand New Co"/i)).toBeInTheDocument();
+  });
+
+  it('should_materialiseCompany_when_createOptionSelected', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue([]);
+    const created = {
+      name: 'brandnewco',
+      displayName: 'Brand New Co',
+      isVerified: false,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    const getOrCreateSpy = vi
+      .spyOn(companyApi, 'getOrCreateCompany')
+      .mockResolvedValue(created as never);
+
+    await act(async () => {
+      render(
+        <TestWrapper>
+          <CompanyAutocomplete value={null} onChange={mockOnChange} />
+        </TestWrapper>
+      );
+    });
+
+    const input = screen.getByRole('combobox');
+    await user.type(input, 'Brand New Co');
+
+    const createOption = await screen.findByTestId('company-create-option');
+    await user.click(createOption);
+
+    await waitFor(() => {
+      expect(getOrCreateSpy).toHaveBeenCalledWith('Brand New Co');
+      expect(mockOnChange).toHaveBeenCalledWith(created);
     });
   });
 });

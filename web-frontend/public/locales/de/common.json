@@ -747,7 +747,8 @@
   "companySearch": {
     "noOptions": "Keine Unternehmen gefunden",
     "searchAriaLabel": "Unternehmen suchen",
-    "clearSearchAriaLabel": "Suche löschen"
+    "clearSearchAriaLabel": "Suche löschen",
+    "createOption": "Neue Firma „{{value}}\" erstellen"
   },
   "countdown": {
     "nextEvent": "Nächste Veranstaltung",

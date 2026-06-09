@@ -743,7 +743,8 @@
   "companySearch": {
     "noOptions": "企業が見つかりません",
     "searchAriaLabel": "企業を検索",
-    "clearSearchAriaLabel": "検索をクリア"
+    "clearSearchAriaLabel": "検索をクリア",
+    "createOption": "新しい会社「{{value}}」を作成"
   },
   "countdown": {
     "nextEvent": "次のイベント",

@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UserDetailModal from './UserDetailModal';
 import '../../../i18n/config';
+import { companyApiClient } from '@/services/api/companyApi';
 import type { User } from '../../../types/user.types';
 
 describe('UserDetailModal Component', () => {
@@ -40,6 +41,16 @@ describe('UserDetailModal Component', () => {
       },
     });
     mockOnClose.mockClear();
+    // The readonly company display now uses CompanyLogo, which fetches the company
+    // (with its logo + display name) via getCompany. Mock it deterministically.
+    vi.spyOn(companyApiClient, 'getCompany').mockResolvedValue({
+      name: 'TechCorp AG',
+      displayName: 'TechCorp AG',
+      isVerified: false,
+      createdAt: '2024-01-01T10:00:00Z',
+      updatedAt: '2024-01-01T10:00:00Z',
+      logo: { url: 'https://example.com/logo.jpg' },
+    } as never);
   });
 
   const renderComponent = (user: User | null, open: boolean) => {
@@ -87,11 +98,11 @@ describe('UserDetailModal Component', () => {
     expect(screen.getByText(/Speaker/i)).toBeInTheDocument();
   });
 
-  it('should_displayCompanyName_when_companyProvided', () => {
+  it('should_displayCompanyName_when_companyProvided', async () => {
     renderComponent(mockUser, true);
 
-    // Company name should be displayed
-    expect(screen.getByText(/TechCorp AG/i)).toBeInTheDocument();
+    // Company display name should be displayed (rendered by CompanyLogo after fetch)
+    expect(await screen.findByText(/TechCorp AG/i)).toBeInTheDocument();
   });
 
   it('should_displayProfilePicture_when_urlProvided', () => {

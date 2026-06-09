@@ -743,7 +743,8 @@
   "companySearch": {
     "noOptions": "No se encontraron empresas",
     "searchAriaLabel": "Buscar empresas",
-    "clearSearchAriaLabel": "Borrar búsqueda"
+    "clearSearchAriaLabel": "Borrar búsqueda",
+    "createOption": "Crear nueva empresa \"{{value}}\""
   },
   "countdown": {
     "nextEvent": "Próximo evento",

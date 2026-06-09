@@ -16,6 +16,7 @@ import {
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
+import CompanyLogo from '@/components/shared/Company/CompanyLogo';
 import type { User } from '../../../types/user.types';
 
 interface UserDetailModalProps {
@@ -115,7 +116,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 {t('table.headers.company')}
               </Typography>
-              <Typography variant="body1">{user.company.name}</Typography>
+              {user.company.name ? (
+                <CompanyLogo companyName={user.company.name} variant="avatar" avatarSize={32} />
+              ) : (
+                <Typography variant="body1">{user.company.displayName}</Typography>
+              )}
               {user.company.website && (
                 <Typography variant="body2" color="text.secondary">
                   {user.company.website}

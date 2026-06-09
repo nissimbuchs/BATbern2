@@ -643,5 +643,8 @@
     "newsletterDescription": "Über chünftigi BATbern-Aaläss informiert blybe.",
     "newsletterLabel": "Dr BATbern-Newsletter abonniere",
     "companySaveError": "S Unternäme het nid chönne gspeicheret wärde. Bitte versuechs nomal."
+  },
+  "companySearch": {
+    "createOption": "Nöii Firma „{{value}}\" erstelle"
   }
 }

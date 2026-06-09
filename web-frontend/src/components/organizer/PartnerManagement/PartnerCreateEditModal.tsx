@@ -24,6 +24,7 @@ import {
 } from '@/hooks/usePartnerMutations/usePartnerMutations';
 import { CreatePartnerSchema, UpdatePartnerSchema } from '@/schemas/partnerSchema';
 import { CompanyAutocomplete } from './CompanyAutocomplete';
+import CompanyLogo from '@/components/shared/Company/CompanyLogo';
 import { PartnershipTierSelect } from './PartnershipTierSelect';
 import { PartnershipDatePicker } from './PartnershipDatePicker';
 import { TierBenefitsPreview } from './TierBenefitsPreview';
@@ -197,7 +198,13 @@ export const PartnerCreateEditModal: React.FC = () => {
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                   {t('modal.fields.company')}
                 </Typography>
-                <Typography variant="body1">{partnerToEdit?.companyName}</Typography>
+                {partnerToEdit?.companyName && (
+                  <CompanyLogo
+                    companyName={partnerToEdit.companyName}
+                    variant="avatar"
+                    avatarSize={32}
+                  />
+                )}
               </Box>
             )}
 

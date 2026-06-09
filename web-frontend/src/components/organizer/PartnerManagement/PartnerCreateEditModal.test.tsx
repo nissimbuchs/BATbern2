@@ -7,6 +7,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { PartnerCreateEditModal } from './PartnerCreateEditModal';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import * as partnerMutations from '@/hooks/usePartnerMutations/usePartnerMutations';
+import { companyApiClient } from '@/services/api/companyApi';
 import { PartnerResponse } from '@/types/generated/partner-types';
 
 // Mock the hooks
@@ -92,6 +93,17 @@ describe('PartnerCreateEditModal', () => {
       isError: false,
       error: null,
     } as any);
+
+    // Edit-mode readonly company display + autocomplete logo adornment use CompanyLogo,
+    // which fetches the company (with logo) via getCompany. Mock it deterministically.
+    vi.spyOn(companyApiClient, 'getCompany').mockResolvedValue({
+      name: 'TestCo',
+      displayName: 'TestCo',
+      isVerified: false,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+      logo: { url: 'https://example.com/logo.png' },
+    } as never);
   });
 
   describe('AC1: Create Partner Modal', () => {
@@ -169,21 +181,21 @@ describe('PartnerCreateEditModal', () => {
       expect(screen.getByRole('heading', { name: /Edit Partnership/i })).toBeInTheDocument();
     });
 
-    it('should_prefillForm_when_editModalOpened', () => {
+    it('should_prefillForm_when_editModalOpened', async () => {
       render(<PartnerCreateEditModal />, { wrapper: createWrapper() });
 
-      // Company should be displayed (read-only)
-      expect(screen.getByText('TestCo')).toBeInTheDocument();
+      // Company should be displayed (read-only, via CompanyLogo after fetch)
+      expect(await screen.findByText('TestCo')).toBeInTheDocument();
 
       // Tier should be pre-selected
       expect(screen.getByDisplayValue('GOLD')).toBeInTheDocument();
     });
 
-    it('should_displayCompanyReadOnly_when_editModalOpened', () => {
+    it('should_displayCompanyReadOnly_when_editModalOpened', async () => {
       render(<PartnerCreateEditModal />, { wrapper: createWrapper() });
 
-      // Company field should be read-only (displayed as text, not input)
-      const companyDisplay = screen.getByText('TestCo');
+      // Company field should be read-only (displayed via CompanyLogo, not an input)
+      const companyDisplay = await screen.findByText('TestCo');
       expect(companyDisplay).toBeInTheDocument();
 
       // Should not have autocomplete input
