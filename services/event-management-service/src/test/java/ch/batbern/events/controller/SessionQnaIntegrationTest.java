@@ -264,6 +264,35 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
                         .isEqualTo(QnaWindowStatus.OPEN));
     }
 
+    // ==================== Threading guards (code-review fixes) ====================
+
+    @Test
+    @DisplayName("Reply to an answer (2nd level) → 400; reply to a removed post → 400")
+    void should_reject_nestedReply_and_replyToRemoved() throws Exception {
+        SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN, Instant.now().plus(10, ChronoUnit.DAYS));
+        SessionQnaPost question = postRepository.save(SessionQnaPost.builder()
+                .windowId(window.getId()).postedByUsername(ATTENDEE).body("question").build());
+        SessionQnaPost answer = postRepository.save(SessionQnaPost.builder()
+                .windowId(window.getId()).parentPostId(question.getId())
+                .postedByUsername(ATTENDEE).body("answer").build());
+
+        // Reply to an answer → one-level-threading violation → 400.
+        mockMvc.perform(post("/api/v1/events/{e}/sessions/{s}/qna/posts", EVENT_CODE, SLUG)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ATTENDEE).roles("ATTENDEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"body\": \"reply to answer\", \"parentPostId\": \"" + answer.getId() + "\" }"))
+                .andExpect(status().isBadRequest());
+
+        // Remove the question, then reply to the tombstone → 400.
+        question.setRemovedAt(Instant.now());
+        postRepository.save(question);
+        mockMvc.perform(post("/api/v1/events/{e}/sessions/{s}/qna/posts", EVENT_CODE, SLUG)
+                        .with(SecurityMockMvcRequestPostProcessors.user(ATTENDEE).roles("ATTENDEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"body\": \"reply to removed\", \"parentPostId\": \"" + question.getId() + "\" }"))
+                .andExpect(status().isBadRequest());
+    }
+
     // ==================== Misc ====================
 
     @Test

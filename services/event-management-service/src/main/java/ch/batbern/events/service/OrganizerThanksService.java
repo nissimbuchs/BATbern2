@@ -52,15 +52,10 @@ public class OrganizerThanksService {
         Event event = loadThankableEvent(eventCode);
 
         if (username != null && !username.isBlank()) {
-            // Logged-in: upsert by (event, username) — one row per attendee, note updatable (AC4).
-            OrganizerThanks row = thanksRepository
-                    .findByEventIdAndThankedByUsername(event.getId(), username)
-                    .orElseGet(() -> OrganizerThanks.builder()
-                            .eventId(event.getId())
-                            .thankedByUsername(username)
-                            .build());
-            row.setNote(note);
-            thanksRepository.save(row);
+            // Logged-in: race-safe atomic upsert by (event, username) — one row per attendee, note
+            // updatable (AC4). A check-then-insert would let two concurrent submissions from the
+            // same user collide on the partial unique index and 500; ON CONFLICT dedupes cleanly.
+            thanksRepository.upsertLoggedInThanks(event.getId(), username, note);
             log.info("Logged-in thank-you for event {} by {}", eventCode, username);
         } else {
             // Anonymous: rate-limit BEFORE inserting so a rejected attempt does not bump the

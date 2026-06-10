@@ -97,7 +97,12 @@ public class OrganizerThanksController {
     private String getClientIp(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].trim();
+            String firstHop = xForwardedFor.split(",")[0].trim();
+            // A blank first hop (e.g. "X-Forwarded-For: , 1.2.3.4") would collapse every caller into
+            // one rate-limit bucket — fall back to the remote address instead.
+            if (!firstHop.isEmpty()) {
+                return firstHop;
+            }
         }
         return request.getRemoteAddr();
     }

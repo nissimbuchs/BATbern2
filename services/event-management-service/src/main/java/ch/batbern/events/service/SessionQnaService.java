@@ -95,6 +95,17 @@ public class SessionQnaService {
             if (!parent.getWindowId().equals(window.getId())) {
                 throw new IllegalArgumentException("Parent post does not belong to this session's Q&A.");
             }
+            // One-level threading only (question → answer). A reply-to-an-answer would be persisted
+            // but never rendered (the thread view groups answers by their parent question id), so it
+            // would silently vanish — reject it instead.
+            if (parent.getParentPostId() != null) {
+                throw new IllegalArgumentException(
+                        "Replies are one level deep — reply to the question, not to an answer.");
+            }
+            // Don't allow replying to an organizer-removed (tombstoned) post.
+            if (parent.isRemoved()) {
+                throw new IllegalArgumentException("Cannot reply to a removed post.");
+            }
         }
         SessionQnaPost saved = postRepository.save(SessionQnaPost.builder()
                 .windowId(window.getId())
