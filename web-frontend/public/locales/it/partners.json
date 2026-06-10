@@ -249,7 +249,11 @@
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
       },
-      "error": "Impossibile caricare gli argomenti"
+      "error": "Impossibile caricare gli argomenti",
+      "source": {
+        "partner": "Partner",
+        "community": "Community"
+      }
     }
   },
   "topicStatus": {

@@ -60,6 +60,18 @@
       "canDo1": "Selata ja ilmoittautua tuleviin BATbern-tapahtumiin",
       "canDo2": "Tutustua aiempiin esityksiin ja puhujien materiaaleihin arkistossa",
       "canDo3": "Hallita tiliäsi ja ilmoitusasetuksia"
+    },
+    "suggestTopic": {
+      "heading": "Ehdota aihetta",
+      "intro": "Mitä tulevan BATbernin tulisi käsitellä? Ehdota aihetta, niin järjestäjät näkevät sen.",
+      "titleLabel": "Aihe",
+      "titlePlaceholder": "esim. Tapahtumapohjainen arkkitehtuuri käytännössä",
+      "descriptionLabel": "Miksi tämä aihe? (valinnainen)",
+      "descriptionPlaceholder": "Lause siitä, miksi tämä on yhteisölle tärkeä",
+      "submit": "Ehdota aihetta",
+      "submitting": "Lähetetään…",
+      "success": "Kiitos! Aiheehdotuksesi on lähetetty järjestäjille.",
+      "error": "Aiheen lähettäminen epäonnistui. Yritä uudelleen."
     }
   },
   "footer": {

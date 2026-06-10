@@ -9,6 +9,7 @@ import { CalendarDays, Archive, Sparkles } from 'lucide-react';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Button } from '@/components/public/ui/button';
 import { Card } from '@/components/public/ui/card';
+import { CommunityTopicSuggestPanel } from '@/components/attendee/CommunityTopicSuggestPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
@@ -60,6 +61,11 @@ const AttendeeWelcomePage = () => {
             <li>• {t('attendee.welcome.canDo3')}</li>
           </ul>
         </Card>
+
+        {/* Story 7.1: Topics From the Floor — give the attendee a voice */}
+        <div className="mt-8">
+          <CommunityTopicSuggestPanel />
+        </div>
       </div>
     </PublicLayout>
   );

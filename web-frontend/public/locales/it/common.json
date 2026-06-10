@@ -60,6 +60,18 @@
       "canDo1": "Sfogliare e iscriverti ai prossimi eventi BATbern",
       "canDo2": "Esplorare i talk passati e i materiali dei relatori nell'archivio",
       "canDo3": "Gestire il tuo account e le preferenze di notifica"
+    },
+    "suggestTopic": {
+      "heading": "Proponi un tema",
+      "intro": "Cosa dovrebbe trattare un prossimo BATbern? Proponi un tema e gli organizzatori lo vedranno.",
+      "titleLabel": "Tema",
+      "titlePlaceholder": "es. Architettura event-driven nella pratica",
+      "descriptionLabel": "Perché questo tema? (facoltativo)",
+      "descriptionPlaceholder": "Una frase sul perché è importante per la community",
+      "submit": "Proponi il tema",
+      "submitting": "Invio in corso…",
+      "success": "Grazie! La tua proposta di tema è stata inviata agli organizzatori.",
+      "error": "Impossibile inviare il tema. Riprova."
     }
   },
   "footer": {

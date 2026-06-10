@@ -60,6 +60,18 @@
       "canDo1": "Bladeren door aankomende BATbern-evenementen en u inschrijven",
       "canDo2": "Vroegere lezingen en materialen van sprekers bekijken in het archief",
       "canDo3": "Uw account en meldingsvoorkeuren beheren"
+    },
+    "suggestTopic": {
+      "heading": "Stel een onderwerp voor",
+      "intro": "Wat moet een volgende BATbern behandelen? Stel een onderwerp voor en de organisatoren zien het.",
+      "titleLabel": "Onderwerp",
+      "titlePlaceholder": "bijv. Event-driven architectuur in de praktijk",
+      "descriptionLabel": "Waarom dit onderwerp? (optioneel)",
+      "descriptionPlaceholder": "Eén zin over waarom dit belangrijk is voor de community",
+      "submit": "Onderwerp voorstellen",
+      "submitting": "Bezig met verzenden…",
+      "success": "Bedankt! Je onderwerpsuggestie is naar de organisatoren gestuurd.",
+      "error": "Je onderwerp kon niet worden verzonden. Probeer het opnieuw."
     }
   },
   "footer": {

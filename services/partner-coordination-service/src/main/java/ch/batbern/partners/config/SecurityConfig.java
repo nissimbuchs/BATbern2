@@ -102,6 +102,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/partners/topics/*").hasAnyRole("PARTNER", "ORGANIZER")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/partners/topics/*").hasAnyRole("PARTNER", "ORGANIZER")
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/partners/topics/*/status").hasRole("ORGANIZER")
+                // Story 7.1: Attendee "Topics From the Floor" — submit-only, ATTENDEE role
+                .requestMatchers(HttpMethod.POST, "/api/v1/attendees/topics").hasRole("ATTENDEE")
                 // Story 8.3: Partner Meeting Coordination (AC6 — ORGANIZER only)
                 .requestMatchers("/api/v1/partner-meetings/**").hasRole("ORGANIZER")
                 // Story 8.4: Partner Notes (ORGANIZER only — partners must not see notes)

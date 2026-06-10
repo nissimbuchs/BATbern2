@@ -60,6 +60,18 @@
       "canDo1": "今後のBATbernイベントを閲覧して登録する",
       "canDo2": "アーカイブで過去のトークやスピーカーの資料を探索する",
       "canDo3": "アカウントと通知設定を管理する"
+    },
+    "suggestTopic": {
+      "heading": "トピックを提案する",
+      "intro": "次回の BATbern で扱うべきテーマは？トピックを提案すると主催者が確認します。",
+      "titleLabel": "トピック",
+      "titlePlaceholder": "例：実践におけるイベント駆動アーキテクチャ",
+      "descriptionLabel": "なぜこのトピック？（任意）",
+      "descriptionPlaceholder": "コミュニティにとって重要な理由を一文で",
+      "submit": "トピックを提案",
+      "submitting": "送信中…",
+      "success": "ありがとうございます！トピックの提案を主催者に送信しました。",
+      "error": "トピックを送信できませんでした。もう一度お試しください。"
     }
   },
   "footer": {

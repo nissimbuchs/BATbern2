@@ -60,6 +60,18 @@
       "canDo1": "Parcourir et s'inscrire aux prochains événements BATbern",
       "canDo2": "Explorer les conférences passées et les supports des intervenants dans les archives",
       "canDo3": "Gérer votre compte et vos préférences de notification"
+    },
+    "suggestTopic": {
+      "heading": "Proposer un sujet",
+      "intro": "Que devrait aborder un prochain BATbern ? Proposez un sujet et les organisateurs le verront.",
+      "titleLabel": "Sujet",
+      "titlePlaceholder": "p. ex. L'architecture événementielle en pratique",
+      "descriptionLabel": "Pourquoi ce sujet ? (facultatif)",
+      "descriptionPlaceholder": "Une phrase sur son importance pour la communauté",
+      "submit": "Proposer le sujet",
+      "submitting": "Envoi…",
+      "success": "Merci ! Votre proposition de sujet a été envoyée aux organisateurs.",
+      "error": "Impossible d'envoyer votre sujet. Veuillez réessayer."
     }
   },
   "footer": {

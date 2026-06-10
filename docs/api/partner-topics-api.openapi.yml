@@ -65,6 +65,39 @@ paths:
       security:
         - bearerAuth: []
 
+  /attendees/topics:
+    post:
+      summary: "Suggest a topic as an attendee (Topics From the Floor)"
+      description: |
+        Story 7.1 — a logged-in ATTENDEE suggests a future event topic. The suggestion flows
+        into the same topic pool as partner suggestions, tagged `source=COMMUNITY` with no
+        company. Submit-only: there is intentionally no attendee read/list endpoint.
+
+        Routed to partner-coordination-service by the gateway (the topic pool lives there).
+      operationId: "suggestCommunityTopic"
+      tags: ["Partner Topics"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopicSuggestionRequest"
+      responses:
+        "201":
+          description: "Community topic suggestion created (source=COMMUNITY)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopicDTO"
+        "400":
+          description: "Validation error (title 5–255 chars, description ≤ 500 chars)"
+        "401":
+          description: "Unauthenticated"
+        "403":
+          description: "Forbidden — requires ATTENDEE role"
+      security:
+        - bearerAuth: []
+
   /partners/topics/{topicId}/vote:
     post:
       summary: "Cast a vote on a topic (toggle on)"
@@ -164,7 +197,8 @@ components:
           description: "Topic description"
         suggestedByCompany:
           type: string
-          description: "Company that suggested this topic (ADR-003 identifier)"
+          nullable: true
+          description: "Company that suggested this topic (ADR-003 identifier). Null for COMMUNITY (attendee) suggestions — Story 7.1."
         voteCount:
           type: integer
           description: "Total number of votes"
@@ -182,7 +216,11 @@ components:
         createdAt:
           type: string
           format: date-time
-      required: [id, title, suggestedByCompany, voteCount, currentPartnerHasVoted, status, createdAt]
+        source:
+          type: string
+          enum: [PARTNER, COMMUNITY]
+          description: "Origin of the suggestion: PARTNER (Story 8.2) or COMMUNITY/attendee (Story 7.1)"
+      required: [id, title, voteCount, currentPartnerHasVoted, status, createdAt, source]
 
     TopicSuggestionRequest:
       type: object

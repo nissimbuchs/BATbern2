@@ -127,6 +127,15 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("partner-coordination-service");
     }
 
+    // Story 7.1: attendee "Topics From the Floor" writes into the topic pool, which lives in
+    // partner-coordination-service — so /api/v1/attendees/topics must route there.
+    @Test
+    @DisplayName("should_routeToPartnerService_when_attendeeTopicsEndpointCalled")
+    void should_routeToPartnerService_when_attendeeTopicsEndpointCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/attendees/topics"))
+                .isEqualTo("partner-coordination-service");
+    }
+
     // Test 5.4: should_routeToAttendeeService_when_contentEndpointCalled
     @Test
     @DisplayName("should_routeToAttendeeService_when_contentEndpointCalled")

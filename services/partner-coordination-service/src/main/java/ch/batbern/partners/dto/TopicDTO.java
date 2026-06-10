@@ -16,5 +16,7 @@ public record TopicDTO(
         boolean currentPartnerHasVoted,
         String status,
         String plannedEvent,
-        Instant createdAt
+        Instant createdAt,
+        // Story 7.1: PARTNER or COMMUNITY — lets the organizer UI badge attendee suggestions.
+        String source
 ) {}

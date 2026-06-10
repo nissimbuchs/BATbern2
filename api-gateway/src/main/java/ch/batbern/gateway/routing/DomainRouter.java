@@ -99,7 +99,10 @@ public class DomainRouter {
                 || cleanPath.equals("/api/v1/public/settings/features")) { // Story 10.16: Feature flags
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/partners")
-                || cleanPath.startsWith("/api/v1/partner-meetings")) {
+                || cleanPath.startsWith("/api/v1/partner-meetings")
+                // Story 7.1: attendee "Topics From the Floor" writes into the topic pool,
+                // which physically lives in partner-coordination-service (Story 8.2).
+                || cleanPath.startsWith("/api/v1/attendees/topics")) {
             return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/content")) {
             return "attendee-experience-service";
