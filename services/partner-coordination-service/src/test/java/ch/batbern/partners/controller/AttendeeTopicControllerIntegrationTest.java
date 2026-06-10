@@ -149,6 +149,54 @@ class AttendeeTopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @WithMockUser(username = "carol", roles = {"ATTENDEE"})
+    void should_return400_when_titleTooLong() throws Exception {
+        Map<String, String> body = new HashMap<>();
+        body.put("title", "a".repeat(256)); // > 255 chars
+
+        mockMvc.perform(post(ATTENDEE_BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "carol", roles = {"ATTENDEE"})
+    void should_return400_when_descriptionTooLong() throws Exception {
+        Map<String, String> body = new HashMap<>();
+        body.put("title", "A perfectly valid topic title");
+        body.put("description", "d".repeat(501)); // > 500 chars
+
+        mockMvc.perform(post(ATTENDEE_BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ─── AC2: anonymous callers cannot submit ─────────────────────────────────
+
+    @Test
+    void should_rejectAnonymous_when_noAuthentication() throws Exception {
+        Map<String, String> body = new HashMap<>();
+        body.put("title", "Anonymous trying to suggest a topic");
+
+        // No @WithMockUser / no .with(user(...)) → anonymous principal.
+        // In production the request is rejected with 401: the api-gateway chain
+        // (anyRequest().authenticated()) and the service prod chain both sit behind a
+        // bearer-token entry point. This @Import(TestSecurityConfig) harness uses the
+        // permitAll testFilterChain (no entry point), so @PreAuthorize denial surfaces
+        // as 403 here rather than 401 — either way it is rejected as a 4xx and, crucially,
+        // no topic row is created.
+        mockMvc.perform(post(ATTENDEE_BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().is4xxClientError());
+
+        org.junit.jupiter.api.Assertions.assertEquals(0, topicRepository.count(),
+                "anonymous submission must not create a topic row");
+    }
+
     // ─── AC: role gate — only ATTENDEE may submit here ────────────────────────
 
     @Test

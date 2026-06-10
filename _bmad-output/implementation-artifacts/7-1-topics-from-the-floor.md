@@ -1,6 +1,6 @@
 # Story 7.1: Topics From the Floor
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -17,8 +17,8 @@ so that the ~200 practitioners in the room become a sensing network for what BAT
 1. A logged-in attendee (`ATTENDEE` role) can submit a topic suggestion (title + rationale/description) via a new endpoint; a `topic_suggestions` row is created with `source = 'community'` and `suggested_by` = their username.
 2. The new endpoint is rejected with **401** for anonymous callers (login-gated at BOTH api-gateway and partner-coordination-service `SecurityConfig`, all profile chains).
 3. Community suggestions appear in the **existing** organizer topic-suggestion admin UI, visibly distinguishable from partner-sourced (`source` tag), with existing partner-suggestion behaviour unchanged.
-4. Validation failures (empty title, title < 5 chars, title > 255, description > 500) return **400** via the explicit `MethodArgumentNotValidException` handler; no row is created.
-5. The attendee-facing "suggest a topic" surface lives behind the `<MuiLayout>` boundary (MUI permitted) and uses `useTranslation()` for all strings, with keys added to all 10 locales.
+4. Validation failures (empty title, title < 5 chars, title > 255, description > 500) return **400**; no row is created. _(Amended 2026-06-10 per code-review Decision 1: validation is enforced service-side via `TopicService.validate()` → `IllegalArgumentException` → 400 in `GlobalExceptionHandler`, matching the established partner-topic precedent — not the bean-validation `@Valid`/`MethodArgumentNotValidException` path the original wording prescribed.)_
+5. The attendee-facing "suggest a topic" surface is login-gated, uses `useTranslation()` for all strings (keys in all 10 locales). _(Amended 2026-06-10 per code-review Decision 2: the surface lives on `AttendeeWelcomePage` (`PublicLayout`) and is built Tailwind-only — MUI is deliberately avoided per the no-MUI-on-public-pages bundle boundary; login-gating is enforced by the `/attendee` `<ProtectedRoute>`. The original "behind `<MuiLayout>`" wording is superseded by the bundle-boundary rule.)_
 6. OpenAPI spec updated contract-first; types regenerated and committed. Integration tests (PostgreSQL Testcontainers) cover create + auth + validation + `source` tagging. No test leaves data behind.
 
 ## Tasks / Subtasks
@@ -91,7 +91,7 @@ Claude Opus 4.8 (1M context) via bmad-dev-story, 2026-06-10.
 
 ### Debug Log References
 
-- `:services:partner-coordination-service:test` — AttendeeTopicControllerIntegrationTest (7) + TopicControllerIntegrationTest (23) = 30 passed, 0 failed (PostgreSQL Testcontainers).
+- `:services:partner-coordination-service:test` — AttendeeTopicControllerIntegrationTest (7, then 10 after code-review patches added title>255 / description>500 / anonymous-rejection) + TopicControllerIntegrationTest (23) (PostgreSQL Testcontainers); all passed, 0 failed.
 - `:api-gateway:test --tests DomainRouterTest` — passed (incl. new attendee-topics route test).
 - Frontend: `tsc --noEmit` clean; vitest 49 passed across the 5 affected suites; eslint clean on changed files.
 
@@ -140,6 +140,7 @@ Claude Opus 4.8 (1M context) via bmad-dev-story, 2026-06-10.
 | Date | Change |
 |------|--------|
 | 2026-06-10 | Story 7.1 implemented: attendee "Topics From the Floor" — `POST /api/v1/attendees/topics` (source=COMMUNITY) into the existing topic pool, organizer Community badge, Tailwind attendee surface, 10-locale i18n. 30 backend + 49 frontend tests green. Status → review. |
+| 2026-06-10 | Code review (3 layers): 2 decisions resolved (AC4 & AC5 amended to match shipped code — service-level validation precedent + no-MUI bundle boundary), 2 patches applied (3 new ITs: title>255, description>500, anonymous-rejection — 10 attendee ITs now green), 3 pre-existing items deferred to `deferred-work.md`, 8 dismissed. No production-code defects. Status → done. |
 
 ## Resolved Decisions
 
@@ -147,3 +148,15 @@ _Resolved with the PM 2026-06-10._
 
 1. **Organizer view:** **One combined list** with a "Partner / Community" `source` badge — organizers triage everything in one place (Task 6 + AC3 reflect this). `GET /api/v1/partners/topics` returns community topics too, source-labelled.
 2. **Attendee visibility:** **Submit-only** for the MVP — the attendee submits and gets a confirmation; there is NO public community-topics list and no browse/vote (idea #13 stays out of scope). Do not build a read/list endpoint for attendees in this story.
+
+## Review Findings
+
+_Code review 2026-06-10 (3 layers: Blind Hunter, Edge Case Hunter, Acceptance Auditor). 2 decision-needed, 2 patch, 3 deferred, 8 dismissed as noise._
+
+- [x] [Review][Decision] AC4 validation path — RESOLVED 2026-06-10 (option 1): accept the service-level validation precedent; **AC4 amended** to match. No code change.
+- [x] [Review][Decision] AC5 layout boundary — RESOLVED 2026-06-10 (option 1): ratify the bundle-boundary amendment; **AC5 amended** to reflect the Tailwind/`PublicLayout` + `<ProtectedRoute>` reality. No code change.
+- [x] [Review][Patch] AC4 validation-boundary test gap — FIXED 2026-06-10: added `should_return400_when_titleTooLong` (256 chars) + `should_return400_when_descriptionTooLong` (501 chars) [services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/AttendeeTopicControllerIntegrationTest.java]
+- [x] [Review][Patch] AC2 anonymous-rejection untested — FIXED 2026-06-10: added `should_rejectAnonymous_when_noAuthentication` asserting an anonymous POST is rejected (4xx) and creates no row. Documented in the test that prod returns 401 (gateway + service prod chain behind the bearer entry point) while the `permitAll` test harness surfaces the `@PreAuthorize` denial as 403 [services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/AttendeeTopicControllerIntegrationTest.java]
+- [x] [Review][Defer] Malformed/empty request body → 500 instead of 400 — `GlobalExceptionHandler` has no `HttpMessageNotReadableException` handler, so a body-less/garbage POST falls through to the catch-all `Exception` → 500 [services/partner-coordination-service/src/main/java/ch/batbern/partners/exception/GlobalExceptionHandler.java] — deferred, pre-existing (affects all POST endpoints, newly inherited by /attendees/topics)
+- [x] [Review][Defer] `resolveCallerCompanyNameOrNull()` fail-open — it swallows all exceptions and returns null, so a partner whose company resolution transiently fails is treated as a null-company organizer and bypasses the ownership guard in `updateTopic`/`deleteTopic` [services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:227] — deferred, pre-existing (the `callerCompanyName != null` short-circuit predates this commit; the diff only flipped the `.equals()` operand order to avoid an NPE on community topics, which is correct)
+- [x] [Review][Defer] `getCurrentUsername()` empty-string trap — a blank `suggestedBy` is persisted if the JWT username claim is empty (Pattern 3b twin); no guard in `suggestCommunityTopic` [services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:108] — deferred, pre-existing (dormant in staging where the JWT always carries a username; a local-dev/edge risk)
