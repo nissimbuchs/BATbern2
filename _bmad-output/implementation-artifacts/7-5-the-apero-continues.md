@@ -149,3 +149,24 @@ _Resolved with the PM 2026-06-10._
 2. **Who can post:** **Any logged-in user** may post within the window; the session's speaker is just a normal poster (role may be badged). No event-registrant restriction.
 3. **Takedown:** **Soft-delete with a tombstone** — set `removed_at` and render "removed by organizer"; never hard-delete (preserves thread coherence in the frozen archive). (Schema `removed_at` column + Task 3.)
 4. **Notifications:** **None for the MVP** — attendees check back during the 2-week window. No new email machinery; revisit later if engagement warrants.
+
+## Senior Developer Review (AI)
+
+**Reviewed:** 2026-06-11, adversarial 3-layer review (Blind Hunter + Edge Case Hunter + Acceptance Auditor) over commits 78a9a837..e56dfff5. **Outcome: Approve with minor fixes applied.**
+
+All 7 ACs + 4 Resolved Decisions + project rules (ADR-003, enum value-flow via converter, no-MUI-public, ShedLock `@MockBean` test, doc-drift) confirmed **Met** by the Acceptance Auditor.
+
+Fixes applied this review (commit 2ca3966e):
+- **[High] One-level threading + tombstone-reply guards.** `addPost` now rejects (400) a reply whose parent is itself an answer, and a reply to an organizer-removed post. Both were previously persisted but never rendered (the thread view groups answers only by their top-level question id), so they'd silently vanish. Added an integration test.
+
+Noted but **not** changed (see Open Questions): public username attribution; `patchWindow` both-fields precedence; the rare concurrent-listener window-open race; freeze-job batch size.
+
+## Open Questions
+
+1. **Public username attribution on the Q&A archive.** A frozen Q&A thread is publicly readable (AC3), and each post shows its poster's `username` (e.g. `john.doe`) to anonymous visitors — by design, since AC2 says posts are "attributed to their username". This is a deliberate contrast with 7.4, where notes are organizer-only. Are you comfortable publishing attendee usernames on the public archive, or would you prefer the public view to show display names / "BATbern attendee" / initials, with full usernames only for organizers? (Easy to add a public-vs-organizer branch like 7.4's notes if you want it.)
+
+2. **`PATCH .../qna` when an organizer sends both `closesAt` and `close=true`.** Current precedence: `close=true` wins (the window freezes; the new `closesAt` is ignored). That seems the safer default, but it's silent. Keep this precedence, or reject the ambiguous combination with a 400?
+
+3. **Concurrent window-opening race (low risk, left as-is).** Window creation is idempotent for the normal case (the `exists` guard handles a re-fired completion event). In the extraordinarily rare case of two `EVENT_COMPLETED` transitions for the same event firing in the *same instant* (e.g. the ShedLock-guarded scheduler colliding with a manual transition), the unique index would roll back that one opening attempt — the listener swallows it so the state transition is never blocked, and a later re-fire is idempotent. Acceptable for MVP, or do you want per-session isolation (each window in its own transaction)?
+
+4. **Freeze job batch size.** `freezeQnaWindows` loads all expired open windows in a single query/transaction each hour. Trivial at BATbern's scale (a handful of sessions per event). Flagged only for the future: if an event ever had thousands of sessions, this would want pagination. No action needed now — noting it for the record.

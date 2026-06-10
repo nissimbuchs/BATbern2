@@ -161,3 +161,19 @@ _Resolved with the PM 2026-06-10._
 1. **Placement:** On the **public event/archive page**, built **Tailwind-only** (no MUI) so anyone — logged in or not — can thank. (Task 5 + AC7 reflect this.)
 2. **Notes visibility:** The **aggregate count is public**; free-text **notes are organizer-visible only** (no public appreciation wall of anonymous notes; no approval queue). Keeps troll-text off the public surface with zero recurring moderation. → AC6 returns count publicly, notes only in the organizer view.
 3. **Abuse guard:** **Per-event per-IP cap + Turnstile** on anonymous submissions (not just the global gateway IP limit) — a small cap (e.g. a handful per event per IP) is enough at this scale.
+
+## Senior Developer Review (AI)
+
+**Reviewed:** 2026-06-11, adversarial 3-layer review (Blind Hunter + Edge Case Hunter + Acceptance Auditor) over commits 78a9a837..e56dfff5. **Outcome: Approve with minor fixes applied.**
+
+All 7 ACs + 3 Resolved Decisions + project rules (ADR-003, no-MUI-public, GlobalExceptionHandler, Flyway) confirmed **Met** by the Acceptance Auditor.
+
+Fixes applied this review (commit 2ca3966e):
+- **[High] Race-safe logged-in dedupe.** The check-then-insert upsert could collide on the partial unique index under a concurrent double-submit and return 500. Replaced with an atomic native `ON CONFLICT … DO UPDATE` (`OrganizerThanksRepository.upsertLoggedInThanks`). The UI already disables the button mid-submit, so this is defense-in-depth for multi-tab/API callers.
+- **[Low] `getClientIp` empty-hop fallback.** A blank `X-Forwarded-For` first hop would have collapsed all anonymous callers into one rate-limit bucket; now falls back to `remoteAddr`.
+
+## Open Questions
+
+1. **Rate-limit cap and its scope.** The anonymous cap is **5 thank-yous per event per IP per hour**, held **in-memory per service instance** (Caffeine, no Redis — matching the project's caching stance). So the real cluster-wide ceiling is roughly `5 × number-of-running-instances`, and it resets on every deploy/restart. For a gratitude clap that's almost certainly fine, but if you'd prefer a hard cluster-wide cap we'd need a shared store. Is 5/event/IP/hour the "handful" you intended, and is per-instance acceptable?
+
+2. **Thank-you visibility vs. the Q&A on archived events.** The thank-you widget shows only while an event is `EVENT_LIVE`/`EVENT_COMPLETED` and disappears once the event flips to `ARCHIVED` (~14 days after the event). The 7.5 Q&A, by contrast, stays visible on archived events. Do you want the thank-you button to remain on archived event pages too (i.e. allow thanking older events), or is the live/completed-only window the intended behaviour?
