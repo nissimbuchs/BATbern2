@@ -72,6 +72,21 @@
       "submitting": "Enviando…",
       "success": "¡Gracias! Tu propuesta de tema se ha enviado a los organizadores.",
       "error": "No se pudo enviar tu tema. Inténtalo de nuevo."
+    },
+    "selfNominate": {
+      "button": "Yo podría hablar de eso",
+      "heading": "Propónte como ponente",
+      "intro": "¿Tienes una charla en mente? Proponla y los organizadores la verán junto a otras candidaturas.",
+      "introWithTopic": "El próximo evento trata sobre “{{topic}}”. ¿Tienes una charla que encaje? Proponla y los organizadores la verán.",
+      "titleLabel": "Título de la charla",
+      "titlePlaceholder": "p. ej. Arquitectura orientada a eventos en la práctica",
+      "abstractLabel": "Resumen",
+      "abstractPlaceholder": "Unas frases sobre lo que tratará tu charla",
+      "submit": "Enviar propuesta",
+      "submitting": "Enviando…",
+      "success": "¡Gracias! Tu propuesta se ha enviado a los organizadores.",
+      "error": "No se pudo enviar tu propuesta. Inténtalo de nuevo.",
+      "alreadyDone": "Ya te has propuesto para este evento."
     }
   },
   "footer": {

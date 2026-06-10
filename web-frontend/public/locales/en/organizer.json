@@ -600,6 +600,7 @@
       "sublineFilterAriaLabel": "Filter {{state}} column: {{description}}",
       "filterClearedAnnouncement": "Column filter cleared",
       "filterAppliedAnnouncement": "{{state}} column filtered, showing {{count}} cards"
-    }
+    },
+    "selfNominated": "Self-nominated"
   }
 }

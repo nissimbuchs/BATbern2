@@ -72,6 +72,21 @@
       "submitting": "Trametter…",
       "success": "Grazia fitg! Tia proposta da tema è vegnida tramessa als organisaturs.",
       "error": "Tia proposta n'ha betg pudì vegnir tramessa. Emprova anc ina giada."
+    },
+    "selfNominate": {
+      "button": "Da quai pudess jau discurrer",
+      "heading": "Sa proponer sco relatur/relatura",
+      "intro": "Has ti ina preschentaziun? Propona la e gli organisaturs la vesan ensemen cun autras candidaturas.",
+      "introWithTopic": "Il proxim eveniment tracta da “{{topic}}”. Has ti ina preschentaziun adattada? Propona la als organisaturs.",
+      "titleLabel": "Titel da la preschentaziun",
+      "titlePlaceholder": "p.ex. Architectura event-driven en la pratica",
+      "abstractLabel": "Abstract",
+      "abstractPlaceholder": "Intginas frasas davart tge che tractescha tia preschentaziun",
+      "submit": "Trametter la proposta",
+      "submitting": "Trametter…",
+      "success": "Grazia! Tia proposta è vegnida tramessa als organisaturs.",
+      "error": "Impussibel da trametter tia proposta. Emprova anc ina giada.",
+      "alreadyDone": "Ti t'has gia proponì per quest eveniment."
     }
   },
   "footer": {

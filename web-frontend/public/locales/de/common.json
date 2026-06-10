@@ -73,6 +73,21 @@
       "submitting": "Wird gesendet…",
       "success": "Danke! Dein Themenvorschlag wurde an die Organisatoren gesendet.",
       "error": "Dein Thema konnte nicht gesendet werden. Bitte versuche es erneut."
+    },
+    "selfNominate": {
+      "button": "Dazu könnte ich sprechen",
+      "heading": "Als Referent:in vorschlagen",
+      "intro": "Du hast einen Vortrag im Gepäck? Reiche ihn ein – die Organisatoren sehen deinen Vorschlag neben anderen Kandidat:innen.",
+      "introWithTopic": "Das nächste Event dreht sich um „{{topic}}“. Du hast einen passenden Vortrag? Reiche ihn ein – die Organisatoren sehen deinen Vorschlag.",
+      "titleLabel": "Vortragstitel",
+      "titlePlaceholder": "z. B. Event-Driven Architecture in der Praxis",
+      "abstractLabel": "Abstract",
+      "abstractPlaceholder": "Ein paar Sätze, worum es in deinem Vortrag geht",
+      "submit": "Vorschlag senden",
+      "submitting": "Wird gesendet…",
+      "success": "Danke! Dein Vorschlag wurde an die Organisatoren gesendet.",
+      "error": "Dein Vorschlag konnte nicht gesendet werden. Bitte versuche es erneut.",
+      "alreadyDone": "Du hast dich für dieses Event bereits vorgeschlagen."
     }
   },
   "footer": {

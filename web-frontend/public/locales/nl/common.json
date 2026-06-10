@@ -72,6 +72,21 @@
       "submitting": "Bezig met verzenden…",
       "success": "Bedankt! Je onderwerpsuggestie is naar de organisatoren gestuurd.",
       "error": "Je onderwerp kon niet worden verzonden. Probeer het opnieuw."
+    },
+    "selfNominate": {
+      "button": "Daar zou ik over kunnen spreken",
+      "heading": "Stel jezelf voor als spreker",
+      "intro": "Heb je een talk in gedachten? Dien hem in en de organisatoren zien je voorstel naast andere kandidaten.",
+      "introWithTopic": "Het volgende evenement gaat over “{{topic}}”. Heb je een passende talk? Dien hem in en de organisatoren zien je voorstel.",
+      "titleLabel": "Titel van de talk",
+      "titlePlaceholder": "bijv. Event-driven architectuur in de praktijk",
+      "abstractLabel": "Samenvatting",
+      "abstractPlaceholder": "Een paar zinnen over waar je talk over gaat",
+      "submit": "Voorstel versturen",
+      "submitting": "Versturen…",
+      "success": "Bedankt! Je voorstel is naar de organisatoren verstuurd.",
+      "error": "Je voorstel kon niet worden verstuurd. Probeer het opnieuw.",
+      "alreadyDone": "Je hebt jezelf al voorgesteld voor dit evenement."
     }
   },
   "footer": {

@@ -1289,7 +1289,20 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                 {cardDisplayName.charAt(0).toUpperCase()}
               </Avatar>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2">{cardDisplayName}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                  <Typography variant="subtitle2">{cardDisplayName}</Typography>
+                  {/* Story 7.2: flag attendee self-nominations so organizers can tell them
+                      apart from organizer-sourced candidates during triage. */}
+                  {speaker.source === 'self_nomination' && (
+                    <Chip
+                      label={t('speakerCard.selfNominated')}
+                      size="small"
+                      color="info"
+                      variant="outlined"
+                      data-testid={`self-nominated-badge-${speaker.id}`}
+                    />
+                  )}
+                </Box>
                 {showBrainstormCaption && (
                   <Typography
                     variant="caption"
@@ -1309,6 +1322,21 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
             {speaker.expertise && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                 {speaker.expertise}
+              </Typography>
+            )}
+            {/* Story 7.2: the self-nominee's proposed talk (no session yet at IDENTIFIED). */}
+            {speaker.proposedSessionTitle && (
+              <Typography
+                variant="caption"
+                sx={{ mt: 1, display: 'block', fontWeight: 600 }}
+                data-testid={`proposed-talk-title-${speaker.id}`}
+              >
+                {speaker.proposedSessionTitle}
+              </Typography>
+            )}
+            {speaker.proposedAbstract && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {speaker.proposedAbstract}
               </Typography>
             )}
 

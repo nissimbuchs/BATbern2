@@ -423,6 +423,42 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/speakers/self-nominate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Attendee self-nominates as a speaker ("I Could Speak on That")
+     * @description A logged-in attendee raises their hand with a proposed talk once the event's topic
+     *     is set + published, feeding the speaker pipeline from the floor.
+     *
+     *     **Story**: 7.2 - "I Could Speak on That"
+     *     **Authorization**: Requires ATTENDEE role (login-gated end-to-end)
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Business Rules**:
+     *     - The event's topic must be set (`topicCode != null`) AND the event must be
+     *       published (`publishedAt != null` or `currentPublishedPhase != 'none'`) — else 409.
+     *     - The nomination lands as a `speaker_pool` row at the `IDENTIFIED` default, tagged
+     *       `source = 'self_nomination'` with `proposedByUsername` = the caller's username.
+     *       **No** Cognito user, SPEAKER role, or session is created here — provisioning stays
+     *       organizer-only at promote-to-READY.
+     *     - Identity (speaker name + company) is auto-filled from the attendee's profile; the
+     *       body carries only the proposed talk. Unknown body fields are rejected (400).
+     *     - At most **one** self-nomination per attendee per event — a second attempt returns 409.
+     */
+    post: operations['selfNominateSpeaker'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/speakers/pool/{speakerId}': {
     parameters: {
       query?: never;
@@ -4582,6 +4618,25 @@ export interface components {
       validationMessages: string[];
     };
     /**
+     * @description Story 7.2 "I Could Speak on That": an attendee's speaker self-nomination body. The
+     *     attendee supplies only the proposed talk — their name + company are auto-filled from
+     *     their user profile server-side, so identity is never re-typed and cannot be spoofed.
+     *     `additionalProperties: false`: an unexpected field (e.g. `speakerName`, `status`) is
+     *     rejected with HTTP 400.
+     */
+    SelfNominateSpeakerRequest: {
+      /**
+       * @description The proposed talk title.
+       * @example Event-driven architecture in practice
+       */
+      sessionTitle: string;
+      /**
+       * @description The proposed talk abstract, stored raw (no agent pre-screen).
+       * @example A field report on migrating a monolith to an event-driven core, including the dead ends.
+       */
+      abstract: string;
+    };
+    /**
      * @description Request to add a potential speaker to the event speaker pool during brainstorming phase.
      *     Story 5.2 - AC9-12: Speaker Pool Management.
      *     Story 11.D.1 (AR23): `additionalProperties: false` — any client-supplied `email` (or
@@ -4759,6 +4814,29 @@ export interface components {
        * @example Met at KubeCon 2024. Very enthusiastic about BATbern.
        */
       notes?: string | null;
+      /**
+       * @description Story 7.2 — provenance of the pool row. `organizer_added` for organizer-sourced
+       *     candidates (the default), `self_nomination` for attendee "I Could Speak on That"
+       *     entries. Lets the organizer pool/brainstorming UI flag self-nominations.
+       * @example self_nomination
+       * @enum {string}
+       */
+      source?: 'organizer_added' | 'self_nomination';
+      /**
+       * @description Story 7.2 — username of the self-nominating attendee (null for organizer-added rows).
+       * @example jane.attendee
+       */
+      proposedByUsername?: string | null;
+      /**
+       * @description Story 7.2 — the talk title the attendee proposed (null for organizer-added rows).
+       * @example Event-driven architecture in practice
+       */
+      proposedSessionTitle?: string | null;
+      /**
+       * @description Story 7.2 — the talk abstract the attendee proposed, stored raw (null for organizer-added rows).
+       * @example A field report on migrating a monolith to an event-driven core.
+       */
+      proposedAbstract?: string | null;
       /**
        * Format: date-time
        * @description Timestamp when speaker was added to pool
@@ -5977,6 +6055,75 @@ export interface operations {
            *       "error": "Not Found"
            *     }
            */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  selfNominateSpeaker: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SelfNominateSpeakerRequest'];
+      };
+    };
+    responses: {
+      /** @description Self-nomination created (status IDENTIFIED, source self_nomination) */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerPoolResponse'];
+        };
+      };
+      /** @description Validation error (missing sessionTitle/abstract, or an unknown field) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Not authenticated (anonymous caller — rejected at the API gateway) */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description Conflict. Two paths:
+       *     (a) `SELF_NOMINATION_NOT_ALLOWED` — the event's topic is unset or it is unpublished, or
+       *     (b) `DUPLICATE_SELF_NOMINATION` — this attendee already self-nominated for the event.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };

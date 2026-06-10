@@ -1121,6 +1121,103 @@ paths:
       security:
         - BearerAuth: []
 
+  /events/{eventCode}/speakers/self-nominate:
+    post:
+      tags:
+        - Event Actions
+      summary: Attendee self-nominates as a speaker ("I Could Speak on That")
+      description: |
+        A logged-in attendee raises their hand with a proposed talk once the event's topic
+        is set + published, feeding the speaker pipeline from the floor.
+
+        **Story**: 7.2 - "I Could Speak on That"
+        **Authorization**: Requires ATTENDEE role (login-gated end-to-end)
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - The event's topic must be set (`topicCode != null`) AND the event must be
+          published (`publishedAt != null` or `currentPublishedPhase != 'none'`) — else 409.
+        - The nomination lands as a `speaker_pool` row at the `IDENTIFIED` default, tagged
+          `source = 'self_nomination'` with `proposedByUsername` = the caller's username.
+          **No** Cognito user, SPEAKER role, or session is created here — provisioning stays
+          organizer-only at promote-to-READY.
+        - Identity (speaker name + company) is auto-filled from the attendee's profile; the
+          body carries only the proposed talk. Unknown body fields are rejected (400).
+        - At most **one** self-nomination per attendee per event — a second attempt returns 409.
+      operationId: selfNominateSpeaker
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelfNominateSpeakerRequest'
+      responses:
+        '201':
+          description: Self-nomination created (status IDENTIFIED, source self_nomination)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: Validation error (missing sessionTitle/abstract, or an unknown field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated (anonymous caller — rejected at the API gateway)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            Conflict. Two paths:
+            (a) `SELF_NOMINATION_NOT_ALLOWED` — the event's topic is unset or it is unpublished, or
+            (b) `DUPLICATE_SELF_NOMINATION` — this attendee already self-nominated for the event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notAllowed:
+                  summary: Topic unset / not published
+                  value:
+                    message: "Self-nomination is not open for BATbern57 — the event topic must be set and published first."
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "SELF_NOMINATION_NOT_ALLOWED"
+                duplicate:
+                  summary: Already self-nominated
+                  value:
+                    message: "You have already self-nominated for BATbern57."
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "DUPLICATE_SELF_NOMINATION"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /events/{eventCode}/speakers/pool/{speakerId}:
     patch:
       tags:
@@ -8555,6 +8652,32 @@ components:
           example:
             - "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified (need 6, have 3)"
 
+    SelfNominateSpeakerRequest:
+      type: object
+      description: |
+        Story 7.2 "I Could Speak on That": an attendee's speaker self-nomination body. The
+        attendee supplies only the proposed talk — their name + company are auto-filled from
+        their user profile server-side, so identity is never re-typed and cannot be spoofed.
+        `additionalProperties: false`: an unexpected field (e.g. `speakerName`, `status`) is
+        rejected with HTTP 400.
+      additionalProperties: false
+      required:
+        - sessionTitle
+        - abstract
+      properties:
+        sessionTitle:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: The proposed talk title.
+          example: Event-driven architecture in practice
+        abstract:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: The proposed talk abstract, stored raw (no agent pre-screen).
+          example: A field report on migrating a monolith to an event-driven core, including the dead ends.
+
     AddSpeakerToPoolRequest:
       type: object
       description: |
@@ -8757,6 +8880,31 @@ components:
           nullable: true
           description: Free-text notes about the speaker
           example: Met at KubeCon 2024. Very enthusiastic about BATbern.
+        source:
+          type: string
+          enum:
+            - organizer_added
+            - self_nomination
+          description: |
+            Story 7.2 — provenance of the pool row. `organizer_added` for organizer-sourced
+            candidates (the default), `self_nomination` for attendee "I Could Speak on That"
+            entries. Lets the organizer pool/brainstorming UI flag self-nominations.
+          example: self_nomination
+        proposedByUsername:
+          type: string
+          nullable: true
+          description: Story 7.2 — username of the self-nominating attendee (null for organizer-added rows).
+          example: jane.attendee
+        proposedSessionTitle:
+          type: string
+          nullable: true
+          description: Story 7.2 — the talk title the attendee proposed (null for organizer-added rows).
+          example: Event-driven architecture in practice
+        proposedAbstract:
+          type: string
+          nullable: true
+          description: Story 7.2 — the talk abstract the attendee proposed, stored raw (null for organizer-added rows).
+          example: A field report on migrating a monolith to an event-driven core.
         createdAt:
           type: string
           format: date-time

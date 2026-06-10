@@ -73,6 +73,21 @@
       "submitting": "Submitting…",
       "success": "Thanks! Your topic suggestion has been sent to the organizers.",
       "error": "Could not submit your topic. Please try again."
+    },
+    "selfNominate": {
+      "button": "I could speak on that",
+      "heading": "Propose yourself as a speaker",
+      "intro": "Got a talk in you? Pitch it and the organizers will see your proposal alongside other speaker candidates.",
+      "introWithTopic": "The next event is about “{{topic}}”. Got a talk that fits? Pitch it and the organizers will see your proposal.",
+      "titleLabel": "Talk title",
+      "titlePlaceholder": "e.g. Event-driven architecture in practice",
+      "abstractLabel": "Abstract",
+      "abstractPlaceholder": "A few sentences on what your talk would cover",
+      "submit": "Submit nomination",
+      "submitting": "Submitting…",
+      "success": "Thanks! Your nomination has been sent to the organizers.",
+      "error": "Could not submit your nomination. Please try again.",
+      "alreadyDone": "You’ve nominated yourself for this event."
     }
   },
   "footer": {

@@ -35,6 +35,13 @@ export interface SpeakerPoolEntry {
   createdAt: string;
   updatedAt?: string;
 
+  // Story 7.2 "I Could Speak on That": provenance + the attendee's proposed talk, so the
+  // organizer pool/brainstorming UI can flag self-nominations and show the pitch.
+  source?: 'organizer_added' | 'self_nomination';
+  proposedByUsername?: string | null;
+  proposedSessionTitle?: string | null;
+  proposedAbstract?: string | null;
+
   // Story 6.1b: Speaker Invitation System fields
   username?: string;
   invitedAt?: string;

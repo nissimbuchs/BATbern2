@@ -72,6 +72,21 @@
       "submitting": "Envoi…",
       "success": "Merci ! Votre proposition de sujet a été envoyée aux organisateurs.",
       "error": "Impossible d'envoyer votre sujet. Veuillez réessayer."
+    },
+    "selfNominate": {
+      "button": "Je pourrais en parler",
+      "heading": "Proposez-vous comme intervenant·e",
+      "intro": "Vous avez une présentation en tête ? Proposez-la et les organisateurs la verront parmi les autres candidatures.",
+      "introWithTopic": "Le prochain événement porte sur « {{topic}} ». Une présentation qui colle ? Proposez-la et les organisateurs la verront.",
+      "titleLabel": "Titre de la présentation",
+      "titlePlaceholder": "p. ex. L'architecture orientée événements en pratique",
+      "abstractLabel": "Résumé",
+      "abstractPlaceholder": "Quelques phrases sur le contenu de votre présentation",
+      "submit": "Envoyer la proposition",
+      "submitting": "Envoi…",
+      "success": "Merci ! Votre proposition a été envoyée aux organisateurs.",
+      "error": "Impossible d'envoyer votre proposition. Veuillez réessayer.",
+      "alreadyDone": "Vous vous êtes déjà proposé·e pour cet événement."
     }
   },
   "footer": {

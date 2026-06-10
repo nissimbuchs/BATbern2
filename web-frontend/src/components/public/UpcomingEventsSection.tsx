@@ -30,6 +30,8 @@ function UpcomingEventCardWithStatus({ event }: { event: EventDetailUI }) {
       viewMode="grid"
       linkPrefix="/events/"
       myRegistrationStatus={myReg?.status}
+      // Story 7.2 "I Could Speak on That": attendees can self-nominate from upcoming-event cards.
+      enableSelfNomination
     />
   );
 }

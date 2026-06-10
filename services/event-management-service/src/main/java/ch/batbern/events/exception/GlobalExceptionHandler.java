@@ -1010,6 +1010,62 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle SelfNominationNotAllowedException (Story 7.2): attendee self-nomination attempted
+     * for an event whose topic is unset or which is unpublished. Returns HTTP 409 Conflict with
+     * {@code details.code = SELF_NOMINATION_NOT_ALLOWED}; no pool row is created (AC4).
+     */
+    @ExceptionHandler(SelfNominationNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleSelfNominationNotAllowedException(
+            SelfNominationNotAllowedException ex,
+            HttpServletRequest request) {
+        log.warn("Self-nomination not allowed: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "SELF_NOMINATION_NOT_ALLOWED");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle DuplicateSelfNominationException (Story 7.2): an attendee who already self-nominated
+     * for an event tries again. One self-nomination per attendee per event (AC8). Returns HTTP 409
+     * Conflict with {@code details.code = DUPLICATE_SELF_NOMINATION}.
+     */
+    @ExceptionHandler(DuplicateSelfNominationException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateSelfNominationException(
+            DuplicateSelfNominationException ex,
+            HttpServletRequest request) {
+        log.warn("Duplicate self-nomination: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "DUPLICATE_SELF_NOMINATION");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle SlotCapacityReachedException (READY → INVITED blocked by slot-capacity gate)
      * Returns HTTP 409 Conflict.
      * Story 11.B.2: slot-capacity gate replaces removed OVERFLOW state (ADR-009 §0.7).

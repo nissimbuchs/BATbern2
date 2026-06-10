@@ -31,6 +31,13 @@ public class SpeakerPoolResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
+    // Story 7.2 "I Could Speak on That": provenance + the attendee's proposed talk, so the
+    // organizer pool/brainstorming UI can flag self-nominations and show the pitch (AC6).
+    private String source; // 'organizer_added' | 'self_nomination'
+    private String proposedByUsername;
+    private String proposedSessionTitle;
+    private String proposedAbstract;
+
     // Story 6.1b: Speaker Invitation System fields
     private String username;
     private String email;
@@ -116,6 +123,12 @@ public class SpeakerPoolResponse {
         response.notes = speakerPool.getNotes();
         response.createdAt = speakerPool.getCreatedAt();
         response.updatedAt = speakerPool.getUpdatedAt();
+
+        // Story 7.2: self-nomination provenance + proposed talk (organizer-visible).
+        response.source = speakerPool.getSource();
+        response.proposedByUsername = speakerPool.getProposedByUsername();
+        response.proposedSessionTitle = speakerPool.getProposedSessionTitle();
+        response.proposedAbstract = speakerPool.getProposedAbstract();
 
         // Story 11.E.9: username + email columns dropped from speaker_pool (V103).
         // These response fields are now populated exclusively by
@@ -290,6 +303,40 @@ public class SpeakerPoolResponse {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    // Story 7.2: self-nomination fields
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public String getProposedByUsername() {
+        return proposedByUsername;
+    }
+
+    public void setProposedByUsername(String proposedByUsername) {
+        this.proposedByUsername = proposedByUsername;
+    }
+
+    public String getProposedSessionTitle() {
+        return proposedSessionTitle;
+    }
+
+    public void setProposedSessionTitle(String proposedSessionTitle) {
+        this.proposedSessionTitle = proposedSessionTitle;
+    }
+
+    public String getProposedAbstract() {
+        return proposedAbstract;
+    }
+
+    public void setProposedAbstract(String proposedAbstract) {
+        this.proposedAbstract = proposedAbstract;
     }
 
     public Instant getCreatedAt() {

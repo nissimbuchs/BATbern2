@@ -110,7 +110,8 @@
       "sublineFilterAriaLabel": "Spalte {{state}} filtere: {{description}}",
       "filterClearedAnnouncement": "Spalte-Filter ufghoben",
       "filterAppliedAnnouncement": "Spalte {{state}} gfilteret, {{count}} Charte sichtbar"
-    }
+    },
+    "selfNominated": "Sälber vorgschla"
   },
   "speakerContent": {
     "bioLabel": "Short CV / bio (optional)",

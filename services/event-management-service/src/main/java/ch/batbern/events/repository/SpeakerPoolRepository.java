@@ -101,6 +101,19 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
     long countPublishableByEventId(@org.springframework.data.repository.query.Param("eventId") UUID eventId);
 
     /**
+     * Story 7.2 "I Could Speak on That": friendly pre-check for the one-self-nomination-per-
+     * attendee-per-event rule (AC8). The partial unique index {@code ux_speaker_pool_self_nom}
+     * is the race-safe backstop; this lets the service return a clean 409 in the common case.
+     *
+     * @param eventId the event ID
+     * @param proposedByUsername the self-nominating attendee's username
+     * @param source the row source (pass {@code "self_nomination"})
+     * @return true if this attendee already has a self-nomination for the event
+     */
+    boolean existsByEventIdAndProposedByUsernameAndSource(
+            UUID eventId, String proposedByUsername, String source);
+
+    /**
      * Find speakers assigned to a specific session.
      *
      * Story 5.7 (BAT-11): Speaker auto-confirmation when session timing assigned

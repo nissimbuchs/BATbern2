@@ -1,6 +1,6 @@
 # Story 7.2: "I Could Speak on That"
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -25,29 +25,30 @@ so that BATbern's speaker pipeline becomes pull-and-push instead of only organiz
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Schema — add `source` + `proposed_by_username` to speaker_pool** (AC: 2, 8)
-  - [ ] New forward migration (current highest in event-management-service is **V108**; use next free number at implementation time). `ALTER TABLE speaker_pool ADD COLUMN source VARCHAR(30) NOT NULL DEFAULT 'organizer_added'`, `ADD COLUMN proposed_by_username VARCHAR(100)`. CHECK `source IN ('organizer_added','self_nomination')` (extendable).
-  - [ ] **One-per-event dedupe:** partial unique index `CREATE UNIQUE INDEX ux_speaker_pool_self_nom ON speaker_pool(event_id, proposed_by_username) WHERE source = 'self_nomination'`.
-  - [ ] Add fields to `SpeakerPool` entity.
-- [ ] **Task 2: Self-nomination endpoint** (AC: 1, 2, 3, 4)
-  - [ ] New `SelfNominationController` (or add to an existing speaker controller) `POST /api/v1/events/{eventCode}/speakers/self-nominate`, `@PreAuthorize("hasRole('ATTENDEE')")`.
-  - [ ] Load event via `eventRepository.findByEventCode(eventCode)`; **guard**: `topicCode != null` AND published — else throw a 409/422 exception (add handler).
-  - [ ] Create the `speaker_pool` row via the **existing add-to-pool creation path** (entity defaults `status = IDENTIFIED`); set `speakerName` **auto-filled from the attendee's user profile** (via `UserApiClient` lookup by username — do NOT ask the attendee to re-type it; company optional, same source), `source = self_nomination`, `proposed_by_username = username`, `assignedOrganizerId = null`. Do NOT call `transition(...)` to create.
-  - [ ] **One-per-event:** reject (409) if this attendee already has a `self_nomination` row for the event (enforced by the partial unique index + a friendly service check).
-  - [ ] Username from `SecurityContextHelper.getCurrentUsername()` (String — NO `SecurityPrincipal`).
-- [ ] **Task 3: SecurityConfig (both layers)** (AC: 5)
-  - [ ] api-gateway: endpoint `authenticated()`. event-management-service `SecurityConfig`: `.requestMatchers(HttpMethod.POST, "/api/v1/events/*/speakers/self-nominate").hasRole("ATTENDEE")` (prod chain); local/test permitAll confirmed.
-- [ ] **Task 4: OpenAPI** (AC: 7)
-  - [ ] Add the endpoint to `docs/api/speakers-api.openapi.yml` (security: ATTENDEE; body sessionTitle+abstract; 201 → SpeakerPoolResponse). Regenerate + commit types.
-- [ ] **Task 5: Organizer visibility** (AC: 6)
-  - [ ] Confirm self-nominations render in the existing speaker-pool/brainstorming UI; surface the `source` so organizers can see "self-nominated". No new triage flow.
-- [ ] **Task 6: Attendee frontend** (AC: 7) — DECIDED: entry point = button on upcoming-event cards
-  - [ ] Surface an **"I could speak on that" button on the event card of upcoming events**, visible only to **logged-in** users and only when that event's topic is set + published. Clicking opens a small form (title + abstract) that nominates **for that specific event** (the card supplies the eventCode — no separate event picker needed). Service call → `POST /api/v1/events/{eventCode}/speakers/self-nominate`.
-  - [ ] If the attendee already self-nominated for that event, show the button as already-done (the one-per-event rule). i18n in all 10 locales.
-  - [ ] NOTE bundle boundary: if the upcoming-event card renders on a **public** (Tailwind-only) page, the button + its visibility gate must be Tailwind-only; the nomination form itself can live behind `<MuiLayout>` (login-gated) — confirm where the card renders.
-- [ ] **Task 7: Tests (TDD)** (AC: 1–6)
-  - [ ] Integration (PostgreSQL): create → row at `IDENTIFIED`, `source='self_nomination'`, username set, NO session_users/role/Cognito; topic-unset/unpublished → 409/422; anonymous → 401. Assert `SpeakerWorkflowService` was NOT used to create.
-  - [ ] Verify promote path still works from the self-nominated entry (IDENTIFIED → CONTACTED → READY via existing endpoints).
+- [x] **Task 1: Schema — add `source` + `proposed_by_username` to speaker_pool** (AC: 2, 8)
+  - [x] New forward migration **`V109__add_self_nomination_to_speaker_pool.sql`** (V108 was the highest). `ADD COLUMN source VARCHAR(30) NOT NULL DEFAULT 'organizer_added'`, `proposed_by_username VARCHAR(100)`, **plus** `proposed_session_title VARCHAR(255)` + `proposed_abstract TEXT` (see decision below). CHECK `source IN ('organizer_added','self_nomination')`.
+  - [x] **One-per-event dedupe:** partial unique index `ux_speaker_pool_self_nom ON speaker_pool(event_id, proposed_by_username) WHERE source = 'self_nomination'`.
+  - [x] Added fields to `SpeakerPool` entity. `source` carries `@Builder.Default` — `SpeakerPool.builder()` is used across the test suite and would otherwise persist a null `source` into the NOT NULL column.
+- [x] **Task 2: Self-nomination endpoint** (AC: 1, 2, 3, 4)
+  - [x] New `SelfNominationController` `POST /api/v1/events/{eventCode}/speakers/self-nominate`, `@PreAuthorize("hasRole('ATTENDEE')")`.
+  - [x] Loads event via `eventRepository.findByEventCode`; **guard** `topicCode != null && published` — else `SelfNominationNotAllowedException` → 409 (`SELF_NOMINATION_NOT_ALLOWED`).
+  - [x] Creates the row via the add-to-pool save path (entity default `status = IDENTIFIED`); `speakerName` **auto-filled from the profile** (`UserApiClient.getUserByUsername` → firstName+lastName, company = companyId; falls back to the username if CUMS is down), `source = self_nomination`, `proposed_by_username = username`, `proposed_session_title`/`proposed_abstract` from the body, `assignedOrganizerId = null`. Never calls `transition(...)`.
+  - [x] **One-per-event:** friendly `existsBy…` pre-check + `saveAndFlush` so the partial unique index surfaces the race deterministically → `DuplicateSelfNominationException` → 409 (`DUPLICATE_SELF_NOMINATION`).
+  - [x] Username from `SecurityContextHelper.getCurrentUsername()` (String — no `SecurityPrincipal`).
+- [x] **Task 3: SecurityConfig (both layers)** (AC: 5)
+  - [x] Login-gating is enforced by `anyRequest().authenticated()` in BOTH the api-gateway and event-management-service prod chains (self-nominate is not in any permitAll list); the **role** gate is method-level `@PreAuthorize("hasRole('ATTENDEE')")`. This matches the established convention — every speaker endpoint is method-gated, not listed in `SecurityConfig` (see the `GET …/speakers` comment). A redundant `requestMatchers` line was deliberately NOT added.
+- [x] **Task 4: OpenAPI** (AC: 7)
+  - [x] Added the path + `SelfNominateSpeakerRequest` schema and the new `source`/`proposedByUsername`/`proposedSessionTitle`/`proposedAbstract` fields on `SpeakerPoolResponse` to **`docs/api/events-api.openapi.yml`** (the pool endpoints live there, not `speakers-api.openapi.yml`). Regenerated + committed frontend types (`npm run generate:api-types`).
+- [x] **Task 5: Organizer visibility** (AC: 6)
+  - [x] `SpeakerStatusLanes` kanban card shows a "Self-nominated" `Chip` when `source === 'self_nomination'` and renders the proposed talk title + abstract. No new triage flow — the row follows the unchanged promote path.
+- [x] **Task 6: Attendee frontend** (AC: 7) — entry point = button on upcoming-event cards
+  - [x] `SpeakerSelfNominatePanel` renders an "I could speak on that" button on `UpcomingEventsSection`'s `EventCard`s, login-gated (`useAuth`) + only when topic is set + a publishing phase is active. Clicking opens a Tailwind Dialog (title + abstract) that nominates for that card's `eventCode`. Service: `speakerNominationApi.selfNominateSpeaker`.
+  - [x] Already-nominated handling: success and a 409 both flip to the already-done state. i18n `attendee.selfNominate.*` in all 10 locales + organizer `speakerCard.selfNominated` in all 10.
+  - [x] Bundle boundary: the card renders on the **public Tailwind-only homepage**, so the whole panel (button + Dialog form) is Tailwind-only — built from `@/components/public/ui/*`, no MUI. The form lives in a Radix Dialog (portal) so its clicks don't bubble to the card's `<Link>`; the panel is rendered as a sibling outside the `<Link>` to avoid nested interactives.
+- [x] **Task 7: Tests (TDD)** (AC: 1–6)
+  - [x] `SelfNominationIntegrationTest` (PostgreSQL, 11 tests): create → row at `IDENTIFIED`, `source='self_nomination'`, username set, name auto-filled from profile, **no session / no status-history row / `provisionUserWithRole` never called**; topic-unset & unpublished → 409 (no row); duplicate → 409; unknown field / missing field → 400; not-found → 404; wrong role → 403; unauthenticated → rejected (403 at the EMS layer in isolation; the 401 from AC5 is produced at the api-gateway — documented in the test).
+  - [x] `should_allowPromotePath_from_selfNomination`: self-nominate → IDENTIFIED → CONTACTED (status endpoint) → READY (promote endpoint, provisioning here only).
+  - [x] Frontend `SpeakerSelfNominatePanel.test.tsx` (6 tests): login gate, open form, submit-disabled validation, submit→success, 409→already-done, generic error.
 
 ## Dev Notes
 
@@ -82,11 +83,65 @@ so that BATbern's speaker pipeline becomes pull-and-push instead of only organiz
 
 ### Agent Model Used
 
+Claude Opus 4.8 (1M context) — bmad-dev-story, 2026-06-10.
+
 ### Debug Log References
+
+- `SelfNominationIntegrationTest`: 11/11 PASS (`/tmp/ems-selfnom-test3.log`).
+- Speaker-pool backend regression (`SpeakerPoolWorkflowIntegrationTest`, `SpeakerPromoteControllerIntegrationTest`, `SpeakerPoolRepositoryIntegrationTest`, `SpeakerStatusControllerIntegrationTest`, all `dto.*`): PASS (`/tmp/ems-regress.log`).
+- Frontend `SpeakerSelfNominatePanel.test.tsx`: 6/6 PASS. Regression (`EventCard`, `SpeakerStatusLanes`, public + organizer suites): 268/268 PASS (`/tmp/fe-regress.log`). `type-check` + `eslint` clean.
+- One iteration: the AC5 anonymous test first asserted 401; `@WithAnonymousUser` / no-auth under the EMS `TestSecurityConfig` (method-security only, no JWT resource-server) yields 403, so the test now asserts the accurate EMS-layer 403 and documents that the 401 is produced at the api-gateway.
 
 ### Completion Notes List
 
+- **Service location**: everything is in `event-management-service` (speaker workflow unified there per Epic 11 / ADR-009), NOT speaker-coordination. No api-gateway `DomainRouter` change was needed — `/api/v1/events/*/speakers/self-nominate` already falls through to the events route (contrast Story 7.1, which needed a new `/attendees/topics` route).
+- **Where `sessionTitle` + `abstract` are stored (decision)**: the story's Task 1 named only `source` + `proposed_by_username`, but AC1/AC6 require persisting + showing the proposed talk. I added two explicit columns — `proposed_session_title` + `proposed_abstract` — rather than overloading `expertise`/`notes`. This is structured, organizer-visible, and keeps the pre-READY pool row honest (there is no `sessions.title` yet at IDENTIFIED; `initial_presentation_title` was dropped in V102). See Open Questions for PM confirmation.
+- **No provisioning** is the load-bearing invariant: the row is created via `new SpeakerPool()` + setters at the IDENTIFIED default, never via `transition(...)`. The test asserts no session, no `speaker_status_history` row, and `provisionUserWithRole` never called. Promotion to READY (and all provisioning) stays organizer-only and is proven still reachable from a self-nominated row.
+- **Identity auto-fill**: name + company come from `UserApiClient.getUserByUsername`; on a `UserServiceException` (CUMS down) it degrades to the username. The request body cannot set the name (`@JsonIgnoreProperties(ignoreUnknown=false)` → unknown field 400), so identity can't be spoofed.
+- **AC5 status nuance**: anonymous → 401 is the api-gateway's behavior (no JWT). Within EMS in isolation the same call is a 403 under method security (TestSecurityConfig has no JWT entry-point). Both reject; documented in the test.
+- **i18n**: `attendee.selfNominate.*` (common.json) + `speakerCard.selfNominated` (organizer.json) populated in all 10 locales; EN/DE first-class, other 8 straight translations.
+
 ### File List
+
+**Backend (event-management-service)**
+- `src/main/resources/db/migration/V109__add_self_nomination_to_speaker_pool.sql` (new)
+- `src/main/java/ch/batbern/events/domain/SpeakerPool.java` (4 fields)
+- `src/main/java/ch/batbern/events/dto/SelfNominateSpeakerRequest.java` (new)
+- `src/main/java/ch/batbern/events/dto/SpeakerPoolResponse.java` (4 fields + accessors + fromEntity mapping)
+- `src/main/java/ch/batbern/events/exception/SelfNominationNotAllowedException.java` (new)
+- `src/main/java/ch/batbern/events/exception/DuplicateSelfNominationException.java` (new)
+- `src/main/java/ch/batbern/events/exception/GlobalExceptionHandler.java` (2 handlers → 409)
+- `src/main/java/ch/batbern/events/repository/SpeakerPoolRepository.java` (existsBy… dedupe method)
+- `src/main/java/ch/batbern/events/service/SpeakerPoolService.java` (`selfNominate` + source constants)
+- `src/main/java/ch/batbern/events/controller/SelfNominationController.java` (new)
+- `src/test/java/ch/batbern/events/controller/SelfNominationIntegrationTest.java` (new, 11 tests)
+
+**Contract**
+- `docs/api/events-api.openapi.yml` (self-nominate path + `SelfNominateSpeakerRequest` schema + 4 `SpeakerPoolResponse` fields)
+- `web-frontend/src/types/generated/*` (regenerated)
+
+**Frontend (web-frontend)**
+- `src/services/api/speakerNominationApi.ts` (new)
+- `src/components/attendee/SpeakerSelfNominatePanel.tsx` (new)
+- `src/components/attendee/__tests__/SpeakerSelfNominatePanel.test.tsx` (new, 6 tests)
+- `src/components/public/EventCard.tsx` (`enableSelfNomination` prop + panel render)
+- `src/components/public/UpcomingEventsSection.tsx` (passes `enableSelfNomination`)
+- `src/components/organizer/SpeakerStatus/SpeakerStatusLanes.tsx` (Self-nominated badge + proposed talk)
+- `src/types/speakerPool.types.ts` (4 fields on `SpeakerPoolEntry`)
+- `public/locales/*/common.json` (10 locales: `attendee.selfNominate.*`)
+- `public/locales/*/organizer.json` (10 locales: `speakerCard.selfNominated`)
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-10 | Implemented Story 7.2 "I Could Speak on That" — attendee speaker self-nomination. Backend (V109 migration + entity/DTO/service/controller/exceptions in event-management-service), OpenAPI + regenerated types, attendee Tailwind panel on upcoming-event cards, organizer self-nominated badge + proposed talk, i18n in 10 locales. 11 backend + 6 frontend tests; no regressions. Status → review. |
+
+## Open Questions
+
+1. **Where the proposed talk is stored.** The story listed only `source` + `proposed_by_username` as new columns, but the attendee's `sessionTitle` + `abstract` need a home that organizers can see. I added two explicit, organizer-visible columns (`proposed_session_title`, `proposed_abstract`) rather than overloading `expertise`/`notes`. If the PM would rather these flow into `expertise`/`notes` (so they reuse the existing kanban display with zero new fields), that's a small change — but the explicit columns keep the data structured for any later "pre-fill the session on promote" feature. Please confirm the column approach is acceptable.
+
+2. **Frontend "published" gate.** The card shows the button when a topic object is present AND a publishing phase is active (`currentPublishedPhase` truthy). The backend is authoritative (409 otherwise), so this is only a UX hint. Confirm that "any active publishing phase" is the right visibility threshold, or whether it should be specifically the `topic` phase and beyond.
 
 ## Resolved Decisions
 

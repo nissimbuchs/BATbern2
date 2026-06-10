@@ -91,6 +91,34 @@ public class SpeakerPool {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    /**
+     * Story 7.2 "I Could Speak on That": provenance of this pool row.
+     * 'organizer_added' (default for every pre-7.2 row) or 'self_nomination'.
+     *
+     * <p>{@code @Builder.Default} is required: SpeakerPool.builder() is used across the
+     * test suite, and without it builder-created rows would persist {@code source = null}
+     * and violate the NOT NULL column.
+     */
+    @Builder.Default
+    @Column(name = "source", nullable = false, length = 30)
+    private String source = "organizer_added";
+
+    /**
+     * Story 7.2: JWT username of the self-nominating attendee (null for organizer-added rows).
+     * Meaningful ID per ADR-003 — never a UUID. Part of the partial unique index that enforces
+     * one self-nomination per attendee per event.
+     */
+    @Column(name = "proposed_by_username", length = 100)
+    private String proposedByUsername;
+
+    /** Story 7.2: the talk title the attendee proposed (organizer-visible; null for organizer-added rows). */
+    @Column(name = "proposed_session_title", length = 255)
+    private String proposedSessionTitle;
+
+    /** Story 7.2: the talk abstract the attendee proposed, stored raw (no agent pre-screen, AC3). */
+    @Column(name = "proposed_abstract", columnDefinition = "TEXT")
+    private String proposedAbstract;
+
     // Story 6.1b: Speaker Invitation System fields
     // Story 11.E.9: email column dropped (V103) — see note at top of class.
 
