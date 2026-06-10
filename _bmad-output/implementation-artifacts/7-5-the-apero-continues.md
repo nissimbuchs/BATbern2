@@ -83,9 +83,11 @@ so that the open questions that currently have nowhere to live get answered — 
 
 ### File List
 
-## Open Questions
+## Resolved Decisions
 
-1. **Is 14 days the right window, and should it align with auto-archival?** Events auto-archive ~14 days after the event date, which is almost the same as the Q&A window. We should confirm the window length (14 days default, organizer-overridable per the resolved decision) and make sure a frozen thread stays visible on the session page even after the event is archived — archival shouldn't hide the Q&A.
-2. **Who can answer — any logged-in attendee, or only attendees of that event + the speaker?** The brainstorming said "speakers/attendees answer." Letting any logged-in attendee answer is simplest and most open; restricting to event registrants + the session's speaker is tighter but adds checks. Recommendation: any logged-in user may post within the window; speakers are just normal posters (their role can be badged). Please confirm.
-3. **What's the takedown UX and does a removed post leave a tombstone?** When an organizer removes a post, do we hard-delete it or soft-delete (show "removed by organizer")? Soft-delete (the `removed_at` column) preserves thread coherence and is friendlier in a frozen archive. Confirm soft-delete is acceptable.
-4. **Do we notify anyone about Q&A activity?** A speaker might want to know a question was asked, or an asker might want to know it was answered. The MVP assumes no notifications (attendees check back during the 2-week window). Confirm that's acceptable, or whether a minimal "you have a new answer" email is in scope (it would lean on Story 7.3's email machinery).
+_Resolved with the PM 2026-06-10._
+
+1. **Window vs archival:** 14-day default (organizer-overridable). The **frozen thread persists on the archived session page** — neither window-close nor the auto-archival job (~14d after event date) hides it. The Q&A render must survive `EVENT_COMPLETED → ARCHIVED`. (AC5 + Task 5.)
+2. **Who can post:** **Any logged-in user** may post within the window; the session's speaker is just a normal poster (role may be badged). No event-registrant restriction.
+3. **Takedown:** **Soft-delete with a tombstone** — set `removed_at` and render "removed by organizer"; never hard-delete (preserves thread coherence in the frozen archive). (Schema `removed_at` column + Task 3.)
+4. **Notifications:** **None for the MVP** — attendees check back during the 2-week window. No new email machinery; revisit later if engagement warrants.

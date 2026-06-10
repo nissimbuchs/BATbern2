@@ -41,8 +41,8 @@ so that the ~200 practitioners in the room become a sensing network for what BAT
 - [ ] **Task 5: SecurityConfig (both layers)** (AC: 2)
   - [ ] api-gateway `SecurityConfig`: the endpoint is `authenticated()` (no permitAll); confirm `anyRequest().authenticated()` covers it or add explicit rule.
   - [ ] partner-coordination-service `SecurityConfig`: add `.requestMatchers(HttpMethod.POST, "/api/v1/attendees/topics").hasRole("ATTENDEE")` in the prod chain; verify local + test chains permitAll already.
-- [ ] **Task 6: Organizer triage visibility** (AC: 3)
-  - [ ] Confirm community suggestions surface in the existing organizer view (`PartnerTopicsTab.tsx`). Decide & document whether GET `/api/v1/partners/topics` returns community topics too (recommended: include, with `source` shown) or a filter is added. Show a `source` badge (Partner vs Community).
+- [ ] **Task 6: Organizer triage visibility** (AC: 3) — DECIDED: one combined list + source badge
+  - [ ] `GET /api/v1/partners/topics` returns community topics alongside partner ones (extend `findAllWithVoteCounts` to include `source`); surface a "Partner / Community" badge in `PartnerTopicsTab.tsx`. No separate tab.
 - [ ] **Task 7: Attendee frontend surface** (AC: 5)
   - [ ] Add a "Suggest a topic" form for attendees behind `<MuiLayout>` (reuse/adapt `TopicSuggestionForm.tsx`); new service fn `suggestTopicAsAttendee` in `partnerTopicsApi.ts` (or a new `attendeeTopicsApi.ts`) → `POST /attendees/topics`.
   - [ ] i18n keys in all 10 locales (`de, en, fr, it, rm, es, fi, nl, ja, gsw-BE`); EN+DE first-class.
@@ -93,7 +93,9 @@ so that the ~200 practitioners in the room become a sensing network for what BAT
 
 ### File List
 
-## Open Questions
+## Resolved Decisions
 
-1. **Should attendee-suggested topics appear in the same organizer list as partner topics, or a separate tab?** The simplest path is one combined list with a small "Partner / Community" badge, so organizers triage everything in one place. A separate tab is cleaner visually but doubles the surface. Recommendation: one list with a badge — confirm before building the organizer side.
-2. **Can attendees see each other's suggestions, or only submit their own?** This story only adds submission. If we later want attendees to browse/vote (idea #13), the read endpoint and visibility rules need their own decision. For now the attendee just submits and gets a confirmation — please confirm that's the intended MVP and we're not implying a public community-topics list yet.
+_Resolved with the PM 2026-06-10._
+
+1. **Organizer view:** **One combined list** with a "Partner / Community" `source` badge — organizers triage everything in one place (Task 6 + AC3 reflect this). `GET /api/v1/partners/topics` returns community topics too, source-labelled.
+2. **Attendee visibility:** **Submit-only** for the MVP — the attendee submits and gets a confirmation; there is NO public community-topics list and no browse/vote (idea #13 stays out of scope). Do not build a read/list endpoint for attendees in this story.

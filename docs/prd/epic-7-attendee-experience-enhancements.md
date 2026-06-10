@@ -63,8 +63,8 @@ The old over-scoped scope (dashboards / bookmarks / PWA / recommendation engine)
 - **FR5**: Once an event's topic is set and the event is published, a logged-in attendee can self-nominate as a speaker (session title + abstract).
 - **FR6**: A self-nomination creates a `speaker_pool` entry at `IDENTIFIED` via `SpeakerWorkflowService.transition` — never at `READY`, and never auto-provisioning a Cognito user / SPEAKER role.
 - **FR7**: Organizers triage self-nominations through the existing 8-state speaker workflow (promote path unchanged).
-- **FR8**: When an event's materials/slides auto-publish, registered attendees of that event receive a "slides are online" notification email.
-- **FR9**: The slides-online email is event-triggered (not a recurring feed), sent once per event, in DE or EN per the attendee's language preference.
+- **FR8**: A default organizer task ("Newsletter: Slides Are Online", due ~2 weeks after the event) is auto-created with the event's task set; the organizer manually sends a "slides are online" email to the event's active registrants from that task.
+- **FR9**: The slides-online email reuses the existing newsletter send with a new DE+EN template, sent once per event, in the attendee's web-language preference (de* → German, en → English, else German fallback); recipients honour the global email opt-out.
 - **FR10**: After an event, any attendee (anonymous allowed) can send a one-click thank-you, optionally with a short note, to the volunteer organizers — protected by an abuse guard (rate-limit + Turnstile on anonymous submissions).
 - **FR11**: Thank-yous are surfaced as an aggregate counter / appreciation wall. Logged-in attendees are deduped to one thank-you per event; anonymous thank-yous are rate-limited (clap-style increment) to prevent inflation.
 - **FR12**: For a time-boxed window (~2 weeks) after an event, logged-in attendees can post open questions per session and answer others' questions asynchronously.
@@ -244,46 +244,47 @@ event-management-service
 As an **attendee who registered for an event**, I want an email the day the slides go online, so that I get the one post-event message I'll actually open — turning 3 website visits/year into 6 without asking more commitment of me.
 
 **Scope (what it is):**
-- When an event's materials/slides auto-publish (existing auto-publishing), enqueue a one-time "slides are online" email to that event's registered attendees.
-- DE + EN templates only; locale chosen from the attendee's language preference (any `de*` → German, else EN).
-- Sent **once per event** (idempotent); event-triggered, never a recurring digest (cadence-match #24).
-- Reuses the SES rendering pattern from Story 6.5.
+- A default organizer task ("Newsletter: Slides Are Online", due ~2 weeks after the event) is auto-created with the event's task set (existing `EventTaskService` template mechanism — zero engine change).
+- From that task the organizer manually sends a "slides are online" email to the event's **active registrants** (`registered`/`confirmed`), reusing the existing newsletter-send infra with a NEW DE+EN `slides-online` template.
+- Per-recipient locale = web-language preference (de* → German, en → English, **else German fallback**); recipients honour the global email opt-out; double-send guarded.
+- Event-anchored, never a recurring digest (cadence-match #24).
 
 **What's NOT in scope:**
-- A general per-event newsletter or any recurring/scheduled feed.
-- Sending to non-registrants or newsletter-only subscribers.
+- An automated materials-publish trigger (none exists; resolved to task + manual send).
+- Sending to the global newsletter-subscriber pool (recipients are this event's registrants).
 - Per-session granular notifications.
 
 **Architecture:**
 ```
-Auto-publishing publishes event materials (event-management-service)
-       │  domain event: EventMaterialsPublished
+Event task set auto-created → "Newsletter: Slides Are Online" task (due event +14d)
+       │  (existing EventTaskService template seed — no engine change)
        ▼
-  SlidesOnlineNotificationService
-       │  guard: not already sent for this eventCode (idempotent)
-       │  recipients: registrations for eventCode
-       │  locale: attendee pref (de* → de, else en)
+Organizer opens task → POST /api/v1/events/{eventCode}/newsletter/send
+       │  templateKey = slides-online, recipients = active registrants
        ▼
-  AWS SES (Story 6.5 pattern)  → DE/EN "slides are online" template
+  NewsletterEmailService (reused: paged, throttled, audited, double-send guard)
+       │  per recipient: skip opt-out; locale de*/en/German-fallback
+       ▼
+  AWS SES  → DE/EN "slides-online" template
 ```
 
 **Acceptance Criteria:**
 
-**Given** an event whose materials auto-publish for the first time
-**When** the publish completes
-**Then** each registered attendee receives exactly one "slides are online" email, in DE if their language preference starts with `de`, otherwise EN.
+**Given** an event with the auto-created "Newsletter: Slides Are Online" task
+**When** the organizer sends from that task
+**Then** each active registrant (`registered`/`confirmed`, not opted out) receives one "slides are online" email, in German if their language preference starts with `de`, English if `en`, else German fallback.
 
-**Given** an event whose materials publish event fires again (re-publish / retry)
-**When** the notification service runs
-**Then** no duplicate emails are sent (idempotent per `eventCode`).
+**Given** a slides-online send already completed for an event
+**When** the organizer attempts to send again
+**Then** the double-send guard prevents a second send.
 
-**Given** an attendee with no language preference set
-**When** the email is sent
-**Then** it falls back to EN.
+**Given** a registrant who has globally opted out of email
+**When** the send runs
+**Then** that recipient is excluded.
 
-**Given** the SES send fails transiently for a recipient
+**Given** the SES send fails transiently for one recipient
 **When** the failure occurs
-**Then** it is retried per the existing retry pattern and logged, without blocking other recipients.
+**Then** it is logged/marked failed without blocking the other recipients.
 
 ---
 
@@ -302,8 +303,8 @@ As **any attendee** (logged in or not), I want to thank the volunteer organizers
 **Scope (what it is):**
 - After an event (live/completed), any attendee can send a one-click thank-you, with an optional short note.
 - Logged-in attendees are deduped to one thank-you per event; anonymous thank-yous increment a counter (clap-style), rate-limited per session/IP + Turnstile to prevent inflation.
-- Surfaced as an aggregate counter and an appreciation wall (notes shown; logged-in notes attributable, anonymous notes shown without identity).
-- Near-zero build; no new service.
+- Surfaced as a **public aggregate counter**; free-text notes are **organizer-visible only** (no public note wall, no approval queue).
+- Lives on the public event/archive page, Tailwind-only (no MUI). Near-zero build; no new service.
 
 **What's NOT in scope:**
 - Per-organizer targeting or rating.

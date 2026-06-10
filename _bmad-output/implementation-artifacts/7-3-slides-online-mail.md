@@ -7,64 +7,74 @@ Status: ready-for-dev
 ## Story
 
 As an **attendee who registered for an event**,
-I want an email the day the slides go online,
+I want an email when the slides go online,
 so that I get the one post-event message I'll actually open — turning 3 website visits/year into 6 without asking more commitment of me.
 
 **Source:** Brainstorming 2026-06-06 idea #07 (GitHub #752, 3 votes). Epic FR8–FR9. Cadence-match guardrail #24: event-triggered, never a recurring feed.
 
+> **Design (PM-resolved 2026-06-10):** NOT an automated materials-publish trigger. Instead, an **organizer task** is auto-created with the event's standard task set, due ~2 weeks **after** the event (when slides are up); the organizer **manually sends** a newsletter-style email to the event's **active registrants** using a NEW `slides-online` template. This drops cleanly into the existing task-template + newsletter-send machinery — no new scheduler, no new domain event.
+
 ## Acceptance Criteria
 
-1. When an event's slides/materials become published, each **registered** attendee of that event receives exactly **one** "slides are online" email.
-2. The email is **DE or EN only** — German if the attendee's language preference starts with `de`, otherwise English; no language preference ⇒ EN.
-3. The send is **idempotent per event**: if the triggering event re-fires (retry/re-publish), no duplicate emails.
-4. A transient SES failure for one recipient is logged/handled without blocking the others.
-5. Sending reuses the shared `EmailService` + `EmailTemplateService` pattern (Story 6.5); new templates `slides-online-de.html` / `slides-online-en.html` added (DE+EN only — do NOT create 10 locale templates).
-6. Integration tests (PostgreSQL, **mocked EmailService** — no real SES) cover: one-email-per-registrant, DE/EN selection, idempotency, per-recipient failure isolation. No real outbound mail; no leftover data.
+1. A new **default task template** "Newsletter: Slides Are Online" is seeded so every event auto-gets a task (due ~14 days after the event date) prompting the organizer to send the slides-online mail — created via the **existing** `EventTaskService` auto-creation (no change to the task engine).
+2. Sending reuses the **existing newsletter send** path with a NEW `slides-online` template (DE + EN only — do NOT create 10-locale templates); recipients are the event's **active registrants** (status `registered`/`confirmed`), **not** the global newsletter-subscriber pool.
+3. Recipients with a global email opt-out (newsletter `unsubscribed_at`/`suppressed_at` for their email) are **excluded**.
+4. Per recipient, the template language = the attendee's web-language preference: starts with `de` ⇒ German, `en` ⇒ English, **anything else / unknown ⇒ German fallback** (note: deliberately German, not EN, for this feature).
+5. The send is guarded against **double-send** for the same event (reuse the in-progress guard + a slides-online-already-sent check).
+6. A transient SES failure for one recipient is isolated (logged/marked failed) without aborting the rest.
+7. Integration tests (PostgreSQL, **mocked EmailService** — no real SES) cover: task auto-created with correct due date; send goes to active registrants only; opt-out excluded; DE/EN/German-fallback selection; double-send guard; per-recipient failure isolation. No real outbound mail; no leftover data.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 0: Resolve the trigger (BLOCKING — see Open Question 1)** (AC: 1)
-  - [ ] Decide what "slides are online" means: (a) a NEW `materials` publish phase added to `PublishingService`/`PublishingScheduledService`, or (b) a signal fired when an event's session materials first become public. There is **currently no `materials` phase** (only topic/speakers/agenda) and **no `EventMaterialsPublishedEvent`**. Pick one with PM/architect before coding.
-- [ ] **Task 1: Fire a domain event on materials publish** (AC: 1, 3)
-  - [ ] Per Task 0's decision, publish an `EventMaterialsPublishedEvent(eventCode)` at the chosen point (extend `PublishingService.publishPhase(...)` or the materials-visibility path).
-- [ ] **Task 2: Notification listener** (AC: 1, 2, 4)
-  - [ ] Add `onEventMaterialsPublished(...)` modeled on `NotificationService.onEventPublished(EventPublishedEvent)` (~L48–78): fetch registrants via `registrationRepository.findUsernamesByEventCode(eventCode)`, resolve email via `userApiClient.getEmailByUsername(...)`, resolve locale (de* → de else en), render `slides-online-{de|en}` template, send via `emailService.sendHtmlEmail(...)`.
-- [ ] **Task 3: Idempotency** (AC: 3)
-  - [ ] Reuse the `notifications` table (V33) — record a row per (recipient, eventCode, type=`SLIDES_ONLINE`) and guard with a uniqueness check (or add a unique constraint via a new forward migration; current highest **V108**, use next free number). Skip recipients already sent.
-- [ ] **Task 4: Templates (DE+EN)** (AC: 5)
-  - [ ] `services/event-management-service/src/main/resources/email-templates/slides-online-de.html` + `-en.html`, using the existing layout (`layout-batbern-default-{de|en}.html`) + `{{variable}}` substitution. Subject per template.
-- [ ] **Task 5: Tests (TDD)** (AC: 6)
-  - [ ] Integration test with mocked `EmailService` (see `TestAwsConfig` `@Primary` mock) asserting send count, locale, idempotency (second fire = 0 new sends), and that one recipient's failure doesn't abort the loop. Clean up notification/registration rows.
-- [ ] **Task 6: Doc-drift** — update scheduler/notification docs per `.github/doc-drift-mappings.yml` in the same commit (or `[no-doc]` if pure internal).
+- [ ] **Task 1: Seed the task template** (AC: 1)
+  - [ ] New forward migration (current highest **V108**; next free at implementation time) inserting into `task_templates`: `name='Newsletter: Slides Are Online'`, `trigger_state` = the post-event state (e.g. `event_completed`/`event_live` — match the existing newsletter templates' convention), `due_date_type='relative_to_event'`, `due_date_offset_days = +14` (after the event), `is_default=true`. Mirrors the existing seeds in `V22` (e.g. "Newsletter: Speaker Lineup", offset −30).
+  - [ ] Verify `EventTaskService.autoCreateTasksForState(...)` / `createTasksForEvent(...)` picks it up with **no code change** (templates are treated uniformly).
+- [ ] **Task 2: `slides-online` email template (DE+EN)** (AC: 2, 4)
+  - [ ] Add `services/event-management-service/src/main/resources/email-templates/slides-online-de.html` + `-en.html` (subject in the leading `<!-- subject: ... -->` comment; body uses `{{variable}}`; layout `batbern-default`). `EmailTemplateSeedService` auto-seeds on startup.
+  - [ ] Update `EmailTemplateSeedService.deriveCategory(...)` so `slides-online` maps to `NEWSLETTER` (it currently falls through to `LAYOUT` — verify and fix).
+- [ ] **Task 3: Send to event registrants** (AC: 2, 3, 4)
+  - [ ] The existing `NewsletterEmailService.sendNewsletter(...)` sends to the **global** `newsletter_subscribers` pool. Add a recipient-source mode (or an overload) that targets **event registrants**: `registrationRepository.findByEventIdAndStatus(eventId, 'registered'|'confirmed')` → resolve email (`attendee_email` or `UserApiClient.getEmailByUsername`) → resolve locale from the attendee's language pref (Task 4) → skip opt-outs (Task 3a).
+  - [ ] **Task 3a (opt-out):** for each registrant email, skip if a `newsletter_subscribers` row exists with `unsubscribed_at` or `suppressed_at` set. (Registrations have no own opt-out flag — reuse the newsletter suppression list.)
+  - [ ] Reuse the async paged-send + per-recipient audit + 70ms SES throttle already in `NewsletterEmailService`.
+- [ ] **Task 4: Per-recipient locale** (AC: 4)
+  - [ ] Resolve the attendee's language from their profile (`UserApiClient` → user `pref_language` / preferred language). Map: `de*`→`de`, `en`→`en`, else → **`de` (German fallback)**. ⚠️ If the preferred-language field is not yet exposed on the user lookup response, expose it (small addition) — see Dev Notes; do not hardcode a single language for everyone.
+- [ ] **Task 5: Double-send guard** (AC: 5)
+  - [ ] Reuse `NewsletterEmailService`'s in-progress guard (`DuplicateNewsletterSendException`) and add a check that a completed slides-online send for this event doesn't re-fire (e.g. a `newsletter_sends` row with this template key + event, or a `notifications` guard).
+- [ ] **Task 6: Endpoint** (AC: 2)
+  - [ ] Prefer reusing `POST /api/v1/events/{eventCode}/newsletter/send` (`@PreAuthorize("hasRole('ORGANIZER')")`) with `templateKey="slides-online"` + a recipient-source flag = `registrants`. If a flag doesn't fit cleanly, add a sibling endpoint; keep it organizer-only.
+- [ ] **Task 7: Tests (TDD) + doc-drift** (AC: 7)
+  - [ ] Integration test (mocked `EmailService`, see `TestAwsConfig` `@Primary` mock): task auto-created with due = eventDate+14; send → active registrants only; opt-out skipped; DE/EN/German-fallback; double-send guard; per-recipient failure isolation. Clean up registrations/sends/notifications rows.
+  - [ ] Update `.github/doc-drift-mappings.yml` targets if task-template/newsletter docs are mapped (or `[no-doc]`).
 
 ## Dev Notes
 
-### Existing machinery to REUSE
-- **Listener pattern (the template to copy):** `services/event-management-service/.../notification/NotificationService.java` `onEventPublished(EventPublishedEvent)` (~L48–78) → `createAndSendEmailNotification(...)` (~L84–133): creates a `notifications` row, fetches email, sends, marks SENT/FAILED. **This is exactly the shape needed.**
-- **Registrants:** `RegistrationRepository.findUsernamesByEventCode(eventCode)` (~L169–171).
-- **Email + locale:** shared-kernel `EmailService.sendHtmlEmail(...)` (~L88) / `sendHtmlEmailSync` (~L124); `EmailTemplateService.findByKeyAndLocale(...)` (~L60) + `mergeWithLayout(...)` (~L162); model after `SpeakerReminderEmailService` (locale: `locale.getLanguage().equals("de") ? "de" : "en"` ~L153, DB-first template + classpath fallback).
-- **User email/locale:** `UserApiClient.getEmailByUsername(username)` (~L80). ⚠️ **Language-pref dependency:** `UserResponse` may still default locale to German pending Story 10.15's `preferredLanguage` — verify whether the pref is available; if not, document the fallback (de) and wire the de*/en rule the moment the field exists.
-- **Idempotency store:** `notifications` table — `V33__Create_notifications_table.sql` (status PENDING/SENT/FAILED). No unique constraint today.
-- **Test SES mock:** `TestAwsConfig` provides `@Bean @Primary EmailService` Mockito mock (~L128–134) — tests never hit SES.
+### Existing machinery to REUSE (this is mostly assembly, not new infra)
+- **Task system:** `EventTask` (`event_tasks`, V22) + `TaskTemplate` (`task_templates`, V22, with `due_date_type` / `due_date_offset_days`). `EventTaskService.createTasksForEvent(...)` (~L66) instantiates templates at event creation (status `pending`); `autoCreateTasksForState(...)` (~L116) flips them to `todo` on the trigger state; `calculateDueDate(...)` (~L182) does `eventDate.plus(offsetDays)`. **Seeding a new default template is all that's needed — no engine change.** Existing newsletter task seeds in `V22` (~L60–68) are the exact precedent (e.g. "Newsletter: Final Agenda", `relative_to_event`, −14).
+- **Newsletter send:** `NewsletterController` `POST /api/v1/events/{eventCode}/newsletter/send` (~L244, ORGANIZER); `NewsletterEmailService.sendNewsletter(...)` (~L254) → async `executeNewsletterSendAsync(...)` (~L326): paged 50/batch, 70ms throttle, `newsletter_sends` audit + progress, per-recipient `newsletter_recipients`, `DuplicateNewsletterSendException` in-progress guard. **NOTE the recipient pool is global `newsletter_subscribers` — Task 3 changes the source to event registrants.**
+- **Templates:** `EmailTemplateService.findByKeyAndLocale(...)` (~L61) + `mergeWithLayout(...)` (~L162); `EmailTemplateSeedService` auto-seeds `email-templates/{key}-{de|en}.html` on startup (filename pattern `^(?:(layout)-)?(.+)-(de|en)\.html$`), subject from `<!-- subject: ... -->`. `deriveCategory(...)` (~L151) needs a `slides-online`→`NEWSLETTER` case.
+- **Registrants:** `RegistrationRepository.findByEventIdAndStatus(eventId, status)` (~L80); `Registration.attendeeEmail` denormalized, `attendeeUsername` for the profile lookup. Active = `registered`/`confirmed`.
+- **Opt-out:** registrations have **no** own opt-out flag — reuse `newsletter_subscribers.unsubscribed_at`/`suppressed_at` matched by email.
+- **Test SES mock:** `TestAwsConfig` `@Bean @Primary EmailService` Mockito mock — tests never hit SES.
 
-### Why there's a design gap (Open Question 1)
-`PublishingScheduledService` auto-publishes only **speakers @30d** and **agenda @14d** (cron `0 0 1 * * *`); `PublishingService.publishPhase` sets `currentPublishedPhase` to topic/speakers/agenda. **Materials are per-session uploads, not a publish phase, and no domain event fires for them.** So this story must first define the trigger (Task 0).
+### Locale dependency
+- The attendee's language lives as a user preference (`pref_language` in company-user-management; web language menu persists it). The generated `UserResponse` used here may **not** expose `preferredLanguage` yet — if absent, add it to the user lookup (small) so per-recipient DE/EN/German-fallback works. Do NOT ship a single hardcoded language for all.
 
 ### Constraints / gotchas
-- **DE+EN only** for email (email-localization rule) — fallback EN; do NOT fan out 10 locales.
-- **Staging = production:** no real outbound email in tests; reuse the mocked `EmailService`. Add cleanup.
-- **No @Retryable** exists for SES today; failures are caught per-recipient and marked FAILED (match that — don't add a blocking retry loop inside a transaction).
-- `PublishingScheduledService` currently has **no ShedLock** (multi-instance race risk) — if you add a scheduled element, add `@SchedulerLock` (see `EventWorkflowScheduledService`); otherwise prefer the event-listener path.
+- **DE+EN templates only**; **German fallback** for this feature (AC4) — note this intentionally differs from the platform's usual non-DE/EN→EN email fallback.
+- **Staging = production:** no real outbound email in tests; reuse the mocked `EmailService`; clean up. The send already throttles for SES rate limits.
+- **No @Retryable** for SES — per-recipient failures are caught and marked failed (match `NewsletterEmailService`); no blocking retry in a transaction.
+- Near-zero organizer effort: the task is the only nudge; sending is one click on a pre-filled template.
 
 ### Project Structure Notes
-- Listener lives in `.../notification/`; templates in `.../resources/email-templates/`; migration in `.../resources/db/migration/`.
+- Template files in `.../resources/email-templates/`; task-template seed + any guard column in `.../resources/db/migration/`; send logic in `.../service/NewsletterEmailService.java` (extend) and `.../controller/NewsletterController.java`.
 
 ### References
 - [Source: docs/prd/epic-7-attendee-experience-enhancements.md#story-73-the-slides-are-online-mail]
-- [Source: services/event-management-service/.../notification/NotificationService.java#onEventPublished]
-- [Source: services/event-management-service/.../service/SpeakerReminderEmailService.java] [Source: shared-kernel/.../service/EmailService.java]
-- [Source: services/event-management-service/.../scheduled/PublishingScheduledService.java] [Source: .../service/publishing/PublishingService.java]
-- [Source: _bmad-output/project-context.md#i18n-localization] [Source: #backend-integration-tests]
+- [Source: services/event-management-service/.../service/EventTaskService.java] [Source: .../domain/TaskTemplate.java] [Source: .../resources/db/migration/V22__Add_task_system.sql]
+- [Source: services/event-management-service/.../service/NewsletterEmailService.java] [Source: .../controller/NewsletterController.java]
+- [Source: services/event-management-service/.../service/EmailTemplateSeedService.java] [Source: .../service/EmailTemplateService.java]
+- [Source: services/event-management-service/.../repository/RegistrationRepository.java]
+- [Source: _bmad-output/project-context.md#i18n-localization]
 
 ## Dev Agent Record
 
@@ -76,8 +86,15 @@ so that I get the one post-event message I'll actually open — turning 3 websit
 
 ### File List
 
+## Resolved Decisions
+
+_Resolved with the PM 2026-06-10._
+
+1. **Trigger:** No automated materials-publish hook (none exists). A **default organizer task** "Newsletter: Slides Are Online" is auto-created with the event's task set, due **~2 weeks after** the event; the organizer **manually sends** the mail. Reuses the existing task-template + newsletter-send machinery.
+2. **Recipients:** the event's **active registrants** (`registered`/`confirmed`), honouring the global email opt-out — **not** the newsletter-subscriber pool. (This requires extending the newsletter send with a registrants recipient source — the one real build beyond assembly.)
+3. **Locale:** the attendee's **web-language preference**; `de*`→German, `en`→English, **else German fallback** (intentionally German, not EN).
+
 ## Open Questions
 
-1. **What exactly triggers the email — a new "materials published" phase, or session materials becoming visible?** Today the platform auto-publishes speakers and the agenda, but "slides/materials" are uploaded per session and have no publish moment or event. We need to decide whether to add a small "materials" publish step (organizer clicks publish, or it auto-publishes on a schedule) or to fire on the first session-material becoming public. This is the one real design decision in the story and it needs PM/architect sign-off before coding.
-2. **Does the attendee's language preference actually reach this service yet?** The email must pick DE vs EN from the attendee's preferred language, but that field may not be exposed on the user lookup until a separate story lands. If it isn't available, the MVP will send EN (or DE) as a fallback and we wire the real preference once it exists — please confirm that interim behaviour is acceptable rather than blocking 7.3 on it.
-3. **Should unsubscribed / cancelled registrants be excluded?** The plan emails everyone with a registration for the event. If someone cancelled, or globally opted out of email, we probably shouldn't mail them. Confirm whether to filter by registration status (e.g. only `registered`/`confirmed`) and honour any global email-opt-out flag.
+1. **Is the due date 2 weeks *after* the event (not before)?** Slides go up after the event, so the task should fall due ~14 days *after* the event date (offset `+14`). The original phrasing was ambiguous ("two weeks … of the event"). The story assumes **+14 after**; please confirm so the seed offset sign is right.
+2. **Reuse the existing newsletter-send endpoint, or a dedicated slides-online send?** The cleanest reuse is the existing `POST …/newsletter/send` with `templateKey=slides-online` plus a "recipients = event registrants" flag. If you'd rather keep the registrant-targeted send fully separate from the subscriber newsletter (different audit, different metrics), say so — it changes whether we extend `NewsletterEmailService` or add a sibling service.

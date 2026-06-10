@@ -19,7 +19,7 @@ so that the people who've run BATbern for 20 years — free, ad-free, on their o
 3. **Abuse guard:** anonymous submissions require a valid **Cloudflare Turnstile** token (endpoint added to `TurnstileProperties.protectedEndpoints`) and are rate-limited; a missing/invalid token or exceeding the rate limit is rejected (403/429) without incrementing.
 4. **Logged-in** attendees are deduped to **one** thank-you per event (unique on `eventCode + username`); a repeat does not double-increment, and an existing note may be updated.
 5. **Anonymous** thank-yous increment a clap-style aggregate counter (rate-limited per IP/session); they are not user-deduped.
-6. An organizer view shows the aggregate count and any submitted notes for an event.
+6. The aggregate count is readable publicly; submitted notes are returned **only** to organizers (the public GET returns count only). No public note wall, no approval queue.
 7. The thank-you UI element respects the bundle boundary: if placed on a **public** event/archive page it is **Tailwind-only (no MUI)**. i18n keys in all 10 locales. Integration tests (PostgreSQL) cover logged-in dedupe, anonymous increment + Turnstile/rate-limit rejection, and event-state guard. No leftover test data.
 
 ## Tasks / Subtasks
@@ -31,7 +31,7 @@ so that the people who've run BATbern for 20 years — free, ad-free, on their o
   - [ ] `OrganizerThanksController` `POST /api/v1/events/{eventCode}/thanks` — **no `@PreAuthorize`** (public). Inject `Authentication` and null-check (pattern from `EventPhotoController` ~L76: `username = authentication != null ? authentication.getName() : null`).
   - [ ] Guard: event must be `EVENT_LIVE`/`EVENT_COMPLETED` (load via `eventRepository.findByEventCode`).
   - [ ] Logged-in → upsert by (event, username); anonymous → insert clap row (username null) after guard checks.
-  - [ ] GET aggregate: `GET /api/v1/events/{eventCode}/thanks` → `{ count, notes[] }` (organizer-visible; public count optional).
+  - [ ] GET aggregate: `GET /api/v1/events/{eventCode}/thanks` → public response returns `{ count }` only; the organizer-authenticated response additionally returns `notes[]`. (Branch on role; notes never exposed to anonymous/public.)
 - [ ] **Task 3: Turnstile + rate limit** (AC: 3)
   - [ ] Add `POST:/api/v1/events/{code}/thanks` (or the AntPath equivalent) to `TurnstileProperties.protectedEndpoints` so `TurnstileVerificationFilter` validates anonymous tokens (fail-open behaviour matches existing config when `turnstile.enabled=false`).
   - [ ] Anonymous rate limit: reuse the gateway `RateLimitingFilter` IP bucketing if sufficient, else add a per-event/per-IP guard at the service (no per-entity limiter exists today — document the chosen approach).
@@ -90,8 +90,10 @@ so that the people who've run BATbern for 20 years — free, ad-free, on their o
 
 ### File List
 
-## Open Questions
+## Resolved Decisions
 
-1. **Where does the "thank the organizers" button live?** It could sit on the public event/archive page (where most attendees land after an event) or on a logged-in post-event surface. The answer matters technically: a public page must be Tailwind-only (no MUI), per the bundle boundary. Recommendation: put it on the public event/archive detail page as a Tailwind element so anyone can thank — please confirm the placement.
-2. **Are anonymous notes shown publicly, and is there any moderation?** Logged-in notes are attributable; anonymous notes have no author. Showing free-text notes from anonymous senders on an appreciation wall invites the occasional troll. Options: show anonymous notes immediately, show only the count for anonymous (notes for logged-in only), or hold notes for organizer approval. Recommendation: count is public, notes are organizer-visible only for the MVP — confirm.
-3. **How aggressive should the anonymous rate limit be?** We want to prevent one person inflating the counter without making it annoying. A simple per-IP cap (e.g. a handful per event per IP) plus Turnstile is probably enough at this scale. Please confirm a sensible cap, or whether the global gateway IP limit is acceptable as-is.
+_Resolved with the PM 2026-06-10._
+
+1. **Placement:** On the **public event/archive page**, built **Tailwind-only** (no MUI) so anyone — logged in or not — can thank. (Task 5 + AC7 reflect this.)
+2. **Notes visibility:** The **aggregate count is public**; free-text **notes are organizer-visible only** (no public appreciation wall of anonymous notes; no approval queue). Keeps troll-text off the public surface with zero recurring moderation. → AC6 returns count publicly, notes only in the organizer view.
+3. **Abuse guard:** **Per-event per-IP cap + Turnstile** on anonymous submissions (not just the global gateway IP limit) — a small cap (e.g. a handful per event per IP) is enough at this scale.

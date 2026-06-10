@@ -21,16 +21,19 @@ so that BATbern's speaker pipeline becomes pull-and-push instead of only organiz
 5. Anonymous callers are rejected **401** (login-gated in BOTH api-gateway and event-management-service `SecurityConfig`).
 6. The self-nomination appears in the existing organizer speaker-pool / brainstorming UI alongside organizer-sourced candidates and follows the existing triage → `promote` path unchanged (promotion to `READY` stays organizer-only, with provisioning happening only there).
 7. OpenAPI updated; integration tests (PostgreSQL) cover create-at-IDENTIFIED, no-provisioning, topic/published guard, 401, and source tagging. Attendee UI extends 7.1's contribution surface; i18n in all 10 locales.
+8. The speaker name is auto-filled from the attendee's profile (attendee does not type it). An attendee may have at most **one** self-nomination per event; a second attempt is rejected (409). The entry point is an "I could speak on that" button on the upcoming-event card, shown only to logged-in users when the event's topic is set + published.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Schema — add `source` + `proposed_by_username` to speaker_pool** (AC: 2)
+- [ ] **Task 1: Schema — add `source` + `proposed_by_username` to speaker_pool** (AC: 2, 8)
   - [ ] New forward migration (current highest in event-management-service is **V108**; use next free number at implementation time). `ALTER TABLE speaker_pool ADD COLUMN source VARCHAR(30) NOT NULL DEFAULT 'organizer_added'`, `ADD COLUMN proposed_by_username VARCHAR(100)`. CHECK `source IN ('organizer_added','self_nomination')` (extendable).
+  - [ ] **One-per-event dedupe:** partial unique index `CREATE UNIQUE INDEX ux_speaker_pool_self_nom ON speaker_pool(event_id, proposed_by_username) WHERE source = 'self_nomination'`.
   - [ ] Add fields to `SpeakerPool` entity.
 - [ ] **Task 2: Self-nomination endpoint** (AC: 1, 2, 3, 4)
   - [ ] New `SelfNominationController` (or add to an existing speaker controller) `POST /api/v1/events/{eventCode}/speakers/self-nominate`, `@PreAuthorize("hasRole('ATTENDEE')")`.
   - [ ] Load event via `eventRepository.findByEventCode(eventCode)`; **guard**: `topicCode != null` AND published — else throw a 409/422 exception (add handler).
-  - [ ] Create the `speaker_pool` row via the **existing add-to-pool creation path** (entity defaults `status = IDENTIFIED`); set `speakerName` (from JWT/user lookup), `source = self_nomination`, `proposed_by_username = username`, `assignedOrganizerId = null`. Do NOT call `transition(...)` to create.
+  - [ ] Create the `speaker_pool` row via the **existing add-to-pool creation path** (entity defaults `status = IDENTIFIED`); set `speakerName` **auto-filled from the attendee's user profile** (via `UserApiClient` lookup by username — do NOT ask the attendee to re-type it; company optional, same source), `source = self_nomination`, `proposed_by_username = username`, `assignedOrganizerId = null`. Do NOT call `transition(...)` to create.
+  - [ ] **One-per-event:** reject (409) if this attendee already has a `self_nomination` row for the event (enforced by the partial unique index + a friendly service check).
   - [ ] Username from `SecurityContextHelper.getCurrentUsername()` (String — NO `SecurityPrincipal`).
 - [ ] **Task 3: SecurityConfig (both layers)** (AC: 5)
   - [ ] api-gateway: endpoint `authenticated()`. event-management-service `SecurityConfig`: `.requestMatchers(HttpMethod.POST, "/api/v1/events/*/speakers/self-nominate").hasRole("ATTENDEE")` (prod chain); local/test permitAll confirmed.
@@ -38,8 +41,10 @@ so that BATbern's speaker pipeline becomes pull-and-push instead of only organiz
   - [ ] Add the endpoint to `docs/api/speakers-api.openapi.yml` (security: ATTENDEE; body sessionTitle+abstract; 201 → SpeakerPoolResponse). Regenerate + commit types.
 - [ ] **Task 5: Organizer visibility** (AC: 6)
   - [ ] Confirm self-nominations render in the existing speaker-pool/brainstorming UI; surface the `source` so organizers can see "self-nominated". No new triage flow.
-- [ ] **Task 6: Attendee frontend** (AC: 7)
-  - [ ] Extend 7.1's contribution surface with an "I could speak on that" form (title + abstract), shown only when the current/next event's topic is set + published. Service call → `POST .../self-nominate`. i18n in all 10 locales.
+- [ ] **Task 6: Attendee frontend** (AC: 7) — DECIDED: entry point = button on upcoming-event cards
+  - [ ] Surface an **"I could speak on that" button on the event card of upcoming events**, visible only to **logged-in** users and only when that event's topic is set + published. Clicking opens a small form (title + abstract) that nominates **for that specific event** (the card supplies the eventCode — no separate event picker needed). Service call → `POST /api/v1/events/{eventCode}/speakers/self-nominate`.
+  - [ ] If the attendee already self-nominated for that event, show the button as already-done (the one-per-event rule). i18n in all 10 locales.
+  - [ ] NOTE bundle boundary: if the upcoming-event card renders on a **public** (Tailwind-only) page, the button + its visibility gate must be Tailwind-only; the nomination form itself can live behind `<MuiLayout>` (login-gated) — confirm where the card renders.
 - [ ] **Task 7: Tests (TDD)** (AC: 1–6)
   - [ ] Integration (PostgreSQL): create → row at `IDENTIFIED`, `source='self_nomination'`, username set, NO session_users/role/Cognito; topic-unset/unpublished → 409/422; anonymous → 401. Assert `SpeakerWorkflowService` was NOT used to create.
   - [ ] Verify promote path still works from the self-nominated entry (IDENTIFIED → CONTACTED → READY via existing endpoints).
@@ -83,8 +88,10 @@ so that BATbern's speaker pipeline becomes pull-and-push instead of only organiz
 
 ### File List
 
-## Open Questions
+## Resolved Decisions
 
-1. **What name/company do we store for a self-nominee at IDENTIFIED?** `speaker_pool.speaker_name` is required. We can pull the attendee's name from their user profile (via the JWT username → user lookup) so the organizer sees a real name in the pool. Please confirm we should auto-fill name (and optionally company) from the logged-in profile rather than asking the attendee to re-type it.
-2. **Should an attendee be limited to one self-nomination per event?** Nothing stops a keen attendee from submitting several session ideas. A soft limit (e.g. one open self-nomination per attendee per event) keeps the organizer pool clean, but maybe multiple distinct talk ideas are fine. Recommendation: allow a small number, dedupe obvious repeats at triage — confirm the desired limit.
-3. **Exactly which event does the attendee nominate for — the "next" event, or any open one?** The window is "topic set + published," but if two events are simultaneously in that state, the UI needs to know which one to target. Usually there's a single upcoming event; please confirm we can assume "the next published event with a topic" and surface its code, rather than letting the attendee pick from a list.
+_Resolved with the PM 2026-06-10._
+
+1. **Name/company:** **Auto-fill from the attendee's profile** (via `UserApiClient` lookup) — the attendee only types title + abstract; no re-typing of identity.
+2. **Limit:** **Exactly one** self-nomination per attendee per event (partial unique index + 409 on repeat).
+3. **Target event:** No standalone picker. The entry point is an **"I could speak on that" button on the upcoming-event card** (logged-in users only, when the event's topic is set + published); the card supplies the `eventCode`, so the nomination targets that specific event. Naturally handles multiple simultaneous open events (each card has its own button).
