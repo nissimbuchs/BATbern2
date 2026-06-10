@@ -867,5 +867,17 @@
       "exportNameBadgesDocx": "Tarjetas de identificación en Word",
       "exportError": "Exportación fallida"
     }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Agradece a los organizadores",
+      "subtitle": "BATbern está gestionado por voluntarios, de forma gratuita y sin publicidad. Da las gracias con un clic.",
+      "notePlaceholder": "Añade un mensaje para los organizadores (opcional)",
+      "button": "Agradece a los organizadores",
+      "count_one": "{{count}} agradecimiento hasta ahora",
+      "count_other": "{{count}} agradecimientos hasta ahora",
+      "success": "¡Gracias por dar las gracias! 🎉",
+      "error": "Algo salió mal. Inténtalo de nuevo."
+    }
   }
 }

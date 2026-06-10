@@ -121,6 +121,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
 
+                // Story 7.4: Public "Thank the Organizers" endpoints (anonymous allowed).
+                // POST is Turnstile-guarded + service-side per-(event,IP) rate-limited; the GET is
+                // count-only for the public, notes branch to organizers inside the controller.
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/thanks").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/thanks").permitAll()
+
                 // Story 10.12: Self-service deregistration (token-protected)
                 .requestMatchers(HttpMethod.GET, "/api/v1/registrations/deregister/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister").permitAll()

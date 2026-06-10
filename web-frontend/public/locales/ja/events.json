@@ -867,5 +867,17 @@
       "exportNameBadgesDocx": "ネームバッジをWordで",
       "exportError": "エクスポートに失敗しました"
     }
+  },
+  "thanks": {
+    "widget": {
+      "title": "主催者に感謝する",
+      "subtitle": "BATbernはボランティアによって無料・広告なしで運営されています。ワンクリックで感謝を伝えましょう。",
+      "notePlaceholder": "主催者へのメッセージを追加（任意）",
+      "button": "主催者に感謝する",
+      "count_one": "これまでに{{count}}件の感謝",
+      "count_other": "これまでに{{count}}件の感謝",
+      "success": "感謝を伝えていただきありがとうございます！🎉",
+      "error": "問題が発生しました。もう一度お試しください。"
+    }
   }
 }

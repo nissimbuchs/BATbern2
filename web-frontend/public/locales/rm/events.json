@@ -867,5 +867,17 @@
       "exportNameBadgesDocx": "Etichettas da num sco Word",
       "exportError": "Exportaziun fallida"
     }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Engraziar als organisaturs",
+      "subtitle": "BATbern vegn manà da voluntaris, gratuitamain e senza reclama. Di engraziament cun in clic.",
+      "notePlaceholder": "Agiuntar in messadi per ils organisaturs (facultativ)",
+      "button": "Engraziar als organisaturs",
+      "count_one": "{{count}} engraziament fin ussa",
+      "count_other": "{{count}} engraziaments fin ussa",
+      "success": "Grazia fitg per engraziar! 🎉",
+      "error": "Insatge è ì fal. Empruva anc ina giada."
+    }
   }
 }

@@ -891,5 +891,17 @@
       "exportNameBadgesDocx": "Namensschilder als Word",
       "exportError": "Export fehlgeschlagen"
     }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Den Organisatoren danken",
+      "subtitle": "BATbern wird von Freiwilligen betrieben – kostenlos und werbefrei. Sag in einem Klick Danke.",
+      "notePlaceholder": "Eine Nachricht an die Organisatoren (optional)",
+      "button": "Den Organisatoren danken",
+      "count_one": "{{count}} Dankeschön bisher",
+      "count_other": "{{count}} Dankeschöns bisher",
+      "success": "Danke fürs Dankesagen! 🎉",
+      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    }
   }
 }

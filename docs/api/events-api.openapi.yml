@@ -1218,6 +1218,135 @@ paths:
       security:
         - BearerAuth: []
 
+  /events/{eventCode}/thanks:
+    post:
+      tags:
+        - Event Actions
+      summary: Thank the organizers ("Thank the Organizers")
+      description: |
+        Send a one-click thank-you to the volunteer organizers after an event is live/completed.
+
+        **Story**: 7.4 - "Thank the Organizers"
+        **Authorization**: PUBLIC — anonymous allowed. Authentication is OPTIONAL.
+        **Abuse guard (anonymous only)**: a valid Cloudflare Turnstile token
+        (`X-Turnstile-Token` header) is required at the gateway, and submissions are
+        rate-limited per (event, client-IP) at the service.
+
+        **Business Rules**:
+        - The event must be `EVENT_LIVE` or `EVENT_COMPLETED` — else 409 (`THANKS_NOT_ALLOWED`).
+        - Logged-in attendees are deduped to one thank-you per event (a repeat updates the
+          optional note, it never double-counts).
+        - Anonymous thank-yous are clap-style and not user-deduped; exceeding the per-(event,IP)
+          rate limit returns 429 (`THANKS_RATE_LIMITED`) without incrementing the counter.
+        - The response carries the new aggregate `count`. Submitted notes are NEVER returned here.
+      operationId: submitThanks
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitThanksRequest'
+      responses:
+        '200':
+          description: Thank-you recorded; returns the new aggregate count (notes never included).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThanksCountResponse'
+        '400':
+          description: Validation error (note too long, or an unknown body field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Turnstile verification failed (anonymous submission, invalid/blocked token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            `THANKS_NOT_ALLOWED` — the event is not yet live or completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Thank-yous open only after the event is live or completed."
+                status: 409
+                error: "Conflict"
+                details:
+                  code: "THANKS_NOT_ALLOWED"
+        '429':
+          description: |
+            `THANKS_RATE_LIMITED` — too many anonymous thank-yous for this event from your IP.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Too many thank-yous for this event from your network — please try later."
+                status: 429
+                error: "Too Many Requests"
+                details:
+                  code: "THANKS_RATE_LIMITED"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+    get:
+      tags:
+        - Event Actions
+      summary: Get the thank-the-organizers aggregate (and notes for organizers)
+      description: |
+        Returns the public clap-style aggregate `count` for an event. Organizer-authenticated
+        callers additionally receive the submitted `notes` (AC6); the public response is
+        count-only — there is no public note wall.
+
+        **Story**: 7.4 - "Thank the Organizers"
+        **Authorization**: PUBLIC for the count. Notes returned ONLY to ORGANIZER callers.
+      operationId: getThanks
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      responses:
+        '200':
+          description: Aggregate count (notes present only for organizer callers).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThanksCountResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+
   /events/{eventCode}/speakers/pool/{speakerId}:
     patch:
       tags:
@@ -8727,6 +8856,62 @@ components:
           maxLength: 5000
           description: The proposed talk abstract, stored raw (no agent pre-screen).
           example: A field report on migrating a monolith to an event-driven core, including the dead ends.
+
+    SubmitThanksRequest:
+      type: object
+      description: |
+        Story 7.4 "Thank the Organizers": the optional body of a thank-you. Identity (logged-in
+        username) is taken from the JWT server-side, never from the body, so the only field is an
+        optional short `note`. A one-click thank-you may send an empty body / no body at all.
+        `additionalProperties: false`: an unexpected field is rejected with HTTP 400.
+      additionalProperties: false
+      properties:
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional short note for the organizers (organizer-visible only).
+          example: Thank you for 20 years of BATbern!
+
+    ThanksNoteResponse:
+      type: object
+      description: |
+        Story 7.4: a single organizer-visible thank-you note. Returned ONLY in the
+        organizer-authenticated GET response — never to anonymous/public callers.
+      properties:
+        note:
+          type: string
+          nullable: true
+          description: The submitted note (may be null if the thank-you carried no note).
+        thankedByUsername:
+          type: string
+          nullable: true
+          description: The logged-in attendee's username, or null for an anonymous clap.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the thank-you was submitted.
+
+    ThanksCountResponse:
+      type: object
+      description: |
+        Story 7.4: response for both the POST submit and the GET aggregate. `count` (the public
+        clap-style aggregate) is always present. `notes` is populated ONLY for organizer GET
+        callers; it is null for the public GET and for POST responses (no public note wall).
+      required:
+        - count
+      properties:
+        count:
+          type: integer
+          format: int64
+          description: The aggregate number of thank-yous for the event.
+          example: 42
+        notes:
+          type: array
+          nullable: true
+          description: Organizer-only list of submitted notes (newest first); null for the public.
+          items:
+            $ref: '#/components/schemas/ThanksNoteResponse'
 
     AddSpeakerToPoolRequest:
       type: object

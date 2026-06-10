@@ -869,5 +869,17 @@
       "exportNameBadgesDocx": "Namesschildli als Word",
       "exportError": "Export het nid funktioniert"
     }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Den Organisatore danke",
+      "subtitle": "BATbern wird vo Freiwillige gmacht – gratis u ohni Werbig. Säg mit eim Klick Merci.",
+      "notePlaceholder": "Es Nötli a d'Organisatore (fakultativ)",
+      "button": "Den Organisatore danke",
+      "count_one": "{{count}} Merci bishär",
+      "count_other": "{{count}} Merci bishär",
+      "success": "Merci fürs Merci säge! 🎉",
+      "error": "Öppis isch schiefgloffe. Probier's nomal."
+    }
   }
 }

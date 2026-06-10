@@ -459,6 +459,49 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/thanks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the thank-the-organizers aggregate (and notes for organizers)
+     * @description Returns the public clap-style aggregate `count` for an event. Organizer-authenticated
+     *     callers additionally receive the submitted `notes` (AC6); the public response is
+     *     count-only — there is no public note wall.
+     *
+     *     **Story**: 7.4 - "Thank the Organizers"
+     *     **Authorization**: PUBLIC for the count. Notes returned ONLY to ORGANIZER callers.
+     */
+    get: operations['getThanks'];
+    put?: never;
+    /**
+     * Thank the organizers ("Thank the Organizers")
+     * @description Send a one-click thank-you to the volunteer organizers after an event is live/completed.
+     *
+     *     **Story**: 7.4 - "Thank the Organizers"
+     *     **Authorization**: PUBLIC — anonymous allowed. Authentication is OPTIONAL.
+     *     **Abuse guard (anonymous only)**: a valid Cloudflare Turnstile token
+     *     (`X-Turnstile-Token` header) is required at the gateway, and submissions are
+     *     rate-limited per (event, client-IP) at the service.
+     *
+     *     **Business Rules**:
+     *     - The event must be `EVENT_LIVE` or `EVENT_COMPLETED` — else 409 (`THANKS_NOT_ALLOWED`).
+     *     - Logged-in attendees are deduped to one thank-you per event (a repeat updates the
+     *       optional note, it never double-counts).
+     *     - Anonymous thank-yous are clap-style and not user-deduped; exceeding the per-(event,IP)
+     *       rate limit returns 429 (`THANKS_RATE_LIMITED`) without incrementing the counter.
+     *     - The response carries the new aggregate `count`. Submitted notes are NEVER returned here.
+     */
+    post: operations['submitThanks'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/speakers/pool/{speakerId}': {
     parameters: {
       query?: never;
@@ -4676,6 +4719,49 @@ export interface components {
       abstract: string;
     };
     /**
+     * @description Story 7.4 "Thank the Organizers": the optional body of a thank-you. Identity (logged-in
+     *     username) is taken from the JWT server-side, never from the body, so the only field is an
+     *     optional short `note`. A one-click thank-you may send an empty body / no body at all.
+     *     `additionalProperties: false`: an unexpected field is rejected with HTTP 400.
+     */
+    SubmitThanksRequest: {
+      /**
+       * @description Optional short note for the organizers (organizer-visible only).
+       * @example Thank you for 20 years of BATbern!
+       */
+      note?: string | null;
+    };
+    /**
+     * @description Story 7.4: a single organizer-visible thank-you note. Returned ONLY in the
+     *     organizer-authenticated GET response — never to anonymous/public callers.
+     */
+    ThanksNoteResponse: {
+      /** @description The submitted note (may be null if the thank-you carried no note). */
+      note?: string | null;
+      /** @description The logged-in attendee's username, or null for an anonymous clap. */
+      thankedByUsername?: string | null;
+      /**
+       * Format: date-time
+       * @description When the thank-you was submitted.
+       */
+      createdAt?: string;
+    };
+    /**
+     * @description Story 7.4: response for both the POST submit and the GET aggregate. `count` (the public
+     *     clap-style aggregate) is always present. `notes` is populated ONLY for organizer GET
+     *     callers; it is null for the public GET and for POST responses (no public note wall).
+     */
+    ThanksCountResponse: {
+      /**
+       * Format: int64
+       * @description The aggregate number of thank-yous for the event.
+       * @example 42
+       */
+      count: number;
+      /** @description Organizer-only list of submitted notes (newest first); null for the public. */
+      notes?: components['schemas']['ThanksNoteResponse'][] | null;
+    };
+    /**
      * @description Request to add a potential speaker to the event speaker pool during brainstorming phase.
      *     Story 5.2 - AC9-12: Speaker Pool Management.
      *     Story 11.D.1 (AR23): `additionalProperties: false` — any client-supplied `email` (or
@@ -6163,6 +6249,132 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getThanks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Aggregate count (notes present only for organizer callers). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ThanksCountResponse'];
+        };
+      };
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  submitThanks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['SubmitThanksRequest'];
+      };
+    };
+    responses: {
+      /** @description Thank-you recorded; returns the new aggregate count (notes never included). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ThanksCountResponse'];
+        };
+      };
+      /** @description Validation error (note too long, or an unknown body field) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Turnstile verification failed (anonymous submission, invalid/blocked token) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description `THANKS_NOT_ALLOWED` — the event is not yet live or completed. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Thank-yous open only after the event is live or completed.",
+           *       "status": 409,
+           *       "error": "Conflict",
+           *       "details": {
+           *         "code": "THANKS_NOT_ALLOWED"
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description `THANKS_RATE_LIMITED` — too many anonymous thank-yous for this event from your IP. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Too many thank-yous for this event from your network — please try later.",
+           *       "status": 429,
+           *       "error": "Too Many Requests",
+           *       "details": {
+           *         "code": "THANKS_RATE_LIMITED"
+           *       }
+           *     }
+           */
           'application/json': components['schemas']['ErrorResponse'];
         };
       };

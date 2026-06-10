@@ -867,5 +867,17 @@
       "exportNameBadgesDocx": "Badges nominatifs en Word",
       "exportError": "Échec de l'exportation"
     }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Remercier les organisateurs",
+      "subtitle": "BATbern est animé par des bénévoles, gratuitement et sans publicité. Dites merci en un clic.",
+      "notePlaceholder": "Ajouter un message pour les organisateurs (facultatif)",
+      "button": "Remercier les organisateurs",
+      "count_one": "{{count}} remerciement jusqu'à présent",
+      "count_other": "{{count}} remerciements jusqu'à présent",
+      "success": "Merci d'avoir dit merci ! 🎉",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    }
   }
 }

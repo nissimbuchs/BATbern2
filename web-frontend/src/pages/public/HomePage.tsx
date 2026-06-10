@@ -43,6 +43,13 @@ const NewsletterSubscribeWidget = lazy(() =>
     default: m.NewsletterSubscribeWidget,
   }))
 );
+// Story 7.4: lazy so the (below-the-fold) thank-the-organizers widget + its Turnstile script
+// never enter the homepage's critical render path.
+const ThankOrganizersWidget = lazy(() =>
+  import('@/components/public/ThankOrganizersWidget').then((m) => ({
+    default: m.ThankOrganizersWidget,
+  }))
+);
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { useEventPhotos } from '@/hooks/useEventPhotos';
@@ -352,6 +359,14 @@ const HomePage = () => {
         <div className="mt-16 pb-12">
           <TestimonialSection skipPhotoRow={vis.testimonialsSkipPhotoRow} />
         </div>
+
+        {/* Thank the Organizers — Story 7.4: only once the event is live/completed (AC1) */}
+        {!!event.eventCode &&
+          (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED') && (
+            <Suspense fallback={null}>
+              <ThankOrganizersWidget eventCode={event.eventCode} />
+            </Suspense>
+          )}
 
         {/* Newsletter Subscribe Widget — always shown (lazy, below the fold) */}
         <div className="border-t pt-4 pb-8">

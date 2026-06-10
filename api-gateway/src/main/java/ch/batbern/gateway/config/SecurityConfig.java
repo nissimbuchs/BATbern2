@@ -286,6 +286,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
 
+                        // Story 7.4: Public "Thank the Organizers" endpoints (anonymous allowed).
+                        // Mirror in event-management-service SecurityConfig. POST is added to the
+                        // Turnstile protected-endpoints list; the GET is count-only for the public.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/*/thanks").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/thanks").permitAll()
+
                         // Additional-email verification (v2): public token-credentialed verify
                         // endpoints (GET-check / POST-confirm). The token IS the credential.
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()

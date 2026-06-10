@@ -1066,6 +1066,63 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle ThanksNotAllowedException (Story 7.4): a thank-you was submitted for an event that
+     * is not yet live/completed. Returns HTTP 409 Conflict with
+     * {@code details.code = THANKS_NOT_ALLOWED}; no row is created (AC7).
+     */
+    @ExceptionHandler(ThanksNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleThanksNotAllowedException(
+            ThanksNotAllowedException ex,
+            HttpServletRequest request) {
+        log.warn("Thanks not allowed: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "THANKS_NOT_ALLOWED");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle ThanksRateLimitedException (Story 7.4): anonymous thank-yous for one event from a
+     * single IP exceeded the per-(event,IP) cap (AC3/AC5). Returns HTTP 429 Too Many Requests with
+     * {@code details.code = THANKS_RATE_LIMITED}; the submission is rejected before any row is
+     * inserted, so the aggregate is not incremented.
+     */
+    @ExceptionHandler(ThanksRateLimitedException.class)
+    public ResponseEntity<ErrorResponse> handleThanksRateLimitedException(
+            ThanksRateLimitedException ex,
+            HttpServletRequest request) {
+        log.warn("Thanks rate limited: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "THANKS_RATE_LIMITED");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.TOO_MANY_REQUESTS.value())
+                .error("Too Many Requests")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(error);
+    }
+
+    /**
      * Handle SlotCapacityReachedException (READY → INVITED blocked by slot-capacity gate)
      * Returns HTTP 409 Conflict.
      * Story 11.B.2: slot-capacity gate replaces removed OVERFLOW state (ADR-009 §0.7).

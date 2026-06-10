@@ -867,5 +867,17 @@
       "exportNameBadgesDocx": "Nimikyltit Word-muodossa",
       "exportError": "Vienti epäonnistui"
     }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Kiitä järjestäjiä",
+      "subtitle": "BATbernia pyörittävät vapaaehtoiset, ilmaiseksi ja mainoksitta. Sano kiitos yhdellä klikkauksella.",
+      "notePlaceholder": "Lisää viesti järjestäjille (valinnainen)",
+      "button": "Kiitä järjestäjiä",
+      "count_one": "{{count}} kiitos tähän mennessä",
+      "count_other": "{{count}} kiitosta tähän mennessä",
+      "success": "Kiitos, kun sanoit kiitos! 🎉",
+      "error": "Jotain meni vikaan. Yritä uudelleen."
+    }
   }
 }
