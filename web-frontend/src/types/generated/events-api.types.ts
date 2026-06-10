@@ -2277,6 +2277,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/slides-online/send': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send the "slides are online" mail to the event's active registrants (ORGANIZER)
+     * @description Story 7.3 — sends a one-shot, event-triggered "The Slides Are Online" mail to the event's
+     *     ACTIVE REGISTRANTS (status registered/confirmed), NOT the global newsletter-subscriber pool.
+     *     Recipients with a global newsletter opt-out (unsubscribed/suppressed) are excluded. The
+     *     template language is per-recipient (de* → German, en → English, else → German fallback).
+     *     Guarded against double-send (409 if already in progress or already sent). Runs asynchronously.
+     */
+    post: operations['sendSlidesOnline'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/newsletter/send': {
     parameters: {
       query?: never;
@@ -2760,6 +2784,21 @@ export interface components {
       startedAt?: string;
       /** Format: date-time */
       completedAt?: string;
+    };
+    /** @description Story 7.3 — response for a dedicated "slides are online" send (runs async). */
+    SlidesOnlineSendResponse: {
+      /**
+       * Format: uuid
+       * @description Id of the underlying newsletter_sends audit row (template_key='slides-online').
+       */
+      sendId: string;
+      /**
+       * @description Send-job status at return time (PENDING).
+       * @enum {string}
+       */
+      status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
+      /** @description Number of active registrants resolved as the recipient base. */
+      recipientCount: number;
     };
     NewsletterSendStatusResponse: {
       /** Format: uuid */
@@ -9129,6 +9168,44 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ErrorResponse'];
         };
+      };
+    };
+  };
+  sendSlidesOnline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Slides-online send queued */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SlidesOnlineSendResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A slides-online send is already in progress or has already been sent */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

@@ -88,6 +88,22 @@ public interface UserApiClient {
     String getEmailByUsername(String username);
 
     /**
+     * Get the user's preferred UI/web language (Story 7.3).
+     *
+     * <p>Hits {@code GET /api/v1/users/{username}?include=preferences} and returns the lowercase
+     * language code from {@code preferences.language} (e.g. {@code "de"}, {@code "en"}, {@code "fr"}).
+     *
+     * <p><b>Lenient by design:</b> returns {@code null} — never throws — when the username is
+     * blank, the user/preferences are absent, or CUMS is degraded. The slides-online send treats
+     * {@code null} (and any non-de/en value) as the German fallback, so a per-recipient lookup
+     * failure can never abort the rest of the send.
+     *
+     * @param username User's username (public identifier)
+     * @return lowercase language code, or {@code null} when unavailable
+     */
+    String getPreferredLanguage(String username);
+
+    /**
      * Get user's last login timestamp.
      * Used for in-app notification queries.
      *

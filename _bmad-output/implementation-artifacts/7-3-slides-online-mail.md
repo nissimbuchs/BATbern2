@@ -1,6 +1,6 @@
 # Story 7.3: "The Slides Are Online" Mail
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,25 +26,25 @@ so that I get the one post-event message I'll actually open — turning 3 websit
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Seed the task template** (AC: 1)
-  - [ ] New forward migration (current highest **V108**; next free at implementation time) inserting into `task_templates`: `name='Newsletter: Slides Are Online'`, `trigger_state` = the post-event state (e.g. `event_completed`/`event_live` — match the existing newsletter templates' convention), `due_date_type='relative_to_event'`, `due_date_offset_days = +14` (after the event), `is_default=true`. Mirrors the existing seeds in `V22` (e.g. "Newsletter: Speaker Lineup", offset −30).
-  - [ ] Verify `EventTaskService.autoCreateTasksForState(...)` / `createTasksForEvent(...)` picks it up with **no code change** (templates are treated uniformly).
-- [ ] **Task 2: `slides-online` email template (DE+EN)** (AC: 2, 4)
-  - [ ] Add `services/event-management-service/src/main/resources/email-templates/slides-online-de.html` + `-en.html` (subject in the leading `<!-- subject: ... -->` comment; body uses `{{variable}}`; layout `batbern-default`). `EmailTemplateSeedService` auto-seeds on startup.
-  - [ ] Update `EmailTemplateSeedService.deriveCategory(...)` so `slides-online` maps to `NEWSLETTER` (it currently falls through to `LAYOUT` — verify and fix).
-- [ ] **Task 3: Send to event registrants** (AC: 2, 3, 4)
-  - [ ] The existing `NewsletterEmailService.sendNewsletter(...)` sends to the **global** `newsletter_subscribers` pool. Add a recipient-source mode (or an overload) that targets **event registrants**: `registrationRepository.findByEventIdAndStatus(eventId, 'registered'|'confirmed')` → resolve email (`attendee_email` or `UserApiClient.getEmailByUsername`) → resolve locale from the attendee's language pref (Task 4) → skip opt-outs (Task 3a).
-  - [ ] **Task 3a (opt-out):** for each registrant email, skip if a `newsletter_subscribers` row exists with `unsubscribed_at` or `suppressed_at` set. (Registrations have no own opt-out flag — reuse the newsletter suppression list.)
-  - [ ] Reuse the async paged-send + per-recipient audit + 70ms SES throttle already in `NewsletterEmailService`.
-- [ ] **Task 4: Per-recipient locale** (AC: 4)
-  - [ ] Resolve the attendee's language from their profile (`UserApiClient` → user `pref_language` / preferred language). Map: `de*`→`de`, `en`→`en`, else → **`de` (German fallback)**. ⚠️ If the preferred-language field is not yet exposed on the user lookup response, expose it (small addition) — see Dev Notes; do not hardcode a single language for everyone.
-- [ ] **Task 5: Double-send guard** (AC: 5)
-  - [ ] Reuse `NewsletterEmailService`'s in-progress guard (`DuplicateNewsletterSendException`) and add a check that a completed slides-online send for this event doesn't re-fire (e.g. a `newsletter_sends` row with this template key + event, or a `notifications` guard).
-- [ ] **Task 6: Endpoint** (AC: 2)
-  - [ ] Prefer reusing `POST /api/v1/events/{eventCode}/newsletter/send` (`@PreAuthorize("hasRole('ORGANIZER')")`) with `templateKey="slides-online"` + a recipient-source flag = `registrants`. If a flag doesn't fit cleanly, add a sibling endpoint; keep it organizer-only.
-- [ ] **Task 7: Tests (TDD) + doc-drift** (AC: 7)
-  - [ ] Integration test (mocked `EmailService`, see `TestAwsConfig` `@Primary` mock): task auto-created with due = eventDate+14; send → active registrants only; opt-out skipped; DE/EN/German-fallback; double-send guard; per-recipient failure isolation. Clean up registrations/sends/notifications rows.
-  - [ ] Update `.github/doc-drift-mappings.yml` targets if task-template/newsletter docs are mapped (or `[no-doc]`).
+- [x] **Task 1: Seed the task template** (AC: 1)
+  - [x] New forward migration **V110** (`V110__seed_slides_online_task_template.sql`) inserting into `task_templates`: `name='Newsletter: Slides Are Online'`, `trigger_state='event_completed'`, `due_date_type='relative_to_event'`, `due_date_offset_days = 1` (**+1 day AFTER the event** per Nissim's resolution, revised from the original `+14`), `is_default=true`, guarded by `NOT EXISTS`. Mirrors the V22 newsletter seeds.
+  - [x] Verified `EventTaskService.createTasksForEvent(...)` picks it up with **no code change** — covered by `SlidesOnlineIntegrationTest` AC1 (asserts the task auto-created at `pending` with due = eventDate+1, trigger `event_completed`).
+- [x] **Task 2: `slides-online` email template (DE+EN)** (AC: 2, 4)
+  - [x] Added `email-templates/slides-online-de.html` + `-en.html` (subject in the leading `<!-- subject: ... -->` comment; `{{eventTitle}}/{{eventNumber}}/{{eventType}}/{{eventDate}}/{{eventDetailLink}}/{{currentYear}}`; layout `batbern-default`). Auto-seeded by `EmailTemplateSeedService` on startup.
+  - [x] Updated `EmailTemplateSeedService.deriveCategory(...)` — added an explicit `slides-online → NEWSLETTER` case (it does not carry the `newsletter-` prefix, so it previously fell through to `LAYOUT`).
+- [x] **Task 3: Send to event registrants** (AC: 2, 3, 4) — **dedicated sibling, not bolted onto the subscriber newsletter** (Nissim's resolution)
+  - [x] New `SlidesOnlineEmailService` targets **event registrants** via `registrationRepository.findByEventIdAndStatusIn(eventId, ['registered','confirmed'])` → resolve email (`attendeeEmail`, fallback `UserApiClient.getEmailByUsername`) → resolve per-recipient locale (Task 4) → skip opt-outs (Task 3a). Dedupes by lowercased email.
+  - [x] **Task 3a (opt-out):** skips any registrant whose email matches a `newsletter_subscribers` row with `unsubscribed_at` or `suppressed_at` set (new `findByEmailIgnoreCase`). Registrations have no own opt-out flag.
+  - [x] Reuses the proven `newsletter_sends`/`newsletter_recipients` audit (discriminated by `template_key='slides-online'`), the 70 ms SES throttle, per-recipient audit + failure isolation; orphan recovery is already handled by `NewsletterEmailService.recoverOrphanedSends()` (template-agnostic).
+- [x] **Task 4: Per-recipient locale** (AC: 4)
+  - [x] `UserApiClient.getPreferredLanguage(username)` (new) reads `preferences.language` via `GET /users/{username}?include=preferences` — the field was **already exposed** on the user lookup (no users-api spec change needed). Lenient (null on any failure). Map: `de*`→`de`, `en`→`en`, else/unknown → **`de` (German fallback)**.
+- [x] **Task 5: Double-send guard** (AC: 5)
+  - [x] In-progress guard reuses `DuplicateNewsletterSendException` (scoped to `template_key='slides-online'` so it doesn't collide with a subscriber-newsletter send); a completed/partial slides-online send re-fire throws the new `SlidesOnlineAlreadySentException` (also 409, with an explicit `GlobalExceptionHandler` entry so the catch-all doesn't shadow it into a 500).
+- [x] **Task 6: Endpoint** (AC: 2)
+  - [x] Dedicated `POST /api/v1/events/{eventCode}/slides-online/send` (`@PreAuthorize("hasRole('ORGANIZER')")`) in a new `SlidesOnlineController` — sibling endpoint per Nissim's resolution (kept isolated from the subscriber-newsletter endpoint). Added to `events-api.openapi.yml` + regenerated FE types.
+- [x] **Task 7: Tests (TDD) + doc-drift** (AC: 7)
+  - [x] `SlidesOnlineIntegrationTest` (PostgreSQL, mocked `EmailService` + `UserApiClient`): task auto-created due eventDate+1; send → active registrants only; opt-out skipped; DE/EN/German-fallback (subject-language asserted); double-send guard (409 in-progress + already-sent); per-recipient failure isolation (PARTIAL). `SlidesOnlineEmailServiceTest` (Mockito) covers locale mapping, both guards, opt-out skip, queued response. 13 new tests green; 79 related-suite regression tests green.
+  - [x] `.github/doc-drift-mappings.yml` has **no** entries mapped to the changed paths (newsletter / task-template / email-templates / UserApiClient / GlobalExceptionHandler) → **`[no-doc]`** applies to the commit.
 
 ## Dev Notes
 
@@ -80,11 +80,65 @@ so that I get the one post-event message I'll actually open — turning 3 websit
 
 ### Agent Model Used
 
+Claude Opus 4.8 (1M context) — bmad-dev-story, 2026-06-10.
+
 ### Debug Log References
+
+- Initial `endpoint_alreadySent_returns409` IT returned **500** not 409: `SlidesOnlineAlreadySentException`'s `@ResponseStatus(CONFLICT)` was shadowed by `GlobalExceptionHandler`'s catch-all `@ExceptionHandler(Exception.class)` (line ~1253). Fixed by adding an explicit `@ExceptionHandler(SlidesOnlineAlreadySentException.class)` (mirrors the existing `DuplicateNewsletterSendException` handler). `DuplicateNewsletterSendException` was already explicitly handled, which is why the in-progress guard mapped to 409 correctly.
+- A pure-Mockito unit test for per-recipient failure isolation hit a `STRICT_STUBS`/`computeIfAbsent` interaction (a non-matching `doThrow` stub left `mail` null for the non-failing recipient — not reproducible in a Spring context). Removed it; AC6 is covered authoritatively by `SlidesOnlineIntegrationTest` against real PostgreSQL (PARTIAL, sent=1/failed=1) — which passes.
 
 ### Completion Notes List
 
+- **Locale field was already exposed.** Task 4's flagged risk (preferredLanguage maybe not on the user lookup) did not materialise: `UserResponse.preferences.language` is already in `users-api.openapi.yml` and CUMS already maps it via `?include=preferences`. So **no cross-service spec change** — just a lenient `UserApiClient.getPreferredLanguage` reading it (cached under a `prefLang:` key to avoid colliding with the base-user cache entry).
+- **Dedicated sibling, reusing audit infra.** Per Nissim's resolution, the send is a standalone `SlidesOnlineEmailService` + `SlidesOnlineController` — NOT a mode on `NewsletterEmailService`. It reuses the `newsletter_sends`/`newsletter_recipients` tables discriminated by `template_key='slides-online'` (distinct audit/metrics without a new table), the 70 ms SES throttle, and per-recipient failure isolation. The synchronous send core is `processSend(...)` (package-private, non-`@Async`) so tests drive it deterministically; the public `sendSlidesOnline` does the guards + audit row + `@Async` dispatch.
+- **Task due = eventDate + 1 day** (`offset_days = 1`, trigger `event_completed`), revised from the story's tentative `+14` per Nissim.
+- **No frontend work** in this story (Tasks 1–7 are backend-only; ACs make no FE demand). The OpenAPI path + regenerated TS types are committed for contract-first completeness; wiring the organizer "send" button is out of scope.
+- **Tests:** 13 new (5 unit + 8 PostgreSQL integration) all green; 79 related-suite regression tests (newsletter, email-template-seed, UserApiClient consumers, self-nomination) green. Full event-management suite NOT run end-to-end here (known to exceed the 20-min Testcontainers timeout on this machine — see memory `project_event_management_prepush_timeout`); changes to shared classes are additive and regression-covered at their call sites.
+- **NOT committed** — left for review.
+
 ### File List
+
+**New:**
+- `services/event-management-service/src/main/resources/db/migration/V110__seed_slides_online_task_template.sql`
+- `services/event-management-service/src/main/resources/email-templates/slides-online-de.html`
+- `services/event-management-service/src/main/resources/email-templates/slides-online-en.html`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SlidesOnlineEmailService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/SlidesOnlineController.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/SlidesOnlineSendResponse.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/exception/SlidesOnlineAlreadySentException.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SlidesOnlineEmailServiceTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SlidesOnlineIntegrationTest.java`
+
+**Modified:**
+- `services/event-management-service/src/main/java/ch/batbern/events/service/EmailTemplateSeedService.java` (deriveCategory: `slides-online → NEWSLETTER`)
+- `services/event-management-service/src/main/java/ch/batbern/events/exception/GlobalExceptionHandler.java` (handler for `SlidesOnlineAlreadySentException` → 409)
+- `services/event-management-service/src/main/java/ch/batbern/events/client/UserApiClient.java` (+ `getPreferredLanguage`)
+- `services/event-management-service/src/main/java/ch/batbern/events/client/impl/UserApiClientImpl.java` (impl + cache key)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/NewsletterSendRepository.java` (+ template-scoped guard queries)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/NewsletterSubscriberRepository.java` (+ `findByEmailIgnoreCase`)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java` (+ `findByEventIdAndStatusIn`)
+- `docs/api/events-api.openapi.yml` (+ `/events/{eventCode}/slides-online/send` path + `SlidesOnlineSendResponse` schema)
+- `web-frontend/src/types/generated/events-api.types.ts` (regenerated)
+- `_bmad-output/implementation-artifacts/7-3-slides-online-mail.md` (this story)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (status → review)
+
+### Change Log
+
+- 2026-06-10 — Implemented Story 7.3 (dev-story, Claude Opus 4.8 1M): V110 task-template seed (+1 day, `event_completed`); DE+EN `slides-online` templates + `deriveCategory` NEWSLETTER case; dedicated `SlidesOnlineEmailService` + `SlidesOnlineController` (`POST /events/{eventCode}/slides-online/send`, ORGANIZER) sending to active registrants with per-recipient locale (de*/en/else→de German fallback), global opt-out exclusion, double-send guards, per-recipient failure isolation, reusing the newsletter audit/throttle infra; `UserApiClient.getPreferredLanguage`; OpenAPI path + schema + regenerated FE types. 13 new tests + 79 regression tests green. Status → review. `[no-doc]`.
+
+### Open-Question Resolutions (Nissim, 2026-06-10, pre-code)
+
+1. **Task due date → `+1` (one day AFTER the event).** The auto-created organizer task
+   "Newsletter: Slides Are Online" is due **eventDate + 1 day**. Seed: `trigger_state='event_completed'`,
+   `due_date_type='relative_to_event'`, `due_date_offset_days = 1`. (Revised down from the story's
+   tentative `+14` assumption — organizer wants the nudge to surface promptly once the event completes.)
+2. **Send path → DEDICATED SIBLING, fully isolated from the subscriber newsletter.** A new
+   `SlidesOnlineEmailService` + `SlidesOnlineController` (`POST /api/v1/events/{eventCode}/slides-online/send`,
+   ORGANIZER-only) — NOT an extra mode bolted onto `NewsletterEmailService`/the subscriber-newsletter
+   endpoint. It REUSES the proven infra (the `newsletter_sends`/`newsletter_recipients` audit tables —
+   discriminated by `template_key='slides-online'`, the 70 ms SES throttle, paged send, per-recipient
+   failure isolation, `EmailService`/`EmailTemplateService`) but keeps audit/metrics/guard scoped to the
+   slides-online template so the two sends never interfere.
 
 ## Resolved Decisions
 

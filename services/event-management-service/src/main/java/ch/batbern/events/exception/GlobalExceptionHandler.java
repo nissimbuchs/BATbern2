@@ -1168,6 +1168,31 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Story 7.3 — handle SlidesOnlineAlreadySentException (the one-shot slides-online mail has
+     * already been sent for this event). Returns HTTP 409 Conflict. An explicit handler is
+     * required so the catch-all {@code @ExceptionHandler(Exception.class)} below does not shadow
+     * the exception's {@code @ResponseStatus(CONFLICT)} and translate it into a 500.
+     */
+    @ExceptionHandler(SlidesOnlineAlreadySentException.class)
+    public ResponseEntity<ErrorResponse> handleSlidesOnlineAlreadySentException(
+            SlidesOnlineAlreadySentException ex,
+            HttpServletRequest request) {
+        log.warn("Duplicate slides-online send attempt: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Spring MVC raises {@code NoHandlerFoundException} / {@code NoResourceFoundException}
      * when no controller method matches the inbound request. Without this explicit handler
      * the catch-all {@code Exception} branch below would translate either into a 500 (same

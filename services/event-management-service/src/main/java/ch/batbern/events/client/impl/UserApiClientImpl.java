@@ -355,6 +355,53 @@ public class UserApiClientImpl implements UserApiClient {
         }
     }
 
+    /**
+     * Story 7.3: resolve a user's preferred language via {@code ?include=preferences}.
+     *
+     * <p>Lenient: any failure (blank username, 404, 5xx, network, missing preferences) yields
+     * {@code null} so a per-recipient locale lookup can never abort a slides-online send. Cached
+     * 15&nbsp;min under a {@code prefLang:} key so it does not collide with the base user cache
+     * entry (which is fetched without {@code ?include=preferences}).
+     */
+    @Override
+    @Cacheable(value = "userApiCache", key = "'prefLang:' + #username", unless = "#result == null")
+    public String getPreferredLanguage(String username) {
+        if (username == null || username.isEmpty()) {
+            return null;
+        }
+        log.debug("Fetching preferred language for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "?include=preferences";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<UserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    UserResponse.class
+            );
+
+            UserResponse user = response.getBody();
+            if (user == null || user.getPreferences() == null
+                    || user.getPreferences().getLanguage() == null) {
+                log.debug("No language preference available for username: {}", username);
+                return null;
+            }
+            String language = user.getPreferences().getLanguage().getValue();
+            return language != null ? language.toLowerCase(java.util.Locale.ROOT) : null;
+
+        } catch (Exception e) {
+            // Non-fatal: caller applies the German fallback. Do not propagate — a single
+            // recipient's missing/degraded preference must not break the whole send.
+            log.warn("Could not resolve preferred language for username {} (falling back): {}",
+                    username, e.getMessage());
+            return null;
+        }
+    }
+
     @Override
     public java.time.Instant getLastLogin(String username) {
         log.debug("Fetching last login for username: {}", username);

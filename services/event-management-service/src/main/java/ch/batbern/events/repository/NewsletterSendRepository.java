@@ -18,6 +18,21 @@ public interface NewsletterSendRepository extends JpaRepository<NewsletterSend, 
     /** Returns the first IN_PROGRESS send for this event (for duplicate-send prevention). */
     java.util.Optional<NewsletterSend> findFirstByEventIdAndStatus(UUID eventId, String status);
 
+    /**
+     * Story 7.3: template-scoped in-progress guard for the dedicated slides-online send.
+     * Lets the slides-online send guard against its OWN concurrent send without being blocked
+     * by (or blocking) an unrelated subscriber-newsletter send for the same event.
+     */
+    java.util.Optional<NewsletterSend> findFirstByEventIdAndTemplateKeyAndStatus(
+            UUID eventId, String templateKey, String status);
+
+    /**
+     * Story 7.3: "already sent" guard — true when a terminal slides-online send already exists
+     * for this event (COMPLETED or PARTIAL), so the organizer cannot re-fire it.
+     */
+    boolean existsByEventIdAndTemplateKeyAndStatusIn(
+            UUID eventId, String templateKey, java.util.Collection<String> statuses);
+
     /** Validates that a send record belongs to a specific event (security guard). */
     java.util.Optional<NewsletterSend> findByIdAndEventId(UUID id, UUID eventId);
 

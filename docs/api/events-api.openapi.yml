@@ -5293,6 +5293,39 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /events/{eventCode}/slides-online/send:
+    post:
+      tags: [Newsletter]
+      summary: Send the "slides are online" mail to the event's active registrants (ORGANIZER)
+      description: |
+        Story 7.3 — sends a one-shot, event-triggered "The Slides Are Online" mail to the event's
+        ACTIVE REGISTRANTS (status registered/confirmed), NOT the global newsletter-subscriber pool.
+        Recipients with a global newsletter opt-out (unsubscribed/suppressed) are excluded. The
+        template language is per-recipient (de* → German, en → English, else → German fallback).
+        Guarded against double-send (409 if already in progress or already sent). Runs asynchronously.
+      operationId: sendSlidesOnline
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Slides-online send queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlidesOnlineSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+        '409':
+          description: A slides-online send is already in progress or has already been sent
+
   /events/{eventCode}/newsletter/send:
     post:
       tags: [Newsletter]
@@ -6165,6 +6198,23 @@ components:
         completedAt:
           type: string
           format: date-time
+
+    SlidesOnlineSendResponse:
+      type: object
+      description: Story 7.3 — response for a dedicated "slides are online" send (runs async).
+      required: [sendId, status, recipientCount]
+      properties:
+        sendId:
+          type: string
+          format: uuid
+          description: Id of the underlying newsletter_sends audit row (template_key='slides-online').
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, PARTIAL, FAILED]
+          description: Send-job status at return time (PENDING).
+        recipientCount:
+          type: integer
+          description: Number of active registrants resolved as the recipient base.
 
     NewsletterSendStatusResponse:
       type: object
