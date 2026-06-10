@@ -8717,13 +8717,13 @@ components:
       properties:
         sessionTitle:
           type: string
-          minLength: 1
+          minLength: 5
           maxLength: 255
           description: The proposed talk title.
           example: Event-driven architecture in practice
         abstract:
           type: string
-          minLength: 1
+          minLength: 10
           maxLength: 5000
           description: The proposed talk abstract, stored raw (no agent pre-screen).
           example: A field report on migrating a monolith to an event-driven core, including the dead ends.

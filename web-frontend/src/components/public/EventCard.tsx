@@ -52,11 +52,16 @@ export function EventCard({
   // Story 7.2: only surface the self-nomination button once the event's topic is set
   // (topic object present) AND the event is published (a publishing phase is active). The
   // button itself is additionally login-gated; the backend enforces both conditions too.
+  // Whitelist the actually-published phases rather than testing truthiness: the phase is
+  // serialized upper-case (EventMapper), and the unpublished sentinel 'NONE' is truthy, so a
+  // bare Boolean() check would wrongly show the button on an unpublished event. The declared
+  // union omits 'NONE', so we compare as a string. Mirrors the backend guard
+  // (publishedAt != null || currentPublishedPhase != 'none').
   const showSelfNominate =
     enableSelfNomination &&
     typeof event.topic === 'object' &&
     event.topic != null &&
-    Boolean(event.currentPublishedPhase);
+    ['TOPIC', 'SPEAKERS', 'AGENDA'].includes(event.currentPublishedPhase ?? '');
 
   const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
 

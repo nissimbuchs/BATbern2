@@ -21,11 +21,11 @@ import jakarta.validation.constraints.Size;
 public class SelfNominateSpeakerRequest {
 
     @NotBlank(message = "sessionTitle is required")
-    @Size(max = 255, message = "sessionTitle must be at most 255 characters")
+    @Size(min = 5, max = 255, message = "sessionTitle must be between 5 and 255 characters")
     private String sessionTitle;
 
     @NotBlank(message = "abstract is required")
-    @Size(max = 5000, message = "abstract must be at most 5000 characters")
+    @Size(min = 10, max = 5000, message = "abstract must be between 10 and 5000 characters")
     private String abstractText;
 
     public SelfNominateSpeakerRequest() {

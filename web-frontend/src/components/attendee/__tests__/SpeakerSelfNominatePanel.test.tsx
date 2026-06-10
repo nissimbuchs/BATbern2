@@ -88,9 +88,12 @@ describe('SpeakerSelfNominatePanel (Story 7.2)', () => {
     expect(await screen.findByTestId('self-nominate-success')).toBeInTheDocument();
   });
 
-  it('treats a 409 (already nominated) as already-done', async () => {
+  it('treats a 409 DUPLICATE_SELF_NOMINATION as already-done', async () => {
     const user = userEvent.setup();
-    mockNominate.mockRejectedValueOnce({ isAxiosError: true, response: { status: 409 } });
+    mockNominate.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 409, data: { details: { code: 'DUPLICATE_SELF_NOMINATION' } } },
+    });
     renderPanel();
 
     await user.click(screen.getByTestId('self-nominate-button'));
@@ -100,6 +103,25 @@ describe('SpeakerSelfNominatePanel (Story 7.2)', () => {
 
     // After the duplicate error the dialog flips to the success/already-done view.
     expect(await screen.findByTestId('self-nominate-success')).toBeInTheDocument();
+  });
+
+  it('shows a generic error (NOT already-done) for a 409 SELF_NOMINATION_NOT_ALLOWED', async () => {
+    const user = userEvent.setup();
+    // Topic unset / unpublished race after the card rendered — same status, different code.
+    mockNominate.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 409, data: { details: { code: 'SELF_NOMINATION_NOT_ALLOWED' } } },
+    });
+    renderPanel();
+
+    await user.click(screen.getByTestId('self-nominate-button'));
+    await user.type(await screen.findByTestId('self-nominate-title'), 'A timely talk title');
+    await user.type(screen.getByTestId('self-nominate-abstract'), 'Pitch text goes here.');
+    await user.click(screen.getByTestId('self-nominate-submit'));
+
+    // Must NOT flip to already-done; the form stays open and surfaces the generic error.
+    expect(await screen.findByTestId('self-nominate-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('self-nominate-success')).not.toBeInTheDocument();
   });
 
   it('shows a generic error when the submission fails for another reason', async () => {

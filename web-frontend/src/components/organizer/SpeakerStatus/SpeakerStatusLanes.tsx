@@ -1312,9 +1312,9 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                     {speaker.speakerName}
                   </Typography>
                 )}
-                {speaker.company && (
+                {(speaker.companyDisplayName || speaker.company) && (
                   <Typography variant="caption" color="text.secondary">
-                    {speaker.company}
+                    {speaker.companyDisplayName || speaker.company}
                   </Typography>
                 )}
               </Box>

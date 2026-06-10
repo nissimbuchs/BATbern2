@@ -21,6 +21,10 @@ export interface SpeakerPoolEntry {
   eventId: string;
   speakerName: string;
   company?: string;
+  // The list endpoint resolves the company slug to its display name (SpeakerPoolService
+  // companyDisplayName overlay). Self-nominations store the raw slug in `company`, so prefer
+  // this when rendering (Story 7.2 review).
+  companyDisplayName?: string | null;
   expertise?: string;
   email?: string; // Speaker email - required for sending invitations (Story 6.1c)
   assignedOrganizerId?: string | null;

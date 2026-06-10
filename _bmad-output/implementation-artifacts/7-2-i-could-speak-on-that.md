@@ -1,6 +1,6 @@
 # Story 7.2: "I Could Speak on That"
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -49,6 +49,30 @@ so that BATbern's speaker pipeline becomes pull-and-push instead of only organiz
   - [x] `SelfNominationIntegrationTest` (PostgreSQL, 11 tests): create → row at `IDENTIFIED`, `source='self_nomination'`, username set, name auto-filled from profile, **no session / no status-history row / `provisionUserWithRole` never called**; topic-unset & unpublished → 409 (no row); duplicate → 409; unknown field / missing field → 400; not-found → 404; wrong role → 403; unauthenticated → rejected (403 at the EMS layer in isolation; the 401 from AC5 is produced at the api-gateway — documented in the test).
   - [x] `should_allowPromotePath_from_selfNomination`: self-nominate → IDENTIFIED → CONTACTED (status endpoint) → READY (promote endpoint, provisioning here only).
   - [x] Frontend `SpeakerSelfNominatePanel.test.tsx` (6 tests): login gate, open form, submit-disabled validation, submit→success, 409→already-done, generic error.
+
+## Review Findings
+
+_Code review 2026-06-10 (bmad-code-review, Claude Opus 4.8 1M) — 3 adversarial layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor). All 8 ACs verified IMPLEMENTED by the Auditor. 1 decision-needed (RESOLVED → patch), 5 patch (ALL APPLIED), 1 defer, 2 dismissed._
+
+### Decision-needed — RESOLVED
+
+- [x] [Review][Decision→Patch] Self-nomination advances the EVENT workflow state (TOPIC_SELECTION → SPEAKER_IDENTIFICATION) — `SpeakerPoolService.selfNominate` republishes the same `SpeakerAddedToPoolEvent` as the organizer add-path (SpeakerPoolService.java:240-250); its `@Async @EventListener` advances CREATED/TOPIC_SELECTION → SPEAKER_IDENTIFICATION (listener:67-79). Publishing the **topic** phase does NOT change `workflowState`, so `(published topic, TOPIC_SELECTION)` is the eligible state and the first self-nom drives the transition. **RESOLVED 2026-06-10 (Nissim, option 2): keep the transition — a speaker entering the pool should advance the event regardless of source — and add a test.** Patch applied: new IT `should_publishSpeakerAddedToPoolEvent_advancingWorkflow_from_topicSelection` (`@RecordApplicationEvents`) asserts a self-nom from a `TOPIC_SELECTION` event publishes the load-bearing `SpeakerAddedToPoolEvent` (deterministic; doesn't race the async listener). The pool ROW stays IDENTIFIED (AC3 safe).
+
+### Patches — ALL APPLIED
+
+- [x] [Review][Patch] Frontend conflates the two 409 codes — a `SELF_NOMINATION_NOT_ALLOWED` 409 was misrendered as "you've already nominated" [web-frontend/src/components/attendee/SpeakerSelfNominatePanel.tsx]. **Fixed:** added `isDuplicateSelfNomination(err)` helper keying on `details.code === 'DUPLICATE_SELF_NOMINATION'`; `onError`/`isDuplicateError` now use it, so a not-allowed 409 shows the generic error. New test `shows a generic error (NOT already-done) for a 409 SELF_NOMINATION_NOT_ALLOWED`.
+- [x] [Review][Patch] Frontend publish-gate treated phase `"NONE"` as published [web-frontend/src/components/public/EventCard.tsx]. **Fixed:** whitelist `['TOPIC','SPEAKERS','AGENDA'].includes(event.currentPublishedPhase ?? '')` (the declared union omits the runtime `'NONE'` sentinel, so a string compare; mirrors the backend guard).
+- [x] [Review][Patch] Organizer kanban showed the raw company **slug** for self-nominations [web-frontend/src/components/organizer/SpeakerStatus/SpeakerStatusLanes.tsx]. **Fixed:** added `companyDisplayName?` to `SpeakerPoolEntry` and render `companyDisplayName || company` (the list endpoint already resolves the display name via the `getCompanyDisplayName` overlay).
+- [x] [Review][Patch] Backend/contract min-length was weaker than the UI [dto/SelfNominateSpeakerRequest.java + docs/api/events-api.openapi.yml]. **Fixed:** `@Size(min=5)` on sessionTitle + `@Size(min=10)` on abstract; OpenAPI `minLength` raised to 5/10 to match `MIN_TITLE`/`MIN_ABSTRACT`. (Unknown-field IT still 400 — Jackson rejects at deserialization before bean validation.)
+
+### Deferred
+
+- [x] [Review][Defer] `@PreAuthorize("hasRole('ATTENDEE')")` is the single load-bearing runtime assumption [SelfNominationController.java:50] — deferred, verify-in-prod. If logged-in attendees do not carry an explicit `ROLE_ATTENDEE` claim/assignment, every nomination 403s and the feature is dead-on-arrival. `JwtRolesConverter` maps `ROLE_ATTENDEE` from `custom:role`/`role_assignments`; JIT defaults ATTENDEE + Pattern 3b DB-fallback should cover it, but the integration tests use `@WithMockUser(roles={"ATTENDEE"})` and cannot catch a missing real-world claim. Confirm a real registered/federated attendee's token carries ATTENDEE before sign-off.
+
+### Dismissed (noise / false positive)
+
+- `proposedByUsername` PII added to the shared `SpeakerPoolResponse` — only populated on IDENTIFIED self-nomination rows, which surface only through ORGANIZER-gated listings (all `SpeakerStatusController` endpoints `@PreAuthorize ORGANIZER`); the self-nominee receives only their own username in the 201. Public speaker listings show only READY+ rows. Not a leak.
+- Empty-JWT-claim users dedupe on the Cognito UUID rather than the human username (`getCurrentUsername` fallback) — dormant in staging-prod (the JWT always carries `custom:username`); dedupe still functions (consistent UUID) and `speakerName` is independently profile-filled. Pre-existing identity-resolution behavior, not introduced by this change.
 
 ## Dev Notes
 

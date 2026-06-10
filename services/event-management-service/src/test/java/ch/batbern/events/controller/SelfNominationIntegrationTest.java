@@ -9,6 +9,7 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
+import ch.batbern.shared.events.SpeakerAddedToPoolEvent;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -20,8 +21,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.event.EventListener;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -52,10 +60,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * hitting CUMS — the profile lookup (auto-fill) and the READY-path provisioning both go through it.
  */
 @Transactional
+@Import(SelfNominationIntegrationTest.EventCaptorConfig.class)
 class SelfNominationIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private SpeakerAddedEventCaptor speakerAddedEventCaptor;
+
+    /**
+     * A synchronous test-scoped {@code @EventListener} that records every {@link SpeakerAddedToPoolEvent}
+     * on the publishing (test) thread. This is the same {@code @EventListener} mechanism the production
+     * {@code SpeakerAddedToPoolEventListener} uses, so it fires deterministically at publish time —
+     * unlike that listener it is NOT {@code @Async}, so there is no thread/transaction race to assert on.
+     */
+    @TestConfiguration
+    static class EventCaptorConfig {
+        @Bean
+        SpeakerAddedEventCaptor speakerAddedEventCaptor() {
+            return new SpeakerAddedEventCaptor();
+        }
+    }
+
+    static class SpeakerAddedEventCaptor {
+        final List<SpeakerAddedToPoolEvent> events = new CopyOnWriteArrayList<>();
+
+        @EventListener
+        public void on(SpeakerAddedToPoolEvent event) {
+            events.add(event);
+        }
+    }
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -68,6 +103,9 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SpeakerStatusHistoryRepository statusHistoryRepository;
+
+    @Autowired
+    private ch.batbern.events.service.SpeakerPoolService speakerPoolService;
 
     @MockitoBean
     private UserApiClient userApiClient;
@@ -86,6 +124,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         statusHistoryRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         eventRepository.deleteAll();
+        speakerAddedEventCaptor.events.clear();
 
         // Auto-fill source: the attendee's profile (Resolved Decision #1). companyId is the
         // company slug stored on the pool row's `company` column.
@@ -319,9 +358,49 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         verify(userApiClient).provisionUserWithRole(any(ProvisionUserRequest.class));
     }
 
+    // ==================== AC6: workflow auto-transition is intentionally driven by self-nom ====================
+
+    @Test
+    @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
+    @DisplayName("Self-nomination from TOPIC_SELECTION publishes SpeakerAddedToPoolEvent (drives the auto-transition)")
+    void should_publishSpeakerAddedToPoolEvent_advancingWorkflow_from_topicSelection() throws Exception {
+        // A topic-published event that has NOT yet left TOPIC_SELECTION (publishing the topic phase
+        // does not change workflowState) — exactly the self-nomination-eligible state. The first
+        // self-nomination reuses the organizer add-to-pool path, which publishes SpeakerAddedToPoolEvent;
+        // the existing @Async SpeakerAddedToPoolEventListener advances CREATED/TOPIC_SELECTION →
+        // SPEAKER_IDENTIFICATION. This coupling is intentional (review decision 2026-06-10): a speaker
+        // entering the pool advances the event regardless of source. We assert the load-bearing event
+        // is published (deterministic, captured by a synchronous test @EventListener), rather than
+        // racing the async listener thread. The service is invoked directly so the publish happens on
+        // the test thread (the @WithMockUser SecurityContext supplies the username).
+        saveEvent(EVENT_CODE, "cloud-native", true, "topic", EventWorkflowState.TOPIC_SELECTION);
+
+        speakerPoolService.selfNominate(EVENT_CODE, new ch.batbern.events.dto.SelfNominateSpeakerRequest(
+                "Event-driven architecture in practice",
+                "A field report on migrating a monolith to an event-driven core."));
+
+        // Sanity: selfNominate actually ran (row created at IDENTIFIED).
+        assertThat(speakerPoolRepository.count()).as("self-nomination created one pool row").isEqualTo(1);
+
+        // The captor is cleared per-test, so exactly one SpeakerAddedToPoolEvent — for this event —
+        // proves the self-nomination feeds the same auto-transition mechanism the organizer add-path
+        // uses (the @Async listener advances TOPIC_SELECTION → SPEAKER_IDENTIFICATION).
+        assertThat(speakerAddedEventCaptor.events)
+                .as("self-nomination must publish the SpeakerAddedToPoolEvent that drives the "
+                        + "TOPIC_SELECTION → SPEAKER_IDENTIFICATION auto-transition")
+                .singleElement()
+                .extracting(SpeakerAddedToPoolEvent::getEventCode)
+                .isEqualTo(EVENT_CODE);
+    }
+
     // ==================== Helper ====================
 
     private Event saveEvent(String eventCode, String topicCode, boolean published, String phase) {
+        return saveEvent(eventCode, topicCode, published, phase, EventWorkflowState.SPEAKER_IDENTIFICATION);
+    }
+
+    private Event saveEvent(String eventCode, String topicCode, boolean published, String phase,
+                            EventWorkflowState workflowState) {
         Event event = new Event();
         event.setEventCode(eventCode);
         event.setEventNumber(950);
@@ -333,7 +412,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         event.setVenueCapacity(150);
         event.setOrganizerUsername(ORGANIZER);
         event.setEventType(ch.batbern.events.dto.generated.EventType.EVENING);
-        event.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
+        event.setWorkflowState(workflowState);
         event.setTopicCode(topicCode);
         event.setCurrentPublishedPhase(phase);
         if (published) {

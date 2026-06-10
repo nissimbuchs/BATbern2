@@ -12,7 +12,10 @@
  *
  * Identity (name + company) is auto-filled server-side from the attendee's profile — the body
  * carries only the proposed talk. One self-nomination per attendee per event (the backend rejects
- * a repeat with 409); we render the already-done state on success or on a duplicate error.
+ * a repeat with 409 `DUPLICATE_SELF_NOMINATION`); we render the already-done state on success or on
+ * that duplicate error. The backend reuses 409 for a second condition — `SELF_NOMINATION_NOT_ALLOWED`
+ * (topic unset / event unpublished, e.g. a race after the card rendered) — so we key on
+ * `details.code`, NOT the bare status, and surface the generic error for the not-allowed case.
  */
 
 import { useState } from 'react';
@@ -38,6 +41,18 @@ const MIN_TITLE = 5;
 const MAX_TITLE = 255;
 const MIN_ABSTRACT = 10;
 const MAX_ABSTRACT = 5000;
+
+/**
+ * A 409 from the backend is ambiguous by status alone: `DUPLICATE_SELF_NOMINATION` (already
+ * nominated → already-done) vs `SELF_NOMINATION_NOT_ALLOWED` (topic unset / unpublished → a
+ * real, transient error). Key on `details.code` so we only flip to the permanent already-done
+ * state for an actual duplicate.
+ */
+const isDuplicateSelfNomination = (err: unknown): boolean =>
+  isAxiosError(err) &&
+  err.response?.status === 409 &&
+  (err.response.data as { details?: { code?: string } } | undefined)?.details?.code ===
+    'DUPLICATE_SELF_NOMINATION';
 
 interface SpeakerSelfNominatePanelProps {
   /** The event this nomination targets (supplied by the card). */
@@ -66,8 +81,10 @@ export const SpeakerSelfNominatePanel = ({
       setAbstract('');
     },
     onError: (err) => {
-      // A 409 means the attendee already self-nominated for this event — treat as already-done.
-      if (isAxiosError(err) && err.response?.status === 409) {
+      // Only a DUPLICATE_SELF_NOMINATION 409 means already-nominated → already-done. A
+      // SELF_NOMINATION_NOT_ALLOWED 409 (topic unset / unpublished) is a real error and falls
+      // through to the generic error message.
+      if (isDuplicateSelfNomination(err)) {
         setDone(true);
       }
     },
@@ -82,8 +99,7 @@ export const SpeakerSelfNominatePanel = ({
   const abstractValid =
     abstract.trim().length >= MIN_ABSTRACT && abstract.trim().length <= MAX_ABSTRACT;
   const canSubmit = titleValid && abstractValid && !mutation.isPending;
-  const isDuplicateError =
-    mutation.isError && isAxiosError(mutation.error) && mutation.error.response?.status === 409;
+  const isDuplicateError = mutation.isError && isDuplicateSelfNomination(mutation.error);
 
   return (
     <div data-testid={`self-nominate-panel-${eventCode}`}>
