@@ -879,5 +879,19 @@
       "success": "Grazia fitg per engraziar! 🎉",
       "error": "Insatge è ì fal. Empruva anc ina giada."
     }
+  },
+  "qna": {
+    "title": "Dumondas & respostas",
+    "statusOpen": "Avert",
+    "statusFrozen": "Serrà",
+    "empty": "Anc naginas dumondas. Fai la emprima.",
+    "removed": "Allontanà d'in organisatur",
+    "takedown": "Allontanar",
+    "reply": "Respunder",
+    "cancel": "Interrumper",
+    "replyPlaceholder": "Scriver ina resposta…",
+    "questionPlaceholder": "Fai ina dumonda davart questa sessiun…",
+    "askQuestion": "Far ina dumonda",
+    "loginToPost": "Annunzia tai per far u respunder dumondas."
   }
 }

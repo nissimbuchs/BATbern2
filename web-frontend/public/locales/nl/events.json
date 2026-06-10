@@ -879,5 +879,19 @@
       "success": "Bedankt voor het bedanken! 🎉",
       "error": "Er is iets misgegaan. Probeer het opnieuw."
     }
+  },
+  "qna": {
+    "title": "Vragen en antwoorden",
+    "statusOpen": "Open",
+    "statusFrozen": "Gesloten",
+    "empty": "Nog geen vragen. Stel de eerste.",
+    "removed": "Verwijderd door een organisator",
+    "takedown": "Verwijderen",
+    "reply": "Antwoorden",
+    "cancel": "Annuleren",
+    "replyPlaceholder": "Schrijf een antwoord…",
+    "questionPlaceholder": "Stel een vraag over deze sessie…",
+    "askQuestion": "Stel een vraag",
+    "loginToPost": "Log in om vragen te stellen of te beantwoorden."
   }
 }

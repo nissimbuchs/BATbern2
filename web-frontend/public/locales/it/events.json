@@ -879,5 +879,19 @@
       "success": "Grazie per aver detto grazie! 🎉",
       "error": "Qualcosa è andato storto. Riprova."
     }
+  },
+  "qna": {
+    "title": "Domande e risposte",
+    "statusOpen": "Aperto",
+    "statusFrozen": "Chiuso",
+    "empty": "Ancora nessuna domanda. Fai la prima.",
+    "removed": "Rimosso da un organizzatore",
+    "takedown": "Rimuovi",
+    "reply": "Rispondi",
+    "cancel": "Annulla",
+    "replyPlaceholder": "Scrivi una risposta…",
+    "questionPlaceholder": "Fai una domanda su questa sessione…",
+    "askQuestion": "Fai una domanda",
+    "loginToPost": "Accedi per fare domande o rispondere."
   }
 }

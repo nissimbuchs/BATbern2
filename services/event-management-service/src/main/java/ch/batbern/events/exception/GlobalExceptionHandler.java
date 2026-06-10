@@ -1094,6 +1094,33 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle QnaWindowFrozenException (Story 7.5): a post was attempted on a closed Q&A window.
+     * Returns HTTP 409 Conflict with {@code details.code = QNA_WINDOW_FROZEN}; no post created (AC5).
+     */
+    @ExceptionHandler(QnaWindowFrozenException.class)
+    public ResponseEntity<ErrorResponse> handleQnaWindowFrozenException(
+            QnaWindowFrozenException ex,
+            HttpServletRequest request) {
+        log.warn("Q&A window frozen: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "QNA_WINDOW_FROZEN");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle ThanksRateLimitedException (Story 7.4): anonymous thank-yous for one event from a
      * single IP exceeded the per-(event,IP) cap (AC3/AC5). Returns HTTP 429 Too Many Requests with
      * {@code details.code = THANKS_RATE_LIMITED}; the submission is rejected before any row is

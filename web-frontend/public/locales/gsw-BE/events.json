@@ -881,5 +881,19 @@
       "success": "Merci fürs Merci säge! 🎉",
       "error": "Öppis isch schiefgloffe. Probier's nomal."
     }
+  },
+  "qna": {
+    "title": "Frage & Antworte",
+    "statusOpen": "Offe",
+    "statusFrozen": "Zue",
+    "empty": "No kei Frage. Stell di erschti.",
+    "removed": "Vo de Organisation entfernt",
+    "takedown": "Entferne",
+    "reply": "Antworte",
+    "cancel": "Abbräche",
+    "replyPlaceholder": "Antwort schribe…",
+    "questionPlaceholder": "Stell e Frag zu dere Session…",
+    "askQuestion": "Frag stelle",
+    "loginToPost": "Mäld di a, zum Frage stelle oder beantworte."
   }
 }

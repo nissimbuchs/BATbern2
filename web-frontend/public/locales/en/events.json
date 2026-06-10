@@ -903,5 +903,19 @@
       "success": "Thank you for saying thanks! 🎉",
       "error": "Something went wrong. Please try again."
     }
+  },
+  "qna": {
+    "title": "Q&A",
+    "statusOpen": "Open",
+    "statusFrozen": "Closed",
+    "empty": "No questions yet. Be the first to ask.",
+    "removed": "Removed by an organizer",
+    "takedown": "Remove",
+    "reply": "Reply",
+    "cancel": "Cancel",
+    "replyPlaceholder": "Write an answer…",
+    "questionPlaceholder": "Ask a question about this session…",
+    "askQuestion": "Ask a question",
+    "loginToPost": "Log in to ask or answer questions."
   }
 }

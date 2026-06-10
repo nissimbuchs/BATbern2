@@ -502,6 +502,84 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/sessions/{sessionSlug}/qna': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a session's Q&A thread ("The Apéro Continues")
+     * @description Returns the open or frozen Q&A thread for a session. PUBLIC — anonymous may read the
+     *     frozen archive thread (AC3). Posts are returned oldest-first; the client nests answers
+     *     under their `parentPostId`. Removed posts are tombstones (`removed: true`, body/author null).
+     *
+     *     **Story**: 7.5 - "The Apéro Continues"
+     */
+    get: operations['getSessionQna'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Extend or close a session's Q&A window (organizer)
+     * @description Organizer-only (AC4). Extend by sending a new `closesAt` (reopens to that time) or close
+     *     early with `close: true` (freezes immediately). Changes take effect immediately.
+     *
+     *     **Story**: 7.5 - "The Apéro Continues"
+     */
+    patch: operations['patchSessionQnaWindow'];
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/qna/posts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Post a Q&A question or answer (logged-in)
+     * @description Any logged-in user may post within an open window (AC2). `parentPostId` set = an answer to
+     *     that question; omitted = a top-level question. Anonymous → 401 (rejected at the gateway).
+     *     Posting to a frozen window → 409 `QNA_WINDOW_FROZEN` (AC5).
+     *
+     *     **Story**: 7.5 - "The Apéro Continues"
+     */
+    post: operations['postSessionQna'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/qna/posts/{postId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Take down a Q&A post (organizer)
+     * @description Organizer-only soft-delete (AC4): the post becomes a "removed by organizer" tombstone
+     *     (never hard-deleted), preserving thread coherence in the frozen archive.
+     *
+     *     **Story**: 7.5 - "The Apéro Continues"
+     */
+    delete: operations['removeSessionQnaPost'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/speakers/pool/{speakerId}': {
     parameters: {
       query?: never;
@@ -4762,6 +4840,73 @@ export interface components {
       notes?: components['schemas']['ThanksNoteResponse'][] | null;
     };
     /**
+     * @description Story 7.5: post a Q&A question or answer. `parentPostId` set = an answer to that question;
+     *     omitted = a top-level question. Identity comes from the JWT, never the body.
+     *     `additionalProperties: false`: unexpected fields are rejected with 400.
+     */
+    QnaPostRequest: {
+      /**
+       * @description The question or answer text.
+       * @example How did you handle schema migration during the cutover?
+       */
+      body: string;
+      /**
+       * Format: uuid
+       * @description The question being answered; omit for a top-level question.
+       */
+      parentPostId?: string | null;
+    };
+    /**
+     * @description Story 7.5: organizer adjustment of a Q&A window. Provide a new `closesAt` to extend
+     *     (reopens to that time) OR `close: true` to close early (freeze now). At least one required.
+     */
+    QnaWindowPatchRequest: {
+      /**
+       * Format: date-time
+       * @description New close time (extends/reopens the window).
+       */
+      closesAt?: string | null;
+      /** @description When true, freeze the window immediately (close early). */
+      close?: boolean | null;
+    };
+    /**
+     * @description Story 7.5: a single Q&A post. A removed post is a tombstone — `removed: true` and
+     *     `body`/`postedByUsername` are null (the archive shows "removed by organizer").
+     */
+    QnaPostResponse: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * Format: uuid
+       * @description Parent question id; null for a top-level question.
+       */
+      parentPostId?: string | null;
+      /** @description Poster username; null if removed. */
+      postedByUsername?: string | null;
+      /** @description Post text; null if removed. */
+      body?: string | null;
+      /** @description True if the post was taken down by an organizer. */
+      removed: boolean;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    /**
+     * @description Story 7.5: the Q&A thread for a session. `status` is OPEN or FROZEN. Posts are oldest-first;
+     *     the client nests answers under `parentPostId`.
+     */
+    QnaWindowResponse: {
+      /**
+       * @description OPEN = accepting posts; FROZEN = read-only.
+       * @enum {string}
+       */
+      status: 'OPEN' | 'FROZEN';
+      /** Format: date-time */
+      opensAt?: string;
+      /** Format: date-time */
+      closesAt?: string;
+      posts: components['schemas']['QnaPostResponse'][];
+    };
+    /**
      * @description Request to add a potential speaker to the event speaker pool during brainstorming phase.
      *     Story 5.2 - AC9-12: Speaker Pool Management.
      *     Story 11.D.1 (AR23): `additionalProperties: false` — any client-supplied `email` (or
@@ -6375,6 +6520,197 @@ export interface operations {
            *       }
            *     }
            */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getSessionQna: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        /** @example cloud-native-foundations */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The Q&A thread (open or frozen). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QnaWindowResponse'];
+        };
+      };
+      /** @description No Q&A window for this session (event not completed, or unknown session). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  patchSessionQnaWindow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        /** @example cloud-native-foundations */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['QnaWindowPatchRequest'];
+      };
+    };
+    responses: {
+      /** @description Updated window. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QnaWindowResponse'];
+        };
+      };
+      /** @description Neither closesAt nor close provided. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description No Q&A window for this session. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  postSessionQna: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        /** @example cloud-native-foundations */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['QnaPostRequest'];
+      };
+    };
+    responses: {
+      /** @description Post created. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QnaPostResponse'];
+        };
+      };
+      /** @description Validation error (empty/too-long body or unknown field). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Not authenticated (anonymous caller — rejected at the API gateway). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description No Q&A window for this session. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description `QNA_WINDOW_FROZEN` — the Q&A for this session has closed. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "The Q&A for this session has closed — no further posts are accepted.",
+           *       "status": 409,
+           *       "error": "Conflict",
+           *       "details": {
+           *         "code": "QNA_WINDOW_FROZEN"
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  removeSessionQnaPost: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        /** @example cloud-native-foundations */
+        sessionSlug: string;
+        postId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Post removed (tombstoned). */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Post or Q&A window not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };

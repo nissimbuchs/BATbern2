@@ -903,5 +903,19 @@
       "success": "Danke fürs Dankesagen! 🎉",
       "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
     }
+  },
+  "qna": {
+    "title": "Fragen & Antworten",
+    "statusOpen": "Offen",
+    "statusFrozen": "Geschlossen",
+    "empty": "Noch keine Fragen. Stell die erste.",
+    "removed": "Von der Organisation entfernt",
+    "takedown": "Entfernen",
+    "reply": "Antworten",
+    "cancel": "Abbrechen",
+    "replyPlaceholder": "Antwort schreiben…",
+    "questionPlaceholder": "Stell eine Frage zu dieser Session…",
+    "askQuestion": "Frage stellen",
+    "loginToPost": "Melde dich an, um Fragen zu stellen oder zu beantworten."
   }
 }

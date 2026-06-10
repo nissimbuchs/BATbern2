@@ -879,5 +879,19 @@
       "success": "Kiitos, kun sanoit kiitos! 🎉",
       "error": "Jotain meni vikaan. Yritä uudelleen."
     }
+  },
+  "qna": {
+    "title": "Kysymykset ja vastaukset",
+    "statusOpen": "Avoinna",
+    "statusFrozen": "Suljettu",
+    "empty": "Ei vielä kysymyksiä. Kysy ensimmäinen.",
+    "removed": "Järjestäjän poistama",
+    "takedown": "Poista",
+    "reply": "Vastaa",
+    "cancel": "Peruuta",
+    "replyPlaceholder": "Kirjoita vastaus…",
+    "questionPlaceholder": "Kysy tästä sessiosta…",
+    "askQuestion": "Esitä kysymys",
+    "loginToPost": "Kirjaudu sisään kysyäksesi tai vastataksesi."
   }
 }

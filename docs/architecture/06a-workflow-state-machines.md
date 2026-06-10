@@ -63,6 +63,13 @@ After an event transitions to **EVENT_COMPLETED**, it enters a 14-day public-vis
 
 **Implementation note:** The scheduler lives in `event-management-service` and is guarded by ShedLock to prevent duplicate execution across ECS tasks. The archive-style homepage UI is determined in the frontend by checking `event.workflowState === 'EVENT_COMPLETED'`.
 
+#### EVENT_COMPLETED side-effects (Epic 7)
+
+Reaching **EVENT_COMPLETED** is also the trigger for two attendee-contribution features that compose onto the existing machinery without adding states:
+
+- **Thank the Organizers (Story 7.4):** the public "thank the organizers" surface opens once `workflowState IN (EVENT_LIVE, EVENT_COMPLETED)`. No transition or scheduler is involved — it is a read-time gate on the state (`OrganizerThanksService`).
+- **Session Q&A — "The Apéro Continues" (Story 7.5):** `SessionQnaWindowListener` (an `@EventListener` on `EventWorkflowTransitionEvent`) opens one `session_qna_window` per session, default `closesAt = now + 14d`, on **every** transition into EVENT_COMPLETED (scheduler or manual). Window creation is idempotent. A second ShedLock-guarded scheduled job, `SessionQnaScheduledService.freezeQnaWindows` (hourly), flips OPEN windows past their `closesAt` to FROZEN (read-only). The frozen thread persists onto the ARCHIVED session page — neither window-close nor `processEventsToArchive()` hides it.
+
 ### Implementation
 
 ```java

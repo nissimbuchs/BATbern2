@@ -879,5 +879,19 @@
       "success": "¡Gracias por dar las gracias! 🎉",
       "error": "Algo salió mal. Inténtalo de nuevo."
     }
+  },
+  "qna": {
+    "title": "Preguntas y respuestas",
+    "statusOpen": "Abierto",
+    "statusFrozen": "Cerrado",
+    "empty": "Aún no hay preguntas. Haz la primera.",
+    "removed": "Eliminado por un organizador",
+    "takedown": "Eliminar",
+    "reply": "Responder",
+    "cancel": "Cancelar",
+    "replyPlaceholder": "Escribe una respuesta…",
+    "questionPlaceholder": "Haz una pregunta sobre esta sesión…",
+    "askQuestion": "Haz una pregunta",
+    "loginToPost": "Inicia sesión para preguntar o responder."
   }
 }

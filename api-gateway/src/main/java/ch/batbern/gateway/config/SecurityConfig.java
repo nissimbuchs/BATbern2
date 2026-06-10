@@ -229,6 +229,10 @@ public class SecurityConfig {
                         // Story 5.9: Public materials download endpoint for archived events
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 
+                        // Story 7.5: Public read of a session's Q&A thread (frozen archive is public).
+                        // POST/PATCH/DELETE fall through to authenticated + @PreAuthorize in EMS.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/qna").permitAll()
+
                         // Story 4.1.5: Public registration endpoints
                         // (no auth required - anonymous registration per ADR-005)
                         .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()

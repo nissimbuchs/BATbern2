@@ -879,5 +879,19 @@
       "success": "感謝を伝えていただきありがとうございます！🎉",
       "error": "問題が発生しました。もう一度お試しください。"
     }
+  },
+  "qna": {
+    "title": "Q&A",
+    "statusOpen": "受付中",
+    "statusFrozen": "終了",
+    "empty": "まだ質問はありません。最初の質問をどうぞ。",
+    "removed": "主催者により削除されました",
+    "takedown": "削除",
+    "reply": "返信",
+    "cancel": "キャンセル",
+    "replyPlaceholder": "回答を入力…",
+    "questionPlaceholder": "このセッションについて質問する…",
+    "askQuestion": "質問する",
+    "loginToPost": "ログインすると質問・回答できます。"
   }
 }

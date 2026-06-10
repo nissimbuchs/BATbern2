@@ -1,6 +1,6 @@
 # Story 7.5: The Apéro Continues
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,22 +24,22 @@ so that the open questions that currently have nowhere to live get answered — 
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Schema** (AC: 1, 2, 5)
-  - [ ] New forward migration (current highest **V108**; next free at implementation). `session_qna_window(id UUID PK, session_id UUID NOT NULL FK→sessions ON DELETE CASCADE, event_code VARCHAR(50), status VARCHAR(20) NOT NULL DEFAULT 'open', opens_at TIMESTAMPTZ, closes_at TIMESTAMPTZ)`. `session_qna_post(id UUID PK, window_id UUID NOT NULL FK→session_qna_window ON DELETE CASCADE, parent_post_id UUID NULL, posted_by_username VARCHAR(100) NOT NULL, body TEXT NOT NULL, removed_at TIMESTAMPTZ NULL, created_at TIMESTAMPTZ DEFAULT now())`.
-  - [ ] `SessionQnaWindow` + `SessionQnaPost` entities (model on `SessionContentVersion`/`SessionMaterial`: `@ManyToOne(LAZY)` FK, `@PrePersist/@PreUpdate`, excluded from `@ToString`). Status enum `QnaWindowStatus { OPEN, FROZEN }` + converter (DB lowercase, Java UPPER).
-- [ ] **Task 2: Open windows on EVENT_COMPLETED** (AC: 1)
-  - [ ] Hook the completion path in `EventWorkflowScheduledService.processCompletedEvents()` (~L131–205) / the `EventWorkflowTransitionEvent` listener: for each session of the completed event, create an OPEN `session_qna_window` with `closes_at = now + 14d` (configurable default).
-- [ ] **Task 3: Q&A endpoints (mixed auth)** (AC: 2, 3, 4, 5)
-  - [ ] `SessionQnaController`: `GET /api/v1/events/{eventCode}/sessions/{sessionSlug}/qna` → **permitAll** (public read, returns open or frozen thread). `POST .../qna/posts` → **authenticated** (ATTENDEE) — reject if window FROZEN (409). Organizer: `PATCH .../qna` (extend/close-early) and `DELETE .../qna/posts/{id}` (takedown) → `@PreAuthorize("hasRole('ORGANIZER')")`.
-  - [ ] Attribute posts via `SecurityContextHelper.getCurrentUsername()`.
-- [ ] **Task 4: Scheduled freeze job** (AC: 5, 6)
-  - [ ] `@Scheduled` + `@SchedulerLock(name="freezeQnaWindows", lockAtMostFor="5m", lockAtLeastFor="30s")` job: set windows with `closes_at <= now` and `status=open` → `FROZEN`. Model on existing jobs in `EventWorkflowScheduledService`; `ShedLockConfig` already provides the `LockProvider`.
-- [ ] **Task 5: Archive rendering** (AC: 3, 5)
-  - [ ] Render the frozen thread on the public session archive view. **Confirm whether the session archive page is Tailwind-only (public)** — if so, the Q&A render there is Tailwind-only; the live (open-window) posting UI behind `<MuiLayout>` may use MUI.
-- [ ] **Task 6: SecurityConfig (both layers)** (AC: 3)
-  - [ ] GET permitAll + POST authenticated + organizer-only PATCH/DELETE in BOTH gateway and event-management-service `SecurityConfig`. Mirror the `SessionMaterialsController` mixed-auth pattern (public GET download + authenticated writes).
-- [ ] **Task 7: OpenAPI + tests + doc-drift** (AC: 7)
-  - [ ] Spec the endpoints; regenerate/commit types. Integration tests per AC7 with **class-scoped `@MockBean LockProvider`**. Frontend tests use `waitFor()` for MUI `Collapse`/async DOM. Update scheduler/state-machine docs per `.github/doc-drift-mappings.yml`.
+- [x] **Task 1: Schema** (AC: 1, 2, 5)
+  - [x] `V112__create_session_qna.sql` — `session_qna_window` (UNIQUE(session_id) → idempotent open; CHECK status in open|frozen; FK→sessions CASCADE) + `session_qna_post` (self-FK parent_post_id CASCADE, removed_at tombstone, FK→window CASCADE). Indexes on (status, closes_at) for the freeze scan + (window_id, created_at).
+  - [x] `SessionQnaWindow` + `SessionQnaPost` entities (`@PrePersist`/`@PreUpdate`, `@EqualsAndHashCode(onlyExplicitlyIncluded)`). `QnaWindowStatus { OPEN, FROZEN }` + `QnaWindowStatusConverter` (DB lowercase ↔ Java UPPER, modeled on `EventWorkflowStateConverter`). NOTE: used `UUID` FK columns (not `@ManyToOne`) — simpler for this access pattern; same ADR-003 in-service-UUID rule.
+- [x] **Task 2: Open windows on EVENT_COMPLETED** (AC: 1)
+  - [x] `SessionQnaWindowListener` — `@EventListener` on `EventWorkflowTransitionEvent`, fires when `toState == EVENT_COMPLETED` (covers BOTH scheduler and manual transition; cleaner + more robust than editing `processCompletedEvents`). Calls `SessionQnaService.openWindowsForCompletedEvent` (idempotent, `existsBySessionId` guard, `closesAt = now + ${qna.window.default-days:14}d`). Best-effort try/catch like the sibling task listener — never blocks the transition.
+- [x] **Task 3: Q&A endpoints (mixed auth)** (AC: 2, 3, 4, 5)
+  - [x] `SessionQnaController` @ `/api/v1/events/{eventCode}/sessions/{sessionSlug}/qna`: `GET` (public), `POST /posts` (`@PreAuthorize("isAuthenticated()")` — ANY logged-in user per Resolved Decision #2, not role-restricted; rejects FROZEN → 409), `PATCH` + `DELETE /posts/{id}` (`@PreAuthorize("hasRole('ORGANIZER')")`).
+  - [x] Posts attributed via `SecurityContextHelper.getCurrentUsername()`.
+- [x] **Task 4: Scheduled freeze job** (AC: 5, 6)
+  - [x] `SessionQnaScheduledService.freezeExpiredWindows` — `@Scheduled(cron=${qna.scheduled.freeze.cron:0 5 * * * *})` (hourly) + `@SchedulerLock(name="freezeQnaWindows", lockAtMostFor="5m", lockAtLeastFor="30s")`. Flips OPEN windows past `closesAt` → FROZEN.
+- [x] **Task 5: Archive rendering** (AC: 3, 5)
+  - [x] Confirmed: public per-session render is `SessionCards` on `HomePage` (Tailwind-only). New `SessionQnaThread` (Tailwind, NO MUI) wired into each `SessionCards` card when `showMaterials` (POST_EVENT/ARCHIVE). Renders nothing when no window (404). Threaded display (questions + one-level answers), tombstones, OPEN→post/reply forms (logged-in), organizer takedown, FROZEN→read-only. `useAuth` gates posting/takedown.
+- [x] **Task 6: SecurityConfig (both layers)** (AC: 3)
+  - [x] GET `/api/v1/events/*/sessions/*/qna` permitAll in BOTH gateway + EMS `SecurityConfig`. POST/PATCH/DELETE fall through to `.anyRequest().authenticated()` + `@PreAuthorize` (mirrors `SessionMaterialsController`).
+- [x] **Task 7: OpenAPI + tests + doc-drift** (AC: 7)
+  - [x] OpenAPI: 3 paths (qna GET/PATCH, qna/posts POST, qna/posts/{id} DELETE) + 4 schemas; frontend types regenerated. `SessionQnaIntegrationTest` (PostgreSQL) — 11 tests green with **class-scoped `@MockBean LockProvider`** (PR #773 pattern) for the freeze job. `SessionQnaThread.test.tsx` — 7 tests green (`waitFor` for async). doc-drift: `docs/architecture/06a-workflow-state-machines.md` updated with the EVENT_COMPLETED Q&A side-effect + freeze job.
 
 ## Dev Notes
 
@@ -77,11 +77,69 @@ so that the open questions that currently have nowhere to live get answered — 
 
 ### Agent Model Used
 
+Claude Opus 4.8 (1M context) — bmad-dev-story (Amelia).
+
 ### Debug Log References
+
+- `SessionQnaIntegrationTest` (11 tests) — `BUILD SUCCESSFUL`, all PASSED (PostgreSQL/Testcontainers; ShedLock via class-scoped `@MockBean LockProvider`).
+- `SessionQnaThread.test.tsx` (7 tests) — all PASSED (vitest).
+- Frontend `tsc --noEmit` clean; ESLint clean; Prettier applied. `checkstyleMain` (event-management + api-gateway) — `BUILD SUCCESSFUL`.
 
 ### Completion Notes List
 
+- **All 7 ACs satisfied.** Windows open per-session on EVENT_COMPLETED (idempotent), logged-in post within window, anonymous read-only (post rejected), organizer extend/close-early/takedown, scheduled ShedLock freeze, frozen thread public + soft-delete tombstones.
+- **Decision — window opening hook:** used a dedicated `@EventListener` (`SessionQnaWindowListener`) on `EventWorkflowTransitionEvent` rather than editing `processCompletedEvents()`. It fires for BOTH scheduler and manual transitions to EVENT_COMPLETED, is idempotent, and (like the sibling task listener) never blocks the transition on failure.
+- **Decision — who can post:** `@PreAuthorize("isAuthenticated()")` (any logged-in user, Resolved Decision #2), NOT role-restricted to ATTENDEE — the session's speaker is just a normal poster.
+- **Anonymous POST status:** AC3 says 401; that is produced at the api-gateway (the public entry point). In EMS isolation `TestSecurityConfig` has no JWT entry point, so method security returns 403 — the integration test asserts 403 and documents the gateway 401 (same convention as Story 7.2).
+- **Takedown = soft-delete tombstone** (Resolved Decision #3): `removed_at` set; the response nulls body + username and flags `removed:true`; never hard-deleted, so thread structure survives in the frozen archive.
+- **Frozen thread survives archival** (Resolved Decision #1): the window/posts are independent of the EVENT_COMPLETED→ARCHIVED transition; `SessionCards` renders Q&A whenever `showMaterials` (POST_EVENT + ARCHIVE).
+- **No notifications** (Resolved Decision #4) — none built for MVP.
+- Entities use plain `UUID` FK columns (not `@ManyToOne`) — simplest for the read/write patterns here; still ADR-003-compliant (in-service UUID FKs).
+
 ### File List
+
+**Backend (event-management-service):**
+- `src/main/resources/db/migration/V112__create_session_qna.sql` (new)
+- `src/main/java/ch/batbern/events/domain/QnaWindowStatus.java` (new)
+- `src/main/java/ch/batbern/events/converter/QnaWindowStatusConverter.java` (new)
+- `src/main/java/ch/batbern/events/domain/SessionQnaWindow.java` (new)
+- `src/main/java/ch/batbern/events/domain/SessionQnaPost.java` (new)
+- `src/main/java/ch/batbern/events/repository/SessionQnaWindowRepository.java` (new)
+- `src/main/java/ch/batbern/events/repository/SessionQnaPostRepository.java` (new)
+- `src/main/java/ch/batbern/events/dto/QnaPostRequest.java` (new)
+- `src/main/java/ch/batbern/events/dto/QnaWindowPatchRequest.java` (new)
+- `src/main/java/ch/batbern/events/dto/QnaPostResponse.java` (new)
+- `src/main/java/ch/batbern/events/dto/QnaWindowResponse.java` (new)
+- `src/main/java/ch/batbern/events/exception/QnaWindowFrozenException.java` (new)
+- `src/main/java/ch/batbern/events/service/SessionQnaService.java` (new)
+- `src/main/java/ch/batbern/events/service/SessionQnaScheduledService.java` (new)
+- `src/main/java/ch/batbern/events/listener/SessionQnaWindowListener.java` (new)
+- `src/main/java/ch/batbern/events/controller/SessionQnaController.java` (new)
+- `src/main/java/ch/batbern/events/exception/GlobalExceptionHandler.java` (modified — +QnaWindowFrozen handler)
+- `src/main/java/ch/batbern/events/config/SecurityConfig.java` (modified — +qna GET permitAll)
+- `src/test/java/ch/batbern/events/controller/SessionQnaIntegrationTest.java` (new)
+
+**API Gateway:**
+- `src/main/java/ch/batbern/gateway/config/SecurityConfig.java` (modified — +qna GET permitAll)
+
+**API contract + docs:**
+- `docs/api/events-api.openapi.yml` (modified — +3 paths, +4 schemas)
+- `docs/architecture/06a-workflow-state-machines.md` (modified — EVENT_COMPLETED Q&A side-effect + freeze job)
+
+**Frontend (web-frontend):**
+- `src/services/qnaService.ts` (new)
+- `src/hooks/useQna/useQna.ts` (new)
+- `src/components/public/Event/SessionQnaThread.tsx` (new)
+- `src/components/public/Event/__tests__/SessionQnaThread.test.tsx` (new)
+- `src/components/public/Event/SessionCards.tsx` (modified — render SessionQnaThread post-event)
+- `src/types/generated/events-api.types.ts` (regenerated)
+- `public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json` (modified — `qna.*`)
+
+### Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-10 | Story 7.5 implemented (Amelia / bmad-dev-story). Per-session Q&A: windows open on EVENT_COMPLETED (idempotent listener), public read / logged-in post / organizer extend-close-takedown, ShedLock hourly freeze, Tailwind-only thread on the archive session cards, 10-locale i18n. Backend 11 ITs + FE 7 unit tests green. Status → review. |
 
 ## Resolved Decisions
 
