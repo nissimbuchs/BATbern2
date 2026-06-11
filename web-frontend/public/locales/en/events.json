@@ -917,5 +917,22 @@
     "questionPlaceholder": "Ask a question about this session…",
     "askQuestion": "Ask a question",
     "loginToPost": "Log in to ask or answer questions."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Your events",
+      "titleWithName": "Welcome back, {{name}}",
+      "upcoming": "Upcoming events",
+      "past": "Past events",
+      "emptyUpcoming": "No upcoming events — browse what's coming up.",
+      "emptyPast": "No past events yet.",
+      "error": "Couldn't load your events. Please try again.",
+      "status": {
+        "registered": "Registered",
+        "confirmed": "Confirmed",
+        "waitlist": "Waitlist",
+        "attended": "Attended"
+      }
+    }
   }
 }

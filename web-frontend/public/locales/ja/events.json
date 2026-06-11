@@ -893,5 +893,22 @@
     "questionPlaceholder": "このセッションについて質問する…",
     "askQuestion": "質問する",
     "loginToPost": "ログインすると質問・回答できます。"
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "あなたのイベント",
+      "titleWithName": "おかえりなさい、{{name}}さん",
+      "upcoming": "今後のイベント",
+      "past": "過去のイベント",
+      "emptyUpcoming": "今後のイベントはありません — これからの予定をご覧ください。",
+      "emptyPast": "過去のイベントはまだありません。",
+      "error": "イベントを読み込めませんでした。もう一度お試しください。",
+      "status": {
+        "registered": "登録済み",
+        "confirmed": "確定",
+        "waitlist": "キャンセル待ち",
+        "attended": "参加済み"
+      }
+    }
   }
 }

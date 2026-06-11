@@ -893,5 +893,22 @@
     "questionPlaceholder": "Kysy tästä sessiosta…",
     "askQuestion": "Esitä kysymys",
     "loginToPost": "Kirjaudu sisään kysyäksesi tai vastataksesi."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Tapahtumasi",
+      "titleWithName": "Tervetuloa takaisin, {{name}}",
+      "upcoming": "Tulevat tapahtumat",
+      "past": "Menneet tapahtumat",
+      "emptyUpcoming": "Ei tulevia tapahtumia — katso mitä on tulossa.",
+      "emptyPast": "Ei vielä menneitä tapahtumia.",
+      "error": "Tapahtumiasi ei voitu ladata. Yritä uudelleen.",
+      "status": {
+        "registered": "Ilmoittautunut",
+        "confirmed": "Vahvistettu",
+        "waitlist": "Jonopaikka",
+        "attended": "Osallistui"
+      }
+    }
   }
 }

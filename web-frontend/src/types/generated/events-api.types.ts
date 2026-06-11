@@ -580,6 +580,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/attendee-portal/dashboard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Attendee dashboard — events I participated in (Story 7.6)
+     * @description Returns every event the authenticated attendee participated in (each non-cancelled
+     *     registration), split into upcoming (soonest-first) and past (most-recent-first). The
+     *     username is taken from the JWT — there is no path/header parameter. Authenticated only.
+     */
+    get: operations['getAttendeeDashboard'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/speakers/pool/{speakerId}': {
     parameters: {
       query?: never;
@@ -4907,6 +4929,33 @@ export interface components {
       posts: components['schemas']['QnaPostResponse'][];
     };
     /**
+     * @description Story 7.6: one event on the attendee dashboard. The client links the card to
+     *     `/events/{eventCode}` (upcoming) or `/archive/{eventCode}` (past).
+     */
+    AttendeeEventCardResponse: {
+      /** @example BATbern57 */
+      eventCode: string;
+      eventTitle: string;
+      /** Format: date-time */
+      eventDate?: string;
+      /** @description The event venue name. */
+      eventLocation?: string | null;
+      /** @description The event's UPPER_CASE workflow state (e.g. EVENT_COMPLETED, ARCHIVED). */
+      workflowState?: string | null;
+      /** @description The attendee's registration status (registered|confirmed|waitlist|attended). */
+      registrationStatus?: string | null;
+    };
+    /**
+     * @description Story 7.6: the attendee's event history — every participated (non-cancelled) event, split
+     *     into upcoming (soonest-first) and past (most-recent-first).
+     */
+    AttendeeDashboardResponse: {
+      /** @description Display name (denormalized from a registration) or the username. */
+      attendeeName?: string | null;
+      upcomingEvents: components['schemas']['AttendeeEventCardResponse'][];
+      pastEvents: components['schemas']['AttendeeEventCardResponse'][];
+    };
+    /**
      * @description Request to add a potential speaker to the event speaker pool during brainstorming phase.
      *     Story 5.2 - AC9-12: Speaker Pool Management.
      *     Story 11.D.1 (AR23): `additionalProperties: false` — any client-supplied `email` (or
@@ -6714,6 +6763,28 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getAttendeeDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The attendee's event history. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendeeDashboardResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
       500: components['responses']['InternalServerError'];
     };
   };

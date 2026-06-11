@@ -4,7 +4,7 @@
  * Login-gated attendee surface: a logged-in attendee suggests a future event topic.
  * Submit-only (no browse). Flows into the existing topic pool tagged source=COMMUNITY.
  *
- * Tailwind-only by design — it lives on the PublicLayout-based AttendeeWelcomePage, which
+ * Tailwind-only by design — it lives on the PublicLayout-based AttendeeDashboardPage, which
  * must not import MUI (public-page bundle boundary). The route is login-gated upstream.
  */
 

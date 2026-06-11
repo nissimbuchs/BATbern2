@@ -178,6 +178,20 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("company-user-management-service");
     }
 
+    // Test Story 7.6: attendee dashboard must route to event-management-service
+    @Test
+    @DisplayName("should_routeToEventService_when_attendeePortalDashboardCalled")
+    void should_routeToEventService_when_attendeePortalDashboardCalled() {
+        // Given
+        String requestPath = "/api/v1/attendee-portal/dashboard";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
     // Test Story 10.5: analytics must route to event-management-service
     @Test
     @DisplayName("should_routeToEventService_when_analyticsEndpointCalled")

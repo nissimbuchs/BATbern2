@@ -893,5 +893,22 @@
     "questionPlaceholder": "Haz una pregunta sobre esta sesión…",
     "askQuestion": "Haz una pregunta",
     "loginToPost": "Inicia sesión para preguntar o responder."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Tus eventos",
+      "titleWithName": "Bienvenido de nuevo, {{name}}",
+      "upcoming": "Próximos eventos",
+      "past": "Eventos pasados",
+      "emptyUpcoming": "No hay próximos eventos — mira lo que viene.",
+      "emptyPast": "Aún no hay eventos pasados.",
+      "error": "No se pudieron cargar tus eventos. Inténtalo de nuevo.",
+      "status": {
+        "registered": "Registrado",
+        "confirmed": "Confirmado",
+        "waitlist": "Lista de espera",
+        "attended": "Asistió"
+      }
+    }
   }
 }

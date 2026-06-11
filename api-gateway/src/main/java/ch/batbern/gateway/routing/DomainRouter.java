@@ -91,6 +91,7 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/notifications")
                 || cleanPath.startsWith("/api/v1/materials") // Story 5.9: Materials upload
                 || cleanPath.startsWith("/api/v1/speaker-portal") // Story 6.2a: Speaker portal
+                || cleanPath.startsWith("/api/v1/attendee-portal") // Story 7.6: Attendee dashboard
                 || cleanPath.startsWith("/api/v1/sessions") // GlobalSessionController lives in EMS
                 || cleanPath.startsWith("/api/v1/email-templates") // Story 10.2: Email template management
                 || cleanPath.startsWith("/api/v1/analytics") // Story 10.5: Analytics dashboard

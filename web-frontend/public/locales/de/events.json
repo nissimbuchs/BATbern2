@@ -917,5 +917,22 @@
     "questionPlaceholder": "Stell eine Frage zu dieser Session…",
     "askQuestion": "Frage stellen",
     "loginToPost": "Melde dich an, um Fragen zu stellen oder zu beantworten."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Deine Veranstaltungen",
+      "titleWithName": "Willkommen zurück, {{name}}",
+      "upcoming": "Kommende Veranstaltungen",
+      "past": "Vergangene Veranstaltungen",
+      "emptyUpcoming": "Keine kommenden Veranstaltungen — schau, was ansteht.",
+      "emptyPast": "Noch keine vergangenen Veranstaltungen.",
+      "error": "Deine Veranstaltungen konnten nicht geladen werden. Bitte versuche es erneut.",
+      "status": {
+        "registered": "Angemeldet",
+        "confirmed": "Bestätigt",
+        "waitlist": "Warteliste",
+        "attended": "Teilgenommen"
+      }
+    }
   }
 }

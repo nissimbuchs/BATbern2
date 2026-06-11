@@ -893,5 +893,22 @@
     "questionPlaceholder": "Fai ina dumonda davart questa sessiun…",
     "askQuestion": "Far ina dumonda",
     "loginToPost": "Annunzia tai per far u respunder dumondas."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Tias occurrenzas",
+      "titleWithName": "Bainvegni anavos, {{name}}",
+      "upcoming": "Proximas occurrenzas",
+      "past": "Occurrenzas passadas",
+      "emptyUpcoming": "Naginas proximas occurrenzas — guarda tge che vegn.",
+      "emptyPast": "Anc naginas occurrenzas passadas.",
+      "error": "Tias occurrenzas n'han betg pudì vegnir chargiadas. Empruva anc ina giada.",
+      "status": {
+        "registered": "Annunzià",
+        "confirmed": "Confermà",
+        "waitlist": "Glista d'spetga",
+        "attended": "Participà"
+      }
+    }
   }
 }

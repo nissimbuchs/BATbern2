@@ -41,6 +41,10 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
   // `user.roles` array — fall back to the singular when the array is unset.
   const userRoles = user?.roles ?? (user?.role ? [user.role] : []);
   const isSpeaker = userRoles.includes('speaker');
+  // Story 7.6: attendees get a "My Events" link to their event-history dashboard. A
+  // speaker+attendee user sees BOTH "My Sessions" and "My Events" — the speaker dashboard
+  // stays their primary surface (precedence), and "My Events" reaches the attendee dashboard.
+  const isAttendee = userRoles.includes('attendee');
   const hasAdminRole = userRoles.includes('organizer') || userRoles.includes('partner');
 
   const initials = user
@@ -117,6 +121,15 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
                   data-testid="public-nav-my-sessions"
                 >
                   {t('navigation.mySessions', 'My Sessions')}
+                </Link>
+              )}
+              {isAuthenticated && isAttendee && (
+                <Link
+                  to="/attendee/dashboard"
+                  className="text-foreground/80 hover:text-foreground transition-colors"
+                  data-testid="public-nav-my-events"
+                >
+                  {t('navigation.myEvents', 'My Events')}
                 </Link>
               )}
             </div>
@@ -246,6 +259,16 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
               className="px-3 py-3 rounded-md text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
             >
               {t('navigation.mySessions', 'My Sessions')}
+            </Link>
+          )}
+          {isAuthenticated && isAttendee && (
+            <Link
+              to="/attendee/dashboard"
+              onClick={closeMobileMenu}
+              className="px-3 py-3 rounded-md text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
+              data-testid="public-nav-mobile-my-events"
+            >
+              {t('navigation.myEvents', 'My Events')}
             </Link>
           )}
         </nav>

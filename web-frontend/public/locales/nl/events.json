@@ -893,5 +893,22 @@
     "questionPlaceholder": "Stel een vraag over deze sessie…",
     "askQuestion": "Stel een vraag",
     "loginToPost": "Log in om vragen te stellen of te beantwoorden."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Jouw evenementen",
+      "titleWithName": "Welkom terug, {{name}}",
+      "upcoming": "Aankomende evenementen",
+      "past": "Afgelopen evenementen",
+      "emptyUpcoming": "Geen aankomende evenementen — bekijk wat eraan komt.",
+      "emptyPast": "Nog geen afgelopen evenementen.",
+      "error": "Kon je evenementen niet laden. Probeer het opnieuw.",
+      "status": {
+        "registered": "Geregistreerd",
+        "confirmed": "Bevestigd",
+        "waitlist": "Wachtlijst",
+        "attended": "Aanwezig geweest"
+      }
+    }
   }
 }

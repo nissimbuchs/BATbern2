@@ -42,7 +42,10 @@ const Dashboard: React.FC = () => {
       // not exist; speakers landed on a blank page with no console error.
       navigate('/speaker-portal/dashboard', { replace: true });
     } else if (has('attendee')) {
-      navigate('/attendee', { replace: true });
+      // Story 7.6: attendee event-history dashboard. (Speaker is checked first above, so a
+      // speaker+attendee user lands on the speaker dashboard — attendee dash is reached via
+      // the "My Events" top-nav link.)
+      navigate('/attendee/dashboard', { replace: true });
     } else {
       // Defensive: no recognised role. Send the user to the public home page
       // rather than leaving them on an infinite spinner.

@@ -895,5 +895,22 @@
     "questionPlaceholder": "Stell e Frag zu dere Session…",
     "askQuestion": "Frag stelle",
     "loginToPost": "Mäld di a, zum Frage stelle oder beantworte."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Dini Aläss",
+      "titleWithName": "Willkomme zrugg, {{name}}",
+      "upcoming": "Chömendi Aläss",
+      "past": "Vergangeni Aläss",
+      "emptyUpcoming": "Kei chömende Aläss — lueg, was chunnt.",
+      "emptyPast": "No kei vergangeni Aläss.",
+      "error": "Dini Aläss hei nid chönne glade wärde. Probier's nomal.",
+      "status": {
+        "registered": "Aagmäldet",
+        "confirmed": "Bestätigt",
+        "waitlist": "Wartlischte",
+        "attended": "Debi gsi"
+      }
+    }
   }
 }
