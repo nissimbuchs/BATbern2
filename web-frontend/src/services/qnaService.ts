@@ -42,13 +42,24 @@ export async function addPost(
   return response.data;
 }
 
-/** Organizer: extend (new closesAt) or close early (close=true). */
-export async function patchWindow(
+/**
+ * Organizer: extend (new closesAt) or close early (close=true) ALL of the event's Q&A windows
+ * at once (Story 7.5 rework — event-level control replaces the old per-session PATCH).
+ */
+export interface AdjustEventQnaResult {
+  eventCode: string;
+  windowsAdjusted: number;
+  status: 'OPEN' | 'FROZEN';
+}
+
+export async function adjustEventQna(
   eventCode: string,
-  sessionSlug: string,
   payload: { closesAt?: string; close?: boolean }
-): Promise<QnaWindowResponse> {
-  const response = await apiClient.patch<QnaWindowResponse>(base(eventCode, sessionSlug), payload);
+): Promise<AdjustEventQnaResult> {
+  const response = await apiClient.patch<AdjustEventQnaResult>(
+    `/events/${encodeURIComponent(eventCode)}/qna`,
+    payload
+  );
   return response.data;
 }
 

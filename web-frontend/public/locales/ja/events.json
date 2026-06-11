@@ -132,7 +132,22 @@
       "checkInReminders": "イベント当日のチェックインリマインダー",
       "checkInRemindersDesc": "イベント当日の朝",
       "startPresentation": "プレゼンテーションを開始",
-      "liveControl": "ライブコントロール"
+      "liveControl": "ライブコントロール",
+      "qna": {
+        "title": "セッションQ&A",
+        "enabledLabel": "このイベントでセッションごとのQ&Aを有効にする",
+        "triggerLabel": "Q&Aを開く",
+        "triggerCompleted": "イベント後（アフターグロー）",
+        "triggerSpeakers": "登壇者の公開時（イベント前）",
+        "daysLabel": "公開期間（イベント後の日数）",
+        "daysHelper": "ウィンドウはイベント日からこの日数後に閉じ、その後アーカイブに固定されます。",
+        "daysInvalid": "期間は1〜365日の間で指定してください。",
+        "saveError": "Q&A設定の更新に失敗しました。",
+        "adjustError": "Q&Aを調整できませんでした（まだ開いているウィンドウがありません）。",
+        "closeNow": "今すぐQ&Aを閉じる",
+        "reopen": "Q&Aを再開する",
+        "saved": "Q&A設定を保存しました"
+      }
     },
     "speakers": {
       "progress": "進捗",

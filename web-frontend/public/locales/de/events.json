@@ -92,7 +92,22 @@
       "checkInReminders": "Check-in-Erinnerungen am Veranstaltungstag",
       "checkInRemindersDesc": "Am Morgen des Veranstaltungstags",
       "startPresentation": "Präsentation starten",
-      "liveControl": "Live Steuerung"
+      "liveControl": "Live Steuerung",
+      "qna": {
+        "title": "Session-Q&A",
+        "enabledLabel": "Session-Q&A für diese Veranstaltung aktivieren",
+        "triggerLabel": "Q&A öffnen",
+        "triggerCompleted": "Nach der Veranstaltung (Afterglow)",
+        "triggerSpeakers": "Wenn Referenten veröffentlicht sind (vor der Veranstaltung)",
+        "daysLabel": "Geöffnet für (Tage nach der Veranstaltung)",
+        "daysHelper": "Die Fenster schließen so viele Tage nach dem Veranstaltungsdatum und werden dann ins Archiv eingefroren.",
+        "daysInvalid": "Das Fenster muss zwischen 1 und 365 Tagen liegen.",
+        "saveError": "Q&A-Einstellungen konnten nicht aktualisiert werden.",
+        "adjustError": "Q&A konnte nicht angepasst werden (noch keine Fenster offen?).",
+        "closeNow": "Q&A jetzt schließen",
+        "reopen": "Q&A wieder öffnen",
+        "saved": "Q&A-Einstellungen gespeichert"
+      }
     },
     "participantTable": {
       "headers": {

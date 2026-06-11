@@ -103,20 +103,31 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
     // ==================== AC1: windows open on completion (idempotent) ====================
 
     @Test
-    @DisplayName("AC1: openWindowsForCompletedEvent opens one window per session, idempotently")
+    @DisplayName("AC1: EVENT_COMPLETED trigger opens one window per session, idempotently")
     void should_openOneWindowPerSession_idempotently() {
-        Event event = saveEvent(EventWorkflowState.EVENT_COMPLETED);
+        Event event = saveEvent(EventWorkflowState.EVENT_COMPLETED); // default trigger = EVENT_COMPLETED
         saveSession(event, SLUG);
         saveSession(event, "second-session");
 
-        qnaService.openWindowsForCompletedEvent(EVENT_CODE);
+        qnaService.openWindowsIfTrigger(EVENT_CODE, ch.batbern.events.domain.QnaOpenTrigger.EVENT_COMPLETED);
         assertThat(windowRepository.count()).isEqualTo(2);
 
-        // Re-firing the completion event must not create duplicates.
-        qnaService.openWindowsForCompletedEvent(EVENT_CODE);
+        // Re-firing the completion trigger must not create duplicates.
+        qnaService.openWindowsIfTrigger(EVENT_CODE, ch.batbern.events.domain.QnaOpenTrigger.EVENT_COMPLETED);
         assertThat(windowRepository.count()).isEqualTo(2);
         assertThat(windowRepository.findAll())
                 .allSatisfy(w -> assertThat(w.getStatus()).isEqualTo(QnaWindowStatus.OPEN));
+    }
+
+    @Test
+    @DisplayName("Story 7.5 rework: a trigger that doesn't match the event's setting opens nothing")
+    void should_notOpen_when_triggerMismatch() {
+        Event event = saveEvent(EventWorkflowState.EVENT_COMPLETED); // trigger defaults to EVENT_COMPLETED
+        saveSession(event, SLUG);
+
+        // SPEAKERS_PUBLISHED trigger on an EVENT_COMPLETED-configured event → no windows.
+        qnaService.openWindowsIfTrigger(EVENT_CODE, ch.batbern.events.domain.QnaOpenTrigger.SPEAKERS_PUBLISHED);
+        assertThat(windowRepository.count()).isZero();
     }
 
     // ==================== AC2: logged-in post within window ====================
@@ -190,29 +201,37 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = ORGANIZER, roles = {"ORGANIZER"})
-    @DisplayName("AC4: organizer closes a window early → FROZEN")
+    @DisplayName("AC4 (rework): organizer closes the event's Q&A early → all windows FROZEN")
     void should_closeEarly_when_organizer() throws Exception {
         openWindow(QnaWindowStatus.OPEN, Instant.now().plus(10, ChronoUnit.DAYS));
 
-        mockMvc.perform(patch("/api/v1/events/{e}/sessions/{s}/qna", EVENT_CODE, SLUG)
+        // Event-level endpoint (per-session PATCH removed).
+        mockMvc.perform(patch("/api/v1/events/{e}/qna", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"close\": true }"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status", is("FROZEN")));
+                .andExpect(jsonPath("$.status", is("FROZEN")))
+                .andExpect(jsonPath("$.windowsAdjusted", is(1)));
+
+        assertThat(windowRepository.findByEventCode(EVENT_CODE))
+                .allSatisfy(w -> assertThat(w.getStatus()).isEqualTo(QnaWindowStatus.FROZEN));
     }
 
     @Test
     @WithMockUser(username = ORGANIZER, roles = {"ORGANIZER"})
-    @DisplayName("AC4: organizer extends a frozen window → reopens OPEN with new closesAt")
+    @DisplayName("AC4 (rework): organizer extends the event's Q&A → all windows reopen OPEN")
     void should_extend_when_organizer() throws Exception {
         openWindow(QnaWindowStatus.FROZEN, Instant.now().minus(1, ChronoUnit.DAYS));
         String future = Instant.now().plus(30, ChronoUnit.DAYS).toString();
 
-        mockMvc.perform(patch("/api/v1/events/{e}/sessions/{s}/qna", EVENT_CODE, SLUG)
+        mockMvc.perform(patch("/api/v1/events/{e}/qna", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"closesAt\": \"" + future + "\" }"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("OPEN")));
+
+        assertThat(windowRepository.findByEventCode(EVENT_CODE))
+                .allSatisfy(w -> assertThat(w.getStatus()).isEqualTo(QnaWindowStatus.OPEN));
     }
 
     @Test

@@ -92,7 +92,22 @@
       "checkInReminders": "Event day check-in reminders",
       "checkInRemindersDesc": "Morning of event",
       "startPresentation": "Start Presentation",
-      "liveControl": "Live Control"
+      "liveControl": "Live Control",
+      "qna": {
+        "title": "Session Q&A",
+        "enabledLabel": "Enable per-session Q&A for this event",
+        "triggerLabel": "Open the Q&A",
+        "triggerCompleted": "After the event (afterglow)",
+        "triggerSpeakers": "When speakers are published (pre-event)",
+        "daysLabel": "Open for (days after the event)",
+        "daysHelper": "Windows close this many days after the event date, then freeze into the archive.",
+        "daysInvalid": "Window must be between 1 and 365 days.",
+        "saveError": "Failed to update Q&A settings.",
+        "adjustError": "Failed to adjust the Q&A (no windows open yet?).",
+        "closeNow": "Close Q&A now",
+        "reopen": "Reopen Q&A",
+        "saved": "Q&A settings saved"
+      }
     },
     "participantTable": {
       "headers": {

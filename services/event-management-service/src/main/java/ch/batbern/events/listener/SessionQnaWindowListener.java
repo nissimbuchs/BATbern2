@@ -1,5 +1,7 @@
 package ch.batbern.events.listener;
 
+import ch.batbern.events.domain.QnaOpenTrigger;
+import ch.batbern.events.event.SpeakersPhasePublishedEvent;
 import ch.batbern.events.service.SessionQnaService;
 import ch.batbern.shared.events.EventWorkflowTransitionEvent;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -9,12 +11,16 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Opens per-session Q&A windows when an event reaches {@code EVENT_COMPLETED} (Story 7.5, AC1).
+ * Opens per-session Q&A windows (Story 7.5 "The Apéro Continues"), at the moment configured by the
+ * event's {@code qnaOpenTrigger}:
+ * <ul>
+ *   <li>{@code EVENT_COMPLETED} (default) — on the workflow transition to EVENT_COMPLETED.</li>
+ *   <li>{@code SPEAKERS_PUBLISHED} — when the speakers publishing phase goes live.</li>
+ * </ul>
  *
- * <p>Fires for BOTH the scheduled completion ({@code EventWorkflowScheduledService}) and a manual
- * organizer transition — they both publish {@link EventWorkflowTransitionEvent}. Window creation is
- * idempotent ({@code SessionQnaService.openWindowsForCompletedEvent}), and — like the sibling task
- * listener — failures are logged but never break the state transition.
+ * <p>Both fire for scheduled and manual paths. {@code SessionQnaService.openWindowsIfTrigger} is
+ * idempotent and a no-op when the event's trigger doesn't match (so both listeners can fire freely);
+ * failures are logged but never break the transition / publish.
  */
 @Component
 @Slf4j
@@ -29,10 +35,20 @@ public class SessionQnaWindowListener {
             return;
         }
         try {
-            sessionQnaService.openWindowsForCompletedEvent(event.getEventCode());
+            sessionQnaService.openWindowsIfTrigger(event.getEventCode(), QnaOpenTrigger.EVENT_COMPLETED);
         } catch (Exception e) {
             log.error("Failed to open Q&A windows for completed event {}: {}",
                     event.getEventCode(), e.getMessage(), e);
+        }
+    }
+
+    @EventListener
+    public void handleSpeakersPhasePublished(SpeakersPhasePublishedEvent event) {
+        try {
+            sessionQnaService.openWindowsIfTrigger(event.eventCode(), QnaOpenTrigger.SPEAKERS_PUBLISHED);
+        } catch (Exception e) {
+            log.error("Failed to open Q&A windows on speakers-publish for event {}: {}",
+                    event.eventCode(), e.getMessage(), e);
         }
     }
 }

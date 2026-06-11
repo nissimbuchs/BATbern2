@@ -132,7 +132,22 @@
       "checkInReminders": "Sisäänkirjautumismuistutukset tapahtumapäivänä",
       "checkInRemindersDesc": "Tapahtumapäivän aamuna",
       "startPresentation": "Aloita esitys",
-      "liveControl": "Live-ohjaus"
+      "liveControl": "Live-ohjaus",
+      "qna": {
+        "title": "Istunnon Q&A",
+        "enabledLabel": "Ota istuntokohtainen Q&A käyttöön tälle tapahtumalle",
+        "triggerLabel": "Avaa Q&A",
+        "triggerCompleted": "Tapahtuman jälkeen (afterglow)",
+        "triggerSpeakers": "Kun puhujat on julkaistu (ennen tapahtumaa)",
+        "daysLabel": "Avoinna (päivää tapahtuman jälkeen)",
+        "daysHelper": "Ikkunat sulkeutuvat näin monta päivää tapahtumapäivän jälkeen ja jäätyvät sitten arkistoon.",
+        "daysInvalid": "Ikkunan on oltava 1–365 päivää.",
+        "saveError": "Q&A-asetusten päivitys epäonnistui.",
+        "adjustError": "Q&A:n säätäminen epäonnistui (ei vielä avoimia ikkunoita?).",
+        "closeNow": "Sulje Q&A nyt",
+        "reopen": "Avaa Q&A uudelleen",
+        "saved": "Q&A-asetukset tallennettu"
+      }
     },
     "speakers": {
       "progress": "Edistyminen",

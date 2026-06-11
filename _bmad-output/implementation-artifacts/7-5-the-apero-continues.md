@@ -172,3 +172,43 @@ Noted but **not** changed (see Open Questions): public username attribution; `pa
 3. **Concurrent window-opening race (low risk, left as-is).** Window creation is idempotent for the normal case (the `exists` guard handles a re-fired completion event). In the extraordinarily rare case of two `EVENT_COMPLETED` transitions for the same event firing in the *same instant* (e.g. the ShedLock-guarded scheduler colliding with a manual transition), the unique index would roll back that one opening attempt — the listener swallows it so the state transition is never blocked, and a later re-fire is idempotent. Acceptable for MVP, or do you want per-session isolation (each window in its own transaction)?
 
 4. **Freeze job batch size.** `freezeQnaWindows` loads all expired open windows in a single query/transaction each hour. Trivial at BATbern's scale (a handful of sessions per event). Flagged only for the future: if an event ever had thousands of sessions, this would want pagination. No action needed now — noting it for the record.
+
+---
+
+## Per-Event Q&A Settings — rework (2026-06-11)
+
+_Decided with the architect (Winston) + PO (Nissim) and built. Significant rework of this story:
+Q&A configuration moves from a global default + per-session control to **per-event settings** in
+the organizer event **Settings tab**._
+
+### What changed
+
+1. **Configurable open trigger (one per event):** `qnaOpenTrigger` ∈ `{EVENT_COMPLETED,
+   SPEAKERS_PUBLISHED}`. `EVENT_COMPLETED` (default) is the original "digital afterglow."
+   `SPEAKERS_PUBLISHED` opens the windows when the speakers phase publishes — **pre-event**
+   discussion.
+2. **⚠️ Guardrail reversal (conscious, opt-in):** `SPEAKERS_PUBLISHED` is a deliberate reversal of
+   Epic 7 **NFR6 "Sacred Three / afterglow"** (7.5 was specified as the digital afterglow only).
+   The default stays `EVENT_COMPLETED`, so the afterglow remains the out-of-the-box behavior; an
+   organizer opts into pre-event Q&A per event. Recorded here so the NFR6 deviation is explicit.
+3. **All config is event-level; per-session control removed.** New event fields `qnaEnabled`,
+   `qnaOpenTrigger`, `qnaWindowDays` (V113). The per-session `PATCH …/sessions/{slug}/qna` is
+   **gone** — replaced by event-level `PATCH /api/v1/events/{eventCode}/qna` (extend/close ALL of
+   the event's windows at once). Per-session *threads* are unchanged (each talk has its own).
+4. **Close timing:** windows close at **event date + `qnaWindowDays`** (so a `SPEAKERS_PUBLISHED`
+   window opened weeks early still stays open through the event + N days).
+
+### Implementation (status: built, local tests green)
+
+- **Backend:** `V113__add_event_qna_settings.sql`; `Event` + `QnaOpenTrigger` enum (defaults
+  coalesced in `@PrePersist` since `@Builder.Default` + `new Event()` would persist null on the new
+  NOT NULL columns); `EventResponse`/`PatchEventRequest`/`EventMapper`/`applyPatchUpdates`; OpenAPI
+  + regenerated types. `SessionQnaService.openWindowsIfTrigger(eventCode, trigger)` (gated on
+  `qnaEnabled` + matching trigger) replaces `openWindowsForCompletedEvent`; `adjustWindows(eventCode,…)`
+  replaces per-session `patchWindow`. `PublishingService` emits `SpeakersPhasePublishedEvent` on the
+  speakers phase; `SessionQnaWindowListener` opens on either trigger. New `EventQnaController`.
+- **Frontend:** Q&A section in `EventSettingsTab` (enable switch, trigger select, duration, Save +
+  Close-now/Reopen); `qnaService.adjustEventQna`; 10-locale i18n (`eventPage.settings.qna.*`).
+- **Tests:** `SessionQnaIntegrationTest` updated (trigger-match opens; trigger-mismatch opens
+  nothing; event-level close/extend affect all windows) — 13 green; `EventSettingsTab` render test
+  for the new section.

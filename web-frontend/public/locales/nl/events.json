@@ -132,7 +132,22 @@
       "checkInReminders": "Incheckherinneringen op de dag van het evenement",
       "checkInRemindersDesc": "Ochtend van het evenement",
       "startPresentation": "Presentatie starten",
-      "liveControl": "Live besturing"
+      "liveControl": "Live besturing",
+      "qna": {
+        "title": "Sessie-Q&A",
+        "enabledLabel": "Q&A per sessie inschakelen voor dit evenement",
+        "triggerLabel": "Q&A openen",
+        "triggerCompleted": "Na het evenement (afterglow)",
+        "triggerSpeakers": "Wanneer sprekers gepubliceerd zijn (vóór het evenement)",
+        "daysLabel": "Open gedurende (dagen na het evenement)",
+        "daysHelper": "Vensters sluiten zoveel dagen na de evenementdatum en bevriezen daarna in het archief.",
+        "daysInvalid": "Het venster moet tussen 1 en 365 dagen liggen.",
+        "saveError": "Bijwerken van Q&A-instellingen mislukt.",
+        "adjustError": "Q&A aanpassen mislukt (nog geen vensters open?).",
+        "closeNow": "Q&A nu sluiten",
+        "reopen": "Q&A heropenen",
+        "saved": "Q&A-instellingen opgeslagen"
+      }
     },
     "speakers": {
       "progress": "Voortgang",

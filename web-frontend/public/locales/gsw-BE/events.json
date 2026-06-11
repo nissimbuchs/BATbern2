@@ -137,7 +137,22 @@
       "checkInReminders": "Check-in-Erinnirige am Veranstatigstag",
       "checkInRemindersDesc": "Am Morge vom Veranstatigstag",
       "startPresentation": "Präsentation starte",
-      "liveControl": "Live Stüürig"
+      "liveControl": "Live Stüürig",
+      "qna": {
+        "title": "Session-Q&A",
+        "enabledLabel": "Session-Q&A für die Aalass aaschalte",
+        "triggerLabel": "Q&A ufmache",
+        "triggerCompleted": "Nach em Aalass (Afterglow)",
+        "triggerSpeakers": "Wenn d’Referänte publiziert si (vor em Aalass)",
+        "daysLabel": "Offe für (Täg nach em Aalass)",
+        "daysHelper": "D’Fänschter göh so vil Täg nach em Aalass-Datum zue u wärde de im Archiv iigfrore.",
+        "daysInvalid": "S Fänschter mues zwüsche 1 u 365 Täg si.",
+        "saveError": "Q&A-Iistellige hei nid chönne aktualisiert wärde.",
+        "adjustError": "Q&A het nid chönne aapasst wärde (no kei Fänschter offe?).",
+        "closeNow": "Q&A jetz zuemache",
+        "reopen": "Q&A wider ufmache",
+        "saved": "Q&A-Iistellige gspeicheret"
+      }
     },
     "speakers": {
       "progress": "Fortschritt",

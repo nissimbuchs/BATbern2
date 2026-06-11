@@ -132,7 +132,22 @@
       "checkInReminders": "Promemoria check-in giorno evento",
       "checkInRemindersDesc": "Mattina del giorno evento",
       "startPresentation": "Avvia presentazione",
-      "liveControl": "Controllo live"
+      "liveControl": "Controllo live",
+      "qna": {
+        "title": "Q&A di sessione",
+        "enabledLabel": "Abilita le Q&A per sessione per questo evento",
+        "triggerLabel": "Apri le Q&A",
+        "triggerCompleted": "Dopo l'evento (afterglow)",
+        "triggerSpeakers": "Alla pubblicazione dei relatori (pre-evento)",
+        "daysLabel": "Aperto per (giorni dopo l'evento)",
+        "daysHelper": "Le finestre si chiudono questo numero di giorni dopo la data dell'evento, poi si congelano nell'archivio.",
+        "daysInvalid": "La finestra deve essere tra 1 e 365 giorni.",
+        "saveError": "Impossibile aggiornare le impostazioni Q&A.",
+        "adjustError": "Impossibile modificare le Q&A (nessuna finestra ancora aperta?).",
+        "closeNow": "Chiudi le Q&A ora",
+        "reopen": "Riapri le Q&A",
+        "saved": "Impostazioni Q&A salvate"
+      }
     },
     "speakers": {
       "progress": "Avanzamento",

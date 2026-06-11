@@ -132,7 +132,22 @@
       "checkInReminders": "Recordatorios de check-in el día del evento",
       "checkInRemindersDesc": "La mañana del evento",
       "startPresentation": "Iniciar presentación",
-      "liveControl": "Control en vivo"
+      "liveControl": "Control en vivo",
+      "qna": {
+        "title": "Preguntas y respuestas de sesión",
+        "enabledLabel": "Activar Q&A por sesión para este evento",
+        "triggerLabel": "Abrir las Q&A",
+        "triggerCompleted": "Después del evento (afterglow)",
+        "triggerSpeakers": "Al publicar los ponentes (antes del evento)",
+        "daysLabel": "Abierto durante (días después del evento)",
+        "daysHelper": "Las ventanas se cierran tantos días después de la fecha del evento y luego se congelan en el archivo.",
+        "daysInvalid": "La ventana debe estar entre 1 y 365 días.",
+        "saveError": "No se pudieron actualizar los ajustes de Q&A.",
+        "adjustError": "No se pudieron ajustar las Q&A (¿aún no hay ventanas abiertas?).",
+        "closeNow": "Cerrar Q&A ahora",
+        "reopen": "Reabrir Q&A",
+        "saved": "Ajustes de Q&A guardados"
+      }
     },
     "speakers": {
       "progress": "Progreso",

@@ -2,7 +2,6 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.dto.QnaPostRequest;
 import ch.batbern.events.dto.QnaPostResponse;
-import ch.batbern.events.dto.QnaWindowPatchRequest;
 import ch.batbern.events.dto.QnaWindowResponse;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SessionQnaService;
@@ -14,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,15 +22,16 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * Per-session Q&A endpoints (Story 7.5 "The Apéro Continues").
+ * Per-session Q&A endpoints (Story 7.5 "The Apéro Continues"). The THREAD is per session; the
+ * window's lifecycle (open/close/extend) and config live at the EVENT level now — see
+ * {@code EventQnaController} + the event Settings tab (Story 7.5 rework).
  *
  * <p>Mixed auth (mirrors {@code SessionMaterialsController}):
  * <ul>
  *   <li>{@code GET .../qna} — PUBLIC: read the open or frozen thread (anonymous can read, AC3).</li>
  *   <li>{@code POST .../qna/posts} — AUTHENTICATED: any logged-in user may post (AC2);
  *       anonymous → 401 at the gateway. Rejected if the window is frozen (409, AC5).</li>
- *   <li>{@code PATCH .../qna} + {@code DELETE .../qna/posts/{id}} — ORGANIZER only (AC4):
- *       extend / close-early and takedown (soft-delete tombstone).</li>
+ *   <li>{@code DELETE .../qna/posts/{id}} — ORGANIZER only (AC4): takedown (soft-delete tombstone).</li>
  * </ul>
  */
 @RestController
@@ -63,17 +62,6 @@ public class SessionQnaController {
         QnaPostResponse post = qnaService.addPost(
                 eventCode, sessionSlug, request.getBody(), request.getParentPostId(), username);
         return ResponseEntity.status(HttpStatus.CREATED).body(post);
-    }
-
-    /** Organizer: extend the window (new closesAt) or close it early (close=true). */
-    @PatchMapping
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<QnaWindowResponse> patchWindow(
-            @PathVariable String eventCode,
-            @PathVariable String sessionSlug,
-            @Valid @RequestBody QnaWindowPatchRequest request) {
-        return ResponseEntity.ok(qnaService.patchWindow(
-                eventCode, sessionSlug, request.getClosesAt(), request.getClose()));
     }
 
     /** Organizer: take down a post (soft-delete tombstone). */

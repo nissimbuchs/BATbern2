@@ -20,6 +20,9 @@ public interface SessionQnaWindowRepository extends JpaRepository<SessionQnaWind
 
     boolean existsBySessionId(UUID sessionId);
 
+    /** Story 7.5 rework: all of an event's session windows, for event-level open/close. */
+    List<SessionQnaWindow> findByEventCode(String eventCode);
+
     /** Freeze-job scan: open windows whose close time has passed. */
     List<SessionQnaWindow> findByStatusAndClosesAtBefore(QnaWindowStatus status, Instant cutoff);
 }

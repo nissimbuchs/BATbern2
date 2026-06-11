@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.QnaOpenTrigger;
 import ch.batbern.events.domain.QnaWindowStatus;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionQnaPost;
@@ -15,7 +16,6 @@ import ch.batbern.events.repository.SessionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,9 +35,7 @@ import java.util.UUID;
 @Slf4j
 public class SessionQnaService {
 
-    /** Default window length in days (organizer-extendable). AC1: 14 days. */
-    @Value("${qna.window.default-days:14}")
-    private int defaultWindowDays;
+    private static final int FALLBACK_WINDOW_DAYS = 14;
 
     private final SessionQnaWindowRepository windowRepository;
     private final SessionQnaPostRepository postRepository;
@@ -45,16 +43,34 @@ public class SessionQnaService {
     private final EventRepository eventRepository;
 
     /**
-     * Open a Q&A window for every session of a just-completed event (AC1). Idempotent: sessions
-     * that already have a window are skipped, so a re-fired completion event creates no duplicates.
+     * Story 7.5 rework: open a Q&A window for every session of an event, but ONLY when the event's
+     * configured {@code qnaOpenTrigger} matches {@code expectedTrigger} and Q&A is enabled. Called
+     * from two places: the EVENT_COMPLETED listener (with {@code EVENT_COMPLETED}) and the
+     * speakers-phase-published listener (with {@code SPEAKERS_PUBLISHED}). Idempotent — sessions
+     * that already have a window are skipped, so a re-fired trigger creates no duplicates.
+     *
+     * <p>Windows close at {@code event date + qnaWindowDays} ("completion + N days"; for the
+     * pre-event SPEAKERS_PUBLISHED trigger this keeps the window open through the event).
      */
     @Transactional
-    public void openWindowsForCompletedEvent(String eventCode) {
+    public void openWindowsIfTrigger(String eventCode, QnaOpenTrigger expectedTrigger) {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventCode));
 
+        if (!Boolean.TRUE.equals(event.getQnaEnabled())) {
+            log.debug("Q&A disabled for event {} — not opening windows", eventCode);
+            return;
+        }
+        if (event.getQnaOpenTrigger() != expectedTrigger) {
+            log.debug("Event {} Q&A trigger is {}, not {} — skipping",
+                    eventCode, event.getQnaOpenTrigger(), expectedTrigger);
+            return;
+        }
+
+        int windowDays = event.getQnaWindowDays() != null ? event.getQnaWindowDays() : FALLBACK_WINDOW_DAYS;
+        Instant base = event.getDate() != null ? event.getDate() : Instant.now();
+        Instant closesAt = base.plus(windowDays, ChronoUnit.DAYS);
         List<Session> sessions = sessionRepository.findByEventId(event.getId());
-        Instant closesAt = Instant.now().plus(defaultWindowDays, ChronoUnit.DAYS);
         int opened = 0;
         for (Session session : sessions) {
             if (windowRepository.existsBySessionId(session.getId())) {
@@ -69,8 +85,8 @@ public class SessionQnaService {
                     .build());
             opened++;
         }
-        log.info("Opened {} Q&A window(s) for completed event {} ({} sessions total)",
-                opened, eventCode, sessions.size());
+        log.info("Opened {} Q&A window(s) for event {} (trigger {}, closes {}, {} sessions total)",
+                opened, eventCode, expectedTrigger, closesAt, sessions.size());
     }
 
     /** Public read of a session's Q&A thread (open or frozen). */
@@ -118,26 +134,35 @@ public class SessionQnaService {
     }
 
     /**
-     * Organizer adjusts the window (AC4): extend ({@code closesAt} → reopen to that time) or close
-     * early ({@code close = true} → freeze now).
+     * Story 7.5 rework — EVENT-LEVEL adjust (AC4): extend ({@code closesAt} → reopen all of the
+     * event's windows to that time) or close early ({@code close = true} → freeze all now). There
+     * is no per-session control anymore; the organizer manages the whole event's Q&A as a unit.
+     *
+     * @return the number of windows adjusted
      */
     @Transactional
-    public QnaWindowResponse patchWindow(String eventCode, String sessionSlug,
-                                         Instant closesAt, Boolean close) {
-        SessionQnaWindow window = loadWindow(eventCode, sessionSlug);
-        if (Boolean.TRUE.equals(close)) {
-            window.setStatus(QnaWindowStatus.FROZEN);
-            window.setClosesAt(Instant.now());
-        } else if (closesAt != null) {
-            window.setClosesAt(closesAt);
-            window.setStatus(QnaWindowStatus.OPEN);
-        } else {
+    public int adjustWindows(String eventCode, Instant closesAt, Boolean close) {
+        List<SessionQnaWindow> windows = windowRepository.findByEventCode(eventCode);
+        if (windows.isEmpty()) {
+            throw new EntityNotFoundException("No Q&A windows exist for event " + eventCode);
+        }
+        boolean closing = Boolean.TRUE.equals(close);
+        if (!closing && closesAt == null) {
             throw new IllegalArgumentException("Provide either a new closesAt (extend) or close=true.");
         }
-        windowRepository.save(window);
-        log.info("Organizer adjusted Q&A window for session {} (event {}): status={}, closesAt={}",
-                sessionSlug, eventCode, window.getStatus(), window.getClosesAt());
-        return toWindowResponse(window);
+        for (SessionQnaWindow window : windows) {
+            if (closing) {
+                window.setStatus(QnaWindowStatus.FROZEN);
+                window.setClosesAt(Instant.now());
+            } else {
+                window.setClosesAt(closesAt);
+                window.setStatus(QnaWindowStatus.OPEN);
+            }
+        }
+        windowRepository.saveAll(windows);
+        log.info("Organizer adjusted {} Q&A window(s) for event {}: {}",
+                windows.size(), eventCode, closing ? "closed" : "extended to " + closesAt);
+        return windows.size();
     }
 
     /** Organizer takedown (AC4): soft-delete a post (tombstone), preserving thread structure. */

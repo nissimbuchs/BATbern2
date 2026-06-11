@@ -132,7 +132,22 @@
       "checkInReminders": "Rappels d'enregistrement le jour de l'événement",
       "checkInRemindersDesc": "Le matin de l'événement",
       "startPresentation": "Démarrer la présentation",
-      "liveControl": "Contrôle en direct"
+      "liveControl": "Contrôle en direct",
+      "qna": {
+        "title": "Q&R de session",
+        "enabledLabel": "Activer les Q&R par session pour cet événement",
+        "triggerLabel": "Ouvrir les Q&R",
+        "triggerCompleted": "Après l'événement (afterglow)",
+        "triggerSpeakers": "À la publication des intervenants (avant l’événement)",
+        "daysLabel": "Ouvert pendant (jours après l'événement)",
+        "daysHelper": "Les fenêtres se ferment ce nombre de jours après la date de l'événement, puis sont figées dans les archives.",
+        "daysInvalid": "La fenêtre doit être comprise entre 1 et 365 jours.",
+        "saveError": "Échec de la mise à jour des paramètres Q&R.",
+        "adjustError": "Impossible d’ajuster les Q&R (aucune fenêtre ouverte ?).",
+        "closeNow": "Fermer les Q&R maintenant",
+        "reopen": "Rouvrir les Q&R",
+        "saved": "Paramètres Q&R enregistrés"
+      }
     },
     "speakers": {
       "progress": "Progression",

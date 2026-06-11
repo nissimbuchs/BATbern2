@@ -3537,6 +3537,23 @@ export interface components {
        */
       registrationCapacity?: number | null;
       /**
+       * @description Story 7.5 rework: master on/off for this event's per-session Q&A.
+       * @example true
+       */
+      qnaEnabled?: boolean;
+      /**
+       * @description Story 7.5 rework: WHEN the Q&A windows open. EVENT_COMPLETED (default, "digital
+       *     afterglow") or SPEAKERS_PUBLISHED (opt-in: open once the speakers phase publishes).
+       * @example EVENT_COMPLETED
+       * @enum {string}
+       */
+      qnaOpenTrigger?: 'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED';
+      /**
+       * @description Story 7.5 rework: window length; windows close at (event date + this many days).
+       * @example 14
+       */
+      qnaWindowDays?: number;
+      /**
        * @description Story 10.11 — Count of registrations with status registered or confirmed.
        * @example 42
        */
@@ -4179,6 +4196,15 @@ export interface components {
       description?: string;
       /** @description Upload ID from /logos/presigned-url for event theme image */
       themeImageUploadId?: string | null;
+      /** @description Story 7.5 rework: master on/off for this event's per-session Q&A. */
+      qnaEnabled?: boolean;
+      /**
+       * @description Story 7.5 rework: when the Q&A windows open.
+       * @enum {string}
+       */
+      qnaOpenTrigger?: 'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED';
+      /** @description Story 7.5 rework: window length in days (close = event date + this). */
+      qnaWindowDays?: number;
     };
     /**
      * @description Create session request - supports creating placeholder sessions.
@@ -4808,7 +4834,7 @@ export interface components {
      */
     SelfNominateSpeakerRequest: {
       /**
-       * @description The proposed talk title.
+       * @description The proposed talk title. Max 200 to match the canonical session content title — the pitch is carried verbatim into the session at promote (ADR-012).
        * @example Event-driven architecture in practice
        */
       sessionTitle: string;

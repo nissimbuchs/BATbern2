@@ -7492,6 +7492,21 @@ components:
             Story 10.11: Organizer-configured registration limit (≤ venueCapacity). NULL = unlimited.
             Distinct from venueCapacity (fire-code limit). Null means no cap is enforced.
           example: 60
+        qnaEnabled:
+          type: boolean
+          description: "Story 7.5 rework: master on/off for this event's per-session Q&A."
+          example: true
+        qnaOpenTrigger:
+          type: string
+          enum: [EVENT_COMPLETED, SPEAKERS_PUBLISHED]
+          description: |
+            Story 7.5 rework: WHEN the Q&A windows open. EVENT_COMPLETED (default, "digital
+            afterglow") or SPEAKERS_PUBLISHED (opt-in: open once the speakers phase publishes).
+          example: EVENT_COMPLETED
+        qnaWindowDays:
+          type: integer
+          description: "Story 7.5 rework: window length; windows close at (event date + this many days)."
+          example: 14
         confirmedCount:
           type: integer
           description: Story 10.11 — Count of registrations with status registered or confirmed.
@@ -8324,6 +8339,18 @@ components:
           nullable: true
           maxLength: 100
           description: Upload ID from /logos/presigned-url for event theme image
+        qnaEnabled:
+          type: boolean
+          description: "Story 7.5 rework: master on/off for this event's per-session Q&A."
+        qnaOpenTrigger:
+          type: string
+          enum: [EVENT_COMPLETED, SPEAKERS_PUBLISHED]
+          description: "Story 7.5 rework: when the Q&A windows open."
+        qnaWindowDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: "Story 7.5 rework: window length in days (close = event date + this)."
 
     CreateSessionRequest:
       type: object

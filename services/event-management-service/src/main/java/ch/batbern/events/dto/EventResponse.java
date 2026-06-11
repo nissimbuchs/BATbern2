@@ -49,6 +49,10 @@ public class EventResponse {
     private String topicSelectionNote;
     private String workflowState;
     private String currentPublishedPhase;
+    // Story 7.5 rework: per-event Q&A settings.
+    private Boolean qnaEnabled;
+    private String qnaOpenTrigger;
+    private Integer qnaWindowDays;
 
     // Teaser images for moderator presentation page (Story 10.22)
     // Populated by EventController after base DTO construction (N+1 acceptable at BATbern scale).
