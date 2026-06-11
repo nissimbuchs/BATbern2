@@ -20,7 +20,11 @@ export async function getThread(
   eventCode: string,
   sessionSlug: string
 ): Promise<QnaWindowResponse> {
-  const response = await apiClient.get<QnaWindowResponse>(base(eventCode, sessionSlug));
+  // Public, optional read on (public) archive pages: a 401 must not force-logout the visitor —
+  // the caller renders empty on error. See apiClient's skipAuthRedirect handling.
+  const response = await apiClient.get<QnaWindowResponse>(base(eventCode, sessionSlug), {
+    skipAuthRedirect: true,
+  });
   return response.data;
 }
 

@@ -9,17 +9,19 @@
  * {@link EventPhotosMarquee} only when a photo is first opened, so it never enters the public
  * homepage's critical bundle (no MUI here — Tailwind-only public surface).
  *
- * Images are served through the CDN resize Lambda at a viewer-appropriate width (WebP), so the
- * lightbox fetches a sensibly sized variant rather than the raw origin. (No responsive `srcSet`:
- * YARL's slide srcSet requires per-entry pixel height, which we don't know for arbitrary-aspect
- * event photos — a single CDN-resized width is correct and keeps bytes down.)
+ * Images: the lightbox serves the RAW origin (full resolution). The CDN resize Lambda 503s for
+ * high-megapixel sources above ~1200px wide (verified on BATbern58 — w=1600 → 503, w=512 thumbnail
+ * → 200), so requesting a large resized variant here would show broken images. Full-res also gives
+ * the best zoom quality, and this is an explicit one-at-a-time view (not a perf-critical list), so
+ * the larger bytes are acceptable. The marquee thumbnails stay CDN-resized (w=512, reliable).
+ * TODO(infra): once the image-resize Lambda handles large sources at viewer widths, switch back to
+ * a resized src to cut bytes.
  */
 import Lightbox from 'yet-another-react-lightbox';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import Counter from 'yet-another-react-lightbox/plugins/counter';
 import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/counter.css';
-import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 /** Minimal photo shape (decoupled from the generated EventPhotoResponse). */
 export interface PhotoLike {
@@ -35,12 +37,9 @@ interface PhotoLightboxProps {
   onClose: () => void;
 }
 
-// Full-screen viewer width — the CDN resizer emits WebP at this width.
-const VIEWER_WIDTH = 1600;
-
 export default function PhotoLightbox({ photos, index, open, onClose }: PhotoLightboxProps) {
   const slides = photos.map((photo) => ({
-    src: buildCdnImageUrl(photo.displayUrl, { w: VIEWER_WIDTH }) ?? photo.displayUrl,
+    src: photo.displayUrl, // raw origin — see file header (resize Lambda 503s at viewer widths)
     alt: photo.filename || 'BATbern event photo',
   }));
 
