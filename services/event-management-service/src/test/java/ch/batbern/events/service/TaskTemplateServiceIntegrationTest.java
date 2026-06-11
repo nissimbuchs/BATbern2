@@ -75,8 +75,9 @@ class TaskTemplateServiceIntegrationTest extends AbstractIntegrationTest {
         // When: List default templates only
         List<TaskTemplate> defaultTemplates = taskTemplateService.listDefaultTemplates();
 
-        // Then: Only default templates returned
-        assertThat(defaultTemplates).hasSize(7);
+        // Then: Only default templates returned. (8 since Story 7.3 / V110 seeded the
+        // "Newsletter: Slides Are Online" default template.)
+        assertThat(defaultTemplates).hasSize(8);
         assertThat(defaultTemplates).allMatch(TaskTemplate::getIsDefault);
         assertThat(defaultTemplates).extracting("name").containsExactlyInAnyOrder(
             "Venue Booking",
@@ -85,7 +86,8 @@ class TaskTemplateServiceIntegrationTest extends AbstractIntegrationTest {
             "Newsletter: Topic Announcement",
             "Newsletter: Speaker Lineup",
             "Newsletter: Final Agenda",
-            "Catering Coordination"
+            "Catering Coordination",
+            "Newsletter: Slides Are Online"
         );
     }
 
