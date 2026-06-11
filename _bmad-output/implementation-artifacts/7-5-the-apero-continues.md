@@ -163,6 +163,8 @@ Noted but **not** changed (see Open Questions): public username attribution; `pa
 
 ## Open Questions
 
+> **Resolved 2026-06-11 (Nissim/PM): all accepted as-is — current behavior confirmed, no changes.** Q1 public username attribution on the Q&A archive is fine. Q2 `patchWindow` keeps the `close=true`-wins precedence. Q3 concurrent window-open race left as-is (idempotent for the normal case). Q4 freeze-job batch size noted for the future, no action now.
+
 1. **Public username attribution on the Q&A archive.** A frozen Q&A thread is publicly readable (AC3), and each post shows its poster's `username` (e.g. `john.doe`) to anonymous visitors — by design, since AC2 says posts are "attributed to their username". This is a deliberate contrast with 7.4, where notes are organizer-only. Are you comfortable publishing attendee usernames on the public archive, or would you prefer the public view to show display names / "BATbern attendee" / initials, with full usernames only for organizers? (Easy to add a public-vs-organizer branch like 7.4's notes if you want it.)
 
 2. **`PATCH .../qna` when an organizer sends both `closesAt` and `close=true`.** Current precedence: `close=true` wins (the window freezes; the new `closesAt` is ignored). That seems the safer default, but it's silent. Keep this precedence, or reject the ambiguous combination with a 400?

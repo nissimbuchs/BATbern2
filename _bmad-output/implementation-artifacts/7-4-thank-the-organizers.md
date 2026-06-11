@@ -174,6 +174,8 @@ Fixes applied this review (commit 2ca3966e):
 
 ## Open Questions
 
+> **Resolved 2026-06-11 (Nissim/PM): all accepted as-is — current behavior confirmed, no changes.** Q1 rate-limit cap (5/event/IP/hour, per-instance) is fine. Q2 thank-you widget stays live/completed-only (hidden on ARCHIVED).
+
 1. **Rate-limit cap and its scope.** The anonymous cap is **5 thank-yous per event per IP per hour**, held **in-memory per service instance** (Caffeine, no Redis — matching the project's caching stance). So the real cluster-wide ceiling is roughly `5 × number-of-running-instances`, and it resets on every deploy/restart. For a gratitude clap that's almost certainly fine, but if you'd prefer a hard cluster-wide cap we'd need a shared store. Is 5/event/IP/hour the "handful" you intended, and is per-instance acceptable?
 
 2. **Thank-you visibility vs. the Q&A on archived events.** The thank-you widget shows only while an event is `EVENT_LIVE`/`EVENT_COMPLETED` and disappears once the event flips to `ARCHIVED` (~14 days after the event). The 7.5 Q&A, by contrast, stays visible on archived events. Do you want the thank-you button to remain on archived event pages too (i.e. allow thanking older events), or is the live/completed-only window the intended behaviour?
