@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/public/ui/card';
 import { Badge } from '@/components/public/ui/badge';
 import { SpeakerDisplay } from './Event/SpeakerDisplay';
+import { SpeakerSelfNominatePanel } from '@/components/attendee/SpeakerSelfNominatePanel';
 import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
 import type { EventDetailUI, SessionUI } from '@/types/event.types';
 
@@ -22,6 +23,12 @@ interface EventCardProps {
   linkPrefix?: string;
   /** Optional registration status for this event (Story 10.10, AC5) */
   myRegistrationStatus?: RegistrationStatus;
+  /**
+   * Story 7.2 "I Could Speak on That": show the attendee speaker self-nomination button on
+   * upcoming-event cards. The button is login-gated internally; the card additionally only
+   * renders it once the event's topic is set + published (the backend is authoritative).
+   */
+  enableSelfNomination?: boolean;
 }
 
 const STATUS_CHIP_STYLES: Record<RegistrationStatus, string> = {
@@ -37,9 +44,24 @@ export function EventCard({
   viewMode,
   linkPrefix = '/archive/',
   myRegistrationStatus,
+  enableSelfNomination = false,
 }: EventCardProps) {
   const { t } = useTranslation();
   const { t: tEvents } = useTranslation('events');
+
+  // Story 7.2: only surface the self-nomination button once the event's topic is set
+  // (topic object present) AND the event is published (a publishing phase is active). The
+  // button itself is additionally login-gated; the backend enforces both conditions too.
+  // Whitelist the actually-published phases rather than testing truthiness: the phase is
+  // serialized upper-case (EventMapper), and the unpublished sentinel 'NONE' is truthy, so a
+  // bare Boolean() check would wrongly show the button on an unpublished event. The declared
+  // union omits 'NONE', so we compare as a string. Mirrors the backend guard
+  // (publishedAt != null || currentPublishedPhase != 'none').
+  const showSelfNominate =
+    enableSelfNomination &&
+    typeof event.topic === 'object' &&
+    event.topic != null &&
+    ['TOPIC', 'SPEAKERS', 'AGENDA'].includes(event.currentPublishedPhase ?? '');
 
   const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
 
@@ -58,7 +80,7 @@ export function EventCard({
     day: 'numeric',
   });
 
-  return (
+  const cardLink = (
     <Link
       to={`${linkPrefix}${event.eventCode}`}
       className={`block ${viewMode === 'list' ? 'w-full' : ''}`}
@@ -189,4 +211,18 @@ export function EventCard({
       </div>
     </Link>
   );
+
+  // Story 7.2: when self-nomination is enabled for this card, render the button below the
+  // card (outside the <Link>, so the button is not a nested interactive element). The panel
+  // is login-gated internally.
+  if (showSelfNominate) {
+    return (
+      <div className={`flex flex-col gap-2 ${viewMode === 'list' ? 'w-full' : ''}`}>
+        {cardLink}
+        <SpeakerSelfNominatePanel eventCode={event.eventCode} topicName={event.topic?.name} />
+      </div>
+    );
+  }
+
+  return cardLink;
 }

@@ -60,6 +60,33 @@
       "canDo1": "BATbern-Veranstaltigen aluege und di amälde",
       "canDo2": "Früechere Vorträg und Rednermaterial im Archiv entdecke",
       "canDo3": "Dis Konto und Benarichtigigseinstellige verwauté"
+    },
+    "suggestTopic": {
+      "heading": "Es Thema vorschla",
+      "intro": "Was sött es nächschts BATbern behandle? Schlah es Thema vor – d Organisatore gsehts.",
+      "titleLabel": "Thema",
+      "titlePlaceholder": "z. B. Event-Driven Architecture i dr Praxis",
+      "descriptionLabel": "Wurum das Thema? (fakultativ)",
+      "descriptionPlaceholder": "Ei Satz, wurum das für d Community wichtig isch",
+      "submit": "Thema vorschla",
+      "submitting": "Wird gschickt…",
+      "success": "Merci! Dy Themavorschlag isch a d Organisatore gschickt worde.",
+      "error": "Dy Thema het nid chönne gschickt wärde. Probier's nomal."
+    },
+    "selfNominate": {
+      "button": "Drüber chönnt i rede",
+      "heading": "Sich als Referänt:in vorschla",
+      "intro": "Häsch en Vortrag im Gepäck? Gib en i – d'Organisatore gseh dy Vorschlag näbe andere Chandidate.",
+      "introWithTopic": "Ds nächschte Event geit um „{{topic}}“. Häsch en passende Vortrag? Gib en i – d'Organisatore gseh dy Vorschlag.",
+      "titleLabel": "Vortragstitel",
+      "titlePlaceholder": "z. B. Event-Driven Architecture i dr Praxis",
+      "abstractLabel": "Abstract",
+      "abstractPlaceholder": "Es paar Sätz, worum's i dym Vortrag geit",
+      "submit": "Vorschlag schicke",
+      "submitting": "Wird gschickt…",
+      "success": "Merci! Dy Vorschlag isch a d'Organisatore gschickt worde.",
+      "error": "Dy Vorschlag het nid chönne gschickt wärde. Bitte probier's nomal.",
+      "alreadyDone": "Du hesch di für das Event scho vorgschla."
     }
   },
   "footer": {
@@ -471,6 +498,9 @@
       "newest": "Nöischti zerscht",
       "oldest": "Ältischti zerscht",
       "mostAttended": "Am meischte bsuecht"
+    },
+    "photos": {
+      "viewPhoto": "Foti aaluege"
     }
   },
   "notifications": {

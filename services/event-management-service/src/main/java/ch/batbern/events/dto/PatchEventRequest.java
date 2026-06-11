@@ -1,6 +1,9 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.domain.QnaOpenTrigger;
 import ch.batbern.shared.types.EventWorkflowState;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -63,4 +66,13 @@ public class PatchEventRequest {
 
     // Story 10.11: nullable — when provided (non-null), sets the limit; to clear use PUT with null
     private Integer registrationCapacity;
+
+    // Story 7.5 rework: per-event Q&A settings (organizer Settings tab).
+    private Boolean qnaEnabled;
+
+    private QnaOpenTrigger qnaOpenTrigger;
+
+    @Min(value = 1, message = "qnaWindowDays must be at least 1")
+    @Max(value = 365, message = "qnaWindowDays must not exceed 365")
+    private Integer qnaWindowDays;
 }

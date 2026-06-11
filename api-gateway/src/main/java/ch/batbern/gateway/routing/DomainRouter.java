@@ -91,6 +91,7 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/notifications")
                 || cleanPath.startsWith("/api/v1/materials") // Story 5.9: Materials upload
                 || cleanPath.startsWith("/api/v1/speaker-portal") // Story 6.2a: Speaker portal
+                || cleanPath.startsWith("/api/v1/attendee-portal") // Story 7.6: Attendee dashboard
                 || cleanPath.startsWith("/api/v1/sessions") // GlobalSessionController lives in EMS
                 || cleanPath.startsWith("/api/v1/email-templates") // Story 10.2: Email template management
                 || cleanPath.startsWith("/api/v1/analytics") // Story 10.5: Analytics dashboard
@@ -99,7 +100,10 @@ public class DomainRouter {
                 || cleanPath.equals("/api/v1/public/settings/features")) { // Story 10.16: Feature flags
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/partners")
-                || cleanPath.startsWith("/api/v1/partner-meetings")) {
+                || cleanPath.startsWith("/api/v1/partner-meetings")
+                // Story 7.1: attendee "Topics From the Floor" writes into the topic pool,
+                // which physically lives in partner-coordination-service (Story 8.2).
+                || cleanPath.startsWith("/api/v1/attendees/topics")) {
             return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/content")) {
             return "attendee-experience-service";

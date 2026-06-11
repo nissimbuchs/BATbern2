@@ -27,6 +27,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Warning as WarningIcon,
@@ -41,6 +43,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useDeleteEvent, useUpdateEvent } from '@/hooks/useEvents';
+import { adjustEventQna } from '@/services/qnaService';
 import {
   useUploadTeaserImage,
   useDeleteTeaserImage,
@@ -110,6 +113,64 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         error instanceof Error
           ? error.message
           : t('eventPage.settings.capacityUpdateError', 'Failed to update capacity.')
+      );
+    }
+  };
+
+  // Story 7.5 rework: per-event Q&A settings.
+  const [qnaEnabled, setQnaEnabled] = useState<boolean>(event.qnaEnabled ?? true);
+  const [qnaOpenTrigger, setQnaOpenTrigger] = useState<'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED'>(
+    event.qnaOpenTrigger ?? 'EVENT_COMPLETED'
+  );
+  const [qnaWindowDays, setQnaWindowDays] = useState<string>(
+    (event.qnaWindowDays ?? 14).toString()
+  );
+  const [qnaError, setQnaError] = useState<string | null>(null);
+  const [qnaSuccess, setQnaSuccess] = useState(false);
+
+  const handleQnaSettingsSave = async () => {
+    setQnaError(null);
+    const days = parseInt(qnaWindowDays, 10);
+    if (isNaN(days) || days < 1 || days > 365) {
+      setQnaError(
+        t('eventPage.settings.qna.daysInvalid', 'Window must be between 1 and 365 days.')
+      );
+      return;
+    }
+    try {
+      await updateEventMutation.mutateAsync({
+        eventCode,
+        data: { qnaEnabled, qnaOpenTrigger, qnaWindowDays: days },
+      });
+      setQnaSuccess(true);
+    } catch (error) {
+      setQnaError(
+        error instanceof Error
+          ? error.message
+          : t('eventPage.settings.qna.saveError', 'Failed to update Q&A settings.')
+      );
+    }
+  };
+
+  // Manual event-level open/close of all the event's session Q&A windows (only meaningful once
+  // the windows have opened via the configured trigger; otherwise the API returns 404).
+  const handleQnaAdjust = async (close: boolean) => {
+    setQnaError(null);
+    try {
+      const days = parseInt(qnaWindowDays, 10);
+      const payload = close
+        ? { close: true }
+        : { closesAt: new Date(Date.now() + (isNaN(days) ? 14 : days) * 86400000).toISOString() };
+      await adjustEventQna(eventCode, payload);
+      setQnaSuccess(true);
+    } catch (error) {
+      setQnaError(
+        error instanceof Error
+          ? error.message
+          : t(
+              'eventPage.settings.qna.adjustError',
+              'Failed to adjust the Q&A (no windows open yet?).'
+            )
       );
     }
   };
@@ -289,6 +350,110 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           </Box>
         </Stack>
       </Paper>
+
+      {/* Story 7.5 rework: per-event Q&A ("The Apéro Continues") settings */}
+      <Paper sx={{ p: 3 }} data-testid="qna-settings-section">
+        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+          <GroupIcon color="action" />
+          <Typography variant="h6">{t('eventPage.settings.qna.title', 'Session Q&A')}</Typography>
+        </Stack>
+        <Divider sx={{ mb: 2 }} />
+        <Stack spacing={2}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={qnaEnabled}
+                onChange={(e) => setQnaEnabled(e.target.checked)}
+                disabled={updateEventMutation.isPending}
+                data-testid="qna-enabled-switch"
+              />
+            }
+            label={t(
+              'eventPage.settings.qna.enabledLabel',
+              'Enable per-session Q&A for this event'
+            )}
+          />
+          <FormControl
+            sx={{ maxWidth: 360 }}
+            disabled={!qnaEnabled || updateEventMutation.isPending}
+          >
+            <InputLabel id="qna-trigger-label">
+              {t('eventPage.settings.qna.triggerLabel', 'Open the Q&A')}
+            </InputLabel>
+            <Select
+              labelId="qna-trigger-label"
+              label={t('eventPage.settings.qna.triggerLabel', 'Open the Q&A')}
+              value={qnaOpenTrigger}
+              onChange={(e) =>
+                setQnaOpenTrigger(e.target.value as 'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED')
+              }
+              data-testid="qna-trigger-select"
+            >
+              <MenuItem value="EVENT_COMPLETED">
+                {t('eventPage.settings.qna.triggerCompleted', 'After the event (afterglow)')}
+              </MenuItem>
+              <MenuItem value="SPEAKERS_PUBLISHED">
+                {t(
+                  'eventPage.settings.qna.triggerSpeakers',
+                  'When speakers are published (pre-event)'
+                )}
+              </MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            label={t('eventPage.settings.qna.daysLabel', 'Open for (days after the event)')}
+            helperText={t(
+              'eventPage.settings.qna.daysHelper',
+              'Windows close this many days after the event date, then freeze into the archive.'
+            )}
+            type="number"
+            value={qnaWindowDays}
+            onChange={(e) => setQnaWindowDays(e.target.value)}
+            disabled={!qnaEnabled || updateEventMutation.isPending}
+            inputProps={{ min: 1, max: 365 }}
+            sx={{ maxWidth: 300 }}
+            data-testid="qna-days-field"
+            error={!!qnaError}
+          />
+          {qnaError && (
+            <Alert severity="error" onClose={() => setQnaError(null)}>
+              {qnaError}
+            </Alert>
+          )}
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Button
+              variant="contained"
+              onClick={handleQnaSettingsSave}
+              disabled={updateEventMutation.isPending}
+              data-testid="qna-settings-save-btn"
+            >
+              {t('common:actions.save', 'Save')}
+            </Button>
+            <Button
+              variant="outlined"
+              color="warning"
+              onClick={() => handleQnaAdjust(true)}
+              data-testid="qna-close-now-btn"
+            >
+              {t('eventPage.settings.qna.closeNow', 'Close Q&A now')}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => handleQnaAdjust(false)}
+              data-testid="qna-reopen-btn"
+            >
+              {t('eventPage.settings.qna.reopen', 'Reopen Q&A')}
+            </Button>
+          </Stack>
+        </Stack>
+      </Paper>
+
+      <Snackbar
+        open={qnaSuccess}
+        autoHideDuration={3000}
+        onClose={() => setQnaSuccess(false)}
+        message={t('eventPage.settings.qna.saved', 'Q&A settings saved')}
+      />
 
       <Snackbar
         open={capacitySuccess}

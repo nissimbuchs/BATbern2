@@ -21,6 +21,10 @@ export interface SpeakerPoolEntry {
   eventId: string;
   speakerName: string;
   company?: string;
+  // The list endpoint resolves the company slug to its display name (SpeakerPoolService
+  // companyDisplayName overlay). Self-nominations store the raw slug in `company`, so prefer
+  // this when rendering (Story 7.2 review).
+  companyDisplayName?: string | null;
   expertise?: string;
   email?: string; // Speaker email - required for sending invitations (Story 6.1c)
   assignedOrganizerId?: string | null;
@@ -34,6 +38,13 @@ export interface SpeakerPoolEntry {
   notes?: string;
   createdAt: string;
   updatedAt?: string;
+
+  // Story 7.2 "I Could Speak on That": provenance + the attendee's proposed talk, so the
+  // organizer pool/brainstorming UI can flag self-nominations and show the pitch.
+  source?: 'organizer_added' | 'self_nomination';
+  proposedByUsername?: string | null;
+  proposedSessionTitle?: string | null;
+  proposedAbstract?: string | null;
 
   // Story 6.1b: Speaker Invitation System fields
   username?: string;

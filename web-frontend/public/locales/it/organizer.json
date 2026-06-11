@@ -555,7 +555,8 @@
       "sublineFilterAriaLabel": "Filtra colonna {{state}}: {{description}}",
       "filterClearedAnnouncement": "Filtro colonna rimosso",
       "filterAppliedAnnouncement": "Colonna {{state}} filtrata, {{count}} carte visibili"
-    }
+    },
+    "selfNominated": "Auto-candidatura"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",

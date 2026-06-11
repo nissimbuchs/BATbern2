@@ -60,6 +60,33 @@
       "canDo1": "Bladeren door aankomende BATbern-evenementen en u inschrijven",
       "canDo2": "Vroegere lezingen en materialen van sprekers bekijken in het archief",
       "canDo3": "Uw account en meldingsvoorkeuren beheren"
+    },
+    "suggestTopic": {
+      "heading": "Stel een onderwerp voor",
+      "intro": "Wat moet een volgende BATbern behandelen? Stel een onderwerp voor en de organisatoren zien het.",
+      "titleLabel": "Onderwerp",
+      "titlePlaceholder": "bijv. Event-driven architectuur in de praktijk",
+      "descriptionLabel": "Waarom dit onderwerp? (optioneel)",
+      "descriptionPlaceholder": "Eén zin over waarom dit belangrijk is voor de community",
+      "submit": "Onderwerp voorstellen",
+      "submitting": "Bezig met verzenden…",
+      "success": "Bedankt! Je onderwerpsuggestie is naar de organisatoren gestuurd.",
+      "error": "Je onderwerp kon niet worden verzonden. Probeer het opnieuw."
+    },
+    "selfNominate": {
+      "button": "Daar zou ik over kunnen spreken",
+      "heading": "Stel jezelf voor als spreker",
+      "intro": "Heb je een talk in gedachten? Dien hem in en de organisatoren zien je voorstel naast andere kandidaten.",
+      "introWithTopic": "Het volgende evenement gaat over “{{topic}}”. Heb je een passende talk? Dien hem in en de organisatoren zien je voorstel.",
+      "titleLabel": "Titel van de talk",
+      "titlePlaceholder": "bijv. Event-driven architectuur in de praktijk",
+      "abstractLabel": "Samenvatting",
+      "abstractPlaceholder": "Een paar zinnen over waar je talk over gaat",
+      "submit": "Voorstel versturen",
+      "submitting": "Versturen…",
+      "success": "Bedankt! Je voorstel is naar de organisatoren verstuurd.",
+      "error": "Je voorstel kon niet worden verstuurd. Probeer het opnieuw.",
+      "alreadyDone": "Je hebt jezelf al voorgesteld voor dit evenement."
     }
   },
   "footer": {
@@ -565,6 +592,9 @@
       "newest": "Nieuwste eerst",
       "oldest": "Oudste eerst",
       "mostAttended": "Meest bezocht"
+    },
+    "photos": {
+      "viewPhoto": "Foto bekijken"
     }
   },
   "notifications": {

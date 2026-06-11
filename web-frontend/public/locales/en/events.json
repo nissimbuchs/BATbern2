@@ -92,7 +92,22 @@
       "checkInReminders": "Event day check-in reminders",
       "checkInRemindersDesc": "Morning of event",
       "startPresentation": "Start Presentation",
-      "liveControl": "Live Control"
+      "liveControl": "Live Control",
+      "qna": {
+        "title": "Session Q&A",
+        "enabledLabel": "Enable per-session Q&A for this event",
+        "triggerLabel": "Open the Q&A",
+        "triggerCompleted": "After the event (afterglow)",
+        "triggerSpeakers": "When speakers are published (pre-event)",
+        "daysLabel": "Open for (days after the event)",
+        "daysHelper": "Windows close this many days after the event date, then freeze into the archive.",
+        "daysInvalid": "Window must be between 1 and 365 days.",
+        "saveError": "Failed to update Q&A settings.",
+        "adjustError": "Failed to adjust the Q&A (no windows open yet?).",
+        "closeNow": "Close Q&A now",
+        "reopen": "Reopen Q&A",
+        "saved": "Q&A settings saved"
+      }
     },
     "participantTable": {
       "headers": {
@@ -890,6 +905,49 @@
       "exportNameBadges": "Export name badges",
       "exportNameBadgesDocx": "Name badges as Word",
       "exportError": "Export failed"
+    }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Thank the organizers",
+      "subtitle": "BATbern is run by volunteers — free and ad-free. Say thanks in one click.",
+      "notePlaceholder": "Add a note for the organizers (optional)",
+      "button": "Thank the organizers",
+      "count_one": "{{count}} thank-you so far",
+      "count_other": "{{count}} thank-yous so far",
+      "success": "Thank you for saying thanks! 🎉",
+      "error": "Something went wrong. Please try again."
+    }
+  },
+  "qna": {
+    "title": "Q&A",
+    "statusOpen": "Open",
+    "statusFrozen": "Closed",
+    "empty": "No questions yet. Be the first to ask.",
+    "removed": "Removed by an organizer",
+    "takedown": "Remove",
+    "reply": "Reply",
+    "cancel": "Cancel",
+    "replyPlaceholder": "Write an answer…",
+    "questionPlaceholder": "Ask a question about this session…",
+    "askQuestion": "Ask a question",
+    "loginToPost": "Log in to ask or answer questions."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Your events",
+      "titleWithName": "Welcome back, {{name}}",
+      "upcoming": "Upcoming events",
+      "past": "Past events",
+      "emptyUpcoming": "No upcoming events — browse what's coming up.",
+      "emptyPast": "No past events yet.",
+      "error": "Couldn't load your events. Please try again.",
+      "status": {
+        "registered": "Registered",
+        "confirmed": "Confirmed",
+        "waitlist": "Waitlist",
+        "attended": "Attended"
+      }
     }
   }
 }

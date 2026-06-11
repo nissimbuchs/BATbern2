@@ -1,5 +1,6 @@
 package ch.batbern.partners.service;
 
+import ch.batbern.partners.domain.TopicSource;
 import ch.batbern.partners.domain.TopicStatus;
 import ch.batbern.partners.domain.TopicSuggestion;
 import ch.batbern.partners.domain.TopicVote;
@@ -94,6 +95,34 @@ public class TopicService {
     }
 
     /**
+     * Submit a topic suggestion as a logged-in ATTENDEE ("Topics From the Floor", Story 7.1).
+     *
+     * <p>Flows into the same {@code topic_suggestions} pool tagged {@code source = COMMUNITY},
+     * with no partner company ({@code company_name = null}). Organizers triage community and
+     * partner suggestions together in the existing topic-suggestion admin UI.
+     *
+     * @param request title + optional description ({@code companyName} is ignored for community)
+     */
+    public TopicDTO suggestCommunityTopic(TopicSuggestionRequest request) {
+        validate(request);
+        String username = securityContextHelper.getCurrentUsername();
+
+        TopicSuggestion suggestion = TopicSuggestion.builder()
+                .companyName(null)
+                .suggestedBy(username)
+                .title(request.title().strip())
+                .description(request.description())
+                .status(TopicStatus.PROPOSED)
+                .source(TopicSource.COMMUNITY)
+                .build();
+
+        TopicSuggestion saved = topicRepository.save(suggestion);
+        log.info("Community topic suggested: id={} title={} suggestedBy={}",
+                saved.getId(), request.title(), username);
+        return toDTO(saved, 0L, 0L);
+    }
+
+    /**
      * Toggle a vote on (idempotent — duplicate vote is silently ignored).
      */
     public void castVote(UUID topicId, String callerCompanyName) {
@@ -129,7 +158,8 @@ public class TopicService {
         validate(request);
         TopicSuggestion topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
-        if (callerCompanyName != null && !topic.getCompanyName().equals(callerCompanyName)) {
+        // Null-safe: COMMUNITY topics have a null companyName (Story 7.1) and are not partner-owned.
+        if (callerCompanyName != null && !callerCompanyName.equals(topic.getCompanyName())) {
             throw new AccessDeniedException("Cannot edit a topic from another company");
         }
         topic.setTitle(request.title().strip());
@@ -152,7 +182,8 @@ public class TopicService {
     public void deleteTopic(UUID topicId, String callerCompanyName) {
         TopicSuggestion topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
-        if (callerCompanyName != null && !topic.getCompanyName().equals(callerCompanyName)) {
+        // Null-safe: COMMUNITY topics have a null companyName (Story 7.1) and are not partner-owned.
+        if (callerCompanyName != null && !callerCompanyName.equals(topic.getCompanyName())) {
             throw new AccessDeniedException("Cannot delete a topic from another company");
         }
         topicRepository.delete(topic); // votes cascade via ON DELETE CASCADE
@@ -245,7 +276,8 @@ public class TopicService {
                 callerVoteCount != null && callerVoteCount > 0,
                 topic.getStatus().name(),
                 topic.getPlannedEvent(),
-                topic.getCreatedAt()
+                topic.getCreatedAt(),
+                topic.getSource() != null ? topic.getSource().name() : TopicSource.PARTNER.name()
         );
     }
 }

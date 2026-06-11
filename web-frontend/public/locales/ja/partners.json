@@ -249,7 +249,11 @@
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
       },
-      "error": "トピックの読み込みに失敗しました"
+      "error": "トピックの読み込みに失敗しました",
+      "source": {
+        "partner": "パートナー",
+        "community": "コミュニティ"
+      }
     }
   },
   "topicStatus": {

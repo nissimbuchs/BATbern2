@@ -251,43 +251,50 @@ function UpcomingEventCard({ event }: { event: DashboardUpcomingEvent }) {
 function PastEventCard({ event }: { event: DashboardPastEvent }) {
   const { t } = useTranslation();
 
+  // Story 7.6: a past event card links to the public event detail page.
   return (
-    <Card
-      className="p-4 mb-3"
-      role="article"
-      aria-label={`${t('speakerPortal.dashboard.pastEvent')}: ${event.eventTitle}`}
+    <Link
+      to={`/archive/${event.eventCode}`}
+      className="block transition-colors hover:opacity-90"
+      data-testid="speaker-past-event-card"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h3 className="text-base font-medium text-foreground">{event.eventTitle}</h3>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
-              {event.eventDate}
-            </span>
-            {event.sessionTitle && <span>{event.sessionTitle}</span>}
+      <Card
+        className="p-4 mb-3"
+        role="article"
+        aria-label={`${t('speakerPortal.dashboard.pastEvent')}: ${event.eventTitle}`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h3 className="text-base font-medium text-foreground">{event.eventTitle}</h3>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+                {event.eventDate}
+              </span>
+              {event.sessionTitle && <span>{event.sessionTitle}</span>}
+            </div>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {event.hasMaterial ? (
+              <span
+                className="flex items-center gap-1 text-green-600 dark:text-green-400"
+                aria-label={`${t('speakerPortal.dashboard.materialAvailable')}: ${event.materialFileName}`}
+              >
+                <FileText className="w-4 h-4" aria-hidden="true" />
+                {event.materialFileName}
+              </span>
+            ) : (
+              <span
+                className="text-muted-foreground"
+                aria-label={t('speakerPortal.dashboard.noMaterials')}
+              >
+                {t('speakerPortal.dashboard.noMaterials')}
+              </span>
+            )}
           </div>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {event.hasMaterial ? (
-            <span
-              className="flex items-center gap-1 text-green-600 dark:text-green-400"
-              aria-label={`${t('speakerPortal.dashboard.materialAvailable')}: ${event.materialFileName}`}
-            >
-              <FileText className="w-4 h-4" aria-hidden="true" />
-              {event.materialFileName}
-            </span>
-          ) : (
-            <span
-              className="text-muted-foreground"
-              aria-label={t('speakerPortal.dashboard.noMaterials')}
-            >
-              {t('speakerPortal.dashboard.noMaterials')}
-            </span>
-          )}
-        </div>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   );
 }
 

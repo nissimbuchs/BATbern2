@@ -257,7 +257,11 @@
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
       },
-      "error": "Failed to load topics"
+      "error": "Failed to load topics",
+      "source": {
+        "partner": "Partner",
+        "community": "Community"
+      }
     }
   },
   "topicStatus": {

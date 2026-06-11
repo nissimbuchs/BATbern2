@@ -61,6 +61,33 @@
       "canDo1": "Kommende BATbern-Veranstaltungen entdecken und sich anmelden",
       "canDo2": "Vergangene Vorträge und Materialien im Archiv erkunden",
       "canDo3": "Ihr Konto und Benachrichtigungseinstellungen verwalten"
+    },
+    "suggestTopic": {
+      "heading": "Thema vorschlagen",
+      "intro": "Was sollte ein künftiges BATbern behandeln? Schlage ein Thema vor – die Organisatoren sehen es.",
+      "titleLabel": "Thema",
+      "titlePlaceholder": "z. B. Event-Driven Architecture in der Praxis",
+      "descriptionLabel": "Warum dieses Thema? (optional)",
+      "descriptionPlaceholder": "Ein Satz, warum das für die Community wichtig ist",
+      "submit": "Thema vorschlagen",
+      "submitting": "Wird gesendet…",
+      "success": "Danke! Dein Themenvorschlag wurde an die Organisatoren gesendet.",
+      "error": "Dein Thema konnte nicht gesendet werden. Bitte versuche es erneut."
+    },
+    "selfNominate": {
+      "button": "Dazu könnte ich sprechen",
+      "heading": "Als Referent:in vorschlagen",
+      "intro": "Du hast einen Vortrag im Gepäck? Reiche ihn ein – die Organisatoren sehen deinen Vorschlag neben anderen Kandidat:innen.",
+      "introWithTopic": "Das nächste Event dreht sich um „{{topic}}“. Du hast einen passenden Vortrag? Reiche ihn ein – die Organisatoren sehen deinen Vorschlag.",
+      "titleLabel": "Vortragstitel",
+      "titlePlaceholder": "z. B. Event-Driven Architecture in der Praxis",
+      "abstractLabel": "Abstract",
+      "abstractPlaceholder": "Ein paar Sätze, worum es in deinem Vortrag geht",
+      "submit": "Vorschlag senden",
+      "submitting": "Wird gesendet…",
+      "success": "Danke! Dein Vorschlag wurde an die Organisatoren gesendet.",
+      "error": "Dein Vorschlag konnte nicht gesendet werden. Bitte versuche es erneut.",
+      "alreadyDone": "Du hast dich für dieses Event bereits vorgeschlagen."
     }
   },
   "footer": {
@@ -567,6 +594,9 @@
       "newest": "Neueste zuerst",
       "oldest": "Älteste zuerst",
       "mostAttended": "Meistbesucht"
+    },
+    "photos": {
+      "viewPhoto": "Foto ansehen"
     }
   },
   "notifications": {

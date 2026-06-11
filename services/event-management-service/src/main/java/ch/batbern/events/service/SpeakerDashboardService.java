@@ -234,8 +234,21 @@ public class SpeakerDashboardService {
             }
             if (isUpcoming && UPCOMING_STATES.contains(effectiveState)) {
                 upcomingEvents.add(buildUpcomingEvent(membership, pool, event, session));
-            } else if (!isUpcoming && PAST_STATES.contains(effectiveState)) {
-                pastEvents.add(buildPastEvent(membership, pool, event, session));
+            } else if (!isUpcoming) {
+                // Pool-backed past memberships keep the PAST_STATES gate (a pool row stuck at
+                // INVITED/READY for a past event genuinely means the speaker never presented).
+                boolean poolBackedPast = pool != null && PAST_STATES.contains(effectiveState);
+                // 2026-06-11 regression fix — migrated archive talks and co-speaker memberships
+                // have NO pool row and never set is_confirmed, so effectiveState synthesizes to
+                // INVITED and they were dropped (the dashboard's "Past Events" went empty for
+                // historical speakers). A non-declined speaking-role membership of a PAST event
+                // is a talk the speaker actually gave; restore it regardless of is_confirmed.
+                // MODERATOR rows are excluded so presentation-typed "Programmheft" migration
+                // artifacts don't resurface — this list is "where I was speaker".
+                boolean membershipOnlyPast = pool == null && isSpeakingRole(membership);
+                if (poolBackedPast || membershipOnlyPast) {
+                    pastEvents.add(buildPastEvent(membership, pool, event, session));
+                }
             }
         }
 
@@ -491,6 +504,18 @@ public class SpeakerDashboardService {
                 .hasMaterial(hasMaterial)
                 .materialFileName(materialFileName)
                 .build();
+    }
+
+    /**
+     * Speaking roles for the "where I was speaker" dashboard. MODERATOR is intentionally
+     * excluded so presentation-typed "Programmheft" migration artifacts (catalog rows that
+     * list people as moderators) don't resurface as talks. See the past-branch comment.
+     */
+    private static boolean isSpeakingRole(SessionUser membership) {
+        SessionUser.SpeakerRole role = membership.getSpeakerRole();
+        return role == SessionUser.SpeakerRole.PRIMARY_SPEAKER
+                || role == SessionUser.SpeakerRole.CO_SPEAKER
+                || role == SessionUser.SpeakerRole.PANELIST;
     }
 
     private String formatEventDate(Instant date) {

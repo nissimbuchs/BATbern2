@@ -14,12 +14,18 @@ export interface TopicDTO {
   id: string;
   title: string;
   description?: string | null;
-  suggestedByCompany: string;
+  /** Null for COMMUNITY (attendee) suggestions — Story 7.1. */
+  suggestedByCompany?: string | null;
   voteCount: number;
   currentPartnerHasVoted: boolean;
   status: 'PROPOSED' | 'SELECTED' | 'DECLINED';
   plannedEvent?: string | null;
   createdAt: string;
+  /**
+   * PARTNER (Story 8.2) or COMMUNITY/attendee (Story 7.1). Backend always sends it;
+   * optional here so pre-7.1 fixtures/callers still type-check (treated as PARTNER when absent).
+   */
+  source?: 'PARTNER' | 'COMMUNITY';
 }
 
 export interface TopicSuggestionRequest {
@@ -45,6 +51,16 @@ export const getTopics = async (): Promise<TopicDTO[]> => {
 /** Submit a new topic suggestion (PARTNER only). */
 export const suggestTopic = async (req: TopicSuggestionRequest): Promise<TopicDTO> => {
   const response = await apiClient.post<TopicDTO>('/partners/topics', req);
+  return response.data;
+};
+
+/**
+ * Submit a topic suggestion as a logged-in ATTENDEE ("Topics From the Floor", Story 7.1).
+ * Flows into the same topic pool tagged source=COMMUNITY. Submit-only — there is no
+ * attendee read endpoint.
+ */
+export const suggestTopicAsAttendee = async (req: TopicSuggestionRequest): Promise<TopicDTO> => {
+  const response = await apiClient.post<TopicDTO>('/attendees/topics', req);
   return response.data;
 };
 

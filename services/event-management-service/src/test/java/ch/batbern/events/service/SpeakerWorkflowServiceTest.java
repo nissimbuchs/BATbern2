@@ -74,6 +74,10 @@ class SpeakerWorkflowServiceTest {
     @Mock
     private SpeakerStatusHistoryRepository statusHistoryRepository;
     @Mock
+    private ch.batbern.events.repository.SessionProposalRepository sessionProposalRepository;
+    @Mock
+    private ch.batbern.events.repository.SessionContentHistoryRepository sessionContentHistoryRepository;
+    @Mock
     private EventTypeService eventTypeService;
     @Mock
     private UserApiClient userApiClient;
@@ -108,6 +112,8 @@ class SpeakerWorkflowServiceTest {
                 sessionUserRepository,
                 eventRepository,
                 statusHistoryRepository,
+                sessionProposalRepository,
+                sessionContentHistoryRepository,
                 eventTypeService,
                 userApiClient,
                 speakerProvisioningHook,

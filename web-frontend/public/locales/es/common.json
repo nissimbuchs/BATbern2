@@ -60,6 +60,33 @@
       "canDo1": "Explorar e inscribirte en los próximos eventos BATbern",
       "canDo2": "Explorar charlas pasadas y materiales de ponentes en el archivo",
       "canDo3": "Gestionar tu cuenta y preferencias de notificación"
+    },
+    "suggestTopic": {
+      "heading": "Proponer un tema",
+      "intro": "¿Qué debería tratar un próximo BATbern? Propón un tema y los organizadores lo verán.",
+      "titleLabel": "Tema",
+      "titlePlaceholder": "p. ej. Arquitectura orientada a eventos en la práctica",
+      "descriptionLabel": "¿Por qué este tema? (opcional)",
+      "descriptionPlaceholder": "Una frase sobre por qué es importante para la comunidad",
+      "submit": "Proponer tema",
+      "submitting": "Enviando…",
+      "success": "¡Gracias! Tu propuesta de tema se ha enviado a los organizadores.",
+      "error": "No se pudo enviar tu tema. Inténtalo de nuevo."
+    },
+    "selfNominate": {
+      "button": "Yo podría hablar de eso",
+      "heading": "Propónte como ponente",
+      "intro": "¿Tienes una charla en mente? Proponla y los organizadores la verán junto a otras candidaturas.",
+      "introWithTopic": "El próximo evento trata sobre “{{topic}}”. ¿Tienes una charla que encaje? Proponla y los organizadores la verán.",
+      "titleLabel": "Título de la charla",
+      "titlePlaceholder": "p. ej. Arquitectura orientada a eventos en la práctica",
+      "abstractLabel": "Resumen",
+      "abstractPlaceholder": "Unas frases sobre lo que tratará tu charla",
+      "submit": "Enviar propuesta",
+      "submitting": "Enviando…",
+      "success": "¡Gracias! Tu propuesta se ha enviado a los organizadores.",
+      "error": "No se pudo enviar tu propuesta. Inténtalo de nuevo.",
+      "alreadyDone": "Ya te has propuesto para este evento."
     }
   },
   "footer": {
@@ -565,6 +592,9 @@
       "newest": "Más recientes",
       "oldest": "Más antiguos",
       "mostAttended": "Más asistidos"
+    },
+    "photos": {
+      "viewPhoto": "Ver foto"
     }
   },
   "notifications": {

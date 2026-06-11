@@ -60,6 +60,33 @@
       "canDo1": "今後のBATbernイベントを閲覧して登録する",
       "canDo2": "アーカイブで過去のトークやスピーカーの資料を探索する",
       "canDo3": "アカウントと通知設定を管理する"
+    },
+    "suggestTopic": {
+      "heading": "トピックを提案する",
+      "intro": "次回の BATbern で扱うべきテーマは？トピックを提案すると主催者が確認します。",
+      "titleLabel": "トピック",
+      "titlePlaceholder": "例：実践におけるイベント駆動アーキテクチャ",
+      "descriptionLabel": "なぜこのトピック？（任意）",
+      "descriptionPlaceholder": "コミュニティにとって重要な理由を一文で",
+      "submit": "トピックを提案",
+      "submitting": "送信中…",
+      "success": "ありがとうございます！トピックの提案を主催者に送信しました。",
+      "error": "トピックを送信できませんでした。もう一度お試しください。"
+    },
+    "selfNominate": {
+      "button": "それなら私が話せます",
+      "heading": "登壇者として立候補する",
+      "intro": "話せるテーマがありますか？提案すると、主催者が他の候補者と並べて確認します。",
+      "introWithTopic": "次のイベントのテーマは「{{topic}}」です。ぴったりの講演はありますか？提案すると主催者が確認します。",
+      "titleLabel": "講演タイトル",
+      "titlePlaceholder": "例：実践におけるイベント駆動アーキテクチャ",
+      "abstractLabel": "概要",
+      "abstractPlaceholder": "講演内容を数文で記入してください",
+      "submit": "提案を送信",
+      "submitting": "送信中…",
+      "success": "ありがとうございます！提案を主催者に送信しました。",
+      "error": "提案を送信できませんでした。もう一度お試しください。",
+      "alreadyDone": "このイベントにはすでに立候補済みです。"
     }
   },
   "footer": {
@@ -565,6 +592,9 @@
       "newest": "新しい順",
       "oldest": "古い順",
       "mostAttended": "参加者の多い順"
+    },
+    "photos": {
+      "viewPhoto": "写真を見る"
     }
   },
   "notifications": {

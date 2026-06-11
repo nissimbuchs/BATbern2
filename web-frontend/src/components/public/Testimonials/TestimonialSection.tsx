@@ -6,6 +6,7 @@
 
 import { TestimonialCard } from './TestimonialCard';
 import { InfiniteMarquee } from './InfiniteMarquee';
+import { ClickablePhotoMarquee } from '@/components/public/EventPhotos/ClickablePhotoMarquee';
 import { PartnerShowcaseCard } from '../Partners';
 import { usePublicPartners } from '@/hooks/usePublicPartners';
 import { useRecentEventPhotos } from '@/hooks/useRecentEventPhotos';
@@ -165,32 +166,23 @@ export const TestimonialSection = ({ skipPhotoRow = false }: TestimonialSectionP
     <section className="py-16 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden">
       <div className="space-y-6">
         {/* First row: real event photos with testimonial fallback — suppressed when caller shows event photos */}
-        {!skipPhotoRow && (
-          <InfiniteMarquee direction="left" speed="slow">
-            {hasEnoughPhotos
-              ? recentPhotos!.map((photo) => (
-                  <img
-                    key={photo.id}
-                    src={`${photo.displayUrl}?w=256&h=192&fit=cover`}
-                    alt="BATbern event"
-                    className="rounded-lg object-cover h-48 w-64 shrink-0"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ))
-              : testimonials
-                  .slice(0, 10)
-                  .map((testimonial) => (
-                    <TestimonialCard
-                      key={testimonial.id}
-                      name={testimonial.name}
-                      quote={testimonial.quote}
-                      company={testimonial.company}
-                      avatar={testimonial.avatar}
-                    />
-                  ))}
-          </InfiniteMarquee>
-        )}
+        {!skipPhotoRow &&
+          (hasEnoughPhotos ? (
+            // Real event photos → clickable, open the zoomable lightbox (same as the event page).
+            <ClickablePhotoMarquee photos={recentPhotos!} direction="left" />
+          ) : (
+            <InfiniteMarquee direction="left" speed="slow">
+              {testimonials.slice(0, 10).map((testimonial) => (
+                <TestimonialCard
+                  key={testimonial.id}
+                  name={testimonial.name}
+                  quote={testimonial.quote}
+                  company={testimonial.company}
+                  avatar={testimonial.avatar}
+                />
+              ))}
+            </InfiniteMarquee>
+          ))}
 
         {/* Second row - partner showcase scrolling right */}
         {partners.length > 0 && (

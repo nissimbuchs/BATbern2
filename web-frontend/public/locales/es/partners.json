@@ -249,7 +249,11 @@
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
       },
-      "error": "Error al cargar los temas"
+      "error": "Error al cargar los temas",
+      "source": {
+        "partner": "Socio",
+        "community": "Comunidad"
+      }
     }
   },
   "topicStatus": {

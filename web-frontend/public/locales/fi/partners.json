@@ -249,7 +249,11 @@
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
       },
-      "error": "Aiheiden lataaminen epäonnistui"
+      "error": "Aiheiden lataaminen epäonnistui",
+      "source": {
+        "partner": "Kumppani",
+        "community": "Yhteisö"
+      }
     }
   },
   "topicStatus": {

@@ -91,6 +91,23 @@ public class SpeakerPool {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    /**
+     * Story 7.2 "I Could Speak on That": provenance of this pool row.
+     * 'organizer_added' (default for every pre-7.2 row) or 'self_nomination'.
+     *
+     * <p>{@code @Builder.Default} is required: SpeakerPool.builder() is used across the
+     * test suite, and without it builder-created rows would persist {@code source = null}
+     * and violate the NOT NULL column.
+     */
+    @Builder.Default
+    @Column(name = "source", nullable = false, length = 30)
+    private String source = "organizer_added";
+
+    // Story 7.2 / ADR-012: the proposed talk (title + abstract + proposer) does NOT live here.
+    // speaker_pool is the workflow state machine ONLY — content lives in session_proposals
+    // (pre-READY pitch) and, post-promote, in sessions + session_content_history. A
+    // schema-fitness test enforces "no content columns on speaker_pool". See SessionProposal.
+
     // Story 6.1b: Speaker Invitation System fields
     // Story 11.E.9: email column dropped (V103) — see note at top of class.
 

@@ -7,6 +7,8 @@ import ch.batbern.shared.types.EventWorkflowState;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -155,6 +157,20 @@ public class Event {
     @Column(name = "last_published_at")
     private Instant lastPublishedAt;
 
+    // Story 7.5 rework: per-event Q&A settings (edited in the organizer Settings tab). See V113.
+    @Builder.Default
+    @Column(name = "qna_enabled", nullable = false)
+    private Boolean qnaEnabled = true;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "qna_open_trigger", nullable = false, length = 20)
+    private QnaOpenTrigger qnaOpenTrigger = QnaOpenTrigger.EVENT_COMPLETED;
+
+    @Builder.Default
+    @Column(name = "qna_window_days", nullable = false)
+    private Integer qnaWindowDays = 14;
+
     // Note: title_vector and description_vector columns exist in DB (V35 migration)
     // but are not mapped here because they're PostgreSQL tsvector types used only
     // in SQL queries via HibernateConfig.ts_match() function (Story 4.2 AC9, AC19)
@@ -171,6 +187,18 @@ public class Event {
         // Set default workflow state if not already set
         if (workflowState == null) {
             workflowState = EventWorkflowState.CREATED;
+        }
+        // Story 7.5 rework: the Q&A columns are NOT NULL. @Builder.Default covers builder-created
+        // events, but `new Event()` (no-args) leaves them null — coalesce here so every
+        // construction path persists valid defaults.
+        if (qnaEnabled == null) {
+            qnaEnabled = true;
+        }
+        if (qnaOpenTrigger == null) {
+            qnaOpenTrigger = QnaOpenTrigger.EVENT_COMPLETED;
+        }
+        if (qnaWindowDays == null) {
+            qnaWindowDays = 14;
         }
     }
 

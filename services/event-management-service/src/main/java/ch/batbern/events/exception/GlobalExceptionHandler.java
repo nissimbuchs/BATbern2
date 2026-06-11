@@ -1010,6 +1010,146 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle SelfNominationNotAllowedException (Story 7.2): attendee self-nomination attempted
+     * for an event whose topic is unset or which is unpublished. Returns HTTP 409 Conflict with
+     * {@code details.code = SELF_NOMINATION_NOT_ALLOWED}; no pool row is created (AC4).
+     */
+    @ExceptionHandler(SelfNominationNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleSelfNominationNotAllowedException(
+            SelfNominationNotAllowedException ex,
+            HttpServletRequest request) {
+        log.warn("Self-nomination not allowed: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "SELF_NOMINATION_NOT_ALLOWED");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle DuplicateSelfNominationException (Story 7.2): an attendee who already self-nominated
+     * for an event tries again. One self-nomination per attendee per event (AC8). Returns HTTP 409
+     * Conflict with {@code details.code = DUPLICATE_SELF_NOMINATION}.
+     */
+    @ExceptionHandler(DuplicateSelfNominationException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateSelfNominationException(
+            DuplicateSelfNominationException ex,
+            HttpServletRequest request) {
+        log.warn("Duplicate self-nomination: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "DUPLICATE_SELF_NOMINATION");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle ThanksNotAllowedException (Story 7.4): a thank-you was submitted for an event that
+     * is not yet live/completed. Returns HTTP 409 Conflict with
+     * {@code details.code = THANKS_NOT_ALLOWED}; no row is created (AC7).
+     */
+    @ExceptionHandler(ThanksNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleThanksNotAllowedException(
+            ThanksNotAllowedException ex,
+            HttpServletRequest request) {
+        log.warn("Thanks not allowed: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "THANKS_NOT_ALLOWED");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle QnaWindowFrozenException (Story 7.5): a post was attempted on a closed Q&A window.
+     * Returns HTTP 409 Conflict with {@code details.code = QNA_WINDOW_FROZEN}; no post created (AC5).
+     */
+    @ExceptionHandler(QnaWindowFrozenException.class)
+    public ResponseEntity<ErrorResponse> handleQnaWindowFrozenException(
+            QnaWindowFrozenException ex,
+            HttpServletRequest request) {
+        log.warn("Q&A window frozen: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "QNA_WINDOW_FROZEN");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle ThanksRateLimitedException (Story 7.4): anonymous thank-yous for one event from a
+     * single IP exceeded the per-(event,IP) cap (AC3/AC5). Returns HTTP 429 Too Many Requests with
+     * {@code details.code = THANKS_RATE_LIMITED}; the submission is rejected before any row is
+     * inserted, so the aggregate is not incremented.
+     */
+    @ExceptionHandler(ThanksRateLimitedException.class)
+    public ResponseEntity<ErrorResponse> handleThanksRateLimitedException(
+            ThanksRateLimitedException ex,
+            HttpServletRequest request) {
+        log.warn("Thanks rate limited: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "THANKS_RATE_LIMITED");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.TOO_MANY_REQUESTS.value())
+                .error("Too Many Requests")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(error);
+    }
+
+    /**
      * Handle SlotCapacityReachedException (READY → INVITED blocked by slot-capacity gate)
      * Returns HTTP 409 Conflict.
      * Story 11.B.2: slot-capacity gate replaces removed OVERFLOW state (ADR-009 §0.7).
@@ -1097,6 +1237,31 @@ public class GlobalExceptionHandler {
             DuplicateNewsletterSendException ex,
             HttpServletRequest request) {
         log.warn("Duplicate newsletter send attempt: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Story 7.3 — handle SlidesOnlineAlreadySentException (the one-shot slides-online mail has
+     * already been sent for this event). Returns HTTP 409 Conflict. An explicit handler is
+     * required so the catch-all {@code @ExceptionHandler(Exception.class)} below does not shadow
+     * the exception's {@code @ResponseStatus(CONFLICT)} and translate it into a 500.
+     */
+    @ExceptionHandler(SlidesOnlineAlreadySentException.class)
+    public ResponseEntity<ErrorResponse> handleSlidesOnlineAlreadySentException(
+            SlidesOnlineAlreadySentException ex,
+            HttpServletRequest request) {
+        log.warn("Duplicate slides-online send attempt: {}", ex.getMessage());
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())

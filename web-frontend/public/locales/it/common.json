@@ -60,6 +60,33 @@
       "canDo1": "Sfogliare e iscriverti ai prossimi eventi BATbern",
       "canDo2": "Esplorare i talk passati e i materiali dei relatori nell'archivio",
       "canDo3": "Gestire il tuo account e le preferenze di notifica"
+    },
+    "suggestTopic": {
+      "heading": "Proponi un tema",
+      "intro": "Cosa dovrebbe trattare un prossimo BATbern? Proponi un tema e gli organizzatori lo vedranno.",
+      "titleLabel": "Tema",
+      "titlePlaceholder": "es. Architettura event-driven nella pratica",
+      "descriptionLabel": "Perché questo tema? (facoltativo)",
+      "descriptionPlaceholder": "Una frase sul perché è importante per la community",
+      "submit": "Proponi il tema",
+      "submitting": "Invio in corso…",
+      "success": "Grazie! La tua proposta di tema è stata inviata agli organizzatori.",
+      "error": "Impossibile inviare il tema. Riprova."
+    },
+    "selfNominate": {
+      "button": "Potrei parlarne io",
+      "heading": "Proponiti come relatore/relatrice",
+      "intro": "Hai un intervento da proporre? Invialo e gli organizzatori lo vedranno insieme alle altre candidature.",
+      "introWithTopic": "Il prossimo evento parla di “{{topic}}”. Hai un intervento adatto? Invialo e gli organizzatori lo vedranno.",
+      "titleLabel": "Titolo dell'intervento",
+      "titlePlaceholder": "es. Architettura event-driven nella pratica",
+      "abstractLabel": "Abstract",
+      "abstractPlaceholder": "Qualche frase su cosa tratterà il tuo intervento",
+      "submit": "Invia la proposta",
+      "submitting": "Invio in corso…",
+      "success": "Grazie! La tua proposta è stata inviata agli organizzatori.",
+      "error": "Impossibile inviare la proposta. Riprova.",
+      "alreadyDone": "Ti sei già proposto/a per questo evento."
     }
   },
   "footer": {
@@ -565,6 +592,9 @@
       "newest": "Più recenti",
       "oldest": "Più vecchi",
       "mostAttended": "Più frequentati"
+    },
+    "photos": {
+      "viewPhoto": "Vedi foto"
     }
   },
   "notifications": {

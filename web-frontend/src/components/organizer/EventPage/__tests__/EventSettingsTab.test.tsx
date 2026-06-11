@@ -114,6 +114,18 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       expect(deleteButton).not.toBeDisabled();
     });
 
+    // Story 7.5 rework: per-event Q&A settings section.
+    it('renders the Q&A settings section with the trigger options + controls', () => {
+      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
+
+      expect(screen.getByTestId('qna-settings-section')).toBeInTheDocument();
+      expect(screen.getByTestId('qna-enabled-switch')).toBeInTheDocument();
+      expect(screen.getByTestId('qna-trigger-select')).toBeInTheDocument();
+      expect(screen.getByTestId('qna-days-field')).toBeInTheDocument();
+      expect(screen.getByTestId('qna-settings-save-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('qna-close-now-btn')).toBeInTheDocument();
+    });
+
     it('should_notRenderMockNotificationData_when_rendered', () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 

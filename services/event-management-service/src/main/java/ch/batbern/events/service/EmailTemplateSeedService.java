@@ -164,6 +164,12 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("newsletter-")) {
             return "NEWSLETTER";
         }
+        // Story 7.3: the "slides are online" mail is a newsletter-style send to event
+        // registrants. It does not carry the "newsletter-" prefix, so map it explicitly —
+        // otherwise it would fall through to LAYOUT.
+        if (templateKey.startsWith("slides-online")) {
+            return "NEWSLETTER";
+        }
         // Story (venue-coordination): outbound mails to the event venue + caterer.
         // Both share one category so the Event Detail Venue tab dropdown can list them
         // together; the key prefix still distinguishes which recipient the template targets.

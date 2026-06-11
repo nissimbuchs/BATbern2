@@ -32,8 +32,10 @@ import { SocialSharing } from '@/components/public/Event/SocialSharing';
 import { EventDescriptionSection } from '@/components/public/Event/EventDescriptionSection';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
-import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
+import { EventPhotosMarquee } from '@/components/public/EventPhotos/EventPhotosMarquee';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
+import { SpeakerSelfNominatePanel } from '@/components/attendee/SpeakerSelfNominatePanel';
+import { canOfferSelfNomination } from '@/utils/eventPublication';
 // Below-the-fold + backend/Turnstile-dependent → lazy-loaded so it stays off the eager
 // homepage bundle (its Turnstile/config code too) and only mounts after the page's event
 // data has resolved, by which point runtime config is loaded. Keeps the config gate from
@@ -41,6 +43,13 @@ import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection
 const NewsletterSubscribeWidget = lazy(() =>
   import('@/components/public/NewsletterSubscribeWidget').then((m) => ({
     default: m.NewsletterSubscribeWidget,
+  }))
+);
+// Story 7.4: lazy so the (below-the-fold) thank-the-organizers widget + its Turnstile script
+// never enter the homepage's critical render path.
+const ThankOrganizersWidget = lazy(() =>
+  import('@/components/public/ThankOrganizersWidget').then((m) => ({
+    default: m.ThankOrganizersWidget,
   }))
 );
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
@@ -53,7 +62,6 @@ import { RegistrationStatusBanner } from '@/components/public/RegistrationStatus
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
 import { getHomepagePhase, getSectionVisibility } from './homePagePhase';
-import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
@@ -155,6 +163,17 @@ const HomePage = () => {
   const eventDate = event.date;
   const eventLocation = event.venueName;
   const eventDateObj = eventDate ? new Date(eventDate) : null;
+  // Story 7.2 "I Could Speak on That": the current/hero event must also offer self-nomination
+  // while it is still upcoming, its topic is set, and it is published — not only the secondary
+  // upcoming-event cards. The panel self-gates on login; the event must be in the future
+  // (a past/archived hero event never accepts nominations — the window closes at event start).
+  const heroSelfNominationEligible =
+    !!event.eventCode &&
+    !!eventDateObj &&
+    eventDateObj.getTime() > Date.now() &&
+    canOfferSelfNomination(event);
+  const heroTopicName =
+    event.topic && typeof event.topic === 'object' ? event.topic.name : undefined;
   const eventUrl = typeof window !== 'undefined' ? window.location.href : '';
   const eventDescription = event.description || `Join us for ${eventTitle} in ${eventLocation}`;
   const hasSessions = !!(event.sessions && event.sessions.length > 0);
@@ -221,6 +240,16 @@ const HomePage = () => {
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
         spotsRemaining={event.spotsRemaining}
       />
+
+      {/* Story 7.2: self-nominate on the current event (topic set + published + upcoming).
+          The panel renders nothing for anonymous visitors, so this stays invisible until login. */}
+      {heroSelfNominationEligible && (
+        <div className="container mx-auto px-4 mt-6">
+          <div className="max-w-md mx-auto" data-testid="hero-self-nominate">
+            <SpeakerSelfNominatePanel eventCode={event.eventCode!} topicName={heroTopicName} />
+          </div>
+        </div>
+      )}
 
       {/* Event Description — hidden in COMING_SOON */}
       {vis.eventDescription && (
@@ -327,31 +356,24 @@ const HomePage = () => {
         {/* Upcoming Events — always shown */}
         <UpcomingEventsSection currentEventCode={event.eventCode} />
 
-        {/* Event-specific photos marquee — POST_EVENT and ARCHIVE when photos exist */}
+        {/* Event-specific photos marquee — POST_EVENT and ARCHIVE when photos exist.
+            Each photo opens a zoomable, swipeable lightbox (lazy-loaded). */}
         {vis.eventPhotosMarquee && eventPhotos && eventPhotos.length > 0 && (
-          <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden py-6 mt-12">
-            <InfiniteMarquee direction="left" speed="slow">
-              {eventPhotos.map((photo) => (
-                <img
-                  key={photo.id}
-                  src={
-                    buildCdnImageUrl(photo.displayUrl, { w: 512, h: 384, fit: 'cover' }) ??
-                    photo.displayUrl
-                  }
-                  alt={photo.filename || 'BATbern event photo'}
-                  loading="lazy"
-                  decoding="async"
-                  className="rounded-lg object-cover h-48 w-64 shrink-0"
-                />
-              ))}
-            </InfiniteMarquee>
-          </section>
+          <EventPhotosMarquee photos={eventPhotos} />
         )}
 
         {/* Testimonials + Partners — always shown */}
         <div className="mt-16 pb-12">
           <TestimonialSection skipPhotoRow={vis.testimonialsSkipPhotoRow} />
         </div>
+
+        {/* Thank the Organizers — Story 7.4: only once the event is live/completed (AC1) */}
+        {!!event.eventCode &&
+          (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED') && (
+            <Suspense fallback={null}>
+              <ThankOrganizersWidget eventCode={event.eventCode} />
+            </Suspense>
+          )}
 
         {/* Newsletter Subscribe Widget — always shown (lazy, below the fold) */}
         <div className="border-t pt-4 pb-8">

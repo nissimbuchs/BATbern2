@@ -543,7 +543,8 @@
       "sublineFilterAriaLabel": "Filtrar la colonna {{state}}: {{description}}",
       "filterClearedAnnouncement": "Filter da colonna stizzà",
       "filterAppliedAnnouncement": "Colonna {{state}} filtrada, {{count}} cartas visiblas"
-    }
+    },
+    "selfNominated": "Sez proponì"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
