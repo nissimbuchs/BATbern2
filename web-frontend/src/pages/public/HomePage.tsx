@@ -34,6 +34,8 @@ import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
+import { SpeakerSelfNominatePanel } from '@/components/attendee/SpeakerSelfNominatePanel';
+import { canOfferSelfNomination } from '@/utils/eventPublication';
 // Below-the-fold + backend/Turnstile-dependent → lazy-loaded so it stays off the eager
 // homepage bundle (its Turnstile/config code too) and only mounts after the page's event
 // data has resolved, by which point runtime config is loaded. Keeps the config gate from
@@ -162,6 +164,17 @@ const HomePage = () => {
   const eventDate = event.date;
   const eventLocation = event.venueName;
   const eventDateObj = eventDate ? new Date(eventDate) : null;
+  // Story 7.2 "I Could Speak on That": the current/hero event must also offer self-nomination
+  // while it is still upcoming, its topic is set, and it is published — not only the secondary
+  // upcoming-event cards. The panel self-gates on login; the event must be in the future
+  // (a past/archived hero event never accepts nominations — the window closes at event start).
+  const heroSelfNominationEligible =
+    !!event.eventCode &&
+    !!eventDateObj &&
+    eventDateObj.getTime() > Date.now() &&
+    canOfferSelfNomination(event);
+  const heroTopicName =
+    event.topic && typeof event.topic === 'object' ? event.topic.name : undefined;
   const eventUrl = typeof window !== 'undefined' ? window.location.href : '';
   const eventDescription = event.description || `Join us for ${eventTitle} in ${eventLocation}`;
   const hasSessions = !!(event.sessions && event.sessions.length > 0);
@@ -228,6 +241,16 @@ const HomePage = () => {
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
         spotsRemaining={event.spotsRemaining}
       />
+
+      {/* Story 7.2: self-nominate on the current event (topic set + published + upcoming).
+          The panel renders nothing for anonymous visitors, so this stays invisible until login. */}
+      {heroSelfNominationEligible && (
+        <div className="container mx-auto px-4 mt-6">
+          <div className="max-w-md mx-auto" data-testid="hero-self-nominate">
+            <SpeakerSelfNominatePanel eventCode={event.eventCode!} topicName={heroTopicName} />
+          </div>
+        </div>
+      )}
 
       {/* Event Description — hidden in COMING_SOON */}
       {vis.eventDescription && (

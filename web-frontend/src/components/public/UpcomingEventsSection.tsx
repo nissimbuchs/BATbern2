@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useEvents } from '@/hooks/useEvents';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { EventCard } from '@/components/public/EventCard';
+import { isPublishedPhase } from '@/utils/eventPublication';
 import type { EventDetailUI } from '@/types/event.types';
 
 interface UpcomingEventsSectionProps {
@@ -47,7 +48,18 @@ export function UpcomingEventsSection({ currentEventCode }: UpcomingEventsSectio
 
   const now = new Date();
   const upcomingEvents = (data?.data ?? [])
-    .filter((e) => e.eventCode !== currentEventCode && new Date(e.date) > now)
+    .filter(
+      (e) =>
+        e.eventCode !== currentEventCode &&
+        new Date(e.date) > now &&
+        // Only surface events the organizer has actively published. The generic
+        // GET /events list returns every event regardless of publication, so an
+        // unpublished CREATED event (currentPublishedPhase NONE/null) would otherwise
+        // leak onto the public homepage (mirrors the backend /events/current gate).
+        // currentPublishedPhase rides in the list payload at runtime but isn't on the
+        // narrower list-item type — read it through EventDetailUI (the cast used below too).
+        isPublishedPhase((e as EventDetailUI).currentPublishedPhase)
+    )
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 4);
 

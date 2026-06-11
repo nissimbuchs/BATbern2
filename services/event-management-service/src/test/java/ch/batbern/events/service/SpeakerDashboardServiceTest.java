@@ -1,6 +1,9 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.dto.SpeakerDashboardDto;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
@@ -17,7 +20,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -110,5 +116,99 @@ class SpeakerDashboardServiceTest {
         assertThat(dashboard.profileCompleteness()).isZero();
         assertThat(dashboard.speakerName()).isEqualTo("ghost.user");
         assertThat(dashboard.profilePictureUrl()).isNull();
+    }
+
+    /**
+     * 2026-06-11 regression (Epic 7 testing): the dashboard was rerooted to session_users
+     * (commit 7447d8fc) and now synthesizes {@code isConfirmed ? ACCEPTED : INVITED} when a
+     * membership has no pool row. Migrated archive talks carry {@code is_confirmed = false}
+     * and no pool row, so they synthesized to INVITED — which {@code PAST_STATES} excludes —
+     * and silently vanished from "Past Events". A past, non-declined PRIMARY_SPEAKER (or
+     * CO_SPEAKER / PANELIST) membership with no pool row IS a talk the speaker gave and must
+     * appear regardless of {@code is_confirmed}.
+     */
+    @Test
+    void should_includePastEvent_when_speakingMembershipHasNoPoolRow_andNotConfirmed() {
+        UUID sessionId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        Session session = Session.builder()
+                .id(sessionId)
+                .eventId(eventId)
+                .title("IBIS Desktop")
+                .sessionType("presentation") // not a structural slot
+                .speakerPoolId(null)          // migrated talk: no workflow pool row
+                .build();
+        Event event = Event.builder()
+                .id(eventId)
+                .eventCode("BATbern1")
+                .title("BATbern 1")
+                .date(Instant.parse("2005-06-24T14:00:00Z")) // past
+                .build();
+        SessionUser membership = SessionUser.builder()
+                .session(session)
+                .username("nissim.buchs")
+                .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(false) // migrated data never set the forward-workflow flag
+                .build();
+
+        when(sessionUserRepository.findByUsername("nissim.buchs")).thenReturn(List.of(membership));
+        when(sessionRepository.findAllById(Set.of(sessionId))).thenReturn(List.of(session));
+        when(eventRepository.findAllById(Set.of(eventId))).thenReturn(List.of(event));
+        // PRIMARY_SPEAKER + null speakerPoolId → reverse lookup, also empty for migrated data.
+        when(speakerPoolRepository.findBySessionId(sessionId)).thenReturn(List.of());
+        when(sessionMaterialsRepository.existsBySession_IdAndMaterialType(sessionId, "PRESENTATION"))
+                .thenReturn(false);
+        when(userApiClient.getUserByUsername("nissim.buchs")).thenReturn(new UserResponse()
+                .firstName("Nissim").lastName("Buchs"));
+
+        SpeakerDashboardDto dashboard = service.getDashboard("nissim.buchs");
+
+        assertThat(dashboard.pastEvents()).hasSize(1);
+        assertThat(dashboard.pastEvents().get(0).eventCode()).isEqualTo("BATbern1");
+        assertThat(dashboard.pastEvents().get(0).sessionTitle()).isEqualTo("IBIS Desktop");
+        assertThat(dashboard.upcomingEvents()).isEmpty();
+    }
+
+    /**
+     * Counterpart to the regression above: a no-pool MODERATOR membership on a
+     * presentation-typed "Programmheft" row is a migration artifact (program-booklet
+     * catalog entry), NOT a talk the speaker gave. "Where I was speaker" must not
+     * resurface these, so only speaking roles (PRIMARY_SPEAKER / CO_SPEAKER / PANELIST)
+     * are restored for pool-less past memberships.
+     */
+    @Test
+    void should_excludePastEvent_when_noPoolMembershipIsModeratorArtifact() {
+        UUID sessionId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        Session session = Session.builder()
+                .id(sessionId)
+                .eventId(eventId)
+                .title("Programmheft")
+                .sessionType("presentation") // not structural, so not filtered by slot type
+                .speakerPoolId(null)
+                .build();
+        Event event = Event.builder()
+                .id(eventId)
+                .eventCode("BATbern10")
+                .title("BATbern 10")
+                .date(Instant.parse("2008-06-20T06:30:00Z")) // past
+                .build();
+        SessionUser membership = SessionUser.builder()
+                .session(session)
+                .username("nissim.buchs")
+                .speakerRole(SessionUser.SpeakerRole.MODERATOR)
+                .isConfirmed(false)
+                .build();
+
+        when(sessionUserRepository.findByUsername("nissim.buchs")).thenReturn(List.of(membership));
+        when(sessionRepository.findAllById(Set.of(sessionId))).thenReturn(List.of(session));
+        when(eventRepository.findAllById(Set.of(eventId))).thenReturn(List.of(event));
+        when(userApiClient.getUserByUsername("nissim.buchs")).thenReturn(new UserResponse()
+                .firstName("Nissim").lastName("Buchs"));
+
+        SpeakerDashboardDto dashboard = service.getDashboard("nissim.buchs");
+
+        assertThat(dashboard.pastEvents()).isEmpty();
+        assertThat(dashboard.upcomingEvents()).isEmpty();
     }
 }
