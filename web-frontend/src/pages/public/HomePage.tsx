@@ -32,7 +32,7 @@ import { SocialSharing } from '@/components/public/Event/SocialSharing';
 import { EventDescriptionSection } from '@/components/public/Event/EventDescriptionSection';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
-import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
+import { EventPhotosMarquee } from '@/components/public/EventPhotos/EventPhotosMarquee';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
 import { SpeakerSelfNominatePanel } from '@/components/attendee/SpeakerSelfNominatePanel';
 import { canOfferSelfNomination } from '@/utils/eventPublication';
@@ -62,7 +62,6 @@ import { RegistrationStatusBanner } from '@/components/public/RegistrationStatus
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
 import { getHomepagePhase, getSectionVisibility } from './homePagePhase';
-import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
@@ -357,25 +356,10 @@ const HomePage = () => {
         {/* Upcoming Events — always shown */}
         <UpcomingEventsSection currentEventCode={event.eventCode} />
 
-        {/* Event-specific photos marquee — POST_EVENT and ARCHIVE when photos exist */}
+        {/* Event-specific photos marquee — POST_EVENT and ARCHIVE when photos exist.
+            Each photo opens a zoomable, swipeable lightbox (lazy-loaded). */}
         {vis.eventPhotosMarquee && eventPhotos && eventPhotos.length > 0 && (
-          <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden py-6 mt-12">
-            <InfiniteMarquee direction="left" speed="slow">
-              {eventPhotos.map((photo) => (
-                <img
-                  key={photo.id}
-                  src={
-                    buildCdnImageUrl(photo.displayUrl, { w: 512, h: 384, fit: 'cover' }) ??
-                    photo.displayUrl
-                  }
-                  alt={photo.filename || 'BATbern event photo'}
-                  loading="lazy"
-                  decoding="async"
-                  className="rounded-lg object-cover h-48 w-64 shrink-0"
-                />
-              ))}
-            </InfiniteMarquee>
-          </section>
+          <EventPhotosMarquee photos={eventPhotos} />
         )}
 
         {/* Testimonials + Partners — always shown */}

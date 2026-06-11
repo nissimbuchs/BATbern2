@@ -592,6 +592,9 @@
       "newest": "Uusimmat ensin",
       "oldest": "Vanhimmat ensin",
       "mostAttended": "Eniten osallistujia"
+    },
+    "photos": {
+      "viewPhoto": "Katso kuva"
     }
   },
   "notifications": {

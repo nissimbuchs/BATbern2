@@ -592,6 +592,9 @@
       "newest": "新しい順",
       "oldest": "古い順",
       "mostAttended": "参加者の多い順"
+    },
+    "photos": {
+      "viewPhoto": "写真を見る"
     }
   },
   "notifications": {

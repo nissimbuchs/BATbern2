@@ -629,6 +629,9 @@
       "newest": "Newest first",
       "oldest": "Oldest first",
       "mostAttended": "Most attended"
+    },
+    "photos": {
+      "viewPhoto": "View photo"
     }
   },
   "notifications": {

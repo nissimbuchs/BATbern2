@@ -592,6 +592,9 @@
       "newest": "I pli novs",
       "oldest": "I pli vegls",
       "mostAttended": "Il pli frequentà"
+    },
+    "photos": {
+      "viewPhoto": "Vesair la foto"
     }
   },
   "notifications": {

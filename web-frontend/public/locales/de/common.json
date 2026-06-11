@@ -594,6 +594,9 @@
       "newest": "Neueste zuerst",
       "oldest": "Älteste zuerst",
       "mostAttended": "Meistbesucht"
+    },
+    "photos": {
+      "viewPhoto": "Foto ansehen"
     }
   },
   "notifications": {

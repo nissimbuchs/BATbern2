@@ -592,6 +592,9 @@
       "newest": "Nieuwste eerst",
       "oldest": "Oudste eerst",
       "mostAttended": "Meest bezocht"
+    },
+    "photos": {
+      "viewPhoto": "Foto bekijken"
     }
   },
   "notifications": {
