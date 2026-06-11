@@ -9091,8 +9091,10 @@ components:
         sessionTitle:
           type: string
           minLength: 5
-          maxLength: 255
-          description: The proposed talk title.
+          maxLength: 200
+          description: >-
+            The proposed talk title. Max 200 to match the canonical session content title —
+            the pitch is carried verbatim into the session at promote (ADR-012).
           example: Event-driven architecture in practice
         abstract:
           type: string

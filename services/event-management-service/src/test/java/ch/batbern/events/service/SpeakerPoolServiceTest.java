@@ -59,6 +59,9 @@ class SpeakerPoolServiceTest {
     private SessionUserRepository sessionUserRepository;
 
     @Mock
+    private ch.batbern.events.repository.SessionProposalRepository sessionProposalRepository;
+
+    @Mock
     private UserApiClient userApiClient;
 
     @Mock
@@ -80,7 +83,7 @@ class SpeakerPoolServiceTest {
         service = new SpeakerPoolService(
                 speakerPoolRepository, eventRepository, sessionContentHistoryRepository,
                 sessionRepository, sessionMaterialsRepository, sessionUserRepository,
-                userApiClient, eventPublisher, securityContextHelper,
+                sessionProposalRepository, userApiClient, eventPublisher, securityContextHelper,
                 primarySpeakerResolver
         );
 

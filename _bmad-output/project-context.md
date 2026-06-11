@@ -118,6 +118,13 @@ Focus on unobvious details that agents otherwise miss._
   `POST /api/v1/events/{code}/speakers/{speakerId}/promote`.
 - `speaker_pool.username`/`email` columns are GONE (V103). Canonical speaker identity =
   `PrimarySpeakerResolver.resolve(pool)` (primary `session_users` row + CUMS-backed email).
+- **NO content on `speaker_pool`, EVER (ADR-012).** `speaker_pool` is the workflow state machine
+  (+ a `source` provenance flag) only. Content — title/abstract/materials — lives in
+  `session_users` + `content_submissions`/`session_content_history`. A pre-READY self-nomination
+  pitch (which has no session yet) lives in its own `session_proposals` table (FK → `speaker_pool`),
+  NOT in columns on `speaker_pool`; on `CONTACTED → READY` the promote hook seeds the canonical
+  session from it and the proposal row becomes immutable audit. A schema-fitness test asserts
+  `speaker_pool` has no title/abstract/materials columns — do not re-add them.
 - Magic-link auth was torn down (Story 11.F.1) — speakers authenticate via Cognito only.
 
 ### Backend Layered Architecture

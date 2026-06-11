@@ -1,6 +1,14 @@
 # Story 7.2: "I Could Speak on That"
 
-Status: done
+Status: review (ADR-012 amendment implemented 2026-06-11)
+
+> **⚠️ Reopened then re-implemented 2026-06-11 — see "ADR-012 Amendment" at the end of this file.**
+> The original implementation stored the proposed talk as content columns on `speaker_pool`
+> (V109), which reverses the 11.E.8 normalization. ADR-012 moved the pitch to a new
+> `session_proposals` table, carries it into the canonical session at promote, and fixed the
+> promote-picker SPEAKER filter. The amendment section is the authoritative spec; AC2/AC7/AC8
+> above are superseded where they conflict with it. **All amendment tasks (T1′–T8′) are done and
+> green** — see the checklist + Dev Agent Record (ADR-012) at the end.
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -160,6 +168,7 @@ Claude Opus 4.8 (1M context) — bmad-dev-story, 2026-06-10.
 | Date | Change |
 |------|--------|
 | 2026-06-10 | Implemented Story 7.2 "I Could Speak on That" — attendee speaker self-nomination. Backend (V109 migration + entity/DTO/service/controller/exceptions in event-management-service), OpenAPI + regenerated types, attendee Tailwind panel on upcoming-event cards, organizer self-nominated badge + proposed talk, i18n in 10 locales. 11 backend + 6 frontend tests; no regressions. Status → review. |
+| 2026-06-11 | **Reopened (status done → in progress).** ADR-012 ratified: the proposed talk must NOT live as content columns on `speaker_pool` (reverses 11.E.8). Move pitch to new `session_proposals` table; rewrite V109 (dev-only exception, unpushed); fix promote-picker SPEAKER filter; carry proposal into the canonical session at READY; add schema-fitness guard. See "ADR-012 Amendment" section + `docs/sprint-change-proposal-2026-06-11.md`. Handed to Amelia. |
 
 ## Open Questions
 
@@ -174,3 +183,118 @@ _Resolved with the PM 2026-06-10._
 1. **Name/company:** **Auto-fill from the attendee's profile** (via `UserApiClient` lookup) — the attendee only types title + abstract; no re-typing of identity.
 2. **Limit:** **Exactly one** self-nomination per attendee per event (partial unique index + 409 on repeat).
 3. **Target event:** No standalone picker. The entry point is an **"I could speak on that" button on the upcoming-event card** (logged-in users only, when the event's topic is set + published); the card supplies the `eventCode`, so the nomination targets that specific event. Naturally handles multiple simultaneous open events (each card has its own button).
+
+---
+
+## ADR-012 Amendment (2026-06-11)
+
+_Ratified with the architect (Winston) + PO (Nissim). Authoritative for the remaining work; see
+`docs/architecture/ADR-012-self-nomination-proposals.md` and
+`docs/sprint-change-proposal-2026-06-11.md`. Branch is unpushed; nothing deployed._
+
+**Why:** V109 stored the proposed talk as `proposed_session_title` / `proposed_abstract` columns
+on `speaker_pool` — content on the workflow-state table, reversing 11.E.8 / V103. A self-nomination
+is an *application/pitch*, distinct from speaker (workflow) and session (content); it gets its own
+table. Also fixes a live promote bug (non-SPEAKER self-nominee not selectable).
+
+### Revised acceptance criteria (supersede AC2 / AC7 / AC8 where they conflict)
+
+- **AC2′**: A self-nomination creates (a) a `speaker_pool` row at `IDENTIFIED` with **`source =
+  'self_nomination'`** and **no other new columns**, and (b) a `session_proposals` row holding
+  `proposed_title` + `proposed_abstract` + `proposed_by_username`. No Cognito user / SPEAKER role /
+  `session_users` row. `speaker_pool` carries **no** `proposed_*` content columns.
+- **AC8′**: One self-nomination per attendee per event — enforced by `UNIQUE(event_id,
+  proposed_by_username)` on `session_proposals` (replaces the `speaker_pool` partial unique index).
+  Repeat → 409 `DUPLICATE_SELF_NOMINATION` (unchanged behavior).
+- **AC-PROMOTE-1 (new)**: In `PromoteSpeakerSubView.tsx`, the user picker shows **all users** (drop
+  `role="SPEAKER"` on `UserAutocomplete` **and** the `roles?.includes('SPEAKER')` prefill filter,
+  ~line 89). This is wanted **regardless** of the proposals redesign — a non-SPEAKER self-nominee
+  (ATTENDEE) must be selectable. `provisionUserWithRole` already grants SPEAKER to an existing user
+  idempotently by email (no duplicate). For `source = 'self_nomination'` rows, auto-prefill the
+  picker from `proposed_by_username` (via `getUserByUsername`) so the organizer doesn't search.
+- **AC-PROMOTE-2 (new)**: At the `CONTACTED → READY` hook
+  (`SpeakerWorkflowService.provisionSessionAndPrimarySpeaker`), look up `session_proposals` by
+  `speaker_pool_id`; when present, seed `sessions.title = proposed_title` (instead of the
+  placeholder name) and the **first content submission** = `proposed_abstract`. The proposal row
+  then becomes immutable audit (no further mutation). Session is canonical post-READY.
+- **AC-GUARD (new)**: A schema-fitness test asserts `speaker_pool` has **no** title/abstract/
+  materials content columns. `session_proposals` has **no status column** — acceptance is derived
+  from the linked `speaker_pool` workflow state (no second state machine).
+
+### Revised / new tasks (for Amelia)
+
+- [x] **T1′ Migration (rewrite V109 — dev-only exception).** Roll back V109 on the dev DB
+  (`flywayRepair`/manual drop is fine — it exists on **one dev DB only**, unpushed). Re-author
+  **`V109__self_nomination_source_and_proposals.sql`** to: (a) `ALTER TABLE speaker_pool ADD COLUMN
+  source VARCHAR(30) NOT NULL DEFAULT 'organizer_added'` + the `chk_speaker_pool_source` CHECK;
+  (b) `CREATE TABLE session_proposals (id uuid PK, speaker_pool_id uuid NOT NULL REFERENCES
+  speaker_pool(id) ON DELETE CASCADE, event_id uuid NOT NULL, proposed_by_username varchar(100) NOT
+  NULL, proposed_title varchar(255) NOT NULL, proposed_abstract text NOT NULL, created_at
+  timestamptz NOT NULL DEFAULT now(), UNIQUE(event_id, proposed_by_username))`. **Do NOT** add
+  `proposed_*` columns to `speaker_pool`; **do NOT** add the `ux_speaker_pool_self_nom` partial
+  index. (Once this branch is pushed, V109 is frozen forever per the standard Flyway rule.)
+- [x] **T2′ Entity/repo.** New `SessionProposal` entity + `SessionProposalRepository`
+  (`findBySpeakerPoolId`, `existsByEventIdAndProposedByUsername`). Remove the `proposed*` fields
+  from `SpeakerPool` (keep `source`).
+- [x] **T3′ Self-nominate write path.** `SpeakerPoolService.selfNominate`: create the IDENTIFIED
+  pool row (source=self_nomination) **and** a `SessionProposal` row in the same transaction;
+  dedupe via `existsByEventIdAndProposedByUsername` + the unique constraint (race → 409).
+- [x] **T4′ Organizer kanban read.** Surface the proposed talk by joining `session_proposals` on
+  `speaker_pool_id` (e.g. enrich `SpeakerPoolResponse.proposedTitle/proposedAbstract` from the
+  proposal, not from `speaker_pool`). Self-nominated badge unchanged (keys on `source`).
+- [x] **T5′ Promote picker fix** (`PromoteSpeakerSubView.tsx`): per AC-PROMOTE-1.
+- [x] **T6′ Carry-into-session** (`SpeakerWorkflowService`): per AC-PROMOTE-2 (seed title +
+  first content submission from the proposal; idempotent on re-run).
+- [x] **T7′ Guard test**: schema-fitness assertion (AC-GUARD) + update the existing
+  `SelfNominationIntegrationTest` to assert the proposal row + no `speaker_pool` content columns,
+  and a promote IT proving title/abstract land on the session and an existing ATTENDEE is granted
+  SPEAKER without a duplicate user.
+- [x] **T8′ OpenAPI/types**: no change to the self-nominate request body; regenerate only if the
+  organizer-facing `SpeakerPoolResponse` field source changes shape.
+
+### Superseded original artifacts
+
+- V109's four-column `speaker_pool` shape and `ux_speaker_pool_self_nom` index (T1 original).
+- `SpeakerPool.proposedSessionTitle` / `proposedAbstract` / `proposedByUsername` fields.
+- The original AC8 "partial unique index on `speaker_pool`".
+
+### Dev Agent Record — ADR-012 implementation (Amelia, 2026-06-11)
+
+**Model:** Claude Opus 4.8 (1M). All tasks T1′–T8′ done; tests green; dev DB reconciled.
+
+**Backend (`event-management-service`):**
+- `V109__add_self_nomination_to_speaker_pool.sql` — rewritten: adds only `source` to
+  `speaker_pool` + `CHECK`; creates `session_proposals` (FK→speaker_pool + events, `UNIQUE(event_id,
+  proposed_by_username)`, `proposed_title VARCHAR(200)`).
+- New `domain/SessionProposal.java` + `repository/SessionProposalRepository.java`.
+- `domain/SpeakerPool.java` — dropped `proposedByUsername`/`proposedSessionTitle`/`proposedAbstract`
+  (kept `source`). `repository/SpeakerPoolRepository.java` — removed the old dedupe method.
+- `service/SpeakerPoolService.java` — `selfNominate` writes the pool row + a `session_proposals`
+  row (saveAndFlush → 409 on the unique constraint); dedupe via the proposal table; kanban list
+  (`getSpeakerPool`) batch-loads proposals and enriches via `SpeakerPoolResponse.applyProposal`.
+- `dto/SpeakerPoolResponse.java` — `fromEntity` no longer reads proposed_* from the entity; new
+  `applyProposal(SessionProposal)` layers the pitch onto read paths + the 201.
+- `service/SpeakerWorkflowService.java` — READY hook seeds `sessions.title` + the first
+  `session_content_history` row from the proposal (`seedContentFromProposal`); placeholder only
+  when there's no proposal.
+- `dto/SelfNominateSpeakerRequest.java` + `docs/api/events-api.openapi.yml` — `sessionTitle` max
+  200 (matches content title; pitch carried verbatim at promote).
+
+**Frontend:**
+- `components/organizer/SpeakerDrawer/PromoteSpeakerSubView.tsx` — dropped `role="SPEAKER"` on the
+  picker + the SPEAKER-only prefill filter; for `source==='self_nomination'` auto-prefills via
+  `getUserByUsername(proposedByUsername)`. (`provisionUserWithRole` grants SPEAKER to the existing
+  user idempotently by email — no duplicate.)
+- `components/attendee/SpeakerSelfNominatePanel.tsx` — `MAX_TITLE` 255→200.
+
+**Tests (all green):** `SelfNominationIntegrationTest` (proposal row + no speaker_pool content
+cols + carry-into-session at READY), `SpeakerPoolSchemaFitnessTest` (guard: no content columns on
+speaker_pool; `session_proposals` shape, no status col), unit/IT regressions
+(`SpeakerPoolServiceTest`, `SpeakerWorkflowServiceTest`, `SpeakerPromoteControllerIntegrationTest`,
+`SpeakerStatusControllerIntegrationTest`, `SpeakerWorkflowServiceIntegrationTest`),
+`PromoteSpeakerSubView.test.tsx` (new), `SpeakerSelfNominatePanel.test.tsx`. `tsc` + eslint clean.
+
+**Dev DB:** V109 (which existed on the one dev DB only) reconciled — `session_proposals` created,
+the one test self-nomination row migrated, the three `proposed_*` columns dropped; `flywayRepair`
+realigned the V109 checksum; `flywayValidate` clean; event-management restarted and booted clean
+(107 migrations validated).

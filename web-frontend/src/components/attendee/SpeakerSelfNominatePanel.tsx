@@ -38,7 +38,9 @@ import {
 import { selfNominateSpeaker } from '@/services/api/speakerNominationApi';
 
 const MIN_TITLE = 5;
-const MAX_TITLE = 255;
+// 200 to match the canonical session content title — the pitch is carried verbatim into the
+// session at promote (ADR-012 / Story 7.2), so it must fit session_content_history.title.
+const MAX_TITLE = 200;
 const MIN_ABSTRACT = 10;
 const MAX_ABSTRACT = 5000;
 

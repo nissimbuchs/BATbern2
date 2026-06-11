@@ -105,6 +105,15 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     private SpeakerStatusHistoryRepository statusHistoryRepository;
 
     @Autowired
+    private ch.batbern.events.repository.SessionProposalRepository sessionProposalRepository;
+
+    @Autowired
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
+    @Autowired
+    private ch.batbern.events.repository.SessionContentHistoryRepository sessionContentHistoryRepository;
+
+    @Autowired
     private ch.batbern.events.service.SpeakerPoolService speakerPoolService;
 
     @MockitoBean
@@ -122,6 +131,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         statusHistoryRepository.deleteAll();
+        sessionProposalRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         eventRepository.deleteAll();
         speakerAddedEventCaptor.events.clear();
@@ -171,6 +181,15 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
                 .as("no status-history row — the row was created at the IDENTIFIED default, not via transition()")
                 .isEmpty();
         verify(userApiClient, never()).provisionUserWithRole(any(ProvisionUserRequest.class));
+
+        // ADR-012: the proposed talk lives in session_proposals (NOT on speaker_pool). The pool
+        // row carries only the provenance flag.
+        assertThat(persisted.getSource()).isEqualTo("self_nomination");
+        var proposal = sessionProposalRepository.findBySpeakerPoolId(persisted.getId()).orElseThrow();
+        assertThat(proposal.getProposedByUsername()).isEqualTo(ATTENDEE);
+        assertThat(proposal.getProposedTitle()).isEqualTo("Event-driven architecture in practice");
+        assertThat(proposal.getProposedAbstract()).isNotBlank();
+        assertThat(proposal.getEventId()).isEqualTo(event.getId());
     }
 
     @Test
@@ -356,6 +375,19 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status", is("READY")));
 
         verify(userApiClient).provisionUserWithRole(any(ProvisionUserRequest.class));
+
+        // AC-PROMOTE-2 / ADR-012: the pitch was carried into the canonical session — the session
+        // title is the proposed title (not a placeholder), and the abstract seeded the first
+        // content-history row so the self-nominee never re-enters it.
+        SpeakerPool promoted = speakerPoolRepository.findById(java.util.UUID.fromString(speakerId)).orElseThrow();
+        assertThat(promoted.getSessionId()).as("session provisioned at READY").isNotNull();
+        var session = sessionRepository.findById(promoted.getSessionId()).orElseThrow();
+        assertThat(session.getTitle()).isEqualTo("Event-driven architecture in practice");
+        var contentVersion = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(session.getId()).orElseThrow();
+        assertThat(contentVersion.getContentAbstract())
+                .isEqualTo("A field report on migrating a monolith to an event-driven core.");
+        assertThat(contentVersion.getSubmissionVersion()).isEqualTo(1);
     }
 
     // ==================== AC6: workflow auto-transition is intentionally driven by self-nom ====================

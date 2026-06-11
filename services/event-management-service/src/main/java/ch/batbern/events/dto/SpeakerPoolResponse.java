@@ -124,11 +124,11 @@ public class SpeakerPoolResponse {
         response.createdAt = speakerPool.getCreatedAt();
         response.updatedAt = speakerPool.getUpdatedAt();
 
-        // Story 7.2: self-nomination provenance + proposed talk (organizer-visible).
+        // Story 7.2 / ADR-012: `source` is the only self-nomination field on speaker_pool. The
+        // proposed talk (proposedByUsername / proposedSessionTitle / proposedAbstract) lives in
+        // session_proposals and is layered on via applyProposal(...) by the read paths that have
+        // loaded it (organizer kanban + the self-nominate 201). It stays null otherwise.
         response.source = speakerPool.getSource();
-        response.proposedByUsername = speakerPool.getProposedByUsername();
-        response.proposedSessionTitle = speakerPool.getProposedSessionTitle();
-        response.proposedAbstract = speakerPool.getProposedAbstract();
 
         // Story 11.E.9: username + email columns dropped from speaker_pool (V103).
         // These response fields are now populated exclusively by
@@ -213,6 +213,20 @@ public class SpeakerPoolResponse {
                     speakerPool.getStatus(), java.util.Optional.of(latestVersion));
         }
         return response;
+    }
+
+    /**
+     * Story 7.2 / ADR-012: layer a self-nomination pitch ({@code session_proposals}) onto the
+     * response. The proposed talk does NOT live on {@code speaker_pool}, so read paths that have
+     * loaded the proposal call this to populate the organizer-visible fields. No-op for null.
+     */
+    public void applyProposal(ch.batbern.events.domain.SessionProposal proposal) {
+        if (proposal == null) {
+            return;
+        }
+        this.proposedByUsername = proposal.getProposedByUsername();
+        this.proposedSessionTitle = proposal.getProposedTitle();
+        this.proposedAbstract = proposal.getProposedAbstract();
     }
 
     // Getters and Setters

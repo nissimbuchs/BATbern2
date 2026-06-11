@@ -21,7 +21,9 @@ import jakarta.validation.constraints.Size;
 public class SelfNominateSpeakerRequest {
 
     @NotBlank(message = "sessionTitle is required")
-    @Size(min = 5, max = 255, message = "sessionTitle must be between 5 and 255 characters")
+    // Max 200 to match session_content_history.title / session_proposals.proposed_title — the
+    // pitch is carried verbatim into the canonical session at promote (ADR-012), so it must fit.
+    @Size(min = 5, max = 200, message = "sessionTitle must be between 5 and 200 characters")
     private String sessionTitle;
 
     @NotBlank(message = "abstract is required")

@@ -15,6 +15,7 @@ import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
+import ch.batbern.events.repository.SessionProposalRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -48,6 +49,7 @@ public class SpeakerPoolService {
     private final SessionRepository sessionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final SessionUserRepository sessionUserRepository;
+    private final SessionProposalRepository sessionProposalRepository;
     private final UserApiClient userApiClient;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
@@ -59,6 +61,7 @@ public class SpeakerPoolService {
                               SessionRepository sessionRepository,
                               SessionMaterialsRepository sessionMaterialsRepository,
                               SessionUserRepository sessionUserRepository,
+                              SessionProposalRepository sessionProposalRepository,
                               UserApiClient userApiClient,
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper,
@@ -69,6 +72,7 @@ public class SpeakerPoolService {
         this.sessionRepository = sessionRepository;
         this.sessionMaterialsRepository = sessionMaterialsRepository;
         this.sessionUserRepository = sessionUserRepository;
+        this.sessionProposalRepository = sessionProposalRepository;
         this.userApiClient = userApiClient;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
@@ -179,9 +183,9 @@ public class SpeakerPoolService {
 
         String username = securityContextHelper.getCurrentUsername();
 
-        // AC8 one-per-event: friendly pre-check (the partial unique index is the race-safe backstop).
-        if (speakerPoolRepository.existsByEventIdAndProposedByUsernameAndSource(
-                event.getId(), username, SOURCE_SELF_NOMINATION)) {
+        // AC8′ one-per-event: friendly pre-check against session_proposals (the table's
+        // UNIQUE(event_id, proposed_by_username) is the race-safe backstop, surfaced below).
+        if (sessionProposalRepository.existsByEventIdAndProposedByUsername(event.getId(), username)) {
             throw new ch.batbern.events.exception.DuplicateSelfNominationException(
                     "You have already self-nominated for " + eventCode + ".");
         }
@@ -210,29 +214,36 @@ public class SpeakerPoolService {
 
         // Reuse the add-to-pool creation path: new row at the IDENTIFIED default (entity default),
         // tagged as a self-nomination. assignedOrganizerId stays null — organizers triage later.
+        // ADR-012: the pool row carries NO proposed talk — that lives in session_proposals below.
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setEventId(event.getId());
         speakerPool.setSpeakerName(speakerName);
         speakerPool.setCompany(company);
         speakerPool.setSource(SOURCE_SELF_NOMINATION);
-        speakerPool.setProposedByUsername(username);
-        speakerPool.setProposedSessionTitle(request.getSessionTitle());
-        speakerPool.setProposedAbstract(request.getAbstractText());
         speakerPool.setSessionId(null);
+        SpeakerPool saved = speakerPoolRepository.save(speakerPool);
 
-        // saveAndFlush so the partial unique index (ux_speaker_pool_self_nom) fires now, not at
-        // commit — turns the race-condition backstop into a deterministic 409 (AC8).
-        SpeakerPool saved;
+        // The pitch (title + abstract) is a session_proposals row linked to the pool row.
+        // saveAndFlush so the UNIQUE(event_id, proposed_by_username) constraint fires now, not at
+        // commit — turning the race-condition backstop into a deterministic 409 (AC8′).
+        ch.batbern.events.domain.SessionProposal proposal =
+                ch.batbern.events.domain.SessionProposal.builder()
+                        .speakerPoolId(saved.getId())
+                        .eventId(event.getId())
+                        .proposedByUsername(username)
+                        .proposedTitle(request.getSessionTitle())
+                        .proposedAbstract(request.getAbstractText())
+                        .build();
         try {
-            saved = speakerPoolRepository.saveAndFlush(speakerPool);
+            proposal = sessionProposalRepository.saveAndFlush(proposal);
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
-            log.info("Concurrent self-nomination for {} by {} hit the unique index — rejecting as duplicate",
+            log.info("Concurrent self-nomination for {} by {} hit the unique constraint — rejecting as duplicate",
                     eventCode, username);
             throw new ch.batbern.events.exception.DuplicateSelfNominationException(
                     "You have already self-nominated for " + eventCode + ".");
         }
-        log.info("Attendee {} self-nominated for {} (pool row {}, status IDENTIFIED, source self_nomination)",
-                username, eventCode, saved.getId());
+        log.info("Attendee {} self-nominated for {} (pool row {}, proposal {}, status IDENTIFIED, "
+                + "source self_nomination)", username, eventCode, saved.getId(), proposal.getId());
 
         // Surface it to organizers via the same SpeakerAddedToPoolEvent the manual add path
         // publishes, so it lands in the existing brainstorming/pool flow (AC6). This is an
@@ -251,6 +262,9 @@ public class SpeakerPoolService {
 
         SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(saved);
         primarySpeakerResolver.applyOverlay(response, saved);
+        // ADR-012: layer the just-created pitch onto the 201 (proposed talk lives in
+        // session_proposals, not on the pool row).
+        response.applyProposal(proposal);
         return response;
     }
 
@@ -268,6 +282,21 @@ public class SpeakerPoolService {
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
 
         List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
+
+        // Story 7.2 / ADR-012: the proposed talk for self-nomination rows lives in
+        // session_proposals (not on speaker_pool). Batch-load by pool id and key by pool id so
+        // the kanban card can show the pitch without an N+1.
+        List<UUID> selfNomPoolIds = speakers.stream()
+                .filter(s -> SOURCE_SELF_NOMINATION.equals(s.getSource()))
+                .map(SpeakerPool::getId)
+                .collect(Collectors.toList());
+        Map<UUID, ch.batbern.events.domain.SessionProposal> proposalByPoolId = selfNomPoolIds.isEmpty()
+                ? Map.of()
+                : sessionProposalRepository.findBySpeakerPoolIdIn(selfNomPoolIds).stream()
+                        .collect(Collectors.toMap(
+                                ch.batbern.events.domain.SessionProposal::getSpeakerPoolId,
+                                p -> p,
+                                (existing, duplicate) -> existing));
 
         // Story 11.E.8 consolidation: content history is now keyed by session_id. Batch-fetch
         // sessions first, then the latest version per session.
@@ -334,6 +363,9 @@ public class SpeakerPoolService {
                             : null;
                     SpeakerPoolResponse response = SpeakerPoolResponse.fromEntityWithContent(
                             speaker, session, latestVersion);
+                    // ADR-012: layer the self-nomination pitch (from session_proposals) onto the
+                    // card. No-op for organizer-added rows (no proposal).
+                    response.applyProposal(proposalByPoolId.get(speaker.getId()));
                     // Phase A: session-derived identity overlay. The primary SessionUser
                     // gives us the canonical username; the UserApiClient profile gives us
                     // the live email + full name + company. When the profile is missing

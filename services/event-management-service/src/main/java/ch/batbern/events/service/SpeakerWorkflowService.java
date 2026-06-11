@@ -3,6 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionContentVersion;
+import ch.batbern.events.domain.SessionProposal;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
@@ -11,6 +13,8 @@ import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
 import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.exception.SlotCapacityReachedException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
+import ch.batbern.events.repository.SessionProposalRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -102,6 +106,9 @@ public class SpeakerWorkflowService {
     private final SessionUserRepository sessionUserRepository;
     private final EventRepository eventRepository;
     private final SpeakerStatusHistoryRepository statusHistoryRepository;
+    // Story 7.2 / ADR-012: carry a self-nomination pitch into the canonical session at READY.
+    private final SessionProposalRepository sessionProposalRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final EventTypeService eventTypeService;
     private final UserApiClient userApiClient;
     private final SpeakerProvisioningHook speakerProvisioningHook;
@@ -428,15 +435,22 @@ public class SpeakerWorkflowService {
         }
 
         String sessionSlug = generateUniqueSlug(event.getEventCode(), username);
+
+        // Story 7.2 / ADR-012: if this pool row came from a self-nomination, carry the attendee's
+        // pitch into the canonical session instead of writing a placeholder title. The proposal
+        // then becomes immutable audit; sessions.title + session_content_history are canonical.
+        SessionProposal proposal = sessionProposalRepository.findBySpeakerPoolId(speaker.getId())
+                .orElse(null);
         String placeholderTitle = speaker.getSpeakerName() != null && !speaker.getSpeakerName().isBlank()
                 ? speaker.getSpeakerName()
                 : "TBD — " + username;
+        String sessionTitle = proposal != null ? proposal.getProposedTitle() : placeholderTitle;
 
         Session session = Session.builder()
                 .eventId(event.getId())
                 .eventCode(event.getEventCode())
                 .sessionSlug(sessionSlug)
-                .title(placeholderTitle)
+                .title(sessionTitle)
                 .sessionType("presentation")
                 .speakerPoolId(speaker.getId())
                 .build();
@@ -450,6 +464,13 @@ public class SpeakerWorkflowService {
                 .build();
         sessionUserRepository.save(sessionUser);
 
+        // Seed the first content submission from the pitch so the self-nominee's abstract
+        // survives promotion without re-entry (the abstract's canonical home is
+        // session_content_history, read by the speaker dashboard + organizer review).
+        if (proposal != null) {
+            seedContentFromProposal(session, proposal, username);
+        }
+
         speaker.setSessionId(session.getId());
         log.info("Provisioned session {} + PRIMARY_SPEAKER session_users row for speaker {} "
                 + "at READY transition", session.getId(), speaker.getId());
@@ -460,6 +481,29 @@ public class SpeakerWorkflowService {
         speakerAutoRegistrationService.autoRegisterIfAbsent(
                 event.getId(), username,
                 SpeakerAutoRegistrationService.TRIGGER_SESSION_PRIMARY_SPEAKER);
+    }
+
+    /**
+     * Story 7.2 / ADR-012: seed the first content submission from a self-nomination pitch so the
+     * attendee's abstract becomes the session's canonical content at promote-to-READY (no
+     * re-entry). {@code submitted_by_username} is the promoted speaker; version 1; not yet
+     * reviewer-touched. The proposal row is left untouched as immutable audit.
+     */
+    private void seedContentFromProposal(Session session, SessionProposal proposal, String username) {
+        String abstractText = proposal.getProposedAbstract() != null
+                ? proposal.getProposedAbstract() : "";
+        SessionContentVersion version = SessionContentVersion.builder()
+                .session(session)
+                .title(proposal.getProposedTitle())
+                .contentAbstract(abstractText)
+                .abstractCharCount(abstractText.length())
+                .submissionVersion(1)
+                .submittedByUsername(username)
+                .submittedAt(java.time.Instant.now())
+                .build();
+        sessionContentHistoryRepository.save(version);
+        log.info("Seeded session_content_history v1 for session {} from self-nomination proposal {}",
+                session.getId(), proposal.getId());
     }
 
     private void ensurePrimarySpeakerRow(Session session, String username) {
