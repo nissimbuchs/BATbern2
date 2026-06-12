@@ -96,6 +96,38 @@ export interface SectionVisibility {
   showSessionMaterials: boolean;
 }
 
+/**
+ * Whether the per-session Q&A thread should be mounted on the public homepage (Story 7.5).
+ *
+ * Q&A is decoupled from `showSessionMaterials`: the 2026-06-11 rework made Q&A open either
+ * PRE-event (`SPEAKERS_PUBLISHED` trigger) or post-event (`EVENT_COMPLETED`), and the
+ * 2026-06-12 manual "Open Q&A" lets an organizer open windows INDEPENDENT of the configured
+ * trigger. So `qnaOpenTrigger` is NOT a reliable signal for "are there open windows" — we mount
+ * the thread wherever session cards render in a Q&A-eligible phase and let `SessionQnaThread`
+ * self-gate on window existence (it renders nothing on a 404). We only skip when Q&A is
+ * explicitly disabled for the event (`qnaEnabled === false`).
+ *
+ * Note: session cards only render in PRE_EVENT/SPEAKERS, POST_EVENT and ARCHIVE; the AGENDA
+ * sub-phase shows the timetable (EventProgram) instead, which has no Q&A surface yet.
+ */
+export function showSessionQna(
+  phase: HomePagePhase,
+  event: Pick<EventDetail, 'qnaEnabled'>
+): boolean {
+  if (event.qnaEnabled === false) {
+    return false;
+  }
+  switch (phase.kind) {
+    case 'POST_EVENT':
+    case 'ARCHIVE':
+      return true;
+    case 'PRE_EVENT':
+      return phase.sub === 'SPEAKERS';
+    default:
+      return false;
+  }
+}
+
 export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
   switch (phase.kind) {
     case 'COMING_SOON':

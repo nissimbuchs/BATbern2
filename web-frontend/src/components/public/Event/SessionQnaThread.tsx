@@ -1,13 +1,18 @@
 /**
  * SessionQnaThread (Story 7.5 — "The Apéro Continues")
  *
- * Tailwind-only (NO MUI — renders on the public, post-event session card) per-session Q&A thread.
+ * Tailwind-only (NO MUI) per-session Q&A thread, mounted on the public session card both
+ * PRE-event (SPEAKERS_PUBLISHED trigger / manual organizer open) and post-event/archive.
  * Anyone can read; logged-in users can post questions + one-level answers while the window is OPEN;
  * organizers can take down posts. A FROZEN window is read-only (the permanent archive thread).
  * Removed posts render as "removed by organizer" tombstones, preserving thread structure.
+ *
+ * The thread is COLLAPSED by default behind a compact "Ask a question" toggle — discoverable but
+ * unobtrusive when shown under many session cards (e.g. pre-event with empty threads).
  */
 
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useSessionQna, useAddQnaPost, useRemoveQnaPost } from '@/hooks/useQna/useQna';
@@ -27,6 +32,7 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
   const addPost = useAddQnaPost(eventCode, sessionSlug);
   const removePost = useRemoveQnaPost(eventCode, sessionSlug);
 
+  const [expanded, setExpanded] = useState(false);
   const [question, setQuestion] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState('');
@@ -97,10 +103,20 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
     );
   }
 
+  const questionCount = questions.length;
+  const panelId = `qna-panel-${sessionSlug}`;
+
   return (
     <div className="pt-2 border-t border-zinc-800" data-testid="qna-thread">
-      <div className="mb-3 flex items-center gap-2">
-        <p className="text-xs text-zinc-500">{t('qna.title')}</p>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        data-testid="qna-toggle"
+        className="flex w-full items-center gap-2 rounded py-1 text-left transition-colors hover:text-zinc-100"
+      >
+        <span className="text-sm text-zinc-300">💬 {t('qna.title')}</span>
         <span
           className={`rounded px-1.5 py-0.5 text-[10px] uppercase ${
             isOpen ? 'bg-green-900/50 text-green-300' : 'bg-zinc-700 text-zinc-400'
@@ -109,102 +125,121 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
         >
           {isOpen ? t('qna.statusOpen') : t('qna.statusFrozen')}
         </span>
-      </div>
+        {questionCount > 0 && (
+          <span
+            className="rounded-full bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-300"
+            data-testid="qna-count"
+          >
+            {questionCount}
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-1 text-xs text-blue-400">
+          {!expanded && (isOpen ? t('qna.askQuestion') : t('qna.viewThread'))}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+          />
+        </span>
+      </button>
 
-      {questions.length === 0 && (
-        <p className="mb-3 text-sm text-zinc-500" data-testid="qna-empty">
-          {t('qna.empty')}
-        </p>
-      )}
+      {expanded && (
+        <div id={panelId} className="mt-3" data-testid="qna-panel">
+          {questions.length === 0 && (
+            <p className="mb-3 text-sm text-zinc-500" data-testid="qna-empty">
+              {t('qna.empty')}
+            </p>
+          )}
 
-      <div className="space-y-3">
-        {questions.map((q) => (
-          <div key={q.id}>
-            {renderPost(q, false)}
-            {(answersByParent[q.id] ?? []).map((a) => renderPost(a, true))}
+          <div className="space-y-3">
+            {questions.map((q) => (
+              <div key={q.id}>
+                {renderPost(q, false)}
+                {(answersByParent[q.id] ?? []).map((a) => renderPost(a, true))}
 
-            {isOpen && isAuthenticated && (
-              <div className="ml-6 mt-2">
-                {replyTo === q.id ? (
-                  <form onSubmit={(e) => submitReply(e, q.id)} className="flex flex-col gap-2">
-                    <textarea
-                      value={replyBody}
-                      onChange={(e) => setReplyBody(e.target.value)}
-                      maxLength={5000}
-                      rows={2}
-                      placeholder={t('qna.replyPlaceholder')}
-                      aria-label={t('qna.replyPlaceholder')}
-                      className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200"
-                      data-testid="qna-reply-input"
-                    />
-                    <div className="flex gap-2">
+                {isOpen && isAuthenticated && (
+                  <div className="ml-6 mt-2">
+                    {replyTo === q.id ? (
+                      <form onSubmit={(e) => submitReply(e, q.id)} className="flex flex-col gap-2">
+                        <textarea
+                          value={replyBody}
+                          onChange={(e) => setReplyBody(e.target.value)}
+                          maxLength={5000}
+                          rows={2}
+                          placeholder={t('qna.replyPlaceholder')}
+                          aria-label={t('qna.replyPlaceholder')}
+                          className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200"
+                          data-testid="qna-reply-input"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            disabled={addPost.isPending}
+                            className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-500 disabled:opacity-50"
+                            data-testid="qna-reply-submit"
+                          >
+                            {t('qna.reply')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setReplyTo(null)}
+                            className="text-xs text-zinc-400 hover:text-zinc-300"
+                          >
+                            {t('qna.cancel')}
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
                       <button
-                        type="submit"
-                        disabled={addPost.isPending}
-                        className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-500 disabled:opacity-50"
-                        data-testid="qna-reply-submit"
+                        type="button"
+                        onClick={() => {
+                          setReplyTo(q.id);
+                          setReplyBody('');
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                        data-testid="qna-reply-button"
                       >
                         {t('qna.reply')}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setReplyTo(null)}
-                        className="text-xs text-zinc-400 hover:text-zinc-300"
-                      >
-                        {t('qna.cancel')}
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReplyTo(q.id);
-                      setReplyBody('');
-                    }}
-                    className="text-xs text-blue-400 hover:text-blue-300"
-                    data-testid="qna-reply-button"
-                  >
-                    {t('qna.reply')}
-                  </button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
 
-      {isOpen && isAuthenticated && (
-        <form
-          onSubmit={submitQuestion}
-          className="mt-4 flex flex-col gap-2"
-          data-testid="qna-question-form"
-        >
-          <textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            maxLength={5000}
-            rows={2}
-            placeholder={t('qna.questionPlaceholder')}
-            aria-label={t('qna.questionPlaceholder')}
-            className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200"
-            data-testid="qna-question-input"
-          />
-          <button
-            type="submit"
-            disabled={addPost.isPending}
-            className="self-start rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-500 disabled:opacity-50"
-            data-testid="qna-question-submit"
-          >
-            {t('qna.askQuestion')}
-          </button>
-        </form>
-      )}
+          {isOpen && isAuthenticated && (
+            <form
+              onSubmit={submitQuestion}
+              className="mt-4 flex flex-col gap-2"
+              data-testid="qna-question-form"
+            >
+              <textarea
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                maxLength={5000}
+                rows={2}
+                placeholder={t('qna.questionPlaceholder')}
+                aria-label={t('qna.questionPlaceholder')}
+                className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200"
+                data-testid="qna-question-input"
+              />
+              <button
+                type="submit"
+                disabled={addPost.isPending}
+                className="self-start rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-500 disabled:opacity-50"
+                data-testid="qna-question-submit"
+              >
+                {t('qna.askQuestion')}
+              </button>
+            </form>
+          )}
 
-      {isOpen && !isAuthenticated && (
-        <p className="mt-3 text-xs text-zinc-500" data-testid="qna-login-hint">
-          {t('qna.loginToPost')}
-        </p>
+          {isOpen && !isAuthenticated && (
+            <p className="mt-3 text-xs text-zinc-500" data-testid="qna-login-hint">
+              {t('qna.loginToPost')}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

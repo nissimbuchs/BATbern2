@@ -931,6 +931,7 @@
     "replyPlaceholder": "Write an answer…",
     "questionPlaceholder": "Ask a question about this session…",
     "askQuestion": "Ask a question",
+    "viewThread": "View Q&A",
     "loginToPost": "Log in to ask or answer questions."
   },
   "attendee": {

@@ -907,6 +907,7 @@
     "replyPlaceholder": "回答を入力…",
     "questionPlaceholder": "このセッションについて質問する…",
     "askQuestion": "質問する",
+    "viewThread": "Q&Aを見る",
     "loginToPost": "ログインすると質問・回答できます。"
   },
   "attendee": {

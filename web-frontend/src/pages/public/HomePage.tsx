@@ -61,7 +61,7 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
-import { getHomepagePhase, getSectionVisibility } from './homePagePhase';
+import { getHomepagePhase, getSectionVisibility, showSessionQna } from './homePagePhase';
 
 const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
@@ -190,6 +190,7 @@ const HomePage = () => {
 
   const phase = getHomepagePhase(event, isArchiveMode, eventPhotos);
   const vis = getSectionVisibility(phase);
+  const qnaVisible = showSessionQna(phase, event);
 
   const canDeregister =
     !!event.workflowState && REGISTRATION_WORKFLOW_STATES.includes(event.workflowState);
@@ -331,6 +332,7 @@ const HomePage = () => {
           <SessionCards
             sessions={event.sessions!}
             showMaterials={vis.showSessionMaterials}
+            showQna={qnaVisible}
             eventCode={event.eventCode}
           />
         )}

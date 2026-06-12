@@ -44,7 +44,13 @@ interface SessionCardsProps {
   topics?: Topic[];
   /** Show session materials download links (true in POST_EVENT / ARCHIVE phases) */
   showMaterials?: boolean;
-  /** Required when showMaterials=true — used for the download presigned URL API */
+  /**
+   * Mount the per-session Q&A thread (Story 7.5). Decoupled from `showMaterials` so Q&A can
+   * appear PRE-event (SPEAKERS_PUBLISHED trigger / manual organizer open), not only post-event.
+   * Computed by `showSessionQna()` in homePagePhase.ts.
+   */
+  showQna?: boolean;
+  /** Required when showMaterials or showQna is true — used for the download / Q&A APIs */
   eventCode?: string;
 }
 
@@ -52,6 +58,7 @@ export const SessionCards = ({
   sessions,
   topics = [],
   showMaterials = false,
+  showQna = false,
   eventCode,
 }: SessionCardsProps) => {
   const { t } = useTranslation('events');
@@ -323,9 +330,10 @@ export const SessionCards = ({
                 </div>
               )}
 
-              {/* Story 7.5: per-session Q&A thread — shown post-event/archive. The component
-                  renders nothing when no Q&A window exists for the session. */}
-              {showMaterials && eventCode && (
+              {/* Story 7.5: per-session Q&A thread. Decoupled from materials so it also shows
+                  pre-event (SPEAKERS_PUBLISHED trigger / manual open). The component renders
+                  nothing when no Q&A window exists for the session (404 self-gate). */}
+              {showQna && eventCode && (
                 <SessionQnaThread eventCode={eventCode} sessionSlug={session.sessionSlug} />
               )}
             </CardContent>
