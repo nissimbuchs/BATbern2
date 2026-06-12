@@ -43,7 +43,7 @@ export const PartnerShowcaseCard = ({
         <div className="flex-1 w-full max-h-32 flex items-center justify-center">
           {logoUrl ? (
             <img
-              src={buildCdnImageUrl(logoUrl, { h: 256, fit: 'contain' }) ?? logoUrl}
+              src={buildCdnImageUrl(logoUrl, { h: 256, fit: 'inside' }) ?? logoUrl}
               alt={companyName}
               loading="lazy"
               className="max-w-full max-h-32 object-contain"
