@@ -42,10 +42,10 @@ tests {
     }
   });
 
-  test("should include 7 default templates - Story 5.5 AC19", function() {
+  test("should include 8 default templates - Story 5.5 AC19 (+ 7.3 slides-online)", function() {
     const response = res.getBody();
     const defaultTemplates = response.filter(t => t.isDefault === true);
-    expect(defaultTemplates.length).to.equal(7);
+    expect(defaultTemplates.length).to.equal(8);
 
     const expectedNames = [
       'Venue Booking',
@@ -54,7 +54,8 @@ tests {
       'Newsletter: Topic Announcement',
       'Newsletter: Speaker Lineup',
       'Newsletter: Final Agenda',
-      'Catering Coordination'
+      'Catering Coordination',
+      'Newsletter: Slides Are Online'
     ];
 
     defaultTemplates.forEach(template => {
