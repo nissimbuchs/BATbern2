@@ -62,9 +62,12 @@ export function ThankOrganizersWidget({ eventCode }: ThankOrganizersWidgetProps)
   }
 
   return (
-    <section className="border-t pt-6 pb-8" data-testid="thank-organizers-widget">
-      <p className="mb-1 text-sm font-medium">{t('thanks.widget.title')}</p>
-      <p className="mb-3 text-xs text-muted-foreground">{t('thanks.widget.subtitle')}</p>
+    <section
+      className="mt-12 rounded-lg border border-zinc-800 bg-zinc-900/50 p-8"
+      data-testid="thank-organizers-widget"
+    >
+      <p className="mb-2 text-xl font-light text-zinc-100">🙏 {t('thanks.widget.title')}</p>
+      <p className="mb-4 text-sm text-zinc-400">{t('thanks.widget.subtitle')}</p>
 
       {/* Invisible Turnstile widget container (anonymous submissions) */}
       <div ref={widgetRef} />

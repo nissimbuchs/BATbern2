@@ -153,6 +153,7 @@ Grounded in the live codebase (not the story's tentative guesses):
 | Date | Change |
 |------|--------|
 | 2026-06-10 | Story 7.4 implemented (Amelia / bmad-dev-story). Public anonymous "Thank the Organizers" POST/GET in event-management-service, Turnstile + per-(event,IP) rate limit, logged-in dedupe, organizer-only notes, Tailwind-only public widget on HomePage, 10-locale i18n. Backend 7 ITs + FE 5 unit tests green. Status → review. |
+| 2026-06-12 | UX fix: the widget rendered correctly but at ~93% down the post-event page (above the newsletter footer), so it was effectively invisible — reported as "no thank-you button anywhere" on BATbern57. Relocated to a prominent card directly below the event description / hero (now ~18% down, before logistics/sessions) in `HomePage.tsx`, and restyled the widget's outer section from a `border-t` footer divider into a rounded zinc card (🙏 title) matching the sibling logistics card. Gate (`workflowState IN EVENT_LIVE/EVENT_COMPLETED`) unchanged; FE tests green; verified in-browser (Playwright). |
 
 ## Resolved Decisions
 

@@ -259,6 +259,17 @@ const HomePage = () => {
         </div>
       )}
 
+      {/* Thank the Organizers — Story 7.4: prominent post-event card near the top, shown once
+          the event is live/completed (AC1). Placed here (not the footer) for discoverability. */}
+      {!!event.eventCode &&
+        (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED') && (
+          <div className="container mx-auto px-4">
+            <Suspense fallback={null}>
+              <ThankOrganizersWidget eventCode={event.eventCode} />
+            </Suspense>
+          </div>
+        )}
+
       <div className="container mx-auto px-4">
         {/* Registration Status Banner (Story 10.10) */}
         {registrationActive && (
@@ -368,14 +379,6 @@ const HomePage = () => {
         <div className="mt-16 pb-12">
           <TestimonialSection skipPhotoRow={vis.testimonialsSkipPhotoRow} />
         </div>
-
-        {/* Thank the Organizers — Story 7.4: only once the event is live/completed (AC1) */}
-        {!!event.eventCode &&
-          (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED') && (
-            <Suspense fallback={null}>
-              <ThankOrganizersWidget eventCode={event.eventCode} />
-            </Suspense>
-          )}
 
         {/* Newsletter Subscribe Widget — always shown (lazy, below the fold) */}
         <div className="border-t pt-4 pb-8">
