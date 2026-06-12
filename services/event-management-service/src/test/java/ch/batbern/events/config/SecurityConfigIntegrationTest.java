@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - JWT validation happens at API Gateway (services trust gateway)
  */
 @DisplayName("Security Configuration Tests")
-class SecurityConfigTest extends AbstractIntegrationTest {
+class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

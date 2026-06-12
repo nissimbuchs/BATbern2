@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Foreign key constraints to sessions table work correctly
  */
 @Transactional
-class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
+class SessionMaterialsRepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SessionMaterialsRepository sessionMaterialsRepository;

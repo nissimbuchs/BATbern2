@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Unique constraints on eventCode and eventNumber
  * - Index existence for performance-critical fields
  */
-class SchemaValidationTest extends AbstractIntegrationTest {
+class SchemaValidationIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

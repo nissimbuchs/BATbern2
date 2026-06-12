@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code speaker_pool} (the exact regression V109's first cut introduced). Runs against the real
  * migrated PostgreSQL schema (Testcontainers).
  */
-class SpeakerPoolSchemaFitnessTest extends AbstractIntegrationTest {
+class SpeakerPoolSchemaFitnessIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

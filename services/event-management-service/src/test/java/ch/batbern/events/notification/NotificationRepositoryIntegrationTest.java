@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - ADR-003 compliance (meaningful IDs work)
  */
 @Transactional
-class NotificationRepositoryTest extends AbstractIntegrationTest {
+class NotificationRepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private NotificationRepository notificationRepository;

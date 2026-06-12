@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-public class CaffeineCacheConfigTest extends AbstractIntegrationTest {
+public class CaffeineCacheConfigIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ApplicationContext applicationContext;

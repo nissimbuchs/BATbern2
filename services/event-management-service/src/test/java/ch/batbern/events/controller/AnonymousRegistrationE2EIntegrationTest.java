@@ -54,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
+public class AnonymousRegistrationE2EIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

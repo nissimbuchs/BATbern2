@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Indexes are created for performance
  * - Trigger function exists and updates materials_count
  */
-class SessionMaterialsSchemaValidationTest extends AbstractIntegrationTest {
+class SessionMaterialsSchemaValidationIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
