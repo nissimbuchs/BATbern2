@@ -30,6 +30,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Email as EmailIcon } from '@mui/icons-material';
+import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useEmailTemplates } from '@/hooks/useEmailTemplates';
 import type { EmailTemplateResponse } from '@/services/emailTemplateService';
@@ -127,6 +128,33 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
   }
 
   const noTemplates = !templatesQuery.isLoading && filteredTemplates.length === 0;
+
+  // Surface the API error. The 409 "already sent / in progress" guard is an expected outcome the
+  // organizer must understand (shown as an info, not a red failure); other errors show the API
+  // message when present, else a generic fallback.
+  const apiError: { severity: 'info' | 'error'; message: string } | null = (() => {
+    const err = sendMutation.error ?? previewMutation.error;
+    if (!err) return null;
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status;
+      const apiMsg = (err.response?.data as { message?: string } | undefined)?.message;
+      if (status === 409) {
+        return {
+          severity: 'info',
+          message: t('eventPage.registrantNotices.alreadySent', {
+            defaultValue:
+              apiMsg ??
+              'This notice has already been sent (or a send is in progress) for this event.',
+          }),
+        };
+      }
+      if (apiMsg) return { severity: 'error', message: apiMsg };
+    }
+    return {
+      severity: 'error',
+      message: t('eventPage.registrantNotices.error', 'Something went wrong. Please try again.'),
+    };
+  })();
 
   return (
     <Stack spacing={4}>
@@ -272,9 +300,9 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
             </Typography>
           )}
 
-          {(previewMutation.isError || sendMutation.isError) && (
-            <Alert severity="error" data-testid="rn-error">
-              {t('eventPage.registrantNotices.error', 'Something went wrong. Please try again.')}
+          {apiError && (
+            <Alert severity={apiError.severity} data-testid="rn-error">
+              {apiError.message}
             </Alert>
           )}
         </Stack>

@@ -236,7 +236,8 @@
       "sending": "Wird gschickt… {{sent}} / {{total}}",
       "sendResult": "A {{sent}} vo {{total}} Aagmäldeti gschickt.",
       "sendResultSkipped": "{{count}} ohni E-Mail-Adrässe (übersprunge).",
-      "sendResultFailed": "{{count}} fehlgschlage."
+      "sendResultFailed": "{{count}} fehlgschlage.",
+      "alreadySent": "Die Mitteilig isch für dää Event scho gschickt worde (oder e Versand louft grad)."
     }
   },
   "dashboard": {

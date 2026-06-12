@@ -230,7 +230,8 @@
       "sending": "Lähetetään… {{sent}} / {{total}}",
       "sendResult": "Lähetetty {{sent}}/{{total}} ilmoittautuneelle.",
       "sendResultSkipped": "{{count}} ilman sähköpostiosoitetta (ohitettu).",
-      "sendResultFailed": "{{count}} epäonnistui."
+      "sendResultFailed": "{{count}} epäonnistui.",
+      "alreadySent": "Tämä tiedote on jo lähetetty (tai lähetys on käynnissä) tälle tapahtumalle."
     }
   },
   "dashboard": {

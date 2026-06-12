@@ -230,7 +230,8 @@
       "sending": "Envoi… {{sent}} / {{total}}",
       "sendResult": "Envoyé à {{sent}} inscrits sur {{total}}.",
       "sendResultSkipped": "{{count}} sans adresse e-mail enregistrée (ignorés).",
-      "sendResultFailed": "{{count}} en échec."
+      "sendResultFailed": "{{count}} en échec.",
+      "alreadySent": "Cette information a déjà été envoyée (ou un envoi est en cours) pour cet événement."
     }
   },
   "dashboard": {

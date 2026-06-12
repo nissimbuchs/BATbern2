@@ -281,16 +281,18 @@ export const EventPage: React.FC = () => {
         <Box>{renderTabContent()}</Box>
       </Container>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation — icon-only for every tab (consistent + compact). Labels are
+          provided via aria-label for accessibility but never rendered, so the selected tab does
+          not widen the bar (MUI shows the selected action's label by default). */}
       {isMobile && (
         <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
-          <BottomNavigation value={currentTab} onChange={handleMobileNavChange}>
+          <BottomNavigation value={currentTab} onChange={handleMobileNavChange} showLabels={false}>
             {TABS.map((tab) => (
               <BottomNavigationAction
                 key={tab.id}
                 value={tab.id}
-                label={t(tab.labelKey, tab.id)}
                 icon={tab.icon}
+                aria-label={t(tab.labelKey, tab.id)}
                 data-testid={`event-tab-${tab.id}`}
                 sx={{ minWidth: 0, flex: 1, px: 0 }}
               />

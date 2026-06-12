@@ -244,7 +244,8 @@
       "sending": "Sending… {{sent}} / {{total}}",
       "sendResult": "Sent to {{sent}} of {{total}} registrants.",
       "sendResultSkipped": "{{count}} had no email address on file (skipped).",
-      "sendResultFailed": "{{count}} failed."
+      "sendResultFailed": "{{count}} failed.",
+      "alreadySent": "This notice has already been sent (or a send is in progress) for this event."
     }
   },
   "dashboard": {

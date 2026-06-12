@@ -230,7 +230,8 @@
       "sending": "送信中… {{sent}} / {{total}}",
       "sendResult": "{{total}} 名中 {{sent}} 名の参加者に送信しました。",
       "sendResultSkipped": "{{count}} 名はメールアドレス未登録のためスキップしました。",
-      "sendResultFailed": "{{count}} 名が失敗しました。"
+      "sendResultFailed": "{{count}} 名が失敗しました。",
+      "alreadySent": "このお知らせはこのイベントに対して既に送信済みです（または送信中です）。"
     }
   },
   "dashboard": {

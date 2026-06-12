@@ -230,7 +230,8 @@
       "sending": "Trametter… {{sent}} / {{total}}",
       "sendResult": "Tramess a {{sent}} da {{total}} participants.",
       "sendResultSkipped": "{{count}} senza adressa d’e-mail (sursaglì).",
-      "sendResultFailed": "{{count}} betg reussì."
+      "sendResultFailed": "{{count}} betg reussì.",
+      "alreadySent": "Questa infurmaziun è gia vegnida tramessa (u in process è en curs) per quest eveniment."
     }
   },
   "dashboard": {

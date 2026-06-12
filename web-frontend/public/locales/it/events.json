@@ -230,7 +230,8 @@
       "sending": "Invio… {{sent}} / {{total}}",
       "sendResult": "Inviato a {{sent}} iscritti su {{total}}.",
       "sendResultSkipped": "{{count}} senza indirizzo e-mail registrato (saltati).",
-      "sendResultFailed": "{{count}} non riusciti."
+      "sendResultFailed": "{{count}} non riusciti.",
+      "alreadySent": "Questo avviso è già stato inviato (o un invio è in corso) per questo evento."
     }
   },
   "dashboard": {

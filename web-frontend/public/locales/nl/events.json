@@ -230,7 +230,8 @@
       "sending": "Verzenden… {{sent}} / {{total}}",
       "sendResult": "Verstuurd naar {{sent}} van {{total}} deelnemers.",
       "sendResultSkipped": "{{count}} zonder e-mailadres in het bestand (overgeslagen).",
-      "sendResultFailed": "{{count}} mislukt."
+      "sendResultFailed": "{{count}} mislukt.",
+      "alreadySent": "Dit bericht is al verstuurd (of een verzending is bezig) voor dit evenement."
     }
   },
   "dashboard": {

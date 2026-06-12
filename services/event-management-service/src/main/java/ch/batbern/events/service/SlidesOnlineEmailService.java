@@ -373,6 +373,14 @@ public class SlidesOnlineEmailService {
         vars.put("eventDate", formatEventDate(event, isDe ? Locale.GERMAN : Locale.ENGLISH));
         vars.put("eventDetailLink", baseUrl + "/events/" + event.getEventCode());
         vars.put("currentYear", String.valueOf(Year.now().getValue()));
+        // batbern-default layout variables (the layout is shared with the newsletter; without
+        // these the merged email shows literal {{logoUrl}} etc. — replaceVariables leaves
+        // unmatched placeholders untouched). logoUrl matches the newsletter (white logo on the
+        // dark header); the footer links point at the public site / event detail.
+        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
+        vars.put("eventUrl", baseUrl + "/events/" + event.getEventCode());
+        vars.put("dashboardLink", baseUrl);
+        vars.put("supportUrl", baseUrl);
         return vars;
     }
 

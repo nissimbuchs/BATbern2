@@ -120,4 +120,21 @@ describe('EventRegistrantNoticesTab', () => {
     );
     expect(screen.getByTestId('rn-send-success')).toBeInTheDocument();
   });
+
+  it('surfaces the API 409 "already sent" message instead of a generic error', () => {
+    vi.mocked(useSendRegistrantNotice).mockReturnValue({
+      mutate: sendMutate,
+      isPending: false,
+      isError: true,
+      error: {
+        isAxiosError: true,
+        response: {
+          status: 409,
+          data: { message: "The 'slides-online' mail has already been sent for event BATbern73" },
+        },
+      },
+    } as unknown as ReturnType<typeof useSendRegistrantNotice>);
+    renderTab();
+    expect(screen.getByTestId('rn-error')).toHaveTextContent('already been sent');
+  });
 });

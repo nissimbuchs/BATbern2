@@ -244,7 +244,8 @@
       "sending": "Wird gesendet… {{sent}} / {{total}}",
       "sendResult": "An {{sent}} von {{total}} Angemeldete gesendet.",
       "sendResultSkipped": "{{count}} ohne E-Mail-Adresse hinterlegt (übersprungen).",
-      "sendResultFailed": "{{count}} fehlgeschlagen."
+      "sendResultFailed": "{{count}} fehlgeschlagen.",
+      "alreadySent": "Diese Mitteilung wurde für diesen Event bereits gesendet (oder ein Versand läuft)."
     }
   },
   "dashboard": {
