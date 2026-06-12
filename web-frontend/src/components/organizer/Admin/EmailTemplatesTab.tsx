@@ -60,7 +60,13 @@ const EmailTemplatePreviewModal = React.lazy(() =>
   import('./EmailTemplatePreviewModal').then((m) => ({ default: m.EmailTemplatePreviewModal }))
 );
 
-type Category = 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'NEWSLETTER' | 'VENUE_COORDINATION';
+type Category =
+  | 'SPEAKER'
+  | 'REGISTRATION'
+  | 'TASK_REMINDER'
+  | 'NEWSLETTER'
+  | 'VENUE_COORDINATION'
+  | 'REGISTRANT_NOTICE';
 
 const formatDate = (dateStr: string) => {
   try {
@@ -76,6 +82,7 @@ const CATEGORY_OPTIONS: Category[] = [
   'TASK_REMINDER',
   'NEWSLETTER',
   'VENUE_COORDINATION',
+  'REGISTRANT_NOTICE',
 ];
 
 const CATEGORY_LABEL_KEYS: Record<Category, [string, string]> = {
@@ -84,6 +91,7 @@ const CATEGORY_LABEL_KEYS: Record<Category, [string, string]> = {
   TASK_REMINDER: ['emailTemplates.categories.TASK_REMINDER', 'Task Reminders'],
   NEWSLETTER: ['emailTemplates.categories.NEWSLETTER', 'Newsletter'],
   VENUE_COORDINATION: ['emailTemplates.categories.VENUE_COORDINATION', 'Venue & Catering'],
+  REGISTRANT_NOTICE: ['emailTemplates.categories.REGISTRANT_NOTICE', 'Registrant Notices'],
 };
 
 export const EmailTemplatesTab: React.FC = () => {

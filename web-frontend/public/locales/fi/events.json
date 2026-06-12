@@ -224,10 +224,13 @@
       "previewTitle": "Sähköpostin esikatselu",
       "description": "Lähetä kertaluonteinen tiedote (esim. ”diat ovat verkossa”) tämän tapahtuman ilmoittautuneille. Vastaanottajat ovat aktiiviset ilmoittautuneet – eivät uutiskirjeen tilaajat – ja kukin saa sen omalla kielellään.",
       "confirmBody": "Lähetetäänkö ”{{templateKey}}” {{count}} aktiiviselle ilmoittautuneelle tapahtumasta «{{eventTitle}}»? Kukin saa sen omalla kielellään.",
-      "sendQueued": "Jonossa – lähetetään {{count}} ilmoittautuneelle.",
       "recipientCount": "{{count}} aktiivista ilmoittautunutta",
       "noTemplates": "Tälle kielelle ei vielä ole ilmoittautuneiden tiedotemallia.",
-      "error": "Jokin meni pieleen. Yritä uudelleen."
+      "error": "Jokin meni pieleen. Yritä uudelleen.",
+      "sending": "Lähetetään… {{sent}} / {{total}}",
+      "sendResult": "Lähetetty {{sent}}/{{total}} ilmoittautuneelle.",
+      "sendResultSkipped": "{{count}} ilman sähköpostiosoitetta (ohitettu).",
+      "sendResultFailed": "{{count}} epäonnistui."
     }
   },
   "dashboard": {

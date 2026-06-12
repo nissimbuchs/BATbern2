@@ -224,10 +224,13 @@
       "previewTitle": "E-mailvoorbeeld",
       "description": "Stuur een eenmalig bericht (bijv. “de slides staan online”) naar de deelnemers van dit evenement. Ontvangers zijn de actieve deelnemers — niet de nieuwsbriefabonnees — en iedereen ontvangt het in de eigen taal.",
       "confirmBody": "«{{templateKey}}» naar {{count}} actieve deelnemers van «{{eventTitle}}» sturen? Iedereen ontvangt het in de eigen taal.",
-      "sendQueued": "In wachtrij — versturen naar {{count}} deelnemers.",
       "recipientCount": "{{count}} actieve deelnemers",
       "noTemplates": "Nog geen deelnemersbericht-sjabloon voor deze taal.",
-      "error": "Er ging iets mis. Probeer het opnieuw."
+      "error": "Er ging iets mis. Probeer het opnieuw.",
+      "sending": "Verzenden… {{sent}} / {{total}}",
+      "sendResult": "Verstuurd naar {{sent}} van {{total}} deelnemers.",
+      "sendResultSkipped": "{{count}} zonder e-mailadres in het bestand (overgeslagen).",
+      "sendResultFailed": "{{count}} mislukt."
     }
   },
   "dashboard": {

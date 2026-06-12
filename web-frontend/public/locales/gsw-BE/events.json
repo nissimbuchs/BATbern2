@@ -230,10 +230,13 @@
       "previewTitle": "E-Mail-Vorschou",
       "description": "Schick e einmaligi Info (z.B. «d Folie si online») a d Teilnähmer vo däm Event. Empfänger si di aktive Aagmäldete – nid d Newsletter-Abonnänte – u jede überchunnt s Mail i siner Sprach.",
       "confirmBody": "«{{templateKey}}» a {{count}} aktivi Aagmäldeti vo «{{eventTitle}}» schicke? Jede überchunnt s i siner Sprach.",
-      "sendQueued": "I dr Warteschlange – wird a {{count}} Aagmäldeti gschickt.",
       "recipientCount": "{{count}} aktivi Aagmäldeti",
       "noTemplates": "No kei Teilnähmer-Info-Vorlag für die Sprach.",
-      "error": "Öppis isch schiefgloffe. Bitte versuechs nomal."
+      "error": "Öppis isch schiefgloffe. Bitte versuechs nomal.",
+      "sending": "Wird gschickt… {{sent}} / {{total}}",
+      "sendResult": "A {{sent}} vo {{total}} Aagmäldeti gschickt.",
+      "sendResultSkipped": "{{count}} ohni E-Mail-Adrässe (übersprunge).",
+      "sendResultFailed": "{{count}} fehlgschlage."
     }
   },
   "dashboard": {

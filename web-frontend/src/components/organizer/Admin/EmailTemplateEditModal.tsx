@@ -170,7 +170,9 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
             | 'REGISTRATION'
             | 'TASK_REMINDER'
             | 'LAYOUT'
-            | 'NEWSLETTER',
+            | 'NEWSLETTER'
+            | 'VENUE_COORDINATION'
+            | 'REGISTRANT_NOTICE',
           isLayout: false,
           subject,
           htmlBody: currentHtmlBody,

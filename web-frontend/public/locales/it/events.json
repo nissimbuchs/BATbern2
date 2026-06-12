@@ -224,10 +224,13 @@
       "previewTitle": "Anteprima e-mail",
       "description": "Invia un avviso una tantum (es. «le slide sono online») agli iscritti di questo evento. I destinatari sono gli iscritti attivi — non gli abbonati alla newsletter — e ognuno la riceve nella propria lingua.",
       "confirmBody": "Inviare «{{templateKey}}» a {{count}} iscritti attivi di «{{eventTitle}}»? Ognuno la riceve nella propria lingua.",
-      "sendQueued": "In coda — invio a {{count}} iscritti.",
       "recipientCount": "{{count}} iscritti attivi",
       "noTemplates": "Nessun modello di avviso iscritti per questa lingua.",
-      "error": "Qualcosa è andato storto. Riprova."
+      "error": "Qualcosa è andato storto. Riprova.",
+      "sending": "Invio… {{sent}} / {{total}}",
+      "sendResult": "Inviato a {{sent}} iscritti su {{total}}.",
+      "sendResultSkipped": "{{count}} senza indirizzo e-mail registrato (saltati).",
+      "sendResultFailed": "{{count}} non riusciti."
     }
   },
   "dashboard": {

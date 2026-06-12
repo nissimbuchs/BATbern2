@@ -238,10 +238,13 @@
       "previewTitle": "E-Mail-Vorschau",
       "description": "Sende eine einmalige Info (z. B. «die Folien sind online») an die Teilnehmer dieses Events. Empfänger sind die aktiven Angemeldeten – nicht die Newsletter-Abonnenten – und jeder erhält die Mail in seiner Sprache.",
       "confirmBody": "«{{templateKey}}» an {{count}} aktive Angemeldete von «{{eventTitle}}» senden? Jede:r erhält die Mail in der eigenen Sprache.",
-      "sendQueued": "In Warteschlange – wird an {{count}} Angemeldete gesendet.",
       "recipientCount": "{{count}} aktive Angemeldete",
       "noTemplates": "Noch keine Teilnehmer-Info-Vorlage für diese Sprache.",
-      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+      "sending": "Wird gesendet… {{sent}} / {{total}}",
+      "sendResult": "An {{sent}} von {{total}} Angemeldete gesendet.",
+      "sendResultSkipped": "{{count}} ohne E-Mail-Adresse hinterlegt (übersprungen).",
+      "sendResultFailed": "{{count}} fehlgeschlagen."
     }
   },
   "dashboard": {

@@ -224,10 +224,13 @@
       "previewTitle": "Vista previa del correo",
       "description": "Envía un aviso puntual (p. ej. «las diapositivas están en línea») a los inscritos de este evento. Los destinatarios son los inscritos activos, no los suscriptores del boletín, y cada uno lo recibe en su idioma.",
       "confirmBody": "¿Enviar «{{templateKey}}» a {{count}} inscritos activos de «{{eventTitle}}»? Cada uno lo recibe en su idioma.",
-      "sendQueued": "En cola — enviando a {{count}} inscritos.",
       "recipientCount": "{{count}} inscritos activos",
       "noTemplates": "Aún no hay plantilla de aviso a inscritos para este idioma.",
-      "error": "Algo salió mal. Inténtalo de nuevo."
+      "error": "Algo salió mal. Inténtalo de nuevo.",
+      "sending": "Enviando… {{sent}} / {{total}}",
+      "sendResult": "Enviado a {{sent}} de {{total}} inscritos.",
+      "sendResultSkipped": "{{count}} sin dirección de correo registrada (omitidos).",
+      "sendResultFailed": "{{count}} con error."
     }
   },
   "dashboard": {

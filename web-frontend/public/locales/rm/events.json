@@ -224,10 +224,13 @@
       "previewTitle": "Prevista da l’e-mail",
       "description": "Tramet ina infurmaziun unica (p.ex. «las slides èn online») als participants da quest eveniment. Ils destinaturs èn ils participants activs – betg ils abunents da la newsletter – e mintgin la retschaiva en sia lingua.",
       "confirmBody": "Trametter «{{templateKey}}» a {{count}} participants activs da «{{eventTitle}}»? Mintgin la retschaiva en sia lingua.",
-      "sendQueued": "En la colonna d’spetga – trametter a {{count}} participants.",
       "recipientCount": "{{count}} participants activs",
       "noTemplates": "Anc nagin model d’infurmaziun per questa lingua.",
-      "error": "Insatge è ì stort. Emprova anc ina giada."
+      "error": "Insatge è ì stort. Emprova anc ina giada.",
+      "sending": "Trametter… {{sent}} / {{total}}",
+      "sendResult": "Tramess a {{sent}} da {{total}} participants.",
+      "sendResultSkipped": "{{count}} senza adressa d’e-mail (sursaglì).",
+      "sendResultFailed": "{{count}} betg reussì."
     }
   },
   "dashboard": {

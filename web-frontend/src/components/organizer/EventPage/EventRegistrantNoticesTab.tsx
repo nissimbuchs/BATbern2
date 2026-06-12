@@ -37,6 +37,7 @@ import {
   usePreviewRegistrantNotice,
   useSendRegistrantNotice,
 } from '@/hooks/useRegistrantNotice/useRegistrantNotice';
+import { useSendStatus } from '@/hooks/useNewsletter/useNewsletter';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 interface EventRegistrantNoticesTabProps {
@@ -55,11 +56,14 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [recipientCount, setRecipientCount] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [sentCount, setSentCount] = useState<number | null>(null);
+  /** sendId of the most recently triggered send — polled for its final status. */
+  const [activeSendId, setActiveSendId] = useState<string | null>(null);
 
   const templatesQuery = useEmailTemplates({ category: 'REGISTRANT_NOTICE' });
   const previewMutation = usePreviewRegistrantNotice(eventCode);
   const sendMutation = useSendRegistrantNotice(eventCode);
+  // Reuse the template-agnostic newsletter send-status endpoint (polls until terminal).
+  const sendStatusQuery = useSendStatus(eventCode, activeSendId);
 
   const filteredTemplates: EmailTemplateResponse[] = React.useMemo(
     () => (templatesQuery.data ?? []).filter((tpl) => tpl.locale === locale),
@@ -79,7 +83,7 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
 
   function handlePreview() {
     if (!selectedTemplateKey) return;
-    setSentCount(null);
+    setActiveSendId(null);
     previewMutation.mutate(
       { templateKey: selectedTemplateKey, locale },
       {
@@ -116,7 +120,7 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
     sendMutation.mutate(selectedTemplateKey, {
       onSuccess: (data) => {
         setConfirmOpen(false);
-        setSentCount(data.recipientCount);
+        setActiveSendId(data.sendId); // begin polling for the final result
       },
       onError: () => setConfirmOpen(false),
     });
@@ -138,14 +142,50 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
         </Typography>
       </Box>
 
-      {sentCount !== null && (
-        <Alert severity="success" onClose={() => setSentCount(null)} data-testid="rn-send-success">
-          {t('eventPage.registrantNotices.sendQueued', {
-            count: sentCount,
-            defaultValue: `Queued — sending to ${sentCount} registrants.`,
-          })}
-        </Alert>
-      )}
+      {activeSendId &&
+        sendStatusQuery.data &&
+        (() => {
+          const s = sendStatusQuery.data;
+          const sending = s.status === 'PENDING' || s.status === 'IN_PROGRESS';
+          if (sending) {
+            return (
+              <Alert severity="info" data-testid="rn-send-progress">
+                {t('eventPage.registrantNotices.sending', {
+                  sent: s.sentCount,
+                  total: s.totalCount,
+                  defaultValue: `Sending… ${s.sentCount} / ${s.totalCount}`,
+                })}
+              </Alert>
+            );
+          }
+          // Terminal: skipped = registrants with no resolvable email on file.
+          const skipped = Math.max(0, s.totalCount - s.sentCount - s.failedCount);
+          return (
+            <Alert
+              severity={s.sentCount > 0 ? 'success' : 'warning'}
+              onClose={() => setActiveSendId(null)}
+              data-testid="rn-send-success"
+            >
+              {t('eventPage.registrantNotices.sendResult', {
+                sent: s.sentCount,
+                total: s.totalCount,
+                defaultValue: `Sent to ${s.sentCount} of ${s.totalCount} registrants.`,
+              })}
+              {skipped > 0 &&
+                ' ' +
+                  t('eventPage.registrantNotices.sendResultSkipped', {
+                    count: skipped,
+                    defaultValue: `${skipped} had no email address on file (skipped).`,
+                  })}
+              {s.failedCount > 0 &&
+                ' ' +
+                  t('eventPage.registrantNotices.sendResultFailed', {
+                    count: s.failedCount,
+                    defaultValue: `${s.failedCount} failed.`,
+                  })}
+            </Alert>
+          );
+        })()}
 
       <Box>
         <Stack spacing={2} maxWidth={400}>

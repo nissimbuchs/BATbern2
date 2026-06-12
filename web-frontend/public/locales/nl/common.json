@@ -630,7 +630,8 @@
       "REGISTRATION": "Registratie",
       "TASK_REMINDER": "Taakherinneringen",
       "NEWSLETTER": "Nieuwsbrief",
-      "VENUE_COORDINATION": "Locatie & Catering"
+      "VENUE_COORDINATION": "Locatie & Catering",
+      "REGISTRANT_NOTICE": "Deelnemersberichten"
     },
     "layoutKey": "Lay-out",
     "standalone": "Geen (zelfstandig)",

@@ -667,7 +667,8 @@
       "REGISTRATION": "Registration",
       "TASK_REMINDER": "Task Reminders",
       "NEWSLETTER": "Newsletter",
-      "VENUE_COORDINATION": "Venue & Catering"
+      "VENUE_COORDINATION": "Venue & Catering",
+      "REGISTRANT_NOTICE": "Registrant Notices"
     },
     "layoutKey": "Layout",
     "standalone": "None (standalone)",

@@ -224,10 +224,13 @@
       "previewTitle": "Aperçu de l’e-mail",
       "description": "Envoyez une info ponctuelle (p. ex. « les diapos sont en ligne ») aux inscrits de cet événement. Les destinataires sont les inscrits actifs — pas les abonnés à la newsletter — et chacun la reçoit dans sa langue.",
       "confirmBody": "Envoyer « {{templateKey}} » à {{count}} inscrits actifs de «{{eventTitle}}» ? Chacun la reçoit dans sa langue.",
-      "sendQueued": "En file — envoi à {{count}} inscrits.",
       "recipientCount": "{{count}} inscrits actifs",
       "noTemplates": "Aucun modèle d’info participants pour cette langue.",
-      "error": "Une erreur s’est produite. Veuillez réessayer."
+      "error": "Une erreur s’est produite. Veuillez réessayer.",
+      "sending": "Envoi… {{sent}} / {{total}}",
+      "sendResult": "Envoyé à {{sent}} inscrits sur {{total}}.",
+      "sendResultSkipped": "{{count}} sans adresse e-mail enregistrée (ignorés).",
+      "sendResultFailed": "{{count}} en échec."
     }
   },
   "dashboard": {

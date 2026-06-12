@@ -535,7 +535,8 @@
       "REGISTRATION": "Amäldigä",
       "TASK_REMINDER": "Ufgabeerinnerige",
       "NEWSLETTER": "Newsletter",
-      "VENUE_COORDINATION": "Lokau & Catering"
+      "VENUE_COORDINATION": "Lokau & Catering",
+      "REGISTRANT_NOTICE": "Teilnähmer-Infos"
     },
     "layoutKey": "Layout",
     "standalone": "Keis (eigenständig)",

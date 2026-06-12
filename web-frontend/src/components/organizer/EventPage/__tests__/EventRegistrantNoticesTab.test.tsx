@@ -12,6 +12,9 @@ vi.mock('@/hooks/useRegistrantNotice/useRegistrantNotice', () => ({
   usePreviewRegistrantNotice: vi.fn(),
   useSendRegistrantNotice: vi.fn(),
 }));
+vi.mock('@/hooks/useNewsletter/useNewsletter', () => ({
+  useSendStatus: vi.fn(),
+}));
 vi.mock('@/hooks/useBreakpoints', () => ({
   useBreakpoints: () => ({ isMobile: false }),
 }));
@@ -26,6 +29,7 @@ import {
   usePreviewRegistrantNotice,
   useSendRegistrantNotice,
 } from '@/hooks/useRegistrantNotice/useRegistrantNotice';
+import { useSendStatus } from '@/hooks/useNewsletter/useNewsletter';
 
 const previewMutate = vi.fn();
 const sendMutate = vi.fn();
@@ -50,6 +54,10 @@ beforeEach(() => {
     isPending: false,
     isError: false,
   } as unknown as ReturnType<typeof useSendRegistrantNotice>);
+  // No active send by default → no status alert.
+  vi.mocked(useSendStatus).mockReturnValue({
+    data: undefined,
+  } as ReturnType<typeof useSendStatus>);
 });
 
 function renderTab() {
@@ -90,6 +98,17 @@ describe('EventRegistrantNoticesTab', () => {
     sendMutate.mockImplementation((_templateKey, opts) =>
       opts.onSuccess({ sendId: 's1', status: 'PENDING', recipientCount: 174 })
     );
+    // Status poll resolves to a terminal COMPLETED result.
+    vi.mocked(useSendStatus).mockReturnValue({
+      data: {
+        id: 's1',
+        status: 'COMPLETED',
+        sentCount: 174,
+        failedCount: 0,
+        totalCount: 174,
+        percentComplete: 100,
+      },
+    } as ReturnType<typeof useSendStatus>);
     renderTab();
     fireEvent.click(screen.getByTestId('rn-send-button'));
     await waitFor(() => expect(screen.getByTestId('rn-confirm-send')).toBeInTheDocument());
