@@ -212,3 +212,18 @@ the organizer event **Settings tab**._
 - **Tests:** `SessionQnaIntegrationTest` updated (trigger-match opens; trigger-mismatch opens
   nothing; event-level close/extend affect all windows) — 13 green; `EventSettingsTab` render test
   for the new section.
+
+## Manual "Open Q&A" — create-if-absent (2026-06-12)
+
+Reported: PATCH `/events/{code}/qna` returned 404 "No Q&A windows exist" when an organizer tried
+to (re)open BATbern73's Q&A — its trigger was `SPEAKERS_PUBLISHED` and speakers were already
+published, but the windows never got created (the `SpeakersPhasePublishedEvent` fires only at the
+publish *moment*, which for BATbern73 predated this feature; setting the trigger after-the-fact
+doesn't open retroactively).
+
+Fix: the event-level control now supports `{ "open": true }` → `SessionQnaService.openWindowsManually`
+creates a window for every session that lacks one and (re)opens the rest, **independent of the
+configured trigger** (`ensureWindowsOpen(event, eventDate+qnaWindowDays, reopenExisting=true)`). The
+Settings-tab "Open Q&A" button sends `open:true`; "Close Q&A now" still freezes. Trigger-driven
+auto-open (`openWindowsIfTrigger`) is unchanged (idempotent, leaves existing windows alone). Test:
+"open creates windows for every session when none exist".

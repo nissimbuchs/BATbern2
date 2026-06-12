@@ -145,7 +145,7 @@
         "saveError": "Échec de la mise à jour des paramètres Q&R.",
         "adjustError": "Impossible d’ajuster les Q&R (aucune fenêtre ouverte ?).",
         "closeNow": "Fermer les Q&R maintenant",
-        "reopen": "Rouvrir les Q&R",
+        "reopen": "Ouvrir les Q&R",
         "saved": "Paramètres Q&R enregistrés"
       }
     },

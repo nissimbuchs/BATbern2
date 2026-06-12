@@ -145,7 +145,7 @@
         "saveError": "Q&A-asetusten päivitys epäonnistui.",
         "adjustError": "Q&A:n säätäminen epäonnistui (ei vielä avoimia ikkunoita?).",
         "closeNow": "Sulje Q&A nyt",
-        "reopen": "Avaa Q&A uudelleen",
+        "reopen": "Avaa Q&A",
         "saved": "Q&A-asetukset tallennettu"
       }
     },

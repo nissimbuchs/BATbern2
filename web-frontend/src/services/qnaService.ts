@@ -54,7 +54,7 @@ export interface AdjustEventQnaResult {
 
 export async function adjustEventQna(
   eventCode: string,
-  payload: { closesAt?: string; close?: boolean }
+  payload: { open?: boolean; closesAt?: string; close?: boolean }
 ): Promise<AdjustEventQnaResult> {
   const response = await apiClient.patch<AdjustEventQnaResult>(
     `/events/${encodeURIComponent(eventCode)}/qna`,

@@ -145,7 +145,7 @@
         "saveError": "Q&A設定の更新に失敗しました。",
         "adjustError": "Q&Aを調整できませんでした（まだ開いているウィンドウがありません）。",
         "closeNow": "今すぐQ&Aを閉じる",
-        "reopen": "Q&Aを再開する",
+        "reopen": "Q&Aを開く",
         "saved": "Q&A設定を保存しました"
       }
     },

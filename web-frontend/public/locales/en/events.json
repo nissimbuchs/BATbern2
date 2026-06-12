@@ -105,7 +105,7 @@
         "saveError": "Failed to update Q&A settings.",
         "adjustError": "Failed to adjust the Q&A (no windows open yet?).",
         "closeNow": "Close Q&A now",
-        "reopen": "Reopen Q&A",
+        "reopen": "Open Q&A",
         "saved": "Q&A settings saved"
       }
     },

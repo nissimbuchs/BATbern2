@@ -152,15 +152,15 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     }
   };
 
-  // Manual event-level open/close of all the event's session Q&A windows (only meaningful once
-  // the windows have opened via the configured trigger; otherwise the API returns 404).
+  // Manual event-level open/close of all the event's session Q&A windows. Open creates windows
+  // for sessions that don't have one yet (independent of the configured trigger), so it works
+  // even before/without an automatic open; close freezes them.
   const handleQnaAdjust = async (close: boolean) => {
     setQnaError(null);
     try {
-      const days = parseInt(qnaWindowDays, 10);
-      const payload = close
-        ? { close: true }
-        : { closesAt: new Date(Date.now() + (isNaN(days) ? 14 : days) * 86400000).toISOString() };
+      // Open/reopen creates windows if none exist yet (manual open, independent of the trigger);
+      // close freezes them. Backend computes the close time (event date + window days).
+      const payload = close ? { close: true } : { open: true };
       await adjustEventQna(eventCode, payload);
       setQnaSuccess(true);
     } catch (error) {
@@ -442,7 +442,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               onClick={() => handleQnaAdjust(false)}
               data-testid="qna-reopen-btn"
             >
-              {t('eventPage.settings.qna.reopen', 'Reopen Q&A')}
+              {t('eventPage.settings.qna.reopen', 'Open Q&A')}
             </Button>
           </Stack>
         </Stack>

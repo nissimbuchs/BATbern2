@@ -145,7 +145,7 @@
         "saveError": "No se pudieron actualizar los ajustes de Q&A.",
         "adjustError": "No se pudieron ajustar las Q&A (¿aún no hay ventanas abiertas?).",
         "closeNow": "Cerrar Q&A ahora",
-        "reopen": "Reabrir Q&A",
+        "reopen": "Abrir Q&A",
         "saved": "Ajustes de Q&A guardados"
       }
     },

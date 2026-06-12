@@ -105,7 +105,7 @@
         "saveError": "Q&A-Einstellungen konnten nicht aktualisiert werden.",
         "adjustError": "Q&A konnte nicht angepasst werden (noch keine Fenster offen?).",
         "closeNow": "Q&A jetzt schließen",
-        "reopen": "Q&A wieder öffnen",
+        "reopen": "Q&A öffnen",
         "saved": "Q&A-Einstellungen gespeichert"
       }
     },

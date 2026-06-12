@@ -67,26 +67,68 @@ public class SessionQnaService {
             return;
         }
 
+        int opened = ensureWindowsOpen(event, defaultClosesAt(event), false);
+        log.info("Opened {} Q&A window(s) for event {} (trigger {})", opened, eventCode, expectedTrigger);
+    }
+
+    /**
+     * Story 7.5 rework follow-up: MANUALLY open (or reopen) the Q&A for an event — create a window
+     * for every session that lacks one and (re)open every existing window. Independent of the
+     * configured trigger, so an organizer can open the Q&A on demand, and crucially can open an
+     * event whose trigger moment already passed (e.g. speakers were published before this feature
+     * shipped, or the trigger was set to SPEAKERS_PUBLISHED after the lineup was already public —
+     * the original cause of "No Q&A windows exist for event …" on a manual reopen).
+     *
+     * @param closesAt optional explicit close time; defaults to event date + qnaWindowDays.
+     * @return number of session windows now open
+     */
+    @Transactional
+    public int openWindowsManually(String eventCode, Instant closesAt) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventCode));
+        Instant effectiveClose = closesAt != null ? closesAt : defaultClosesAt(event);
+        int count = ensureWindowsOpen(event, effectiveClose, true);
+        log.info("Organizer manually opened/reopened {} Q&A window(s) for event {} (closes {})",
+                count, eventCode, effectiveClose);
+        return count;
+    }
+
+    /** Default window close: event date (proxy for completion) + qnaWindowDays. */
+    private Instant defaultClosesAt(Event event) {
         int windowDays = event.getQnaWindowDays() != null ? event.getQnaWindowDays() : FALLBACK_WINDOW_DAYS;
         Instant base = event.getDate() != null ? event.getDate() : Instant.now();
-        Instant closesAt = base.plus(windowDays, ChronoUnit.DAYS);
+        return base.plus(windowDays, ChronoUnit.DAYS);
+    }
+
+    /**
+     * Ensure every session of the event has an OPEN window closing at {@code closesAt}. Missing
+     * windows are created; for existing ones, {@code reopenExisting} controls whether they are
+     * (re)set to OPEN + the new close time (manual open) or left untouched (idempotent trigger open).
+     *
+     * @return number of session windows that are open afterwards
+     */
+    private int ensureWindowsOpen(Event event, Instant closesAt, boolean reopenExisting) {
         List<Session> sessions = sessionRepository.findByEventId(event.getId());
-        int opened = 0;
+        int open = 0;
         for (Session session : sessions) {
-            if (windowRepository.existsBySessionId(session.getId())) {
-                continue;
+            SessionQnaWindow existing = windowRepository.findBySessionId(session.getId()).orElse(null);
+            if (existing == null) {
+                windowRepository.save(SessionQnaWindow.builder()
+                        .sessionId(session.getId())
+                        .eventCode(event.getEventCode())
+                        .status(QnaWindowStatus.OPEN)
+                        .opensAt(Instant.now())
+                        .closesAt(closesAt)
+                        .build());
+                open++;
+            } else if (reopenExisting) {
+                existing.setStatus(QnaWindowStatus.OPEN);
+                existing.setClosesAt(closesAt);
+                windowRepository.save(existing);
+                open++;
             }
-            windowRepository.save(SessionQnaWindow.builder()
-                    .sessionId(session.getId())
-                    .eventCode(eventCode)
-                    .status(QnaWindowStatus.OPEN)
-                    .opensAt(Instant.now())
-                    .closesAt(closesAt)
-                    .build());
-            opened++;
         }
-        log.info("Opened {} Q&A window(s) for event {} (trigger {}, closes {}, {} sessions total)",
-                opened, eventCode, expectedTrigger, closesAt, sessions.size());
+        return open;
     }
 
     /** Public read of a session's Q&A thread (open or frozen). */
