@@ -14,6 +14,10 @@ vi.mock('@/hooks/useTurnstile', () => ({
   useTurnstile: vi.fn(),
 }));
 
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: { count?: number }) => {
@@ -33,12 +37,21 @@ vi.mock('react-i18next', () => ({
 
 import { useThanksCount, useSubmitThanks } from '@/hooks/useThanks/useThanks';
 import { useTurnstile } from '@/hooks/useTurnstile';
+import { useAuth } from '@/hooks/useAuth';
 
 const submitMutate = vi.fn();
 const getToken = vi.fn(() => Promise.resolve<string | null>('tok-123'));
 
+function mockAuth(isAuthenticated: boolean) {
+  vi.mocked(useAuth).mockReturnValue({
+    isAuthenticated,
+  } as unknown as ReturnType<typeof useAuth>);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
+  mockAuth(false); // anonymous by default
   vi.mocked(useThanksCount).mockReturnValue({
     data: { count: 7 },
   } as ReturnType<typeof useThanksCount>);
@@ -102,5 +115,23 @@ describe('ThankOrganizersNavButton', () => {
     await waitFor(() => expect(screen.getByTestId('thanks-submit')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('thanks-submit'));
     await waitFor(() => expect(screen.getByTestId('thanks-error')).toBeInTheDocument());
+  });
+
+  it('renders a disabled "thanked" pill (no popover trigger) for an anonymous browser that already thanked', () => {
+    localStorage.setItem('batbern.thanked.BATbern57', 'true');
+    renderButton();
+    const pill = screen.getByTestId('thanks-nav-thanked');
+    expect(pill).toBeDisabled();
+    expect(screen.getByTestId('thanks-nav-count')).toHaveTextContent('7');
+    expect(screen.queryByTestId('thanks-nav-trigger')).not.toBeInTheDocument();
+  });
+
+  it('ignores the soft guard for logged-in users (server dedupes; note stays editable)', () => {
+    localStorage.setItem('batbern.thanked.BATbern57', 'true');
+    mockAuth(true);
+    renderButton();
+    // Authenticated → no thanked pill; the normal trigger is available.
+    expect(screen.queryByTestId('thanks-nav-thanked')).not.toBeInTheDocument();
+    expect(screen.getByTestId('thanks-nav-trigger')).toBeInTheDocument();
   });
 });

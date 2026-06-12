@@ -22,6 +22,7 @@ import { Button } from '@/components/public/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/public/ui/popover';
 import { useThanksCount, useSubmitThanks } from '@/hooks/useThanks/useThanks';
 import { useTurnstile } from '@/hooks/useTurnstile';
+import { useAuth } from '@/hooks/useAuth';
 
 type WidgetState = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -29,11 +30,39 @@ interface ThankOrganizersNavButtonProps {
   eventCode: string;
 }
 
+/**
+ * Soft one-per-browser guard for ANONYMOUS thank-yous (logged-in users are deduped server-side
+ * and may re-open to update their note). localStorage can throw (private mode / quota) — never
+ * let that break the button.
+ */
+const thankedKey = (eventCode: string) => `batbern.thanked.${eventCode}`;
+
+function readThanked(eventCode: string): boolean {
+  try {
+    return localStorage.getItem(thankedKey(eventCode)) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function rememberThanked(eventCode: string): void {
+  try {
+    localStorage.setItem(thankedKey(eventCode), 'true');
+  } catch {
+    /* ignore — soft guard only */
+  }
+}
+
 export function ThankOrganizersNavButton({ eventCode }: ThankOrganizersNavButtonProps) {
   const { t } = useTranslation('events');
+  const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState('');
   const [widgetState, setWidgetState] = useState<WidgetState>('idle');
+  // Soft guard applies to anonymous visitors only.
+  const [alreadyThanked, setAlreadyThanked] = useState(
+    () => !isAuthenticated && readThanked(eventCode)
+  );
 
   const { data: thanks } = useThanksCount(eventCode);
   const submitMutation = useSubmitThanks(eventCode);
@@ -52,6 +81,12 @@ export function ThankOrganizersNavButton({ eventCode }: ThankOrganizersNavButton
           onSuccess: () => {
             setNote('');
             setWidgetState('success');
+            // Anonymous: persist now so this browser does not casually re-increment (the
+            // server rate limit stays the hard backstop). We keep the popover on the success
+            // message and only swap to the disabled "thanked" pill once it closes (below).
+            if (!isAuthenticated) {
+              rememberThanked(eventCode);
+            }
           },
           onError: (error) => {
             if (
@@ -69,6 +104,25 @@ export function ThankOrganizersNavButton({ eventCode }: ThankOrganizersNavButton
     });
   }
 
+  // Anonymous visitor who already thanked in this browser → a disabled "thanked" pill, no popover.
+  if (alreadyThanked) {
+    return (
+      <Button
+        variant="outline"
+        disabled
+        className="flex items-center gap-1.5 px-3"
+        data-testid="thanks-nav-thanked"
+        aria-label={t('thanks.widget.alreadyThanked')}
+        title={t('thanks.widget.alreadyThanked')}
+      >
+        <Heart className="h-4 w-4 fill-rose-400 text-rose-400" aria-hidden="true" />
+        <span className="text-sm tabular-nums" data-testid="thanks-nav-count">
+          {count}
+        </span>
+      </Button>
+    );
+  }
+
   return (
     <div className="relative" data-testid="thanks-nav">
       <Popover
@@ -77,6 +131,9 @@ export function ThankOrganizersNavButton({ eventCode }: ThankOrganizersNavButton
           setOpen(next);
           if (next) {
             setWidgetState('idle');
+          } else if (!isAuthenticated && readThanked(eventCode)) {
+            // Anonymous + just thanked → collapse to the disabled "thanked" pill on close.
+            setAlreadyThanked(true);
           }
         }}
       >

@@ -889,6 +889,7 @@
       "subtitle": "BATbernia pyörittävät vapaaehtoiset, ilmaiseksi ja mainoksitta. Sano kiitos yhdellä klikkauksella.",
       "notePlaceholder": "Lisää viesti järjestäjille (valinnainen)",
       "button": "Kiitä järjestäjiä",
+      "alreadyThanked": "Kiitit",
       "count_one": "{{count}} kiitos tähän mennessä",
       "count_other": "{{count}} kiitosta tähän mennessä",
       "success": "Kiitos, kun sanoit kiitos! 🎉",

@@ -891,6 +891,7 @@
       "subtitle": "BATbern wird vo Freiwillige gmacht – gratis u ohni Werbig. Säg mit eim Klick Merci.",
       "notePlaceholder": "Es Nötli a d'Organisatore (fakultativ)",
       "button": "Den Organisatore danke",
+      "alreadyThanked": "Du hesch dankt",
       "count_one": "{{count}} Merci bishär",
       "count_other": "{{count}} Merci bishär",
       "success": "Merci fürs Merci säge! 🎉",

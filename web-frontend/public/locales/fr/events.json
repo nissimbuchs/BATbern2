@@ -889,6 +889,7 @@
       "subtitle": "BATbern est animé par des bénévoles, gratuitement et sans publicité. Dites merci en un clic.",
       "notePlaceholder": "Ajouter un message pour les organisateurs (facultatif)",
       "button": "Remercier les organisateurs",
+      "alreadyThanked": "Merci envoyé",
       "count_one": "{{count}} remerciement jusqu'à présent",
       "count_other": "{{count}} remerciements jusqu'à présent",
       "success": "Merci d'avoir dit merci ! 🎉",

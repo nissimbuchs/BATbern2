@@ -913,6 +913,7 @@
       "subtitle": "BATbern wird von Freiwilligen betrieben – kostenlos und werbefrei. Sag in einem Klick Danke.",
       "notePlaceholder": "Eine Nachricht an die Organisatoren (optional)",
       "button": "Den Organisatoren danken",
+      "alreadyThanked": "Du hast gedankt",
       "count_one": "{{count}} Dankeschön bisher",
       "count_other": "{{count}} Dankeschöns bisher",
       "success": "Danke fürs Dankesagen! 🎉",

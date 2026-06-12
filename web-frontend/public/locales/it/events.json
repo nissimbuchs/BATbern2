@@ -889,6 +889,7 @@
       "subtitle": "BATbern è gestito da volontari, gratuitamente e senza pubblicità. Di' grazie con un clic.",
       "notePlaceholder": "Aggiungi un messaggio per gli organizzatori (facoltativo)",
       "button": "Ringrazia gli organizzatori",
+      "alreadyThanked": "Grazie inviato",
       "count_one": "{{count}} ringraziamento finora",
       "count_other": "{{count}} ringraziamenti finora",
       "success": "Grazie per aver detto grazie! 🎉",

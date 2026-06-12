@@ -889,6 +889,7 @@
       "subtitle": "BATbern wordt gerund door vrijwilligers, gratis en advertentievrij. Zeg bedankt met één klik.",
       "notePlaceholder": "Voeg een bericht toe voor de organisatoren (optioneel)",
       "button": "Bedank de organisatoren",
+      "alreadyThanked": "Je hebt bedankt",
       "count_one": "{{count}} bedankje tot nu toe",
       "count_other": "{{count}} bedankjes tot nu toe",
       "success": "Bedankt voor het bedanken! 🎉",
