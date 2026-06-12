@@ -91,6 +91,26 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
     );
   }
 
+  // Open the confirm dialog with a real recipient count. If the organizer hasn't previewed yet,
+  // fetch the count first so the dialog never shows a misleading "0".
+  function handleOpenConfirm() {
+    if (!selectedTemplateKey) return;
+    if (recipientCount !== null) {
+      setConfirmOpen(true);
+      return;
+    }
+    previewMutation.mutate(
+      { templateKey: selectedTemplateKey, locale },
+      {
+        onSuccess: (data) => {
+          setPreviewHtml(data.htmlPreview);
+          setRecipientCount(data.recipientCount);
+          setConfirmOpen(true);
+        },
+      }
+    );
+  }
+
   function handleConfirmSend() {
     if (!selectedTemplateKey) return;
     sendMutation.mutate(selectedTemplateKey, {
@@ -195,8 +215,8 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
             </Button>
             <Button
               variant="contained"
-              onClick={() => setConfirmOpen(true)}
-              disabled={sendMutation.isPending || !selectedTemplateKey}
+              onClick={handleOpenConfirm}
+              disabled={sendMutation.isPending || previewMutation.isPending || !selectedTemplateKey}
               data-testid="rn-send-button"
             >
               {t('eventPage.registrantNotices.send', 'Send to registrants')}

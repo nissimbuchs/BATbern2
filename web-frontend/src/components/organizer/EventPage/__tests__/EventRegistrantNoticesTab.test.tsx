@@ -83,12 +83,18 @@ describe('EventRegistrantNoticesTab', () => {
   });
 
   it('opens the confirm dialog and sends to registrants', async () => {
+    // Send without previewing first → the tab fetches the recipient count before confirming.
+    previewMutate.mockImplementation((_vars, opts) =>
+      opts.onSuccess({ subject: 'S', htmlPreview: '<p>hi</p>', recipientCount: 174 })
+    );
     sendMutate.mockImplementation((_templateKey, opts) =>
-      opts.onSuccess({ sendId: 's1', status: 'PENDING', recipientCount: 42 })
+      opts.onSuccess({ sendId: 's1', status: 'PENDING', recipientCount: 174 })
     );
     renderTab();
     fireEvent.click(screen.getByTestId('rn-send-button'));
     await waitFor(() => expect(screen.getByTestId('rn-confirm-send')).toBeInTheDocument());
+    // count was resolved before the dialog opened
+    expect(screen.getByTestId('rn-recipient-count')).toHaveTextContent('174');
     fireEvent.click(screen.getByTestId('rn-confirm-send'));
     await waitFor(() =>
       expect(sendMutate).toHaveBeenCalledWith('slides-online', expect.anything())
