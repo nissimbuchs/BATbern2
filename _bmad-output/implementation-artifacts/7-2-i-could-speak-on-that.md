@@ -298,3 +298,17 @@ speaker_pool; `session_proposals` shape, no status col), unit/IT regressions
 the one test self-nomination row migrated, the three `proposed_*` columns dropped; `flywayRepair`
 realigned the V109 checksum; `flywayValidate` clean; event-management restarted and booted clean
 (107 migrations validated).
+
+---
+
+## Self-nomination window narrowed (2026-06-12, PO)
+
+The window is now **the TOPIC publishing phase only** — open from when the topic is published
+until the speaker lineup is published. Once `currentPublishedPhase` advances to `speakers`/`agenda`,
+no further nominations are accepted (the program is set). This supersedes the original "opens when
+topic set + published, closes when the event starts" wording.
+
+- Frontend gate: `canOfferSelfNomination` requires `currentPublishedPhase === 'TOPIC'` (shared by
+  the homepage hero + upcoming-event cards via `EventCard`).
+- Backend guard: `SpeakerPoolService.selfNominate` requires `currentPublishedPhase == 'topic'` →
+  else 409 `SELF_NOMINATION_NOT_ALLOWED`. Test: "phase=speakers → 409".

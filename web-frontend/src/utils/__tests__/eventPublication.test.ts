@@ -12,10 +12,19 @@ describe('isPublishedPhase', () => {
 });
 
 describe('canOfferSelfNomination', () => {
-  test('true when topic object present and a published phase is active', () => {
+  test('true ONLY during the TOPIC phase (topic published, speakers not yet)', () => {
     expect(
       canOfferSelfNomination({ topic: { name: 'Architecture' }, currentPublishedPhase: 'TOPIC' })
     ).toBe(true);
+  });
+
+  test('false once the speaker lineup is published (SPEAKERS / AGENDA) — window closed', () => {
+    expect(
+      canOfferSelfNomination({ topic: { name: 'Architecture' }, currentPublishedPhase: 'SPEAKERS' })
+    ).toBe(false);
+    expect(
+      canOfferSelfNomination({ topic: { name: 'Architecture' }, currentPublishedPhase: 'AGENDA' })
+    ).toBe(false);
   });
 
   test('false when the event is unpublished (NONE) even with a topic', () => {
@@ -25,7 +34,7 @@ describe('canOfferSelfNomination', () => {
   });
 
   test('false when no topic object is set', () => {
-    expect(canOfferSelfNomination({ topic: null, currentPublishedPhase: 'SPEAKERS' })).toBe(false);
-    expect(canOfferSelfNomination({ currentPublishedPhase: 'SPEAKERS' })).toBe(false);
+    expect(canOfferSelfNomination({ topic: null, currentPublishedPhase: 'TOPIC' })).toBe(false);
+    expect(canOfferSelfNomination({ currentPublishedPhase: 'TOPIC' })).toBe(false);
   });
 });

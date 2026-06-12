@@ -1,9 +1,11 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.AttendeeDashboardResponse;
 import ch.batbern.events.dto.AttendeeEventCardResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,7 @@ public class AttendeeDashboardService {
 
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
+    private final UserApiClient userApiClient;
 
     @Transactional(readOnly = true)
     public AttendeeDashboardResponse getDashboard(String username) {
@@ -78,17 +81,31 @@ public class AttendeeDashboardService {
         past.sort(Comparator.comparing(AttendeeEventCardResponse::eventDate,
                 Comparator.nullsLast(Comparator.reverseOrder())));
 
-        String name = deriveName(registrations, username);
+        String name = resolveGreetingName(registrations, username);
         log.info("Attendee dashboard for {}: {} upcoming, {} past", username, upcoming.size(), past.size());
         return new AttendeeDashboardResponse(name, upcoming, past);
     }
 
-    /** Prefer the denormalized first+last name on a registration; fall back to the username. */
-    private String deriveName(List<Registration> registrations, String username) {
+    /**
+     * The first name to greet the attendee with. Primary source is the CUMS profile (the
+     * authoritative identity, like SpeakerDashboardService); falls back to a registration's
+     * denormalized first name, then — only if all else fails — the raw username. Greeting with the
+     * login username was the bug: profile lookup makes "Welcome, alice.muller" → "Welcome, Alice".
+     */
+    private String resolveGreetingName(List<Registration> registrations, String username) {
+        try {
+            UserResponse profile = userApiClient.getUserByUsername(username);
+            if (profile != null && profile.getFirstName() != null && !profile.getFirstName().isBlank()) {
+                return profile.getFirstName().trim();
+            }
+        } catch (Exception e) {
+            log.debug("CUMS profile lookup failed for {} on attendee dashboard — falling back: {}",
+                    username, e.getMessage());
+        }
         return registrations.stream()
-                .filter(r -> r.getAttendeeFirstName() != null && !r.getAttendeeFirstName().isBlank())
-                .map(r -> (r.getAttendeeFirstName() + " "
-                        + (r.getAttendeeLastName() != null ? r.getAttendeeLastName() : "")).trim())
+                .map(Registration::getAttendeeFirstName)
+                .filter(n -> n != null && !n.isBlank())
+                .map(String::trim)
                 .findFirst()
                 .orElse(username);
     }

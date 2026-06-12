@@ -13,6 +13,7 @@ import { Badge } from '@/components/public/ui/badge';
 import { SpeakerDisplay } from './Event/SpeakerDisplay';
 import { SpeakerSelfNominatePanel } from '@/components/attendee/SpeakerSelfNominatePanel';
 import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
+import { canOfferSelfNomination } from '@/utils/eventPublication';
 import type { EventDetailUI, SessionUI } from '@/types/event.types';
 
 type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
@@ -49,19 +50,11 @@ export function EventCard({
   const { t } = useTranslation();
   const { t: tEvents } = useTranslation('events');
 
-  // Story 7.2: only surface the self-nomination button once the event's topic is set
-  // (topic object present) AND the event is published (a publishing phase is active). The
-  // button itself is additionally login-gated; the backend enforces both conditions too.
-  // Whitelist the actually-published phases rather than testing truthiness: the phase is
-  // serialized upper-case (EventMapper), and the unpublished sentinel 'NONE' is truthy, so a
-  // bare Boolean() check would wrongly show the button on an unpublished event. The declared
-  // union omits 'NONE', so we compare as a string. Mirrors the backend guard
-  // (publishedAt != null || currentPublishedPhase != 'none').
-  const showSelfNominate =
-    enableSelfNomination &&
-    typeof event.topic === 'object' &&
-    event.topic != null &&
-    ['TOPIC', 'SPEAKERS', 'AGENDA'].includes(event.currentPublishedPhase ?? '');
+  // Story 7.2: surface the self-nomination button only while the self-nomination window is open
+  // — during the TOPIC publishing phase (topic published, speakers not yet). canOfferSelfNomination
+  // is the single source of truth (shared with the homepage hero + mirrored by the backend guard);
+  // the button itself is additionally login-gated.
+  const showSelfNominate = enableSelfNomination && canOfferSelfNomination(event);
 
   const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
 
