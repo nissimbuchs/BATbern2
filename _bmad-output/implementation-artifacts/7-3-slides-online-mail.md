@@ -184,3 +184,13 @@ action was the dangerous one.
 **Tests:** `NewsletterEmailServiceTest` rejects a REGISTRANT_NOTICE template (preview + send);
 `SlidesOnlineEmailServiceTest` (5) green with the new category guard; `EventRegistrantNoticesTab`
 test (4). Backend `compileJava`/`compileTestJava` + FE `tsc`/ESLint clean.
+
+### Recipient-status correction (2026-06-12)
+
+Found while testing on local: the send/preview targeted only `['registered','confirmed']`, but a
+registrant notice fires POST-event (task due event+1d), by which time a completed event's
+registrants are `attended`. So for BATbern57 (173 `attended` + 1 `confirmed`) the preview/confirm
+showed **0 recipients**. Fixed: `ACTIVE_REGISTRANT_STATUSES` now reuses the canonical
+`Registration.CONFIRMED_STATUSES` = `[registered, confirmed, attended]` (excludes `waitlist` and
+`cancelled`). This corrects the original AC2 wording, which assumed the mail goes out while
+registrations are still registered/confirmed. Integration test gains an `attended` recipient.

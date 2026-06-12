@@ -75,8 +75,14 @@ public class SlidesOnlineEmailService {
     static final String TEMPLATE_KEY = "slides-online";
     private static final String LAYOUT_KEY = "batbern-default";
 
-    /** Active registrant statuses that receive the mail (AC2). */
-    static final List<String> ACTIVE_REGISTRANT_STATUSES = List.of("registered", "confirmed");
+    /**
+     * Registrant statuses that receive the mail. Uses the canonical "confirmed/attending" set
+     * ({@code registered} + {@code confirmed} + {@code attended}) — NOT just registered/confirmed:
+     * a registrant notice (e.g. slides-online) is sent POST-event (the seeded task is due event+1d),
+     * by which time real registrants of a completed event are {@code attended}. Excludes
+     * {@code waitlist} (never got a seat) and {@code cancelled}.
+     */
+    static final List<String> ACTIVE_REGISTRANT_STATUSES = Registration.CONFIRMED_STATUSES;
 
     static final String STATUS_PENDING = "PENDING";
     static final String STATUS_IN_PROGRESS = "IN_PROGRESS";

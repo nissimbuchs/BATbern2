@@ -136,6 +136,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         saveRegistration(event.getId(), "att.en", "en@x.ch", "registered");   // EN
         saveRegistration(event.getId(), "att.de", "de@x.ch", "confirmed");    // DE
         saveRegistration(event.getId(), "att.fr", "fr@x.ch", "confirmed");    // fr → German fallback
+        saveRegistration(event.getId(), "att.attd", "attended@x.ch", "attended"); // INCLUDED: post-event status
         saveRegistration(event.getId(), "att.cancel", "cancel@x.ch", "cancelled"); // excluded (status)
         saveRegistration(event.getId(), "att.wait", "wait@x.ch", "waitlist");      // excluded (status)
         saveRegistration(event.getId(), "att.opt", "opt@x.ch", "registered");      // excluded (opt-out)
@@ -148,6 +149,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         lenient().when(userApiClient.getPreferredLanguage("att.en")).thenReturn("en");
         lenient().when(userApiClient.getPreferredLanguage("att.de")).thenReturn("de");
         lenient().when(userApiClient.getPreferredLanguage("att.fr")).thenReturn("fr");
+        lenient().when(userApiClient.getPreferredLanguage("att.attd")).thenReturn("en");
 
         NewsletterSend send = savePendingSend(event.getId());
         slidesOnlineEmailService.processSend(send.getId(), event, "slides-online");
@@ -155,7 +157,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         // Capture every (to, subject) the send dispatched.
         var toCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
         var subjectCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
-        org.mockito.Mockito.verify(emailService, org.mockito.Mockito.times(3))
+        org.mockito.Mockito.verify(emailService, org.mockito.Mockito.times(4))
                 .sendHtmlEmailSync(toCaptor.capture(), subjectCaptor.capture(), anyString(),
                         org.mockito.ArgumentMatchers.any());
 
@@ -164,21 +166,23 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
             subjectByEmail.put(toCaptor.getAllValues().get(i), subjectCaptor.getAllValues().get(i));
         }
 
-        // Only the three active, non-opted-out registrants received the mail.
-        assertThat(subjectByEmail.keySet()).containsExactlyInAnyOrder("en@x.ch", "de@x.ch", "fr@x.ch");
+        // The active, non-opted-out registrants — including the post-event 'attended' one — received it.
+        assertThat(subjectByEmail.keySet())
+                .containsExactlyInAnyOrder("en@x.ch", "de@x.ch", "fr@x.ch", "attended@x.ch");
         assertThat(subjectByEmail).doesNotContainKeys("cancel@x.ch", "wait@x.ch", "opt@x.ch");
 
         // Per-recipient locale: en → English subject; de + fr(fallback) → German subject.
         assertThat(subjectByEmail.get("en@x.ch")).contains("The slides are online");
         assertThat(subjectByEmail.get("de@x.ch")).contains("Die Folien sind online");
         assertThat(subjectByEmail.get("fr@x.ch")).contains("Die Folien sind online");
+        assertThat(subjectByEmail.get("attended@x.ch")).contains("The slides are online");
 
         NewsletterSend completed = sendRepository.findById(send.getId()).orElseThrow();
         assertThat(completed.getStatus()).isEqualTo("COMPLETED");
-        assertThat(completed.getSentCount()).isEqualTo(3);
+        assertThat(completed.getSentCount()).isEqualTo(4);
         assertThat(completed.getFailedCount()).isZero();
         assertThat(recipientRepository.findAll())
-                .filteredOn(r -> "sent".equals(r.getDeliveryStatus())).hasSize(3);
+                .filteredOn(r -> "sent".equals(r.getDeliveryStatus())).hasSize(4);
     }
 
     // ── AC6: per-recipient failure isolation ─────────────────────────────────
