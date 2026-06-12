@@ -212,3 +212,54 @@ the organizer event **Settings tab**._
 - **Tests:** `SessionQnaIntegrationTest` updated (trigger-match opens; trigger-mismatch opens
   nothing; event-level close/extend affect all windows) — 13 green; `EventSettingsTab` render test
   for the new section.
+
+## Manual "Open Q&A" — create-if-absent (2026-06-12)
+
+Reported: PATCH `/events/{code}/qna` returned 404 "No Q&A windows exist" when an organizer tried
+to (re)open BATbern73's Q&A — its trigger was `SPEAKERS_PUBLISHED` and speakers were already
+published, but the windows never got created (the `SpeakersPhasePublishedEvent` fires only at the
+publish *moment*, which for BATbern73 predated this feature; setting the trigger after-the-fact
+doesn't open retroactively).
+
+Fix: the event-level control now supports `{ "open": true }` → `SessionQnaService.openWindowsManually`
+creates a window for every session that lacks one and (re)opens the rest, **independent of the
+configured trigger** (`ensureWindowsOpen(event, eventDate+qnaWindowDays, reopenExisting=true)`). The
+Settings-tab "Open Q&A" button sends `open:true`; "Close Q&A now" still freezes. Trigger-driven
+auto-open (`openWindowsIfTrigger`) is unchanged (idempotent, leaves existing windows alone). Test:
+"open creates windows for every session when none exist".
+
+## Public render gate fix + collapsible UX (2026-06-12)
+
+Reported: an organizer opened Q&A for BATbern73 (`SPEAKERS_PUBLISHED` trigger, SPEAKERS phase,
+17 OPEN windows in the DB) but there was **no Q&A entry point anywhere on the public site** — not
+on the event homepage, not on the detail. Root cause: the public render gate from the original
+Task 5 still mounted `SessionQnaThread` only when `showMaterials` (POST_EVENT/ARCHIVE). The
+2026-06-11 pre-event rework + 2026-06-12 manual-open never updated the public-facing gate, so a
+pre-event / manually-opened window had open windows but zero UI.
+
+Fix:
+- **Decoupled Q&A from materials.** New pure helper `showSessionQna(phase, event)` in
+  `web-frontend/src/pages/public/homePagePhase.ts` and a new `showQna` prop on `SessionCards`
+  (replaces the `showMaterials` gate for the Q&A mount only; materials still gate on
+  `showMaterials`). Mounts wherever session cards render in a Q&A-eligible phase
+  (PRE_EVENT/SPEAKERS, POST_EVENT, ARCHIVE) when `qnaEnabled !== false`. Crucially it does **NOT**
+  gate on `qnaOpenTrigger` — manual-open decouples window existence from the trigger, so the only
+  reliable signal is the window itself; `SessionQnaThread` already self-gates on the 404.
+- **Collapsible "Ask a question" UX.** `SessionQnaThread` is now COLLAPSED by default behind a
+  compact toggle (`💬 Q&A · <status> · <count?> · Ask a question ▾`), expanding to the thread +
+  form. Keeps the homepage uncluttered when shown under many pre-event session cards with empty
+  threads. New i18n key `qna.viewThread` (collapsed CTA for frozen windows) in all 10 locales.
+- **Known gap (noted, not fixed):** the PRE_EVENT/AGENDA sub-phase renders the timetable
+  (`EventProgram`) instead of `SessionCards`, so a pre-event Q&A would disappear if the event
+  advances from SPEAKERS to AGENDA before completion. EventProgram has no Q&A surface yet — flag
+  for a follow-up if pre-event Q&A is used on agenda-published events.
+
+Tests: `showSessionQna` unit tests (9) in `homePagePhase.test.ts`; `SessionQnaThread.test.tsx`
+updated for the collapsed-by-default contract (+2 tests: collapsed-default, count badge). All
+green; `tsc`/ESLint clean.
+
+## Change Log (append)
+
+| Date | Change |
+|------|--------|
+| 2026-06-12 | Public Q&A render gate fix: decoupled `SessionQnaThread` from `showMaterials` via `showSessionQna(phase,event)` + `SessionCards.showQna`, so pre-event / manually-opened windows are visible on the public homepage (SPEAKERS phase). Restructured the thread into a collapsible "Ask a question" toggle (+`qna.viewThread` ×10 locales). FE tests green. |

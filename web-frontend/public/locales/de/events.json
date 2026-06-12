@@ -105,7 +105,7 @@
         "saveError": "Q&A-Einstellungen konnten nicht aktualisiert werden.",
         "adjustError": "Q&A konnte nicht angepasst werden (noch keine Fenster offen?).",
         "closeNow": "Q&A jetzt schließen",
-        "reopen": "Q&A wieder öffnen",
+        "reopen": "Q&A öffnen",
         "saved": "Q&A-Einstellungen gespeichert"
       }
     },
@@ -913,6 +913,7 @@
       "subtitle": "BATbern wird von Freiwilligen betrieben – kostenlos und werbefrei. Sag in einem Klick Danke.",
       "notePlaceholder": "Eine Nachricht an die Organisatoren (optional)",
       "button": "Den Organisatoren danken",
+      "alreadyThanked": "Du hast gedankt",
       "count_one": "{{count}} Dankeschön bisher",
       "count_other": "{{count}} Dankeschöns bisher",
       "success": "Danke fürs Dankesagen! 🎉",
@@ -931,6 +932,7 @@
     "replyPlaceholder": "Antwort schreiben…",
     "questionPlaceholder": "Stell eine Frage zu dieser Session…",
     "askQuestion": "Frage stellen",
+    "viewThread": "Q&A ansehen",
     "loginToPost": "Melde dich an, um Fragen zu stellen oder zu beantworten."
   },
   "attendee": {

@@ -30,6 +30,7 @@ vi.mock('react-i18next', () => ({
         'qna.replyPlaceholder': 'Write an answer…',
         'qna.questionPlaceholder': 'Ask a question about this session…',
         'qna.askQuestion': 'Ask a question',
+        'qna.viewThread': 'View Q&A',
         'qna.loginToPost': 'Log in to ask or answer questions.',
       };
       return map[key] ?? key;
@@ -82,6 +83,11 @@ function renderThread() {
   return render(<SessionQnaThread eventCode="BATbern57" sessionSlug="cloud-native" />);
 }
 
+/** The thread is collapsed by default — open it before asserting on inner content. */
+function expandThread() {
+  fireEvent.click(screen.getByTestId('qna-toggle'));
+}
+
 describe('SessionQnaThread', () => {
   it('renders nothing when there is no window (404 / isError)', () => {
     vi.mocked(useSessionQna).mockReturnValue({
@@ -93,11 +99,38 @@ describe('SessionQnaThread', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows an OPEN badge and the question form for a logged-in user', () => {
+  it('is collapsed by default — status visible in the toggle, panel hidden', () => {
+    mockThread('OPEN', []);
+    mockAuth(true);
+    renderThread();
+    expect(screen.getByTestId('qna-toggle')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByTestId('qna-status')).toHaveTextContent('Open');
+    expect(screen.queryByTestId('qna-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('qna-question-form')).not.toBeInTheDocument();
+  });
+
+  it('shows the question count badge in the collapsed header', () => {
+    mockThread('OPEN', [
+      {
+        id: 'p1',
+        parentPostId: null,
+        postedByUsername: 'jane',
+        body: 'A question',
+        removed: false,
+        createdAt: '',
+      },
+    ]);
+    mockAuth(false);
+    renderThread();
+    expect(screen.getByTestId('qna-count')).toHaveTextContent('1');
+  });
+
+  it('shows an OPEN badge and the question form for a logged-in user once expanded', () => {
     mockThread('OPEN', []);
     mockAuth(true);
     renderThread();
     expect(screen.getByTestId('qna-status')).toHaveTextContent('Open');
+    expandThread();
     expect(screen.getByTestId('qna-question-form')).toBeInTheDocument();
     expect(screen.getByTestId('qna-empty')).toBeInTheDocument();
   });
@@ -106,6 +139,7 @@ describe('SessionQnaThread', () => {
     mockThread('OPEN', []);
     mockAuth(false);
     renderThread();
+    expandThread();
     expect(screen.getByTestId('qna-login-hint')).toBeInTheDocument();
     expect(screen.queryByTestId('qna-question-form')).not.toBeInTheDocument();
   });
@@ -114,6 +148,7 @@ describe('SessionQnaThread', () => {
     mockThread('OPEN', []);
     mockAuth(true);
     renderThread();
+    expandThread();
     fireEvent.change(screen.getByTestId('qna-question-input'), {
       target: { value: 'How did the migration go?' },
     });
@@ -122,7 +157,7 @@ describe('SessionQnaThread', () => {
     expect(addMutate.mock.calls[0][0]).toEqual({ body: 'How did the migration go?' });
   });
 
-  it('renders a FROZEN window read-only (no form) and shows posts', () => {
+  it('renders a FROZEN window read-only (no form) and shows posts once expanded', () => {
     mockThread('FROZEN', [
       {
         id: 'p1',
@@ -136,11 +171,12 @@ describe('SessionQnaThread', () => {
     mockAuth(true);
     renderThread();
     expect(screen.getByTestId('qna-status')).toHaveTextContent('Closed');
+    expandThread();
     expect(screen.queryByTestId('qna-question-form')).not.toBeInTheDocument();
     expect(screen.getByText('Archived question')).toBeInTheDocument();
   });
 
-  it('renders removed posts as a tombstone', () => {
+  it('renders removed posts as a tombstone once expanded', () => {
     mockThread('FROZEN', [
       {
         id: 'p1',
@@ -153,10 +189,11 @@ describe('SessionQnaThread', () => {
     ]);
     mockAuth(false);
     renderThread();
+    expandThread();
     expect(screen.getByTestId('qna-tombstone')).toHaveTextContent('Removed by an organizer');
   });
 
-  it('shows a takedown button for organizers and calls remove', () => {
+  it('shows a takedown button for organizers and calls remove once expanded', () => {
     mockThread('OPEN', [
       {
         id: 'p1',
@@ -169,6 +206,7 @@ describe('SessionQnaThread', () => {
     ]);
     mockAuth(true, true);
     renderThread();
+    expandThread();
     const takedown = screen.getByTestId('qna-takedown');
     fireEvent.click(takedown);
     expect(removeMutate).toHaveBeenCalledWith('p1');

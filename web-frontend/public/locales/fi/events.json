@@ -145,7 +145,7 @@
         "saveError": "Q&A-asetusten päivitys epäonnistui.",
         "adjustError": "Q&A:n säätäminen epäonnistui (ei vielä avoimia ikkunoita?).",
         "closeNow": "Sulje Q&A nyt",
-        "reopen": "Avaa Q&A uudelleen",
+        "reopen": "Avaa Q&A",
         "saved": "Q&A-asetukset tallennettu"
       }
     },
@@ -889,6 +889,7 @@
       "subtitle": "BATbernia pyörittävät vapaaehtoiset, ilmaiseksi ja mainoksitta. Sano kiitos yhdellä klikkauksella.",
       "notePlaceholder": "Lisää viesti järjestäjille (valinnainen)",
       "button": "Kiitä järjestäjiä",
+      "alreadyThanked": "Kiitit",
       "count_one": "{{count}} kiitos tähän mennessä",
       "count_other": "{{count}} kiitosta tähän mennessä",
       "success": "Kiitos, kun sanoit kiitos! 🎉",
@@ -907,6 +908,7 @@
     "replyPlaceholder": "Kirjoita vastaus…",
     "questionPlaceholder": "Kysy tästä sessiosta…",
     "askQuestion": "Esitä kysymys",
+    "viewThread": "Näytä kysymykset",
     "loginToPost": "Kirjaudu sisään kysyäksesi tai vastataksesi."
   },
   "attendee": {

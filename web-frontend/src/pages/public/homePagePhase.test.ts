@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { getHomepagePhase, getSectionVisibility, type HomePagePhase } from './homePagePhase';
+import {
+  getHomepagePhase,
+  getSectionVisibility,
+  showSessionQna,
+  type HomePagePhase,
+} from './homePagePhase';
 import type { EventDetail } from '@/types/event.types';
 
 // ---------------------------------------------------------------------------
@@ -106,6 +111,43 @@ describe('getHomepagePhase', () => {
       hasEventPhotos: true,
     });
   });
+});
+
+// ---------------------------------------------------------------------------
+// showSessionQna — Q&A thread mount gate (decoupled from showSessionMaterials)
+// ---------------------------------------------------------------------------
+
+describe('showSessionQna', () => {
+  const enabled = { qnaEnabled: true } as Pick<EventDetail, 'qnaEnabled'>;
+  const disabled = { qnaEnabled: false } as Pick<EventDetail, 'qnaEnabled'>;
+  const unset = {} as Pick<EventDetail, 'qnaEnabled'>;
+
+  it('mounts in POST_EVENT when Q&A enabled', () =>
+    expect(showSessionQna({ kind: 'POST_EVENT', hasEventPhotos: false }, enabled)).toBe(true));
+
+  it('mounts in ARCHIVE when Q&A enabled', () =>
+    expect(showSessionQna({ kind: 'ARCHIVE', hasEventPhotos: false }, enabled)).toBe(true));
+
+  it('mounts PRE_EVENT in the SPEAKERS sub-phase (pre-event Q&A / manual open)', () =>
+    expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'SPEAKERS' }, enabled)).toBe(true));
+
+  it('does NOT mount PRE_EVENT in the TOPIC sub-phase (no session cards)', () =>
+    expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'TOPIC' }, enabled)).toBe(false));
+
+  it('does NOT mount PRE_EVENT in the AGENDA sub-phase (timetable, no session cards)', () =>
+    expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'AGENDA' }, enabled)).toBe(false));
+
+  it('does NOT mount in COMING_SOON', () =>
+    expect(showSessionQna({ kind: 'COMING_SOON' }, enabled)).toBe(false));
+
+  it('does NOT mount when Q&A is explicitly disabled, even in SPEAKERS phase', () =>
+    expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'SPEAKERS' }, disabled)).toBe(false));
+
+  it('does NOT mount when Q&A is explicitly disabled, even POST_EVENT', () =>
+    expect(showSessionQna({ kind: 'POST_EVENT', hasEventPhotos: false }, disabled)).toBe(false));
+
+  it('treats an unset qnaEnabled as enabled (defaults on)', () =>
+    expect(showSessionQna({ kind: 'POST_EVENT', hasEventPhotos: false }, unset)).toBe(true));
 });
 
 // ---------------------------------------------------------------------------

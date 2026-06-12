@@ -145,7 +145,7 @@
         "saveError": "Betg reussì dad actualisar las preferenzas da Q&A.",
         "adjustError": "Betg reussì dad adattar las Q&A (anc naginas fanestras avertas?).",
         "closeNow": "Serrar uss las Q&A",
-        "reopen": "Reavrir las Q&A",
+        "reopen": "Avrir las Q&A",
         "saved": "Preferenzas da Q&A memorisadas"
       }
     },
@@ -889,6 +889,7 @@
       "subtitle": "BATbern vegn manà da voluntaris, gratuitamain e senza reclama. Di engraziament cun in clic.",
       "notePlaceholder": "Agiuntar in messadi per ils organisaturs (facultativ)",
       "button": "Engraziar als organisaturs",
+      "alreadyThanked": "Ti has engrazià",
       "count_one": "{{count}} engraziament fin ussa",
       "count_other": "{{count}} engraziaments fin ussa",
       "success": "Grazia fitg per engraziar! 🎉",
@@ -907,6 +908,7 @@
     "replyPlaceholder": "Scriver ina resposta…",
     "questionPlaceholder": "Fai ina dumonda davart questa sessiun…",
     "askQuestion": "Far ina dumonda",
+    "viewThread": "Vesair las dumondas",
     "loginToPost": "Annunzia tai per far u respunder dumondas."
   },
   "attendee": {

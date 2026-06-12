@@ -235,6 +235,28 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = ORGANIZER, roles = {"ORGANIZER"})
+    @DisplayName("Rework: open creates windows for every session when none exist (manual open)")
+    void should_openCreatesWindows_when_noneExist() throws Exception {
+        // An event whose trigger moment already passed / never fired → no windows yet.
+        Event event = saveEvent(EventWorkflowState.SPEAKER_IDENTIFICATION);
+        saveSession(event, SLUG);
+        saveSession(event, "second-session");
+        assertThat(windowRepository.findByEventCode(EVENT_CODE)).isEmpty();
+
+        // Manual open via the event-level endpoint must CREATE the windows (no 404).
+        mockMvc.perform(patch("/api/v1/events/{e}/qna", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"open\": true }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("OPEN")))
+                .andExpect(jsonPath("$.windowsAdjusted", is(2)));
+
+        assertThat(windowRepository.findByEventCode(EVENT_CODE)).hasSize(2)
+                .allSatisfy(w -> assertThat(w.getStatus()).isEqualTo(QnaWindowStatus.OPEN));
+    }
+
+    @Test
     @DisplayName("AC4: organizer takedown soft-deletes (tombstone); attendee role cannot take down (403)")
     void should_takedownPost_when_organizer() throws Exception {
         SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN, Instant.now().plus(10, ChronoUnit.DAYS));

@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * TDD: Written BEFORE implementation (RED phase)
  */
 @Transactional
-class BatchRegistrationContractTest extends AbstractIntegrationTest {
+class BatchRegistrationContractIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

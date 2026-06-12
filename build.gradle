@@ -110,6 +110,13 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
                 events "passed", "skipped", "failed"
                 exceptionFormat = 'full'
             }
+            // Opt-in fast mode for the local pre-push hook: skip the heavy Testcontainers
+            // *IntegrationTest classes (they reliably blow the 20-min cap below on dev machines).
+            // CI/CD invokes `test` WITHOUT this flag, so the full integration suite still gates
+            // every PR. Run with: ./gradlew :services:<svc>:test -PskipIntegration
+            if (project.hasProperty('skipIntegration')) {
+                exclude '**/*IntegrationTest*'
+            }
             timeout = java.time.Duration.ofMinutes(20)
             systemProperty 'junit.jupiter.execution.timeout.default', '5m'
             systemProperty 'junit.jupiter.execution.timeout.testable.method.default', '5m'

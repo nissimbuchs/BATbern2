@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Hibernate query logging enabled in test properties
  */
 @Transactional
-class EventRepositoryEntityGraphTest extends AbstractIntegrationTest {
+class EventRepositoryEntityGraphIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private EventRepository eventRepository;

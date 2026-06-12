@@ -168,17 +168,17 @@ public class SpeakerPoolService {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
 
-        // AC1/AC4 guard: self-nomination opens only once the next event's direction is public —
-        // topic set AND published. A local repository read (events + speaker_pool share one DB),
-        // no cross-service call.
+        // AC1/AC4 guard: self-nomination is open ONLY during the TOPIC publishing phase — from
+        // when the topic is published until the speakers are published. Once the lineup is
+        // published (speakers/agenda) the program is set and no further nominations are accepted.
+        // Local repository read (events + speaker_pool share one DB), no cross-service call.
         boolean topicSet = event.getTopicCode() != null && !event.getTopicCode().isBlank();
-        boolean published = event.getPublishedAt() != null
-                || (event.getCurrentPublishedPhase() != null
-                    && !"none".equals(event.getCurrentPublishedPhase()));
-        if (!topicSet || !published) {
+        boolean topicPhaseOpen = "topic".equalsIgnoreCase(event.getCurrentPublishedPhase());
+        if (!topicSet || !topicPhaseOpen) {
             throw new ch.batbern.events.exception.SelfNominationNotAllowedException(
                     "Self-nomination is not open for " + eventCode
-                            + " — the event topic must be set and published first.");
+                            + " — it is only open while the topic is published and before the "
+                            + "speaker lineup is published.");
         }
 
         String username = securityContextHelper.getCurrentUsername();

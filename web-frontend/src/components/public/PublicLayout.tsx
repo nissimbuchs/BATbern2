@@ -12,9 +12,14 @@ interface PublicLayoutProps {
   children: ReactNode;
   /** Optional banner to display above navigation (e.g., preview mode notice) */
   topBanner?: ReactNode;
+  /**
+   * Event code of a thankable (live/completed) event in view — surfaces the
+   * "Thank the organizers" button in the nav (Story 7.4). Omitted on non-event pages.
+   */
+  thankableEventCode?: string;
 }
 
-export const PublicLayout = ({ children, topBanner }: PublicLayoutProps) => {
+export const PublicLayout = ({ children, topBanner, thankableEventCode }: PublicLayoutProps) => {
   // Apply dark class to html element for Tailwind dark mode
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -32,7 +37,7 @@ export const PublicLayout = ({ children, topBanner }: PublicLayoutProps) => {
     <div className="min-h-screen w-full flex flex-col">
       {/* Top banner (e.g., preview mode notice) */}
       {topBanner}
-      <PublicNavigation topOffset={navTopOffset} />
+      <PublicNavigation topOffset={navTopOffset} thankableEventCode={thankableEventCode} />
       {/* Add padding to prevent content from going under fixed nav and banner */}
       <div className={hasBanner ? 'pt-[116px]' : 'pt-16'}>
         <main className="flex-1">{children}</main>

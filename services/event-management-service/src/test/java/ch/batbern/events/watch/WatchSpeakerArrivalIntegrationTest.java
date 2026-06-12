@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - AC#3: 403 when not ORGANIZER role
  *
  * Note: WebSocket STOMP broadcast test requires RANDOM_PORT webEnvironment.
- * See WatchSpeakerArrivalWebSocketTest for the STOMP broadcast integration test.
+ * See WatchSpeakerArrivalWebSocketIntegrationTest for the STOMP broadcast integration test.
  */
 @Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class, ch.batbern.events.config.TestUserApiClientConfig.class})
@@ -174,7 +174,7 @@ public class WatchSpeakerArrivalIntegrationTest extends AbstractIntegrationTest 
     // ============================================================================
     // Task 12.7: WebSocket STOMP broadcast
     // Note: Full STOMP integration test requires RANDOM_PORT webEnvironment.
-    // See WatchSpeakerArrivalWebSocketTest.java for implementation with
+    // See WatchSpeakerArrivalWebSocketIntegrationTest.java for implementation with
     // WebSocketStompClient + StompSessionHandlerAdapter.
     // ============================================================================
 }

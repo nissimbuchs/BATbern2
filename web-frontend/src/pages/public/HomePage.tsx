@@ -45,13 +45,6 @@ const NewsletterSubscribeWidget = lazy(() =>
     default: m.NewsletterSubscribeWidget,
   }))
 );
-// Story 7.4: lazy so the (below-the-fold) thank-the-organizers widget + its Turnstile script
-// never enter the homepage's critical render path.
-const ThankOrganizersWidget = lazy(() =>
-  import('@/components/public/ThankOrganizersWidget').then((m) => ({
-    default: m.ThankOrganizersWidget,
-  }))
-);
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { useEventPhotos } from '@/hooks/useEventPhotos';
@@ -61,7 +54,7 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
-import { getHomepagePhase, getSectionVisibility } from './homePagePhase';
+import { getHomepagePhase, getSectionVisibility, showSessionQna } from './homePagePhase';
 
 const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
@@ -190,6 +183,14 @@ const HomePage = () => {
 
   const phase = getHomepagePhase(event, isArchiveMode, eventPhotos);
   const vis = getSectionVisibility(phase);
+  const qnaVisible = showSessionQna(phase, event);
+
+  // Story 7.4: surface the "Thank the organizers" nav button only on a live/completed event.
+  const thankableEventCode =
+    event.eventCode &&
+    (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED')
+      ? event.eventCode
+      : undefined;
 
   const canDeregister =
     !!event.workflowState && REGISTRATION_WORKFLOW_STATES.includes(event.workflowState);
@@ -218,7 +219,7 @@ const HomePage = () => {
   // ---------------------------------------------------------------------------
 
   return (
-    <PublicLayout topBanner={previewBanner}>
+    <PublicLayout topBanner={previewBanner} thankableEventCode={thankableEventCode}>
       {/* SEO Meta Tags */}
       <OpenGraphTags
         title={eventTitle}
@@ -331,6 +332,7 @@ const HomePage = () => {
           <SessionCards
             sessions={event.sessions!}
             showMaterials={vis.showSessionMaterials}
+            showQna={qnaVisible}
             eventCode={event.eventCode}
           />
         )}
@@ -366,14 +368,6 @@ const HomePage = () => {
         <div className="mt-16 pb-12">
           <TestimonialSection skipPhotoRow={vis.testimonialsSkipPhotoRow} />
         </div>
-
-        {/* Thank the Organizers — Story 7.4: only once the event is live/completed (AC1) */}
-        {!!event.eventCode &&
-          (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED') && (
-            <Suspense fallback={null}>
-              <ThankOrganizersWidget eventCode={event.eventCode} />
-            </Suspense>
-          )}
 
         {/* Newsletter Subscribe Widget — always shown (lazy, below the fold) */}
         <div className="border-t pt-4 pb-8">

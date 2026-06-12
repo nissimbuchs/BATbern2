@@ -22,14 +22,15 @@ interface SelfNominationGateInput {
 }
 
 /**
- * Story 7.2 "I Could Speak on That": an event can offer speaker self-nomination once its
- * topic is set (the expanded topic object is present) AND it is published. Callers add
- * their own login gate (the panel self-gates) and, where relevant, a future-event check.
+ * Story 7.2 "I Could Speak on That": speaker self-nomination is open ONLY during the TOPIC
+ * publishing phase — from when the topic is published until the speakers are published. Once the
+ * lineup is published (SPEAKERS/AGENDA), the program is set and no further nominations are taken.
+ * Callers add their own login gate (the panel self-gates) and, where relevant, a future-event check.
  */
 export function canOfferSelfNomination(event: SelfNominationGateInput): boolean {
   return (
     typeof event.topic === 'object' &&
     event.topic != null &&
-    isPublishedPhase(event.currentPublishedPhase)
+    (event.currentPublishedPhase ?? '') === 'TOPIC'
   );
 }

@@ -145,7 +145,7 @@
         "saveError": "Q&A設定の更新に失敗しました。",
         "adjustError": "Q&Aを調整できませんでした（まだ開いているウィンドウがありません）。",
         "closeNow": "今すぐQ&Aを閉じる",
-        "reopen": "Q&Aを再開する",
+        "reopen": "Q&Aを開く",
         "saved": "Q&A設定を保存しました"
       }
     },
@@ -889,6 +889,7 @@
       "subtitle": "BATbernはボランティアによって無料・広告なしで運営されています。ワンクリックで感謝を伝えましょう。",
       "notePlaceholder": "主催者へのメッセージを追加（任意）",
       "button": "主催者に感謝する",
+      "alreadyThanked": "お礼を送りました",
       "count_one": "これまでに{{count}}件の感謝",
       "count_other": "これまでに{{count}}件の感謝",
       "success": "感謝を伝えていただきありがとうございます！🎉",
@@ -907,6 +908,7 @@
     "replyPlaceholder": "回答を入力…",
     "questionPlaceholder": "このセッションについて質問する…",
     "askQuestion": "質問する",
+    "viewThread": "Q&Aを見る",
     "loginToPost": "ログインすると質問・回答できます。"
   },
   "attendee": {

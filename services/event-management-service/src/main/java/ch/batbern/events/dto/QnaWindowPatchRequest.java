@@ -7,10 +7,13 @@ import java.time.Instant;
 /**
  * Organizer request to adjust a Q&A window (Story 7.5, AC4).
  *
- * <p>Two independent levers (at least one required):
+ * <p>Levers (at least one required), event-level (Story 7.5 rework):
  * <ul>
- *   <li>{@code closesAt} — extend (or shorten) the open window to a new close time.</li>
- *   <li>{@code close = true} — close the window early (freeze immediately).</li>
+ *   <li>{@code open = true} — open/reopen the Q&A: create a window for every session that lacks
+ *       one and (re)open the rest. Works even when no windows exist yet (manual open, independent
+ *       of the configured trigger). Optional {@code closesAt} overrides the default close time.</li>
+ *   <li>{@code closesAt} (without {@code open}) — extend (or shorten) the EXISTING open windows.</li>
+ *   <li>{@code close = true} — close the windows early (freeze immediately).</li>
  * </ul>
  */
 @JsonIgnoreProperties(ignoreUnknown = false)
@@ -20,12 +23,22 @@ public class QnaWindowPatchRequest {
 
     private Boolean close;
 
+    private Boolean open;
+
     public QnaWindowPatchRequest() {
     }
 
     public QnaWindowPatchRequest(Instant closesAt, Boolean close) {
         this.closesAt = closesAt;
         this.close = close;
+    }
+
+    public Boolean getOpen() {
+        return open;
+    }
+
+    public void setOpen(Boolean open) {
+        this.open = open;
     }
 
     public Instant getClosesAt() {

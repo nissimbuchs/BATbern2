@@ -98,51 +98,62 @@ fi
 # entire class of bug immediately after each storage-stack deploy.
 echo -e "\n${YELLOW}Test 4:${NC} CDN image serving and Lambda@Edge resize"
 
-# Find a known image path from the most recent event via the public API
-SAMPLE_IMAGE_PATH=$(curl -s "$API_URL/api/events?status=COMPLETED&size=1" \
-    | jq -r '.content[0].photoPath // empty' 2>/dev/null || echo "")
+# Find a CURRENT image path via the event-photos API. This endpoint returns the event's
+# LIVE photo keys, so the test survives photo re-uploads. The previous approach (a
+# /api/events?status=COMPLETED lookup that returns no rows + a hardcoded UUID fixture)
+# rotted when BATbern58's photos were re-uploaded with new UUIDs (2026-06-12) — the dead
+# key 404'd at the S3 origin, the Lambda passed the 403 through, and Test 4 failed even
+# though the resize Lambda was perfectly healthy. Derive the path from displayUrl so it
+# works regardless of CDN host.
+SAMPLE_IMAGE_PATH=""
+for ev in BATbern58 BATbern57 BATbern56 BATbern55; do
+    SAMPLE_IMAGE_PATH=$(curl -s --max-time 10 "$API_URL/api/v1/events/$ev/photos" \
+        | jq -r '.[0].displayUrl // empty' 2>/dev/null | sed -E 's#^https?://[^/]+/##')
+    [ -n "$SAMPLE_IMAGE_PATH" ] && break
+done
 
 if [ -z "$SAMPLE_IMAGE_PATH" ]; then
-    # Fall back to a well-known fixture path present in every environment
-    SAMPLE_IMAGE_PATH="events/BATbern58/photos/663b409c-a40a-4dc5-85b5-dd3c6412bae0.jpg"
-fi
-
-# 6a: Plain CDN fetch (no resize params) — Lambda@Edge must pass through to S3
-plain_status=$(curl -s -o /dev/null -w "%{http_code}" \
-    --max-time 10 "$CDN_URL/$SAMPLE_IMAGE_PATH" || echo "000")
-if [ "$plain_status" = "200" ]; then
-    echo -e "  ${GREEN}✓${NC} Plain image fetch: $plain_status"
-    ((passed++))
+    # No fixture discoverable — skip rather than emit a false CDN failure. (Service/API
+    # health is already asserted by Tests 2-3, so we are not masking an outage here.)
+    echo -e "  ${YELLOW}⚠ SKIP${NC}: no current event photo found via the API — skipping CDN resize check"
 else
-    echo -e "  ${RED}✗ FAIL${NC}: Plain image fetch returned $plain_status (expected 200)"
-    echo -e "      URL: $CDN_URL/$SAMPLE_IMAGE_PATH"
-    ((failed++))
-fi
+    # 6a: Plain CDN fetch (no resize params) — Lambda@Edge must pass through to S3
+    plain_status=$(curl -s -o /dev/null -w "%{http_code}" \
+        --max-time 10 "$CDN_URL/$SAMPLE_IMAGE_PATH" || echo "000")
+    if [ "$plain_status" = "200" ]; then
+        echo -e "  ${GREEN}✓${NC} Plain image fetch: $plain_status"
+        ((passed++))
+    else
+        echo -e "  ${RED}✗ FAIL${NC}: Plain image fetch returned $plain_status (expected 200)"
+        echo -e "      URL: $CDN_URL/$SAMPLE_IMAGE_PATH"
+        ((failed++))
+    fi
 
-# 6b: Resize request — Lambda@Edge must load sharp and return image/webp.
-#
-# Randomise w/h per run so each deploy hits a fresh CloudFront cache key. The
-# Lambda's graceful fallback (returns original jpeg if sharp fails) emits the
-# upstream cache-control headers (max-age=31536000, immutable), so a single
-# regression would otherwise poison one fixed cache entry forever — the test
-# would keep seeing the stale jpeg long after the Lambda recovered. A random
-# cache-buster guarantees this test always reflects the *current* Lambda state.
-rand_w=$((150 + RANDOM % 350))
-rand_h=$((150 + RANDOM % 350))
-resize_url="$CDN_URL/$SAMPLE_IMAGE_PATH?w=$rand_w&h=$rand_h&fit=cover"
-resize_response=$(curl -s -D - -o /dev/null --max-time 15 "$resize_url" || echo "")
-resize_status=$(echo "$resize_response" | grep "^HTTP" | awk '{print $2}' | tr -d '\r')
-resize_ct=$(echo "$resize_response" | grep -i "^content-type:" | tr -d '\r' | head -1)
+    # 6b: Resize request — Lambda@Edge must load sharp and return image/webp.
+    #
+    # Randomise w/h per run so each deploy hits a fresh CloudFront cache key. The
+    # Lambda's graceful fallback (returns original jpeg if sharp fails) emits the
+    # upstream cache-control headers (max-age=31536000, immutable), so a single
+    # regression would otherwise poison one fixed cache entry forever — the test
+    # would keep seeing the stale jpeg long after the Lambda recovered. A random
+    # cache-buster guarantees this test always reflects the *current* Lambda state.
+    rand_w=$((150 + RANDOM % 350))
+    rand_h=$((150 + RANDOM % 350))
+    resize_url="$CDN_URL/$SAMPLE_IMAGE_PATH?w=$rand_w&h=$rand_h&fit=cover"
+    resize_response=$(curl -s -D - -o /dev/null --max-time 15 "$resize_url" || echo "")
+    resize_status=$(echo "$resize_response" | grep "^HTTP" | awk '{print $2}' | tr -d '\r')
+    resize_ct=$(echo "$resize_response" | grep -i "^content-type:" | tr -d '\r' | head -1)
 
-if [ "$resize_status" = "200" ] && echo "$resize_ct" | grep -qi "image/webp"; then
-    echo -e "  ${GREEN}✓${NC} Resize+WebP: $resize_status, $resize_ct"
-    ((passed++))
-else
-    echo -e "  ${RED}✗ FAIL${NC}: Resize request returned HTTP $resize_status, Content-Type: $resize_ct"
-    echo -e "      Expected HTTP 200 + content-type: image/webp"
-    echo -e "      URL: $resize_url"
-    echo -e "      This usually means the Lambda@Edge function is missing 'sharp' in its package."
-    ((failed++))
+    if [ "$resize_status" = "200" ] && echo "$resize_ct" | grep -qi "image/webp"; then
+        echo -e "  ${GREEN}✓${NC} Resize+WebP: $resize_status, $resize_ct"
+        ((passed++))
+    else
+        echo -e "  ${RED}✗ FAIL${NC}: Resize request returned HTTP $resize_status, Content-Type: $resize_ct"
+        echo -e "      Expected HTTP 200 + content-type: image/webp"
+        echo -e "      URL: $resize_url"
+        echo -e "      This usually means the Lambda@Edge function is missing 'sharp' in its package."
+        ((failed++))
+    fi
 fi
 
 # Summary

@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * SimpMessagingTemplate is mocked to prevent WebSocket broadcast from failing.
  */
 @Transactional
-class WatchSessionServiceTest extends AbstractIntegrationTest {
+class WatchSessionServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private WatchSessionService watchSessionService;

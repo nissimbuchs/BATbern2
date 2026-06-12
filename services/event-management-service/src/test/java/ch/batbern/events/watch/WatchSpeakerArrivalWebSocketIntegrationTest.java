@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @Import({TestSecurityConfig.class, TestAwsConfig.class, ch.batbern.events.config.TestUserApiClientConfig.class})
-class WatchSpeakerArrivalWebSocketTest extends AbstractIntegrationTest {
+class WatchSpeakerArrivalWebSocketIntegrationTest extends AbstractIntegrationTest {
 
     private static final String EVENT_CODE = "BATbernWS99";
     private static final String SPEAKER_USERNAME = "anna.meier";

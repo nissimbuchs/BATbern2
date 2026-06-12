@@ -105,7 +105,7 @@
         "saveError": "Failed to update Q&A settings.",
         "adjustError": "Failed to adjust the Q&A (no windows open yet?).",
         "closeNow": "Close Q&A now",
-        "reopen": "Reopen Q&A",
+        "reopen": "Open Q&A",
         "saved": "Q&A settings saved"
       }
     },
@@ -913,6 +913,7 @@
       "subtitle": "BATbern is run by volunteers — free and ad-free. Say thanks in one click.",
       "notePlaceholder": "Add a note for the organizers (optional)",
       "button": "Thank the organizers",
+      "alreadyThanked": "You thanked",
       "count_one": "{{count}} thank-you so far",
       "count_other": "{{count}} thank-yous so far",
       "success": "Thank you for saying thanks! 🎉",
@@ -931,6 +932,7 @@
     "replyPlaceholder": "Write an answer…",
     "questionPlaceholder": "Ask a question about this session…",
     "askQuestion": "Ask a question",
+    "viewThread": "View Q&A",
     "loginToPost": "Log in to ask or answer questions."
   },
   "attendee": {

@@ -142,7 +142,7 @@ export const SpeakerDisplay = ({
         >
           {logoUrl ? (
             <img
-              src={buildCdnImageUrl(logoUrl, { h: 128, fit: 'contain' }) ?? undefined}
+              src={buildCdnImageUrl(logoUrl, { h: 128, fit: 'inside' }) ?? undefined}
               alt={`${companyLabel} logo`}
               className={`${sizes.logoImage} object-contain`}
               width={128}

@@ -145,7 +145,7 @@
         "saveError": "Bijwerken van Q&A-instellingen mislukt.",
         "adjustError": "Q&A aanpassen mislukt (nog geen vensters open?).",
         "closeNow": "Q&A nu sluiten",
-        "reopen": "Q&A heropenen",
+        "reopen": "Q&A openen",
         "saved": "Q&A-instellingen opgeslagen"
       }
     },
@@ -889,6 +889,7 @@
       "subtitle": "BATbern wordt gerund door vrijwilligers, gratis en advertentievrij. Zeg bedankt met één klik.",
       "notePlaceholder": "Voeg een bericht toe voor de organisatoren (optioneel)",
       "button": "Bedank de organisatoren",
+      "alreadyThanked": "Je hebt bedankt",
       "count_one": "{{count}} bedankje tot nu toe",
       "count_other": "{{count}} bedankjes tot nu toe",
       "success": "Bedankt voor het bedanken! 🎉",
@@ -907,6 +908,7 @@
     "replyPlaceholder": "Schrijf een antwoord…",
     "questionPlaceholder": "Stel een vraag over deze sessie…",
     "askQuestion": "Stel een vraag",
+    "viewThread": "Vragen bekijken",
     "loginToPost": "Log in om vragen te stellen of te beantwoorden."
   },
   "attendee": {

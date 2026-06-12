@@ -29,12 +29,27 @@ public class EventQnaController {
 
     private final SessionQnaService qnaService;
 
-    /** Organizer: extend (new closesAt) or close early (close=true) all of the event's windows. */
+    /**
+     * Organizer Q&A control for all of an event's session windows:
+     * <ul>
+     *   <li>{@code open=true} — open/reopen, creating windows for sessions that lack one (works
+     *       even when none exist yet — independent of the configured trigger).</li>
+     *   <li>{@code closesAt} — extend/shorten the existing open windows.</li>
+     *   <li>{@code close=true} — freeze the windows now.</li>
+     * </ul>
+     */
     @PatchMapping
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Map<String, Object>> adjustWindows(
             @PathVariable String eventCode,
             @Valid @RequestBody QnaWindowPatchRequest request) {
+        if (Boolean.TRUE.equals(request.getOpen())) {
+            int opened = qnaService.openWindowsManually(eventCode, request.getClosesAt());
+            return ResponseEntity.ok(Map.of(
+                    "eventCode", eventCode,
+                    "windowsAdjusted", opened,
+                    "status", "OPEN"));
+        }
         int adjusted = qnaService.adjustWindows(eventCode, request.getClosesAt(), request.getClose());
         boolean closed = Boolean.TRUE.equals(request.getClose());
         return ResponseEntity.ok(Map.of(

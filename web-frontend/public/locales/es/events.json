@@ -145,7 +145,7 @@
         "saveError": "No se pudieron actualizar los ajustes de Q&A.",
         "adjustError": "No se pudieron ajustar las Q&A (¿aún no hay ventanas abiertas?).",
         "closeNow": "Cerrar Q&A ahora",
-        "reopen": "Reabrir Q&A",
+        "reopen": "Abrir Q&A",
         "saved": "Ajustes de Q&A guardados"
       }
     },
@@ -889,6 +889,7 @@
       "subtitle": "BATbern está gestionado por voluntarios, de forma gratuita y sin publicidad. Da las gracias con un clic.",
       "notePlaceholder": "Añade un mensaje para los organizadores (opcional)",
       "button": "Agradece a los organizadores",
+      "alreadyThanked": "Gracias enviadas",
       "count_one": "{{count}} agradecimiento hasta ahora",
       "count_other": "{{count}} agradecimientos hasta ahora",
       "success": "¡Gracias por dar las gracias! 🎉",
@@ -907,6 +908,7 @@
     "replyPlaceholder": "Escribe una respuesta…",
     "questionPlaceholder": "Haz una pregunta sobre esta sesión…",
     "askQuestion": "Haz una pregunta",
+    "viewThread": "Ver preguntas",
     "loginToPost": "Inicia sesión para preguntar o responder."
   },
   "attendee": {

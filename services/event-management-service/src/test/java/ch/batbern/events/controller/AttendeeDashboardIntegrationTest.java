@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -109,6 +110,22 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
     void should_reject_anonymous() throws Exception {
         mockMvc.perform(get("/api/v1/attendee-portal/dashboard"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
+    @DisplayName("Greets with the CUMS profile first name, not the login username")
+    void should_greetWithProfileFirstName() throws Exception {
+        when(userApiClient.getUserByUsername(ATTENDEE)).thenReturn(
+                new ch.batbern.events.dto.generated.users.UserResponse()
+                        .firstName("Jane").lastName("Müller"));
+        Event e = saveEvent("BATbern974", Instant.now().plus(20, ChronoUnit.DAYS),
+                EventWorkflowState.AGENDA_PUBLISHED);
+        saveRegistration(ATTENDEE, e, "confirmed");
+
+        mockMvc.perform(get("/api/v1/attendee-portal/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attendeeName", is("Jane")));
     }
 
     // ==================== Helpers ====================

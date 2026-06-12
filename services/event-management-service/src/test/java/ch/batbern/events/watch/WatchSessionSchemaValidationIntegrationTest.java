@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * W4.1 Task 5: Verifies watch session control fields added to sessions table.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-class WatchSessionSchemaValidationTest extends AbstractIntegrationTest {
+class WatchSessionSchemaValidationIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

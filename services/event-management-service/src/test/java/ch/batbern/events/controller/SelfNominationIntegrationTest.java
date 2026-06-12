@@ -239,6 +239,23 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         assertThat(speakerPoolRepository.findAll()).isEmpty();
     }
 
+    @Test
+    @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
+    @DisplayName("Window closes at speakers-publish: phase=speakers → 409, no row created")
+    void should_reject_when_speakersPublished() throws Exception {
+        // Topic set + a publishing phase active, but the speaker lineup is already published →
+        // self-nomination is no longer open (only the TOPIC phase is the window).
+        saveEvent(EVENT_CODE, "cloud-native", /* publishedAt */ true, "speakers");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(BODY))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("SELF_NOMINATION_NOT_ALLOWED")));
+
+        assertThat(speakerPoolRepository.findAll()).isEmpty();
+    }
+
     // ==================== AC8: one per event ====================
 
     @Test
