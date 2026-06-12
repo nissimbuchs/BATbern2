@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # BATbern Platform - Optimized Pre-push Hook
-# Runs tests only for changed components to speed up local workflow
-# CI/CD will run full test suite on PR
+# Runs tests only for changed components to speed up local workflow.
+# Java services run with -PskipIntegration (fast unit tests only) — the heavy
+# Testcontainers *IntegrationTest classes reliably exceed the 20-min Gradle cap on dev
+# machines. CI/CD runs the FULL suite (no flag) on every PR, so integration coverage is
+# unchanged at the PR gate.
 
 set -e
 
@@ -164,7 +167,7 @@ if [ "$TEST_SHARED_KERNEL" = true ]; then
     echo -e "${YELLOW}☕ Testing Shared Kernel...${NC}"
 
     if [ -f "gradlew" ]; then
-        ./gradlew :shared-kernel:test :shared-kernel:jacocoTestReport || CHECKS_FAILED=1
+        ./gradlew :shared-kernel:test :shared-kernel:jacocoTestReport -PskipIntegration || CHECKS_FAILED=1
     else
         echo -e "${RED}❌ gradlew not found${NC}"
         CHECKS_FAILED=1
@@ -178,7 +181,7 @@ if [ "$TEST_API_GATEWAY" = true ]; then
     echo -e "${YELLOW}🚪 Testing API Gateway...${NC}"
 
     if [ -f "gradlew" ]; then
-        ./gradlew :api-gateway:test :api-gateway:jacocoTestReport || CHECKS_FAILED=1
+        ./gradlew :api-gateway:test :api-gateway:jacocoTestReport -PskipIntegration || CHECKS_FAILED=1
     else
         echo -e "${RED}❌ gradlew not found${NC}"
         CHECKS_FAILED=1
@@ -193,7 +196,7 @@ if [ -n "$TEST_SERVICES" ]; then
         echo -e "${YELLOW}⚙️  Testing Service: $service...${NC}"
 
         if [ -f "gradlew" ]; then
-            ./gradlew :services:$service:test :services:$service:jacocoTestReport || CHECKS_FAILED=1
+            ./gradlew :services:$service:test :services:$service:jacocoTestReport -PskipIntegration || CHECKS_FAILED=1
         else
             echo -e "${RED}❌ gradlew not found${NC}"
             CHECKS_FAILED=1
