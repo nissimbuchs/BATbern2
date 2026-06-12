@@ -10,15 +10,24 @@ import { Menu, ChevronDown, LogOut, UserCircle } from 'lucide-react';
 import { Button } from '@/components/public/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/public/ui/popover';
 import LanguageSwitcher from '@/components/shared/LanguageSwitcher/LanguageSwitcher';
+import { ThankOrganizersNavButton } from './ThankOrganizersNavButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
 interface PublicNavigationProps {
   /** Top offset in pixels (e.g., when a banner is present above) */
   topOffset?: string;
+  /**
+   * Event code of the current live/completed event, when the page in view is a thankable
+   * event (Story 7.4). When set, a compact "Thank the organizers" button shows in the nav.
+   */
+  thankableEventCode?: string;
 }
 
-export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) => {
+export const PublicNavigation = ({
+  topOffset = '0px',
+  thankableEventCode,
+}: PublicNavigationProps) => {
   const { isAuthenticated, user, signOut } = useAuth();
   const { t } = useTranslation('common');
   const navigate = useNavigate();
@@ -136,6 +145,8 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
 
             {/* CTA Buttons - Right (desktop) */}
             <div className="hidden md:flex items-center gap-3">
+              {/* Thank the organizers — Story 7.4: only on a live/completed event page */}
+              {thankableEventCode && <ThankOrganizersNavButton eventCode={thankableEventCode} />}
               {isAuthenticated ? (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -275,6 +286,12 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
 
         {/* CTA buttons */}
         <div className="px-4 pb-4 flex flex-col gap-3">
+          {/* Thank the organizers — Story 7.4: only on a live/completed event page */}
+          {thankableEventCode && (
+            <div className="pb-1">
+              <ThankOrganizersNavButton eventCode={thankableEventCode} />
+            </div>
+          )}
           {isAuthenticated ? (
             <>
               {/* 2026-05-20 (Q#2b) — Portal/My Sessions moved up into the nav links block.

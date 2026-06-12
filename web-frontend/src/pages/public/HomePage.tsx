@@ -45,13 +45,6 @@ const NewsletterSubscribeWidget = lazy(() =>
     default: m.NewsletterSubscribeWidget,
   }))
 );
-// Story 7.4: lazy so the (below-the-fold) thank-the-organizers widget + its Turnstile script
-// never enter the homepage's critical render path.
-const ThankOrganizersWidget = lazy(() =>
-  import('@/components/public/ThankOrganizersWidget').then((m) => ({
-    default: m.ThankOrganizersWidget,
-  }))
-);
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { useEventPhotos } from '@/hooks/useEventPhotos';
@@ -192,6 +185,13 @@ const HomePage = () => {
   const vis = getSectionVisibility(phase);
   const qnaVisible = showSessionQna(phase, event);
 
+  // Story 7.4: surface the "Thank the organizers" nav button only on a live/completed event.
+  const thankableEventCode =
+    event.eventCode &&
+    (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED')
+      ? event.eventCode
+      : undefined;
+
   const canDeregister =
     !!event.workflowState && REGISTRATION_WORKFLOW_STATES.includes(event.workflowState);
 
@@ -219,7 +219,7 @@ const HomePage = () => {
   // ---------------------------------------------------------------------------
 
   return (
-    <PublicLayout topBanner={previewBanner}>
+    <PublicLayout topBanner={previewBanner} thankableEventCode={thankableEventCode}>
       {/* SEO Meta Tags */}
       <OpenGraphTags
         title={eventTitle}
@@ -258,17 +258,6 @@ const HomePage = () => {
           <EventDescriptionSection description={event?.description} />
         </div>
       )}
-
-      {/* Thank the Organizers — Story 7.4: prominent post-event card near the top, shown once
-          the event is live/completed (AC1). Placed here (not the footer) for discoverability. */}
-      {!!event.eventCode &&
-        (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED') && (
-          <div className="container mx-auto px-4">
-            <Suspense fallback={null}>
-              <ThankOrganizersWidget eventCode={event.eventCode} />
-            </Suspense>
-          </div>
-        )}
 
       <div className="container mx-auto px-4">
         {/* Registration Status Banner (Story 10.10) */}
