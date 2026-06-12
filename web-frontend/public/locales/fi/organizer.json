@@ -543,7 +543,8 @@
       "sublineFilterAriaLabel": "Suodata sarake {{state}}: {{description}}",
       "filterClearedAnnouncement": "Sarakesuodatin poistettu",
       "filterAppliedAnnouncement": "Sarake {{state}} suodatettu, näkyvissä {{count}} korttia"
-    }
+    },
+    "selfNominated": "Itse ehdottanut"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",

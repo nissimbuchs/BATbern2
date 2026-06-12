@@ -61,6 +61,8 @@ turnstile:
   protected-endpoints:
     - POST:/api/v1/newsletter/subscribe
     - POST:/api/v1/events/*/registrations
+    # Story 7.4: anonymous "Thank the Organizers" submissions require a Turnstile token.
+    - POST:/api/v1/events/*/thanks
 
 logging:
   level:

@@ -25,6 +25,7 @@ import {
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { SessionQnaThread } from '@/components/public/Event/SessionQnaThread';
 import { SpeakerDisplay } from './SpeakerDisplay';
 import { eventApiClient } from '@/services/eventApiClient';
 
@@ -320,6 +321,12 @@ export const SessionCards = ({
                     )}
                   </div>
                 </div>
+              )}
+
+              {/* Story 7.5: per-session Q&A thread — shown post-event/archive. The component
+                  renders nothing when no Q&A window exists for the session. */}
+              {showMaterials && eventCode && (
+                <SessionQnaThread eventCode={eventCode} sessionSlug={session.sessionSlug} />
               )}
             </CardContent>
           </Card>

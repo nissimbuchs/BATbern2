@@ -15,6 +15,7 @@ import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
+import ch.batbern.events.repository.SessionProposalRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -48,6 +49,7 @@ public class SpeakerPoolService {
     private final SessionRepository sessionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final SessionUserRepository sessionUserRepository;
+    private final SessionProposalRepository sessionProposalRepository;
     private final UserApiClient userApiClient;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
@@ -59,6 +61,7 @@ public class SpeakerPoolService {
                               SessionRepository sessionRepository,
                               SessionMaterialsRepository sessionMaterialsRepository,
                               SessionUserRepository sessionUserRepository,
+                              SessionProposalRepository sessionProposalRepository,
                               UserApiClient userApiClient,
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper,
@@ -69,6 +72,7 @@ public class SpeakerPoolService {
         this.sessionRepository = sessionRepository;
         this.sessionMaterialsRepository = sessionMaterialsRepository;
         this.sessionUserRepository = sessionUserRepository;
+        this.sessionProposalRepository = sessionProposalRepository;
         this.userApiClient = userApiClient;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
@@ -134,6 +138,136 @@ public class SpeakerPoolService {
         return response;
     }
 
+    /** Story 7.2: source tag for organizer-sourced pool rows (the historical default). */
+    public static final String SOURCE_ORGANIZER_ADDED = "organizer_added";
+    /** Story 7.2: source tag for attendee self-nominations ("I Could Speak on That"). */
+    public static final String SOURCE_SELF_NOMINATION = "self_nomination";
+
+    /**
+     * Story 7.2 "I Could Speak on That": a logged-in attendee self-nominates as a speaker for an
+     * event once its topic is set + published.
+     *
+     * <p>This reuses the add-to-pool creation path: the row enters at the {@code IDENTIFIED}
+     * default (the entity default — we never call {@code transition(...)} to create, honouring
+     * the ADR-009 sole-writer rule), tagged {@code source = 'self_nomination'} with the
+     * attendee's username. <strong>No</strong> Cognito user, SPEAKER role, or
+     * {@code session_users} row is created — provisioning still happens only at promote-to-READY
+     * (organizer-only). The speaker name + company are auto-filled from the attendee's profile
+     * (Resolved Decision #1); the attendee only supplies the proposed talk.
+     *
+     * @param eventCode the target event (the upcoming-event card supplies it)
+     * @param request the proposed talk (sessionTitle + abstract; identity is profile-derived)
+     * @return the created pool entry at IDENTIFIED
+     * @throws EventNotFoundException if the event does not exist
+     * @throws SelfNominationNotAllowedException if the event's topic is unset or it is unpublished (AC4)
+     * @throws DuplicateSelfNominationException if this attendee already self-nominated for the event (AC8)
+     */
+    @Transactional
+    public SpeakerPoolResponse selfNominate(
+            String eventCode, ch.batbern.events.dto.SelfNominateSpeakerRequest request) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+
+        // AC1/AC4 guard: self-nomination opens only once the next event's direction is public —
+        // topic set AND published. A local repository read (events + speaker_pool share one DB),
+        // no cross-service call.
+        boolean topicSet = event.getTopicCode() != null && !event.getTopicCode().isBlank();
+        boolean published = event.getPublishedAt() != null
+                || (event.getCurrentPublishedPhase() != null
+                    && !"none".equals(event.getCurrentPublishedPhase()));
+        if (!topicSet || !published) {
+            throw new ch.batbern.events.exception.SelfNominationNotAllowedException(
+                    "Self-nomination is not open for " + eventCode
+                            + " — the event topic must be set and published first.");
+        }
+
+        String username = securityContextHelper.getCurrentUsername();
+
+        // AC8′ one-per-event: friendly pre-check against session_proposals (the table's
+        // UNIQUE(event_id, proposed_by_username) is the race-safe backstop, surfaced below).
+        if (sessionProposalRepository.existsByEventIdAndProposedByUsername(event.getId(), username)) {
+            throw new ch.batbern.events.exception.DuplicateSelfNominationException(
+                    "You have already self-nominated for " + eventCode + ".");
+        }
+
+        // Resolved Decision #1: auto-fill speaker name + company from the attendee's profile;
+        // never trust a client-supplied name. Degrade gracefully to the username if CUMS is down.
+        String speakerName = username;
+        String company = null;
+        try {
+            UserResponse profile = userApiClient.getUserByUsername(username);
+            if (profile != null) {
+                String first = profile.getFirstName() != null ? profile.getFirstName() : "";
+                String last = profile.getLastName() != null ? profile.getLastName() : "";
+                String full = (first + " " + last).trim();
+                if (!full.isEmpty()) {
+                    speakerName = full;
+                }
+                if (profile.getCompanyId() != null && !profile.getCompanyId().isBlank()) {
+                    company = profile.getCompanyId();
+                }
+            }
+        } catch (UserServiceException ex) {
+            log.warn("UserApiClient failed for {} during self-nomination — falling back to username: {}",
+                    username, ex.getMessage());
+        }
+
+        // Reuse the add-to-pool creation path: new row at the IDENTIFIED default (entity default),
+        // tagged as a self-nomination. assignedOrganizerId stays null — organizers triage later.
+        // ADR-012: the pool row carries NO proposed talk — that lives in session_proposals below.
+        SpeakerPool speakerPool = new SpeakerPool();
+        speakerPool.setEventId(event.getId());
+        speakerPool.setSpeakerName(speakerName);
+        speakerPool.setCompany(company);
+        speakerPool.setSource(SOURCE_SELF_NOMINATION);
+        speakerPool.setSessionId(null);
+        SpeakerPool saved = speakerPoolRepository.save(speakerPool);
+
+        // The pitch (title + abstract) is a session_proposals row linked to the pool row.
+        // saveAndFlush so the UNIQUE(event_id, proposed_by_username) constraint fires now, not at
+        // commit — turning the race-condition backstop into a deterministic 409 (AC8′).
+        ch.batbern.events.domain.SessionProposal proposal =
+                ch.batbern.events.domain.SessionProposal.builder()
+                        .speakerPoolId(saved.getId())
+                        .eventId(event.getId())
+                        .proposedByUsername(username)
+                        .proposedTitle(request.getSessionTitle())
+                        .proposedAbstract(request.getAbstractText())
+                        .build();
+        try {
+            proposal = sessionProposalRepository.saveAndFlush(proposal);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            log.info("Concurrent self-nomination for {} by {} hit the unique constraint — rejecting as duplicate",
+                    eventCode, username);
+            throw new ch.batbern.events.exception.DuplicateSelfNominationException(
+                    "You have already self-nominated for " + eventCode + ".");
+        }
+        log.info("Attendee {} self-nominated for {} (pool row {}, proposal {}, status IDENTIFIED, "
+                + "source self_nomination)", username, eventCode, saved.getId(), proposal.getId());
+
+        // Surface it to organizers via the same SpeakerAddedToPoolEvent the manual add path
+        // publishes, so it lands in the existing brainstorming/pool flow (AC6). This is an
+        // organizer-internal signal — it does NOT email the attendee.
+        SpeakerAddedToPoolEvent speakerAddedEvent = SpeakerAddedToPoolEvent.builder()
+                .eventId(event.getId())
+                .eventCode(eventCode)
+                .speakerPoolId(saved.getId())
+                .speakerName(saved.getSpeakerName())
+                .company(saved.getCompany())
+                .expertise(saved.getExpertise())
+                .assignedOrganizerId(saved.getAssignedOrganizerId())
+                .addedBy(username)
+                .build();
+        eventPublisher.publishEvent(speakerAddedEvent);
+
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(saved);
+        primarySpeakerResolver.applyOverlay(response, saved);
+        // ADR-012: layer the just-created pitch onto the 201 (proposed talk lives in
+        // session_proposals, not on the pool row).
+        response.applyProposal(proposal);
+        return response;
+    }
+
     /**
      * Get all speaker pool entries for an event with content submission data.
      *
@@ -148,6 +282,21 @@ public class SpeakerPoolService {
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
 
         List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
+
+        // Story 7.2 / ADR-012: the proposed talk for self-nomination rows lives in
+        // session_proposals (not on speaker_pool). Batch-load by pool id and key by pool id so
+        // the kanban card can show the pitch without an N+1.
+        List<UUID> selfNomPoolIds = speakers.stream()
+                .filter(s -> SOURCE_SELF_NOMINATION.equals(s.getSource()))
+                .map(SpeakerPool::getId)
+                .collect(Collectors.toList());
+        Map<UUID, ch.batbern.events.domain.SessionProposal> proposalByPoolId = selfNomPoolIds.isEmpty()
+                ? Map.of()
+                : sessionProposalRepository.findBySpeakerPoolIdIn(selfNomPoolIds).stream()
+                        .collect(Collectors.toMap(
+                                ch.batbern.events.domain.SessionProposal::getSpeakerPoolId,
+                                p -> p,
+                                (existing, duplicate) -> existing));
 
         // Story 11.E.8 consolidation: content history is now keyed by session_id. Batch-fetch
         // sessions first, then the latest version per session.
@@ -214,6 +363,9 @@ public class SpeakerPoolService {
                             : null;
                     SpeakerPoolResponse response = SpeakerPoolResponse.fromEntityWithContent(
                             speaker, session, latestVersion);
+                    // ADR-012: layer the self-nomination pitch (from session_proposals) onto the
+                    // card. No-op for organizer-added rows (no proposal).
+                    response.applyProposal(proposalByPoolId.get(speaker.getId()));
                     // Phase A: session-derived identity overlay. The primary SessionUser
                     // gives us the canonical username; the UserApiClient profile gives us
                     // the live email + full name + company. When the profile is missing

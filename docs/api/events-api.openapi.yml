@@ -1121,6 +1121,476 @@ paths:
       security:
         - BearerAuth: []
 
+  /events/{eventCode}/speakers/self-nominate:
+    post:
+      tags:
+        - Event Actions
+      summary: Attendee self-nominates as a speaker ("I Could Speak on That")
+      description: |
+        A logged-in attendee raises their hand with a proposed talk once the event's topic
+        is set + published, feeding the speaker pipeline from the floor.
+
+        **Story**: 7.2 - "I Could Speak on That"
+        **Authorization**: Requires ATTENDEE role (login-gated end-to-end)
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - The event's topic must be set (`topicCode != null`) AND the event must be
+          published (`publishedAt != null` or `currentPublishedPhase != 'none'`) — else 409.
+        - The nomination lands as a `speaker_pool` row at the `IDENTIFIED` default, tagged
+          `source = 'self_nomination'` with `proposedByUsername` = the caller's username.
+          **No** Cognito user, SPEAKER role, or session is created here — provisioning stays
+          organizer-only at promote-to-READY.
+        - Identity (speaker name + company) is auto-filled from the attendee's profile; the
+          body carries only the proposed talk. Unknown body fields are rejected (400).
+        - At most **one** self-nomination per attendee per event — a second attempt returns 409.
+      operationId: selfNominateSpeaker
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelfNominateSpeakerRequest'
+      responses:
+        '201':
+          description: Self-nomination created (status IDENTIFIED, source self_nomination)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: Validation error (missing sessionTitle/abstract, or an unknown field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated (anonymous caller — rejected at the API gateway)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            Conflict. Two paths:
+            (a) `SELF_NOMINATION_NOT_ALLOWED` — the event's topic is unset or it is unpublished, or
+            (b) `DUPLICATE_SELF_NOMINATION` — this attendee already self-nominated for the event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notAllowed:
+                  summary: Topic unset / not published
+                  value:
+                    message: "Self-nomination is not open for BATbern57 — the event topic must be set and published first."
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "SELF_NOMINATION_NOT_ALLOWED"
+                duplicate:
+                  summary: Already self-nominated
+                  value:
+                    message: "You have already self-nominated for BATbern57."
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "DUPLICATE_SELF_NOMINATION"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/thanks:
+    post:
+      tags:
+        - Event Actions
+      summary: Thank the organizers ("Thank the Organizers")
+      description: |
+        Send a one-click thank-you to the volunteer organizers after an event is live/completed.
+
+        **Story**: 7.4 - "Thank the Organizers"
+        **Authorization**: PUBLIC — anonymous allowed. Authentication is OPTIONAL.
+        **Abuse guard (anonymous only)**: a valid Cloudflare Turnstile token
+        (`X-Turnstile-Token` header) is required at the gateway, and submissions are
+        rate-limited per (event, client-IP) at the service.
+
+        **Business Rules**:
+        - The event must be `EVENT_LIVE` or `EVENT_COMPLETED` — else 409 (`THANKS_NOT_ALLOWED`).
+        - Logged-in attendees are deduped to one thank-you per event (a repeat updates the
+          optional note, it never double-counts).
+        - Anonymous thank-yous are clap-style and not user-deduped; exceeding the per-(event,IP)
+          rate limit returns 429 (`THANKS_RATE_LIMITED`) without incrementing the counter.
+        - The response carries the new aggregate `count`. Submitted notes are NEVER returned here.
+      operationId: submitThanks
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitThanksRequest'
+      responses:
+        '200':
+          description: Thank-you recorded; returns the new aggregate count (notes never included).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThanksCountResponse'
+        '400':
+          description: Validation error (note too long, or an unknown body field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Turnstile verification failed (anonymous submission, invalid/blocked token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            `THANKS_NOT_ALLOWED` — the event is not yet live or completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Thank-yous open only after the event is live or completed."
+                status: 409
+                error: "Conflict"
+                details:
+                  code: "THANKS_NOT_ALLOWED"
+        '429':
+          description: |
+            `THANKS_RATE_LIMITED` — too many anonymous thank-yous for this event from your IP.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Too many thank-yous for this event from your network — please try later."
+                status: 429
+                error: "Too Many Requests"
+                details:
+                  code: "THANKS_RATE_LIMITED"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+    get:
+      tags:
+        - Event Actions
+      summary: Get the thank-the-organizers aggregate (and notes for organizers)
+      description: |
+        Returns the public clap-style aggregate `count` for an event. Organizer-authenticated
+        callers additionally receive the submitted `notes` (AC6); the public response is
+        count-only — there is no public note wall.
+
+        **Story**: 7.4 - "Thank the Organizers"
+        **Authorization**: PUBLIC for the count. Notes returned ONLY to ORGANIZER callers.
+      operationId: getThanks
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      responses:
+        '200':
+          description: Aggregate count (notes present only for organizer callers).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThanksCountResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+
+  /events/{eventCode}/sessions/{sessionSlug}/qna:
+    get:
+      tags:
+        - Event Actions
+      summary: Get a session's Q&A thread ("The Apéro Continues")
+      description: |
+        Returns the open or frozen Q&A thread for a session. PUBLIC — anonymous may read the
+        frozen archive thread (AC3). Posts are returned oldest-first; the client nests answers
+        under their `parentPostId`. Removed posts are tombstones (`removed: true`, body/author null).
+
+        **Story**: 7.5 - "The Apéro Continues"
+      operationId: getSessionQna
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+          example: cloud-native-foundations
+      responses:
+        '200':
+          description: The Q&A thread (open or frozen).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QnaWindowResponse'
+        '404':
+          description: No Q&A window for this session (event not completed, or unknown session).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+    patch:
+      tags:
+        - Event Actions
+      summary: Extend or close a session's Q&A window (organizer)
+      description: |
+        Organizer-only (AC4). Extend by sending a new `closesAt` (reopens to that time) or close
+        early with `close: true` (freezes immediately). Changes take effect immediately.
+
+        **Story**: 7.5 - "The Apéro Continues"
+      operationId: patchSessionQnaWindow
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+          example: cloud-native-foundations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QnaWindowPatchRequest'
+      responses:
+        '200':
+          description: Updated window.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QnaWindowResponse'
+        '400':
+          description: Neither closesAt nor close provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No Q&A window for this session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/sessions/{sessionSlug}/qna/posts:
+    post:
+      tags:
+        - Event Actions
+      summary: Post a Q&A question or answer (logged-in)
+      description: |
+        Any logged-in user may post within an open window (AC2). `parentPostId` set = an answer to
+        that question; omitted = a top-level question. Anonymous → 401 (rejected at the gateway).
+        Posting to a frozen window → 409 `QNA_WINDOW_FROZEN` (AC5).
+
+        **Story**: 7.5 - "The Apéro Continues"
+      operationId: postSessionQna
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+          example: cloud-native-foundations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QnaPostRequest'
+      responses:
+        '201':
+          description: Post created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QnaPostResponse'
+        '400':
+          description: Validation error (empty/too-long body or unknown field).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated (anonymous caller — rejected at the API gateway).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No Q&A window for this session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            `QNA_WINDOW_FROZEN` — the Q&A for this session has closed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "The Q&A for this session has closed — no further posts are accepted."
+                status: 409
+                error: "Conflict"
+                details:
+                  code: "QNA_WINDOW_FROZEN"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/sessions/{sessionSlug}/qna/posts/{postId}:
+    delete:
+      tags:
+        - Event Actions
+      summary: Take down a Q&A post (organizer)
+      description: |
+        Organizer-only soft-delete (AC4): the post becomes a "removed by organizer" tombstone
+        (never hard-deleted), preserving thread coherence in the frozen archive.
+
+        **Story**: 7.5 - "The Apéro Continues"
+      operationId: removeSessionQnaPost
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+          example: cloud-native-foundations
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Post removed (tombstoned).
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Post or Q&A window not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /attendee-portal/dashboard:
+    get:
+      tags:
+        - Event Actions
+      summary: Attendee dashboard — events I participated in (Story 7.6)
+      description: |
+        Returns every event the authenticated attendee participated in (each non-cancelled
+        registration), split into upcoming (soonest-first) and past (most-recent-first). The
+        username is taken from the JWT — there is no path/header parameter. Authenticated only.
+      operationId: getAttendeeDashboard
+      responses:
+        '200':
+          description: The attendee's event history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendeeDashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /events/{eventCode}/speakers/pool/{speakerId}:
     patch:
       tags:
@@ -5196,6 +5666,39 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /events/{eventCode}/slides-online/send:
+    post:
+      tags: [Newsletter]
+      summary: Send the "slides are online" mail to the event's active registrants (ORGANIZER)
+      description: |
+        Story 7.3 — sends a one-shot, event-triggered "The Slides Are Online" mail to the event's
+        ACTIVE REGISTRANTS (status registered/confirmed), NOT the global newsletter-subscriber pool.
+        Recipients with a global newsletter opt-out (unsubscribed/suppressed) are excluded. The
+        template language is per-recipient (de* → German, en → English, else → German fallback).
+        Guarded against double-send (409 if already in progress or already sent). Runs asynchronously.
+      operationId: sendSlidesOnline
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Slides-online send queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlidesOnlineSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+        '409':
+          description: A slides-online send is already in progress or has already been sent
+
   /events/{eventCode}/newsletter/send:
     post:
       tags: [Newsletter]
@@ -6068,6 +6571,23 @@ components:
         completedAt:
           type: string
           format: date-time
+
+    SlidesOnlineSendResponse:
+      type: object
+      description: Story 7.3 — response for a dedicated "slides are online" send (runs async).
+      required: [sendId, status, recipientCount]
+      properties:
+        sendId:
+          type: string
+          format: uuid
+          description: Id of the underlying newsletter_sends audit row (template_key='slides-online').
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, PARTIAL, FAILED]
+          description: Send-job status at return time (PENDING).
+        recipientCount:
+          type: integer
+          description: Number of active registrants resolved as the recipient base.
 
     NewsletterSendStatusResponse:
       type: object
@@ -6972,6 +7492,21 @@ components:
             Story 10.11: Organizer-configured registration limit (≤ venueCapacity). NULL = unlimited.
             Distinct from venueCapacity (fire-code limit). Null means no cap is enforced.
           example: 60
+        qnaEnabled:
+          type: boolean
+          description: "Story 7.5 rework: master on/off for this event's per-session Q&A."
+          example: true
+        qnaOpenTrigger:
+          type: string
+          enum: [EVENT_COMPLETED, SPEAKERS_PUBLISHED]
+          description: |
+            Story 7.5 rework: WHEN the Q&A windows open. EVENT_COMPLETED (default, "digital
+            afterglow") or SPEAKERS_PUBLISHED (opt-in: open once the speakers phase publishes).
+          example: EVENT_COMPLETED
+        qnaWindowDays:
+          type: integer
+          description: "Story 7.5 rework: window length; windows close at (event date + this many days)."
+          example: 14
         confirmedCount:
           type: integer
           description: Story 10.11 — Count of registrations with status registered or confirmed.
@@ -7804,6 +8339,18 @@ components:
           nullable: true
           maxLength: 100
           description: Upload ID from /logos/presigned-url for event theme image
+        qnaEnabled:
+          type: boolean
+          description: "Story 7.5 rework: master on/off for this event's per-session Q&A."
+        qnaOpenTrigger:
+          type: string
+          enum: [EVENT_COMPLETED, SPEAKERS_PUBLISHED]
+          description: "Story 7.5 rework: when the Q&A windows open."
+        qnaWindowDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: "Story 7.5 rework: window length in days (close = event date + this)."
 
     CreateSessionRequest:
       type: object
@@ -8555,6 +9102,237 @@ components:
           example:
             - "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified (need 6, have 3)"
 
+    SelfNominateSpeakerRequest:
+      type: object
+      description: |
+        Story 7.2 "I Could Speak on That": an attendee's speaker self-nomination body. The
+        attendee supplies only the proposed talk — their name + company are auto-filled from
+        their user profile server-side, so identity is never re-typed and cannot be spoofed.
+        `additionalProperties: false`: an unexpected field (e.g. `speakerName`, `status`) is
+        rejected with HTTP 400.
+      additionalProperties: false
+      required:
+        - sessionTitle
+        - abstract
+      properties:
+        sessionTitle:
+          type: string
+          minLength: 5
+          maxLength: 200
+          description: >-
+            The proposed talk title. Max 200 to match the canonical session content title —
+            the pitch is carried verbatim into the session at promote (ADR-012).
+          example: Event-driven architecture in practice
+        abstract:
+          type: string
+          minLength: 10
+          maxLength: 5000
+          description: The proposed talk abstract, stored raw (no agent pre-screen).
+          example: A field report on migrating a monolith to an event-driven core, including the dead ends.
+
+    SubmitThanksRequest:
+      type: object
+      description: |
+        Story 7.4 "Thank the Organizers": the optional body of a thank-you. Identity (logged-in
+        username) is taken from the JWT server-side, never from the body, so the only field is an
+        optional short `note`. A one-click thank-you may send an empty body / no body at all.
+        `additionalProperties: false`: an unexpected field is rejected with HTTP 400.
+      additionalProperties: false
+      properties:
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional short note for the organizers (organizer-visible only).
+          example: Thank you for 20 years of BATbern!
+
+    ThanksNoteResponse:
+      type: object
+      description: |
+        Story 7.4: a single organizer-visible thank-you note. Returned ONLY in the
+        organizer-authenticated GET response — never to anonymous/public callers.
+      properties:
+        note:
+          type: string
+          nullable: true
+          description: The submitted note (may be null if the thank-you carried no note).
+        thankedByUsername:
+          type: string
+          nullable: true
+          description: The logged-in attendee's username, or null for an anonymous clap.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the thank-you was submitted.
+
+    ThanksCountResponse:
+      type: object
+      description: |
+        Story 7.4: response for both the POST submit and the GET aggregate. `count` (the public
+        clap-style aggregate) is always present. `notes` is populated ONLY for organizer GET
+        callers; it is null for the public GET and for POST responses (no public note wall).
+      required:
+        - count
+      properties:
+        count:
+          type: integer
+          format: int64
+          description: The aggregate number of thank-yous for the event.
+          example: 42
+        notes:
+          type: array
+          nullable: true
+          description: Organizer-only list of submitted notes (newest first); null for the public.
+          items:
+            $ref: '#/components/schemas/ThanksNoteResponse'
+
+    QnaPostRequest:
+      type: object
+      description: |
+        Story 7.5: post a Q&A question or answer. `parentPostId` set = an answer to that question;
+        omitted = a top-level question. Identity comes from the JWT, never the body.
+        `additionalProperties: false`: unexpected fields are rejected with 400.
+      additionalProperties: false
+      required:
+        - body
+      properties:
+        body:
+          type: string
+          maxLength: 5000
+          description: The question or answer text.
+          example: How did you handle schema migration during the cutover?
+        parentPostId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The question being answered; omit for a top-level question.
+
+    QnaWindowPatchRequest:
+      type: object
+      description: |
+        Story 7.5: organizer adjustment of a Q&A window. Provide a new `closesAt` to extend
+        (reopens to that time) OR `close: true` to close early (freeze now). At least one required.
+      additionalProperties: false
+      properties:
+        closesAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: New close time (extends/reopens the window).
+        close:
+          type: boolean
+          nullable: true
+          description: When true, freeze the window immediately (close early).
+
+    QnaPostResponse:
+      type: object
+      description: |
+        Story 7.5: a single Q&A post. A removed post is a tombstone — `removed: true` and
+        `body`/`postedByUsername` are null (the archive shows "removed by organizer").
+      required:
+        - id
+        - removed
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentPostId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent question id; null for a top-level question.
+        postedByUsername:
+          type: string
+          nullable: true
+          description: Poster username; null if removed.
+        body:
+          type: string
+          nullable: true
+          description: Post text; null if removed.
+        removed:
+          type: boolean
+          description: True if the post was taken down by an organizer.
+        createdAt:
+          type: string
+          format: date-time
+
+    QnaWindowResponse:
+      type: object
+      description: |
+        Story 7.5: the Q&A thread for a session. `status` is OPEN or FROZEN. Posts are oldest-first;
+        the client nests answers under `parentPostId`.
+      required:
+        - status
+        - posts
+      properties:
+        status:
+          type: string
+          enum: [OPEN, FROZEN]
+          description: OPEN = accepting posts; FROZEN = read-only.
+        opensAt:
+          type: string
+          format: date-time
+        closesAt:
+          type: string
+          format: date-time
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/QnaPostResponse'
+
+    AttendeeEventCardResponse:
+      type: object
+      description: |
+        Story 7.6: one event on the attendee dashboard. The client links the card to
+        `/events/{eventCode}` (upcoming) or `/archive/{eventCode}` (past).
+      required:
+        - eventCode
+        - eventTitle
+      properties:
+        eventCode:
+          type: string
+          example: BATbern57
+        eventTitle:
+          type: string
+        eventDate:
+          type: string
+          format: date-time
+        eventLocation:
+          type: string
+          nullable: true
+          description: The event venue name.
+        workflowState:
+          type: string
+          nullable: true
+          description: The event's UPPER_CASE workflow state (e.g. EVENT_COMPLETED, ARCHIVED).
+        registrationStatus:
+          type: string
+          nullable: true
+          description: The attendee's registration status (registered|confirmed|waitlist|attended).
+
+    AttendeeDashboardResponse:
+      type: object
+      description: |
+        Story 7.6: the attendee's event history — every participated (non-cancelled) event, split
+        into upcoming (soonest-first) and past (most-recent-first).
+      required:
+        - upcomingEvents
+        - pastEvents
+      properties:
+        attendeeName:
+          type: string
+          nullable: true
+          description: Display name (denormalized from a registration) or the username.
+        upcomingEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendeeEventCardResponse'
+        pastEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendeeEventCardResponse'
+
     AddSpeakerToPoolRequest:
       type: object
       description: |
@@ -8757,6 +9535,31 @@ components:
           nullable: true
           description: Free-text notes about the speaker
           example: Met at KubeCon 2024. Very enthusiastic about BATbern.
+        source:
+          type: string
+          enum:
+            - organizer_added
+            - self_nomination
+          description: |
+            Story 7.2 — provenance of the pool row. `organizer_added` for organizer-sourced
+            candidates (the default), `self_nomination` for attendee "I Could Speak on That"
+            entries. Lets the organizer pool/brainstorming UI flag self-nominations.
+          example: self_nomination
+        proposedByUsername:
+          type: string
+          nullable: true
+          description: Story 7.2 — username of the self-nominating attendee (null for organizer-added rows).
+          example: jane.attendee
+        proposedSessionTitle:
+          type: string
+          nullable: true
+          description: Story 7.2 — the talk title the attendee proposed (null for organizer-added rows).
+          example: Event-driven architecture in practice
+        proposedAbstract:
+          type: string
+          nullable: true
+          description: Story 7.2 — the talk abstract the attendee proposed, stored raw (null for organizer-added rows).
+          example: A field report on migrating a monolith to an event-driven core.
         createdAt:
           type: string
           format: date-time

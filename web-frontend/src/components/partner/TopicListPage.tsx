@@ -325,7 +325,7 @@ const TopicListPage: React.FC = () => {
                     {/* Company column */}
                     <TableCell>
                       <CompanyLogo
-                        companyName={topic.suggestedByCompany}
+                        companyName={topic.suggestedByCompany ?? ''}
                         variant="full"
                         maxWidth={80}
                         maxHeight={48}

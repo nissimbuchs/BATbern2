@@ -37,6 +37,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/attendees/topics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Suggest a topic as an attendee (Topics From the Floor)
+     * @description Story 7.1 — a logged-in ATTENDEE suggests a future event topic. The suggestion flows
+     *     into the same topic pool as partner suggestions, tagged `source=COMMUNITY` with no
+     *     company. Submit-only: there is intentionally no attendee read/list endpoint.
+     *
+     *     Routed to partner-coordination-service by the gateway (the topic pool lives there).
+     */
+    post: operations['suggestCommunityTopic'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/partners/topics/{topicId}/vote': {
     parameters: {
       query?: never;
@@ -98,8 +122,8 @@ export interface components {
       title: string;
       /** @description Topic description */
       description?: string | null;
-      /** @description Company that suggested this topic (ADR-003 identifier) */
-      suggestedByCompany: string;
+      /** @description Company that suggested this topic (ADR-003 identifier). Null for COMMUNITY (attendee) suggestions — Story 7.1. */
+      suggestedByCompany?: string | null;
       /** @description Total number of votes */
       voteCount: number;
       /** @description True if the calling partner's company has voted for this topic */
@@ -113,6 +137,11 @@ export interface components {
       plannedEvent?: string | null;
       /** Format: date-time */
       createdAt: string;
+      /**
+       * @description Origin of the suggestion: PARTNER (Story 8.2) or COMMUNITY/attendee (Story 7.1)
+       * @enum {string}
+       */
+      source: 'PARTNER' | 'COMMUNITY';
     };
     TopicSuggestionRequest: {
       /** @description Topic title (required) */
@@ -203,6 +232,51 @@ export interface operations {
         content?: never;
       };
       /** @description Forbidden — requires PARTNER or ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  suggestCommunityTopic: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TopicSuggestionRequest'];
+      };
+    };
+    responses: {
+      /** @description Community topic suggestion created (source=COMMUNITY) */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicDTO'];
+        };
+      };
+      /** @description Validation error (title 5–255 chars, description ≤ 500 chars) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden — requires ATTENDEE role */
       403: {
         headers: {
           [name: string]: unknown;

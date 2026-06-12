@@ -249,7 +249,11 @@
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
       },
-      "error": "Échec du chargement des sujets"
+      "error": "Échec du chargement des sujets",
+      "source": {
+        "partner": "Partenaire",
+        "community": "Communauté"
+      }
     }
   },
   "topicStatus": {

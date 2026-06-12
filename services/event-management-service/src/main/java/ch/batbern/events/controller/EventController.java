@@ -1520,6 +1520,16 @@ public class EventController {
         if (request.getRegistrationCapacity() != null) {
             event.setRegistrationCapacity(request.getRegistrationCapacity());
         }
+        // Story 7.5 rework: per-event Q&A settings.
+        if (request.getQnaEnabled() != null) {
+            event.setQnaEnabled(request.getQnaEnabled());
+        }
+        if (request.getQnaOpenTrigger() != null) {
+            event.setQnaOpenTrigger(request.getQnaOpenTrigger());
+        }
+        if (request.getQnaWindowDays() != null) {
+            event.setQnaWindowDays(request.getQnaWindowDays());
+        }
     }
 
     /**

@@ -132,7 +132,22 @@
       "checkInReminders": "Incheckherinneringen op de dag van het evenement",
       "checkInRemindersDesc": "Ochtend van het evenement",
       "startPresentation": "Presentatie starten",
-      "liveControl": "Live besturing"
+      "liveControl": "Live besturing",
+      "qna": {
+        "title": "Sessie-Q&A",
+        "enabledLabel": "Q&A per sessie inschakelen voor dit evenement",
+        "triggerLabel": "Q&A openen",
+        "triggerCompleted": "Na het evenement (afterglow)",
+        "triggerSpeakers": "Wanneer sprekers gepubliceerd zijn (vóór het evenement)",
+        "daysLabel": "Open gedurende (dagen na het evenement)",
+        "daysHelper": "Vensters sluiten zoveel dagen na de evenementdatum en bevriezen daarna in het archief.",
+        "daysInvalid": "Het venster moet tussen 1 en 365 dagen liggen.",
+        "saveError": "Bijwerken van Q&A-instellingen mislukt.",
+        "adjustError": "Q&A aanpassen mislukt (nog geen vensters open?).",
+        "closeNow": "Q&A nu sluiten",
+        "reopen": "Q&A heropenen",
+        "saved": "Q&A-instellingen opgeslagen"
+      }
     },
     "speakers": {
       "progress": "Voortgang",
@@ -866,6 +881,49 @@
       "exportNameBadges": "Naambadges exporteren",
       "exportNameBadgesDocx": "Naambadges als Word",
       "exportError": "Export mislukt"
+    }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Bedank de organisatoren",
+      "subtitle": "BATbern wordt gerund door vrijwilligers, gratis en advertentievrij. Zeg bedankt met één klik.",
+      "notePlaceholder": "Voeg een bericht toe voor de organisatoren (optioneel)",
+      "button": "Bedank de organisatoren",
+      "count_one": "{{count}} bedankje tot nu toe",
+      "count_other": "{{count}} bedankjes tot nu toe",
+      "success": "Bedankt voor het bedanken! 🎉",
+      "error": "Er is iets misgegaan. Probeer het opnieuw."
+    }
+  },
+  "qna": {
+    "title": "Vragen en antwoorden",
+    "statusOpen": "Open",
+    "statusFrozen": "Gesloten",
+    "empty": "Nog geen vragen. Stel de eerste.",
+    "removed": "Verwijderd door een organisator",
+    "takedown": "Verwijderen",
+    "reply": "Antwoorden",
+    "cancel": "Annuleren",
+    "replyPlaceholder": "Schrijf een antwoord…",
+    "questionPlaceholder": "Stel een vraag over deze sessie…",
+    "askQuestion": "Stel een vraag",
+    "loginToPost": "Log in om vragen te stellen of te beantwoorden."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Jouw evenementen",
+      "titleWithName": "Welkom terug, {{name}}",
+      "upcoming": "Aankomende evenementen",
+      "past": "Afgelopen evenementen",
+      "emptyUpcoming": "Geen aankomende evenementen — bekijk wat eraan komt.",
+      "emptyPast": "Nog geen afgelopen evenementen.",
+      "error": "Kon je evenementen niet laden. Probeer het opnieuw.",
+      "status": {
+        "registered": "Geregistreerd",
+        "confirmed": "Bevestigd",
+        "waitlist": "Wachtlijst",
+        "attended": "Aanwezig geweest"
+      }
     }
   }
 }

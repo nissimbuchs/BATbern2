@@ -67,6 +67,10 @@ public class EventMapper {
                 .currentPublishedPhase(entity.getCurrentPublishedPhase() != null
                         ? entity.getCurrentPublishedPhase().toUpperCase() : null)
                 .registrationCapacity(entity.getRegistrationCapacity())
+                .qnaEnabled(entity.getQnaEnabled())
+                .qnaOpenTrigger(entity.getQnaOpenTrigger() != null
+                        ? entity.getQnaOpenTrigger().name() : null)
+                .qnaWindowDays(entity.getQnaWindowDays())
                 .build();
     }
 
@@ -110,6 +114,10 @@ public class EventMapper {
                 .currentPublishedPhase(entity.getCurrentPublishedPhase() != null
                         ? entity.getCurrentPublishedPhase().toUpperCase() : null)
                 .registrationCapacity(entity.getRegistrationCapacity())
+                .qnaEnabled(entity.getQnaEnabled())
+                .qnaOpenTrigger(entity.getQnaOpenTrigger() != null
+                        ? entity.getQnaOpenTrigger().name() : null)
+                .qnaWindowDays(entity.getQnaWindowDays())
                 .build();
     }
 

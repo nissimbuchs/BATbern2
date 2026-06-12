@@ -60,6 +60,33 @@
       "canDo1": "Selata ja ilmoittautua tuleviin BATbern-tapahtumiin",
       "canDo2": "Tutustua aiempiin esityksiin ja puhujien materiaaleihin arkistossa",
       "canDo3": "Hallita tiliäsi ja ilmoitusasetuksia"
+    },
+    "suggestTopic": {
+      "heading": "Ehdota aihetta",
+      "intro": "Mitä tulevan BATbernin tulisi käsitellä? Ehdota aihetta, niin järjestäjät näkevät sen.",
+      "titleLabel": "Aihe",
+      "titlePlaceholder": "esim. Tapahtumapohjainen arkkitehtuuri käytännössä",
+      "descriptionLabel": "Miksi tämä aihe? (valinnainen)",
+      "descriptionPlaceholder": "Lause siitä, miksi tämä on yhteisölle tärkeä",
+      "submit": "Ehdota aihetta",
+      "submitting": "Lähetetään…",
+      "success": "Kiitos! Aiheehdotuksesi on lähetetty järjestäjille.",
+      "error": "Aiheen lähettäminen epäonnistui. Yritä uudelleen."
+    },
+    "selfNominate": {
+      "button": "Voisin puhua tuosta",
+      "heading": "Ehdota itseäsi puhujaksi",
+      "intro": "Onko sinulla esitys mielessä? Ehdota sitä, niin järjestäjät näkevät ehdotuksesi muiden ehdokkaiden joukossa.",
+      "introWithTopic": "Seuraava tapahtuma käsittelee aihetta ”{{topic}}”. Onko sinulla sopiva esitys? Ehdota sitä järjestäjille.",
+      "titleLabel": "Esityksen otsikko",
+      "titlePlaceholder": "esim. Tapahtumapohjainen arkkitehtuuri käytännössä",
+      "abstractLabel": "Tiivistelmä",
+      "abstractPlaceholder": "Muutama lause siitä, mitä esityksesi käsittelisi",
+      "submit": "Lähetä ehdotus",
+      "submitting": "Lähetetään…",
+      "success": "Kiitos! Ehdotuksesi on lähetetty järjestäjille.",
+      "error": "Ehdotuksen lähettäminen epäonnistui. Yritä uudelleen.",
+      "alreadyDone": "Olet jo ehdottanut itseäsi tähän tapahtumaan."
     }
   },
   "footer": {
@@ -565,6 +592,9 @@
       "newest": "Uusimmat ensin",
       "oldest": "Vanhimmat ensin",
       "mostAttended": "Eniten osallistujia"
+    },
+    "photos": {
+      "viewPhoto": "Katso kuva"
     }
   },
   "notifications": {

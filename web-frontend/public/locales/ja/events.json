@@ -132,7 +132,22 @@
       "checkInReminders": "イベント当日のチェックインリマインダー",
       "checkInRemindersDesc": "イベント当日の朝",
       "startPresentation": "プレゼンテーションを開始",
-      "liveControl": "ライブコントロール"
+      "liveControl": "ライブコントロール",
+      "qna": {
+        "title": "セッションQ&A",
+        "enabledLabel": "このイベントでセッションごとのQ&Aを有効にする",
+        "triggerLabel": "Q&Aを開く",
+        "triggerCompleted": "イベント後（アフターグロー）",
+        "triggerSpeakers": "登壇者の公開時（イベント前）",
+        "daysLabel": "公開期間（イベント後の日数）",
+        "daysHelper": "ウィンドウはイベント日からこの日数後に閉じ、その後アーカイブに固定されます。",
+        "daysInvalid": "期間は1〜365日の間で指定してください。",
+        "saveError": "Q&A設定の更新に失敗しました。",
+        "adjustError": "Q&Aを調整できませんでした（まだ開いているウィンドウがありません）。",
+        "closeNow": "今すぐQ&Aを閉じる",
+        "reopen": "Q&Aを再開する",
+        "saved": "Q&A設定を保存しました"
+      }
     },
     "speakers": {
       "progress": "進捗",
@@ -866,6 +881,49 @@
       "exportNameBadges": "ネームバッジをエクスポート",
       "exportNameBadgesDocx": "ネームバッジをWordで",
       "exportError": "エクスポートに失敗しました"
+    }
+  },
+  "thanks": {
+    "widget": {
+      "title": "主催者に感謝する",
+      "subtitle": "BATbernはボランティアによって無料・広告なしで運営されています。ワンクリックで感謝を伝えましょう。",
+      "notePlaceholder": "主催者へのメッセージを追加（任意）",
+      "button": "主催者に感謝する",
+      "count_one": "これまでに{{count}}件の感謝",
+      "count_other": "これまでに{{count}}件の感謝",
+      "success": "感謝を伝えていただきありがとうございます！🎉",
+      "error": "問題が発生しました。もう一度お試しください。"
+    }
+  },
+  "qna": {
+    "title": "Q&A",
+    "statusOpen": "受付中",
+    "statusFrozen": "終了",
+    "empty": "まだ質問はありません。最初の質問をどうぞ。",
+    "removed": "主催者により削除されました",
+    "takedown": "削除",
+    "reply": "返信",
+    "cancel": "キャンセル",
+    "replyPlaceholder": "回答を入力…",
+    "questionPlaceholder": "このセッションについて質問する…",
+    "askQuestion": "質問する",
+    "loginToPost": "ログインすると質問・回答できます。"
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "あなたのイベント",
+      "titleWithName": "おかえりなさい、{{name}}さん",
+      "upcoming": "今後のイベント",
+      "past": "過去のイベント",
+      "emptyUpcoming": "今後のイベントはありません — これからの予定をご覧ください。",
+      "emptyPast": "過去のイベントはまだありません。",
+      "error": "イベントを読み込めませんでした。もう一度お試しください。",
+      "status": {
+        "registered": "登録済み",
+        "confirmed": "確定",
+        "waitlist": "キャンセル待ち",
+        "attended": "参加済み"
+      }
     }
   }
 }

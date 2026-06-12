@@ -229,6 +229,10 @@ public class SecurityConfig {
                         // Story 5.9: Public materials download endpoint for archived events
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 
+                        // Story 7.5: Public read of a session's Q&A thread (frozen archive is public).
+                        // POST/PATCH/DELETE fall through to authenticated + @PreAuthorize in EMS.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/qna").permitAll()
+
                         // Story 4.1.5: Public registration endpoints
                         // (no auth required - anonymous registration per ADR-005)
                         .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
@@ -285,6 +289,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
+
+                        // Story 7.4: Public "Thank the Organizers" endpoints (anonymous allowed).
+                        // Mirror in event-management-service SecurityConfig. POST is added to the
+                        // Turnstile protected-endpoints list; the GET is count-only for the public.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/*/thanks").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/thanks").permitAll()
 
                         // Additional-email verification (v2): public token-credentialed verify
                         // endpoints (GET-check / POST-confirm). The token IS the credential.

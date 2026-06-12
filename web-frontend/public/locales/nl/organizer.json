@@ -543,7 +543,8 @@
       "sublineFilterAriaLabel": "Kolom {{state}} filteren: {{description}}",
       "filterClearedAnnouncement": "Kolomfilter opgeheven",
       "filterAppliedAnnouncement": "Kolom {{state}} gefilterd, {{count}} kaarten zichtbaar"
-    }
+    },
+    "selfNominated": "Zelf voorgesteld"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",

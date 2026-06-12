@@ -25,9 +25,9 @@ export const InfiniteMarquee = ({
   const animationDirection = direction === 'left' ? 'scroll-left' : 'scroll-right';
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="batbern-marquee relative overflow-hidden">
       <div
-        className="inline-flex w-max"
+        className="batbern-marquee-track inline-flex w-max"
         style={{
           animation: `${animationDirection} ${speedDuration[speed]} linear infinite`,
         }}
@@ -54,6 +54,17 @@ export const InfiniteMarquee = ({
           }
           100% {
             transform: translateX(0);
+          }
+        }
+
+        /* Pause on hover so the (now clickable) photos can actually be clicked. The
+           !important beats the inline 'animation' shorthand's running play-state. */
+        .batbern-marquee:hover .batbern-marquee-track {
+          animation-play-state: paused !important;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .batbern-marquee-track {
+            animation: none !important;
           }
         }
       `}</style>

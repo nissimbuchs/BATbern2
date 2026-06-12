@@ -80,6 +80,13 @@ public interface RegistrationRepository
     List<Registration> findByEventIdAndStatus(UUID eventId, String status);
 
     /**
+     * Find all registrations for a specific event whose status is in the given set.
+     * Story 7.3: used to resolve the "active registrants" (registered/confirmed) recipient
+     * list for the slides-online mail.
+     */
+    List<Registration> findByEventIdAndStatusIn(UUID eventId, java.util.Collection<String> statuses);
+
+    /**
      * Delete all registrations for a specific event
      */
     void deleteByEventId(UUID eventId);

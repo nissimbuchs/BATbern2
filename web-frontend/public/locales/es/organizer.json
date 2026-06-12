@@ -555,7 +555,8 @@
       "sublineFilterAriaLabel": "Filtrar columna {{state}}: {{description}}",
       "filterClearedAnnouncement": "Filtro de columna eliminado",
       "filterAppliedAnnouncement": "Columna {{state}} filtrada, mostrando {{count}} tarjetas"
-    }
+    },
+    "selfNominated": "Autopropuesto"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",

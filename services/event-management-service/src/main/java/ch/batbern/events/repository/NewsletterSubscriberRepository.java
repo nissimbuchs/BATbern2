@@ -21,6 +21,13 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
 
     Optional<NewsletterSubscriber> findByEmail(String email);
 
+    /**
+     * Story 7.3: case-insensitive email lookup used by the slides-online send to check
+     * whether a registrant's email carries a global newsletter opt-out (unsubscribed/suppressed).
+     * Registrant emails and subscriber emails may differ in case, so the match is folded.
+     */
+    Optional<NewsletterSubscriber> findByEmailIgnoreCase(String email);
+
     Optional<NewsletterSubscriber> findByUnsubscribeToken(String unsubscribeToken);
 
     Optional<NewsletterSubscriber> findByUsername(String username);

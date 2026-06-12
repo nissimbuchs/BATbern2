@@ -132,7 +132,22 @@
       "checkInReminders": "Memorandums da check-in il di da l'eveniment",
       "checkInRemindersDesc": "Il matin da l'eveniment",
       "startPresentation": "Entschaiver presentaziun",
-      "liveControl": "Controlla live"
+      "liveControl": "Controlla live",
+      "qna": {
+        "title": "Q&A da sesiun",
+        "enabledLabel": "Activar las Q&A per sesiun per questa occurrenza",
+        "triggerLabel": "Avrir las Q&A",
+        "triggerCompleted": "Suenter l'occurrenza (afterglow)",
+        "triggerSpeakers": "Cura ch’ils oratuors èn publitgads (avant l’occurrenza)",
+        "daysLabel": "Avert per (dis suenter l'occurrenza)",
+        "daysHelper": "Las fanestras sa serran tants dis suenter la data da l'occurrenza ed èn lura conservadas en l'archiv.",
+        "daysInvalid": "La fanestra sto esser tranter 1 e 365 dis.",
+        "saveError": "Betg reussì dad actualisar las preferenzas da Q&A.",
+        "adjustError": "Betg reussì dad adattar las Q&A (anc naginas fanestras avertas?).",
+        "closeNow": "Serrar uss las Q&A",
+        "reopen": "Reavrir las Q&A",
+        "saved": "Preferenzas da Q&A memorisadas"
+      }
     },
     "speakers": {
       "progress": "Progress",
@@ -866,6 +881,49 @@
       "exportNameBadges": "Exportar las etiquettas da num",
       "exportNameBadgesDocx": "Etichettas da num sco Word",
       "exportError": "Exportaziun fallida"
+    }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Engraziar als organisaturs",
+      "subtitle": "BATbern vegn manà da voluntaris, gratuitamain e senza reclama. Di engraziament cun in clic.",
+      "notePlaceholder": "Agiuntar in messadi per ils organisaturs (facultativ)",
+      "button": "Engraziar als organisaturs",
+      "count_one": "{{count}} engraziament fin ussa",
+      "count_other": "{{count}} engraziaments fin ussa",
+      "success": "Grazia fitg per engraziar! 🎉",
+      "error": "Insatge è ì fal. Empruva anc ina giada."
+    }
+  },
+  "qna": {
+    "title": "Dumondas & respostas",
+    "statusOpen": "Avert",
+    "statusFrozen": "Serrà",
+    "empty": "Anc naginas dumondas. Fai la emprima.",
+    "removed": "Allontanà d'in organisatur",
+    "takedown": "Allontanar",
+    "reply": "Respunder",
+    "cancel": "Interrumper",
+    "replyPlaceholder": "Scriver ina resposta…",
+    "questionPlaceholder": "Fai ina dumonda davart questa sessiun…",
+    "askQuestion": "Far ina dumonda",
+    "loginToPost": "Annunzia tai per far u respunder dumondas."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Tias occurrenzas",
+      "titleWithName": "Bainvegni anavos, {{name}}",
+      "upcoming": "Proximas occurrenzas",
+      "past": "Occurrenzas passadas",
+      "emptyUpcoming": "Naginas proximas occurrenzas — guarda tge che vegn.",
+      "emptyPast": "Anc naginas occurrenzas passadas.",
+      "error": "Tias occurrenzas n'han betg pudì vegnir chargiadas. Empruva anc ina giada.",
+      "status": {
+        "registered": "Annunzià",
+        "confirmed": "Confermà",
+        "waitlist": "Glista d'spetga",
+        "attended": "Participà"
+      }
     }
   }
 }

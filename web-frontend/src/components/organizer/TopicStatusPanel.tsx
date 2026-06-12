@@ -15,6 +15,7 @@ import {
   Card,
   CardActions,
   CardContent,
+  Chip,
   Container,
   IconButton,
   MenuItem,
@@ -195,6 +196,26 @@ const TopicStatusPanel: React.FC = () => {
 
   // ─── Shared per-row controls (used by both table rows and mobile cards) ──────
 
+  // Story 7.1: COMMUNITY (attendee) suggestions have no company — show an origin badge
+  // instead of a (null) company logo so organizers can distinguish them at a glance.
+  const renderOrigin = (topic: TopicDTO) =>
+    topic.source === 'COMMUNITY' ? (
+      <Chip
+        size="small"
+        color="info"
+        variant="outlined"
+        label={t('portal.topics.source.community')}
+        data-testid={`topic-source-community-${topic.id}`}
+      />
+    ) : (
+      <CompanyLogo
+        companyName={topic.suggestedByCompany ?? ''}
+        variant="full"
+        maxWidth={80}
+        maxHeight={40}
+      />
+    );
+
   const renderStatusSelect = (topic: TopicDTO, row: RowState) => (
     <Select
       size="small"
@@ -329,12 +350,7 @@ const TopicStatusPanel: React.FC = () => {
                         gap: 1,
                       }}
                     >
-                      <CompanyLogo
-                        companyName={topic.suggestedByCompany}
-                        variant="full"
-                        maxWidth={80}
-                        maxHeight={40}
-                      />
+                      {renderOrigin(topic)}
                       <Typography variant="body2" color="text.secondary">
                         {t('portal.topics.organizer.col.votes')}: {topic.voteCount}
                       </Typography>
@@ -433,15 +449,8 @@ const TopicStatusPanel: React.FC = () => {
                       )}
                     </TableCell>
 
-                    {/* Company logo */}
-                    <TableCell>
-                      <CompanyLogo
-                        companyName={topic.suggestedByCompany}
-                        variant="full"
-                        maxWidth={80}
-                        maxHeight={40}
-                      />
-                    </TableCell>
+                    {/* Company logo, or Community badge for attendee-sourced topics */}
+                    <TableCell>{renderOrigin(topic)}</TableCell>
 
                     {/* Vote count */}
                     <TableCell align="right">{topic.voteCount}</TableCell>

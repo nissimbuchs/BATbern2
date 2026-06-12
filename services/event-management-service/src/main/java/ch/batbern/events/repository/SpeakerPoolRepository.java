@@ -100,6 +100,11 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
             """)
     long countPublishableByEventId(@org.springframework.data.repository.query.Param("eventId") UUID eventId);
 
+    // Story 7.2 / ADR-012: the one-self-nomination-per-event dedupe moved to
+    // SessionProposalRepository.existsByEventIdAndProposedByUsername — speaker_pool no longer
+    // carries proposed_by_username, so the old existsByEventIdAndProposedByUsernameAndSource
+    // pre-check was removed.
+
     /**
      * Find speakers assigned to a specific session.
      *

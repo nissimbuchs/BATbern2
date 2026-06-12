@@ -137,7 +137,22 @@
       "checkInReminders": "Check-in-Erinnirige am Veranstatigstag",
       "checkInRemindersDesc": "Am Morge vom Veranstatigstag",
       "startPresentation": "Präsentation starte",
-      "liveControl": "Live Stüürig"
+      "liveControl": "Live Stüürig",
+      "qna": {
+        "title": "Session-Q&A",
+        "enabledLabel": "Session-Q&A für die Aalass aaschalte",
+        "triggerLabel": "Q&A ufmache",
+        "triggerCompleted": "Nach em Aalass (Afterglow)",
+        "triggerSpeakers": "Wenn d’Referänte publiziert si (vor em Aalass)",
+        "daysLabel": "Offe für (Täg nach em Aalass)",
+        "daysHelper": "D’Fänschter göh so vil Täg nach em Aalass-Datum zue u wärde de im Archiv iigfrore.",
+        "daysInvalid": "S Fänschter mues zwüsche 1 u 365 Täg si.",
+        "saveError": "Q&A-Iistellige hei nid chönne aktualisiert wärde.",
+        "adjustError": "Q&A het nid chönne aapasst wärde (no kei Fänschter offe?).",
+        "closeNow": "Q&A jetz zuemache",
+        "reopen": "Q&A wider ufmache",
+        "saved": "Q&A-Iistellige gspeicheret"
+      }
     },
     "speakers": {
       "progress": "Fortschritt",
@@ -868,6 +883,49 @@
       "exportNameBadges": "Namesschildli exportiere",
       "exportNameBadgesDocx": "Namesschildli als Word",
       "exportError": "Export het nid funktioniert"
+    }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Den Organisatore danke",
+      "subtitle": "BATbern wird vo Freiwillige gmacht – gratis u ohni Werbig. Säg mit eim Klick Merci.",
+      "notePlaceholder": "Es Nötli a d'Organisatore (fakultativ)",
+      "button": "Den Organisatore danke",
+      "count_one": "{{count}} Merci bishär",
+      "count_other": "{{count}} Merci bishär",
+      "success": "Merci fürs Merci säge! 🎉",
+      "error": "Öppis isch schiefgloffe. Probier's nomal."
+    }
+  },
+  "qna": {
+    "title": "Frage & Antworte",
+    "statusOpen": "Offe",
+    "statusFrozen": "Zue",
+    "empty": "No kei Frage. Stell di erschti.",
+    "removed": "Vo de Organisation entfernt",
+    "takedown": "Entferne",
+    "reply": "Antworte",
+    "cancel": "Abbräche",
+    "replyPlaceholder": "Antwort schribe…",
+    "questionPlaceholder": "Stell e Frag zu dere Session…",
+    "askQuestion": "Frag stelle",
+    "loginToPost": "Mäld di a, zum Frage stelle oder beantworte."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Dini Aläss",
+      "titleWithName": "Willkomme zrugg, {{name}}",
+      "upcoming": "Chömendi Aläss",
+      "past": "Vergangeni Aläss",
+      "emptyUpcoming": "Kei chömende Aläss — lueg, was chunnt.",
+      "emptyPast": "No kei vergangeni Aläss.",
+      "error": "Dini Aläss hei nid chönne glade wärde. Probier's nomal.",
+      "status": {
+        "registered": "Aagmäldet",
+        "confirmed": "Bestätigt",
+        "waitlist": "Wartlischte",
+        "attended": "Debi gsi"
+      }
     }
   }
 }

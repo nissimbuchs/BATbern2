@@ -191,3 +191,15 @@ Everything else: test-hardening, kanban/modal UX papercuts, sprint-status YAML h
 
 ## 2026-06-07 — from spec-screencast-new-workflow-elevenlabs review
 - **i18n: untranslated `speakerDrawer.secondaryActions` siblings in 8 non-DE/EN locales** — `decline`, `reassignOrganizer`, `editDetails`, `overrideState` are English in es/fi/fr/it/ja/nl/rm/gsw-BE while the newly added `acceptOnBehalf` is translated, producing a mixed-language drawer menu. Pre-existing gap (10-locale rule applies to UI keys); translate the siblings.
+
+---
+
+## Deferred from: code review of 7-1-topics-from-the-floor (2026-06-10)
+
+- **Malformed/empty request body → 500 instead of 400** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/exception/GlobalExceptionHandler.java`] — no `@ExceptionHandler(HttpMessageNotReadableException.class)`, so a body-less or garbage-JSON POST falls through to the catch-all `Exception` handler → 500. Pre-existing; affects all POST endpoints in the service, newly inherited by `/api/v1/attendees/topics`. Fix: add a handler returning 400. [Edge]
+- **`resolveCallerCompanyNameOrNull()` fail-open on resolution error** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:227`] — swallows all exceptions and returns null, so a partner whose company resolution transiently fails (User Service hiccup) is treated as a null-company organizer and bypasses the ownership guard in `updateTopic`/`deleteTopic` (`callerCompanyName != null && ...` short-circuits). Pre-existing — this commit only flipped the `.equals()` operand order to be null-safe for community topics (correct). Consider distinguishing "organizer (no company)" from "partner whose company could not be resolved." [Edge]
+- **`getCurrentUsername()` empty-string trap → blank `suggestedBy`** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:108`] — `suggestCommunityTopic` persists `suggestedBy` with no null/blank guard; per the project's documented Pattern 3b twin, the JWT username claim can be empty in some auth paths, yielding an un-attributable community topic. Dormant in staging (JWT always carries username); a local-dev/edge risk. [Blind]
+
+## Deferred from: code review of story-7.2 (2026-06-10)
+
+- **`@PreAuthorize("hasRole('ATTENDEE')")` runtime-assumption (verify-in-prod)** [`services/event-management-service/src/main/java/ch/batbern/events/controller/SelfNominationController.java:50`] — the entire self-nomination feature depends on logged-in attendees carrying an explicit `ROLE_ATTENDEE` claim/assignment. `JwtRolesConverter` maps `ROLE_ATTENDEE` from `custom:role` / `role_assignments`; JIT provisioning defaults ATTENDEE and Pattern 3b provides a DB-fallback, so it should hold — but the integration tests use `@WithMockUser(roles={"ATTENDEE"})` and cannot detect a missing real-world claim. If absent, every nomination returns 403 and the feature is dead-on-arrival. Confirm a real registered/federated attendee's token carries ATTENDEE before sign-off. [Auditor]

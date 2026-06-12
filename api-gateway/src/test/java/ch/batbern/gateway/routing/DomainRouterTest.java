@@ -127,6 +127,15 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("partner-coordination-service");
     }
 
+    // Story 7.1: attendee "Topics From the Floor" writes into the topic pool, which lives in
+    // partner-coordination-service — so /api/v1/attendees/topics must route there.
+    @Test
+    @DisplayName("should_routeToPartnerService_when_attendeeTopicsEndpointCalled")
+    void should_routeToPartnerService_when_attendeeTopicsEndpointCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/attendees/topics"))
+                .isEqualTo("partner-coordination-service");
+    }
+
     // Test 5.4: should_routeToAttendeeService_when_contentEndpointCalled
     @Test
     @DisplayName("should_routeToAttendeeService_when_contentEndpointCalled")
@@ -167,6 +176,20 @@ class DomainRouterTest {
 
         // Then
         assertThat(targetService).isEqualTo("company-user-management-service");
+    }
+
+    // Test Story 7.6: attendee dashboard must route to event-management-service
+    @Test
+    @DisplayName("should_routeToEventService_when_attendeePortalDashboardCalled")
+    void should_routeToEventService_when_attendeePortalDashboardCalled() {
+        // Given
+        String requestPath = "/api/v1/attendee-portal/dashboard";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
     }
 
     // Test Story 10.5: analytics must route to event-management-service

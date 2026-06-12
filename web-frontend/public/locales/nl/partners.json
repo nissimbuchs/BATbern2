@@ -249,7 +249,11 @@
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
       },
-      "error": "Laden van onderwerpen mislukt"
+      "error": "Laden van onderwerpen mislukt",
+      "source": {
+        "partner": "Partner",
+        "community": "Community"
+      }
     }
   },
   "topicStatus": {
