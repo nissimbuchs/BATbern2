@@ -118,6 +118,17 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Archive robustness (Story 7.5 follow-up): requests for PUBLIC, optional reads — e.g. the
+// per-session Q&A thread rendered on public archive pages — set `skipAuthRedirect` so a 401
+// does NOT force-logout the page. The caller's query handles the error and renders empty.
+// Without this, an optional read that 401s (an endpoint not yet deployed, or a transient auth
+// blip) would bounce an anonymous visitor on a public archive page to /login.
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    skipAuthRedirect?: boolean;
+  }
+}
+
 /**
  * Response interceptor for error handling with correlation ID tracking
  */
@@ -136,6 +147,11 @@ apiClient.interceptors.response.use(
 
       switch (status) {
         case 401:
+          // Public/optional read (e.g. archive Q&A): a 401 must NOT force-logout the page.
+          if (error.config?.skipAuthRedirect) {
+            console.warn(`[${correlationId}] 401 on skipAuthRedirect request — not redirecting`);
+            break;
+          }
           // Unauthorized - redirect to login using React Router navigate
           console.error(`[${correlationId}] Unauthorized - session expired`);
           if (navigateCallback) {

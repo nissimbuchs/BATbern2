@@ -60,6 +60,33 @@
       "canDo1": "Parcourir et s'inscrire aux prochains événements BATbern",
       "canDo2": "Explorer les conférences passées et les supports des intervenants dans les archives",
       "canDo3": "Gérer votre compte et vos préférences de notification"
+    },
+    "suggestTopic": {
+      "heading": "Proposer un sujet",
+      "intro": "Que devrait aborder un prochain BATbern ? Proposez un sujet et les organisateurs le verront.",
+      "titleLabel": "Sujet",
+      "titlePlaceholder": "p. ex. L'architecture événementielle en pratique",
+      "descriptionLabel": "Pourquoi ce sujet ? (facultatif)",
+      "descriptionPlaceholder": "Une phrase sur son importance pour la communauté",
+      "submit": "Proposer le sujet",
+      "submitting": "Envoi…",
+      "success": "Merci ! Votre proposition de sujet a été envoyée aux organisateurs.",
+      "error": "Impossible d'envoyer votre sujet. Veuillez réessayer."
+    },
+    "selfNominate": {
+      "button": "Je pourrais en parler",
+      "heading": "Proposez-vous comme intervenant·e",
+      "intro": "Vous avez une présentation en tête ? Proposez-la et les organisateurs la verront parmi les autres candidatures.",
+      "introWithTopic": "Le prochain événement porte sur « {{topic}} ». Une présentation qui colle ? Proposez-la et les organisateurs la verront.",
+      "titleLabel": "Titre de la présentation",
+      "titlePlaceholder": "p. ex. L'architecture orientée événements en pratique",
+      "abstractLabel": "Résumé",
+      "abstractPlaceholder": "Quelques phrases sur le contenu de votre présentation",
+      "submit": "Envoyer la proposition",
+      "submitting": "Envoi…",
+      "success": "Merci ! Votre proposition a été envoyée aux organisateurs.",
+      "error": "Impossible d'envoyer votre proposition. Veuillez réessayer.",
+      "alreadyDone": "Vous vous êtes déjà proposé·e pour cet événement."
     }
   },
   "footer": {
@@ -565,6 +592,9 @@
       "newest": "Les plus récents",
       "oldest": "Les plus anciens",
       "mostAttended": "Les plus fréquentés"
+    },
+    "photos": {
+      "viewPhoto": "Voir la photo"
     }
   },
   "notifications": {

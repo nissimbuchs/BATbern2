@@ -132,7 +132,22 @@
       "checkInReminders": "Rappels d'enregistrement le jour de l'événement",
       "checkInRemindersDesc": "Le matin de l'événement",
       "startPresentation": "Démarrer la présentation",
-      "liveControl": "Contrôle en direct"
+      "liveControl": "Contrôle en direct",
+      "qna": {
+        "title": "Q&R de session",
+        "enabledLabel": "Activer les Q&R par session pour cet événement",
+        "triggerLabel": "Ouvrir les Q&R",
+        "triggerCompleted": "Après l'événement (afterglow)",
+        "triggerSpeakers": "À la publication des intervenants (avant l’événement)",
+        "daysLabel": "Ouvert pendant (jours après l'événement)",
+        "daysHelper": "Les fenêtres se ferment ce nombre de jours après la date de l'événement, puis sont figées dans les archives.",
+        "daysInvalid": "La fenêtre doit être comprise entre 1 et 365 jours.",
+        "saveError": "Échec de la mise à jour des paramètres Q&R.",
+        "adjustError": "Impossible d’ajuster les Q&R (aucune fenêtre ouverte ?).",
+        "closeNow": "Fermer les Q&R maintenant",
+        "reopen": "Rouvrir les Q&R",
+        "saved": "Paramètres Q&R enregistrés"
+      }
     },
     "speakers": {
       "progress": "Progression",
@@ -866,6 +881,49 @@
       "exportNameBadges": "Exporter les badges nominatifs",
       "exportNameBadgesDocx": "Badges nominatifs en Word",
       "exportError": "Échec de l'exportation"
+    }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Remercier les organisateurs",
+      "subtitle": "BATbern est animé par des bénévoles, gratuitement et sans publicité. Dites merci en un clic.",
+      "notePlaceholder": "Ajouter un message pour les organisateurs (facultatif)",
+      "button": "Remercier les organisateurs",
+      "count_one": "{{count}} remerciement jusqu'à présent",
+      "count_other": "{{count}} remerciements jusqu'à présent",
+      "success": "Merci d'avoir dit merci ! 🎉",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
+  "qna": {
+    "title": "Questions & réponses",
+    "statusOpen": "Ouvert",
+    "statusFrozen": "Fermé",
+    "empty": "Pas encore de questions. Posez la première.",
+    "removed": "Supprimé par un organisateur",
+    "takedown": "Supprimer",
+    "reply": "Répondre",
+    "cancel": "Annuler",
+    "replyPlaceholder": "Écrire une réponse…",
+    "questionPlaceholder": "Posez une question sur cette session…",
+    "askQuestion": "Poser une question",
+    "loginToPost": "Connectez-vous pour poser ou répondre à des questions."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Vos événements",
+      "titleWithName": "Bon retour, {{name}}",
+      "upcoming": "Événements à venir",
+      "past": "Événements passés",
+      "emptyUpcoming": "Aucun événement à venir — découvrez ce qui arrive.",
+      "emptyPast": "Aucun événement passé pour l'instant.",
+      "error": "Impossible de charger vos événements. Veuillez réessayer.",
+      "status": {
+        "registered": "Inscrit",
+        "confirmed": "Confirmé",
+        "waitlist": "Liste d'attente",
+        "attended": "Participé"
+      }
     }
   }
 }

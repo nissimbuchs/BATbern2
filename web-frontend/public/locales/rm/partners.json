@@ -249,7 +249,11 @@
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
       },
-      "error": "Impussibel da chargiare temas"
+      "error": "Impussibel da chargiare temas",
+      "source": {
+        "partner": "Partenari",
+        "community": "Communitad"
+      }
     }
   },
   "topicStatus": {

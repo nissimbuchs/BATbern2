@@ -543,7 +543,8 @@
       "sublineFilterAriaLabel": "{{state}}列をフィルター: {{description}}",
       "filterClearedAnnouncement": "列のフィルターを解除しました",
       "filterAppliedAnnouncement": "{{state}}列をフィルター、{{count}}件のカードを表示中"
-    }
+    },
+    "selfNominated": "自薦"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",

@@ -132,7 +132,7 @@ const CancelRegistrationPage = React.lazy(() => import('@pages/public/CancelRegi
 const RegistrationConfirmationPage = React.lazy(
   () => import('@pages/public/RegistrationConfirmationPage')
 );
-const AttendeeWelcomePage = React.lazy(() => import('@pages/attendee/AttendeeWelcomePage'));
+const AttendeeDashboardPage = React.lazy(() => import('@pages/attendee/AttendeeDashboardPage'));
 // Story 4.2: Archive browsing pages
 const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
 
@@ -441,14 +441,18 @@ function App() {
                       }
                     />
 
-                    {/* Attendee landing page — Epic 7 stub */}
+                    {/* Attendee dashboard — Story 7.6 (event history). /attendee redirects here. */}
                     <Route
-                      path="/attendee"
+                      path="/attendee/dashboard"
                       element={
                         <ProtectedRoute>
-                          <AttendeeWelcomePage />
+                          <AttendeeDashboardPage />
                         </ProtectedRoute>
                       }
+                    />
+                    <Route
+                      path="/attendee"
+                      element={<Navigate to="/attendee/dashboard" replace />}
                     />
 
                     {/* Event Management Routes - Story 2.5.3, Task 4 */}

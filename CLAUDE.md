@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-06-04
+**Last Updated:** 2026-06-09
 
 **Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6, 8, 11, and 12 COMPLETE**
 
-**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal), 8 (Partner Coordination), 11 (Unified Speaker Workflow Refactor), and 12 (Federated Identity / Google SSO) fully implemented. Epic 7 deferred.
+**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal), 8 (Partner Coordination), 11 (Unified Speaker Workflow Refactor), and 12 (Federated Identity / Google SSO) fully implemented. Epic 7 rewritten 2026-06-09 as a right-sized attendee contribution epic (ready for story detailing).
 
 **Epic Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 4**: Public Website & Content Discovery - 100% COMPLETE
 - ✅ **Epic 5**: Enhanced Organizer Workflows - 100% COMPLETE (Auto-publishing & lifecycle automation delivered via BAT-16)
 - ✅ **Epic 6**: Speaker Self-Service Portal - 100% COMPLETE (all stories 6.0-6.5 deployed)
-- 📦 **Epic 7**: Attendee Experience Enhancements - DEFERRED to Phase 3
+- 📋 **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - READY FOR STORY DETAILING (rewritten 2026-06-09; 5 organizer-voted features, replaces deferred dashboards/PWA scope)
 - ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination)
 - ✅ **Epic 11**: Unified Speaker Workflow Refactor - 100% COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Supersedes prior Epic 9 plan.
 - ✅ **Epic 12**: Federated Identity / Google SSO (ADR-010) - COMPLETE (Google OIDC login live 2026-06-04; Apple/generic OIDC + Cognito trigger retirement deferred via backlog Story 12.10)
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 3 — Epics 1-6, 8, 11, and 12 complete; Epic 7 deferred
+**Current Phase:** Phase 3 — Epics 1-6, 8, 11, and 12 complete; Epic 7 rewritten 2026-06-09 (right-sized, ready for story detailing)
 
 ## Project Overview
 
@@ -61,7 +61,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE**
 - ✅ **Epic 5**: Enhanced Organizer Workflows - **100% COMPLETE** (BAT-16 delivered auto-publishing & lifecycle automation)
 - ✅ **Epic 6**: Speaker Self-Service Portal - **100% COMPLETE** (all stories 6.0-6.5 deployed, 6.4 WCAG 2.1 AA)
-- 📦 **Epic 7**: Attendee Experience Enhancements - **DEFERRED to Phase 3**
+- 📋 **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - **READY FOR STORY DETAILING** (rewritten 2026-06-09; 5 organizer-voted features composing onto existing machinery — replaces deferred dashboards/PWA/recommendation-engine scope)
 - ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination)
 - ✅ **Epic 11**: Unified Speaker Workflow Refactor - **100% COMPLETE** (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25; supersedes prior Epic 9 plan)
 - ✅ **Epic 12**: Federated Identity / Google SSO - **COMPLETE** (Google OIDC login live 2026-06-04 per ADR-010; deferred tail — Apple/generic OIDC + trigger retirement — parked as backlog Story 12.10)
@@ -74,8 +74,8 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ Epic 8 Partner Coordination complete (2026-02-22)
 
 **When Adding New Features:**
-- ✅ Platform through Epic 12 is feature-complete (except Epic 7)
-- Epic 7: Personal dashboard, bookmarks, PWA — deferred to Phase 3
+- ✅ Platform through Epic 12 is feature-complete; Epic 7 rewritten 2026-06-09 as a right-sized attendee contribution epic (ready for story detailing)
+- Epic 7 (right-sized): topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, post-event Q&A — see `docs/prd/epic-7-attendee-experience-enhancements.md`
 - Epic 12 deferred tail (backlog Story 12.10): Apple/generic OIDC + Cognito trigger-retirement cleanup — precondition: gateway `is_active` gate + canonical JIT verified in production
 - Prioritize production readiness and Epic 3 data import
 

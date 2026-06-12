@@ -157,5 +157,40 @@ describe('PublicNavigation', () => {
         expect(profileLink).toHaveAttribute('href', '/profile');
       }
     );
+
+    // Story 7.6: "My Events" attendee-dashboard link gating.
+    it('shows the "My Events" link for an attendee', () => {
+      authenticatedAs(['attendee']);
+      render(
+        <BrowserRouter>
+          <PublicNavigation />
+        </BrowserRouter>
+      );
+      expect(screen.getByTestId('public-nav-my-events')).toHaveAttribute(
+        'href',
+        '/attendee/dashboard'
+      );
+    });
+
+    it('hides "My Events" for a non-attendee (organizer-only)', () => {
+      authenticatedAs(['organizer']);
+      render(
+        <BrowserRouter>
+          <PublicNavigation />
+        </BrowserRouter>
+      );
+      expect(screen.queryByTestId('public-nav-my-events')).not.toBeInTheDocument();
+    });
+
+    it('shows BOTH "My Sessions" and "My Events" for a speaker+attendee', () => {
+      authenticatedAs(['speaker', 'attendee']);
+      render(
+        <BrowserRouter>
+          <PublicNavigation />
+        </BrowserRouter>
+      );
+      expect(screen.getByTestId('public-nav-my-sessions')).toBeInTheDocument();
+      expect(screen.getByTestId('public-nav-my-events')).toBeInTheDocument();
+    });
   });
 });

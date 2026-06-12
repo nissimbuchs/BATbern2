@@ -56,6 +56,7 @@ public class PublishingService {
     private final EventTypeRepository eventTypeRepository;
     private final CacheManager cacheManager;
     private final CdnInvalidationService cdnInvalidationService;
+    private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * Publish a specific phase (topic, speakers, or agenda)
@@ -86,6 +87,14 @@ public class PublishingService {
         // Invalidate CDN cache (Story BAT-16, AC6)
         String cdnInvalidationId = cdnInvalidationService.invalidateCache(event.getEventCode(), phase);
         boolean cdnInvalidated = cdnInvalidationId != null && !cdnInvalidationId.startsWith("error");
+
+        // Story 7.5 rework: when the speakers phase publishes, signal the Q&A listener — it opens
+        // the windows iff this event's qnaOpenTrigger == SPEAKERS_PUBLISHED (idempotent; no-op
+        // otherwise). Decoupled via an application event, mirroring the EVENT_COMPLETED path.
+        if ("speakers".equals(phase.toLowerCase())) {
+            applicationEventPublisher.publishEvent(
+                    new ch.batbern.events.event.SpeakersPhasePublishedEvent(event.getEventCode()));
+        }
 
         return PublishPhaseResponse.builder()
                 .phase(phase)

@@ -612,6 +612,7 @@
       "sublineFilterAriaLabel": "Spalte {{state}} filtern: {{description}}",
       "filterClearedAnnouncement": "Spaltenfilter aufgehoben",
       "filterAppliedAnnouncement": "Spalte {{state}} gefiltert, {{count}} Karten sichtbar"
-    }
+    },
+    "selfNominated": "Selbst vorgeschlagen"
   }
 }

@@ -555,7 +555,8 @@
       "sublineFilterAriaLabel": "Filtrer la colonne {{state}} : {{description}}",
       "filterClearedAnnouncement": "Filtre de colonne effacé",
       "filterAppliedAnnouncement": "Colonne {{state}} filtrée, {{count}} cartes visibles"
-    }
+    },
+    "selfNominated": "Auto-proposé"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",

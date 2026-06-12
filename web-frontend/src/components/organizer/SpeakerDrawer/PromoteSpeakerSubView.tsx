@@ -74,28 +74,49 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
 
   const lastPrefilledSpeakerIdRef = useRef<string | null>(null);
 
-  // Prefill the autocomplete with the existing user that best matches the brainstorm
-  // name. Same heuristic as ContentSubmissionSubView so both sub-views resolve identically.
+  // Prefill the autocomplete with the existing user to promote.
+  //
+  // Story 7.2 / ADR-012: a self-nomination already names the exact attendee, so resolve them
+  // directly by username rather than guessing by name — and crucially WITHOUT a SPEAKER-role
+  // filter, because a self-nominee is an ATTENDEE (not yet a SPEAKER). The promote grants SPEAKER
+  // to whichever existing user is selected (provisionUserWithRole is idempotent by email — no
+  // duplicate user), so all users are eligible here, not only existing speakers.
   useEffect(() => {
     const prefill = async () => {
       if (lastPrefilledSpeakerIdRef.current === speaker.id) return;
       lastPrefilledSpeakerIdRef.current = speaker.id;
       try {
+        if (speaker.source === 'self_nomination' && speaker.proposedByUsername) {
+          const user = await getUserByUsername(speaker.proposedByUsername);
+          if (user) {
+            setSelectedUser({
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              roles: user.roles,
+              profilePictureUrl: user.profilePictureUrl,
+              companyId: user.companyId,
+            });
+            return;
+          }
+        }
+        // Organizer-sourced candidate: best-effort match by the brainstorm name. No SPEAKER-role
+        // filter (see above) — the first match is offered and the organizer can change it.
         let users = await searchUsers(speaker.speakerName, 20);
         if (users.length === 0 && speaker.speakerName.includes(' ')) {
           const firstName = speaker.speakerName.split(' ')[0];
           users = await searchUsers(firstName, 20);
         }
-        const candidates = users.filter((u) => u.roles?.includes('SPEAKER'));
-        if (candidates.length > 0) {
-          setSelectedUser(candidates[0]);
+        if (users.length > 0) {
+          setSelectedUser(users[0]);
         }
       } catch (error) {
         console.error('PromoteSpeakerSubView: failed to prefill speaker', error);
       }
     };
     prefill();
-  }, [speaker.id, speaker.speakerName]);
+  }, [speaker.id, speaker.speakerName, speaker.source, speaker.proposedByUsername]);
 
   const handleCreateSpeaker = () => {
     setEditingUser(null);
@@ -257,8 +278,9 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
                 setUserPickerError(undefined);
               }}
               error={userPickerError}
-              label={t('organizer:speakerContent.form.username', 'Find existing speaker')}
-              role="SPEAKER"
+              label={t('organizer:speakerContent.form.username', 'Find existing user')}
+              // Story 7.2 / ADR-012: no role filter — a self-nominee is an ATTENDEE, not yet a
+              // SPEAKER, and the promote grants SPEAKER on the way to READY. All users are eligible.
               disabled={promoteMutation.isPending}
               data-testid="promote-speaker-search-field"
             />

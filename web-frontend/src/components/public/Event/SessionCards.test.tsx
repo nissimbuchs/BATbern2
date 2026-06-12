@@ -16,6 +16,13 @@ vi.mock('@/services/companyApiClient', () => ({
   },
 }));
 
+// SessionCards renders SessionQnaThread (Story 7.5), which calls useAuth. These tests render
+// without an AuthProvider, so stub the hook to the anonymous state (renderWithProviders only
+// wraps QueryClientProvider).
+vi.mock('@/hooks/useAuth/useAuth', () => ({
+  useAuth: () => ({ isAuthenticated: false, hasRole: () => false }),
+}));
+
 describe('SessionCards', () => {
   let queryClient: QueryClient;
 

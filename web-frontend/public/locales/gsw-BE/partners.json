@@ -11,6 +11,10 @@
         "tableAriaLabel": "Partner topic suggestions",
         "editAriaLabel": "Edit topic {{title}}",
         "deleteAriaLabel": "Delete topic {{title}}"
+      },
+      "source": {
+        "partner": "Partner",
+        "community": "Community"
       }
     },
     "analytics": {

@@ -103,6 +103,10 @@ public class SecurityConfig {
                 // Story 5.9: Public materials download endpoint for archived events
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 
+                // Story 7.5: Public read of a session's Q&A thread (frozen archive is public, AC3).
+                // POST/PATCH/DELETE fall through to authenticated + @PreAuthorize on the controller.
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/qna").permitAll()
+
                 // Story 2.2a: Public anonymous registration endpoints (ADR-005)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
@@ -120,6 +124,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
+
+                // Story 7.4: Public "Thank the Organizers" endpoints (anonymous allowed).
+                // POST is Turnstile-guarded + service-side per-(event,IP) rate-limited; the GET is
+                // count-only for the public, notes branch to organizers inside the controller.
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/thanks").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/thanks").permitAll()
 
                 // Story 10.12: Self-service deregistration (token-protected)
                 .requestMatchers(HttpMethod.GET, "/api/v1/registrations/deregister/verify").permitAll()

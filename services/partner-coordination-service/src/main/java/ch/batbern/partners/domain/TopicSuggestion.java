@@ -36,8 +36,11 @@ public class TopicSuggestion {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    /** ADR-003: meaningful company identifier, no FK. */
-    @Column(name = "company_name", nullable = false, length = 255)
+    /**
+     * ADR-003: meaningful company identifier, no FK.
+     * Nullable since Story 7.1 — COMMUNITY (attendee) suggestions have no partner company.
+     */
+    @Column(name = "company_name", length = 255)
     private String companyName;
 
     /** Username of the partner who submitted this suggestion. */
@@ -54,6 +57,12 @@ public class TopicSuggestion {
     @Column(name = "status", nullable = false, length = 50)
     @Builder.Default
     private TopicStatus status = TopicStatus.PROPOSED;
+
+    /** Origin of the suggestion: PARTNER (Story 8.2) or COMMUNITY/attendee (Story 7.1). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", nullable = false, length = 20)
+    @Builder.Default
+    private TopicSource source = TopicSource.PARTNER;
 
     /** Organizer fills in when selecting a topic (e.g. "BATbern58"). */
     @Column(name = "planned_event", length = 100)

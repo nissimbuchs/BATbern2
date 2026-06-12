@@ -92,7 +92,22 @@
       "checkInReminders": "Check-in-Erinnerungen am Veranstaltungstag",
       "checkInRemindersDesc": "Am Morgen des Veranstaltungstags",
       "startPresentation": "Präsentation starten",
-      "liveControl": "Live Steuerung"
+      "liveControl": "Live Steuerung",
+      "qna": {
+        "title": "Session-Q&A",
+        "enabledLabel": "Session-Q&A für diese Veranstaltung aktivieren",
+        "triggerLabel": "Q&A öffnen",
+        "triggerCompleted": "Nach der Veranstaltung (Afterglow)",
+        "triggerSpeakers": "Wenn Referenten veröffentlicht sind (vor der Veranstaltung)",
+        "daysLabel": "Geöffnet für (Tage nach der Veranstaltung)",
+        "daysHelper": "Die Fenster schließen so viele Tage nach dem Veranstaltungsdatum und werden dann ins Archiv eingefroren.",
+        "daysInvalid": "Das Fenster muss zwischen 1 und 365 Tagen liegen.",
+        "saveError": "Q&A-Einstellungen konnten nicht aktualisiert werden.",
+        "adjustError": "Q&A konnte nicht angepasst werden (noch keine Fenster offen?).",
+        "closeNow": "Q&A jetzt schließen",
+        "reopen": "Q&A wieder öffnen",
+        "saved": "Q&A-Einstellungen gespeichert"
+      }
     },
     "participantTable": {
       "headers": {
@@ -890,6 +905,49 @@
       "exportNameBadges": "Namensschilder exportieren",
       "exportNameBadgesDocx": "Namensschilder als Word",
       "exportError": "Export fehlgeschlagen"
+    }
+  },
+  "thanks": {
+    "widget": {
+      "title": "Den Organisatoren danken",
+      "subtitle": "BATbern wird von Freiwilligen betrieben – kostenlos und werbefrei. Sag in einem Klick Danke.",
+      "notePlaceholder": "Eine Nachricht an die Organisatoren (optional)",
+      "button": "Den Organisatoren danken",
+      "count_one": "{{count}} Dankeschön bisher",
+      "count_other": "{{count}} Dankeschöns bisher",
+      "success": "Danke fürs Dankesagen! 🎉",
+      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    }
+  },
+  "qna": {
+    "title": "Fragen & Antworten",
+    "statusOpen": "Offen",
+    "statusFrozen": "Geschlossen",
+    "empty": "Noch keine Fragen. Stell die erste.",
+    "removed": "Von der Organisation entfernt",
+    "takedown": "Entfernen",
+    "reply": "Antworten",
+    "cancel": "Abbrechen",
+    "replyPlaceholder": "Antwort schreiben…",
+    "questionPlaceholder": "Stell eine Frage zu dieser Session…",
+    "askQuestion": "Frage stellen",
+    "loginToPost": "Melde dich an, um Fragen zu stellen oder zu beantworten."
+  },
+  "attendee": {
+    "dashboard": {
+      "title": "Deine Veranstaltungen",
+      "titleWithName": "Willkommen zurück, {{name}}",
+      "upcoming": "Kommende Veranstaltungen",
+      "past": "Vergangene Veranstaltungen",
+      "emptyUpcoming": "Keine kommenden Veranstaltungen — schau, was ansteht.",
+      "emptyPast": "Noch keine vergangenen Veranstaltungen.",
+      "error": "Deine Veranstaltungen konnten nicht geladen werden. Bitte versuche es erneut.",
+      "status": {
+        "registered": "Angemeldet",
+        "confirmed": "Bestätigt",
+        "waitlist": "Warteliste",
+        "attended": "Teilgenommen"
+      }
     }
   }
 }
