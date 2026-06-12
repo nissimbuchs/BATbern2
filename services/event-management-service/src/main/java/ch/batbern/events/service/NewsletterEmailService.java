@@ -198,6 +198,7 @@ public class NewsletterEmailService {
     public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale,
                                               @Nullable String templateKey, boolean testMode) {
         String effectiveKey = resolveTemplateKey(templateKey);
+        rejectRegistrantTemplate(effectiveKey, locale);
         Map<String, String> vars = buildVariables(event, locale, isReminder,
                 baseUrl + "/unsubscribe?token=PREVIEW");
         String contentHtml = renderContent(locale, vars, effectiveKey);
@@ -257,6 +258,7 @@ public class NewsletterEmailService {
                                                   @Nullable Integer maxRecipients,
                                                   boolean testMode) {
         String effectiveKey = resolveTemplateKey(templateKey);
+        rejectRegistrantTemplate(effectiveKey, locale);
 
         // Duplicate-send prevention: reject if a send is already in progress for this event.
         sendRepository.findFirstByEventIdAndStatus(event.getId(), STATUS_IN_PROGRESS)
@@ -930,6 +932,23 @@ public class NewsletterEmailService {
 
     private String resolveTemplateKey(@Nullable String templateKey) {
         return (templateKey != null && !templateKey.isBlank()) ? templateKey : DEFAULT_TEMPLATE_KEY;
+    }
+
+    /**
+     * Defence in depth (Story 7.3 hardening): the subscriber newsletter must NEVER send a
+     * registrant-targeted template (category {@code REGISTRANT_NOTICE}, e.g. {@code slides-online})
+     * to the global subscriber pool. Reject it with 400 ({@link IllegalArgumentException}) — those
+     * templates go through the dedicated Registrant Notices send, which targets event registrants.
+     */
+    private void rejectRegistrantTemplate(String templateKey, String locale) {
+        emailTemplateService.findByKeyAndLocale(templateKey, locale)
+                .filter(t -> "REGISTRANT_NOTICE".equalsIgnoreCase(t.getCategory()))
+                .ifPresent(t -> {
+                    throw new IllegalArgumentException(
+                            "Template '" + templateKey + "' targets event registrants (category "
+                            + "REGISTRANT_NOTICE) and cannot be sent to newsletter subscribers. "
+                            + "Use the Registrant Notices tab.");
+                });
     }
 
     private String renderContent(String locale, Map<String, String> vars, String templateKey) {

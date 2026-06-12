@@ -12,7 +12,8 @@
       "publishing": "Publishing",
       "newsletter": "Newsletter",
       "settings": "Settings",
-      "photos": "Photos"
+      "photos": "Photos",
+      "registrantNotices": "Registrant Notices"
     },
     "tabsAriaLabel": "Event page navigation",
     "overview": {
@@ -226,6 +227,21 @@
       "confirmSend": "Yes, send",
       "sentSuccess": "Sent to {{count}} recipient(s).",
       "sentFailed": "Send failed: {{message}}"
+    },
+    "registrantNotices": {
+      "title": "Registrant Notices",
+      "preview": "Preview",
+      "send": "Send to registrants",
+      "locale": "Preview language",
+      "templateSelect": "Template",
+      "confirmTitle": "Send to registrants?",
+      "previewTitle": "Email Preview",
+      "description": "Send a one-off notice (e.g. “the slides are online”) to this event’s registrants. Recipients are the active registrants — not newsletter subscribers — and each gets the mail in their own language.",
+      "confirmBody": "Send '{{templateKey}}' to {{count}} active registrants of «{{eventTitle}}»? Each receives it in their own language.",
+      "sendQueued": "Queued — sending to {{count}} registrants.",
+      "recipientCount": "{{count}} active registrants",
+      "noTemplates": "No registrant-notice template for this language yet.",
+      "error": "Something went wrong. Please try again."
     }
   },
   "dashboard": {

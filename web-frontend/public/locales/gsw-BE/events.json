@@ -12,7 +12,8 @@
       "publishing": "Veröffentlichig",
       "newsletter": "Newsletter",
       "settings": "Istellige",
-      "photos": "Fotos"
+      "photos": "Fotos",
+      "registrantNotices": "Teilnähmer-Infos"
     },
     "tabsAriaLabel": "Veranstautigsnavigation",
     "overview": {
@@ -218,6 +219,21 @@
       "confirmSend": "Jo, schicke",
       "sentSuccess": "A {{count}} Empfänger gschickt.",
       "sentFailed": "S Schicke het nid klappt: {{message}}"
+    },
+    "registrantNotices": {
+      "title": "Teilnähmer-Infos",
+      "preview": "Vorschou",
+      "send": "A Teilnähmer schicke",
+      "locale": "Vorschousprach",
+      "templateSelect": "Vorlag",
+      "confirmTitle": "A Teilnähmer schicke?",
+      "previewTitle": "E-Mail-Vorschou",
+      "description": "Schick e einmaligi Info (z.B. «d Folie si online») a d Teilnähmer vo däm Event. Empfänger si di aktive Aagmäldete – nid d Newsletter-Abonnänte – u jede überchunnt s Mail i siner Sprach.",
+      "confirmBody": "«{{templateKey}}» a {{count}} aktivi Aagmäldeti vo «{{eventTitle}}» schicke? Jede überchunnt s i siner Sprach.",
+      "sendQueued": "I dr Warteschlange – wird a {{count}} Aagmäldeti gschickt.",
+      "recipientCount": "{{count}} aktivi Aagmäldeti",
+      "noTemplates": "No kei Teilnähmer-Info-Vorlag für die Sprach.",
+      "error": "Öppis isch schiefgloffe. Bitte versuechs nomal."
     }
   },
   "dashboard": {

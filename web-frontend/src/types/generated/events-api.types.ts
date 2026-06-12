@@ -2444,6 +2444,52 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/registrant-notices/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Preview a registrant-notice mail in a chosen language (ORGANIZER)
+     * @description Story 7.3 hardening — renders a REGISTRANT_NOTICE-category template (e.g. slides-online)
+     *     in the chosen preview language and reports how many active registrants would receive it.
+     *     The actual send still resolves each registrant's own language; this locale is preview-only.
+     *     Rejects (400) a template that is not REGISTRANT_NOTICE.
+     */
+    post: operations['previewRegistrantNotice'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/registrant-notices/send': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a registrant-notice mail to the event's active registrants (ORGANIZER)
+     * @description Story 7.3 hardening — sends a REGISTRANT_NOTICE-category template (e.g. slides-online) to the
+     *     event's ACTIVE REGISTRANTS (registered/confirmed), NOT the newsletter-subscriber pool. Honours
+     *     the global newsletter opt-out, resolves the language per recipient (de*\/en/else→German), guards
+     *     against double-send (409), and runs asynchronously. Rejects (400) a non-REGISTRANT_NOTICE template.
+     */
+    post: operations['sendRegistrantNotice'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/newsletter/send': {
     parameters: {
       query?: never;
@@ -2941,6 +2987,30 @@ export interface components {
        */
       status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
       /** @description Number of active registrants resolved as the recipient base. */
+      recipientCount: number;
+    };
+    /** @description Story 7.3 hardening — request to preview a registrant-notice mail. */
+    RegistrantNoticePreviewRequest: {
+      /** @description A REGISTRANT_NOTICE-category template key (e.g. slides-online). */
+      templateKey: string;
+      /**
+       * @description Preview language; defaults to German when omitted/unknown.
+       * @enum {string}
+       */
+      locale?: 'de' | 'en';
+    };
+    /** @description Story 7.3 hardening — request to send a registrant-notice mail to registrants. */
+    RegistrantNoticeSendRequest: {
+      /** @description A REGISTRANT_NOTICE-category template key (e.g. slides-online). */
+      templateKey: string;
+    };
+    /** @description Story 7.3 hardening — rendered preview + active-registrant recipient count. */
+    RegistrantNoticePreviewResponse: {
+      /** @description Rendered, variable-substituted subject line. */
+      subject: string;
+      /** @description Rendered, layout-merged HTML body for the preview iframe. */
+      htmlPreview: string;
+      /** @description Number of active registrants (registered/confirmed) who would receive the mail. */
       recipientCount: number;
     };
     NewsletterSendStatusResponse: {
@@ -9846,6 +9916,97 @@ export interface operations {
         content?: never;
       };
       /** @description A slides-online send is already in progress or has already been sent */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  previewRegistrantNotice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegistrantNoticePreviewRequest'];
+      };
+    };
+    responses: {
+      /** @description Rendered preview + recipient count */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegistrantNoticePreviewResponse'];
+        };
+      };
+      /** @description Template is not a registrant-notice template */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  sendRegistrantNotice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegistrantNoticeSendRequest'];
+      };
+    };
+    responses: {
+      /** @description Registrant-notice send queued */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SlidesOnlineSendResponse'];
+        };
+      };
+      /** @description Template is not a registrant-notice template */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A send of this template is already in progress or has already been sent */
       409: {
         headers: {
           [name: string]: unknown;

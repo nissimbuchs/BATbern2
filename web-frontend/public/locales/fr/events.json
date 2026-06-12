@@ -12,7 +12,8 @@
       "publishing": "Publication",
       "newsletter": "Newsletter",
       "settings": "Paramètres",
-      "photos": "Photos"
+      "photos": "Photos",
+      "registrantNotices": "Infos participants"
     },
     "tabsAriaLabel": "Navigation de la page événement",
     "overview": {
@@ -212,6 +213,21 @@
       "confirmSend": "Oui, envoyer",
       "sentSuccess": "Envoyé à {{count}} destinataire(s).",
       "sentFailed": "Échec de l'envoi : {{message}}"
+    },
+    "registrantNotices": {
+      "title": "Infos participants",
+      "preview": "Aperçu",
+      "send": "Envoyer aux inscrits",
+      "locale": "Langue d’aperçu",
+      "templateSelect": "Modèle",
+      "confirmTitle": "Envoyer aux inscrits ?",
+      "previewTitle": "Aperçu de l’e-mail",
+      "description": "Envoyez une info ponctuelle (p. ex. « les diapos sont en ligne ») aux inscrits de cet événement. Les destinataires sont les inscrits actifs — pas les abonnés à la newsletter — et chacun la reçoit dans sa langue.",
+      "confirmBody": "Envoyer « {{templateKey}} » à {{count}} inscrits actifs de «{{eventTitle}}» ? Chacun la reçoit dans sa langue.",
+      "sendQueued": "En file — envoi à {{count}} inscrits.",
+      "recipientCount": "{{count}} inscrits actifs",
+      "noTemplates": "Aucun modèle d’info participants pour cette langue.",
+      "error": "Une erreur s’est produite. Veuillez réessayer."
     }
   },
   "dashboard": {

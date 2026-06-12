@@ -12,7 +12,8 @@
       "publishing": "Pubblicazione",
       "newsletter": "Newsletter",
       "settings": "Impostazioni",
-      "photos": "Foto"
+      "photos": "Foto",
+      "registrantNotices": "Avvisi iscritti"
     },
     "tabsAriaLabel": "Navigazione pagina evento",
     "overview": {
@@ -212,6 +213,21 @@
       "confirmSend": "Sì, invia",
       "sentSuccess": "Inviato a {{count}} destinatario/i.",
       "sentFailed": "Invio fallito: {{message}}"
+    },
+    "registrantNotices": {
+      "title": "Avvisi iscritti",
+      "preview": "Anteprima",
+      "send": "Invia agli iscritti",
+      "locale": "Lingua anteprima",
+      "templateSelect": "Modello",
+      "confirmTitle": "Inviare agli iscritti?",
+      "previewTitle": "Anteprima e-mail",
+      "description": "Invia un avviso una tantum (es. «le slide sono online») agli iscritti di questo evento. I destinatari sono gli iscritti attivi — non gli abbonati alla newsletter — e ognuno la riceve nella propria lingua.",
+      "confirmBody": "Inviare «{{templateKey}}» a {{count}} iscritti attivi di «{{eventTitle}}»? Ognuno la riceve nella propria lingua.",
+      "sendQueued": "In coda — invio a {{count}} iscritti.",
+      "recipientCount": "{{count}} iscritti attivi",
+      "noTemplates": "Nessun modello di avviso iscritti per questa lingua.",
+      "error": "Qualcosa è andato storto. Riprova."
     }
   },
   "dashboard": {

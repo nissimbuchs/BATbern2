@@ -12,7 +12,8 @@
       "publishing": "Julkaisu",
       "newsletter": "Uutiskirje",
       "settings": "Asetukset",
-      "photos": "Valokuvat"
+      "photos": "Valokuvat",
+      "registrantNotices": "Ilmoittautuneiden tiedotteet"
     },
     "tabsAriaLabel": "Tapahtumassivun navigointi",
     "overview": {
@@ -212,6 +213,21 @@
       "confirmSend": "Kyllä, lähetä",
       "sentSuccess": "Lähetetty {{count}} vastaanottajalle.",
       "sentFailed": "Lähetys epäonnistui: {{message}}"
+    },
+    "registrantNotices": {
+      "title": "Ilmoittautuneiden tiedotteet",
+      "preview": "Esikatselu",
+      "send": "Lähetä ilmoittautuneille",
+      "locale": "Esikatselun kieli",
+      "templateSelect": "Malli",
+      "confirmTitle": "Lähetetäänkö ilmoittautuneille?",
+      "previewTitle": "Sähköpostin esikatselu",
+      "description": "Lähetä kertaluonteinen tiedote (esim. ”diat ovat verkossa”) tämän tapahtuman ilmoittautuneille. Vastaanottajat ovat aktiiviset ilmoittautuneet – eivät uutiskirjeen tilaajat – ja kukin saa sen omalla kielellään.",
+      "confirmBody": "Lähetetäänkö ”{{templateKey}}” {{count}} aktiiviselle ilmoittautuneelle tapahtumasta «{{eventTitle}}»? Kukin saa sen omalla kielellään.",
+      "sendQueued": "Jonossa – lähetetään {{count}} ilmoittautuneelle.",
+      "recipientCount": "{{count}} aktiivista ilmoittautunutta",
+      "noTemplates": "Tälle kielelle ei vielä ole ilmoittautuneiden tiedotemallia.",
+      "error": "Jokin meni pieleen. Yritä uudelleen."
     }
   },
   "dashboard": {

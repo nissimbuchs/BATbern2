@@ -54,6 +54,7 @@ import EventParticipantsTab from './EventParticipantsTab';
 import { EventPublishingTab } from './EventPublishingTab';
 import { EventSettingsTab } from './EventSettingsTab';
 import { EventNewsletterTab } from './EventNewsletterTab';
+import { EventRegistrantNoticesTab } from './EventRegistrantNoticesTab';
 import { EventPhotosTab } from './EventPhotosTab';
 import { EventForm } from '@/components/organizer/EventManagement';
 
@@ -65,6 +66,11 @@ const TABS = [
   { id: 'participants', labelKey: 'eventPage.tabs.participants', icon: <ParticipantsIcon /> },
   { id: 'publishing', labelKey: 'eventPage.tabs.publishing', icon: <PublishIcon /> },
   { id: 'newsletter', labelKey: 'eventPage.tabs.newsletter', icon: <NewsletterIcon /> },
+  {
+    id: 'registrant-notices',
+    labelKey: 'eventPage.tabs.registrantNotices',
+    icon: <SlideshowIcon />,
+  },
   { id: 'settings', labelKey: 'eventPage.tabs.settings', icon: <SettingsIcon /> },
   { id: 'photos', labelKey: 'eventPage.tabs.photos', icon: <PhotosIcon /> },
 ] as const;
@@ -191,6 +197,8 @@ export const EventPage: React.FC = () => {
         return <EventPublishingTab event={event} eventCode={eventCode!} />;
       case 'newsletter':
         return <EventNewsletterTab eventCode={eventCode!} eventTitle={event.title || ''} />;
+      case 'registrant-notices':
+        return <EventRegistrantNoticesTab eventCode={eventCode!} eventTitle={event.title || ''} />;
       case 'settings':
         return <EventSettingsTab event={event} eventCode={eventCode!} />;
       case 'photos':

@@ -164,11 +164,13 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("newsletter-")) {
             return "NEWSLETTER";
         }
-        // Story 7.3: the "slides are online" mail is a newsletter-style send to event
-        // registrants. It does not carry the "newsletter-" prefix, so map it explicitly —
-        // otherwise it would fall through to LAYOUT.
+        // Story 7.3 (hardened): the "slides are online" mail goes to event REGISTRANTS, not the
+        // newsletter-subscriber pool. It lives in its own REGISTRANT_NOTICE category so it is
+        // surfaced ONLY in the dedicated "Registrant Notices" tab and can NEVER be selected in the
+        // subscriber-newsletter picker (where sending it would blast every subscriber). The
+        // NewsletterEmailService also hard-rejects REGISTRANT_NOTICE templates as defence in depth.
         if (templateKey.startsWith("slides-online")) {
-            return "NEWSLETTER";
+            return "REGISTRANT_NOTICE";
         }
         // Story (venue-coordination): outbound mails to the event venue + caterer.
         // Both share one category so the Event Detail Venue tab dropdown can list them

@@ -152,3 +152,35 @@ _Resolved with the PM 2026-06-10._
 
 1. **Is the due date 2 weeks *after* the event (not before)?** Slides go up after the event, so the task should fall due ~14 days *after* the event date (offset `+14`). The original phrasing was ambiguous ("two weeks … of the event"). The story assumes **+14 after**; please confirm so the seed offset sign is right.
 2. **Reuse the existing newsletter-send endpoint, or a dedicated slides-online send?** The cleanest reuse is the existing `POST …/newsletter/send` with `templateKey=slides-online` plus a "recipients = event registrants" flag. If you'd rather keep the registrant-targeted send fully separate from the subscriber newsletter (different audit, different metrics), say so — it changes whether we extend `NewsletterEmailService` or add a sibling service.
+
+---
+
+## Safety hardening + organizer UI (2026-06-12)
+
+**Problem found (review):** the original 7.3 had NO organizer UI for the dedicated, safe
+`/slides-online/send` (registrant-targeted) endpoint — and the `slides-online` template was
+categorised `NEWSLETTER`, so it appeared in the Event → **Newsletter** tab's template picker.
+Selecting it there and clicking Send would have **blasted the entire newsletter-subscriber pool**
+(the subscriber send passed any `templateKey` straight through, no whitelist). The only reachable
+action was the dangerous one.
+
+**Fix (this change):**
+1. **Backend reject (defence in depth):** `NewsletterEmailService.preview`/`sendNewsletter` now
+   reject any `REGISTRANT_NOTICE`-category template with a 400 — the subscriber pool can never be
+   sent a registrant template, regardless of UI.
+2. **Recategorise:** `deriveCategory("slides-online") → REGISTRANT_NOTICE` (was `NEWSLETTER`), so it
+   no longer appears in the subscriber-newsletter picker. Forward migration **V114** recategorises
+   the already-seeded staging/prod rows (seeding is insert-only).
+3. **Generalised, safe send + preview:** `SlidesOnlineEmailService` gained
+   `sendRegistrantNotice(event, templateKey, sentBy)` + `previewRegistrantNotice(event, templateKey,
+   locale)` (validates the template is `REGISTRANT_NOTICE`); `sendSlidesOnline` now delegates.
+   New `RegistrantNoticeController`: `POST /events/{code}/registrant-notices/{preview,send}`
+   (ORGANIZER). OpenAPI + regenerated FE types.
+4. **New organizer tab "Registrant Notices"** (`EventRegistrantNoticesTab`, sibling of Newsletter):
+   pick a `REGISTRANT_NOTICE` template + preview language, preview iframe (shows active-registrant
+   count), send + confirm. The actual send still resolves each registrant's language (AC4); the
+   selector is preview-only. i18n in all 10 locales.
+
+**Tests:** `NewsletterEmailServiceTest` rejects a REGISTRANT_NOTICE template (preview + send);
+`SlidesOnlineEmailServiceTest` (5) green with the new category guard; `EventRegistrantNoticesTab`
+test (4). Backend `compileJava`/`compileTestJava` + FE `tsc`/ESLint clean.

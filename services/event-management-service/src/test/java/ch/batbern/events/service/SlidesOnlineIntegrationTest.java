@@ -150,7 +150,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         lenient().when(userApiClient.getPreferredLanguage("att.fr")).thenReturn("fr");
 
         NewsletterSend send = savePendingSend(event.getId());
-        slidesOnlineEmailService.processSend(send.getId(), event);
+        slidesOnlineEmailService.processSend(send.getId(), event, "slides-online");
 
         // Capture every (to, subject) the send dispatched.
         var toCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
@@ -197,7 +197,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                         org.mockito.ArgumentMatchers.any());
 
         NewsletterSend send = savePendingSend(event.getId());
-        slidesOnlineEmailService.processSend(send.getId(), event);
+        slidesOnlineEmailService.processSend(send.getId(), event, "slides-online");
 
         NewsletterSend result = sendRepository.findById(send.getId()).orElseThrow();
         assertThat(result.getStatus()).isEqualTo("PARTIAL");

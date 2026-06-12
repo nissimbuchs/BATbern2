@@ -12,7 +12,8 @@
       "publishing": "Publicaziun",
       "newsletter": "Newsletter",
       "settings": "Parameters",
-      "photos": "Fotografias"
+      "photos": "Fotografias",
+      "registrantNotices": "Infos participants"
     },
     "tabsAriaLabel": "Navigaziun da la pagina eveniment",
     "overview": {
@@ -212,6 +213,21 @@
       "confirmSend": "Gea, trametter",
       "sentSuccess": "Tramess a {{count}} destinatur(s).",
       "sentFailed": "Trametter n'è betg reussì: {{message}}"
+    },
+    "registrantNotices": {
+      "title": "Infos participants",
+      "preview": "Prevista",
+      "send": "Trametter als participants",
+      "locale": "Lingua da prevista",
+      "templateSelect": "Model",
+      "confirmTitle": "Trametter als participants?",
+      "previewTitle": "Prevista da l’e-mail",
+      "description": "Tramet ina infurmaziun unica (p.ex. «las slides èn online») als participants da quest eveniment. Ils destinaturs èn ils participants activs – betg ils abunents da la newsletter – e mintgin la retschaiva en sia lingua.",
+      "confirmBody": "Trametter «{{templateKey}}» a {{count}} participants activs da «{{eventTitle}}»? Mintgin la retschaiva en sia lingua.",
+      "sendQueued": "En la colonna d’spetga – trametter a {{count}} participants.",
+      "recipientCount": "{{count}} participants activs",
+      "noTemplates": "Anc nagin model d’infurmaziun per questa lingua.",
+      "error": "Insatge è ì stort. Emprova anc ina giada."
     }
   },
   "dashboard": {
