@@ -2,6 +2,16 @@ spring:
   application:
     name: company-user-management-service
 
+  # Epic 13 (SB4): keep the HTTP layer on the Jackson 2 (com.fasterxml) converter during the
+  # migration. SB4 defaults to Jackson 3 (tools.jackson); the spring-boot-jackson2 compat module
+  # provides the Jackson 2 converter, selected here. This keeps API payloads byte-identical and
+  # preserves Jackson-2 deserialization semantics (com.fasterxml exception types, @JsonIgnoreProperties
+  # strict unknown-field rejection). This IS the "Jackson-2-compat flag" from the migration plan —
+  # the final closeout story removes this line to flip the estate to Jackson 3, re-validated via Bruno.
+  http:
+    converters:
+      preferred-json-mapper: jackson2
+
   jackson:
     default-property-inclusion: non_null
     serialization:

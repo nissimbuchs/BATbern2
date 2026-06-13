@@ -114,6 +114,11 @@ dependencies {
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testFixturesImplementation 'org.springframework.boot:spring-boot-jdbc-test'
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-web'
+    // Epic 13 (SB4): SB4 dropped the auto-wiring of springSecurity() into the auto-configured
+    // MockMvc (the old MockMvcSecurityConfiguration is gone from spring-boot-webmvc-test). The
+    // shared MockMvcSecuritySetup re-applies it via a MockMvcBuilderCustomizer, which needs
+    // SecurityMockMvcConfigurers from spring-security-test on the testFixtures classpath.
+    testFixturesImplementation 'org.springframework.security:spring-security-test'
     testFixturesImplementation 'org.testcontainers:testcontainers'
     testFixturesImplementation 'org.testcontainers:testcontainers-postgresql'
     testFixturesImplementation 'org.testcontainers:testcontainers-junit-jupiter'

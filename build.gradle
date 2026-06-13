@@ -118,6 +118,13 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             runtimeOnly 'org.postgresql:postgresql:42.7.7'
             implementation 'org.flywaydb:flyway-core'
             implementation 'org.flywaydb:flyway-database-postgresql'
+            // Epic 13 (SB4): Flyway auto-configuration moved OUT of spring-boot-autoconfigure
+            // into its own module (org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration).
+            // Without it, migrations never run at boot → Hibernate ddl-auto=validate hits an empty
+            // schema → "Schema validation: missing table [...]" and every @SpringBootTest fails to
+            // load its context. Required by the DB services (CUMS/EMS/partner); attendee has no
+            // datasource and excludes it explicitly in its @SpringBootApplication. BOM-managed version.
+            implementation 'org.springframework.boot:spring-boot-flyway'
             
             // OpenAPI/Swagger
             implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
