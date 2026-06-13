@@ -27,7 +27,10 @@ export function AperoSlide(): JSX.Element {
       }}
     >
       {/* BATbern spinner (AC #14) */}
-      <div className={animStyles.loaderWrap} style={{ width: '9.375vw', height: '9.375vw', marginBottom: '2.083vw' }}>
+      <div
+        className={animStyles.loaderWrap}
+        style={{ width: '9.375vw', height: '9.375vw', marginBottom: '2.083vw' }}
+      >
         <BATbernLoader size={180} speed="slow" />
       </div>
 

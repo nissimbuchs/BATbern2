@@ -147,8 +147,7 @@ These work across the entire platform, regardless of current page.
 | `→` or `N` | Next step | Advance to next workflow step (if validated) |
 | `←` or `P` | Previous step | View previous step (admin override required to revert) |
 | `Ctrl/Cmd+Enter` | Advance workflow | Same as clicking "Advance to Next Step" button |
-| `1` - `9` | Jump to step | Jump to specific step (1-9) |
-| `Shift+1` - `Shift+7` | Jump to step 10-16 | For steps 10-16 (e.g., `Shift+1` = Step 10) |
+| `1` - `9` | Jump to state | Jump to one of the 9 event workflow states |
 
 ### Status Changes `[PLANNED]`
 

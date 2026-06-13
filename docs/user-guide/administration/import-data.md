@@ -1,10 +1,14 @@
 # Import Data
 
-> 🔨 **IN PROGRESS** — Part of Story 10.1 (Administration Page). This documentation describes the intended functionality once delivered.
+> <span class="feature-status implemented">Implemented</span> — Batch import (Tab 1, Story 10.1) and legacy BAT-format export/import (Tab 4, Story 10.20) are both live. Historical CSV/JSON batch import composes on the Epic 3 migration tooling.
+
+**Last Updated:** 2026-06-13
 
 ## Overview
 
 The **Import Data** tab consolidates all five batch import modals into a single, organised screen. Previously, import buttons were scattered across the event management dashboard, company management screen, and user list — they have been moved here and removed from those pages.
+
+A second, related surface — the **Export / Import** tab (Tab 4) — handles full data round-trips in the legacy BAT JSON format. See [Legacy BAT-Format Export & Import](#legacy-bat-format-export--import) below.
 
 **Navigation**: Administration → Tab 1 (Import Data)
 
@@ -120,7 +124,43 @@ A summary report shows final counts. You can download:
 
 ---
 
+## Legacy BAT-Format Export & Import
+
+<span class="feature-status implemented">Implemented</span> (Story 10.20)
+
+Separate from the per-entity batch importers above, the **Export / Import** tab (Tab 4 of the Administration page) handles full data round-trips in the **legacy BAT JSON format**. This is used to migrate data between system versions and to interoperate with the old BATspa platform.
+
+> The per-entity CSV/JSON importers (Tab 1) are for *backfilling* historical records; the legacy BAT export/import (Tab 4) is for *whole-dataset* round-trips. They are complementary.
+
+### What you can export
+
+| Export | Endpoint | Contents |
+|--------|----------|----------|
+| **Legacy data** | `GET /api/v1/admin/export/legacy` | A single JSON file with the envelope `{ version, exportedAt, events[], companies[], speakers[], attendees[] }` |
+| **Asset manifest** | `GET /api/v1/admin/export/assets` | A JSON manifest of presigned download URLs (`{ exportedAt, assetCount, assets[] }`); each URL is valid for 1 hour |
+
+Both exports are **organizer-only** (other roles receive `403`).
+
+### What you can import
+
+| Import | Endpoint | Behaviour |
+|--------|----------|-----------|
+| **Legacy data** | `POST /api/v1/admin/import/legacy` (multipart JSON `file`) | Upserts events, sessions, speakers, companies, and attendees; returns `{ imported, skipped, errors }`. **Idempotent** — importing the same file twice has no side effects. Invalid JSON returns `400` with structured errors. |
+| **Assets** | `POST /api/v1/admin/import/assets` (multipart ZIP `file`) | Unpacks the ZIP to S3 under an `imports/{timestamp}/` prefix and links each asset to its entity by filename convention. |
+
+### Using the tab
+
+1. Navigate to **Administration → Export / Import**
+2. To **export**: click the export button — the JSON (or asset manifest) downloads as `batbern-export-{date}.json`
+3. To **import**: pick the JSON (or asset ZIP) file, then confirm in the **confirmation dialog** that appears before any import runs
+4. After import, a **result summary** shows per-entity counts of records imported, skipped, and any errors
+
+Because the legacy import is idempotent, it is safe to re-run after fixing a partial dataset.
+
+---
+
 ## Related
 
 - **[Partners: Attendance Analytics](../partner-portal/analytics.md)** — why participant import matters for partner reporting
+- **[Email Templates](email-templates.md)** — content/layout template management
 - **[Administration Overview](README.md)** — back to admin hub

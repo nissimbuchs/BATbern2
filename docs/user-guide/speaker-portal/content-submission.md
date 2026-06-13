@@ -2,19 +2,21 @@
 
 > Speakers submit their presentation title, abstract, and materials through a guided portal
 
-<span class="feature-status implemented">Implemented</span> — Epic 6.3
+<span class="feature-status implemented">Implemented</span> — Epic 6.3, refactored to Cognito auth in Epic 11.E.3
+
+**Last Updated:** 2026-06-13
 
 ## Overview
 
 After accepting an invitation, speakers submit their presentation content through the self-service portal. The organiser receives the submission automatically, reviews it in Phase C (Quality Review), and approves or requests revisions.
 
-Speakers access the content submission portal via the **VIEW magic link** included in their acceptance confirmation email. This link is **reusable** (not single-use) and valid for 30 days, so speakers can return multiple times.
+Content submission happens behind the speaker's **Cognito-authenticated session** — the speaker signs in to BATbern (email + password, or "Continue with Google") and opens the submission page for the relevant event. The page identifies the event by its `eventCode` in the URL path (e.g. `/speaker-portal/events/BATbern57/content`); there are no magic-link tokens.
 
 ## Accessing the Submission Portal
 
-Speakers receive a **"Submit Content"** link in their acceptance confirmation email. This link opens the content submission portal directly. No login is required.
+From the [Speaker Dashboard](dashboard.md), the speaker clicks **Submit Content** on the event card. The acceptance confirmation email and deadline reminder emails also link straight to the login page — after signing in the speaker lands on the dashboard and picks the event.
 
-If the link has expired (30 days), the speaker should contact the organiser to request a new link. Organisers can resend from the Phase B: Outreach screen.
+Because the portal is Cognito-secured, a speaker can only submit content for events they were invited to: the backend resolves the speaker's pool entry from `(authenticated username, eventCode)` and returns **403 Forbidden** if no matching invitation exists.
 
 ## Submission Wizard
 
@@ -65,7 +67,7 @@ The submission form has three main sections:
 └─────────────────────────────────────────────────────┘
 ```
 
-Files are uploaded directly to S3 via presigned URL — they are never sent through the backend. A progress bar is shown during upload.
+Files are uploaded directly to S3 via presigned URL — they are never sent through the backend. The speaker's Cognito Bearer token authorises the request; the presigned-URL endpoint is scoped to the event's `eventCode`. A progress bar is shown during upload.
 
 ### 3 — Review & Submit
 
@@ -85,7 +87,7 @@ The speaker reviews all entered details before submitting:
 
 ## Draft Auto-Save
 
-The portal **automatically saves a draft every 30 seconds**. If the speaker closes the browser and returns via their link, the draft is restored from the server.
+The portal **automatically saves a draft every 30 seconds**. If the speaker closes the browser and signs back in, the draft is restored from the server (keyed to the speaker's identity + the event).
 
 ```
 Last auto-saved: 30 seconds ago  [  Save Now  ]
@@ -97,7 +99,7 @@ Manual saving is also available at any time.
 
 When the speaker submits:
 
-1. **Speaker status** transitions: **ACCEPTED → CONTENT_SUBMITTED**
+1. **Speaker status** transitions: **ACCEPTED → CONTENT_SUBMITTED** (recorded in `speaker_status_history` with `changed_by_username` = the speaker's Cognito username)
 2. **Organiser notified** automatically (domain event triggers in-app notification)
 3. **Speaker sees** a success page with the content deadline and a link back to their dashboard:
 
@@ -119,7 +121,7 @@ When the speaker submits:
 If the organiser requests changes (Phase C Quality Review), the speaker receives a **revision request email** containing:
 
 - The reviewer's feedback
-- A direct link to the content submission portal (fresh 30-day VIEW token)
+- A link to sign in and reopen the content submission page for that event
 
 The portal shows the feedback at the top of the form:
 
@@ -138,26 +140,26 @@ The speaker edits the form and resubmits. Each resubmission increments the versi
 
 ## Submission Status
 
-| Status | Meaning |
-|--------|---------|
-| **Not submitted** | Speaker has not yet submitted content |
-| **Under review** | Content submitted, awaiting organiser review |
-| **Approved** | Organiser approved the content |
-| **Revision needed** | Organiser requested changes — speaker must resubmit |
+| Status | Meaning | Workflow state |
+|--------|---------|----------------|
+| **Not submitted** | Speaker has not yet submitted content | `ACCEPTED` |
+| **Under review** | Content submitted, awaiting moderator review | `CONTENT_SUBMITTED` |
+| **Approved** | Moderator approved the content | `QUALITY_REVIEWED` |
+| **Revision needed** | Organiser requested changes — speaker must resubmit | `CONTENT_SUBMITTED` + revision flag |
 
-The speaker can see their current status on the [Speaker Dashboard](dashboard.md).
+The speaker can see their current status on the [Speaker Dashboard](dashboard.md). Once content is `QUALITY_REVIEWED` **and** a slot is assigned, the speaker is publishable (the legacy `CONFIRMED` state, removed in Epic 11, is replaced by this derived `is_publishable` condition).
 
 ## Organiser: Uploading on Behalf of a Speaker
 
-Organisers can also submit content on behalf of a speaker directly from the Phase B: Outreach screen (hybrid workflow). This is useful when a speaker is not comfortable with online submissions or has provided content by email or phone.
+Organisers can also submit content on behalf of a speaker directly from the Phase B: Outreach screen (hybrid workflow). This is useful when a speaker is not comfortable with online submissions or has provided content by email or phone. Both the speaker-self and organizer-on-behalf paths traverse the same `ContentSubmissionService`.
 
 See [Phase B: Outreach →](../workflow/phase-b-outreach.md) for the organiser-side content collection flow.
 
 ## Troubleshooting
 
-### Speaker's link is expired
+### Speaker can't open the submission page
 
-The content submission link is a 30-day VIEW token. If expired, the organiser can resend from Phase B: Outreach — this generates a new token and sends a reminder email.
+The page requires a signed-in speaker session. If the speaker sees a login redirect, they should sign in with their BATbern account (the credentials from the invitation email, or "Continue with Google"). If they reach the page but get a 403, confirm they were actually invited to that event — the page is scoped per event.
 
 ### File upload fails
 

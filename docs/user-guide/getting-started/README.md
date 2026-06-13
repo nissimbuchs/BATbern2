@@ -2,6 +2,8 @@
 
 > Quick start guide for BATbern organizers
 
+> **Last Updated**: 2026-06-13
+
 ## Welcome to BATbern
 
 BATbern is a comprehensive event management platform designed specifically for Berner Architekten Treffen (BATbern) conferences. As an **Organizer**, you have access to powerful tools for managing every aspect of conference planning and execution.
@@ -22,29 +24,32 @@ As an organizer, you can:
 BATbern follows a **microservices architecture** with:
 
 - **API Gateway**: Unified entry point at `http://localhost:8080` (development)
-- **Domain Services**: Specialized services for companies, events, partners, speakers
-- **React Frontend**: Modern single-page application at `http://localhost:3000` (development)
+- **Domain Services**: Specialized services for companies, events, partners, speakers, attendee experience
+- **React 19 Frontend**: Modern single-page application at `http://localhost:3000` (development)
 - **AWS Infrastructure**: Scalable cloud deployment with PostgreSQL, S3, CloudFront
+- **Authentication**: AWS Cognito (email/password) with Google SSO federation
 
 ## User Roles
 
-BATbern supports 4 distinct roles:
+BATbern supports 4 primary roles (plus **Admin**):
 
 | Role | Badge | Access Level | Typical Responsibilities |
 |------|-------|--------------|-------------------------|
 | **Organizer** | <span style="background:#2C5F7C;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">ORGANIZER</span> | Full platform access | Plan events, manage speakers, coordinate partners, manage all entities |
 | **Speaker** | <span style="background:#4A90B8;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">SPEAKER</span> | Speaker portal | Accept invitations, submit content, view session dashboard |
-| **Attendee** | <span style="background:#3498DB;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">ATTENDEE</span> | Public registration | Register for events, browse archive, access presentation materials |
+| **Attendee** | <span style="background:#3498DB;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">ATTENDEE</span> | Public registration & contribution | Register for events, browse archive, access materials, suggest topics, self-nominate, post-event Q&A |
 | **Partner** | <span style="background:#9B59B6;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">PARTNER</span> | Partner portal | View attendance analytics, vote on topics, receive meeting invites |
 
 **You are an Organizer** - you have full permissions for event planning, coordination, and entity management.
+
+> **Multiple roles, one session**: A single account can hold more than one role (e.g. an organizer who also speaks). You log in once and the navigation groups each role's features under section dividers — no separate logins. See [Dashboard Navigation](dashboard.md).
 
 ## Quick Start Checklist
 
 <div class="step" data-step="1">
 
 ### Log In to BATbern
-Access the platform using your AWS Cognito credentials. See [Login & Authentication](login.md) for detailed instructions.
+Access the platform with your AWS Cognito email/password or **"Continue with Google"** (SSO). See [Login & Authentication](login.md) for detailed instructions.
 </div>
 
 <div class="step" data-step="2">
@@ -99,8 +104,9 @@ The platform uses 3 independent workflow systems:
 **Event Workflow (9 states)**:
 - CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 
-**Speaker Workflow (per-speaker, parallel)**:
-- identified → contacted → ready → accepted → content_submitted → quality_reviewed → confirmed
+**Speaker Workflow (8-state model, per-speaker, parallel — unified into event-management following Epic 11)**:
+- IDENTIFIED → CONTACTED → READY → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED (plus a declined/closed terminal state)
+- `SpeakerWorkflowService` is the sole status writer; a Cognito user is provisioned at the `READY` transition
 
 **Task System**:
 - Configurable tasks (newsletters, catering, venue booking) triggered by event state transitions

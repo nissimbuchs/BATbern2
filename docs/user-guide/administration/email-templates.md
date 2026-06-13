@@ -1,10 +1,12 @@
 # Email Templates
 
-> 🔨 **IN PROGRESS** — Story 10.2 (Email Template Management). This documentation describes the intended functionality once delivered. Task deadline reminder emails (Story 10.3) are already live.
+> <span class="feature-status implemented">Implemented</span> — Email-template management (Story 10.2) is live. Content templates use a TinyMCE WYSIWYG editor; layout templates use a Monaco source editor. Templates are authored in German and English.
+
+**Last Updated:** 2026-06-13
 
 ## Overview
 
-The **Email Templates** tab lets organizers view and edit the subject lines and body content of every email the platform sends — without requiring a code deployment.
+The **Email Templates** tab lets organizers view and edit the subject lines and body content of every email the platform sends — without requiring a code deployment. It is **Tab 3** of the Administration page.
 
 **Navigation**: Administration → Tab 3 (Email Templates)
 
@@ -118,7 +120,7 @@ Templates use `{{variableName}}` placeholders that are substituted at send time.
 | `{{eventTitle}}` | All event-related templates |
 | `{{eventCode}}` | All event-related templates |
 | `{{eventDate}}` | All event-related templates |
-| `{{magicLink}}` | Speaker invitation templates |
+| `{{portalLink}}` | Speaker invitation templates (links to the Cognito-authenticated speaker portal) |
 | `{{responseDeadline}}` | Speaker invitation templates |
 | `{{contentDeadline}}` | Speaker reminder templates |
 | `{{taskName}}` | Task reminder templates |

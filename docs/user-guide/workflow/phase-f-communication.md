@@ -2,6 +2,8 @@
 
 > Execute event and archive for historical reference
 
+> **Last Updated:** 2026-06-13 — Verified against the 9-state EVENT workflow (Epic 5, unchanged) and the task system. The task system is independent of the speaker workflow; no speaker-state changes apply here.
+
 <div class="workflow-phase phase-f">
 <strong>Phase F: Task Management & Communications</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>

@@ -1,21 +1,31 @@
 # Login & Authentication
 
-> Access your BATbern organizer account using AWS Cognito
+> Access your BATbern account using AWS Cognito email/password or "Continue with Google"
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated**: 2026-06-13
+
 ## Overview
 
-BATbern supports **two authentication flows** depending on your role:
+BATbern uses a **single unified login** for all roles. Every account authenticates through the same screen, and the platform routes you to the right experience based on your role(s). There is no longer a separate login per role.
 
-| Role | Authentication Method | Entry Point |
-|------|-----------------------|-------------|
-| **Organizer / Admin** | Email + password (AWS Cognito) | Standard login page |
-| **Partner** | Email + password (AWS Cognito) | Standard login page (redirects to Partner Portal) |
-| **Speaker** | Magic link (JWT email link) | Invitation email → auto-login |
-| **Attendee** | Email + password (AWS Cognito) | Event registration page |
+You can sign in with either of two methods:
 
-All Cognito flows (login, password reset, email verification) are fully implemented.
+| Method | How It Works | Availability |
+|--------|--------------|--------------|
+| **Email + password (AWS Cognito)** | Enter your BATbern email and password on the standard login screen | <span class="feature-status implemented">Implemented</span> |
+| **Continue with Google (SSO)** | Federated login via `auth.batbern.ch` using your Google account | <span class="feature-status implemented">Implemented</span> |
+
+Both methods work for **all roles** — Organizer, Speaker, Partner, Attendee, and Admin. The role(s) attached to your account determine what you see after login, not which method you used to sign in.
+
+> **Apple / generic OIDC SSO** is the only authentication method **not yet available** — it is planned but not released. <span class="feature-status planned">Planned</span>
+
+All Cognito flows (login, password reset, email verification) and Google SSO are fully implemented and live.
+
+### One Session for All Your Roles
+
+If your account holds more than one role (for example you are both an **Organizer** and a **Speaker**), you log in **once** and get a **single session**. The navigation groups the features for each of your roles under section dividers — you no longer log out and back in to switch "hats". See [Dashboard Navigation](dashboard.md) for how the grouped navigation looks.
 
 ## Logging In
 
@@ -47,7 +57,7 @@ Enter your:
 
 **Submit**
 
-Click the "Sign In" button. You'll be authenticated and redirected to the organizer dashboard.
+Click the "Sign In" button. You'll be authenticated and routed to the experience for your role — the organizer dashboard, the Partner Portal, the Speaker Portal, or the public attendee experience.
 </div>
 
 ### First-Time Login
@@ -58,66 +68,72 @@ If this is your first time logging in, you may need to:
 2. **Complete your profile** - Add your name and preferences
 3. **Accept terms** - Review and accept the platform terms of use
 
-### Partner Login
-
-Partners log in using the same email/password flow as organizers. After authentication, the platform detects the PARTNER role and redirects automatically to the **Partner Portal** (analytics, topic voting, meeting coordination) instead of the organizer dashboard.
-
-> **Note**: Partners see only their own company's data. If you are expecting organizer-level access, contact an administrator to verify your role.
-
 ---
 
-## Speaker Authentication: Magic Link
+## Continue with Google (SSO)
 
 <span class="feature-status implemented">Implemented</span>
 
-Speakers authenticate using a **magic link** — a secure, time-limited URL emailed to them as part of the invitation process. No account creation or password is required.
+Instead of an email/password, you can sign in with your Google account. This federated login is live for all roles and is provided through BATbern's hosted identity domain `auth.batbern.ch`.
 
 ### How It Works
 
 <div class="step" data-step="1">
 
-**Organizer Sends Invitation**
+**Click "Continue with Google"**
 
-The organizer sends a speaker invitation from the event's Speaker Outreach tab. BATbern emails the speaker with a unique magic link.
+On the login screen, click the **Continue with Google** button. You'll be redirected to `auth.batbern.ch`, which hands off to Google's sign-in page.
 </div>
 
 <div class="step" data-step="2">
 
-**Speaker Clicks the Link**
+**Authenticate with Google**
 
-The speaker clicks the link in the email. No password entry required — the link itself is the authentication credential.
+Sign in with your Google account (or pick an already-signed-in account). Google returns you to BATbern.
 </div>
 
 <div class="step" data-step="3">
 
-**Auto-Login & Portal Access**
+**Account Linking**
 
-The speaker is automatically logged in and redirected to the Speaker Portal, where they can accept/decline the invitation and submit presentation materials.
+If a BATbern account already exists with the same email address, the Google identity is **transparently linked** to it — you keep your existing roles and data. If no account exists, one is provisioned automatically (just-in-time) with the default **Attendee** role.
 </div>
 
-### Magic Link Properties
+<div class="step" data-step="4">
 
-| Property | Value |
-|----------|-------|
-| **Format** | JWT (RS256-signed) |
-| **Session duration** | 30 days |
-| **Reusable** | Yes — same link works throughout the 30-day window |
-| **Scope** | Speaker's own events only |
-| **Cookie** | HTTP-only, secure |
+**Terms-of-Service Consent (first federated login only)**
 
-### Troubleshooting Magic Links
+The first time you sign in with Google, you're shown a short **onboarding completion** step: accept the Terms of Service, optionally confirm your company, and choose your newsletter preference. This consent gate appears only once.
+</div>
 
-**Link expired?**
-- Magic links are valid for 30 days from invitation
-- Ask the organizer to resend the invitation to generate a fresh link
+<div class="step" data-step="5">
 
-**Link not working?**
-- Ensure you're clicking the link from the original invitation email (not a forwarded copy — links are personalized)
-- Try opening in a private/incognito browser window
-- Contact the organizer at info@berner-architekten-treffen.ch
+**Avatar Import & Access**
 
-**Received a new invitation but old link still works?**
-- Both links remain valid until their respective 30-day windows expire
+Your **Google profile picture is imported** as your BATbern avatar, and you're routed to the experience for your role. On subsequent logins, "Continue with Google" signs you straight in with no extra steps.
+</div>
+
+> **Note**: SSO is governed by a runtime kill-switch. In the rare event it is temporarily disabled, the email/password method remains fully available.
+
+---
+
+## Partner Login
+
+Partners log in through the same unified screen — email/password **or** "Continue with Google". After authentication, the platform detects the PARTNER role and routes to the **Partner Portal** (analytics, topic voting, meeting coordination).
+
+> **Note**: Partners see only their own company's data. If you are expecting organizer-level access, contact an administrator to verify your role.
+
+---
+
+## Speaker Login
+
+<span class="feature-status implemented">Implemented</span>
+
+Speakers log in through the **same unified screen** as everyone else — email/password **or** "Continue with Google". The earlier email "magic link" auto-login was removed during the unified speaker workflow refactor (Epic 11); speakers now have a normal **AWS Cognito** account.
+
+A speaker's Cognito account is provisioned by the organizer workflow when the speaker reaches the `READY` state. The speaker then signs in (or uses "Continue with Google" if the email matches their Google account) and lands in the **Speaker Portal**, where they can accept/decline the invitation and submit presentation materials.
+
+> **Migrating from magic links?** If you previously used an emailed magic link, that flow no longer exists. Use your email/password or "Continue with Google" on the standard login screen. If you don't yet have a password, use **Forgot Password** to set one, or sign in with Google.
 
 ---
 
@@ -282,7 +298,7 @@ Your session expired due to inactivity.
 
 - [Dashboard Navigation →](dashboard.md) - What you see after logging in
 - [User Management →](../entity-management/users.md) - Managing user accounts and roles
-- [Speaker Portal →](../speaker-portal/README.md) - Speaker magic link authentication and self-service
+- [Speaker Portal →](../speaker-portal/README.md) - Speaker Cognito authentication and self-service
 - [Partner Portal →](../partner-portal/README.md) - Partner login and portal capabilities
 - [Troubleshooting Authentication →](../troubleshooting/authentication.md) - Detailed troubleshooting guide
 

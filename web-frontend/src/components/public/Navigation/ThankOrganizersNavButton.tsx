@@ -172,6 +172,13 @@ export function ThankOrganizersNavButton({ eventCode }: ThankOrganizersNavButton
                 className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
                 data-testid="thanks-note-input"
               />
+              {/* Story 7.7: logged-in notes may be curated onto the public marquee with the author's
+                  name — surface that up front (anonymous claps are never featured). */}
+              {isAuthenticated && (
+                <p className="text-xs text-muted-foreground" data-testid="thanks-public-notice">
+                  {t('thanks.widget.publicNotice')}
+                </p>
+              )}
               <div className="flex items-center justify-between gap-2">
                 <Button
                   type="submit"

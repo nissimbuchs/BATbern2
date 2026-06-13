@@ -1,5 +1,7 @@
 # Analytics
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 The Event Analytics dashboard provides organizers with actionable insights into event performance, attendee engagement, and content effectiveness. Analytics help you:
@@ -14,13 +16,24 @@ The Event Analytics dashboard provides organizers with actionable insights into 
 
 | Analytics Area | Status | Details |
 |----------------|--------|---------|
+| Analytics Dashboard (Story 10.5) | ✅ `[IMPLEMENTED]` | Tabbed Recharts dashboard: Overview · Attendance · Topics · Companies, with a global time-range selector |
 | Partner Attendance Analytics | ✅ `[IMPLEMENTED]` | Attendance table, cost-per-attendee KPI, XLSX export (Epic 8) |
 | Organizer Workflow Analytics | ✅ `[IMPLEMENTED]` | Event progress tracking, speaker pipeline, team activity feed |
-| Full Event Analytics Suite | 📋 `[PLANNED]` | Attendance funnel, session ratings, NPS surveys, financial metrics |
+| Comprehensive Event Analytics Suite | 📋 `[PLANNED]` | Survey/NPS, satisfaction, engagement scoring, financial metrics, predictive analytics |
 
 ---
 
 ## Implemented Analytics
+
+### Analytics Dashboard (Story 10.5)
+
+A dedicated, fully built **Analytics page** (available at **Organizer Portal → Analytics**, and to partners) presents BATbern statistics as live, data-driven charts — designed so organizers can showcase community growth during partner meetings without preparing slides by hand. Built with Recharts (no manual data export needed):
+
+- **Global time-range selector** — All Time / Last 5 Years / Last 2 Years; time-sensitive charts respond without a page reload.
+- **Overview tab** — 4 KPI cards (Total Events · Total Attendees · Companies Represented · Total Sessions) plus an event-cadence timeline coloured by topic category.
+- **Attendance tab** — attendees per event (bars + trend line) and returning-vs-new attendees (stacked bars), each with a collapsible data table.
+- **Topics tab** — events per category (horizontal bars) and topic popularity vs. average attendee count (scatter plot).
+- **Companies tab** — attendees per company over time, sessions per company, with a Top 5 / Top 10 / All toggle. A logged-in **partner's own company is auto-highlighted** and pinned first.
 
 ### Partner Attendance Analytics Dashboard (Epic 8)
 
@@ -40,13 +53,14 @@ Built into the organizer dashboard:
 - **Event workflow progress** — Visual progress bar showing current state in the 9-state machine with completion percentage
 - **Speaker pipeline** — Status breakdown across all speaker states (Invited / Accepted / Content Submitted / Approved / Published)
 - **Team Activity Feed** — Chronological log of organizer actions (edits, state transitions, assignments) with mark-as-read and delete
-- **Organizer Analytics Page** — Aggregate statistics across all events and speakers on the platform
+
+> For the aggregate, cross-event statistics page, see the **Analytics Dashboard (Story 10.5)** section above.
 
 ---
 
 ## Planned: Comprehensive Event Analytics Suite
 
-The sections below document the **planned** analytics capabilities. These features are not yet implemented. Check [Feature Status](../appendix/feature-status.md) for the current roadmap.
+The sections below document **planned, not-yet-built** analytics — post-event satisfaction surveys, NPS, engagement scoring, financial analytics, and predictive insights. They are aspirational and should not be read as currently available. (The shipped, available analytics are covered under "Implemented Analytics" above.) Check [Feature Status](../appendix/feature-status.md) for the current roadmap.
 
 ---
 

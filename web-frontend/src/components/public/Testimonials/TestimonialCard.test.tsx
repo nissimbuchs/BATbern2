@@ -20,19 +20,33 @@ describe('TestimonialCard', () => {
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
   });
 
-  it('should render avatar image when provided', () => {
-    render(<TestimonialCard {...mockTestimonial} avatar="https://example.com/avatar.jpg" />);
+  it('should render the company logo when companyLogoUrl is provided', () => {
+    render(
+      <TestimonialCard
+        {...mockTestimonial}
+        companyLogoUrl="https://cdn.example.com/logos/acme.png"
+      />
+    );
 
-    const avatar = screen.getByAltText('John Doe');
-    expect(avatar).toBeInTheDocument();
-    expect(avatar).toHaveAttribute('src', 'https://example.com/avatar.jpg');
+    // Story 7.7: the logo image uses the company name as its alt text.
+    const logo = screen.getByAltText('Acme Corp');
+    expect(logo.tagName).toBe('IMG');
+    expect(logo.getAttribute('src')).toBeTruthy();
+    // The plain company-name text is replaced by the logo when a logo is present.
+    expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument();
   });
 
-  it('should render fallback avatar when no image provided', () => {
-    render(<TestimonialCard {...mockTestimonial} />);
+  it('should render the company name as text when no logo is provided', () => {
+    const { container } = render(<TestimonialCard {...mockTestimonial} />);
 
-    // Should render first and last initials
-    expect(screen.getByText('JD')).toBeInTheDocument();
+    expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+    expect(container.querySelector('img')).toBeNull();
+  });
+
+  it('should render the thank-you badge with an accessible label when provided', () => {
+    render(<TestimonialCard {...mockTestimonial} badge="Thank you" />);
+
+    expect(screen.getByRole('img', { name: 'Thank you' })).toBeInTheDocument();
   });
 
   it('should have proper styling classes', () => {

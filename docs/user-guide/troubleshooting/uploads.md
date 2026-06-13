@@ -1,8 +1,15 @@
 # File Upload Troubleshooting
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
-This guide helps resolve file upload issues for company logos, speaker materials, and event assets. BATbern uses direct-to-S3 uploads with presigned URLs for security and performance.
+This guide helps resolve file upload issues for company logos, speaker materials, and event assets. BATbern uses **direct-to-S3 uploads with presigned URLs** for security and performance — files go straight from your browser to S3, never proxied through the backend.
+
+Two related behaviours are worth knowing about up front:
+
+- **CDN image resizing:** uploaded images are served through `cdn.batbern.ch`, which can return resized variants on the fly (e.g. `?w=` width parameter) for thumbnails and previews. Thumbnails and small variants are reliable; very large source images may fail to resize at high output widths (use the original/full-size URL in that case). See [Preview Quality Issues](#preview-quality-poor).
+- **Turnstile bot protection on public submit flows:** public, unauthenticated forms (e.g. event registration, the public contribution flows) are protected by Cloudflare Turnstile. This affects public *form* submissions, not the authenticated organizer/speaker file uploads covered by most of this guide — but see [Turnstile on Public Submit Flows](#turnstile-on-public-submit-flows) if a public submission with an attachment is rejected.
 
 See [File Uploads Feature Guide](../features/file-uploads.md) for complete upload documentation.
 
@@ -311,6 +318,32 @@ Support can locate file in S3 and manually associate it.
 
 ---
 
+## Turnstile on Public Submit Flows
+
+**Symptom**: A **public** (not logged-in) form submission — for example event registration or a public contribution flow — is rejected, hangs on submit, or returns a verification error, even though any attached file looks fine
+
+**Cause**: Public, unauthenticated submit endpoints are protected by **Cloudflare Turnstile** (bot protection). The form must pass the Turnstile challenge before the submission (and any associated upload) is accepted. This does **not** apply to authenticated organizer/speaker uploads — those rely on your Cognito session, not Turnstile.
+
+**Solutions**:
+```
+1. Complete the Turnstile challenge widget on the form (it may be invisible
+   and pass automatically, or show a checkbox/challenge)
+2. Allow Cloudflare challenge scripts:
+   - Do not block challenges.cloudflare.com
+   - Disable aggressive privacy/anti-tracking extensions for the page
+   - Allow cookies for the page
+3. If the challenge never appears or never resolves:
+   - Hard refresh (Ctrl+Shift+R / Cmd+Shift+R) to reload the widget
+   - Try a different browser or disable extensions
+   - Try a non-VPN / non-Tor network (challenges are stricter on those)
+4. If you are an organizer testing internally, sign in first — authenticated
+   flows are not Turnstile-gated
+```
+
+> **Note**: Turnstile gates the *form submission*, not the S3 upload itself. A failed public submit can therefore look like an "upload failure" when the real blocker is the unsolved challenge.
+
+---
+
 ## File Size Issues
 
 ### File Too Large
@@ -490,6 +523,20 @@ If image looks fine on standard display but blurry on Retina/4K:
 1. Upload 2x resolution version (e.g., 1600x1600px instead of 800x800px)
 2. Platform will downsample for standard displays
 3. High-DPI displays will use full resolution
+```
+
+**CDN Image-Resize Behaviour**:
+```
+Images are delivered via cdn.batbern.ch, which generates resized variants
+on demand (e.g. a `?w=` width parameter) so each surface gets an appropriately
+sized image:
+- Thumbnails and small/medium variants resize reliably
+- A VERY large source image can fail to produce a large variant
+  (e.g. a full-screen lightbox width) and the resized request may error
+- Workaround: a surface needing a large image should use the original
+  full-size (display) URL rather than a large resized variant
+- For predictable results, upload reasonably sized sources (see recommended
+  dimensions above) rather than extreme-megapixel originals
 ```
 
 ---

@@ -1,6 +1,8 @@
 # Task Templates
 
-> 🔨 **IN PROGRESS** — Tab 2 of the Administration Page (Story 10.1). Task deadline reminder emails (Story 10.3) are already live.
+> <span class="feature-status implemented">Implemented</span> — Tab 2 of the Administration page (Story 10.1). Task deadline reminder emails (Story 10.3) are live, and event-state transitions auto-create tasks from the matching templates.
+
+**Last Updated:** 2026-06-13
 
 ## Overview
 
@@ -25,6 +27,9 @@ Default templates are seeded by the platform and cannot be deleted. They represe
 | Newsletter — Speaker Announcement | `AGENDA_FINALIZED` | 14 days before event |
 | Newsletter — Event Reminder | `SPEAKERS_PUBLISHED` | 7 days before event |
 | Catering | `AGENDA_FINALIZED` | 2 weeks before event |
+| Newsletter — Slides Are Online | `EVENT_COMPLETED` | ~1 day after event |
+
+> The **Newsletter — Slides Are Online** task is auto-seeded by Epic 7 (Story 7.3, *"The Slides Are Online" mail*). About a day after an event completes, this task prompts the organizer to send the "slides are online" email to the event's active registrants (DE + EN), honouring email opt-out, with a double-send guard. It is created automatically — no manual setup required.
 
 ### Custom Templates
 
@@ -68,6 +73,18 @@ Templates are activated when an event enters a specific state in the 9-state wor
 | `EVENT_COMPLETED` | Event finished |
 
 When an event transitions into a trigger state, all active templates with that trigger are instantiated as tasks on the event's task board and assigned to the designated organiser.
+
+---
+
+## Automatic Task Creation by State Transitions
+
+<span class="feature-status implemented">Implemented</span>
+
+Tasks are **created automatically** as an event moves through the workflow — organizers do not hand-create the standard tasks. When an event enters a trigger state, the platform instantiates every active template (default + custom) whose trigger matches that state, computes each task's due date from its offset relative to the event date, and assigns it to the configured organiser.
+
+This is how the standard checklist (venue booking, partner meeting, moderator assignment, newsletters, catering, post-event slides mail) appears on the task board at the right moment without manual effort. Some tasks are also seeded by Epic 7 contribution features (see the *Newsletter — Slides Are Online* row above).
+
+Tasks for an event are cleaned up when the event is archived (Story 10.18), so completed events do not leave stale reminders behind.
 
 ---
 

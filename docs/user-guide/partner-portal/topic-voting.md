@@ -2,6 +2,8 @@
 
 > Partners can suggest topics for future BATbern events and vote on proposals from other companies
 
+> **Last Updated**: 2026-06-13
+
 <span class="feature-status implemented">Implemented</span> — Epic 8.2
 
 ## Overview
@@ -13,6 +15,10 @@ The topic voting system gives partner companies a voice in shaping the content o
 - **Suggest** new topics that haven't been proposed yet
 
 Organisers review all suggestions, select topics for upcoming events, and update each topic's status so all partners can see the outcome.
+
+<div class="alert info">
+ℹ️ <strong>Community-sourced topics share this pool.</strong> Topics suggested by logged-in attendees via <strong>Topics From the Floor</strong> (Epic 7.1) feed into the same topic pool partners vote on. They are tagged <code>source = community</code> (partner suggestions are <code>source = partner</code>) and carry a community badge in the organiser triage view, but partners see and vote on them exactly like partner-suggested topics.
+</div>
 
 ## The Topic List
 

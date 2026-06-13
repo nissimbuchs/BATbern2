@@ -1,57 +1,62 @@
 /**
  * TestimonialCard Component
- * Displays a testimonial with avatar, name, quote, and company
+ *
+ * A curated thank-you note (Story 7.7) for the partner marquee: a small 🙏 marker, the note text
+ * (given most of the card height), and the author name + company logo on one bottom row. Sized to
+ * match PartnerShowcaseCard (w-80 h-48) so it intermingles cleanly. Tailwind-only (public bundle).
  */
 
 import { Card } from '@/components/public/ui/card';
+import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 interface TestimonialCardProps {
-  avatar?: string;
   name: string;
   quote: string;
-  company: string;
+  company?: string;
+  /** Story 7.7: company logo CloudFront URL — rendered to the right of the author when present. */
+  companyLogoUrl?: string;
+  /** Story 7.7: accessible label for the 🙏 marker (e.g. localized "Thank you"); not shown as text. */
+  badge?: string;
 }
 
-export const TestimonialCard = ({ avatar, name, quote, company }: TestimonialCardProps) => {
-  // Get initials from first and last name
-  const getInitials = (fullName: string) => {
-    const names = fullName.trim().split(' ');
-    if (names.length >= 2) {
-      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`;
-    }
-    return names[0].charAt(0);
-  };
-
+export const TestimonialCard = ({
+  name,
+  quote,
+  company,
+  companyLogoUrl,
+  badge,
+}: TestimonialCardProps) => {
   return (
-    <Card className="flex-shrink-0 w-80 p-6 bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors">
-      <div className="flex items-start gap-4">
-        {/* Avatar */}
-        <div className="flex-shrink-0">
-          {avatar ? (
-            <img
-              src={avatar}
-              alt={name}
-              width={48}
-              height={48}
-              loading="lazy"
-              className="w-12 h-12 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-base font-semibold text-primary-foreground">
-                {getInitials(name)}
-              </span>
-            </div>
+    <Card className="flex-shrink-0 w-80 h-48 p-6 bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors">
+      <div className="flex h-full flex-col">
+        {/* Note — 🙏 to the left, text filling the rest; gets the bulk of the card height. */}
+        <div className="flex flex-1 min-h-0 gap-2">
+          {badge && (
+            <span
+              className="text-lg leading-none flex-shrink-0"
+              role="img"
+              aria-label={badge}
+              title={badge}
+            >
+              🙏
+            </span>
           )}
+          <p className="overflow-hidden text-sm text-zinc-300 italic line-clamp-5">"{quote}"</p>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-zinc-300 italic mb-3 line-clamp-3">"{quote}"</p>
-          <div>
-            <p className="text-sm font-medium text-zinc-100">{name}</p>
-            <p className="text-xs text-zinc-400">{company}</p>
-          </div>
+        {/* Author (left) + company logo/name (right) on one row. */}
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-zinc-100 truncate">{name}</p>
+          {companyLogoUrl ? (
+            <img
+              src={buildCdnImageUrl(companyLogoUrl, { h: 64, fit: 'inside' }) ?? companyLogoUrl}
+              alt={company ?? ''}
+              loading="lazy"
+              className="max-h-6 max-w-[7rem] flex-shrink-0 object-contain"
+            />
+          ) : company ? (
+            <p className="text-xs text-zinc-400 truncate">{company}</p>
+          ) : null}
         </div>
       </div>
     </Card>

@@ -2,21 +2,32 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OrganizerThanks;
+import ch.batbern.events.dto.FeaturedThanksResponse;
 import ch.batbern.events.dto.ThanksCountResponse;
 import ch.batbern.events.dto.ThanksNoteResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.ThanksNotAllowedException;
+import ch.batbern.events.exception.ThanksNotFeaturableException;
+import ch.batbern.events.exception.ThanksNotFoundException;
 import ch.batbern.events.exception.ThanksRateLimitedException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.FeaturedThanksProjection;
 import ch.batbern.events.repository.OrganizerThanksRepository;
+import ch.batbern.events.repository.ThanksAuthorProjection;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for "Thank the Organizers" (Story 7.4).
@@ -34,6 +45,9 @@ public class OrganizerThanksService {
     /** Thank-yous open only once the event has actually happened (AC1). */
     private static final Set<EventWorkflowState> THANKABLE_STATES =
             Set.of(EventWorkflowState.EVENT_LIVE, EventWorkflowState.EVENT_COMPLETED);
+
+    /** Hard cap on the public featured marquee fetch (Story 7.7, AC2). */
+    private static final int MAX_FEATURED = 9;
 
     private final OrganizerThanksRepository thanksRepository;
     private final EventRepository eventRepository;
@@ -89,12 +103,101 @@ public class OrganizerThanksService {
             return ThanksCountResponse.ofCount(count);
         }
 
-        List<ThanksNoteResponse> notes = thanksRepository
-                .findByEventIdOrderByCreatedAtDesc(event.getId())
-                .stream()
-                .map(t -> new ThanksNoteResponse(t.getNote(), t.getThankedByUsername(), t.getCreatedAt()))
+        List<OrganizerThanks> rows = thanksRepository.findByEventIdOrderByCreatedAtDesc(event.getId());
+        // Enrich logged-in notes with the author's display name (Story 7.7) in one batched,
+        // anonymous-safe local DB query — same cross-service join the public marquee + Q&A use.
+        Set<String> usernames = rows.stream()
+                .map(OrganizerThanks::getThankedByUsername)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, ThanksAuthorProjection> portraits = loadAuthorPortraits(usernames);
+
+        List<ThanksNoteResponse> notes = rows.stream()
+                .map(t -> {
+                    ThanksAuthorProjection a = t.getThankedByUsername() == null
+                            ? null : portraits.get(t.getThankedByUsername());
+                    boolean showCompany = a != null && !Boolean.FALSE.equals(a.getShowCompany());
+                    return new ThanksNoteResponse(
+                            t.getId(),
+                            t.getNote(),
+                            t.getThankedByUsername(),
+                            a != null ? a.getFirstName() : null,
+                            a != null ? a.getLastName() : null,
+                            showCompany ? a.getCompanyDisplayName() : null,
+                            t.getFeaturedAt() != null,
+                            t.getCreatedAt());
+                })
                 .toList();
         return new ThanksCountResponse(count, notes);
+    }
+
+    /**
+     * PUBLIC featured marquee (Story 7.7, AC2/AC3): up to {@code limit} (capped at {@link
+     * #MAX_FEATURED}) RANDOM featured, logged-in thank-yous across ALL events, enriched with the
+     * author's first name + company logo. Anonymous notes are structurally excluded (no username);
+     * notes by a since-deleted author drop out via the INNER JOIN. Company name/logo are suppressed
+     * when the author opted out of showing their company.
+     */
+    @Transactional(readOnly = true)
+    public List<FeaturedThanksResponse> getFeaturedThanks(int limit) {
+        int capped = Math.max(1, Math.min(limit, MAX_FEATURED));
+        return thanksRepository.findFeaturedRandom(capped).stream()
+                .map(this::toFeaturedResponse)
+                .toList();
+    }
+
+    private FeaturedThanksResponse toFeaturedResponse(FeaturedThanksProjection p) {
+        boolean showCompany = !Boolean.FALSE.equals(p.getShowCompany());
+        return new FeaturedThanksResponse(
+                p.getNote(),
+                p.getEventCode(),
+                p.getFirstName(),
+                p.getLastName(),
+                showCompany ? p.getCompanyDisplayName() : null,
+                showCompany ? p.getCompanyLogoUrl() : null);
+    }
+
+    /**
+     * Organizer feature-toggle (Story 7.7, AC1). Marks/un-marks a note for the public marquee.
+     * Rejects an anonymous note (no name → not featurable). Returns the updated organizer note view.
+     */
+    @Transactional
+    public ThanksNoteResponse setFeatured(String eventCode, UUID id, boolean featured) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        OrganizerThanks thanks = thanksRepository.findByIdAndEventId(id, event.getId())
+                .orElseThrow(() -> new ThanksNotFoundException(
+                        "Thank-you " + id + " not found for event " + eventCode));
+        if (featured && (thanks.getThankedByUsername() == null || thanks.getThankedByUsername().isBlank())) {
+            throw new ThanksNotFeaturableException(
+                    "Anonymous thank-yous cannot be featured on the public marquee.");
+        }
+        thanks.setFeaturedAt(featured ? Instant.now() : null);
+        thanksRepository.save(thanks);
+        log.info("Thank-you {} for event {} featured={}", id, eventCode, featured);
+
+        ThanksAuthorProjection a = thanks.getThankedByUsername() == null ? null
+                : loadAuthorPortraits(Set.of(thanks.getThankedByUsername()))
+                        .get(thanks.getThankedByUsername());
+        boolean showCompany = a != null && !Boolean.FALSE.equals(a.getShowCompany());
+        return new ThanksNoteResponse(
+                thanks.getId(),
+                thanks.getNote(),
+                thanks.getThankedByUsername(),
+                a != null ? a.getFirstName() : null,
+                a != null ? a.getLastName() : null,
+                showCompany ? a.getCompanyDisplayName() : null,
+                thanks.getFeaturedAt() != null,
+                thanks.getCreatedAt());
+    }
+
+    /** Batch-load author portraits keyed by username (empty map for no usernames). */
+    private Map<String, ThanksAuthorProjection> loadAuthorPortraits(Collection<String> usernames) {
+        if (usernames.isEmpty()) {
+            return Map.of();
+        }
+        return thanksRepository.findThanksAuthorPortraitsByUsernames(usernames).stream()
+                .collect(Collectors.toMap(ThanksAuthorProjection::getUsername, p -> p, (a, b) -> a));
     }
 
     private Event loadThankableEvent(String eventCode) {

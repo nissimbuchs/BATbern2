@@ -1,8 +1,12 @@
 # Authentication Troubleshooting
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
-This guide covers solutions to login, password, session, and access control issues. The BATbern platform uses AWS Cognito for authentication, providing enterprise-grade security with multi-factor options.
+This guide covers solutions to login, password, session, and access control issues. The BATbern platform uses **AWS Cognito** for authentication, providing enterprise-grade security. Users sign in either with **email and password** or with **"Continue with Google"** (Google SSO federation, live since Epic 12). Speakers, partners, and attendees all use the same Cognito login — there is no separate "magic link" login for any role.
+
+Multi-role users (for example, an organizer who is also a speaker) sign in **once** and get a **single session** with role-grouped navigation — see [Multi-Role Single Session](#multi-role-single-session-issues).
 
 ## Quick Diagnosis
 
@@ -13,16 +17,23 @@ Can you access the login page?
 │
 ├─ NO → [Network/Browser Issue](#cant-access-login-page)
 │
-└─ YES → Do you know your password?
+└─ YES → How are you signing in?
     │
-    ├─ NO → [Reset Password](#forgot-password)
+    ├─ "Continue with Google" → Does it fail?
+    │   ├─ Bounced back to login → [Google SSO Issues](#continue-with-google-sso-issues)
+    │   ├─ "Account inactive/disabled" → [Account Inactive](#account-inactive-gating)
+    │   └─ Stuck on Terms screen → [Terms-of-Service Consent Gate](#first-login-terms-of-service-consent-gate)
     │
-    └─ YES → Does login fail with error?
+    └─ Email + password → Do you know your password?
         │
-        ├─ "Invalid username or password" → [Invalid Credentials](#invalid-credentials)
-        ├─ "Account locked" → [Account Locked](#account-locked)
-        ├─ "Session expired" → [Session Expired](#session-expired)
-        └─ Other error → See [Error Messages](#error-messages)
+        ├─ NO → [Reset Password](#forgot-password)
+        │
+        └─ YES → Does login fail with error?
+            │
+            ├─ "Invalid username or password" → [Invalid Credentials](#invalid-credentials)
+            ├─ "Account locked" → [Account Locked](#account-locked)
+            ├─ "Session expired" → [Session Expired](#session-expired)
+            └─ Other error → See [Error Messages](#error-messages)
 ```
 
 ---
@@ -129,6 +140,127 @@ If still failing after verification:
 | "Invalid code" | Typo in code entry | Copy-paste code directly from email |
 | "Code already used" | Already reset with this code | Request new code if need to reset again |
 | Email not arriving | Spam filter or typo in email | Check spam, verify email address |
+
+---
+
+### "Continue with Google" SSO Issues
+
+**Symptom**: Clicking **"Continue with Google"** returns you to the login page, shows an error, or doesn't complete sign-in
+
+BATbern supports Google SSO via Cognito federation at `auth.batbern.ch`. When you sign in with Google, the platform **transparently links** your Google identity to your BATbern account by matching your **email address**. If no BATbern account exists for that email, one is provisioned for you on the spot (just-in-time provisioning) with the default **ATTENDEE** role.
+
+**Possible Causes**:
+1. Google account uses a different email than your BATbern account
+2. First-time Google sign-in hasn't completed the consent/onboarding steps yet
+3. Browser blocked the pop-up or third-party cookies for the federated redirect
+4. Account is inactive/disabled (see [Account Inactive](#account-inactive-gating))
+5. SSO temporarily disabled by an administrator (runtime kill-switch)
+
+**Solutions**:
+
+**Step 1: Verify the Email Matches**
+```
+1. Account linking is by EMAIL address
+2. Sign in to Google and confirm which email that account uses
+3. It must match the email on your BATbern account
+   - If they differ, ask an admin to align them, OR
+   - Use email + password login with your BATbern email instead
+```
+
+**Step 2: Allow Pop-ups and Cookies**
+```
+1. The Google redirect uses auth.batbern.ch + Google's domains
+2. Allow pop-ups for app.batbern.ch
+3. Allow third-party cookies for the sign-in flow (corporate browsers
+   often block these)
+4. Disable strict tracking-prevention / privacy extensions for the login
+5. Retry "Continue with Google"
+```
+
+**Step 3: Complete First-Login Onboarding**
+```
+A brand-new Google sign-in must finish onboarding before you land in the app:
+1. Accept the Terms of Service (see consent gate below)
+2. Confirm/complete your profile (company, newsletter preference)
+3. Only after these steps does the session become fully usable
+```
+
+**Step 4: If "Continue with Google" Is Missing**
+```
+1. The button may be hidden if SSO is temporarily disabled by an admin
+   (runtime kill-switch)
+2. Use email + password as a fallback
+3. Report to support if the button is unexpectedly gone
+```
+
+> **Note**: You can link Google sign-in to an existing email/password account — they resolve to the **same** BATbern account as long as the email matches. You do not get a duplicate account.
+
+---
+
+### First-Login Terms-of-Service Consent Gate
+
+**Symptom**: After signing in (especially with Google for the first time), you're held on a **Terms of Service** screen and can't reach the dashboard
+
+**Cause**: This is **by design**. On first login, every account must accept the current Terms of Service before any further access is granted. The consent gate also collects onboarding details (company, newsletter opt-in) for federated sign-ins.
+
+**Solutions**:
+```
+1. Read and accept the Terms of Service (tick the consent box)
+2. Complete any required onboarding fields (e.g. company)
+3. Click "Continue" / "Accept"
+4. You are then redirected into the platform with a full session
+```
+
+**If You Can't Get Past the Gate**:
+```
+1. Ensure the consent checkbox is ticked (the button stays disabled otherwise)
+2. Fill in all required onboarding fields (red asterisks)
+3. Hard refresh (Ctrl+Shift+R / Cmd+Shift+R) and retry if the button won't enable
+4. Check the browser console (F12 → Console) for errors and send to support
+```
+
+> **Note**: You only see this gate again if the Terms are updated and re-consent is required. Day-to-day logins skip it.
+
+---
+
+### Account Inactive Gating
+
+**Symptom**: Login succeeds at Google/Cognito but BATbern shows **"Account inactive"** / "Your account is not active" and denies access
+
+**Cause**: Your BATbern account exists but is **not active**. Active status is enforced at the gateway — a deactivated account cannot use the platform even with valid Google or password credentials.
+
+**Solutions**:
+```
+1. Contact an administrator to confirm your account status
+2. Email support@batbern.ch with subject "Account Inactive"
+   - Include your login email
+   - State which role you expect (organizer, speaker, partner, attendee)
+3. An admin reactivates the account; sign in again afterwards
+```
+
+> **Note**: Being added to the speaker pool (including via self-nomination at the IDENTIFIED state, Epic 7 "I Could Speak on That") is **not** the same as having an active login. A Cognito user is provisioned only later in the speaker workflow (at the READY transition). Until then, sign-in for that speaker may report no/inactive account.
+
+---
+
+### Multi-Role Single Session Issues
+
+**Symptom**: You hold more than one role (e.g. ORGANIZER + SPEAKER, or PARTNER + ATTENDEE) and aren't sure how to switch, or expected role-specific features are missing
+
+**Cause / By Design**: Since the unified workflow refactor (Epic 11), a multi-role user gets **one account, one login, and one session**. There is **no** separate login per role and **no** "switch role" re-authentication. The navigation simply shows **role-grouped sections** (section dividers per role) so every capability you're entitled to is available at once.
+
+**Solutions**:
+```
+1. Sign in once (email/password OR Continue with Google)
+2. Look for role-grouped sections in the navigation/sidebar
+   - Each role you hold contributes its own section/divider
+3. If a role's section is missing:
+   - Go to Settings → Profile and check assigned roles
+   - Contact an admin if a role you expect is not listed
+4. Do NOT create a second account to "log in as" another role —
+   that produces a duplicate and splits your data
+```
+
+> **Note**: If you previously kept separate logins for separate roles, consolidate onto a single account (matching email). Account linking is by email, so Google + password on the same email resolve to one account.
 
 ---
 
@@ -374,6 +506,15 @@ If error on specific event:
 | `LimitExceededException` | Too many attempts | Wait 15 minutes |
 | `InvalidPasswordException` | Password too weak | Use stronger password |
 | `ExpiredCodeException` | Reset code expired | Request new reset code |
+
+### Google SSO / Federation Messages
+
+| Situation | Plain English | What to Do |
+|-----------|---------------|------------|
+| Bounced back to login after Google | Email mismatch or onboarding not completed | Verify Google email matches your BATbern email; finish the consent/onboarding steps |
+| "Account inactive" after Google sign-in | Account exists but is deactivated | Contact admin/support to reactivate (see [Account Inactive](#account-inactive-gating)) |
+| Held on Terms of Service screen | First-login consent gate | Accept Terms + complete onboarding (see [Consent Gate](#first-login-terms-of-service-consent-gate)) |
+| "Continue with Google" button absent | SSO kill-switch disabled by admin | Use email + password; report to support |
 
 ---
 

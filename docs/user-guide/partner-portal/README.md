@@ -2,7 +2,9 @@
 
 > Analytics, topic input, and meeting coordination — all in one place for BATbern partner companies
 
-<span class="feature-status implemented">Implemented</span> — Epic 8 (Stories 8.0–8.4, 2026-02-22)
+> **Last Updated**: 2026-06-13
+
+<span class="feature-status implemented">Implemented</span> — Epic 8 (Stories 8.0–8.4) — complete. Includes partner notes (Story 8.4) and iCal RSVP tracking for partner-meeting invites (Story 10-27).
 
 ## Overview
 
@@ -11,6 +13,8 @@ The Partner Portal gives sponsoring companies three ways to engage with BATbern:
 1. **Attendance Analytics** — See how many employees attended past events and what your partnership costs per attendee
 2. **Topic Voting** — Suggest topics for future events and vote on other partners' suggestions
 3. **Meeting Coordination** — Receive calendar invites for the annual Spring and Autumn partner meetings
+
+The topic pool partners vote on is **not partner-only**: topics suggested by logged-in attendees via **Topics From the Floor** (Epic 7.1) flow into the same pool (tagged `source = community`), so partners and the community shape future-event content side by side.
 
 Partners log in with standard AWS Cognito credentials (role: PARTNER). Each partner sees only their own company's data.
 
@@ -32,6 +36,7 @@ After login, partners are routed to their company dashboard showing all three po
 | Attendance analytics | Own company only | Any company |
 | Topics & votes | All topics (global) | All topics + voting data |
 | Meetings | Receive .ics calendar invite via email only | All meetings + management tools |
+| Meeting RSVPs | Accept/Decline from their own calendar client | Aggregated accept/decline/tentative responses per meeting |
 | Partner notes | **Hidden entirely** | All notes for all partners |
 | Other partners' data | Not visible | All partners |
 
@@ -41,7 +46,7 @@ After login, partners are routed to their company dashboard showing all three po
 |---------|---------------------|
 | [Attendance Analytics](analytics.md) | View attendance table, export to XLSX, see cost-per-attendee |
 | [Topic Voting](topic-voting.md) | Suggest topics, vote on proposals, view status of selected topics |
-| [Meeting Coordination](meetings.md) | Receive .ics calendar invites for partner meetings |
+| [Meeting Coordination](meetings.md) | Receive .ics calendar invites for partner meetings (organisers also track accept/decline RSVPs) |
 
 ## Constraints
 

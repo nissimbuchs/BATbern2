@@ -13,7 +13,8 @@
       "newsletter": "Nieuwsbrief",
       "settings": "Instellingen",
       "photos": "Foto's",
-      "registrantNotices": "Deelnemersberichten"
+      "registrantNotices": "Deelnemersberichten",
+      "appreciation": "Waardering"
     },
     "tabsAriaLabel": "Navigatie evenementenpagina",
     "overview": {
@@ -913,7 +914,11 @@
       "count_one": "{{count}} bedankje tot nu toe",
       "count_other": "{{count}} bedankjes tot nu toe",
       "success": "Bedankt voor het bedanken! 🎉",
-      "error": "Er is iets misgegaan. Probeer het opnieuw."
+      "error": "Er is iets misgegaan. Probeer het opnieuw.",
+      "publicNotice": "Bedankjes van ingelogde gebruikers kunnen openbaar worden getoond met je naam en bedrijf."
+    },
+    "marquee": {
+      "badge": "Bedankt"
     }
   },
   "qna": {
@@ -947,5 +952,16 @@
         "attended": "Aanwezig geweest"
       }
     }
+  },
+  "appreciation": {
+    "title": "Bedankberichten",
+    "subtitle": "{{count}} bedankje(s) voor dit evenement. Licht een bericht uit om het op de publieke banner te tonen.",
+    "empty": "Nog geen bedankberichten voor dit evenement.",
+    "noNote": "(applaus zonder bericht)",
+    "anonymous": "Anoniem",
+    "featured": "Uitgelicht",
+    "featureToggle": "Tonen op publieke banner",
+    "cannotFeatureAnonymous": "Anonieme bedankjes kunnen niet worden uitgelicht (geen naam).",
+    "loadError": "Kon bedankberichten niet laden."
   }
 }

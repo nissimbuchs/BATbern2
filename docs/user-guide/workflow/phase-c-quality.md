@@ -2,19 +2,21 @@
 
 > Review content quality and validate minimum threshold
 
+> **Last Updated:** 2026-06-13 — Speaker states aligned to the 8-state model (ADR-009 / Epic 11); revision flow corrected to the Cognito speaker portal (magic links removed).
+
 <div class="workflow-phase phase-c">
 <strong>Phase C: Quality Control</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 1-2 weeks<br>
 Event State: SPEAKER_IDENTIFICATION (unchanged during quality review)<br>
-Speaker States: content_submitted → quality_reviewed
+Speaker States: CONTENT_SUBMITTED → QUALITY_REVIEWED
 </div>
 
 ## Overview
 
 Phase C ensures submitted content meets quality standards before public release. Organizers review each presentation for relevance, clarity, and audience fit.
 
-**Key Concept**: The event state remains **SPEAKER_IDENTIFICATION** during quality review. Individual speakers transition from **content_submitted** to **quality_reviewed** as their content is approved.
+**Key Concept**: The event state remains **SPEAKER_IDENTIFICATION** during quality review. Individual speakers transition from **`CONTENT_SUBMITTED`** to **`QUALITY_REVIEWED`** as their content is approved.
 
 **Key Deliverable**: Quality-reviewed speakers ready for slot assignment in Phase D
 
@@ -102,27 +104,27 @@ The content review interface displays:
 
 **Make Decision**
 
-After reviewing the content, approve it to confirm the speaker.
+After reviewing the content, approve it to move the speaker to `QUALITY_REVIEWED`.
 
 ![Content Approved](../assets/screenshots/workflow/phase-c-quality/c-05-content-approved-1.png)
 
 **Approve** (score ≥ 3.5):
-- Speaker status: content_submitted → **quality_reviewed**
+- Speaker status: `CONTENT_SUBMITTED` → **`QUALITY_REVIEWED`**
 - Event state: Still SPEAKER_IDENTIFICATION (unchanged)
 - Speaker ready for slot assignment (Phase D)
-- Will auto-confirm to **confirmed** when slot assigned
+- Becomes **`is_publishable`** once a slot is assigned (derived flag — no separate `confirmed` state)
 
 **Request Revision / Reject**:
 - Speaker notified via email with:
   - Detailed feedback explaining what needs to change
-  - **Magic link** to speaker portal (30-day validity) for easy content revision
-  - Direct access to revision page without re-authentication
+  - A link to the **Cognito-authenticated speaker portal** where they log in (email/password or "Continue with Google") to revise — no magic links
+  - Direct access to their content revision page after login
 - Speaker content status set to REVISION_NEEDED
 - Rejection feedback displayed in speaker contact history **and** versioned on the `ContentSubmission` record (`reviewerFeedback`, `reviewedBy`, `reviewedAt` fields) — visible in the speaker portal for the speaker to reference when revising
 - Re-review after speaker submits revised content
 
 **Permanently Reject** (insufficient quality):
-- Speaker marked as **withdrew**
+- Speaker moved to terminal **`DECLINED`** (reason recorded in `speaker_status_history`; replaces the old `withdrew`)
 - Activate backup candidate
 
 </div>
@@ -134,11 +136,11 @@ After reviewing the content, approve it to confirm the speaker.
 When you reject content, the speaker automatically receives an email with:
 - Personalized greeting thanking them for their submission
 - Your feedback explaining what needs to change
-- **Magic link** to the speaker portal (valid for 30 days)
-- Direct access to content revision page - no login required
+- A link to the **Cognito-authenticated speaker portal** (they log in with their existing credentials — email/password or "Continue with Google")
+- Direct access to the content revision page after login
 - Clear next steps for resubmission
 
-The rejection feedback is also saved to the speaker's contact history, visible to all organizers in the speaker details drawer.
+The rejection feedback is also saved to the speaker's contact history, visible to all organizers in the unified speaker drawer.
 
 </div>
 
@@ -148,7 +150,7 @@ The rejection feedback is also saved to the speaker's contact history, visible t
 
 Once all submissions reviewed, you're ready for Phase D (Slot Assignment).
 
-**Note**: Event state remains **SPEAKER_IDENTIFICATION** (unchanged). Individual speakers have transitioned to **quality_reviewed** state.
+**Note**: Event state remains **SPEAKER_IDENTIFICATION** (unchanged). Individual speakers have transitioned to **`QUALITY_REVIEWED`** state.
 </div>
 
 ### Review Best Practices
@@ -171,7 +173,7 @@ Once all submissions reviewed, you're ready for Phase D (Slot Assignment).
 **Parallel Processing**:
 - Quality review and slot assignment can happen in any order
 - You can assign slots in Phase D before all quality reviews complete
-- Speakers auto-confirm when BOTH quality_reviewed AND slot assigned (regardless of order)
+- A speaker becomes `is_publishable` when BOTH `QUALITY_REVIEWED` AND a slot is assigned (regardless of order)
 
 **Idempotent State Transitions**:
 - Re-submitting a speaker to their current state is a safe no-op — the system accepts it without creating duplicate history entries.
@@ -181,7 +183,7 @@ Once all submissions reviewed, you're ready for Phase D (Slot Assignment).
 ### Success Criteria
 
 - ✅ All content reviewed and scored
-- ✅ Minimum speakers at **quality_reviewed** state
+- ✅ Minimum speakers at **`QUALITY_REVIEWED`** state
 - ✅ All topics have quality-reviewed speakers
 - ✅ Event state = **SPEAKER_IDENTIFICATION** (unchanged - progresses in Phase D)
 
@@ -189,9 +191,9 @@ Once all submissions reviewed, you're ready for Phase D (Slot Assignment).
 
 **Phase D: Assignment** begins:
 - Quality-reviewed speakers ready for slot assignment
-- Overflow management (if more speakers than slots)
+- Capacity is enforced upstream at invitation time (slot-capacity gate on `READY → INVITED`), so there is no separate overflow pool to manage here
 - Drag-and-drop scheduling interface
-- Speakers auto-confirm when assigned to slots
+- Speakers become `is_publishable` once assigned to slots
 
 See [Phase D: Assignment →](phase-d-assignment.md) to continue.
 
@@ -215,7 +217,7 @@ See [Phase D: Assignment →](phase-d-assignment.md) to continue.
 - Follow up via phone (more personal)
 - Offer to help edit content
 - Set firm deadline (3 days)
-- Mark as **withdrew** if no response, activate backup
+- Move to **`DECLINED`** if no response, activate backup
 
 ### "Reviewer disagreement on quality scores"
 
@@ -236,10 +238,10 @@ See [Phase D: Assignment →](phase-d-assignment.md) to continue.
 ## API Reference
 
 ```
-POST /api/events/{id}/workflow/step-7     Complete Step 7 (Quality Review)
-POST /api/events/{id}/workflow/step-8     Complete Step 8 (Threshold Validation)
-POST /api/speakers/{id}/review            Submit quality review
-GET  /api/events/{id}/quality-metrics     Get threshold status
+POST /api/events/{id}/workflow/step-7                       Complete Step 7 (Quality Review)
+POST /api/events/{id}/workflow/step-8                       Complete Step 8 (Threshold Validation)
+PUT  /api/v1/events/{code}/speakers/{speakerId}/status      Approve content → QUALITY_REVIEWED (delegates to SpeakerWorkflowService)
+GET  /api/events/{id}/quality-metrics                       Get threshold status
 ```
 
 See [API Documentation](../../api/) for complete specifications.

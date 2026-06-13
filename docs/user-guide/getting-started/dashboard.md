@@ -4,9 +4,13 @@
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated**: 2026-06-13
+
 ## Overview
 
-The BATbern organizer dashboard is your central hub for event planning and management. The interface adapts to your **Organizer** role, showing only relevant features and actions.
+The BATbern organizer dashboard is your central hub for event planning and management. The interface adapts to your role(s), showing only the relevant features and actions.
+
+> **Multiple roles in one session**: If your account holds more than one role (e.g. Organizer **and** Speaker), you don't log in separately for each. After a single login the navigation presents **all** your roles' features, **grouped under per-role section dividers**. Switching between organizing an event and managing your own speaker session is just scrolling the same menu — no re-authentication. See [Multi-Role Navigation](navigation.md#multi-role-single-session-navigation).
 
 ## Dashboard Layout
 
@@ -33,9 +37,9 @@ The top bar provides quick access to global functions:
 - **BATbern Logo** (top-left) - Click to return to dashboard home
 - **Global Search** (center) - Search across companies, users, events, speakers
 - **Notifications** (top-right) - Bell icon shows recent alerts <span class="feature-status planned">Planned</span>
-- **Profile Menu** (top-right) - Avatar dropdown with:
+- **Profile Menu** (top-right) - Avatar dropdown (shows your imported Google avatar when you signed in with SSO) with:
   - Profile settings
-  - Language selection (English/German) <span class="feature-status planned">Planned</span>
+  - Language selection (10 locales) <span class="feature-status implemented">Implemented</span>
   - Logout
 
 ### Left Sidebar Navigation
@@ -224,10 +228,11 @@ See [Topic Heat Map Feature](../features/heat-maps.md) for details.
 <span class="feature-status implemented">Implemented</span>
 
 Track speaker contacts and status:
-- Kanban-style board (identified → contacted → ready → accepted → content_submitted → quality_reviewed → confirmed)
-- Drag-and-drop status updates between columns
+- Kanban-style board on the 8-state model (IDENTIFIED → CONTACTED → READY → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED, plus a declined/closed terminal state)
+- Guided drag-and-drop status updates between columns
 - Contact history and notes
 - Parallel speaker workflow (each speaker progresses independently)
+- A Cognito account is provisioned for the speaker at the `READY` transition (replacing the retired magic-link flow)
 
 See [Phase B: Outreach](../workflow/phase-b-outreach.md) for details.
 

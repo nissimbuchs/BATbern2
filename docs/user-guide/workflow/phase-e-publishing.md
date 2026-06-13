@@ -2,6 +2,8 @@
 
 > Archive completed events and manage publication workflows
 
+> **Last Updated:** 2026-06-13 — Verified the 9-state EVENT workflow (Epic 5, unchanged); speaker publish-readiness now uses the derived `is_publishable` flag (ADR-009 / Epic 11) rather than a `confirmed` state.
+
 <div class="workflow-phase phase-e">
 <strong>Phase E: Event Lifecycle & Archival</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>
@@ -110,7 +112,7 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
 - Cron job runs daily at 00:00 UTC
 - Checks all events where `currentPublishedPhase` has not yet reached "speakers" (i.e. speakers not yet published), regardless of event workflow state
 - For events exactly 30 days away (or past this date if not yet published):
-  - Publishes all confirmed speaker profiles to public website
+  - Publishes all **publishable** speaker profiles (`is_publishable` = `QUALITY_REVIEWED AND is_slot_assigned`) to the public website
   - Sets speaker.publishedAt timestamp
   - Auto-creates "Newsletter: Speakers" task (if not exists)
 
@@ -232,7 +234,7 @@ Typically 14 days before the event, after:
 
 **Review Agenda Completeness**
 
-Verify all slots filled and all speakers confirmed (quality_reviewed AND slot assigned = confirmed state).
+Verify all slots are filled and all speakers are **publishable** (`is_publishable` = `QUALITY_REVIEWED AND is_slot_assigned`). The event-workflow gate `validateAllSpeakersConfirmed` checks this derived flag — there is no separate `confirmed` speaker state.
 
 </div>
 

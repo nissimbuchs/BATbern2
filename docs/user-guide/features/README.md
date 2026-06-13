@@ -1,5 +1,7 @@
 # Platform Features
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 BATbern provides a comprehensive set of features designed to streamline event management for organizers. This section covers the platform's key capabilities that enhance productivity, improve decision-making, and automate common workflows.
@@ -8,11 +10,15 @@ BATbern provides a comprehensive set of features designed to streamline event ma
 
 ### Data Visualization & Analytics
 - **[Topic Heat Maps](heat-maps.md)** - Visual exploration of historical topic patterns `[IMPLEMENTED]`
-- **[Event Analytics](analytics.md)** - Reporting and metrics for event performance `[PLANNED]`
+- **[Event Analytics](analytics.md)** - Tabbed analytics dashboard + partner attendance analytics `[IMPLEMENTED]`
 
 ### Communication & Notifications
-- **[Notification System](notifications.md)** - Real-time alerts and reminders `[PLANNED]`
-- Email templates for speaker outreach and attendee communications `[IN PROGRESS]`
+- **[Notification System](notifications.md)** - Email notifications, newsletter, and inbound email handling `[IMPLEMENTED]`
+- Email templates for speaker outreach and attendee communications `[IMPLEMENTED]`
+- In-app notification center (real-time alerts) `[PLANNED]`
+
+### Media & Content
+- **[Media & Content](media-and-content.md)** - Event photos, teaser images, AI-assisted content, moderator presentation `[IMPLEMENTED]`
 
 ### File Management
 - **[File Uploads](file-uploads.md)** - Secure S3-backed document management `[IMPLEMENTED]`
@@ -21,7 +27,7 @@ BATbern provides a comprehensive set of features designed to streamline event ma
 ### Workflow Automation
 - State-based workflow progression with validation
 - Automated speaker invitation tracking
-- Deadline reminders and escalations `[PLANNED]`
+- Task deadline reminders and escalations `[IMPLEMENTED]`
 
 ### Search & Discovery
 - Full-text search across entities
@@ -56,8 +62,9 @@ Each feature page follows a consistent structure:
 |---------|--------|------------------|---------------|
 | Topic Heat Maps | `IMPLEMENTED` | Historical topic analysis for event planning | [View →](heat-maps.md) |
 | File Uploads | `IMPLEMENTED` | Company logos, speaker materials | [View →](file-uploads.md) |
-| Notifications | `PLANNED` | Real-time alerts for workflow events | [View →](notifications.md) |
-| Analytics | `PLANNED` | Event performance metrics and insights | [View →](analytics.md) |
+| Notifications | `IMPLEMENTED` | Email, newsletter & inbound email handling | [View →](notifications.md) |
+| Analytics | `IMPLEMENTED` | Event performance metrics and insights | [View →](analytics.md) |
+| Media & Content | `IMPLEMENTED` | Event photos, teasers, AI content, presentation | [View →](media-and-content.md) |
 
 ## Getting Started
 

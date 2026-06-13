@@ -8,8 +8,8 @@ Version history and release notes for the BATbern platform. Releases follow [Sem
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes and minor improvements
 
-**Current Version**: v1.2.2
-**Last Updated**: 2026-04-07
+**Current Version**: v1.3.0
+**Last Updated**: 2026-06-13
 
 ---
 
@@ -28,28 +28,58 @@ Each release includes:
 
 ## Upcoming Releases
 
-### v1.3.0 - Speaker Authentication Unification + Admin Tools `[PLANNED Q2 2026]`
+### v1.4.0 - Attendee Contribution + Spring Boot 4 `[PLANNED]`
 
-**Target Date**: Q2 2026
-**Type**: Minor Release (Epic 9 Stories 9.2–9.5 + Epic 10 completion)
+**Type**: Minor Release (Epic 7 finalization + Epic 13 groundwork)
 
-**Already Delivered (v1.2.x)**:
-- ✅ Story 9.1: JWT magic link authentication — RS256 signed, HTTP-only cookie, backward compatible with Epic 6 tokens
-- ✅ Epic 10 (partial): Admin page with Event Types, Import Data, Task Templates, and Email Templates tabs (in progress)
-- ✅ Post-event 14-day homepage window: public homepage shows the most recent event for 14 days after it ends (archive-style view — timetable and speakers visible, no registration/logistics). After 14 days a nightly scheduler auto-archives the event.
+**Planned Features — Epic 7 (Attendee Experience, in review)**:
+- 📋 "The Slides Are Online" mail — auto-created organizer task (~1 day post-event) emailing active registrants
+- 📋 Thank-the-Organizers — one-click post-event thank-you with optional note + public appreciation counter
+- 📋 The Apéro Continues — time-boxed per-session post-event Q&A that freezes onto the session archive
+- 📋 Attendee Event History — logged-in dashboard of events the attendee registered for / attended
+- 📋 Curated Thank-You Marquee — feature selected thank-you notes in the public homepage marquee
 
-**Remaining Planned Features — Epic 9**:
-- 📋 Story 9.2: Auto-create/extend Cognito accounts on invitation acceptance (SPEAKER role assignment)
-- 📋 Story 9.3: Dual auth — magic link + email/password for speakers
-- 📋 Story 9.4: Migration script for Epic 6 staging token-based users (7-day grace period)
-- 📋 Story 9.5: Unified multi-role navigation (speaker + attendee portal in single session)
+**Planned Features — Platform**:
+- 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
+- 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
-**Remaining Planned Features — Epic 10 Admin Tools**:
-- 📋 Story 10.1: Admin page shell — Event Types + Import Data tabs finalization
-- 📋 Story 10.2: Email Templates admin (TinyMCE WYSIWYG for content templates; Monaco for layout templates)
-- 📋 Story 10.3: Automated task scheduler integration (trigger reminders by due date/state)
+> **Note**: The former "v1.3.0 — Speaker Authentication Unification (Epic 9)" plan has shipped in a
+> different form. Epic 9's JWT magic-link approach was **superseded** by Epic 11 (unified Cognito
+> speaker workflow) and Epic 12 (Google SSO), both released in v1.3.0 below.
 
-**Improvements (delivered)**:
+---
+
+## v1.3.x - Current Release
+
+### v1.3.0 - Google SSO, Unified Speaker Workflow & Organizer/Admin Cluster `[2026-06-13]`
+
+**Type**: Minor Release (Epics 10, 11, 12 + partial Epic 7)
+
+**New Features — Authentication (Epic 12)**:
+- ✅ "Continue with Google" single sign-on — Google OIDC federation at `auth.batbern.ch`
+- ✅ Transparent account linking (links a Google identity to an existing account by email)
+- ✅ Just-in-time (JIT) user provisioning on first SSO login
+- ✅ Terms-of-Service consent gate + federated onboarding completion (consent / company / newsletter)
+- ✅ Google profile-avatar import; runtime kill-switch (`FEATURES_SSO_ENABLED`)
+
+**New Features — Unified Speaker Workflow (Epic 11)**:
+- ✅ Speaker workflow reduced to an **8-state model**; `SpeakerWorkflowService` is the sole status writer
+- ✅ Workflow unified into the event-management service (standalone `speakers` table + speaker-coordination refs dropped)
+- ✅ Speaker portal migrated to **AWS Cognito** authentication — the original magic-link login was fully torn down
+- ✅ Cognito user provisioning at the `READY` transition; kanban drawer redesign + guided drag; speaker company self-service
+
+**New Features — Admin Tools, Newsletter & Public Site (Epic 10)**:
+- ✅ Administration page (`/organizer/admin`) — Event Types, Import Data, Task Templates, Email Template management (TinyMCE for content, Monaco for layout); task deadline reminder emails; blob/heat-map topic selector
+- ✅ Newsletter — subscription, sending, template selection, subscriber management; email-reply unsubscribe/deregistration; SES forwarding/distribution lists; SES bounce processing + list hygiene
+- ✅ Registration lifecycle — registration status indicator; venue capacity enforcement + **waitlist** management; self-service deregistration
+- ✅ Public site — event photos gallery; event teaser image; event description on the homepage; **moderator presentation page** (+ animations); organizer analytics dashboard
+- ✅ **Turnstile** bot protection on public submit flows; additional user emails ("receive at" + "send-as" aliases); legacy BAT-format data export/import; AI-assisted event content creation
+
+**New Features — Attendee Contribution (Epic 7, initial)**:
+- ✅ Topics From the Floor — logged-in attendees suggest future topics (tagged `source = community`); organizers triage in the topic-suggestion admin UI
+- ✅ "I Could Speak on That" — logged-in attendees self-nominate as speakers (session title + abstract); creates a `speaker_pool` entry at `IDENTIFIED` for organizer triage (no auto-provisioning)
+
+**Improvements**:
 - ✅ Company picker rework — the company field on the profile and registration forms is now a
   selection-locked combobox: it shows each company's **display name** (not the internal slug),
   locks the chosen company into a removable chip (no more "Firmen-ID muss aus 1-12 Buchstaben…"
@@ -61,10 +91,18 @@ Each release includes:
   permanently disabled. Deletion is now blocked only when an event has *real* (self-registered)
   attendees; events with only auto-enrolled stakeholders can be deleted. The API returns `409`
   if real attendees exist, and the event detail exposes a `realAttendeeCount` field.
+- ✅ Post-event 14-day homepage window: the public homepage shows the most recent event for 14 days
+  after it ends (archive-style view — timetable and speakers visible, no registration/logistics).
+  After 14 days a nightly scheduler auto-archives the event.
 - ✅ Legacy structural entries in historical events — the "Moderation" slots (28 rows, BATbern11–48)
   and the "Programmheft" entries (41 rows, BATbern1–41) — are reclassified from content talks to
   technical sessions (`session_type = moderation`), matching how moderation slots are modelled in
   new events (BATbern57+). Applied directly to the production database (no migration).
+
+**Breaking Changes**:
+- Speaker magic-link login URLs are **retired**. Speakers now log in via AWS Cognito
+  (email/password or "Continue with Google"). Existing speakers were migrated; old magic-link
+  emails no longer authenticate.
 
 ---
 
@@ -432,14 +470,16 @@ Each release includes:
 
 **None** - No features currently deprecated
 
+### Completed Deprecations
+
+**Speaker Magic-Link Login** (removed in v1.3.0 — Epic 11):
+- **What changed**: The JWT magic-link speaker login was fully torn down.
+- **Replacement**: AWS Cognito authentication (email/password or "Continue with Google").
+- **Migration**: Existing speakers were migrated to Cognito; old magic-link emails no longer authenticate.
+
 ### Future Deprecations (Planned)
 
-**v1.3.0** (In Progress — Epic 10, Story 10.2):
-- **Email Template V1** - Being replaced with V2 (TinyMCE WYSIWYG for content templates; Monaco editor for layout templates)
-  - Current: Plain text with placeholders
-  - Replacement: Rich HTML editor (content templates) + full HTML shell editor (layout templates)
-  - Status: Email Templates admin tab active in v1.2.x (in progress); full release in v1.3.0
-  - Migration: Existing templates remain editable; custom templates receive full CRUD in V2
+**None currently scheduled.**
 
 ---
 
@@ -477,10 +517,9 @@ Each release includes:
 
 | Version | Status | Support End Date |
 |---------|--------|------------------|
-| v1.2.2 | **Current** | Until v1.3.0 release |
-| v1.2.1 | Security fixes only | Until v1.3.0 release |
-| v1.2.0 | Security fixes only | Until v1.3.0 release |
-| v1.1.x | Security fixes only | 2026-05-01 |
+| v1.3.0 | **Current** | Until v1.4.0 release |
+| v1.2.x | Security fixes only | Until v1.4.0 release |
+| v1.1.x | Unsupported | Ended 2026-05-01 |
 | v0.9.x | Unsupported | Ended 2026-01-01 |
 | v0.8.x and earlier | Unsupported | Ended 2025-06-01 |
 

@@ -131,6 +131,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/thanks").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/thanks").permitAll()
 
+                // Story 7.7: Public curated featured thank-you marquee (global, cross-event).
+                // The organizer feature-toggle (PATCH /api/v1/events/*/thanks/*) is intentionally
+                // NOT here — it falls through to anyRequest().authenticated() + @PreAuthorize.
+                .requestMatchers(HttpMethod.GET, "/api/v1/thanks/featured").permitAll()
+
                 // Story 10.12: Self-service deregistration (token-protected)
                 .requestMatchers(HttpMethod.GET, "/api/v1/registrations/deregister/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister").permitAll()

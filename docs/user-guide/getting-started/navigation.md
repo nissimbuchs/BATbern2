@@ -4,6 +4,8 @@
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated**: 2026-06-13
+
 ## Overview
 
 BATbern follows **Swiss design principles** for a clean, functional, and intuitive user experience. This guide explains common UI patterns you'll encounter throughout the platform.
@@ -53,11 +55,30 @@ The interface adapts based on your role:
 - 📅 Your assigned sessions
 - ❌ No access to workflow or entity management
 
+**As a Partner, you would see**:
+- 📊 Attendance analytics for your company (with XLSX export)
+- 🗳️ Topic suggestion and voting
+- 🤝 Meeting coordination and iCal invites
+- ❌ No access to planning tools or other companies' data
+
 **As an Attendee, you would see**:
-- 🎫 Event registration
-- 📆 Event schedules
+- 🎫 Event registration and self-service deregistration
+- 📆 Event schedules and your event history
 - 📄 Session materials
+- 💡 Topic suggestions, speaker self-nomination, and post-event Q&A
 - ❌ No access to planning tools
+
+### Multi-Role Single-Session Navigation
+
+<span class="feature-status implemented">Implemented</span>
+
+A single BATbern account can carry **more than one role** — for example, an organizer who also speaks at an event, or a partner who is also an attendee. Following the unified speaker workflow refactor (Epic 11), these roles are no longer separate logins.
+
+**One login, one session.** You authenticate once (email/password or "Continue with Google") and the application loads **every** role you hold into the same session.
+
+**Grouped navigation.** The navigation menu lists the features for each role under its own **section divider**, so a multi-role user sees, for instance, an *Organizer* group and a *Speaker* group stacked in the same sidebar. You move between them by scrolling — there is no role-switcher modal and no need to log out and back in.
+
+**Role-scoped access still applies.** Grouping is purely presentational; each feature is still gated by the role that owns it. You only ever see the groups for roles your account actually holds.
 
 ### Buttons
 

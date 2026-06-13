@@ -82,7 +82,10 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
       ))}
 
       {/* BATbern spinner (AC #11) */}
-      <div className={animStyles.loaderWrap} style={{ width: '4.167vw', height: '4.167vw', marginBottom: '1.25vw' }}>
+      <div
+        className={animStyles.loaderWrap}
+        style={{ width: '4.167vw', height: '4.167vw', marginBottom: '1.25vw' }}
+      >
         <BATbernLoader size={80} speed="slow" />
       </div>
 

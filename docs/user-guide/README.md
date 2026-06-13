@@ -8,22 +8,25 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 
 **Target Audience**: Event organizers and coordinators responsible for planning, executing, and managing BATbern conferences.
 
-**Platform Version**: Production Ready (Epics 1–6 & 8 Complete; Epic 9 In Progress)
+**Platform Version**: Production Ready — Epics 1–6, 8, 10, 11, 12 Complete; Epic 7 (Attendee Experience) in review
 
 ## Platform Status
 
-| Epic                                   | Status              | Progress | Key Features                                                                                         |
-| -------------------------------------- | ------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
-| **Epic 1: Foundation**                 | ✅ Complete         | 100%     | Infrastructure, Authentication, API Gateway, Monitoring                                              |
-| **Epic 2: Entity CRUD**                | ✅ Complete         | 100%     | Company, User, Event, Partner Management                                                             |
-| **Epic 3: Data Migration**             | ✅ Complete         | 100%     | Historical data import tooling (production import pending)                                           |
-| **Epic 4: Public Website**             | ✅ Complete         | 100%     | Landing pages, Registration flow, Archive Browsing, Content Search, SEO                              |
-| **Epic 5: Organizer Workflows**        | ✅ Complete         | 100%     | 9-state event workflow, Speaker workflow, Task system, Auto-publishing, Lifecycle automation         |
-| **Epic 6: Speaker Portal**             | ✅ Complete         | 100%     | Magic link invitations, Self-service response/content submission, Speaker dashboard (WCAG 2.1 AA)    |
-| **Epic 7: Attendee Enhancements**      | 📦 Deferred         | 0%       | Personal dashboard, Bookmarks, PWA — deferred to Phase 3                                            |
-| **Epic 8: Partner Coordination**       | ✅ Complete         | 100%     | Attendance analytics (XLSX export), Topic voting, Meeting coordination (ICS invites)                 |
-| **Epic 9: Speaker Auth Integration**   | 🔨 In Progress      | 20%      | 9.1 JWT magic link done; 9.2–9.5 (Cognito account creation, dual auth, migration) planned           |
-| **Epic 10: Admin Tools**               | 🔨 In Progress      | 40%      | Admin page (event types, import data, task templates, email template management)                     |
+| Epic                                       | Status            | Key Features                                                                                          |
+| ------------------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------- |
+| **Epic 1: Foundation**                     | ✅ Complete        | Infrastructure, Authentication, API Gateway, Monitoring                                               |
+| **Epic 2: Entity CRUD**                    | ✅ Complete        | Company, User, Event, Partner Management                                                               |
+| **Epic 3: Data Migration**                 | ✅ Complete        | Historical data import tooling (production import pending)                                             |
+| **Epic 4: Public Website**                 | ✅ Complete        | Landing pages, Registration flow, Archive Browsing, Content Search, SEO                               |
+| **Epic 5: Organizer Workflows**            | ✅ Complete        | 9-state event workflow, Speaker workflow, Task system, Auto-publishing, Lifecycle automation          |
+| **Epic 6: Speaker Portal**                 | ✅ Complete        | Cognito-authenticated invitations, self-service response/content submission, dashboard (WCAG 2.1 AA)  |
+| **Epic 7: Attendee Experience**            | 🔨 In review       | Topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, post-event Q&A, event history |
+| **Epic 8: Partner Coordination**           | ✅ Complete        | Attendance analytics (XLSX export), topic voting, meeting coordination (ICS), partner notes, iCal RSVP |
+| **Epic 9: Speaker Auth (original plan)**   | ⛔ Superseded      | Replaced by Epic 11 (unified workflow) + Epic 12 (SSO) — speaker auth is now Cognito-based             |
+| **Epic 10: Admin, Newsletter & Public**    | ✅ Complete        | Administration page, newsletter system, registration lifecycle/waitlist, photo gallery, moderator page, Turnstile, legacy export/import |
+| **Epic 11: Unified Speaker Workflow**      | ✅ Complete        | 8-state workflow (ADR-009), Cognito speaker auth (magic-link removed), kanban redesign, company self-service |
+| **Epic 12: "Continue with Google" SSO**    | ✅ Complete        | Federated login with account linking, JIT provisioning, ToS consent, avatar import (Apple OIDC deferred) |
+| **Epic 13: Spring Boot 4 Migration**       | 📋 Planned         | Staged per-module upgrade (SB 3.5 OSS support ends 2026-06-30)                                         |
 
 ## Quick Navigation
 
@@ -89,6 +92,27 @@ Three independent workflow systems for event management:
 **Phase F: Communication** <span class="feature-status implemented">Implemented</span>
 
 - [Task Management](workflow/phase-f-communication.md) - Newsletters, moderation, catering (auto-created by event state transitions), auto-publishing, event lifecycle
+
+### 🎤 Speaker & 🤝 Partner Portals
+
+- [Speaker Portal](speaker-portal/README.md) <span class="feature-status implemented">Implemented</span> - Cognito-authenticated invitation/response, content submission, dashboard, company self-service
+- [Partner Portal](partner-portal/README.md) <span class="feature-status implemented">Implemented</span> - Attendance analytics, topic voting, meeting coordination + RSVP tracking, partner notes
+
+### 🙋 Attendee Experience <span class="feature-status implemented">Implemented</span>
+
+Right-sized contribution & touchpoint features (Epic 7) — give attendees a voice and a return channel:
+
+- [Overview](attendee-experience/README.md) - The contribution-loop model
+- [Topics From the Floor](attendee-experience/topics-from-the-floor.md) - Attendee topic suggestions into the existing pool
+- [Speaker Self-Nomination](attendee-experience/speaker-self-nomination.md) - "I Could Speak on That"
+- [The "Slides Are Online" Mail](attendee-experience/slides-online-email.md) - Event-triggered post-event email
+- [Thank-the-Organizers](attendee-experience/thank-the-organizers.md) - One-click appreciation
+- [Post-Event Q&A](attendee-experience/post-event-qna.md) - Time-boxed per-session Q&A that freezes into the archive
+- [Attendee Event History](attendee-experience/event-history.md) - Logged-in dashboard of past/registered events
+
+### ⚙️ Administration
+
+- [Administration Page](administration/README.md) <span class="feature-status implemented">Implemented</span> - Event types, data import/export, task templates, email-template management
 
 ### ✨ Advanced Features
 

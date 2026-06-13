@@ -1,22 +1,25 @@
 # Invitation & Response
 
-> How speakers receive and respond to BATbern speaking invitations
+> How speakers receive credentials, sign in, and respond to BATbern speaking invitations
 
-<span class="feature-status implemented">Implemented</span> — Epic 6.1b & 6.2a
+<span class="feature-status implemented">Implemented</span> — Epic 6.1b & 6.2a, refactored to Cognito auth in Epic 11.E.3
+
+**Last Updated:** 2026-06-13
 
 ## Overview
 
-When an organizer sends a speaker invitation, the speaker receives a personalised email with two direct-action buttons. Clicking either button opens a pre-authenticated portal page — no login required.
+When an organizer promotes a speaker to `READY` and sends the invitation, the speaker receives an email with a **login link and a temporary password**. The speaker signs in to BATbern with their Cognito account (email + password, or "Continue with Google"), lands on their dashboard, and accepts or declines the invitation from there. There is no magic link — the portal is behind the standard logged-in session.
 
 ## The Invitation Email
 
-The speaker receives an HTML email containing:
+The speaker receives an HTML email (DE/EN) containing:
 
 - Event name, date, and location
 - Session topic and title (if assigned)
 - Response deadline with a countdown
 - Organiser name and contact email
-- Two direct-action buttons:
+- **A login link** to www.batbern.ch
+- **A temporary password** for first sign-in
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -28,24 +31,47 @@ The speaker receives an HTML email containing:
 │                                              │
 │  Please respond by: 1 February 2026         │
 │                                              │
-│  [  ✅ Accept Invitation  ]                  │
-│  [  ❌ Decline Invitation ]                  │
+│  Your login:    hans.mueller@example.com     │
+│  Temp password: ••••••••••                   │
+│                                              │
+│  [  Log in to BATbern  ]                     │
 └─────────────────────────────────────────────┘
 ```
 
-Each button contains a unique **RESPOND magic link** — valid for 30 days from the time of sending.
-
 <div class="alert info">
-ℹ️ <strong>Note for organizers:</strong> The invitation is sent from the Phase B: Outreach screen by clicking <strong>Send Invitation</strong> on the speaker's kanban card. The email is generated automatically using the configured email template (DE/EN).
+ℹ️ <strong>Note for organizers:</strong> The invitation is sent from the Phase B: Outreach screen by clicking <strong>Send Invitation</strong> on the speaker's kanban card (status moves to <code>INVITED</code>). The Cognito account was already provisioned when the speaker was promoted to <code>READY</code>; the invitation email simply delivers the credentials. The email is generated automatically using the configured template (DE/EN).
+</div>
+
+## Signing In
+
+<div class="step" data-step="1">
+
+**Speaker clicks "Log in to BATbern"**
+
+The link opens the standard BATbern login page (the same one every role uses). The speaker enters their email and the temporary password — or chooses **"Continue with Google"** if their Google account matches the invited email.
+</div>
+
+<div class="step" data-step="2">
+
+**First-login password change**
+
+On first sign-in with a temporary password, Cognito requires the speaker to set a new password (`FORCE_CHANGE_PASSWORD → CONFIRMED`). Google sign-in skips this step.
+</div>
+
+<div class="step" data-step="3">
+
+**Speaker lands on their dashboard**
+
+After authenticating, the speaker is taken to `/speaker-portal/dashboard`, which lists every event they're involved in. Pending invitations show a **Respond to Invitation** action.
 </div>
 
 ## Accepting an Invitation
 
 <div class="step" data-step="1">
 
-**Speaker clicks "Accept Invitation"**
+**Speaker opens the invitation**
 
-The magic link opens the BATbern speaker portal in the browser. The speaker is automatically authenticated — no password needed.
+From the dashboard, the speaker clicks **Respond to Invitation** on the relevant event card. The response page targets that specific event via its `eventCode` in the URL path (e.g. `/speaker-portal/events/BATbern57/respond`) — no token is involved.
 </div>
 
 <div class="step" data-step="2">
@@ -75,20 +101,16 @@ The speaker sees a summary of the event details plus an optional message field:
 
 When the speaker confirms:
 - Speaker status transitions: **INVITED → ACCEPTED**
-- A **confirmation email** is sent automatically to the speaker with:
-  - Event and session details
-  - Content submission deadline
-  - Link to update their profile
-  - Link to submit presentation content
+- A **confirmation email** is sent automatically to the speaker with the content submission deadline and a link to sign in and submit content
 - The organiser is notified in-app (async)
-- The acceptance timestamp is recorded in the contact history
+- The acceptance is recorded in `speaker_status_history` with `changed_by_username` = the speaker's Cognito username
 </div>
 
 <div class="step" data-step="4">
 
 **Success page**
 
-The speaker sees a confirmation message with next-step links:
+The speaker sees a confirmation message with next-step links back into the portal:
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -110,9 +132,9 @@ The speaker sees a confirmation message with next-step links:
 
 <div class="step" data-step="1">
 
-**Speaker clicks "Decline Invitation"**
+**Speaker chooses to decline**
 
-The magic link opens the decline form.
+From the response page for that event, the speaker selects **Decline**.
 </div>
 
 <div class="step" data-step="2">
@@ -139,15 +161,15 @@ The speaker must provide a reason:
 
 **Automatic actions on decline**
 
-- Speaker status transitions: **INVITED → DECLINED**
-- The decline reason is stored in the contact history
+- Speaker status transitions: **INVITED → DECLINED** (`DECLINED` is the single terminal "not happening" state, reachable from any non-terminal state)
+- The decline reason is stored in `speaker_status_history`
 - The organiser is notified in-app
 - The decline timestamp is recorded
 </div>
 
 ## Already Responded
 
-If a speaker returns to the portal after having already responded (using an expired single-use token or a bookmark), the page shows their previous response and offers recovery options:
+If a speaker returns to the response page for an event they've already responded to, the page shows their previous response and offers next-step options:
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -159,22 +181,13 @@ If a speaker returns to the portal after having already responded (using an expi
 └─────────────────────────────────────────────┘
 ```
 
-## Token Expiry
+## Authorization
 
-RESPOND tokens are valid for **30 days** from the invitation send date and are **single-use** — they become invalid after the first click. If a token has expired:
+Because the portal is Cognito-secured, a speaker can only act on events they were invited to:
 
-```
-┌─────────────────────────────────────────────┐
-│  ⚠️  This invitation link has expired        │
-│                                              │
-│  Please contact the organiser to request    │
-│  a new invitation link.                     │
-│                                              │
-│  Contact: hans.keller@batbern.ch            │
-└─────────────────────────────────────────────┘
-```
-
-The organiser can resend an invitation from the Phase B Kanban board, which generates a new token.
+- The backend resolves the speaker's pool entry from `(authenticated username, eventCode)`.
+- A request for an `eventCode` the speaker has no pool row for returns **403 Forbidden** (not 404).
+- Unauthenticated requests return **401 Unauthorized**; an ORGANIZER- or PARTNER-only token (no SPEAKER role) returns **403**.
 
 ## What Organizers See
 
@@ -182,7 +195,7 @@ After a speaker responds, the organiser sees:
 
 - **Kanban card** moves to the ACCEPTED or DECLINED column automatically
 - **Contact history** shows the response event with timestamp and any message
-- **Status history** records the transition with `change_reason = 'SPEAKER_PORTAL_RESPONSE'`
+- **Status history** records the transition with `changed_by_username` = the speaker's Cognito username
 - **In-app notification** appears in the organiser's notification centre
 
 See [Phase B: Outreach →](../workflow/phase-b-outreach.md) for how to manage the speaker pool after responses.
@@ -193,13 +206,13 @@ See [Phase B: Outreach →](../workflow/phase-b-outreach.md) for how to manage t
 
 1. Check the speaker's email address on their profile (must be correct)
 2. Ask the speaker to check their spam folder
-3. Resend the invitation from the Phase B Kanban board (generates a fresh token)
+3. Resend the invitation from the Phase B Kanban board (re-sends the login credentials)
 4. If the email is incorrect, update the speaker profile and resend
 
-### Speaker's link shows "expired"
+### Speaker can't sign in / forgot their password
 
-Resend the invitation from Phase B. The old token is invalidated and a new 30-day token is generated.
+The speaker uses the standard **"Forgot password"** flow on the BATbern login page (Cognito self-service reset) — no organizer action needed. If the temporary password was never used and expired, resend the invitation from Phase B to issue a fresh temporary password.
 
 ### Speaker accepted in error and wants to decline
 
-Contact your BATbern platform administrator to manually override the speaker status. Organizers with the ORGANIZER role can update speaker status directly from the speaker edit modal.
+The speaker can move from `ACCEPTED → DECLINED` themselves (decline is reachable from any non-terminal state). Alternatively, organizers with the ORGANIZER role can update speaker status directly from the speaker edit modal.
