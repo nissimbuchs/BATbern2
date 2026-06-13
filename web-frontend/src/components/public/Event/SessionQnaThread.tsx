@@ -17,12 +17,29 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useSessionQna, useAddQnaPost, useRemoveQnaPost } from '@/hooks/useQna/useQna';
 import type { QnaPostResponse } from '@/services/qnaService';
-import { buildCdnImageUrl } from '@/utils/cdnImage';
+import { SpeakerDisplay } from '@/components/public/Event/SpeakerDisplay';
+import type { SessionSpeaker } from '@/types/event.types';
 
-/** Poster display name: "First Last", falling back to the username when the name is unknown. */
-function posterName(post: QnaPostResponse): string {
-  const name = [post.postedByFirstName, post.postedByLastName].filter(Boolean).join(' ').trim();
-  return name || post.postedByUsername || '';
+/**
+ * Map a Q&A post's enriched poster fields onto the {@link SessionSpeaker} shape so the same
+ * portrait + name + company-logo component used on the public speaker cards renders the author.
+ * The portrait image is omitted on purpose — SpeakerDisplay lazy-loads it from the public-user
+ * endpoint (usePublicUser) by username. Name + company come from the server-side read enrichment,
+ * exactly as the speaker cards source them. Falls back to the username when the name is unknown.
+ */
+function postToSpeaker(post: QnaPostResponse): SessionSpeaker {
+  const firstName = post.postedByFirstName?.trim() || post.postedByUsername || '';
+  return {
+    username: post.postedByUsername ?? '',
+    firstName,
+    lastName: post.postedByLastName ?? '',
+    company: post.postedByCompanyName ?? undefined,
+    companyDisplayName: post.postedByCompanyName ?? undefined,
+    companyLogoUrl: post.postedByCompanyLogoUrl ?? undefined,
+    // Required by SessionSpeaker but irrelevant for a Q&A poster (SpeakerDisplay ignores them).
+    speakerRole: 'PRIMARY_SPEAKER',
+    isConfirmed: true,
+  };
 }
 
 interface SessionQnaThreadProps {
@@ -88,24 +105,8 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
         className={`rounded bg-zinc-800/40 p-3 ${isAnswer ? 'ml-6 mt-2' : ''}`}
         data-testid="qna-post"
       >
-        <p className="whitespace-pre-wrap text-sm text-zinc-200">{post.body}</p>
-        <div
-          className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500"
-          data-testid="qna-post-author"
-        >
-          {post.postedByCompanyLogoUrl && (
-            <img
-              src={
-                buildCdnImageUrl(post.postedByCompanyLogoUrl, { h: 32, fit: 'inside' }) ??
-                post.postedByCompanyLogoUrl
-              }
-              alt={post.postedByCompanyName ?? ''}
-              className="h-4 w-auto max-w-[64px] object-contain"
-              loading="lazy"
-            />
-          )}
-          <span>{posterName(post)}</span>
-        </div>
+        <SpeakerDisplay speaker={postToSpeaker(post)} size="small" />
+        <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-200">{post.body}</p>
         {isOrganizer && (
           <button
             type="button"

@@ -15,6 +15,21 @@ vi.mock('@/hooks/useAuth/useAuth', () => ({
   useAuth: vi.fn(),
 }));
 
+// SpeakerDisplay (portrait + name + company logo) has its own tests and lazy-loads the portrait
+// via network hooks; here we stub it to assert SessionQnaThread feeds it the right poster fields.
+vi.mock('@/components/public/Event/SpeakerDisplay', () => ({
+  SpeakerDisplay: ({ speaker }: { speaker: Record<string, string | undefined> }) => (
+    <div data-testid="qna-post-author">
+      <span>
+        {speaker.firstName} {speaker.lastName}
+      </span>
+      {speaker.companyLogoUrl && (
+        <img alt={speaker.companyDisplayName ?? ''} src={speaker.companyLogoUrl} />
+      )}
+    </div>
+  ),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
