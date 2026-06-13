@@ -1,6 +1,8 @@
 # Event Types Configuration
 
-> 🔨 **IN PROGRESS** — Part of Story 10.1 (Administration Page). This documentation describes the intended functionality once delivered.
+> <span class="feature-status implemented">Implemented</span> — Tab 0 of the Administration page (Story 10.1).
+
+**Last Updated:** 2026-06-13
 
 ## Overview
 

@@ -1,5 +1,7 @@
 # Topic Heat Maps `[IMPLEMENTED]`
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 Topic Heat Maps provide visual insight into the frequency and recency of topics presented at past BATbern events. By visualizing 20+ years of event history, heat maps help organizers:
@@ -225,7 +227,7 @@ The heat map supports interactive filtering:
 
 - **[Topic Backlog Management](../workflow/phase-a-setup.md#topic-selection)** - Where heat map integrates into workflow
 - **[Event Management](../entity-management/events.md)** - Historical event data source
-- **[Analytics Dashboard](analytics.md)** - Additional event performance metrics `[PLANNED]`
+- **[Analytics Dashboard](analytics.md)** - Additional event performance metrics `[IMPLEMENTED]`
 
 ## Technical Details
 

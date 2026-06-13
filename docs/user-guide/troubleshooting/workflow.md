@@ -1,12 +1,16 @@
 # Workflow Troubleshooting
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 This guide helps resolve issues with the BATbern workflow system, including state transitions, validation errors, and blocked progression. BATbern uses **three independent workflow systems**:
 
 1. **Event Workflow** - 9-state lifecycle (CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED)
-2. **Speaker Workflow** - Per-speaker states (identified → contacted → ready → accepted → content_submitted → quality_reviewed → confirmed)
+2. **Speaker Workflow** - Per-speaker **8-state model** (ADR-009, Epic 11): `IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED`, plus the terminal `DECLINED` state (reachable from any non-terminal state). `SpeakerWorkflowService` is the sole status writer. (Cognito user provisioning happens at the **`CONTACTED → READY`** "promote" transition; slot assignment and publish-readiness are derived flags — `is_slot_assigned`, `is_publishable` — not states.)
 3. **Task System** - Configurable tasks triggered by event state transitions
+
+> **Note (Epic 7 self-nomination):** When a logged-in attendee self-nominates via "I Could Speak on That" on a published event, a `speaker_pool` entry is created at the **IDENTIFIED** state. Organizers then triage it through the same 8-state workflow. No Cognito user / SPEAKER role is created at nomination time.
 
 See [Workflow System Documentation](../workflow/) for complete workflow details.
 
@@ -143,7 +147,7 @@ Solution:
 2. Add more speaker candidates:
    - Search existing speaker database
    - Or add new speaker profiles
-3. Each speaker added starts in "identified" state
+3. Each speaker added starts in the IDENTIFIED state (also where Epic 7 self-nominations enter)
 4. Once threshold reached, event can transition to SPEAKER_IDENTIFICATION
 
 Tip: Threshold is configurable per event type (default: 10 for full-day, 6 for afternoon, 4 for evening)
@@ -151,56 +155,58 @@ Tip: Threshold is configurable per event type (default: 10 for full-day, 6 for a
 
 #### SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT
 ```
-Validation: Minimum confirmed speakers with quality-reviewed content
-Error: "Insufficient confirmed speakers: 7/10 required"
+Validation: Minimum publishable speakers with quality-reviewed content
+Error: "Insufficient publishable speakers: 7/10 required"
 
 Solution:
 1. Review speaker workflow progress in Phase B Kanban board
 2. For each speaker:
-   - Contact speakers: identified → contacted → accepted
-   - Collect content: accepted → content_submitted
-   - Review quality (Phase C): content_submitted → quality_reviewed
-3. Speakers auto-confirm when quality_reviewed AND session.startTime exists
-4. Once minimum confirmed speakers reached, can transition to SLOT_ASSIGNMENT
+   - Promote chosen candidate: CONTACTED → READY (provisions User + SPEAKER role + Cognito; organizer-only)
+   - Invite the speaker: READY → INVITED (subject to the slot-capacity gate)
+   - Speaker accepts: INVITED → ACCEPTED
+   - Collect content: ACCEPTED → CONTENT_SUBMITTED
+   - Review quality (Phase C): CONTENT_SUBMITTED → QUALITY_REVIEWED
+3. A speaker becomes publishable (derived flag is_publishable) when QUALITY_REVIEWED AND session.startTime exists (is_slot_assigned)
+4. Once minimum publishable speakers reached, can transition to SLOT_ASSIGNMENT
 
-Note: Minimum is 10 confirmed speakers for full-day events, 6 for afternoon, 4 for evening
+Note: Minimum is 10 publishable speakers for full-day events, 6 for afternoon, 4 for evening
 ```
 
 #### SLOT_ASSIGNMENT → AGENDA_PUBLISHED
 ```
-Validation: All confirmed speakers assigned to time slots
-Error: "4 confirmed speakers not assigned to slots"
+Validation: All quality-reviewed speakers assigned to time slots (i.e. publishable)
+Error: "4 quality-reviewed speakers not assigned to slots"
 
 Solution:
 1. Go to Phase D → Slot Assignment
-2. Drag confirmed speakers to available time slots
+2. Drag quality-reviewed speakers to available time slots
 3. Resolve any conflicts (double-booking, speaker unavailability)
 4. System auto-saves slot assignments
-5. Click "Publish Agenda" when all confirmed speakers assigned
+5. Click "Publish Agenda" when all quality-reviewed speakers are assigned (is_publishable)
 6. Event transitions to AGENDA_PUBLISHED state
 ```
 
 #### Speaker-Specific Validations
 ```
-Validation: Speaker cannot reach "confirmed" state
-Error: Speaker stuck at "quality_reviewed" or has slot but not confirmed
+Validation: Speaker cannot become publishable (is_publishable)
+Error: Speaker is QUALITY_REVIEWED but has no slot, or has a slot but is not yet QUALITY_REVIEWED
 
-Cause: Confirmation requires BOTH conditions:
-- Speaker status = quality_reviewed
-- Session has startTime (slot assigned)
+Cause: is_publishable is a derived flag (there is NO confirmed state). It requires BOTH:
+- Speaker status = QUALITY_REVIEWED
+- Session has startTime (is_slot_assigned)
 
 Solution:
-1. If quality_reviewed but no slot:
+1. If QUALITY_REVIEWED but no slot:
    - Go to Phase D → Slot Assignment
    - Assign speaker to time slot
-   - Speaker auto-confirms when slot saved
+   - Speaker becomes publishable when the slot is saved (is_slot_assigned → true)
 
-2. If has slot but not quality_reviewed:
+2. If has slot but not yet QUALITY_REVIEWED:
    - Go to Phase C → Quality Review
-   - Review and approve speaker content
-   - Speaker auto-confirms when approved
+   - Review and approve speaker content (CONTENT_SUBMITTED → QUALITY_REVIEWED)
+   - Speaker becomes publishable once approved
 
-Note: Order doesn't matter - whichever completes second triggers auto-confirmation
+Note: Order doesn't matter - whichever completes second flips is_publishable to true
 ```
 
 ---
@@ -216,7 +222,7 @@ Note: Order doesn't matter - whichever completes second triggers auto-confirmati
 | CREATED | Event type, date, venue, capacity |
 | TOPIC_SELECTION | At least one topic selected |
 | SPEAKER_IDENTIFICATION | Minimum speaker candidates identified |
-| SLOT_ASSIGNMENT | All confirmed speakers assigned to slots |
+| SLOT_ASSIGNMENT | All quality-reviewed speakers assigned to slots (publishable) |
 | AGENDA_PUBLISHED | Event description (public-facing), all speaker bios complete |
 
 **Solutions**:
@@ -411,11 +417,12 @@ If "Failed to save":
 
 **Check Speaker State Columns (Kanban Board)**:
 ```
-Speakers move between Kanban columns based on their individual workflow state:
+Speakers move between Kanban columns based on their individual workflow state (8-state model):
 - Phase A (Setup): Speakers in "Identified" column
-- Phase B (Outreach): Moves to "Contacted", "Accepted", "Content Submitted" columns
+- Phase B (Outreach): Moves to "Contacted", "Ready", "Invited", "Accepted", "Content Submitted" columns
 - Phase C (Quality): Moves to "Quality Reviewed" column
-- Phase D (Assignment): Confirmed speakers visible in slot assignment view
+- Phase D (Assignment): "Quality Reviewed" speakers with an assigned slot are publishable (is_publishable) and visible in slot assignment view
+- (A speaker who declines lands in the terminal "Declined" state)
 
 Solution: Click through different phase views (A-D) to find speakers in their current state.
 ```
@@ -465,14 +472,14 @@ Only the high-level event state is locked forward. Speaker states are independen
 **Special Case: Speaker Workflow Reversal**:
 ```
 Individual speakers CAN move backwards through states:
-- confirmed → quality_reviewed (remove slot assignment)
-- quality_reviewed → content_submitted (request revisions)
-- accepted → contacted (speaker withdrew, re-contacting)
+- QUALITY_REVIEWED → CONTENT_SUBMITTED (request revisions)
+- Removing a slot assignment clears the derived is_slot_assigned / is_publishable flags (the workflow state stays QUALITY_REVIEWED — there is no confirmed state to revert)
+- A speaker who pulls out at any point moves to the terminal DECLINED state (replaces the old withdrew/drop-out outcomes)
 
 This is done via:
-1. Phase B Kanban board: Drag speaker to earlier column
+1. Phase B Kanban board: Drag speaker to an earlier valid column, or mark as DECLINED
 2. Phase C Quality drawer: Click "Request Revisions" instead of "Approve"
-3. Phase D Slot assignment: Remove speaker from slot (auto-updates state)
+3. Phase D Slot assignment: Remove speaker from slot (clears is_slot_assigned / is_publishable; no state write)
 ```
 
 ---
@@ -520,11 +527,11 @@ Warning: Only use if state is genuinely incorrect. Most "stuck" issues are valid
 **Check Speaker State Blocking Event Transition**:
 ```
 Event may be stuck if speaker states prevent progression:
-1. SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT requires minimum confirmed speakers
+1. SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT requires minimum publishable speakers
 2. Go to Phase B/C to review speaker workflow progress
 3. Check how many speakers are in each state:
-   - identified, contacted, accepted, content_submitted, quality_reviewed, confirmed
-4. Ensure minimum threshold of confirmed speakers reached
+   - IDENTIFIED, CONTACTED, READY, INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED (and terminal DECLINED)
+4. Ensure minimum threshold of publishable speakers reached (QUALITY_REVIEWED AND assigned to a slot)
 5. Event can only progress when speaker requirements met
 ```
 
@@ -547,12 +554,12 @@ Contact support with:
 |------------|---------|-------|----------|
 | `WF_001` | "Validation failed: Required criteria not met" | Missing topics, insufficient speakers, or other state requirements | Complete required actions for current state, then transition |
 | `WF_002` | "Transition not allowed from current state" | Invalid state transition (e.g., CREATED → SLOT_ASSIGNMENT) | States must progress sequentially. Verify current state, contact support if state corrupted |
-| `WF_003` | "Minimum confirmed speakers not met" | Not enough speakers in confirmed state | Review Phase B/C to move more speakers through workflow (identified → confirmed) |
+| `WF_003` | "Minimum publishable speakers not met" | Not enough publishable speakers (QUALITY_REVIEWED AND assigned to a slot) | Review Phase B/C to move more speakers through the 8-state workflow (IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED) and assign slots in Phase D |
 | `WF_004` | "Permission denied: Insufficient role" | User lacks event management permission | Contact admin to add you as organizer for this event |
 | `WF_005` | "Concurrent modification detected" | Another user edited event | Refresh page, re-apply changes, attempt transition again |
-| `WF_006` | "Cannot transition: Missing slot assignments" | Confirmed speakers not assigned to time slots | Go to Phase D → Slot Assignment, assign all confirmed speakers |
+| `WF_006` | "Cannot transition: Missing slot assignments" | Quality-reviewed speakers not assigned to time slots | Go to Phase D → Slot Assignment, assign all quality-reviewed speakers (makes them publishable) |
 | `WF_007` | "Event archived: State transitions locked" | Event in ARCHIVED state | Unarchive event if changes needed, or create new event |
-| `WF_008` | "Speaker cannot reach confirmed state" | Speaker quality not reviewed OR no slot assigned | Ensure BOTH quality_reviewed AND session.startTime exist (order doesn't matter) |
+| `WF_008` | "Speaker cannot become publishable" | Speaker not yet QUALITY_REVIEWED OR no slot assigned | Ensure BOTH QUALITY_REVIEWED AND session.startTime exist — is_publishable is then derived (order doesn't matter; there is no confirmed state) |
 
 ---
 
@@ -594,13 +601,13 @@ Contact support with:
 
 2. **Plan Phase Transitions**
    - Review state transition requirements before attempting
-   - Identify potential bottlenecks (minimum confirmed speakers, slot availability)
+   - Identify potential bottlenecks (minimum publishable speakers, slot availability, slot-capacity gate on invitations)
    - Allocate sufficient time for speaker workflow progression
    - Remember: Event state blocked until speakers reach required states
 
 3. **Track Speaker Progress**
    - Use Phase B Kanban board to monitor speaker workflow states
-   - Check speaker distribution across states (identified, contacted, accepted, etc.)
+   - Check speaker distribution across states (IDENTIFIED, CONTACTED, READY, INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED; terminal DECLINED)
    - Address blockers early (stuck in contacted, waiting for content)
    - Parallel quality review and slot assignment for efficiency
 
@@ -646,9 +653,9 @@ Contact support with:
 
 - **[Workflow System Overview](../workflow/)** - Complete 3-workflow-system documentation
 - **[Phase A: Setup](../workflow/phase-a-setup.md)** - Event states: CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION
-- **[Phase B: Outreach](../workflow/phase-b-outreach.md)** - Speaker states: identified → contacted → accepted → content_submitted
-- **[Phase C: Quality](../workflow/phase-c-quality.md)** - Speaker state: content_submitted → quality_reviewed
-- **[Phase D: Assignment](../workflow/phase-d-assignment.md)** - Event states: SLOT_ASSIGNMENT → AGENDA_PUBLISHED, Speaker auto-confirmation
+- **[Phase B: Outreach](../workflow/phase-b-outreach.md)** - Speaker states: IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED
+- **[Phase C: Quality](../workflow/phase-c-quality.md)** - Speaker states: CONTENT_SUBMITTED → QUALITY_REVIEWED
+- **[Phase D: Assignment](../workflow/phase-d-assignment.md)** - Event states: SLOT_ASSIGNMENT → AGENDA_PUBLISHED; speakers become publishable (derived is_publishable flag) on slot assignment
 - **[Phase E: Archival](../workflow/phase-e-publishing.md)** - Event state: Any state → ARCHIVED
 - **[Event Management](../entity-management/events.md)** - Event workflow states reference
 - **[Troubleshooting Overview](README.md)** - Other common issues

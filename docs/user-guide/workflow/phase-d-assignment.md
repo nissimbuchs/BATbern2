@@ -2,21 +2,23 @@
 
 > Assign speakers to time slots and publish the agenda
 
+> **Last Updated:** 2026-06-13 — Speaker states aligned to the 8-state model (ADR-009 / Epic 11); the removed `slot_assigned` / `confirmed` states replaced by derived `is_slot_assigned` / `is_publishable` flags.
+
 <div class="workflow-phase phase-d">
 <strong>Phase D: Assignment</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 1 week<br>
 Event State Transitions: SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED<br>
-Speaker States: quality_reviewed → confirmed (auto-triggered when slot assigned)
+Speaker States: QUALITY_REVIEWED stays; assigning a slot sets the derived <code>is_slot_assigned</code> / <code>is_publishable</code> flags
 </div>
 
 ## Overview
 
 Phase D assigns approved speakers to specific time slots and publishes the finalized agenda.
 
-**Key Concept**: When you assign a quality_reviewed speaker to a time slot (sets session.startTime), the speaker automatically transitions to **confirmed** state.
+**Key Concept**: Slot assignment does **not** change the speaker's workflow state. When you assign a `QUALITY_REVIEWED` speaker to a time slot (sets `session.start_time`), the derived flag **`is_slot_assigned`** becomes true, which makes **`is_publishable`** (`QUALITY_REVIEWED AND is_slot_assigned`) true. There is no separate `slot_assigned` or `confirmed` state under ADR-009 — those are read-time derived flags.
 
-**Key Deliverable**: Published event agenda with complete schedule and all speakers auto-confirmed
+**Key Deliverable**: Published event agenda with complete schedule and all assigned speakers publishable
 
 ### Slot Assignment
 
@@ -123,9 +125,9 @@ Once satisfied with the schedule, save the assignments.
 
 Event state: SPEAKER_IDENTIFICATION → **SLOT_ASSIGNMENT**
 
-**Auto-confirmation**: All quality_reviewed speakers with assigned slots (session.startTime exists) automatically transition to **confirmed** state.
+**Derived publish-readiness**: Assigning a slot sets `session.start_time`, which makes the derived flag `is_slot_assigned` true. Any `QUALITY_REVIEWED` speaker with an assigned slot is then `is_publishable` (`QUALITY_REVIEWED AND is_slot_assigned`). These flags are computed at read time — no workflow-state write happens on slot assignment.
 
-**SLOT_ASSIGNED state**: When a slot is assigned to a speaker, the system automatically sets the speaker to `slot_assigned` state as an intermediate step. This transition is system-managed and cannot be triggered manually. A speaker in `slot_assigned` state can still transition to `declined` if they withdraw after assignment.
+> **No `slot_assigned` state (ADR-009).** Slot assignment no longer moves the speaker to an intermediate `slot_assigned` state — that state was removed. A speaker who drops out after being scheduled is moved to terminal **`DECLINED`** (reason recorded in `speaker_status_history`).
 
 </div>
 
@@ -193,9 +195,9 @@ Phase D complete! ✅
 - ✅ Agenda published successfully
 - ✅ Event state = **AGENDA_PUBLISHED**
 
-### Late Withdrawals by Confirmed Speakers
+### Late Withdrawals by Publishable Speakers
 
-A speaker who has already reached **confirmed** state can still transition to **declined** if they withdraw after confirmation. Mark them as **declined** to free the slot and activate a backup or overflow speaker if needed.
+A speaker who is already `QUALITY_REVIEWED` and scheduled (i.e. `is_publishable`) can still drop out. Move them to terminal **`DECLINED`** (the previous state + reason are recorded in `speaker_status_history`) to free the slot. Freeing a slot lets the slot-capacity gate admit another `READY → INVITED`, so you can promote and invite a backup candidate.
 
 ### What Happens Next
 

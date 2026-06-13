@@ -4,6 +4,8 @@
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 Companies represent architectural firms in Switzerland and internationally that participate in BATbern conferences. Each company has employees (users) who can register as speakers or attendees.

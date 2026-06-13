@@ -1,16 +1,22 @@
 # Speaker Management
 
-> Manage speaker profiles, session assignments, and self-service portal invitations
+> Manage speaker profiles, session assignments, and self-service portal access
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
-Speakers are architecture professionals who present at BATbern conferences. Each speaker has a profile containing biographical information, expertise areas, and contact details. Speakers progress through defined status states from initial identification through confirmed participation.
+Speakers are architecture professionals who present at BATbern conferences. Each speaker has a profile containing biographical information, expertise areas, and contact details. Speakers progress through a defined **8-state workflow** from initial identification through confirmed participation.
 
-**Self-Service Portal**: Invited speakers can accept/decline invitations, submit content, and track their engagements through the [Speaker Self-Service Portal](../speaker-portal/README.md) — no password required. Organisers can also manage all of this directly from this screen (hybrid workflow).
+<div class="alert info">
+ℹ️ <strong>Architecture (Epic 11 — ADR-009):</strong> The standalone <code>speakers</code> table and the separate speaker-coordination service were <strong>removed</strong>. Speaker data and the speaker workflow are now <strong>unified into the event-management service</strong>, where <code>SpeakerWorkflowService</code> is the sole writer of speaker status. Each speaker is tracked as a per-event pool entry that progresses through its own workflow state.
+</div>
 
-**Authentication (Epic 9.1)**: Speaker portal links use JWT-based magic links (RS256, 30-day expiry, HTTP-only cookie) for secure, password-free access.
+**Self-Service Portal**: Invited speakers can accept/decline invitations, submit content, update their company's public info, and track their engagements through the [Speaker Self-Service Portal](../speaker-portal/README.md). Organisers can also manage all of this directly from this screen (hybrid workflow).
+
+**Authentication (Epic 11 / Epic 12)**: Speakers log in through **AWS Cognito** — email/password or **"Continue with Google"** — exactly like every other role. The earlier magic-link login was **fully torn down** in Epic 11; there are no `?token=`/`?jwt=` portal URLs anymore. A Cognito user with the `SPEAKER` role is provisioned automatically when a speaker reaches the `READY` workflow transition.
 
 ## Speaker Profiles
 
@@ -89,7 +95,7 @@ Click **Save** to create the speaker profile.
 
 Speaker is created with initial status: **identified**
 
-Note: Speakers created outside workflow (via Speakers menu) start in "identified" state. Speakers added during Phase A workflow automatically link to the event.
+Note: Speakers are created as per-event pool entries (the standalone `speakers` entity was removed in Epic 11). Speakers added during Phase A workflow start in the "identified" state and are linked to the event.
 </div>
 
 ## Speaker Status States
@@ -520,25 +526,48 @@ topic:Sustainable Building
 
 ## Speaker Self-Service Portal
 
-<span class="feature-status implemented">Implemented</span> — Epic 6
+<span class="feature-status implemented">Implemented</span> — Epic 6 (auth refactored in Epic 11)
 
-Invited speakers can manage their own participation through the [Speaker Self-Service Portal](../speaker-portal/README.md) without logging in:
+Invited speakers manage their own participation through the [Speaker Self-Service Portal](../speaker-portal/README.md) after logging in with their Cognito account (email/password or "Continue with Google"):
 
-- **Accept or decline** invitations via email magic link
+- **Accept or decline** invitations
 - **Submit presentation content** (title, abstract, file) through a guided wizard
+- **Update their company's public info** (display name, website, logo) with organizer review — see below
 - **View the speaker dashboard** — upcoming engagements, deadlines, organiser contact, past events
 
 **How organisers trigger portal access:**
 
 1. Add the speaker to the event's speaker pool (Phase A: Setup)
 2. Click **Send Invitation** on the speaker's Phase B Kanban card
-3. The system generates a magic link and sends the invitation email automatically
+3. The system sends the invitation email automatically; at the `READY` transition a Cognito user with the `SPEAKER` role is provisioned so the speaker can log in
+
+<div class="alert info">
+ℹ️ <strong>Note (Epic 11):</strong> Speaker portal access is now standard Cognito-authenticated login. The earlier JWT magic-link mechanism was fully removed — invitation emails point speakers to the normal login, not a password-free token URL.
+</div>
 
 **Hybrid workflow**: Organisers can always manage content and status on behalf of speakers directly from this screen — the portal supplements but does not replace organiser control.
 
 **Automated deadline reminders** are sent at 14 days, 7 days, and 3 days before the content deadline. Each reminder email includes a fresh dashboard link.
 
 See the [Speaker Portal documentation →](../speaker-portal/README.md) for the full speaker-facing experience.
+
+## Speaker Company Self-Service
+
+<span class="feature-status implemented">Implemented</span> — Story 11.G.1
+
+A speaker whose company's logo, display name, and website appear on the public site beside their session can update those fields from their own speaker profile page — **with an organizer reviewing the change before it goes live**.
+
+**How it works:**
+
+1. The speaker edits the company section on their profile page (display name, website, logo) and submits.
+2. The submission creates a **pending company-update request** (it does NOT change the public company immediately) and raises a review task for organisers.
+3. An organiser reviews the proposed change on the `/organizer/companies` surface (a badge and filter chip flag companies with a pending request) and **approves** or **rejects** it with an optional note.
+4. On approval the company's public fields are updated; on rejection nothing changes.
+
+**Rules:**
+- Only **one pending request per company** at a time (a second concurrent submission is rejected).
+- The decision is audited (`submitted_by` / `reviewed_by` / `reviewed_at` / decision note); first decision wins.
+- This keeps speakers in control of their company's public footprint without emailing an organiser, while preserving an organizer sign-off gate.
 
 ## Related Topics
 
@@ -550,15 +579,17 @@ See the [Speaker Portal documentation →](../speaker-portal/README.md) for the 
 
 ## API Reference
 
-### Endpoints
+<div class="alert info">
+ℹ️ <strong>Note (Epic 11 — ADR-009):</strong> Speaker workflow and data are served by the <strong>event-management service</strong> (the standalone speaker-coordination service was removed). Speakers are managed as per-event pool entries, and status writes go exclusively through <code>SpeakerWorkflowService</code>. Refer to the current OpenAPI specs for the authoritative paths.
+</div>
+
+### Endpoints (illustrative)
 
 ```
-POST   /api/speakers               Create speaker
 GET    /api/speakers               List speakers (paginated)
 GET    /api/speakers/{id}          Get speaker by ID
 PUT    /api/speakers/{id}          Update speaker
-DELETE /api/speakers/{id}          Delete speaker
-PUT    /api/speakers/{id}/status   Update speaker status
+PUT    /api/speakers/{id}/status   Update speaker status (via SpeakerWorkflowService)
 POST   /api/speakers/{id}/content  Submit presentation content
 POST   /api/speakers/{id}/photo    Request presigned URL for headshot upload
 ```

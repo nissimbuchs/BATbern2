@@ -1,47 +1,59 @@
 # Speaker Self-Service Portal
 
-> Enable speakers to respond to invitations, submit content, and track their participation — no account required
+> Enable speakers to respond to invitations, submit content, and track their participation — using their BATbern account
 
-<span class="feature-status implemented">Implemented</span> — Epic 6 (Stories 6.0–6.5, 2026-02-16)
+<span class="feature-status implemented">Implemented</span> — Epic 6 (Stories 6.0–6.5) + Epic 11 Cognito auth refactor (Stories 11.E.3, 11.F.1, 11.G.1)
+
+**Last Updated:** 2026-06-13
 
 ## Overview
 
-The Speaker Self-Service Portal lets invited speakers manage their participation entirely through **magic links** — no password or account creation required. Speakers receive a personalised email with direct action links, and can accept/decline invitations, submit their presentation content, upload materials, and view their upcoming and past engagements from a single dashboard.
+The Speaker Self-Service Portal lets invited speakers manage their participation through the **same AWS Cognito account** they use for the rest of the BATbern app — there is no separate speaker login, and no magic-link tokens. Speakers sign in with **email + password** or **"Continue with Google"**, then accept/decline invitations, submit their presentation content, upload materials, manage their company's public footprint, and view their upcoming and past engagements from a single dashboard.
 
 **For organizers**, the portal automates the most time-consuming parts of speaker coordination: chasing responses, collecting abstracts, and sending deadline reminders.
+
+<div class="alert info">
+ℹ️ <strong>Authentication changed in Epic 11.</strong> The original magic-link login (Epic 6) was fully removed (Story 11.F.1). Speakers now authenticate via AWS Cognito like every other role. A Cognito account is auto-provisioned the moment an organizer promotes a speaker to the <code>READY</code> state, and an invitation email with login credentials (DE/EN) is sent. Any older description of "magic links" is stale.
+</div>
 
 ## How It Works
 
 ```
-Organizer sends invitation
+Organizer identifies the real speaker and promotes them to READY
          ↓
-Speaker receives email with two direct links:
-  [✅ Accept]   [❌ Decline]
+Cognito account auto-provisioned (SPEAKER role granted)
          ↓
-Speaker clicks Accept
+Organizer sends the invitation  (status → INVITED)
          ↓
-Confirmation email sent automatically with:
-  • Content submission deadline
-  • [Update Profile] link
-  • [Submit Content] link
+Speaker receives email with:
+  • A login link to www.batbern.ch
+  • A temporary password (first-login password change required)
          ↓
-Speaker submits title, abstract, and materials
+Speaker signs in (email + password, OR "Continue with Google")
          ↓
-Organizer reviews content (Phase C Quality Review)
+Speaker lands on /speaker-portal/dashboard, sees their event(s)
          ↓
-Speaker confirmed once quality reviewed + slot assigned
+Speaker Accepts the invitation         (status → ACCEPTED)
+         ↓
+Speaker submits title, abstract, materials  (status → CONTENT_SUBMITTED)
+         ↓
+Moderator reviews content (Phase C Quality Review)  (status → QUALITY_REVIEWED)
+         ↓
+Speaker is publishable once content is reviewed AND a slot is assigned
 ```
 
-## Magic Links Explained
+## Authentication (Cognito)
 
-Every link sent to a speaker is a **magic link** — a secure, time-limited token embedded in the email URL. Speakers never need to create or remember a password.
+Speakers log in exactly like organizers, partners, and attendees:
 
-| Token Type | Valid For | Reusable? | Used For |
-|------------|-----------|-----------|----------|
-| **RESPOND** | 30 days | No (single-use) | Accept / Decline invitation |
-| **VIEW** | 30 days | Yes | Dashboard, profile updates, content submission |
+| Method | Notes |
+|--------|-------|
+| **Email + password** | Credentials issued in the invitation email. Cognito forces a password change on first login (`FORCE_CHANGE_PASSWORD → CONFIRMED`). |
+| **"Continue with Google"** | If the speaker's Google account matches their invited email, federated login (Epic 12) links transparently. |
 
-**Security**: Tokens are cryptographically generated (32-byte SecureRandom) and only their SHA-256 hash is stored in the database — the token itself is never persisted. Rate limiting: 5 requests/minute per IP.
+- **Account provisioning happens at `CONTACTED → READY`** — the `/promote` transition creates (or links) the User, provisions the Cognito user, grants the `SPEAKER` role, and creates the primary session row.
+- **No tokens in URLs.** Portal pages live behind the standard logged-in session (`<SpeakerRoute>` guard). The event a page acts on is identified by an `eventCode` in the URL path (e.g. `/speaker-portal/events/{eventCode}/content`), never a `?token=` query parameter.
+- **Multi-role users** (e.g. speaker who is also an organizer) get a single session with grouped navigation — the nav menu shows a "Speaker" section and an "Organizer" section, and switching between portals requires no re-authentication.
 
 ## Speaker Portal Sections
 
@@ -49,17 +61,34 @@ Every link sent to a speaker is a **magic link** — a secure, time-limited toke
 |---------|---------------------|
 | [Invitation & Response](invitation-response.md) | Accept or decline an invitation |
 | [Content Submission](content-submission.md) | Submit title, abstract, presentation file |
-| [Speaker Dashboard](dashboard.md) | View upcoming engagements, deadlines, past events |
+| [Speaker Dashboard](dashboard.md) | View upcoming engagements, deadlines, past events; manage profile + company info |
+
+## The 8-State Speaker Workflow
+
+The portal surfaces the speaker's current state in the unified **8-state workflow** (ADR-009). Organizers drive the early states; speakers act on the portal-facing states.
+
+| State | Meaning | Who acts |
+|-------|---------|----------|
+| `IDENTIFIED` | Name on the brainstorm list; no account yet | Organizer |
+| `CONTACTED` | Organizer reaching out to figure out who will actually speak | Organizer |
+| `READY` | Real speaker identified — Cognito account + SPEAKER role provisioned here | Organizer (`/promote`) |
+| `INVITED` | Invitation email (login link + temp password) sent | Organizer → Speaker |
+| `ACCEPTED` | Speaker committed via the portal | **Speaker** |
+| `CONTENT_SUBMITTED` | Title + abstract submitted | **Speaker** (or organizer on behalf) |
+| `QUALITY_REVIEWED` | Moderator approved content (quasi-terminal happy state) | Moderator |
+| `DECLINED` | Single terminal "not happening" state, reachable from any non-terminal state | Speaker or Organizer |
+
+> **Note on "Confirmed":** the legacy `CONFIRMED` state was removed in Epic 11. A speaker is **publishable** when `QUALITY_REVIEWED` AND a slot is assigned (`is_publishable`). The dashboard surfaces this as "Confirmed / Publishable".
 
 ## What Organizers Set Up
 
 Before speakers can use the portal, organizers must:
 
-1. **Add the speaker** to the event's speaker pool (Phase A: Setup)
-2. **Send the invitation** — triggers the invitation email with magic links (Phase B: Outreach)
-3. **Set deadlines** — response deadline and content submission deadline (configured when sending)
+1. **Promote the speaker to `READY`** — provisions the Cognito account and grants the SPEAKER role (Phase A/B).
+2. **Send the invitation** — triggers the invitation email with login credentials (status → `INVITED`, Phase B: Outreach).
+3. **Set deadlines** — response deadline and content submission deadline (configured when sending).
 
-Once sent, the portal handles the rest automatically. See [Phase B: Outreach](../workflow/phase-b-outreach.md) for the organizer workflow.
+Once sent, the portal handles the rest. See [Phase B: Outreach](../workflow/phase-b-outreach.md) for the organizer workflow.
 
 ## Automated Deadline Reminders
 
@@ -73,13 +102,13 @@ The system sends automatic reminder emails when speaker deadlines approach:
 
 Reminders are skipped if the speaker has already responded or submitted content. After Tier 3, an in-app notification is created for the organizer.
 
-Organizers can disable automated reminders per speaker, or trigger a manual reminder at any time from the Phase B Kanban board.
+Organizers can disable automated reminders per speaker, or trigger a manual reminder at any time from the Phase B Kanban board. Reminder emails link to the standard login page — the speaker signs in with their existing Cognito account.
 
 ## Accessibility & Language
 
-- **WCAG 2.1 AA** compliant (keyboard navigation, ARIA labels, colour contrast, 44px touch targets)
-- **German and English** — all portal screens and emails available in both languages
-- **Mobile responsive** — minimum 375px viewport
+- **WCAG 2.1 AA** compliant (keyboard navigation, ARIA labels, colour contrast, 44px touch targets) — the dashboard passed QA at 98/100.
+- **German and English** — all portal screens and emails available in both languages (the full UI is localised in all 10 supported locales).
+- **Mobile responsive** — minimum 375px viewport.
 
 ## Related
 

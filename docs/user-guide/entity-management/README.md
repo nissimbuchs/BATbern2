@@ -4,6 +4,8 @@
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 Entity management is the foundation of the BATbern platform. As an **Organizer**, you can create, read, update, and delete (CRUD) all core entities needed for successful conference planning.
@@ -29,14 +31,16 @@ Architectural firms participating in BATbern conferences.
 
 ### 👥 Users
 
-Individuals with platform accounts (Organizers, Speakers, Attendees, Admins).
+Individuals with platform accounts (Organizers, Speakers, Attendees, Partners, Admins).
 
 **Key Features**:
-- 4 distinct roles with different permissions
+- 5 roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE, ADMIN) with different permissions
+- Login via email/password or "Continue with Google" (SSO, Epic 12)
+- Additional email aliases (receive-at + send-as, Story 10-32)
 - GDPR-compliant profile management
 - Role promotion/demotion workflows
 - Password reset and email verification
-- User sync from Cognito to PostgreSQL
+- JIT provisioning + user sync from Cognito to PostgreSQL
 
 **Status**: <span class="feature-status implemented">Implemented</span>
 
@@ -77,13 +81,14 @@ Organizations collaborating with BATbern.
 Presenters for BATbern conference sessions.
 
 **Key Features**:
-- Speaker profile management
-- Status tracking (IDENTIFIED → CONTACTED → INTERESTED → CONFIRMED)
+- Speaker profile management (unified into event-management, Epic 11 / ADR-009)
+- 8-state per-speaker workflow tracking
+- Cognito authentication (email/password or "Continue with Google") — magic link removed
 - Content collection (≤1000 characters)
-- Expertise and topic matching
+- Speaker company self-service with organizer review
 - Session assignments
 
-**Status**: <span class="feature-status in-progress">In Progress</span>
+**Status**: <span class="feature-status implemented">Implemented</span>
 
 [Learn more →](speakers.md)
 

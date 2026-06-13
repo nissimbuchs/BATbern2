@@ -2,6 +2,8 @@
 
 > Track how many employees attended BATbern events and calculate your cost-per-attendee
 
+> **Last Updated**: 2026-06-13
+
 <span class="feature-status implemented">Implemented</span> — Epic 8.1
 
 ## Overview

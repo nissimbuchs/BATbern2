@@ -4,37 +4,37 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ## Project Status
 
-**Last Updated:** 2026-06-09
+**Last Updated:** 2026-06-13
 
-**Current Phase:** Post-MVP — Epics 1-6 and 8 complete; Epic 7 (Attendee Experience) rewritten 2026-06-09 as a right-sized contribution epic (ready for story detailing); Epic 9 (Speaker Auth) planned
+**Current Phase:** Post-MVP, feature-rich — Epics 1–6, 8, 10, 11, and 12 complete; Epic 7 (Attendee Experience) implemented and in review; Epic 13 (Spring Boot 4 migration) planned. A separate iOS/watchOS companion app (BATbern Watch) is also complete.
 
-**MVP Status:** ✅ **PRODUCTION READY** — All 5 MVP epics (1-5) complete. Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented.
+**MVP Status:** ✅ **PRODUCTION READY** — All 5 MVP epics (1–5) complete and live, plus a large body of post-MVP work: speaker portal, partner coordination, "Continue with Google" SSO, admin & newsletter tooling, and attendee contribution features.
 
 ### Epic Progress Summary
 
-| Epic | Status | Progress | Key Accomplishments |
-|------|--------|----------|---------------------|
-| **Epic 1: Foundation & Core Infrastructure** | ✅ Complete | 100% | Shared Kernel, API Gateway, Auth, User Mgmt, CI/CD, Monitoring |
-| **Epic 2: Entity CRUD & Domain Services** | ✅ Complete | 100% | Company, User, Event, Partner Management (Backend + Frontend) |
-| **Epic 3: Historical Data Migration** | ✅ Complete | 100% | All batch imports implemented — production data import pending |
-| **Epic 4: Public Website & Content Discovery** | ✅ Complete | 100% | Event landing pages, 3-step registration wizard, archive browsing, SEO |
-| **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | 100% | 9-state workflow, speaker coordination, auto-publishing, lifecycle automation |
-| **Epic 6: Speaker Self-Service Portal** | ✅ Complete | 100% | All 6 stories (6.0-6.5) deployed — invitation, response portal, materials, dashboard, reminders |
-| **Epic 7: Attendee Experience — Contribution & Touchpoints** | 📋 Ready for story detailing | — | Right-sized 2026-06-09 — topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, post-event Q&A |
-| **Epic 8: Partner Coordination** | ✅ Complete | 100% | Partner portal shell, attendance analytics, topic voting, meeting coordination with ICS invites |
-| **Epic 9: Speaker Authentication** | 🔨 In Progress | 20% | Story 9.1 (JWT magic link) complete; 9.2–9.5 (Cognito accounts, dual auth, migration, multi-role nav) planned |
+| Epic | Status | Key Accomplishments |
+|------|--------|---------------------|
+| **Epic 1: Foundation & Core Infrastructure** | ✅ Complete | Shared Kernel, API Gateway, Auth, User Mgmt, CI/CD, Monitoring |
+| **Epic 2: Entity CRUD & Domain Services** | ✅ Complete | Company, User, Event, Partner Management (backend + frontend) |
+| **Epic 3: Historical Data Migration** | ✅ Complete | Batch import tooling ready — production data import pending trigger |
+| **Epic 4: Public Website & Content Discovery** | ✅ Complete | Event landing pages, 3-step registration wizard, archive browsing, content search, SEO |
+| **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | 9-state event workflow, speaker coordination, auto-publishing, lifecycle automation |
+| **Epic 6: Speaker Self-Service Portal** | ✅ Complete | Invitations, response portal, material submission, dashboard (WCAG 2.1 AA), reminders |
+| **Epic 7: Attendee Experience — Contribution & Touchpoints** | 🔨 In review | Topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, post-event Q&A, attendee event history |
+| **Epic 8: Partner Coordination** | ✅ Complete | Attendance analytics + XLSX export, topic voting, meeting coordination (ICS), partner notes, iCal RSVP tracking |
+| **Epic 9: Speaker Authentication** | ⛔ Superseded | Original magic-link plan replaced by Epic 11 (unified workflow) + Epic 12 (SSO) |
+| **Epic 10: Admin Tools, Newsletter & Public Enhancements** | ✅ Complete | Administration page, newsletter system, registration status/waitlist/deregistration, photo gallery, teaser images, moderator presentation, Turnstile, legacy BAT export/import, additional user emails |
+| **Epic 11: Unified Speaker Workflow Refactor** | ✅ Complete | 8-state workflow (ADR-009), `SpeakerWorkflowService` sole writer, Cognito speaker auth (magic-link torn down), kanban redesign, speaker company self-service |
+| **Epic 12: Federated Identity / Google SSO** | ✅ Complete | "Continue with Google" live (account linking, JIT provisioning, ToS consent, avatar import); Apple/generic OIDC deferred |
+| **Epic 13: Spring Boot 4 Migration** | 📋 Planned | Staged per-module upgrade (SB 3.5 OSS support ends 2026-06-30) |
+| **BATbern Watch App** (separate iOS/watchOS track) | ✅ Complete | Public event companion, pairing & organizer access, live countdown & haptics, session control, offline resilience |
 
-### MVP Completion Status
+### Next Steps
 
-**✅ All MVP Epics Complete (100%)**
-
-**Production Readiness (When Launching):**
-- **Epic 3: Production Data Import** — import 2,307 historical participants via batch import modal (~1 day effort)
-
-**Next Steps:**
-- Epic 9 Stories 9.2–9.5 — Cognito account creation on invitation accept, dual auth, staging migration, multi-role nav
-- Epic 3: Production data import (~1 day effort)
-- Epic 7 (Attendee Experience) — right-sized 2026-06-09; detail & build the 5 contribution/touchpoint stories (`docs/prd/epic-7-attendee-experience-enhancements.md`)
+- **Epic 3: Production data import** — import the ~2,307 historical participants via the batch import modal (~1 day effort)
+- **Epic 7** — complete review + merge of the remaining attendee-contribution stories (incl. 7.7 curated thank-you marquee)
+- **Epic 12 tail (Story 12-10)** — Apple / generic OIDC + Cognito trigger retirement
+- **Epic 13** — Spring Boot 4 migration before SB 3.5 OSS support ends (2026-06-30)
 
 ## Quick Start
 
@@ -407,15 +407,40 @@ Each deploy is visible on the [/deployments](../../deployments) and [/releases](
 **Partner Coordination (Epic 8) - ✅ 100% Complete:**
 - **Attendance Analytics Dashboard** - Per-company attendance table with cost-per-attendee KPI + XLSX export
 - **Topic Voting** - Partners suggest topics and toggle-vote; organizers set status (Selected/Declined)
-- **Meeting Coordination** - RFC 5545 ICS calendar invites with agenda sent to all partner contacts
+- **Meeting Coordination** - RFC 5545 ICS calendar invites with agenda + iCal RSVP tracking
+- **Partner Notes** - Organizer/partner notes on partner records (Story 8.4)
+
+**Attendee Experience (Epic 7) - 🔨 In Review:**
+- **Topics From the Floor** - Logged-in attendees suggest future topics into the existing topic pool (`source = community`)
+- **"I Could Speak on That"** - Attendee speaker self-nomination into the 8-state speaker workflow (enters at `IDENTIFIED`)
+- **"Slides Are Online" Mail** - Event-triggered email to active registrants when materials publish (DE/EN)
+- **Thank-the-Organizers** - One-click post-event appreciation (anonymous allowed + Turnstile) with aggregate counter
+- **The Apéro Continues** - Time-boxed per-session post-event Q&A that freezes into the archive
+- **Attendee Event History** - Logged-in dashboard of events the attendee registered for / attended
+
+**Admin Tools, Newsletter & Public Enhancements (Epic 10) - ✅ Complete:**
+- **Administration Page** - Event types, data import/export, task templates, email-template management (TinyMCE/Monaco)
+- **Newsletter System** - Subscription, template selection, sending, subscriber management, SES bounce + list hygiene
+- **Registration Lifecycle** - Status indicator, venue-capacity enforcement + waitlist, self-service deregistration
+- **Inbound Email Handling** - Reply-based unsubscribe/deregistration, SES forwarding / distribution lists
+- **Media & Content** - Event photo gallery, teaser images, moderator presentation page, AI-assisted content
+- **Security & Data** - Turnstile bot protection, additional user emails, legacy BAT-format export/import
+
+**Unified Speaker Workflow & Federated Identity (Epics 11 & 12) - ✅ Complete:**
+- **8-State Speaker Workflow** - ADR-009 unified model; `SpeakerWorkflowService` sole status writer; magic-link torn down
+- **Cognito Speaker Auth** - Speakers log in with their Cognito account; provisioned at the `READY` transition
+- **"Continue with Google" SSO** - Federated login with account linking, JIT provisioning, ToS consent, avatar import
 
 ### Technology Stack
 - **Backend:** Java 21, Spring Boot 3.5+
-- **Frontend:** React 18, TypeScript 5.3+, Material-UI
+- **Frontend:** React 19, TypeScript 5.x, Material-UI + Tailwind CSS
+- **Auth:** AWS Cognito + Google SSO federation (OIDC)
 - **Database:** PostgreSQL 15+
 - **Cache:** Caffeine 3.x (in-memory)
 - **Infrastructure:** AWS ECS, RDS, S3, CloudFront
 - **IaC:** AWS CDK 2.110+
+
+> A separate **BATbern Watch** companion app (iOS/watchOS — SwiftUI) is also complete; it's a distinct product track from this web platform.
 
 ## Testing
 

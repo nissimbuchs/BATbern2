@@ -2,19 +2,23 @@
 
 > Engage speakers, track responses, and collect presentation content
 
+> **Last Updated:** 2026-06-13 — Speaker states aligned to the 8-state model (ADR-009 / Epic 11); promote-to-`READY` provisioning gate and redesigned kanban board documented.
+
 <div class="workflow-phase phase-b">
 <strong>Phase B: Outreach</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 4-6 weeks<br>
 Event State: SPEAKER_IDENTIFICATION (event remains in this state while speakers progress)<br>
-Speaker States: identified → contacted → ready → accepted → content_submitted
+Speaker States: IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED
 </div>
 
 ## Overview
 
-Phase B focuses on speaker engagement. You'll contact identified candidates, track their responses through their individual speaker workflows, and collect presentation content from accepted speakers.
+Phase B focuses on speaker engagement. You'll contact identified candidates, **promote** the chosen speaker to `READY` (which provisions their account), send the formal invitation, track their responses through their individual speaker workflows, and collect presentation content from accepted speakers.
 
-**Key Concept**: The event remains in SPEAKER_IDENTIFICATION state while individual speakers progress through their own parallel workflows (identified → contacted → ready → accepted → content_submitted).
+**Key Concept**: The event remains in SPEAKER_IDENTIFICATION state while individual speakers progress through their own parallel 8-state workflows (`IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED`, per ADR-009).
+
+**The provisioning gate (`CONTACTED → READY`)**: While `IDENTIFIED` and `CONTACTED` are still "brainstorming" states (no account exists), promoting a candidate to `READY` is the moment the system looks up or creates the User, grants the SPEAKER role, and provisions the AWS Cognito account. **Promotion is organizer-only.** The speaker then logs in via Cognito (email/password or "Continue with Google") — there are no magic links.
 
 **Key Deliverable**: Accepted speakers with submitted content ready for quality review
 
@@ -58,6 +62,8 @@ Outreach dashboard displays all candidates in a Kanban board by status.
 ![Outreach View](../assets/screenshots/workflow/phase-b-outreach/b-01-outreach-view-ready.png)
 
 The Kanban board supports drag-and-drop to update speaker status as you contact them and receive responses.
+
+> **Redesigned kanban board (Story 11.D.x + speaker-drawer redesign 10-30):** the board uses **guided drag** — when you pick up a speaker card, only the columns representing valid next states (per the 8-state machine) are highlighted as drop targets; illegal moves are rejected. Each column exposes a **primary-action button** (e.g. *Promote to READY*, *Send Invitation*) so the common transition is one click, and cards use **time-in-state colour coding** to surface speakers who have been stalled in a state too long. Clicking a card opens the **unified speaker drawer**, where the Details, Content, and history sub-tabs live in one place.
 </div>
 
 <div class="step" data-step="2">
@@ -88,7 +94,7 @@ Before contacting a speaker:
 ![Before Contact](../assets/screenshots/workflow/phase-b-outreach/b-02-before-contact-speaker-1.png)
 
 After sending, speaker status updates:
-- Speaker Status: identified → **contacted**
+- Speaker Status: `IDENTIFIED` → **`CONTACTED`**
 - Event Status: Still SPEAKER_IDENTIFICATION (unchanged)
 - Contact log entry created with timestamp
 - Follow-up reminder scheduled (3-5 days)
@@ -105,13 +111,15 @@ After contacting all speakers, the Kanban board shows them in the "Contacted" co
 
 <div class="step" data-step="5">
 
-**Track Responses**
+**Promote, Invite, and Track Responses**
 
-When speakers respond, update their status on the Kanban board. Drag speaker cards from "Contacted" to "Ready" as they show interest.
+Once you've decided who will actually speak, **promote** the chosen candidate from `CONTACTED` to `READY` (the *Promote to READY* primary-action button). This provisions the speaker's account (User + SPEAKER role + Cognito). Promotion is organizer-only.
 
 ![All Speakers Ready](../assets/screenshots/workflow/phase-b-outreach/b-13-all-speakers-ready.png)
 
-Then drag from "Ready" to "Accepted" as they confirm participation.
+Then send the formal invitation to move the speaker from `READY` to `INVITED`. The invitation email carries a login link + temporary password. The `READY → INVITED` step is subject to the **slot-capacity gate** — it is blocked when `count(ACCEPTED) + count(INVITED) >= max_slots`, so you cannot over-invite beyond the available slots (this replaces the old `overflow` parking state).
+
+When speakers respond via the portal, their card moves from `INVITED` to `ACCEPTED` (or to `DECLINED`).
 
 ![Before Moving to Accepted](../assets/screenshots/workflow/phase-b-outreach/b-14-before-drag-to-accepted.png)
 
@@ -133,7 +141,7 @@ For non-responders after 3-5 days, send reminder. The system displays candidates
 
 **Handle Declines**
 
-If speaker declines, the system displays the decline notification with date, reason (if provided), and action buttons: [Mark as DROPOUT] to update their status, and [Contact Backup Candidate] to initiate outreach to the next priority candidate from the same topic.
+If a speaker declines, the system displays the decline notification with date and reason (if provided), and action buttons: [Mark as DECLINED] to move them to the terminal `DECLINED` state (the previous state + reason are recorded in `speaker_status_history`), and [Contact Backup Candidate] to initiate outreach to the next priority candidate from the same topic. Freeing the slot lets the slot-capacity gate admit another `READY → INVITED`.
 </div>
 
 <div class="step" data-step="8">
@@ -166,45 +174,48 @@ Track speaker progression from interest through content submission, ensuring tim
 - ✅ Blockers identified and resolved (e.g., awaiting content guidelines)
 - ✅ Minimum speakers reached **CONTENT_SUBMITTED** status
 
-### Speaker Status Flow
+### Speaker Status Flow (8-state — ADR-009)
 
 ```mermaid
 graph LR
-    A[identified] --> B[contacted]
-    B --> BI[invited]
-    BI --> C[ready]
-    C --> D[accepted]
-    D --> SA[slot_assigned\nsystem-set]
-    D --> E[content_submitted]
-    E --> F[quality_reviewed]
-    F --> G[confirmed]
+    A[IDENTIFIED] --> B[CONTACTED]
+    B -->|promote: provisions account| C[READY]
+    C -->|invite: slot-capacity gate| D[INVITED]
+    D --> E[ACCEPTED]
+    E --> F[CONTENT_SUBMITTED]
+    F --> G[QUALITY_REVIEWED]
 
-    C -.->|Declined| H[declined]
-    D -.->|Withdrew| I[withdrew]
-    F -.->|No slots| J[overflow]
-    G -.->|Withdrew| H
+    A -.->|decline| X[DECLINED]
+    B -.->|decline| X
+    C -.->|decline| X
+    D -.->|decline| X
+    E -.->|drop out| X
+    F -.->|drop out| X
+    G -.->|drop out| X
 ```
 
-> **INVITED state**: After an invitation email is dispatched, the speaker transitions from **contacted** to **invited**. The speaker then moves to **ready** once they acknowledge the invitation. The sequence is: `contacted → invited → ready`.
+> **READY state (provisioning gate)**: `CONTACTED → READY` is **organizer-only** (the *Promote* action). It looks up or creates the User, grants the SPEAKER role, and provisions the AWS Cognito account. No email is sent at this step.
 >
-> **SLOT_ASSIGNED state**: Set automatically by the system when a slot is assigned to a speaker. Manual transitions to SLOT_ASSIGNED are rejected.
+> **INVITED state**: `READY → INVITED` sends the invitation email (login link + temporary password) and is gated by slot capacity — blocked when `count(ACCEPTED) + count(INVITED) >= max_slots`.
+>
+> **DECLINED is terminal and reachable from every non-terminal state.** It covers a lead that didn't pan out, a refusal to an invitation, and a speaker who accepted then dropped out — replacing the old `withdrew` state. The previous state and reason are recorded in `speaker_status_history`.
+>
+> **No separate `slot_assigned` / `confirmed` / `overflow` states.** Slot assignment and publish-readiness are now derived flags (`is_slot_assigned`, `is_publishable`); over-capacity is handled by the slot-capacity gate, not a parking state.
 
 ### Status Definitions
 
 | Status | Meaning | Organizer Action | Speaker Action |
 |--------|---------|------------------|----------------|
-| **identified** | Potential candidate | Send invitation | - |
-| **contacted** | Invitation sent | Await response | Respond to invitation |
-| **invited** | Invitation email dispatched; awaiting speaker acknowledgement | Await response | Acknowledge invitation |
-| **ready** | Ready to accept/decline | Get acceptance | Decide to accept or decline |
-| **accepted** | Committed to presenting | Send content guidelines | Submit content |
-| **declined** | Not available (reachable from any active state, including confirmed) | Contact backup candidate | - |
-| **slot_assigned** | Slot automatically assigned by system (cannot be set manually) | — (system-managed) | - |
-| **content_submitted** | Content received | Review content (Phase C) | - |
-| **quality_reviewed** | Content approved | Assign time slot (Phase D) | - |
-| **confirmed** | Quality reviewed AND slot assigned | Ready for publication | - |
-| **overflow** | Accepted but no slots | Backup speaker | - |
-| **withdrew** | Dropped out after accepting | Find replacement | - |
+| **IDENTIFIED** | On the brainstorm list; no account yet | Reach out / promote when chosen | - |
+| **CONTACTED** | Still brainstorming; outreach recorded | Decide who will speak, then **promote** | Express interest |
+| **READY** | Account provisioned (User + SPEAKER role + Cognito) | Send invitation (slot-capacity gate) | - |
+| **INVITED** | Invitation email dispatched (login link + temp password) | Await response | Accept or decline via the portal |
+| **ACCEPTED** | Committed to presenting | Send content guidelines | Submit content |
+| **CONTENT_SUBMITTED** | Title + abstract received | Review content (Phase C) | - |
+| **QUALITY_REVIEWED** | Content approved (happy end-state of content lifecycle) | Assign time slot (Phase D) | - |
+| **DECLINED** | Terminal "not happening" state; reachable from any non-terminal state | Contact backup candidate | - |
+
+> **Derived flags (not states):** `is_slot_assigned := session.start_time IS NOT NULL`; `is_publishable := QUALITY_REVIEWED AND is_slot_assigned`. These replace the removed `slot_assigned` and `confirmed` states.
 
 ### How to Complete
 
@@ -242,7 +253,8 @@ Optional:
 - Prerequisites (required attendee knowledge)
 - Supporting materials (slides, handouts)
 
-Submit via: https://batbern.ch/submit-content/{token}
+Submit via the speaker portal: https://www.batbern.ch/speaker-portal
+(log in with your invitation credentials — email/password or "Continue with Google")
 
 Looking forward to your presentation!
 
@@ -303,7 +315,7 @@ We still need:
 - Abstract (≤1000 characters)
 - Learning Objectives
 
-Submit via: https://batbern.ch/submit-content/{token}
+Submit via the speaker portal: https://www.batbern.ch/speaker-portal
 
 Let me know if you need an extension or have questions!
 
@@ -317,7 +329,7 @@ Anna
 **Update Status on Submission**
 
 When content received, status automatically updates:
-- Speaker Status: accepted → **content_submitted**
+- Speaker Status: `ACCEPTED` → **`CONTENT_SUBMITTED`**
 - Event Status: Still SPEAKER_IDENTIFICATION (unchanged)
 - Content flagged for review (Phase C)
 
@@ -347,12 +359,13 @@ For speakers missing deadline:
 New deadline: March 4, 2025
 ```
 
-**Option 2**: Mark as Withdrew
+**Option 2**: Mark as Declined
 ```
-[Mark as withdrew]
+[Mark as DECLINED]
 Reason: Missed content deadline
 → Contact backup candidate
 ```
+(The previous state and reason are recorded in `speaker_status_history`; `DECLINED` replaces the old `withdrew` state.)
 </div>
 
 <div class="step" data-step="7">
@@ -443,13 +456,13 @@ Fill in the presentation details and submit.
 
 ![Content Form Filled](../assets/screenshots/workflow/phase-b5-content/b5-05-content-submission-1-filled.png)
 
-Speakers can also receive unique submission links:
+Speakers submit through the **Cognito-authenticated speaker portal** (no magic links):
 
 ```
-https://batbern.ch/submit-content/{token}
+https://www.batbern.ch/speaker-portal
 ```
 
-Portal displays:
+After logging in (email/password or "Continue with Google"), the portal displays:
 
 ```
 BATbern 2025 Content Submission
@@ -590,7 +603,7 @@ Once all required speakers submitted content:
 
 Phase B complete! ✅ Ready for Phase C (Quality Review)
 
-**Note**: Event state remains **SPEAKER_IDENTIFICATION** (unchanged). Speakers have progressed to **content_submitted** state individually.
+**Note**: Event state remains **SPEAKER_IDENTIFICATION** (unchanged). Speakers have progressed to **`CONTENT_SUBMITTED`** state individually.
 </div>
 
 ### Content Quality Tips
@@ -630,9 +643,10 @@ Phase B complete! ✅ Ready for Phase C (Quality Review)
 Before advancing to Phase C, confirm:
 
 - ✅ All high-priority candidates contacted
-- ✅ Minimum speakers reached **accepted** state
+- ✅ Chosen speakers **promoted to `READY`** and **`INVITED`**
+- ✅ Minimum speakers reached **`ACCEPTED`** state
 - ✅ All accepted speakers submitted content
-- ✅ Minimum speakers at **content_submitted** state
+- ✅ Minimum speakers at **`CONTENT_SUBMITTED`** state
 - ✅ Event state = **SPEAKER_IDENTIFICATION** (unchanged - progresses in Phase D)
 
 ### Minimum Speaker Requirements
@@ -694,12 +708,15 @@ See [Phase C: Quality →](phase-c-quality.md) to continue.
 ## API Reference
 
 ```
-POST /api/events/{id}/workflow/step-4         Complete Step 4 (Outreach)
-POST /api/events/{id}/workflow/step-5         Complete Step 5 (Status Mgmt)
-POST /api/events/{id}/workflow/step-6         Complete Step 6 (Content Collection)
-PUT  /api/speakers/{id}/status                Update speaker status
-POST /api/speakers/{id}/content               Submit speaker content
-GET  /api/speakers/{id}/contact-history       Get contact log
+POST /api/events/{id}/workflow/step-4                          Complete Step 4 (Outreach)
+POST /api/events/{id}/workflow/step-5                          Complete Step 5 (Status Mgmt)
+POST /api/events/{id}/workflow/step-6                          Complete Step 6 (Content Collection)
+POST /api/v1/events/{code}/speakers/{speakerId}/promote        Promote CONTACTED → READY (provisions Cognito; ORGANIZER only)
+PUT  /api/v1/events/{code}/speakers/{speakerId}/status         Update speaker status (8-state allow-list; READY rejected → use /promote)
+POST /api/v1/events/{code}/speakers/{speakerId}/content        Submit speaker content (organizer-on-behalf; speakers self-submit via the portal)
+GET  /api/v1/events/{code}/speakers/{speakerId}/contact-history Get contact / outreach log
 ```
+
+> The single writer of `speaker_pool.status` is `SpeakerWorkflowService` — these endpoints delegate to it. `READY` is **not** an accepted `targetStatus` on `PUT .../status`; promotion runs through the dedicated `/promote` endpoint so account provisioning happens exactly once. See [ADR-009](../../architecture/ADR-009-unified-speaker-workflow.md) and [API: Speaker Coordination](../../architecture/04-api-speaker-coordination.md).
 
 See [API Documentation](../../api/) for complete specifications.

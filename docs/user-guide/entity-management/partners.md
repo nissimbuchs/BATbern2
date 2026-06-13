@@ -4,6 +4,8 @@
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 Partners are organizations that collaborate with BATbern through sponsorship, resource sharing, or strategic partnerships. Partners receive benefits like event presence, networking opportunities, and brand visibility.

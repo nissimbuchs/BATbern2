@@ -4,6 +4,8 @@
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 Events are BATbern conferences - the central entity that organizes all other platform activities. Each event represents a single conference occurrence (e.g., "BATbern 2025") with its own timeline, speakers, sessions, and partners.
@@ -347,9 +349,9 @@ Event detail view shows comprehensive information:
 - Session schedule (timeline view)
 - Speaker assignments
 
-**Speakers** <span class="feature-status in-progress">In Progress</span>:
-- List of confirmed speakers
-- Speaker status (IDENTIFIED → CONFIRMED)
+**Speakers** <span class="feature-status implemented">Implemented</span>:
+- List of speakers (per-event pool entries — Epic 11 / ADR-009)
+- 8-state speaker workflow status (identified → … → confirmed)
 - Contact history
 
 **Partners** <span class="feature-status implemented">Implemented</span>:
