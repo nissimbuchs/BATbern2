@@ -324,6 +324,7 @@ const HomePage = () => {
             sessions={event.sessions!}
             isArchived={isCompletedOrArchived}
             eventCode={event.eventCode}
+            showQna={qnaVisible}
           />
         )}
 

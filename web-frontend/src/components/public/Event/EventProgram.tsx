@@ -20,6 +20,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpeakerDisplay } from './SpeakerDisplay';
+import { SessionQnaThread } from './SessionQnaThread';
 import { eventApiClient } from '@/services/eventApiClient';
 
 const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
@@ -41,9 +42,20 @@ interface EventProgramProps {
   sessions: SessionUI[];
   isArchived?: boolean; // Story 5.9 - Show materials only for archived events
   eventCode: string; // Story 5.9 - Required for material download API
+  /**
+   * Mount the per-session Q&A thread on each timeline card (Story 7.5). Same gate as SessionCards
+   * — the timeline (EventProgram) is what renders in the AGENDA phase, so without this the Q&A
+   * would be invisible once the agenda is published. SessionQnaThread self-gates on the 404.
+   */
+  showQna?: boolean;
 }
 
-export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventProgramProps) => {
+export const EventProgram = ({
+  sessions,
+  isArchived = false,
+  eventCode,
+  showQna = false,
+}: EventProgramProps) => {
   const { t } = useTranslation('events');
   const [downloadingMaterials, setDownloadingMaterials] = useState<Set<string>>(new Set());
 
@@ -311,6 +323,18 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
                                 )
                               )}
                             </div>
+                          </div>
+                        )}
+
+                        {/* Story 7.5: per-session Q&A on the timeline card (the timeline is what
+                            renders in the AGENDA phase). Collapsed by default; renders nothing when
+                            no Q&A window exists for the session (404 self-gate). */}
+                        {showQna && eventCode && (
+                          <div className="mt-4">
+                            <SessionQnaThread
+                              eventCode={eventCode}
+                              sessionSlug={session.sessionSlug}
+                            />
                           </div>
                         )}
                       </div>
