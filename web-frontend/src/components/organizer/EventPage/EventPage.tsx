@@ -54,6 +54,8 @@ import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 
 import { EventOverviewTab } from './EventOverviewTab';
+import { CockpitTab } from './cockpit/CockpitTab';
+import type { CardTarget } from './cockpit/cockpitCards';
 import { EventSpeakersTab } from './EventSpeakersTab';
 import EventParticipantsTab from './EventParticipantsTab';
 import { EventPublishingTab } from './EventPublishingTab';
@@ -180,6 +182,35 @@ export const EventPage: React.FC = () => {
     setSearchParams(newParams, { replace: true });
   };
 
+  // Deep-link from the Cockpit: switch tab (and Speakers sub-view) via the same
+  // ?tab=/?view= URL mechanism as handleTabChange — no route change (FR9/FR13).
+  const navigateToTab = (tab: EventTabId, view?: string) => {
+    if (getTabRelevance(workflowState, tab) === 'locked') return;
+    const params = new URLSearchParams(searchParams);
+    if (tab === DEFAULT_TAB) {
+      params.delete('tab');
+    } else {
+      params.set('tab', tab);
+    }
+    if (tab === 'speakers' && view) {
+      params.set('view', view);
+    } else {
+      params.delete('view');
+    }
+    setSearchParams(params, { replace: true });
+  };
+
+  // Cockpit card navigation: tab switch (in-page) or route navigation (event-day cards).
+  const handleCardNavigate = (target: CardTarget) => {
+    if (target.kind === 'tab') {
+      navigateToTab(target.tab, target.view);
+    } else if (target.newTab) {
+      window.open(target.path, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(target.path);
+    }
+  };
+
   const handleBack = () => {
     navigate('/organizer/events');
   };
@@ -271,8 +302,8 @@ export const EventPage: React.FC = () => {
   const renderTabContent = () => {
     switch (effectiveTab) {
       case 'cockpit':
-        // Interim Cockpit = today's Overview content (replaced in Phase B).
-        return <EventOverviewTab event={event} eventCode={eventCode!} onEdit={handleEdit} />;
+        // Phase B — task-driven Cockpit (lifecycle spine · attention cards · metric tiles).
+        return <CockpitTab event={event} eventCode={eventCode!} onNavigate={handleCardNavigate} />;
       case 'speakers':
         return <EventSpeakersTab eventCode={eventCode!} />;
       case 'registrations':

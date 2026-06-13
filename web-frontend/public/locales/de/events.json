@@ -6,6 +6,59 @@
     "blobSelector": "Blob-Auswahl"
   },
   "eventPage": {
+    "cockpit": {
+      "spine": {
+        "stepOf": "Schritt {{current}} von {{total}}"
+      },
+      "emphasis": {
+        "created": "Anlass definieren — Details ausfüllen und ein Thema wählen.",
+        "topic": "Thema bestätigen, eine Moderation zuweisen und den Referenten-Pool starten.",
+        "speakers": "Referenten-Pool füllen; Einreichungen prüfen und mit der Slot-Zuteilung beginnen, sobald Referenten zusagen.",
+        "slots": "Referenten den Zeitfenstern zuweisen und Reviews abschliessen, dann die Agenda veröffentlichen.",
+        "finalize": "Agenda ist live — ausstehende Präsentationen einsammeln, Anmeldungen beobachten und den finalen Newsletter sowie die Catering-Anfrage fristgerecht versenden. Steuerung für den Anlasstag steht zum Test bereit.",
+        "live": "Den Anlass durchführen — Präsentation starten oder Live-Steuerung öffnen.",
+        "wrapup": "«Folien sind online» versenden, Fotos hochladen und Dankesworte kuratieren.",
+        "archived": "Anlass archiviert — schreibgeschützt."
+      },
+      "attention": {
+        "title": "Erfordert Ihre Aufmerksamkeit",
+        "addTask": "Aufgabe hinzufügen",
+        "open": "{{tab}} öffnen →",
+        "go": "Öffnen →",
+        "retry": "Erneut versuchen",
+        "loadError": "Aufgaben konnten nicht geladen werden.",
+        "allCaught": "Alles erledigt — im Moment ist nichts zu tun."
+      },
+      "due": {
+        "overdue": "Überfällig · {{days}} Tage",
+        "dueSoon": "Fällig in {{days}} Tagen",
+        "upcoming": "Demnächst",
+        "live": "Jetzt · Anlass ist live"
+      },
+      "cards": {
+        "addDetailsPickTopic": "Anlass-Details hinzufügen & Thema wählen",
+        "confirmTopic": "Thema bestätigen",
+        "publishAgenda": "Agenda finalisieren & veröffentlichen",
+        "fillPool": "Referenten-Pool füllen — {{confirmed}} / {{min}} bestätigt",
+        "needsSlot": "{{count}} Sessions benötigen noch einen Slot",
+        "reviewSubmissions": "Referenten-Einreichungen prüfen",
+        "outstandingPresentations": "Ausstehende Präsentationen einsammeln",
+        "watchRegistrations": "Anmeldungen {{confirmed}} / {{capacity}} — Kapazität & Warteliste beobachten",
+        "startPresentation": "🔴 Präsentation starten",
+        "openLiveControl": "📡 Live-Steuerung öffnen"
+      },
+      "tiles": {
+        "registrations": "Anmeldungen",
+        "speakers": "Referenten",
+        "materials": "Unterlagen",
+        "agenda": "Agenda",
+        "filled": "{{percent}}% belegt",
+        "waitlist": "{{count}} auf Warteliste"
+      },
+      "atAGlance": {
+        "title": "Auf einen Blick"
+      }
+    },
     "tabs": {
       "venue": "Veranstaltungsort",
       "participants": "Teilnehmer",

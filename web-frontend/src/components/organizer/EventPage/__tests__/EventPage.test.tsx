@@ -60,6 +60,13 @@ vi.mock('../EventOverviewTab', () => ({
     <div data-testid="event-overview-tab">Overview Tab - {eventCode}</div>
   ),
 }));
+// Phase B: the Cockpit tab mounts CockpitTab (its internals are covered by the
+// cockpit/* test suite). Mock it here to keep EventPage tests focused on the shell.
+vi.mock('../cockpit/CockpitTab', () => ({
+  CockpitTab: ({ eventCode }: { eventCode: string }) => (
+    <div data-testid="cockpit-tab">Cockpit Tab - {eventCode}</div>
+  ),
+}));
 vi.mock('../EventSpeakersTab', () => ({
   EventSpeakersTab: ({ eventCode }: { eventCode: string }) => (
     <div data-testid="event-speakers-tab">Speakers Tab - {eventCode}</div>
@@ -201,7 +208,7 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
 
     it('lands on the Cockpit by default', () => {
       renderWithProviders();
-      expect(screen.getByTestId('event-overview-tab')).toBeInTheDocument();
+      expect(screen.getByTestId('cockpit-tab')).toBeInTheDocument();
     });
   });
 
@@ -241,7 +248,7 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
 
     it('defaults to Cockpit for an invalid ?tab=', () => {
       renderWithProviders('/organizer/events/BAT54?tab=bogus');
-      expect(screen.getByTestId('event-overview-tab')).toBeInTheDocument();
+      expect(screen.getByTestId('cockpit-tab')).toBeInTheDocument();
     });
   });
 
@@ -253,7 +260,7 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
 
     it('falls back to Cockpit when the URL targets a locked tab', () => {
       renderWithProviders('/organizer/events/BAT54?tab=wrapup');
-      expect(screen.getByTestId('event-overview-tab')).toBeInTheDocument();
+      expect(screen.getByTestId('cockpit-tab')).toBeInTheDocument();
       expect(screen.queryByTestId('event-wrapup-tab')).not.toBeInTheDocument();
     });
 
