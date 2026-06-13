@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BATbern · Event Page Redesign (Mobile)</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --surface:#ffffff; --ink:#1a2330; --ink-soft:#5b6675;
+    --line:#e3e8f0; --line-soft:#eef1f6;
+    --primary:#0a4d8c; --primary-soft:#e7f0fb;
+    --accent:#1f8a5b; --accent-soft:#e4f4ec;
+    --warn:#b9770a; --warn-soft:#fdf3e0; --warn-line:#f0d9ac;
+    --danger:#c0392b; --danger-soft:#fbeae8;
+    --muted:#9aa6b6; --shadow:0 1px 2px rgba(16,30,54,.06),0 4px 16px rgba(16,30,54,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#e9edf3;color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.4}
+  .proto{background:#0e1b2e;color:#cdd8e6;font-size:12.5px;padding:8px 18px;display:flex;gap:12px;
+    align-items:center;justify-content:center;flex-wrap:wrap}
+  .proto b{color:#fff}.proto a{color:#7fb2ee}.proto .pill{background:#1b2c44;border-radius:999px;padding:2px 10px;color:#9fc1ec}
+
+  .stage{display:flex;gap:40px;flex-wrap:wrap;justify-content:center;align-items:flex-start;padding:34px 20px 60px}
+  .col-notes{max-width:340px;font-size:13.5px;color:#33414f}
+  .col-notes h2{font-size:17px;margin:0 0 12px}
+  .col-notes h3{font-size:13.5px;margin:18px 0 5px;color:var(--primary)}
+  .col-notes p{margin:0 0 10px}
+  .col-notes code{background:#dde5ef;border-radius:5px;padding:1px 5px;font-size:12px}
+  .col-notes li{margin-bottom:6px}
+
+  /* phone */
+  .phone{width:380px;height:780px;background:#0e1b2e;border-radius:42px;padding:11px;box-shadow:0 22px 60px rgba(16,30,54,.32);flex:0 0 auto}
+  .screen{position:relative;width:100%;height:100%;background:var(--bg);border-radius:32px;overflow:hidden;display:flex;flex-direction:column}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:140px;height:26px;background:#0e1b2e;border-radius:0 0 16px 16px;z-index:30}
+
+  /* app header */
+  .ah{background:var(--surface);border-bottom:1px solid var(--line);padding:30px 14px 10px;flex:0 0 auto;z-index:20}
+  .ah .top{display:flex;align-items:center;gap:8px}
+  .ah .bk{font-size:18px;color:var(--ink-soft);background:none;border:none;cursor:pointer}
+  .ah .ti{font-weight:700;font-size:15px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ah .more{font-size:18px;background:none;border:none;cursor:pointer;color:var(--ink-soft)}
+  .ah .sub{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:5px;background:var(--primary-soft);color:var(--primary);font-weight:600;font-size:11px;padding:3px 9px;border-radius:999px}
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+  .ah .sub .meta{font-size:11.5px;color:var(--ink-soft)}
+
+  /* scroll body */
+  .body{flex:1;overflow-y:auto;padding:14px 13px 80px}
+  .scr{display:none}.scr.show{display:block}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:13px 14px;margin-bottom:12px}
+  .lbl{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 9px}
+  .ctitle{font-size:14px;font-weight:700;margin:0 0 3px}.csub{font-size:12px;color:var(--ink-soft);margin:0}
+
+  .miniprog{display:flex;align-items:center;gap:9px}
+  .miniprog .bar{flex:1;height:8px;border-radius:6px;background:var(--line-soft);overflow:hidden}
+  .miniprog .bar>i{display:block;height:100%;background:var(--primary);border-radius:6px}
+  .miniprog .pct{font-size:12px;font-weight:700;color:var(--primary)}
+  .stepname{font-size:12.5px;color:var(--ink-soft);margin-top:7px}
+
+  .task{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line-soft)}
+  .task:last-child{border:none}
+  .task .strip{width:4px;border-radius:4px;align-self:stretch}
+  .task.over .strip{background:var(--danger)}.task.soon .strip{background:var(--warn)}.task.ok .strip{background:var(--accent)}
+  .task .b{flex:1}.task .tn{font-weight:700;font-size:13px;margin:0 0 4px}
+  .due{font-weight:700;font-size:11px;padding:2px 7px;border-radius:999px}
+  .due.over{background:var(--danger-soft);color:var(--danger)}.due.soon{background:var(--warn-soft);color:var(--warn)}.due.ok{background:var(--accent-soft);color:var(--accent)}
+  .task .go{font-size:11.5px;color:var(--primary);font-weight:700;background:none;border:none;padding:6px 0 0;cursor:pointer}
+
+  .tiles2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
+  .tile .tl{font-size:11.5px;color:var(--ink-soft);margin-bottom:6px}
+  .tile .num{font-size:19px;font-weight:800}.tile .num small{font-size:12px;color:var(--muted);font-weight:600}
+  .tile .bar{height:6px;border-radius:5px;background:var(--line-soft);margin-top:7px;overflow:hidden}
+  .tile .bar>i{display:block;height:100%;border-radius:5px;background:var(--primary)}
+  .tile .bar>i.g{background:var(--accent)}.tile .bar>i.w{background:var(--warn)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:13px;font-weight:600;
+    border-radius:9px;padding:9px 13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;width:100%}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.sm{width:auto;padding:6px 11px;font-size:12px}
+  .btn.warn{color:var(--warn);border-color:var(--warn-line)}
+  .btn.danger{color:var(--danger);border-color:var(--danger)}
+
+  /* segmented (sub-nav, scrollable) */
+  .segm{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+  .segm button{flex:0 0 auto;font:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+  .segm button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+
+  .lane{margin-bottom:12px}
+  .lane h4{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:0 0 7px;display:flex;justify-content:space-between}
+  .scard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-bottom:7px;box-shadow:var(--shadow)}
+  .scard .nm{font-weight:600;font-size:13px}.scard .co{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+  .scard .act{font-size:11.5px;color:var(--primary);font-weight:700;margin-top:6px;display:inline-block}
+
+  /* tap-to-assign */
+  .tray{background:var(--warn-soft);border:1px solid var(--warn-line);border-radius:11px;padding:11px;margin-bottom:12px}
+  .tray .th{font-size:11.5px;font-weight:700;color:var(--warn);margin-bottom:8px}
+  .schip{background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-bottom:7px;display:flex;align-items:center;gap:9px;cursor:pointer}
+  .schip.sel{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+  .schip .nm{font-weight:600;font-size:12.5px}.schip .co{font-size:11px;color:var(--ink-soft)}
+  .schip .pick{margin-left:auto;font-size:11px;font-weight:700;color:var(--primary)}
+  .slot{border:1.5px dashed var(--line);border-radius:10px;padding:10px 11px;margin-bottom:8px;display:flex;align-items:center;gap:10px;min-height:46px}
+  .slot.filled{border-style:solid;border-color:var(--primary-soft);background:var(--primary-soft)}
+  .slot.struct{border-style:solid;background:var(--line-soft);border-color:var(--line)}
+  .slot .tm{font-size:11.5px;font-weight:700;color:var(--ink-soft);width:62px;flex:0 0 auto}
+  .slot .ss{font-size:12.5px;font-weight:600}.slot.empty .ss{color:var(--muted);font-style:italic;font-weight:500}
+  .slot.armed{border-color:var(--accent);background:var(--accent-soft);cursor:pointer}
+  .hintbar{font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:10px;display:none}
+  .hintbar.show{display:block}
+
+  /* registrations */
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);padding:6px 4px;border-bottom:1px solid var(--line)}
+  td{padding:9px 4px;border-bottom:1px solid var(--line-soft)}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .tag.g{background:var(--accent-soft);color:var(--accent)}.tag.w{background:var(--warn-soft);color:var(--warn)}
+  .tag.b{background:var(--primary-soft);color:var(--primary)}.tag.n{background:var(--line-soft);color:var(--ink-soft)}
+  .rcard{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+  .av{width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .rcard .ri{flex:1;min-width:0}.rcard .rn{font-weight:600;font-size:13px}.rcard .rc{font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .field{margin-bottom:11px}.field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin-bottom:4px}
+  .field select,.field input,.field textarea{width:100%;font:inherit;font-size:13px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:#fff}
+  .seg2{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+  .seg2 button{flex:0 0 auto;font:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+  .seg2 button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .anote{font-size:11.5px;padding:9px 11px;border-radius:9px;margin-bottom:12px;background:var(--primary-soft);color:var(--primary)}
+  .preview{border:1px solid var(--line);border-radius:10px;height:150px;background:linear-gradient(#fff,#f8fafd);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;margin-bottom:12px}
+  .switch{width:36px;height:21px;border-radius:999px;background:var(--line);position:relative;display:inline-block;flex:0 0 auto}
+  .switch.on{background:var(--accent)}.switch::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.15s}.switch.on::after{left:17px}
+  .note{padding:11px;border:1px solid var(--line);border-radius:11px;margin-bottom:10px}
+  .note .nq{font-size:12.5px;font-style:italic;margin:0 0 6px}.note .nf{font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:center}
+
+  /* bottom nav */
+  .bnav{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);
+    display:flex;padding:7px 4px 9px;z-index:25}
+  .bnav button{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;
+    font:inherit;font-size:10px;font-weight:600;color:var(--muted);position:relative}
+  .bnav button .bi{font-size:19px}
+  .bnav button.on{color:var(--primary)}
+  .bnav button .bdg{position:absolute;top:-2px;right:50%;margin-right:-16px;background:var(--warn);color:#fff;font-size:9px;font-weight:700;min-width:15px;height:15px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+  .bnav button .rdot{position:absolute;top:0;right:50%;margin-right:-13px;width:7px;height:7px;border-radius:50%;background:var(--danger)}
+
+  /* more sheet */
+  .sheet-ov{position:absolute;inset:0;background:rgba(14,27,46,.45);display:none;z-index:35}
+  .sheet-ov.show{display:block}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:8px 14px 22px;z-index:36;transform:translateY(100%);transition:.22s}
+  .sheet.show{transform:none}
+  .sheet .grab{width:38px;height:4px;border-radius:4px;background:var(--line);margin:8px auto 12px}
+  .sheet h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .sheet .item{display:flex;align-items:center;gap:12px;padding:13px 6px;border-bottom:1px solid var(--line-soft);font-size:14.5px;font-weight:600;cursor:pointer}
+  .sheet .item:last-child{border:none}.sheet .item .si{font-size:19px}
+  .sheet .item .lock{margin-left:auto;font-size:12px;color:var(--muted);font-weight:500}
+
+  @media(max-width:840px){.stage{flex-direction:column-reverse;align-items:center}.col-notes{max-width:380px}}
+</style>
+</head>
+<body>
+
+<div class="proto">
+  <b>PROTOTYPE · MOBILE</b>
+  <span class="pill">live phone — tap the bottom nav</span>
+  <a href="event-detail-redesign-prototype.html">→ open desktop prototype</a>
+</div>
+
+<div class="stage">
+
+  <!-- explanatory column -->
+  <div class="col-notes">
+    <h2>📱 The mobile strategy</h2>
+    <p>Seven destinations don’t fit a phone tab bar (4–5 max is the platform norm), so the IA changes shape — it doesn’t just shrink.</p>
+
+    <h3>1 · Bottom nav + “More”</h3>
+    <p>The four <b>day-to-day</b> destinations live in the bottom bar — <b>Cockpit, Speakers, Registrations, Communications</b>. The three <b>occasional</b> ones (Publishing, Wrap-up, Settings) live behind <b>⋯ More</b>, which opens a sheet. Badges/dots ride on the nav icons. Tap <b>⋯ More</b> to see it.</p>
+
+    <h3>2 · Cockpit is the answer to “what now?”</h3>
+    <p>On a phone the cockpit matters <i>more</i>, not less — the organizer checks it on the train. Lifecycle collapses to a single <code>Step 4/9</code> bar; attention tasks stack full-width; metrics go 2-up.</p>
+
+    <h3>3 · Drag → tap-to-assign</h3>
+    <p>Drag-drop is hostile on touch. In <b>Speakers → Slots</b>, tap an unassigned session, then tap a highlighted slot. Same model, thumb-friendly. <b>Try it.</b></p>
+
+    <h3>4 · Tables → cards</h3>
+    <p>Registrations becomes a search box + stacked cards (the real app already does responsive cards), with row actions in an overflow menu.</p>
+
+    <h3>5 · Lifecycle dimming holds</h3>
+    <p>Wrap-up shows a 🔒 in the More sheet until <code>EVENT_LIVE</code> — same adaptive rule as desktop.</p>
+  </div>
+
+  <!-- live phone -->
+  <div class="phone">
+    <div class="screen">
+      <div class="notch"></div>
+
+      <!-- header -->
+      <div class="ah">
+        <div class="top">
+          <button class="bk">‹</button>
+          <div class="ti">BATbern 76 — Cloud Native…</div>
+          <button class="more" id="moreBtn">⋯</button>
+        </div>
+        <div class="sub">
+          <span class="chip"><span class="dot"></span> Slot Assignment · 4/9</span>
+          <span class="meta">📅 18 Sep · ⏳ 34d</span>
+        </div>
+      </div>
+
+      <!-- body -->
+      <div class="body" id="body">
+
+        <!-- COCKPIT -->
+        <div class="scr show" id="s-cockpit">
+          <div class="card" style="display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink-soft)">
+            <span style="font-size:17px;opacity:.55">🎬</span>
+            <span><b style="color:var(--ink)">Event-day controls</b> — on 18 Sep, Present &amp; Live Control appear as cards in “Needs your attention”.</span>
+          </div>
+          <div class="card">
+            <p class="lbl">Where this event is</p>
+            <div class="miniprog"><span class="pct">44%</span><div class="bar"><i style="width:44%"></i></div></div>
+            <div class="stepname">Step 4 of 9 · <b>Slot Assignment</b> → next: Agenda Published</div>
+          </div>
+          <div class="card">
+            <p class="ctitle">Needs your attention</p>
+            <p class="csub" style="margin-bottom:8px">Overdue first, then due soon.</p>
+            <div class="task over"><div class="strip"></div><div class="b"><p class="tn">Assign moderator</p>
+              <span class="due over">Overdue · 3d</span><button class="go" data-go="settings">Open Settings →</button></div></div>
+            <div class="task soon"><div class="strip"></div><div class="b"><p class="tn">Send “Speaker line-up” newsletter</p>
+              <span class="due soon">Due in 4d</span><button class="go" data-go="comms">Open Communications →</button></div></div>
+            <div class="task soon"><div class="strip"></div><div class="b"><p class="tn">Finalize &amp; publish agenda</p>
+              <span class="due soon">Locks in 6d</span><button class="go" data-go="publishing">Open Publishing →</button></div></div>
+          </div>
+          <p class="lbl">At a glance · tap to jump</p>
+          <div class="tiles2">
+            <div class="tile" data-mtile="registrations" style="cursor:pointer"><div class="tl">🎟️ Registrations</div><div class="num">128 <small>/180</small></div><div class="bar"><i style="width:71%"></i></div></div>
+            <div class="tile" data-mtile="pool" style="cursor:pointer"><div class="tl">🎤 Speakers</div><div class="num">6 <small>/6</small></div><div class="bar"><i class="g" style="width:100%"></i></div></div>
+            <div class="tile" data-mtile="agenda" style="cursor:pointer"><div class="tl">📋 Materials</div><div class="num">3 <small>/6</small></div><div class="bar"><i class="w" style="width:50%"></i></div></div>
+            <div class="tile" data-mtile="slots" style="cursor:pointer"><div class="tl">🗓️ Agenda</div><div class="num">4 <small>/6</small></div><div class="bar"><i class="w" style="width:66%"></i></div></div>
+          </div>
+        </div>
+
+        <!-- SPEAKERS -->
+        <div class="scr" id="s-speakers">
+          <div class="segm" id="spkSeg">
+            <button class="on" data-sp="pool">🗂️ Pool</button>
+            <button data-sp="agenda">🗓️ Agenda</button>
+            <button data-sp="slots">🧩 Slots</button>
+          </div>
+
+          <div id="sp-pool">
+            <div class="lane"><h4>Contacted <span>1</span></h4>
+              <div class="scard"><div class="nm">Dr. Amir Roth</div><div class="co">ETH Zürich</div><span class="act">Promote →</span></div></div>
+            <div class="lane"><h4>Accepted <span>3</span></h4>
+              <div class="scard"><div class="nm">Sophie Meier</div><div class="co">Google ZH</div><span class="act">Enter content →</span></div>
+              <div class="scard"><div class="nm">Tobias Brun</div><div class="co">Swisscom</div></div>
+              <div class="scard"><div class="nm">Nadia Kex</div><div class="co">Zühlke</div></div></div>
+            <div class="lane"><h4>Reviewed <span>3</span></h4>
+              <div class="scard"><div class="nm">Jan Keller</div><div class="co">Adnovum</div></div></div>
+          </div>
+
+          <div id="sp-agenda" style="display:none">
+            <div class="scard"><div class="nm">Platform Engineering at Scale</div><div class="co">Sophie Meier · <span class="tag b">17:35</span> · <span class="tag g">Approved</span></div></div>
+            <div class="scard"><div class="nm">GitOps in Regulated Banking</div><div class="co">Tobias Brun · <span class="tag b">18:10</span> · <span class="tag w">In review</span></div></div>
+            <div class="scard"><div class="nm">Multi-cluster Service Mesh</div><div class="co">Pia Stöckli · <span class="tag n">no slot</span> · <span class="tag w">Pending</span></div></div>
+            <div class="scard"><div class="nm">Edge-native Workloads</div><div class="co">Nadia Kex · <span class="tag n">no slot</span> · <span class="tag w">Pending</span></div></div>
+          </div>
+
+          <div id="sp-slots" style="display:none">
+            <div class="tray">
+              <div class="th">⏳ UNASSIGNED — tap one, then tap a slot</div>
+              <div class="schip" data-s="Multi-cluster Service Mesh"><div><div class="nm">Multi-cluster Service Mesh</div><div class="co">Pia Stöckli · 30 min</div></div><span class="pick">tap →</span></div>
+              <div class="schip" data-s="Edge-native Workloads"><div><div class="nm">Edge-native Workloads</div><div class="co">Nadia Kex · 30 min</div></div><span class="pick">tap →</span></div>
+            </div>
+            <div class="hintbar" id="hint">↓ Now tap a highlighted slot to place it</div>
+            <div class="slot struct"><div class="tm">17:30</div><div class="ss">🎙️ Moderation</div></div>
+            <div class="slot filled"><div class="tm">17:35</div><div class="ss">Platform Eng. — S. Meier</div></div>
+            <div class="slot filled"><div class="tm">18:10</div><div class="ss">GitOps — T. Brun</div></div>
+            <div class="slot filled"><div class="tm">18:45</div><div class="ss">eBPF — R. Costa</div></div>
+            <div class="slot struct"><div class="tm">19:15</div><div class="ss">🍷 Apéro</div></div>
+            <div class="slot filled"><div class="tm">19:35</div><div class="ss">FinOps — J. Keller</div></div>
+            <div class="slot empty target"><div class="tm">20:10</div><div class="ss">empty slot</div></div>
+            <div class="slot empty target"><div class="tm">20:45</div><div class="ss">empty slot</div></div>
+            <button class="btn primary" style="margin-top:6px">✨ Auto-assign the rest</button>
+          </div>
+        </div>
+
+        <!-- REGISTRATIONS -->
+        <div class="scr" id="s-registrations">
+          <div class="card">
+            <p class="ctitle">Registrations <span class="tag b">140 active</span></p>
+            <p class="csub" style="margin:4px 0 10px">128 confirmed / 180 · 12 waitlist</p>
+            <div class="field" style="margin:0 0 10px"><input placeholder="🔍 Search name / email / company"></div>
+            <div class="seg2"><button class="on">All</button><button>Confirmed</button><button>Registered</button><button>Waitlisted</button><button>Cancelled</button></div>
+            <div class="rcard"><span class="av">AB</span><div class="ri"><div class="rn">Anna Brunner</div><div class="rc">Mobiliar · 02 Aug</div></div><span class="tag g">Confirmed</span><button class="more" style="font-size:16px">⋯</button></div>
+            <div class="rcard"><span class="av">FW</span><div class="ri"><div class="rn">Felix Wyss</div><div class="rc">SIX · 05 Aug</div></div><span class="tag b">Reg.</span><button class="more" style="font-size:16px">⋯</button></div>
+            <div class="rcard"><span class="av">UG</span><div class="ri"><div class="rn">Urs Gerber</div><div class="rc">Die Post · 14 Aug</div></div><span class="tag g">Confirmed</span><button class="more" style="font-size:16px">⋯</button></div>
+            <div style="text-align:center;font-size:12px;color:var(--ink-soft);padding:10px 0">Showing 1–25 of 140</div>
+          </div>
+          <div class="card">
+            <div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn sm" style="flex:1">⬇ Badges XLSX</button><button class="btn sm" style="flex:1">⬇ Badges DOCX</button></div>
+            <button class="btn sm" style="width:100%">👥 Enroll organizers &amp; partners</button>
+          </div>
+        </div>
+
+        <!-- COMMUNICATIONS -->
+        <div class="scr" id="s-comms">
+          <div class="card">
+            <p class="ctitle" style="margin-bottom:9px">Who are you emailing?</p>
+            <div class="seg2" id="audM">
+              <button class="on" data-a="subs">📰 Subscribers</button>
+              <button data-a="regs">🎟️ Registrants</button>
+              <button data-a="spk">🎤 Speakers</button>
+              <button data-a="venue">🏛️ Venue/Caterer</button>
+            </div>
+            <div class="anote" id="anoteM">Global newsletter list (~2,400). Newsletter + Reminder, with history &amp; retry.</div>
+            <div class="field"><label>Template</label><select id="tmplM"><option>Speaker line-up announcement</option><option>Final agenda</option></select></div>
+            <div class="field"><label>Preview language</label><select><option>Deutsch</option><option>English</option></select></div>
+            <div class="preview">📧 Email preview</div>
+            <button class="btn primary" id="sendM">✉️ Send Newsletter…</button>
+          </div>
+        </div>
+
+        <!-- PUBLISHING -->
+        <div class="scr" id="s-publishing">
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">Validation</p>
+            <div style="font-size:13px;line-height:2"><div>✅ Topic defined</div><div>✅ Speakers confirmed (6)</div><div>⚠️ 2 sessions need a slot</div><div>⚠️ 3 materials in review</div></div></div>
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">Phases</p>
+            <div class="slot filled"><div class="tm">Topic</div><div class="ss">Live ✓</div></div>
+            <div class="slot filled" style="margin-top:8px"><div class="tm">Speakers</div><div class="ss">Live ✓</div></div>
+            <div class="slot" style="margin-top:8px"><div class="tm">Agenda</div><div class="ss empty">Blocked</div></div>
+            <button class="btn primary" style="margin-top:12px">📢 Publish agenda</button></div>
+        </div>
+
+        <!-- WRAP-UP -->
+        <div class="scr" id="s-wrapup">
+          <div class="card" style="background:var(--warn-soft);border-color:var(--warn-line);font-size:12.5px">🔒 <b>Locked until EVENT_LIVE.</b> Previewing layout.</div>
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">📸 Photos</p>
+            <div class="tiles2"><div class="preview" style="height:70px;margin:0">🖼️</div><div class="preview" style="height:70px;margin:0">＋</div></div>
+            <button class="btn" style="margin-top:10px">⬆ Upload photos</button></div>
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">💌 Thank-you notes (2)</p>
+            <div class="note"><p class="nq">“Best BATbern in years!”</p><div class="nf"><span>Anna B. · Mobiliar</span><span class="tag g">♥ Featured</span></div></div>
+            <div class="note"><p class="nq">“Loved the venue. Thank you!”</p><div class="nf"><span>Anonymous</span><span class="switch" style="opacity:.4"></span></div></div></div>
+        </div>
+
+        <!-- DETAILS -->
+        <div class="scr" id="s-details">
+          <div class="card" style="overflow:hidden;padding:0">
+            <div style="height:90px;background:linear-gradient(120deg,#0a4d8c,#1f8a5b);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);font-size:12px">🖼️ Theme image</div>
+            <div style="padding:12px 13px"><div style="display:flex;gap:8px"><button class="btn sm" style="flex:1">⬆ Replace</button><button class="btn sm" style="flex:1">✨ AI</button></div></div>
+          </div>
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">📝 Event details</p>
+            <div class="field"><label>Title</label><input value="Cloud Native Architecture"></div>
+            <div class="field" style="margin:0"><label>Description</label><textarea rows="4">A deep-dive into platform engineering, GitOps &amp; cloud-native ops in Swiss enterprises…</textarea></div></div>
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">🏷️ Topic</p><div style="display:flex;align-items:center;gap:9px"><span class="tag b">Cloud Native Architecture</span><button class="btn sm" style="margin-left:auto">Change</button></div></div>
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">📅 When &amp; where</p>
+            <div class="field"><label>Date &amp; time</label><input value="2026-09-18 · 17:30"></div>
+            <div class="field"><label>Venue</label><input value="Welle 7, Bern"></div>
+            <div class="field" style="margin:0"><label>Registration deadline</label><input value="2026-09-15"></div></div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="scr" id="s-settings">
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">👤 Moderator</p><div class="field" style="margin:0"><select><option>Nissim Buchs</option></select></div></div>
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">👥 Registration capacity</p><div class="field" style="margin:0 0 9px"><input value="180"></div><button class="btn sm">Save</button></div>
+          <div class="card"><p class="ctitle" style="margin-bottom:9px">💬 Session Q&amp;A</p><div style="display:flex;align-items:center;gap:9px"><span class="switch on"></span><span class="csub">Enabled · opens after event · 14d</span></div></div>
+          <div class="card" style="border-color:var(--danger);background:var(--danger-soft)"><p class="ctitle" style="color:var(--danger);margin-bottom:9px">⚠️ Danger zone</p>
+            <button class="btn warn" style="margin-bottom:8px">Cancel event</button><button class="btn danger">Delete event</button></div>
+        </div>
+
+      </div>
+
+      <!-- bottom nav -->
+      <div class="bnav" id="bnav">
+        <button class="on" data-nav="cockpit"><span class="bi">🧭</span>Cockpit</button>
+        <button data-nav="speakers"><span class="bi">🎤</span>Speakers<span class="bdg">2</span></button>
+        <button data-nav="registrations"><span class="bi">🎟️</span>Regs</button>
+        <button data-nav="comms"><span class="bi">✉️</span>Comms<span class="rdot"></span></button>
+        <button id="navMore"><span class="bi">⋯</span>More</button>
+      </div>
+
+      <!-- more sheet -->
+      <div class="sheet-ov" id="sheetOv"></div>
+      <div class="sheet" id="sheet">
+        <div class="grab"></div>
+        <h4>More</h4>
+        <div class="item" data-nav="publishing"><span class="si">📢</span> Publishing</div>
+        <div class="item" data-nav="wrapup"><span class="si">🎁</span> Wrap-up <span class="lock">🔒 unlocks at event</span></div>
+        <div class="item" data-nav="details"><span class="si">📝</span> Details</div>
+        <div class="item" data-nav="settings"><span class="si">⚙️</span> Settings</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const screens=['cockpit','speakers','registrations','comms','publishing','wrapup','details','settings'];
+  const primaryNav=['cockpit','speakers','registrations','comms'];
+  function show(id){
+    screens.forEach(s=>document.getElementById('s-'+s).classList.toggle('show',s===id));
+    document.querySelectorAll('#bnav button[data-nav]').forEach(b=>b.classList.toggle('on',b.dataset.nav===id));
+    // if a "More" screen, mark More active
+    document.getElementById('navMore').classList.toggle('on',!primaryNav.includes(id));
+    document.getElementById('body').scrollTop=0;
+    closeSheet();
+  }
+  document.getElementById('bnav').addEventListener('click',e=>{const b=e.target.closest('button[data-nav]');if(!b)return;show(b.dataset.nav);});
+  document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
+
+  // more sheet
+  const ov=document.getElementById('sheetOv'),sheet=document.getElementById('sheet');
+  function openSheet(){ov.classList.add('show');sheet.classList.add('show');}
+  function closeSheet(){ov.classList.remove('show');sheet.classList.remove('show');}
+  document.getElementById('navMore').addEventListener('click',openSheet);
+  document.getElementById('moreBtn').addEventListener('click',openSheet);
+  ov.addEventListener('click',closeSheet);
+  document.querySelectorAll('.sheet .item').forEach(i=>i.addEventListener('click',()=>show(i.dataset.nav)));
+
+  // speakers sub-seg
+  document.getElementById('spkSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    document.querySelectorAll('#spkSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    ['pool','agenda','slots'].forEach(s=>document.getElementById('sp-'+s).style.display=(b.dataset.sp===s)?'block':'none');});
+
+  // tap-to-assign
+  let selected=null;
+  document.querySelectorAll('#sp-slots .schip').forEach(c=>c.addEventListener('click',()=>{
+    document.querySelectorAll('#sp-slots .schip').forEach(x=>x.classList.remove('sel'));
+    c.classList.add('sel');selected=c;
+    document.getElementById('hint').classList.add('show');
+    document.querySelectorAll('#sp-slots .slot.target').forEach(s=>s.classList.add('armed'));
+  }));
+  document.querySelectorAll('#sp-slots .slot.target').forEach(s=>s.addEventListener('click',()=>{
+    if(!selected)return;
+    const name=selected.dataset.s;
+    s.classList.remove('empty','armed','target');s.classList.add('filled');
+    s.querySelector('.ss').textContent=name;s.querySelector('.ss').style.fontStyle='normal';
+    selected.remove();selected=null;
+    document.getElementById('hint').classList.remove('show');
+    document.querySelectorAll('#sp-slots .slot.target').forEach(x=>x.classList.remove('armed'));
+    const left=document.querySelectorAll('#sp-slots .schip').length;
+    if(left===0){document.querySelector('.tray .th').textContent='✓ All sessions placed';}
+  }));
+
+  // comms audience (mobile)
+  document.getElementById('audM').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    document.querySelectorAll('#audM button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    const a=b.dataset.a,note=document.getElementById('anoteM'),tmpl=document.getElementById('tmplM'),send=document.getElementById('sendM');
+    if(a==='subs'){note.textContent='Global newsletter list (~2,400). Newsletter + Reminder, history & retry.';tmpl.innerHTML='<option>Speaker line-up announcement</option><option>Final agenda</option>';send.textContent='✉️ Send Newsletter…';}
+    if(a==='regs'){note.textContent='128 active registrants — each in their own language. Single send.';tmpl.innerHTML='<option>Slides are online</option><option>Room change</option>';send.textContent='✉️ Send to registrants…';}
+    if(a==='spk'){note.textContent='6 confirmed speakers. Individual invites stay on each speaker card.';tmpl.innerHTML='<option>Content-deadline reminder</option><option>Logistics & arrival info</option><option>Thank-you to speakers</option>';send.textContent='✉️ Send to speakers…';}
+    if(a==='venue'){note.textContent='Venue + caterer contacts (Welle 7 · Gastro AG). Reply-To: coordinator. Moved here from Settings.';tmpl.innerHTML='<option>Booking confirmation</option><option>Catering headcount</option><option>Setup & logistics</option>';send.textContent='✉️ Send to venue/caterer…';}
+  });
+
+  // mobile cockpit tiles → deep-link
+  document.querySelectorAll('[data-mtile]').forEach(t=>t.addEventListener('click',()=>{
+    const d=t.dataset.mtile;
+    if(d==='registrations'){show('registrations');}
+    else{show('speakers');document.querySelector('#spkSeg button[data-sp="'+d+'"]').click();}
+  }));
+</script>
+</body>
+</html>
