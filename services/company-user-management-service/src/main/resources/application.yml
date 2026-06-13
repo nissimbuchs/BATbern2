@@ -12,7 +12,12 @@ spring:
     converters:
       preferred-json-mapper: jackson2
 
-  jackson:
+  # Epic 13 (SB4): config for the active Jackson 2 web mapper lives under spring.jackson2.* (read by
+  # the spring-boot-jackson2 compat module), NOT spring.jackson.* — the latter binds to the Jackson 3
+  # mapper, whose SerializationFeature no longer has WRITE_DATES_AS_TIMESTAMPS (moved to DateTimeFeature
+  # in Jackson 3), which fails context startup. The final Jackson-3 closeout moves this back to
+  # spring.jackson with Jackson-3 property names.
+  jackson2:
     default-property-inclusion: non_null
     serialization:
       write-dates-as-timestamps: false

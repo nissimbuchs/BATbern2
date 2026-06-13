@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+// Epic 13 (SB4): TestRestTemplate is no longer auto-registered for @SpringBootTest(RANDOM_PORT);
+// its bean now lives behind @AutoConfigureTestRestTemplate (spring-boot-resttestclient).
+@AutoConfigureTestRestTemplate
 @Import(TestSecurityConfig.class)
 class OpenApiConfigTest {
 

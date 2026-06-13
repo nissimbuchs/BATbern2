@@ -3,6 +3,15 @@ spring:
     name: api-gateway
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  # Epic 13 (SB4): the gateway has no datasource, but shared-kernel's spring-boot-starter-data-jpa
+  # (implementation scope) puts the JDBC/JPA auto-config modules on the gateway's RUNTIME classpath.
+  # DataSourceAutoConfiguration then tries to build a Hikari pool with no URL and crashes the context
+  # ("Failed to determine a suitable driver class"). The classes aren't on the compile classpath, so
+  # they're excluded by name here rather than via @SpringBootApplication(exclude=...).
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
   # Epic 13 (SB4): keep the HTTP layer on the Jackson 2 (com.fasterxml) converter during the
   # migration (SB4 defaults to Jackson 3). This is the "Jackson-2-compat flag" from the plan —
   # byte-identical payloads + Jackson-2 semantics; the final closeout removes it to flip to Jackson 3.

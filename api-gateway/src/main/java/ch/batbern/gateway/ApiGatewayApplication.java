@@ -6,9 +6,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * API Gateway application entry point.
  *
- * Stateless gateway with no direct database access. Under Spring Boot 4's modularised
- * auto-configuration, the JDBC/JPA modules are simply absent from the classpath, so there
- * is nothing to exclude (the SB 3.x exclude of DataSource/HibernateJpa auto-config is moot).
+ * Stateless gateway with no direct database access. The JDBC/JPA auto-config modules are NOT on
+ * the gateway's COMPILE classpath (shared-kernel's spring-boot-starter-data-jpa is an implementation
+ * dependency) but ARE on its RUNTIME classpath, so they activate at boot and DataSourceAutoConfiguration
+ * fails trying to build a Hikari pool with no URL. They can't be referenced by class here (compile
+ * error), so they're excluded by name via spring.autoconfigure.exclude in application.yml.
  */
 // Build alignment: 2026-04-05
 @SpringBootApplication
