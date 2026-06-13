@@ -312,14 +312,38 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(ORGANIZER).roles("ORGANIZER")))
                 .andExpect(status().isNoContent());
 
-        // Tombstone: soft-deleted (removed_at set), body/author hidden in the response.
+        // Soft-deleted in the DB (removed_at set) but removed from the public thread entirely.
         assertThat(postRepository.findById(p.getId())).get()
                 .satisfies(post -> assertThat(post.getRemovedAt()).isNotNull());
         mockMvc.perform(get("/api/v1/events/{e}/sessions/{s}/qna", EVENT_CODE, SLUG))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.posts[0].removed", is(true)))
-                .andExpect(jsonPath("$.posts[0].body", nullValue()))
-                .andExpect(jsonPath("$.posts[0].postedByUsername", nullValue()));
+                .andExpect(jsonPath("$.posts.length()", is(0)));
+    }
+
+    @Test
+    @DisplayName("Removed question drops its answers; a removed answer drops only itself")
+    void should_dropRemovedPosts_andOrphanedAnswers() throws Exception {
+        SessionQnaWindow window = openWindow(QnaWindowStatus.FROZEN, Instant.now().minus(1, ChronoUnit.DAYS));
+        // Q1 (removed) + its answer A1 → both must disappear.
+        SessionQnaPost q1 = postRepository.save(SessionQnaPost.builder().windowId(window.getId())
+                .postedByUsername(ATTENDEE).body("q1").removedAt(Instant.now()).build());
+        postRepository.save(SessionQnaPost.builder().windowId(window.getId())
+                .parentPostId(q1.getId()).postedByUsername(ATTENDEE).body("a1 under removed q").build());
+        // Q2 (live) with a removed answer A2 (gone) and a live answer A3 (kept).
+        SessionQnaPost q2 = postRepository.save(SessionQnaPost.builder().windowId(window.getId())
+                .postedByUsername(ATTENDEE).body("q2").build());
+        postRepository.save(SessionQnaPost.builder().windowId(window.getId())
+                .parentPostId(q2.getId()).postedByUsername(ATTENDEE).body("a2 removed")
+                .removedAt(Instant.now()).build());
+        postRepository.save(SessionQnaPost.builder().windowId(window.getId())
+                .parentPostId(q2.getId()).postedByUsername(ATTENDEE).body("a3 live").build());
+
+        // Only Q2 + A3 survive.
+        mockMvc.perform(get("/api/v1/events/{e}/sessions/{s}/qna", EVENT_CODE, SLUG))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.posts.length()", is(2)))
+                .andExpect(jsonPath("$.posts[0].body", is("q2")))
+                .andExpect(jsonPath("$.posts[1].body", is("a3 live")));
     }
 
     // ==================== AC5/AC6: scheduled freeze job ====================
@@ -400,24 +424,20 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
     // ==================== Helpers ====================
 
     /**
-     * Seed the cross-service rows the Q&A poster-enrichment native query reads: a company, the
-     * poster's user_profiles row (with the show-company privacy flag), and an ASSOCIATED company
-     * logo. These live in CUMS-owned tables stubbed for the EMS test container.
+     * Seed the cross-service rows the Q&A poster-enrichment native query reads: the company (with
+     * its denormalized {@code logo_url}) and the poster's user_profiles row (with the show-company
+     * privacy flag). These live in CUMS-owned tables stubbed for the EMS test container. The query
+     * reads {@code companies.logo_url} directly (the column the app maintains), joining
+     * {@code companies.name = user_profiles.company_id}.
      */
     private void seedAuthor(String username, String firstName, String lastName, String companyKey,
                             boolean showCompany, String companyDisplayName, String logoUrl) {
-        java.util.UUID companyId = java.util.UUID.randomUUID();
-        jdbcTemplate.update("INSERT INTO companies (id, name, display_name) VALUES (?, ?, ?)",
-                companyId, companyKey, companyDisplayName);
+        jdbcTemplate.update("INSERT INTO companies (name, display_name, logo_url) VALUES (?, ?, ?)",
+                companyKey, companyDisplayName, logoUrl);
         jdbcTemplate.update(
                 "INSERT INTO user_profiles (username, company_id, first_name, last_name, settings_show_company) "
                         + "VALUES (?, ?, ?, ?, ?)",
                 username, companyKey, firstName, lastName, showCompany);
-        jdbcTemplate.update(
-                "INSERT INTO logos (upload_id, s3_key, cloudfront_url, file_extension, file_size, mime_type, "
-                        + "status, associated_entity_type, associated_entity_id) "
-                        + "VALUES (?, ?, ?, 'png', 1024, 'image/png', 'ASSOCIATED', 'COMPANY', ?)",
-                "upl-" + companyKey, "logos/" + companyKey + ".png", logoUrl, companyId.toString());
     }
 
     private SessionQnaWindow openWindow(QnaWindowStatus status, Instant closesAt) {

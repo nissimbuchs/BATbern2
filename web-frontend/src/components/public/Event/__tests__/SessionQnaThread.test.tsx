@@ -15,6 +15,21 @@ vi.mock('@/hooks/useAuth/useAuth', () => ({
   useAuth: vi.fn(),
 }));
 
+// SpeakerDisplay (portrait + name + company logo) has its own tests and lazy-loads the portrait
+// via network hooks; here we stub it to assert SessionQnaThread feeds it the right poster fields.
+vi.mock('@/components/public/Event/SpeakerDisplay', () => ({
+  SpeakerDisplay: ({ speaker }: { speaker: Record<string, string | undefined> }) => (
+    <div data-testid="qna-post-author">
+      <span>
+        {speaker.firstName} {speaker.lastName}
+      </span>
+      {speaker.companyLogoUrl && (
+        <img alt={speaker.companyDisplayName ?? ''} src={speaker.companyLogoUrl} />
+      )}
+    </div>
+  ),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
@@ -129,6 +144,30 @@ describe('SessionQnaThread', () => {
     expect(screen.getByTestId('qna-count')).toHaveTextContent('1');
   });
 
+  it('excludes removed (tombstoned) questions from the count badge', () => {
+    mockThread('FROZEN', [
+      {
+        id: 'p1',
+        parentPostId: null,
+        postedByUsername: 'jane',
+        body: 'A live question',
+        removed: false,
+        createdAt: '',
+      },
+      {
+        id: 'p2',
+        parentPostId: null,
+        postedByUsername: null,
+        body: null,
+        removed: true,
+        createdAt: '',
+      },
+    ]);
+    mockAuth(false);
+    renderThread();
+    expect(screen.getByTestId('qna-count')).toHaveTextContent('1');
+  });
+
   it('shows an OPEN badge and the question form for a logged-in user once expanded', () => {
     mockThread('OPEN', []);
     mockAuth(true);
@@ -180,10 +219,18 @@ describe('SessionQnaThread', () => {
     expect(screen.getByText('Archived question')).toBeInTheDocument();
   });
 
-  it('renders removed posts as a tombstone once expanded', () => {
+  it('does not render removed posts at all (completely dropped, not tombstoned)', () => {
     mockThread('FROZEN', [
       {
         id: 'p1',
+        parentPostId: null,
+        postedByUsername: 'jane',
+        body: 'A live question',
+        removed: false,
+        createdAt: '',
+      },
+      {
+        id: 'p2',
         parentPostId: null,
         postedByUsername: null,
         body: null,
@@ -194,7 +241,9 @@ describe('SessionQnaThread', () => {
     mockAuth(false);
     renderThread();
     expandThread();
-    expect(screen.getByTestId('qna-tombstone')).toHaveTextContent('Removed by an organizer');
+    expect(screen.queryByTestId('qna-tombstone')).not.toBeInTheDocument();
+    expect(screen.getByText('A live question')).toBeInTheDocument();
+    expect(screen.getAllByTestId('qna-post')).toHaveLength(1);
   });
 
   it('shows a takedown button for organizers and calls remove once expanded', () => {

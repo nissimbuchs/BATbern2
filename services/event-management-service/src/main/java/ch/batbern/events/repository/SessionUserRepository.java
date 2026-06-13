@@ -185,10 +185,7 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
             + "up.profile_picture_url AS profilePictureUrl, "
             + "up.company_id AS companyId, "
             + "COALESCE(c.display_name, c.name, up.company_id) AS companyDisplayName, "
-            + "(SELECT l.cloudfront_url FROM logos l "
-            + " WHERE l.associated_entity_id = c.id::text "
-            + "   AND l.associated_entity_type = 'COMPANY' "
-            + " LIMIT 1) AS companyLogoUrl "
+            + "c.logo_url AS companyLogoUrl "
             + "FROM user_profiles up "
             + "LEFT JOIN companies c ON c.name = up.company_id "
             + "WHERE up.username IN :usernames",
@@ -209,10 +206,7 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
             + "up.last_name AS lastName, "
             + "up.settings_show_company AS showCompany, "
             + "COALESCE(c.display_name, c.name, up.company_id) AS companyDisplayName, "
-            + "(SELECT l.cloudfront_url FROM logos l "
-            + " WHERE l.associated_entity_id = c.id::text "
-            + "   AND l.associated_entity_type = 'COMPANY' "
-            + " LIMIT 1) AS companyLogoUrl "
+            + "c.logo_url AS companyLogoUrl "
             + "FROM user_profiles up "
             + "LEFT JOIN companies c ON c.name = up.company_id "
             + "WHERE up.username IN :usernames",

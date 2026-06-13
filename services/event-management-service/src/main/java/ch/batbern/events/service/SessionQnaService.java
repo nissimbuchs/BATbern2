@@ -243,16 +243,26 @@ public class SessionQnaService {
     private QnaWindowResponse toWindowResponse(SessionQnaWindow window) {
         List<SessionQnaPost> postEntities =
                 postRepository.findByWindowIdOrderByCreatedAtAsc(window.getId());
-        // Enrich each (non-removed) poster with display name + company logo in ONE batched,
-        // anonymous-safe local DB query (the Q&A GET is public — no JWT for UserApiClient).
-        Set<String> authorUsernames = postEntities.stream()
+        // A taken-down post is removed from the thread entirely (not shown as a tombstone). When a
+        // QUESTION is removed, its answers are orphaned and dropped with it.
+        Set<UUID> removedQuestionIds = postEntities.stream()
+                .filter(p -> p.isRemoved() && p.getParentPostId() == null)
+                .map(SessionQnaPost::getId)
+                .collect(Collectors.toSet());
+        List<SessionQnaPost> visible = postEntities.stream()
                 .filter(p -> !p.isRemoved())
+                .filter(p -> p.getParentPostId() == null
+                        || !removedQuestionIds.contains(p.getParentPostId()))
+                .toList();
+        // Enrich each poster with display name + company logo in ONE batched, anonymous-safe local
+        // DB query (the Q&A GET is public — no JWT for UserApiClient).
+        Set<String> authorUsernames = visible.stream()
                 .map(SessionQnaPost::getPostedByUsername)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<String, QnaAuthorProjection> portraits = loadAuthorPortraits(authorUsernames);
         List<QnaPostResponse> posts =
-                postEntities.stream().map(p -> toPostResponse(p, portraits)).toList();
+                visible.stream().map(p -> toPostResponse(p, portraits)).toList();
         return new QnaWindowResponse(window.getStatus().name(), window.getOpensAt(),
                 window.getClosesAt(), posts);
     }
