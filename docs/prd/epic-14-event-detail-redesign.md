@@ -314,12 +314,13 @@ prerequisite-validation decisions.)_
   `acceptedCount >= minSlots`); (c) **workflow-action** → underlying field/state change
   (e.g. `topicCode` set; `workflowState` advanced); (d) **event-day** → no done-state (live
   actions, shown while in the FR12 window). Each "no-signal-yet" card MUST be resolved.
-- **AR4 (Venue-booking completion signal — OPEN decision):** "Book the venue for the next ~2
-  years" has **no data source today** that says "booked". Resolve to either (a) a tickable task
-  the organizer marks complete, or (b) a derived/added venue-booking record. NB the seeded
-  *Venue Booking* template triggers at `TOPIC_SELECTION` (90 days before) — the spec also frames
-  it as annual forward-planning at `EVENT_COMPLETED`; reconcile these two framings during story
-  detailing. (See Open Questions.)
+- **AR4 (Venue-booking completion signal — RESOLVED 2026-06-13):** the card is **task-backed** by
+  the **already-seeded `Venue Booking` task** (`V22`: trigger `TOPIC_SELECTION`, due `−90` days,
+  carries a `status`). It surfaces **per-event in the `TOPIC_SELECTION`/early window** and disappears
+  when that task's `status === 'completed'` — exactly the task-backed detector (AR3 type a). **No new
+  backend, no derived record** (frontend-only, NFR9-safe). The annual "book the next ~2 years"
+  framing is **not** modelled as a separate card in this epic (deferred). _(Decision: Nissim,
+  2026-06-13.)_
 - **AR5 (Slot-assignment rework):** Rework `DragDropSlotAssignment` from a `100vh` 3-column layout
   to a **2-column in-tab layout** with the actions hoisted into a top bar; **drop the
   viewport-lock**, **remove the separate `/slot-assignment` route**, no overlay fallback.
@@ -507,21 +508,32 @@ while de-tangling Speakers, bringing slot assignment in-tab, consolidating outbo
 making the page mobile-usable. **Delivered frontend-only against the shared prod backend** for
 preview on `beta.batbern.ch` before promotion to `www`.
 
-**Cross-cutting acceptance constraints on EVERY story (do not restate per story unless sharpened):**
-- **NFR1 — No silent consequential actions:** any drag/shortcut that would provision a Cognito
+**Definition of Done — cross-cutting acceptance constraints on EVERY story.**
+> **MANDATORY for story detailing:** `/bmad-create-story` MUST copy this checklist verbatim into the
+> acceptance criteria of every UI-bearing story in this epic (not merely reference it here). Each box
+> is an independently verifiable AC; a story is not "done" until every applicable box has a passing
+> test or an explicit, justified N/A. This block exists because a once-declared constraint is reliably
+> skipped during implementation — so it is materialized per story.
+
+- [ ] **NFR1 — No silent consequential actions:** any drag/shortcut that would provision a Cognito
   account or send email opens the **same confirm/modal as the explicit button**. *Staging is
-  production* — no test/E2E may send real comms or leave data behind.
-- **NFR5 — i18n ×10:** every new/changed user-facing string ships in all 10 locales
-  (`de,en,fr,it,rm,es,fi,nl,ja,gsw-BE`) via `useTranslation()`, EN+DE first-class.
-- **NFR7 — Accessibility:** new interactive surfaces stay keyboard-operable + screen-reader-labelled
-  (WCAG 2.1 AA).
-- **NFR8 — Conventions:** service layer only (no direct `fetch`), generated types, `config` objects,
-  `@/` alias.
-- **NFR9 / AR9 — Beta-first / dual-serve:** the change is frontend-only; this epic introduces **no
-  backend changes** (all data sources already exist — `taskService`, `useEvent` includes,
-  `useSendReminder`, publishing/registration endpoints). If any additive backend need is discovered,
-  it must be optional + backward-compatible so the old `www` frontend keeps working. Components are
-  **recomposed**, content unchanged.
+  production* — no test/E2E may send real comms or leave data behind. _(Test: the action surfaces the
+  confirm dialog before any side-effect; E2E uses no real recipients.)_
+- [ ] **NFR5 — i18n ×10:** every new/changed user-facing string is added in **all 10 locales**
+  (`de,en,fr,it,rm,es,fi,nl,ja,gsw-BE`) via `useTranslation()`, EN+DE first-class. _(Test: no
+  hardcoded strings; a locale-completeness check covers the new keys across all 10 files.)_
+- [ ] **NFR7 — Accessibility:** new interactive surfaces (tab dim/lock, kanban drag, metric-tile
+  deep-links, topic overlay, bottom-sheet nav, segmented controls) are **keyboard-operable + screen-
+  reader-labelled**, WCAG 2.1 AA (Epic 6 baseline). _(Test: keyboard-path + role/aria assertions for
+  each new interactive element.)_
+- [ ] **NFR8 — Conventions:** service layer only (no direct `fetch`/`axios` in components), generated
+  types from `src/types/generated/`, `config` objects (no `process.env`), `@/` alias.
+- [ ] **NFR9 / AR9 — Beta-first / dual-serve:** the change is **frontend-only**; this epic introduces
+  **no backend changes** (all data sources already exist — `taskService`, `useEvent` includes,
+  `useSendReminder`, the AI-assist endpoints, publishing/registration endpoints). If any additive
+  backend need is discovered, it must be **optional + backward-compatible** so the old `www` frontend
+  keeps working. Components are **recomposed**, content unchanged. _(Verify: the story's diff touches
+  only `web-frontend/`; if not, the backend delta is additive + the old frontend still passes.)_
 
 > **Implementation seam — the 8-tab shell mounts existing components (Phase A), later phases upgrade
 > internals.** Phase A establishes the 8 tab slots and re-groups today's components into them
@@ -565,6 +577,14 @@ SLOT_ASSIGNMENT, AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED` — **
 **Then** every state→tab pairing is asserted, and the "finalized" emphasis (final newsletter /
 catering offer / print agenda) is attributed to `AGENDA_PUBLISHED` (the 8-state reconciliation),
 not a separate state.
+
+**And** while authoring the map, the **stale "9-step" JSDoc** at the top of `workflowState.ts`
+(and the `// step N/9` examples on `getWorkflowProgress`/`getWorkflowStepNumber`) is corrected to
+8 — _(already done 2026-06-13; assert it stays 8 so it can't regress)_.
+
+> **Enabler-story note:** this is a **pure foundation story** — it ships a declarative map + helper
+> with **no user-visible UI of its own** (it is not independently demoable; its value is realized
+> when 14.A.2/14.A.3 consume it). Its "done" is the helper + full unit coverage, not a screenshot.
 
 #### Story 14.A.2: 8-tab IA shell recomposing existing components
 
@@ -673,6 +693,24 @@ the relevant tab ("Open Communications →", "Open Publishing →") (FR9).
 **When** clicked
 **Then** the page switches to the target tab (and sub-view where applicable) without a route change.
 
+**Given** the task list is empty (no open tasks for this state) OR the task fetch fails
+**When** the attention region renders
+**Then** an empty case shows a friendly "You're all caught up — nothing needs your attention right
+now" state (not a blank region), and a fetch error shows an inline error + retry (the rest of the
+Cockpit — spine, metrics — still renders).
+
+**Given** the "＋ Add task" create call fails
+**When** the organizer submits
+**Then** the error is surfaced inline (no silent failure), the dialog stays open with the entered
+values, and no phantom card is added to the list.
+
+> **No forward dependency on Phase C.** Deep-link targets are addressed against the **sub-view
+> mechanism that already exists today** (`EventSpeakersTab` already has kanban/table/sessions
+> sub-views), not the renamed Pool/Agenda/Slots toggle that Phase C (14.C.1) formalizes. Use a
+> stable sub-view key (e.g. `'pool' | 'agenda' | 'slots'`) that maps to the current sub-views now
+> and is preserved by 14.C.1's relabel — so 14.B.2/14.B.5 are correct whether or not Phase C has
+> landed. 14.C.1 adopts the same keys rather than introducing new ones.
+
 #### Story 14.B.3: Per-card completion-signal model (done cards disappear)
 
 As an organizer,
@@ -699,10 +737,18 @@ awaiting review; hide "outstanding presentations" when
 **When** unit-tested
 **Then** each predicate is covered by a passing test for both its open and its done state.
 
-> **Open item carried to story detailing — venue-booking signal (AR4):** "book the venue for the
-> next ~2 years" has no data source that says "booked", and its trigger framing is split
-> (`TOPIC_SELECTION`@90d seeded template vs `EVENT_COMPLETED` forward-planning). Resolve to a
-> tickable task or a derived record before this card is added. (See Open Questions.)
+**Given** the §12.1 exhaustiveness decision (Nissim, 2026-06-13 — **full table required**)
+**When** Phase B starts
+**Then** a **complete card-by-card table — _card → completion predicate → data source_ — covering
+EVERY card in the prototype's `STATES` map** is enumerated as a **prerequisite to building 14.B.3**
+(not filled in lazily). Every card resolves to one of the four typed detectors with a concrete
+predicate/data source; no card is left as "no signal yet."
+
+**Given** the venue-booking card (AR4 — RESOLVED)
+**When** it is added to the table
+**Then** it is **task-backed** by the existing seeded `Venue Booking` task (trigger
+`TOPIC_SELECTION`, due `−90d`): shown in the early window, hidden when `status === 'completed'`. No
+new backend; the annual forward-planning framing is deferred (not a card in this epic).
 
 #### Story 14.B.4: Event-day virtual cards (Start Presentation / Live Control)
 
@@ -751,6 +797,12 @@ waitlist), 🎤 Speakers (`confirmedSpeakersCount / maxSpeakerSlots`), 📋 Mate
 **Then** it deep-links: Registrations → Registrations tab; Speakers → Speakers & Agenda · Pool;
 Materials → Speakers & Agenda · Agenda; Agenda → Speakers & Agenda · Slots.
 
+**Given** Phase C may not have landed yet (no forward dependency)
+**When** a tile deep-links into a Speakers & Agenda sub-view
+**Then** it targets the **existing** sub-view via the stable key (`'pool' | 'agenda' | 'slots'`) that
+maps to today's kanban/table/sessions sub-views — so the deep-link is correct before *and* after
+14.C.1's relabel (same keys, see 14.B.2 note).
+
 ---
 
 ### Phase C — Speakers & Agenda
@@ -767,6 +819,9 @@ So that the pool, the agenda, and slotting are one place instead of four scatter
 **When** the tab is reworked
 **Then** a summary bar (accepted/min progress, acceptance rate, "Add speakers") sits above a
 **3-way sub-view toggle** labelled **Pool · Agenda · Slots** (FR14).
+**And** the toggle reuses the **stable sub-view keys** (`'pool' | 'agenda' | 'slots'`) that
+14.B.2/14.B.5 already deep-link to (mapping to today's kanban/table/sessions) — this is a relabel,
+not a new key set, so existing Cockpit deep-links keep working.
 **And** the sub-view selection is preserved when the organizer arrives via a Cockpit deep-link
 (e.g. Materials → Agenda).
 
@@ -868,9 +923,27 @@ Pending 2") (FR23, UX-DR7).
 **Then** it renders **in-tab** as the Slots sub-view with the `100vh`/viewport-lock removed, no
 overlay, and the separate `/slot-assignment` route + `SlotAssignmentPage` removed (AR5).
 
-**Given** a bookmark/link to the old `/slot-assignment` route
+**Given** the route is retired, every **in-app navigator** to `/slot-assignment` must be repointed
+to the in-tab Slots sub-view (none may become a dead navigation) — specifically:
+- `ValidationDashboard.tsx:91` (`navigate(.../slot-assignment)` from the "N sessions not yet
+  slotted" Publishing validation row) → switch to Speakers & Agenda · Slots.
+- `EventSpeakersTab.tsx:325` (plain `navigate(.../slot-assignment)`) → switch to the Slots sub-view
+  (in-tab, no route change).
+- `EventSpeakersTab.tsx:266` (`navigate(.../slot-assignment?speakerId=${speaker.id})`) → switch to
+  the Slots sub-view **carrying the speaker context** the `?speakerId=` query param used to forward
+  (so a QUALITY_REVIEWED "⚠ Needs a slot →" jump still focuses that speaker's session — FR17).
+- The callbacks that feed those handlers — `SpeakerStatusLanes.tsx:120` (the "needs a slot" action
+  on a QUALITY_REVIEWED card) and the `SpeakerDetailDrawer.tsx:266` slot button — must invoke the
+  in-tab sub-view switch via the same wiring, not a route navigation.
+**When** any of those actions is triggered
+**Then** the page switches to Speakers & Agenda · Slots **in-tab** (no route change, speaker context
+preserved where applicable) — verified by a test per call site.
+
+**Given** an external bookmark/link to the old `/slot-assignment` route (incl. a stale
+`?speakerId=`)
 **When** opened
-**Then** it redirects to the event's Speakers & Agenda · Slots sub-view (no dead link).
+**Then** it redirects to the event's Speakers & Agenda · Slots sub-view (preserving the speaker
+context if present), so old links never dead-end.
 
 ---
 
@@ -949,6 +1022,12 @@ So that ~200 registrants don't make the tab sluggish.
 **Then** it is **client-side over the existing list payload** by default; if a server-side paginated
 param is introduced it is **optional** and the old `www` frontend (which ignores it) keeps working.
 
+**Given** boundary cases (zero registrants; a filtered/searched result set smaller than one page;
+the last partial page; the active filter changing while on page > 1)
+**When** the list re-renders
+**Then** the counter reads correctly ("Showing 0 of 0" / "Showing 1–7 of 7"), pagination resets to
+page 1 on a filter/search change, and no empty trailing page is shown.
+
 ---
 
 ### Phase E — Communications
@@ -972,6 +1051,14 @@ audience (FR29).
 **When** any audience is active
 **Then** it offers template select, preview-language picker, preview iframe, and a send **confirm
 dialog** showing recipient count + template + event title (FR34).
+
+**Given** the common compose form (applies to ALL four audiences — 14.E.1/14.E.2/14.E.3)
+**When** the recipient set is **empty** (e.g. no active registrants / no speakers / unconfigured
+venue contact), OR a **send call fails**, OR a **send is in flight**
+**Then** the Send action is **disabled with a reason** when there are zero recipients; a failed send
+surfaces an **inline error + retry** without losing the composed content; and the button shows a
+**pending/disabled state during the request** so a double-click can't double-send (NFR1 — no
+silent/duplicate consequential action).
 
 **Given** the Newsletter audience
 **Then** it reuses the existing newsletter behaviour (global list, `NEWSLETTER` template, organizer-only
@@ -1063,7 +1150,13 @@ address) (FR38).
 **Then** "**Preview public page**" is removed (Publishing already has a live preview) and "**Enrol
 organizers & partners**" is absent here (moved to Registrations in 14.D.1) (FR39).
 
-#### Story 14.F.3: Topic selection as a focused overlay (pick → pin → brainstorm)
+**Given** ✨ AI-generate is **existing capability** (RESOLVED by code 2026-06-13 — Story 10.16:
+endpoints `/events/{code}/ai/description`, `/ai/theme-image`, `/ai/theme-image/apply`; hooks
+`useAiGenerateDescription` / `useAiGenerateThemeImage` / `useAiApplyThemeImage`; `AiAssistDrawer`
+already used by `EventOverviewTab` + `EventForm`)
+**When** the Details tab surfaces the AI-generate actions
+**Then** it **recomposes the existing `AiAssistDrawer` / hooks** onto Details — **no new backend**,
+NFR9-safe. This is a re-surfacing, not a new capability.
 
 As an organizer,
 I want choosing a topic and brainstorming speakers to be one focused overlay from Details,
@@ -1193,26 +1286,26 @@ So that the table is usable on a narrow screen.
 
 ## Open Questions
 
-**1. How do we know the venue is "booked"? (Story 14.B.3 / AR4)**
-The Cockpit only works if a card disappears once its work is done, and for almost every card we
-can detect that from existing data or a task status. The one exception is venue booking. There's
-no field anywhere today that says "the venue is booked", and the way we talk about it is split:
-the seeded task template fires it at Topic Selection (90 days before the event), but the spec also
-frames it as an annual "book the next two years ahead" job that surfaces after the event. Before
-we add this card we need to decide whether the organizer simply ticks off a task to mark it done,
-or whether we record an actual venue-booking somewhere we can check — and which of the two timings
-(per-event at 90 days, or annual forward-planning) we actually mean.
+_All three open questions are **RESOLVED** (2026-06-13). Kept here as a decision record._
 
-**2. Is "✨ AI-generate" for the theme image and description new or existing? (Story 14.F.2)**
-The Details tab reproduces the prototype's "AI-generate" buttons for the theme image and the event
-description. Today's Overview tab already has an "AI assist drawer", so this may just be a matter of
-re-surfacing what exists. We should confirm the AI-generate actions already work against a real
-endpoint and are simply being recomposed onto the Details tab — and not quietly a new capability,
-which would pull backend work into an otherwise frontend-only, beta-first epic.
+**1. How do we know the venue is "booked"? (Story 14.B.3 / AR4) — ✅ RESOLVED.**
+The card is **task-backed by the already-seeded `Venue Booking` task** (`V22`: trigger
+`TOPIC_SELECTION`, due `−90` days, carries a `status`) — it shows per-event in the early window and
+disappears when that task is marked `completed`. **No new field, no derived record, no backend
+change.** The annual "book the next ~2 years ahead" framing is **deferred** — not modelled as a
+separate card in this epic. _(Decision: Nissim, 2026-06-13. See AR4 + Story 14.B.3.)_
 
-**3. Does the §12.1 completion-signal table need to be exhaustively enumerated before Phase B starts?**
-Story 14.B.3 defines the per-card "done" detector by card *type* (task-backed, data-derived,
-workflow-action, event-day). The spec asks for a full card-by-card table covering every card in the
-prototype's `STATES` map. We should agree whether enumerating every individual card is a prerequisite
-for starting Phase B, or whether the four typed detectors plus the named predicates already listed
-are enough to build against, with the long-tail cards filled in as they're added.
+**2. Is "✨ AI-generate" for the theme image and description new or existing? (Story 14.F.2) — ✅ RESOLVED (existing).**
+Confirmed against the code: AI-generate is **existing capability** (Story 10.16). The endpoints
+`/events/{code}/ai/description`, `/events/{code}/ai/theme-image`, and `/ai/theme-image/apply` exist;
+the frontend hooks `useAiGenerateDescription` / `useAiGenerateThemeImage` / `useAiApplyThemeImage`
+and the `AiAssistDrawer` are already wired into `EventOverviewTab` + `EventForm`. Story 14.F.2
+**recomposes** these onto the Details tab — **no backend work**, the frontend-only / beta-first
+constraint holds. _(Resolved by code inspection, 2026-06-13.)_
+
+**3. Does the §12.1 completion-signal table need to be exhaustively enumerated before Phase B starts? — ✅ RESOLVED (full table first).**
+**Yes — the full card-by-card table is a prerequisite to Phase B.** Before building Story 14.B.3,
+enumerate every card in the prototype's `STATES` map to a _card → completion predicate → data
+source_ row, each resolved to one of the four typed detectors (no card left as "no signal yet").
+The four typed detectors + named predicates are the *method*; the complete enumeration is the
+*deliverable that gates Phase B*. _(Decision: Nissim, 2026-06-13. See Story 14.B.3 ACs.)_

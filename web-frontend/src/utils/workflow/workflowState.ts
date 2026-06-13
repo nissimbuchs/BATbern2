@@ -12,9 +12,10 @@
 import type { TFunction } from 'i18next';
 
 /**
- * Complete 9-step workflow state order for BATbern events.
+ * Complete 8-step workflow state order for BATbern events.
  * States progress linearly from CREATED through ARCHIVED.
- * Updated for Story 5.7 - Consolidated from 16 states to 9 states.
+ * Updated for Story 5.7 - consolidated from 16 states to 9; then to 8 in V82
+ * (AGENDA_FINALIZED removed — AGENDA_PUBLISHED transitions directly to EVENT_LIVE).
  */
 export const WORKFLOW_STATE_ORDER = [
   'CREATED',
@@ -49,8 +50,8 @@ const LATE_STAGE_STATES: readonly string[] = ['EVENT_LIVE', 'EVENT_COMPLETED', '
  * @returns Progress percentage (0-100), or 0 if state is invalid
  *
  * @example
- * getWorkflowProgress('CREATED') // Returns 11 (step 1/9)
- * getWorkflowProgress('ARCHIVED') // Returns 100 (step 9/9)
+ * getWorkflowProgress('CREATED') // Returns 13 (step 1/8)
+ * getWorkflowProgress('ARCHIVED') // Returns 100 (step 8/8)
  * getWorkflowProgress('INVALID') // Returns 0
  */
 export function getWorkflowProgress(workflowState: string): number {
@@ -116,14 +117,14 @@ export function getWorkflowStateLabel(state: string, t: TFunction): string {
 }
 
 /**
- * Get the step number for a workflow state (1-9).
+ * Get the step number for a workflow state (1-8).
  *
  * @param state - The workflow state
  * @returns Step number (1-indexed), or 0 if state is invalid
  *
  * @example
  * getWorkflowStepNumber('CREATED') // Returns 1
- * getWorkflowStepNumber('ARCHIVED') // Returns 9
+ * getWorkflowStepNumber('ARCHIVED') // Returns 8
  * getWorkflowStepNumber('INVALID') // Returns 0
  */
 export function getWorkflowStepNumber(state: string): number {
