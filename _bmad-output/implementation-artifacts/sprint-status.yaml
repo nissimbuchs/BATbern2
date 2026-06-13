@@ -235,10 +235,13 @@ development_status:
   #   Consequence: 13-2/13-3/13-4 COLLAPSED into ONE unified migration vetted as a unit on
   #   feature/epic-13-spring-boot-4 before a single merge (the shared-kernel binary-compat concern is moot).
   # 13-1 DONE + pushed on feature/epic-13-1-zero-deprecation-baseline (mergeable independently).
-  # Unified migration: entire estate (main + test, 7 modules) COMPILES GREEN on SB 4.0.7; at Phase 3 =
-  #   running Testcontainers suites. Open runtime issue: Flyway not autoconfiguring in SB4 test context
-  #   (spring-boot-flyway module off classpath) → schema-validation failures. Then Bruno/Playwright +
-  #   flip Jackson-2-compat OFF. Jackson-2-compat flag is ON until the final closeout step.
+  # Unified migration (commits 82581006 + 921dcdaa): entire estate's unit/integration suites now PASS on
+  #   SB 4.0.7 — shared-kernel, event-management (1622/1623; 1 pre-existing-flaky WS test), CUMS 732/732,
+  #   partner, speaker, attendee (no tests), api-gateway all green (from 905 fails in EMS alone). Phase-3
+  #   runtime fixes: spring-boot-flyway autoconfig module; MockMvcSecuritySetup (SB4 dropped springSecurity()
+  #   auto-wiring); preferred-json-mapper=jackson2 + spring.jackson→jackson2 relocation; spring-cloud-aws 4.0.2;
+  #   resilience4j -spring-boot4; gateway DataSource autoconfigure.exclude; @AutoConfigureTestRestTemplate.
+  #   REMAINING: Bruno (payload-diff) + Playwright gates, then flip Jackson-2-compat OFF (final step).
   epic-13: in-progress
   13-1-zero-deprecation-baseline-compat-matrix: done
   13-2-shared-kernel-pilot-service-sb4: in-progress      # collapsed into unified migration (feature/epic-13-spring-boot-4)
