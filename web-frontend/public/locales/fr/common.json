@@ -630,7 +630,8 @@
       "REGISTRATION": "Inscription",
       "TASK_REMINDER": "Rappels de tâches",
       "NEWSLETTER": "Newsletter",
-      "VENUE_COORDINATION": "Lieu & Restauration"
+      "VENUE_COORDINATION": "Lieu & Restauration",
+      "REGISTRANT_NOTICE": "Infos participants"
     },
     "layoutKey": "Mise en page",
     "standalone": "Aucune (autonome)",

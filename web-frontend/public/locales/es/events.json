@@ -12,7 +12,8 @@
       "publishing": "Publicación",
       "newsletter": "Newsletter",
       "settings": "Configuración",
-      "photos": "Fotos"
+      "photos": "Fotos",
+      "registrantNotices": "Avisos a inscritos"
     },
     "tabsAriaLabel": "Navegación de la página de evento",
     "overview": {
@@ -212,6 +213,25 @@
       "confirmSend": "Sí, enviar",
       "sentSuccess": "Enviado a {{count}} destinatario(s).",
       "sentFailed": "Error de envío: {{message}}"
+    },
+    "registrantNotices": {
+      "title": "Avisos a inscritos",
+      "preview": "Vista previa",
+      "send": "Enviar a inscritos",
+      "locale": "Idioma de vista previa",
+      "templateSelect": "Plantilla",
+      "confirmTitle": "¿Enviar a inscritos?",
+      "previewTitle": "Vista previa del correo",
+      "description": "Envía un aviso puntual (p. ej. «las diapositivas están en línea») a los inscritos de este evento. Los destinatarios son los inscritos activos, no los suscriptores del boletín, y cada uno lo recibe en su idioma.",
+      "confirmBody": "¿Enviar «{{templateKey}}» a {{count}} inscritos activos de «{{eventTitle}}»? Cada uno lo recibe en su idioma.",
+      "recipientCount": "{{count}} inscritos activos",
+      "noTemplates": "Aún no hay plantilla de aviso a inscritos para este idioma.",
+      "error": "Algo salió mal. Inténtalo de nuevo.",
+      "sending": "Enviando… {{sent}} / {{total}}",
+      "sendResult": "Enviado a {{sent}} de {{total}} inscritos.",
+      "sendResultSkipped": "{{count}} sin dirección de correo registrada (omitidos).",
+      "sendResultFailed": "{{count}} con error.",
+      "alreadySent": "Este aviso ya se ha enviado (o hay un envío en curso) para este evento."
     }
   },
   "dashboard": {

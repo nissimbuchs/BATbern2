@@ -630,7 +630,8 @@
       "REGISTRATION": "Inscripción",
       "TASK_REMINDER": "Recordatorios de tareas",
       "NEWSLETTER": "Boletín",
-      "VENUE_COORDINATION": "Lugar y Catering"
+      "VENUE_COORDINATION": "Lugar y Catering",
+      "REGISTRANT_NOTICE": "Avisos a inscritos"
     },
     "layoutKey": "Diseño",
     "standalone": "Ninguno (independiente)",

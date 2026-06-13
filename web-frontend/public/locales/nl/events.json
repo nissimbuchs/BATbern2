@@ -12,7 +12,8 @@
       "publishing": "Publicatie",
       "newsletter": "Nieuwsbrief",
       "settings": "Instellingen",
-      "photos": "Foto's"
+      "photos": "Foto's",
+      "registrantNotices": "Deelnemersberichten"
     },
     "tabsAriaLabel": "Navigatie evenementenpagina",
     "overview": {
@@ -212,6 +213,25 @@
       "confirmSend": "Ja, versturen",
       "sentSuccess": "Verzonden naar {{count}} ontvanger(s).",
       "sentFailed": "Verzenden mislukt: {{message}}"
+    },
+    "registrantNotices": {
+      "title": "Deelnemersberichten",
+      "preview": "Voorbeeld",
+      "send": "Naar deelnemers sturen",
+      "locale": "Voorbeeldtaal",
+      "templateSelect": "Sjabloon",
+      "confirmTitle": "Naar deelnemers sturen?",
+      "previewTitle": "E-mailvoorbeeld",
+      "description": "Stuur een eenmalig bericht (bijv. “de slides staan online”) naar de deelnemers van dit evenement. Ontvangers zijn de actieve deelnemers — niet de nieuwsbriefabonnees — en iedereen ontvangt het in de eigen taal.",
+      "confirmBody": "«{{templateKey}}» naar {{count}} actieve deelnemers van «{{eventTitle}}» sturen? Iedereen ontvangt het in de eigen taal.",
+      "recipientCount": "{{count}} actieve deelnemers",
+      "noTemplates": "Nog geen deelnemersbericht-sjabloon voor deze taal.",
+      "error": "Er ging iets mis. Probeer het opnieuw.",
+      "sending": "Verzenden… {{sent}} / {{total}}",
+      "sendResult": "Verstuurd naar {{sent}} van {{total}} deelnemers.",
+      "sendResultSkipped": "{{count}} zonder e-mailadres in het bestand (overgeslagen).",
+      "sendResultFailed": "{{count}} mislukt.",
+      "alreadySent": "Dit bericht is al verstuurd (of een verzending is bezig) voor dit evenement."
     }
   },
   "dashboard": {

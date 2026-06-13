@@ -108,6 +108,7 @@ class SlidesOnlineEmailServiceTest {
     @Test
     @DisplayName("sendSlidesOnline: in-progress send → 409 DuplicateNewsletterSendException")
     void sendSlidesOnline_inProgress_throwsDuplicate() {
+        stubIsRegistrantNoticeTemplate();
         when(sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(
                 event.getId(), "slides-online", "IN_PROGRESS"))
                 .thenReturn(Optional.of(NewsletterSend.builder().id(UUID.randomUUID()).build()));
@@ -121,6 +122,7 @@ class SlidesOnlineEmailServiceTest {
     @Test
     @DisplayName("sendSlidesOnline: already-sent → 409 SlidesOnlineAlreadySentException")
     void sendSlidesOnline_alreadySent_throws() {
+        stubIsRegistrantNoticeTemplate();
         when(sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(
                 event.getId(), "slides-online", "IN_PROGRESS")).thenReturn(Optional.empty());
         when(sendRepository.existsByEventIdAndTemplateKeyAndStatusIn(
@@ -133,6 +135,7 @@ class SlidesOnlineEmailServiceTest {
     @Test
     @DisplayName("sendSlidesOnline: no prior send → creates audit row + returns PENDING with registrant count")
     void sendSlidesOnline_happy_returnsPending() {
+        stubIsRegistrantNoticeTemplate();
         when(sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(
                 event.getId(), "slides-online", "IN_PROGRESS")).thenReturn(Optional.empty());
         when(sendRepository.existsByEventIdAndTemplateKeyAndStatusIn(
@@ -155,7 +158,7 @@ class SlidesOnlineEmailServiceTest {
         assertThat(resp.getSendId()).isEqualTo(sendId);
         assertThat(resp.getStatus()).isEqualTo("PENDING");
         assertThat(resp.getRecipientCount()).isEqualTo(2);
-        verify(selfMock).executeSlidesOnlineSendAsync(sendId, event);
+        verify(selfMock).executeSlidesOnlineSendAsync(sendId, event, "slides-online");
     }
 
     // ── processSend: recipients, opt-out, counts (AC2, AC3, AC6) ────────────
@@ -179,7 +182,7 @@ class SlidesOnlineEmailServiceTest {
         NewsletterSend send = pendingSend();
         when(sendRepository.findById(sendId)).thenReturn(Optional.of(send));
 
-        service.processSend(sendId, event);
+        service.processSend(sendId, event, "slides-online");
 
         // Two active, non-opted-out recipients → two sends; opted-out skipped.
         verify(emailService, times(2)).sendHtmlEmailSync(anyString(), anyString(), anyString(), any());
@@ -195,6 +198,13 @@ class SlidesOnlineEmailServiceTest {
     // computeIfAbsent interaction that does not reflect production behaviour, so it is omitted.
 
     // ── helpers ─────────────────────────────────────────────────────────────
+
+    /** Make the slides-online template resolve as a REGISTRANT_NOTICE so the send-guard passes. */
+    private void stubIsRegistrantNoticeTemplate() {
+        EmailTemplate t = new EmailTemplate();
+        t.setCategory("REGISTRANT_NOTICE");
+        when(emailTemplateService.findByKeyAndLocale("slides-online", "de")).thenReturn(Optional.of(t));
+    }
 
     private void stubRenderingAndSend() {
         EmailTemplate template = new EmailTemplate();

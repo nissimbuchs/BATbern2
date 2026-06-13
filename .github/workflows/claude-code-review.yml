@@ -43,24 +43,42 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Please review this pull request and provide feedback on:
+            STEP 1 — Load the project's rules BEFORE reviewing. Read both of these files
+            from the checked-out repository and treat them as the standard you review against:
+              1. `_bmad-output/project-context.md` — the distilled, authoritative rules AI
+                 agents and contributors MUST follow in this codebase: scope/architecture
+                 decisions (ADR-003 cross-service identifiers, ADR-004 domain entity design,
+                 ADR-006 OpenAPI contract-first, ADR-009 unified speaker workflow, the
+                 enum value-flow UPPER/lowercase rule, the no-MUI-on-public-pages bundle
+                 boundary, the Flyway never-edit-an-applied-migration rule, the i18n locale
+                 rules, the Testcontainers/PostgreSQL testing rules, auth/JWT patterns, etc.).
+              2. `CLAUDE.md` — style, conventions, and workflow guidance.
+
+            STEP 2 — Review this pull request AGAINST those rules and provide feedback on:
+            - Adherence to project-context.md — call out the specific rule any change
+              violates (e.g. "ADR-003: storing a UUID FK across services", "enum stored
+              UPPER_CASE in DB", "MUI imported on a public page", "edited an applied
+              Flyway migration", "new i18n key missing in some of the 10 locales").
             - Code quality and best practices
             - Potential bugs or issues
             - Performance considerations
             - Security concerns
-            - Test coverage
+            - Test coverage (integration tests must use PostgreSQL/Testcontainers, not H2)
             - Documentation drift: if this PR modifies business logic, scheduler
               behaviour, state machine transitions, or API contracts, check whether
               the relevant docs in docs/architecture/, docs/prd/, or docs/api/ are
               included in the diff. If not, note which docs likely need updating and why.
 
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+            If you cannot read `_bmad-output/project-context.md`, say so explicitly in your
+            review rather than reviewing without it. Be constructive and helpful.
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          # Read/Grep/Glob are allowed so the reviewer can load project-context.md + CLAUDE.md
+          # and inspect any referenced source before commenting.
+          claude_args: '--allowed-tools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
 
   doc-drift-check:
     name: Doc Drift Check

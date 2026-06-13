@@ -630,7 +630,8 @@
       "REGISTRATION": "Ilmoittautuminen",
       "TASK_REMINDER": "Tehtävämuistutukset",
       "NEWSLETTER": "Uutiskirje",
-      "VENUE_COORDINATION": "Tila & Catering"
+      "VENUE_COORDINATION": "Tila & Catering",
+      "REGISTRANT_NOTICE": "Ilmoittautuneiden tiedotteet"
     },
     "layoutKey": "Asettelu",
     "standalone": "Ei mitään (itsenäinen)",

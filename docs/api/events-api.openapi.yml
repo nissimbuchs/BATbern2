@@ -4859,10 +4859,10 @@ paths:
         - name: category
           in: query
           required: false
-          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION)
+          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE)
           schema:
             type: string
-            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION]
+            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE]
         - name: isLayout
           in: query
           required: false
@@ -5698,6 +5698,84 @@ paths:
           description: Event not found
         '409':
           description: A slides-online send is already in progress or has already been sent
+
+  /events/{eventCode}/registrant-notices/preview:
+    post:
+      tags: [Newsletter]
+      summary: Preview a registrant-notice mail in a chosen language (ORGANIZER)
+      description: |
+        Story 7.3 hardening — renders a REGISTRANT_NOTICE-category template (e.g. slides-online)
+        in the chosen preview language and reports how many active registrants would receive it.
+        The actual send still resolves each registrant's own language; this locale is preview-only.
+        Rejects (400) a template that is not REGISTRANT_NOTICE.
+      operationId: previewRegistrantNotice
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrantNoticePreviewRequest'
+      responses:
+        '200':
+          description: Rendered preview + recipient count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrantNoticePreviewResponse'
+        '400':
+          description: Template is not a registrant-notice template
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+
+  /events/{eventCode}/registrant-notices/send:
+    post:
+      tags: [Newsletter]
+      summary: Send a registrant-notice mail to the event's active registrants (ORGANIZER)
+      description: |
+        Story 7.3 hardening — sends a REGISTRANT_NOTICE-category template (e.g. slides-online) to the
+        event's ACTIVE REGISTRANTS (registered/confirmed), NOT the newsletter-subscriber pool. Honours
+        the global newsletter opt-out, resolves the language per recipient (de*/en/else→German), guards
+        against double-send (409), and runs asynchronously. Rejects (400) a non-REGISTRANT_NOTICE template.
+      operationId: sendRegistrantNotice
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrantNoticeSendRequest'
+      responses:
+        '200':
+          description: Registrant-notice send queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlidesOnlineSendResponse'
+        '400':
+          description: Template is not a registrant-notice template
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+        '409':
+          description: A send of this template is already in progress or has already been sent
 
   /events/{eventCode}/newsletter/send:
     post:
@@ -6589,6 +6667,43 @@ components:
           type: integer
           description: Number of active registrants resolved as the recipient base.
 
+    RegistrantNoticePreviewRequest:
+      type: object
+      description: Story 7.3 hardening — request to preview a registrant-notice mail.
+      required: [templateKey]
+      properties:
+        templateKey:
+          type: string
+          description: A REGISTRANT_NOTICE-category template key (e.g. slides-online).
+        locale:
+          type: string
+          enum: [de, en]
+          description: Preview language; defaults to German when omitted/unknown.
+
+    RegistrantNoticeSendRequest:
+      type: object
+      description: Story 7.3 hardening — request to send a registrant-notice mail to registrants.
+      required: [templateKey]
+      properties:
+        templateKey:
+          type: string
+          description: A REGISTRANT_NOTICE-category template key (e.g. slides-online).
+
+    RegistrantNoticePreviewResponse:
+      type: object
+      description: Story 7.3 hardening — rendered preview + active-registrant recipient count.
+      required: [subject, htmlPreview, recipientCount]
+      properties:
+        subject:
+          type: string
+          description: Rendered, variable-substituted subject line.
+        htmlPreview:
+          type: string
+          description: Rendered, layout-merged HTML body for the preview iframe.
+        recipientCount:
+          type: integer
+          description: Number of active registrants (registered/confirmed) who would receive the mail.
+
     NewsletterSendStatusResponse:
       type: object
       required: [id, status, sentCount, failedCount, totalCount, percentComplete]
@@ -6942,7 +7057,7 @@ components:
         category:
           type: string
           description: Template category
-          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION]
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE]
         subject:
           type: string
           nullable: true
@@ -6992,7 +7107,7 @@ components:
         category:
           type: string
           description: Template category
-          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION]
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE]
         subject:
           type: string
           nullable: true

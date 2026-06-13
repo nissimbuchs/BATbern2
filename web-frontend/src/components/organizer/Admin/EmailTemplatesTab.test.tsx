@@ -306,9 +306,10 @@ describe('EmailTemplatesTab', () => {
     expect(select).toBeInTheDocument();
     const combobox = screen.getByRole('combobox');
     await user.click(combobox);
-    // All 5 category options appear in the opened listbox
+    // All 6 category options appear in the opened listbox
+    // (Speaker, Registration, Task Reminders, Newsletter, Venue & Catering, Registrant Notices)
     const options = await screen.findAllByRole('option');
-    expect(options).toHaveLength(5);
+    expect(options).toHaveLength(6);
   });
 
   it('should_renderCategoryToggleGroup_when_desktopViewport', () => {

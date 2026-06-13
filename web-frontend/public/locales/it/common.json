@@ -630,7 +630,8 @@
       "REGISTRATION": "Iscrizione",
       "TASK_REMINDER": "Promemoria attività",
       "NEWSLETTER": "Newsletter",
-      "VENUE_COORDINATION": "Sede & Catering"
+      "VENUE_COORDINATION": "Sede & Catering",
+      "REGISTRANT_NOTICE": "Avvisi iscritti"
     },
     "layoutKey": "Layout",
     "standalone": "Nessuno (autonomo)",

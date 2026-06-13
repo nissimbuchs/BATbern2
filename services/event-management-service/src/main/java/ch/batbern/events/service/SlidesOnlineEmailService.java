@@ -6,6 +6,7 @@ import ch.batbern.events.domain.NewsletterRecipient;
 import ch.batbern.events.domain.NewsletterRecipientId;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.dto.RegistrantNoticePreviewResponse;
 import ch.batbern.events.dto.SlidesOnlineSendResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
@@ -74,8 +75,14 @@ public class SlidesOnlineEmailService {
     static final String TEMPLATE_KEY = "slides-online";
     private static final String LAYOUT_KEY = "batbern-default";
 
-    /** Active registrant statuses that receive the mail (AC2). */
-    static final List<String> ACTIVE_REGISTRANT_STATUSES = List.of("registered", "confirmed");
+    /**
+     * Registrant statuses that receive the mail. Uses the canonical "confirmed/attending" set
+     * ({@code registered} + {@code confirmed} + {@code attended}) — NOT just registered/confirmed:
+     * a registrant notice (e.g. slides-online) is sent POST-event (the seeded task is due event+1d),
+     * by which time real registrants of a completed event are {@code attended}. Excludes
+     * {@code waitlist} (never got a seat) and {@code cancelled}.
+     */
+    static final List<String> ACTIVE_REGISTRANT_STATUSES = Registration.CONFIRMED_STATUSES;
 
     static final String STATUS_PENDING = "PENDING";
     static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
@@ -124,39 +131,94 @@ public class SlidesOnlineEmailService {
      * @throws SlidesOnlineAlreadySentException (409) if a slides-online send already completed
      */
     public SlidesOnlineSendResponse sendSlidesOnline(Event event, String sentByUsername) {
+        return sendRegistrantNotice(event, TEMPLATE_KEY, sentByUsername);
+    }
+
+    /**
+     * Initiate a registrant-notice send for an event's active registrants using any
+     * {@code REGISTRANT_NOTICE}-category template (e.g. {@code slides-online}).
+     *
+     * <p>Creates the audit row (status {@code PENDING}), launches the {@code @Async} worker, and
+     * returns immediately. Guards against double-send per (event, templateKey).
+     *
+     * @throws IllegalArgumentException (400) if the template is not a REGISTRANT_NOTICE template
+     * @throws DuplicateNewsletterSendException (409) if such a send is already IN_PROGRESS
+     * @throws SlidesOnlineAlreadySentException (409) if such a send already completed for the event
+     */
+    public SlidesOnlineSendResponse sendRegistrantNotice(Event event, String templateKey,
+                                                         String sentByUsername) {
+        requireRegistrantNoticeTemplate(templateKey);
         UUID eventId = event.getId();
 
-        // AC5: reuse the in-progress guard, scoped to the slides-online template.
-        sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(eventId, TEMPLATE_KEY, STATUS_IN_PROGRESS)
+        // AC5: in-progress guard, scoped to (event, templateKey).
+        sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(eventId, templateKey, STATUS_IN_PROGRESS)
                 .ifPresent(active -> {
                     throw new DuplicateNewsletterSendException(
-                            "A slides-online send is already in progress for event "
+                            "A '" + templateKey + "' send is already in progress for event "
                             + event.getEventCode() + " (sendId=" + active.getId() + ")");
                 });
 
-        // AC5: a completed slides-online send must not re-fire (one-shot, event-triggered).
+        // AC5: a completed send of this template must not re-fire (one-shot, event-triggered).
         if (sendRepository.existsByEventIdAndTemplateKeyAndStatusIn(
-                eventId, TEMPLATE_KEY, List.of(STATUS_COMPLETED, STATUS_PARTIAL))) {
+                eventId, templateKey, List.of(STATUS_COMPLETED, STATUS_PARTIAL))) {
             throw new SlidesOnlineAlreadySentException(
-                    "The slides-online mail has already been sent for event " + event.getEventCode());
+                    "The '" + templateKey + "' mail has already been sent for event "
+                    + event.getEventCode());
         }
 
         List<Registration> registrants =
                 registrationRepository.findByEventIdAndStatusIn(eventId, ACTIVE_REGISTRANT_STATUSES);
 
-        NewsletterSend saved = createSendAuditRecord(event, sentByUsername, registrants.size());
+        NewsletterSend saved = createSendAuditRecord(event, templateKey, sentByUsername, registrants.size());
 
         // Launch background job via the proxy so @Async is honoured.
-        self.executeSlidesOnlineSendAsync(saved.getId(), event);
+        self.executeSlidesOnlineSendAsync(saved.getId(), event, templateKey);
 
-        log.info("Slides-online send queued: sendId={}, event={}, registrants={}",
-                saved.getId(), event.getEventCode(), registrants.size());
+        log.info("Registrant-notice send queued: sendId={}, event={}, template={}, registrants={}",
+                saved.getId(), event.getEventCode(), templateKey, registrants.size());
 
         return SlidesOnlineSendResponse.builder()
                 .sendId(saved.getId())
                 .status(STATUS_PENDING)
                 .recipientCount(registrants.size())
                 .build();
+    }
+
+    /**
+     * Render a registrant-notice template for preview in a chosen language and report how many
+     * active registrants would receive it. The actual SEND still resolves each registrant's own
+     * language (AC4); this preview locale only controls what the organizer sees.
+     */
+    @Transactional(readOnly = true)
+    public RegistrantNoticePreviewResponse previewRegistrantNotice(Event event, String templateKey,
+                                                                   String locale) {
+        requireRegistrantNoticeTemplate(templateKey);
+        String loc = "en".equalsIgnoreCase(locale) ? "en" : "de";
+        RenderedMail mail = renderMail(event, templateKey, loc);
+        int recipientCount = registrationRepository
+                .findByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES).size();
+        return RegistrantNoticePreviewResponse.builder()
+                .subject(mail.subject())
+                .htmlPreview(mail.html())
+                .recipientCount(recipientCount)
+                .build();
+    }
+
+    /**
+     * Guard: only templates categorised {@code REGISTRANT_NOTICE} may be sent to registrants.
+     * Prevents a subscriber-newsletter template from being blasted to registrants by mistake
+     * (the symmetric counterpart of {@code NewsletterEmailService#rejectRegistrantTemplate}).
+     */
+    private void requireRegistrantNoticeTemplate(String templateKey) {
+        boolean isRegistrantNotice = java.util.stream.Stream.of("de", "en")
+                .map(l -> emailTemplateService.findByKeyAndLocale(templateKey, l))
+                .flatMap(Optional::stream)
+                .anyMatch(t -> "REGISTRANT_NOTICE".equalsIgnoreCase(t.getCategory()));
+        if (!isRegistrantNotice) {
+            throw new IllegalArgumentException(
+                    "Template '" + templateKey + "' is not a registrant-notice template "
+                    + "(category REGISTRANT_NOTICE) and cannot be sent to registrants.");
+        }
     }
 
     // ── Async worker ───────────────────────────────────────────────────────────
@@ -167,15 +229,15 @@ public class SlidesOnlineEmailService {
      * it deterministically without a thread-pool race).
      */
     @Async
-    public void executeSlidesOnlineSendAsync(UUID sendId, Event event) {
-        processSend(sendId, event);
+    public void executeSlidesOnlineSendAsync(UUID sendId, Event event, String templateKey) {
+        processSend(sendId, event, templateKey);
     }
 
     /**
      * Synchronous send core: resolve active registrants, skip opt-outs, send the locale-correct
      * template to each, record per-recipient audit, isolate per-recipient failures, throttle for SES.
      */
-    void processSend(UUID sendId, Event event) {
+    void processSend(UUID sendId, Event event, String templateKey) {
         markInProgress(sendId);
 
         // Render once per locale (body + subject are identical for all recipients of a locale).
@@ -209,7 +271,8 @@ public class SlidesOnlineEmailService {
                 }
 
                 String locale = resolveLocale(registration.getAttendeeUsername());
-                RenderedMail mail = renderedByLocale.computeIfAbsent(locale, l -> renderMail(event, l));
+                RenderedMail mail =
+                        renderedByLocale.computeIfAbsent(locale, l -> renderMail(event, templateKey, l));
 
                 String deliveryStatus = "sent";
                 try {
@@ -279,21 +342,21 @@ public class SlidesOnlineEmailService {
 
     // ── Rendering ────────────────────────────────────────────────────────────────
 
-    private RenderedMail renderMail(Event event, String locale) {
+    private RenderedMail renderMail(Event event, String templateKey, String locale) {
         Map<String, String> vars = buildVariables(event, locale);
 
         Optional<ch.batbern.events.domain.EmailTemplate> templateOpt =
-                emailTemplateService.findByKeyAndLocale(TEMPLATE_KEY, locale);
+                emailTemplateService.findByKeyAndLocale(templateKey, locale);
         String contentHtml = templateOpt
                 .map(t -> emailService.replaceVariables(t.getHtmlBody(), vars))
                 .orElseGet(() -> {
-                    log.warn("Slides-online template '{}' locale '{}' not found in DB", TEMPLATE_KEY, locale);
+                    log.warn("Registrant-notice template '{}' locale '{}' not found in DB", templateKey, locale);
                     return "<p>The slides are online.</p>";
                 });
         String mergedHtml = emailService.replaceVariables(
                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
 
-        String subject = emailTemplateService.resolveSubject(TEMPLATE_KEY, locale)
+        String subject = emailTemplateService.resolveSubject(templateKey, locale)
                 .map(s -> emailService.replaceVariables(s, vars))
                 .orElseGet(() -> ("de".equals(locale) ? "Die Folien sind online — " : "The slides are online — ")
                         + event.getTitle());
@@ -310,6 +373,14 @@ public class SlidesOnlineEmailService {
         vars.put("eventDate", formatEventDate(event, isDe ? Locale.GERMAN : Locale.ENGLISH));
         vars.put("eventDetailLink", baseUrl + "/events/" + event.getEventCode());
         vars.put("currentYear", String.valueOf(Year.now().getValue()));
+        // batbern-default layout variables (the layout is shared with the newsletter; without
+        // these the merged email shows literal {{logoUrl}} etc. — replaceVariables leaves
+        // unmatched placeholders untouched). logoUrl matches the newsletter (white logo on the
+        // dark header); the footer links point at the public site / event detail.
+        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
+        vars.put("eventUrl", baseUrl + "/events/" + event.getEventCode());
+        vars.put("dashboardLink", baseUrl);
+        vars.put("supportUrl", baseUrl);
         return vars;
     }
 
@@ -337,10 +408,11 @@ public class SlidesOnlineEmailService {
     // ── @Transactional audit helpers (short, autonomous transactions) ─────────────
 
     @Transactional
-    protected NewsletterSend createSendAuditRecord(Event event, String sentByUsername, int recipientCount) {
+    protected NewsletterSend createSendAuditRecord(Event event, String templateKey,
+                                                   String sentByUsername, int recipientCount) {
         NewsletterSend send = NewsletterSend.builder()
                 .eventId(event.getId())
-                .templateKey(TEMPLATE_KEY)
+                .templateKey(templateKey)
                 .reminder(false)
                 .locale("de") // nominal — actual locale is resolved per recipient (AC4)
                 .sentAt(Instant.now())

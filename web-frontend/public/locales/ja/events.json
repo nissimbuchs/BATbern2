@@ -12,7 +12,8 @@
       "publishing": "公開",
       "newsletter": "ニュースレター",
       "settings": "設定",
-      "photos": "写真"
+      "photos": "写真",
+      "registrantNotices": "参加者へのお知らせ"
     },
     "tabsAriaLabel": "イベントページのナビゲーション",
     "overview": {
@@ -212,6 +213,25 @@
       "confirmSend": "はい、送信",
       "sentSuccess": "{{count}} 名の受信者に送信しました。",
       "sentFailed": "送信に失敗しました：{{message}}"
+    },
+    "registrantNotices": {
+      "title": "参加者へのお知らせ",
+      "preview": "プレビュー",
+      "send": "参加者に送信",
+      "locale": "プレビュー言語",
+      "templateSelect": "テンプレート",
+      "confirmTitle": "参加者に送信しますか？",
+      "previewTitle": "メールプレビュー",
+      "description": "このイベントの参加者に一度限りのお知らせ（例：「スライドを公開しました」）を送ります。宛先はニュースレター購読者ではなくアクティブな参加者で、各自の言語で届きます。",
+      "confirmBody": "「{{templateKey}}」を「{{eventTitle}}」のアクティブな参加者 {{count}} 名に送信しますか？各自の言語で届きます。",
+      "recipientCount": "アクティブな参加者 {{count}} 名",
+      "noTemplates": "この言語の参加者向けお知らせテンプレートはまだありません。",
+      "error": "問題が発生しました。もう一度お試しください。",
+      "sending": "送信中… {{sent}} / {{total}}",
+      "sendResult": "{{total}} 名中 {{sent}} 名の参加者に送信しました。",
+      "sendResultSkipped": "{{count}} 名はメールアドレス未登録のためスキップしました。",
+      "sendResultFailed": "{{count}} 名が失敗しました。",
+      "alreadySent": "このお知らせはこのイベントに対して既に送信済みです（または送信中です）。"
     }
   },
   "dashboard": {

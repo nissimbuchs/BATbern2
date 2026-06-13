@@ -374,7 +374,7 @@ class NewsletterEmailServiceTest {
 
         newsletterEmailService.preview(testEvent, false, "de", "custom-newsletter");
 
-        verify(emailTemplateService).findByKeyAndLocale("custom-newsletter", "de");
+        verify(emailTemplateService, atLeastOnce()).findByKeyAndLocale("custom-newsletter", "de");
         verify(emailTemplateService, never()).findByKeyAndLocale("newsletter-event", "de");
     }
 
@@ -394,7 +394,29 @@ class NewsletterEmailServiceTest {
 
         newsletterEmailService.preview(testEvent, false, "de", null);
 
-        verify(emailTemplateService).findByKeyAndLocale("newsletter-event", "de");
+        verify(emailTemplateService, atLeastOnce()).findByKeyAndLocale("newsletter-event", "de");
+    }
+
+    @Test
+    @DisplayName("Story 7.3 hardening: a REGISTRANT_NOTICE template is rejected (400) — never blasted to subscribers")
+    void rejectsRegistrantNoticeTemplateOnSubscriberSend() {
+        testEvent.setId(UUID.randomUUID());
+        EmailTemplate registrantTpl = mockTemplate("slides-online", "de", "<p>slides</p>");
+        registrantTpl.setCategory("REGISTRANT_NOTICE");
+        when(emailTemplateService.findByKeyAndLocale("slides-online", "de"))
+                .thenReturn(Optional.of(registrantTpl));
+
+        // Preview is blocked...
+        assertThatThrownBy(() -> newsletterEmailService.preview(testEvent, false, "de", "slides-online"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Registrant Notices");
+
+        // ...and so is the actual subscriber send — the registrant pool must never be blasted.
+        assertThatThrownBy(() -> newsletterEmailService.sendNewsletter(
+                testEvent, false, "de", "org.user", "slides-online"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(sendRepository, never()).save(any());
     }
 
     private EmailTemplate mockTemplate(String key, String locale, String html) {

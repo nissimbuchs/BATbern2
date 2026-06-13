@@ -632,7 +632,8 @@
       "REGISTRATION": "Registrierungs-E-Mails",
       "TASK_REMINDER": "Aufgaben-Erinnerungen",
       "NEWSLETTER": "Newsletter",
-      "VENUE_COORDINATION": "Veranstaltungsort & Catering"
+      "VENUE_COORDINATION": "Veranstaltungsort & Catering",
+      "REGISTRANT_NOTICE": "Teilnehmer-Infos"
     },
     "layoutKey": "Layout",
     "standalone": "Kein Layout (eigenständig)",
