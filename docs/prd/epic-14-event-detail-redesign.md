@@ -1309,3 +1309,30 @@ enumerate every card in the prototype's `STATES` map to a _card → completion p
 source_ row, each resolved to one of the four typed detectors (no card left as "no signal yet").
 The four typed detectors + named predicates are the *method*; the complete enumeration is the
 *deliverable that gates Phase B*. _(Decision: Nissim, 2026-06-13. See Story 14.B.3 ACs.)_
+
+---
+
+## Post-Implementation Follow-ups — revisit after ALL stories are merged
+
+_Incidental, low-severity items surfaced during the **Phase A** code review (the 8-tab shell,
+2026-06-13). Each is bounded by an interim heuristic that a later phase supersedes — listed here
+(not in throw-away deferred-work) so they are checked off when the epic is complete. None blocks any
+story._
+
+- **Comms-overdue dot under-matches venue/caterer tasks** — `web-frontend/src/components/organizer/EventPage/tabBadges.ts`
+  (`COMMS_TASK_PATTERN`). The regex was deliberately narrowed to clearly comms-owned names
+  (newsletter / registrant-notice / Teilnehmer-Info) to avoid false positives like "Book the venue".
+  Consequence: an overdue `Venue Booking` / `Catering Coordination` task does **not** raise the
+  Communications dot, even though Venue & Caterer is a comms sub-surface. **Phase E (14.E.2)** should
+  fold venue/caterer tasks into the audience model and re-derive the dot from a first-class category
+  rather than a name heuristic — then this regex can be removed. _(Review: Edge-case hunter M3.)_
+- **Speakers attention-badge can double-count one speaker** — `tabBadges.ts` (`computeTabBadges`):
+  `speakers = sessionsNeedingSlot + pendingMaterialsCount`, so a speaker with an unslotted session
+  who also owes materials counts in both terms. Intended as an "open items" count, not a headcount.
+  **Phase B** (Cockpit / FR16–FR17) should confirm whether a true per-speaker headcount is wanted and,
+  if so, de-dupe by speaker. _(Review: Blind #1 / Edge L5.)_
+- **Unknown/absent `workflowState` leaves Wrap-up active (not locked)** — `web-frontend/src/utils/workflow/workflowState.ts`
+  (`getTabRelevance`). By frozen design ("never hide a tab"; unknown → `active`) and harmless because
+  `workflowState` is always present on `/organizer/events/:eventCode`. **Accepted-by-design, not a
+  fix** — revisit only if a real legacy/empty-state event is ever observed exposing post-event tools
+  early. _(Review: Edge-case hunter H1.)_

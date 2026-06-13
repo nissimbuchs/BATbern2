@@ -200,16 +200,6 @@ Everything else: test-hardening, kanban/modal UX papercuts, sprint-status YAML h
 - **`resolveCallerCompanyNameOrNull()` fail-open on resolution error** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:227`] — swallows all exceptions and returns null, so a partner whose company resolution transiently fails (User Service hiccup) is treated as a null-company organizer and bypasses the ownership guard in `updateTopic`/`deleteTopic` (`callerCompanyName != null && ...` short-circuits). Pre-existing — this commit only flipped the `.equals()` operand order to be null-safe for community topics (correct). Consider distinguishing "organizer (no company)" from "partner whose company could not be resolved." [Edge]
 - **`getCurrentUsername()` empty-string trap → blank `suggestedBy`** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:108`] — `suggestCommunityTopic` persists `suggestedBy` with no null/blank guard; per the project's documented Pattern 3b twin, the JWT username claim can be empty in some auth paths, yielding an un-attributable community topic. Dormant in staging (JWT always carries username); a local-dev/edge risk. [Blind]
 
-## Deferred from: code review of Epic 14 Phase A shell (2026-06-13)
-
-Incidental, low-severity items surfaced reviewing `spec-14-a-event-detail-shell.md` (the 8-tab
-shell). All are bounded by the interim badge heuristics; the real fix lands with Phase E's
-first-class Communications audience model.
-
-- **Comms-overdue dot under-matches venue/caterer tasks** [`web-frontend/src/components/organizer/EventPage/tabBadges.ts` `COMMS_TASK_PATTERN`] — the regex was deliberately narrowed to clearly comms-owned names (newsletter / registrant-notice / Teilnehmer-Info) to avoid false positives like "Book the venue". Consequence: an overdue `Venue Booking` / `Catering Coordination` task does NOT raise the Communications dot, even though Venue & Caterer is a comms sub-surface. Phase E (14.E.2) should fold venue/caterer tasks into the audience model and re-derive the dot from a first-class category instead of a name heuristic. [Edge-case hunter M3]
-- **Speakers attention-badge can double-count one speaker** [`tabBadges.ts` `computeTabBadges`] — `speakers = sessionsNeedingSlot + pendingMaterialsCount`; a speaker with an unslotted session who also owes materials counts in both terms. Intended as an "open items" count, not a headcount; if Phase B wants a true headcount, de-dupe by speaker. [Blind #1 / Edge L5]
-- **Unknown/absent `workflowState` leaves Wrap-up active (not locked)** [`web-frontend/src/utils/workflow/workflowState.ts` `getTabRelevance`] — by frozen design ("never hide a tab"; unknown → active) and harmless since `workflowState` is always present on `/organizer/events/:eventCode`. Noted as a conscious trade-off, NOT a fix; revisit only if a real legacy/empty-state event is ever observed exposing post-event tools early. [Edge-case hunter H1 — accepted-by-design]
-
 ## Deferred from: quick-dev scoping of Epic 14 (2026-06-13)
 
 `/bmad-quick-dev` was pointed at `docs/prd/epic-14-event-detail-redesign.md` (the full epic = 24
