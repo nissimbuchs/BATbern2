@@ -13,7 +13,8 @@
       "newsletter": "Newsletter",
       "settings": "Settings",
       "photos": "Photos",
-      "registrantNotices": "Registrant Notices"
+      "registrantNotices": "Registrant Notices",
+      "appreciation": "Appreciation"
     },
     "tabsAriaLabel": "Event page navigation",
     "overview": {
@@ -937,7 +938,11 @@
       "count_one": "{{count}} thank-you so far",
       "count_other": "{{count}} thank-yous so far",
       "success": "Thank you for saying thanks! 🎉",
-      "error": "Something went wrong. Please try again."
+      "error": "Something went wrong. Please try again.",
+      "publicNotice": "Logged-in thank-yous may be shown publicly with your name and company."
+    },
+    "marquee": {
+      "badge": "Thank you"
     }
   },
   "qna": {
@@ -971,5 +976,16 @@
         "attended": "Attended"
       }
     }
+  },
+  "appreciation": {
+    "title": "Thank-you notes",
+    "subtitle": "{{count}} thank-you(s) for this event. Feature a note to show it on the public marquee.",
+    "empty": "No thank-you notes yet for this event.",
+    "noNote": "(clap with no note)",
+    "anonymous": "Anonymous",
+    "featured": "Featured",
+    "featureToggle": "Feature on public marquee",
+    "cannotFeatureAnonymous": "Anonymous thank-yous cannot be featured (no name).",
+    "loadError": "Could not load thank-you notes."
   }
 }

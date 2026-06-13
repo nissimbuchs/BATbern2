@@ -96,6 +96,7 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/email-templates") // Story 10.2: Email template management
                 || cleanPath.startsWith("/api/v1/analytics") // Story 10.5: Analytics dashboard
                 || cleanPath.startsWith("/api/v1/newsletter") // Story 10.7: Newsletter
+                || cleanPath.startsWith("/api/v1/thanks") // Story 7.7: Public featured thank-you marquee
                 || cleanPath.startsWith("/api/v1/ai") // Story 10.16: AI content generation
                 || cleanPath.equals("/api/v1/public/settings/features")) { // Story 10.16: Feature flags
             return "event-management-service";

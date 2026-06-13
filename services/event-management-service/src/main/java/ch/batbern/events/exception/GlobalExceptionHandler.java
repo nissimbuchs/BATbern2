@@ -1094,6 +1094,62 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle ThanksNotFoundException (Story 7.7): an organizer feature-toggle targeted a thank-you
+     * that does not exist for the event. Returns HTTP 404 with {@code details.code = THANKS_NOT_FOUND}.
+     * Explicit handler so the catch-all {@code @ExceptionHandler(Exception.class)} doesn't 500 it.
+     */
+    @ExceptionHandler(ThanksNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleThanksNotFoundException(
+            ThanksNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Thanks not found: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "THANKS_NOT_FOUND");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle ThanksNotFeaturableException (Story 7.7): an organizer tried to feature an ANONYMOUS
+     * thank-you. Returns HTTP 409 with {@code details.code = THANKS_NOT_FEATURABLE}. Explicit handler
+     * so the catch-all {@code @ExceptionHandler(Exception.class)} doesn't 500 it.
+     */
+    @ExceptionHandler(ThanksNotFeaturableException.class)
+    public ResponseEntity<ErrorResponse> handleThanksNotFeaturableException(
+            ThanksNotFeaturableException ex,
+            HttpServletRequest request) {
+        log.warn("Thanks not featurable: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "THANKS_NOT_FEATURABLE");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle QnaWindowFrozenException (Story 7.5): a post was attempted on a closed Q&A window.
      * Returns HTTP 409 Conflict with {@code details.code = QNA_WINDOW_FROZEN}; no post created (AC5).
      */

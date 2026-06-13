@@ -10,6 +10,23 @@ import apiClient from '@/services/api/apiClient';
 import type { components } from '@/types/generated/events-api.types';
 
 export type ThanksCountResponse = components['schemas']['ThanksCountResponse'];
+export type ThanksNoteResponse = components['schemas']['ThanksNoteResponse'];
+
+/**
+ * Organizer feature-toggle (Story 7.7): mark/un-mark a thank-you note for the public marquee.
+ * Organizer-authenticated; featuring an anonymous note is rejected server-side (409).
+ */
+export async function setThanksFeatured(
+  eventCode: string,
+  id: string,
+  featured: boolean
+): Promise<ThanksNoteResponse> {
+  const response = await apiClient.patch<ThanksNoteResponse>(
+    `/events/${encodeURIComponent(eventCode)}/thanks/${encodeURIComponent(id)}`,
+    { featured }
+  );
+  return response.data;
+}
 
 /**
  * Submit a thank-you for an event (no auth required). Returns the new aggregate count.

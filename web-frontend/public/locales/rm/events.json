@@ -13,7 +13,8 @@
       "newsletter": "Newsletter",
       "settings": "Parameters",
       "photos": "Fotografias",
-      "registrantNotices": "Infos participants"
+      "registrantNotices": "Infos participants",
+      "appreciation": "Engraziaments"
     },
     "tabsAriaLabel": "Navigaziun da la pagina eveniment",
     "overview": {
@@ -913,7 +914,11 @@
       "count_one": "{{count}} engraziament fin ussa",
       "count_other": "{{count}} engraziaments fin ussa",
       "success": "Grazia fitg per engraziar! 🎉",
-      "error": "Insatge è ì fal. Empruva anc ina giada."
+      "error": "Insatge è ì fal. Empruva anc ina giada.",
+      "publicNotice": "Engraziaments da utilisaders annunziads pon vegnir mussads publicamain cun voss num e vossa firma."
+    },
+    "marquee": {
+      "badge": "Grazia"
     }
   },
   "qna": {
@@ -947,5 +952,16 @@
         "attended": "Participà"
       }
     }
+  },
+  "appreciation": {
+    "title": "Messadis da gratituded",
+    "subtitle": "{{count}} engraziament(s) per quest eveniment. Relevar in messadi per al mussar sin il bandero public.",
+    "empty": "Anc nagins messadis da gratituded per quest eveniment.",
+    "noNote": "(applaus senza messadi)",
+    "anonymous": "Anonim",
+    "featured": "Relevà",
+    "featureToggle": "Mussar sin il bandero public",
+    "cannotFeatureAnonymous": "Engraziaments anonims na pon betg vegnir relevads (nagin num).",
+    "loadError": "Impussibel da chargiar ils messadis da gratituded."
   }
 }

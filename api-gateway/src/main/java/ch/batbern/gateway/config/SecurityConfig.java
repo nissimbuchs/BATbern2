@@ -296,6 +296,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/events/*/thanks").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/thanks").permitAll()
 
+                        // Story 7.7: Public curated featured thank-you marquee (global, cross-event).
+                        // The organizer PATCH /api/v1/events/*/thanks/* stays authenticated.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/thanks/featured").permitAll()
+
                         // Additional-email verification (v2): public token-credentialed verify
                         // endpoints (GET-check / POST-confirm). The token IS the credential.
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()

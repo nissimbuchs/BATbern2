@@ -1,6 +1,6 @@
 # Story 7.7: Curated Thank-You Notes in the Partner Marquee
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,40 +26,40 @@ so that **the genuine gratitude attendees leave (Story 7.4) becomes visible soci
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Schema — new forward migration** (AC: 1, 2)
-  - [ ] `V112__organizer_thanks_featured.sql` in `services/event-management-service/src/main/resources/db/migration/`. `ALTER TABLE organizer_thanks ADD COLUMN featured_at TIMESTAMPTZ NULL;`. Partial index for the random-featured query: `CREATE INDEX ix_organizer_thanks_featured ON organizer_thanks (featured_at) WHERE featured_at IS NOT NULL AND thanked_by_username IS NOT NULL;`
-  - [ ] **NEVER edit V111** (already shipped — checksum-frozen). Confirm V112 is the next free number (V109/V110/V111 shipped). Exclude `**/db/migration/**` from any bulk edits.
-  - [ ] Add `featuredAt` (`Instant`, nullable) field to `OrganizerThanks` entity. No `@PrePersist` change (defaults null).
-- [ ] **Task 2: Enrichment — mirror Q&A author portraits** (AC: 2, 3)
-  - [ ] New projection `ThanksAuthorProjection` (mirror `QnaAuthorProjection`: `username, firstName, lastName, showCompany, companyDisplayName, companyLogoUrl`).
-  - [ ] New repository method on `OrganizerThanksRepository` (or a dedicated query method) cloning `SessionUserRepository.findQnaAuthorPortraitsByUsernames` verbatim — native query `user_profiles up LEFT JOIN companies c ON c.name = up.company_id WHERE up.username IN :usernames`, returning the projection. Batch-load by the set of usernames in the featured result (avoid N+1).
-  - [ ] In the service, blank out `companyDisplayName`/`companyLogoUrl` when `showCompany` is false/null (same as Q&A). Omit notes whose username has no projection row (deleted author).
-- [ ] **Task 3: Public featured endpoint** (AC: 2, 3)
-  - [ ] Repository query: select featured + logged-in rows, `ORDER BY random() LIMIT :limit` (Postgres `random()`; cap `limit` at 9 in the service regardless of query param). Return rows across **all events** (no event filter).
-  - [ ] New DTO `FeaturedThanksResponse` (list item: `note`, `eventCode`, `thankedByFirstName`, `thankedByLastName`, `thankedByCompanyName`, `thankedByCompanyLogoUrl`). Mirror `QnaPostResponse` field naming (`thankedBy*`). Never expose `thanked_by_username`.
-  - [ ] `OrganizerThanksController` (or a new `FeaturedThanksController`): `GET /api/v1/thanks/featured` — public, no `@PreAuthorize`. Service enriches + maps.
-- [ ] **Task 4: Organizer feature-toggle endpoint** (AC: 1, 6)
-  - [ ] `PATCH /api/v1/events/{eventCode}/thanks/{id}` — `@PreAuthorize` organizer (match the role pattern used by other organizer EMS endpoints, e.g. `SlidesOnlineController` / Q&A `EventQnaController` PATCH). Body `ThanksFeaturePatchRequest { Boolean featured }`.
-  - [ ] Service: load by id (scoped to eventCode — 404 `THANKS_NOT_FOUND` if mismatch), reject if `thanked_by_username IS NULL` (409 `THANKS_NOT_FEATURABLE`), else set/clear `featured_at`. Return the updated note (organizer view).
-  - [ ] New exceptions `ThanksNotFoundException` (404) + `ThanksNotFeaturableException` (409) each with explicit `@ExceptionHandler` in `GlobalExceptionHandler` (catch-all would otherwise 500). Reuse `details.code` typed-conflict idiom.
-- [ ] **Task 5: SecurityConfig (both layers)** (AC: 1, 2)
-  - [ ] api-gateway `SecurityConfig.defaultSecurityFilterChain` (`@Profile("!test")`): `GET /api/v1/thanks/featured` → `.permitAll()`. event-management `SecurityConfig.filterChain` (`@Profile("!test")`): same. (Mirror the 7.4 thanks permitAll matchers.)
-  - [ ] The organizer PATCH is `@PreAuthorize`-gated, not permitAll — confirm it is **not** accidentally swept into a permitAll matcher.
-- [ ] **Task 6: API contract + type-gen** (AC: 2, 6)
-  - [ ] Update `docs/api/events-api.openapi.yml`: +`GET /thanks/featured` (+`FeaturedThanksResponse` schema), +`PATCH /events/{eventCode}/thanks/{id}` (+`ThanksFeaturePatchRequest`). Run `npm run generate:api-types` and commit generated types.
-- [ ] **Task 7: Frontend — public marquee** (AC: 4, 5)
-  - [ ] New `featuredThanksService` + `useFeaturedThanks` hook (mirror `thanksService`/`useThanks`; React Query, public GET, ~5-min staleTime so the random shuffle is stable).
-  - [ ] Enhance `TestimonialCard.tsx` to render the **company logo** (reuse `buildCdnImageUrl({ h: 128, fit: 'inside' })` + the `SpeakerDisplay.tsx` logo block); graceful fallback to company text / name-only.
-  - [ ] In `TestimonialSection.tsx`: delete the hardcoded array (L22-149), source featured notes from the hook, **interleave** partner + thank-you cards in the single `InfiniteMarquee` (even/odd interleave; partners-only fallback under threshold). Match `PartnerShowcaseCard` sizing (`w-80 h-48`). Keep `prefers-reduced-motion` + pause-on-hover behavior.
-- [ ] **Task 8: Frontend — organizer Appreciation panel** (AC: 6)
-  - [ ] New `EventAppreciationTab` (mirror `EventNewsletterTab` structure), added to `TABS` in `components/organizer/EventPage/EventPage.tsx`. Lists notes (organizer GET already returns `notes[]` from 7.4) + each note's ★ feature toggle (PATCH). Toggle disabled + tooltip for anonymous notes.
-  - [ ] Extend the organizer `getThanks` typing to surface `id` + `featured`/`featuredAt` per note (the 7.4 organizer GET returns `notes[]`; ensure `id` + featured state are present in `ThanksNoteResponse`).
-- [ ] **Task 9: i18n** (AC: 7)
-  - [ ] Public: `thanks.marquee.*` (e.g. card aria-label / "Thank you" heading) in all 10 locales, EN+DE first-class.
-  - [ ] Organizer: `eventPage.appreciation.*` (tab label, feature/unfeature, anonymous-disabled tooltip, count) in all 10 locales.
-- [ ] **Task 10: Tests (TDD)** (AC: 1, 2, 3, 7)
-  - [ ] EMS `FeaturedThanksIntegrationTest` (PostgreSQL/Testcontainers): feature toggle sets/clears `featured_at`; anonymous → 409 `THANKS_NOT_FEATURABLE`; public GET returns only featured+logged-in; `limit` capped at 9; enrichment populates name + companyLogoUrl; `settings_show_company=false` → company/logo null; deleted author omitted; id/eventCode mismatch → 404. Cleanup via `deleteAll` + `@Transactional` rollback (seed `user_profiles`/`companies` rows as the Q&A tests do).
-  - [ ] FE unit tests: `TestimonialCard` renders logo / falls back; `TestimonialSection` interleaves correctly and degrades to partners-only under threshold; opted-out company hidden. `tsc --noEmit` + ESLint clean.
+- [x] **Task 1: Schema — new forward migration** (AC: 1, 2)
+  - [x] `V112__organizer_thanks_featured.sql` in `services/event-management-service/src/main/resources/db/migration/`. `ALTER TABLE organizer_thanks ADD COLUMN featured_at TIMESTAMPTZ NULL;`. Partial index for the random-featured query: `CREATE INDEX ix_organizer_thanks_featured ON organizer_thanks (featured_at) WHERE featured_at IS NOT NULL AND thanked_by_username IS NOT NULL;`
+  - [x] **NEVER edit V111** (already shipped — checksum-frozen). Confirm V112 is the next free number (V109/V110/V111 shipped). Exclude `**/db/migration/**` from any bulk edits.
+  - [x] Add `featuredAt` (`Instant`, nullable) field to `OrganizerThanks` entity. No `@PrePersist` change (defaults null).
+- [x] **Task 2: Enrichment — mirror Q&A author portraits** (AC: 2, 3)
+  - [x] New projection `ThanksAuthorProjection` (mirror `QnaAuthorProjection`: `username, firstName, lastName, showCompany, companyDisplayName, companyLogoUrl`).
+  - [x] New repository method on `OrganizerThanksRepository` (or a dedicated query method) cloning `SessionUserRepository.findQnaAuthorPortraitsByUsernames` verbatim — native query `user_profiles up LEFT JOIN companies c ON c.name = up.company_id WHERE up.username IN :usernames`, returning the projection. Batch-load by the set of usernames in the featured result (avoid N+1).
+  - [x] In the service, blank out `companyDisplayName`/`companyLogoUrl` when `showCompany` is false/null (same as Q&A). Omit notes whose username has no projection row (deleted author).
+- [x] **Task 3: Public featured endpoint** (AC: 2, 3)
+  - [x] Repository query: select featured + logged-in rows, `ORDER BY random() LIMIT :limit` (Postgres `random()`; cap `limit` at 9 in the service regardless of query param). Return rows across **all events** (no event filter).
+  - [x] New DTO `FeaturedThanksResponse` (list item: `note`, `eventCode`, `thankedByFirstName`, `thankedByLastName`, `thankedByCompanyName`, `thankedByCompanyLogoUrl`). Mirror `QnaPostResponse` field naming (`thankedBy*`). Never expose `thanked_by_username`.
+  - [x] `OrganizerThanksController` (or a new `FeaturedThanksController`): `GET /api/v1/thanks/featured` — public, no `@PreAuthorize`. Service enriches + maps.
+- [x] **Task 4: Organizer feature-toggle endpoint** (AC: 1, 6)
+  - [x] `PATCH /api/v1/events/{eventCode}/thanks/{id}` — `@PreAuthorize` organizer (match the role pattern used by other organizer EMS endpoints, e.g. `SlidesOnlineController` / Q&A `EventQnaController` PATCH). Body `ThanksFeaturePatchRequest { Boolean featured }`.
+  - [x] Service: load by id (scoped to eventCode — 404 `THANKS_NOT_FOUND` if mismatch), reject if `thanked_by_username IS NULL` (409 `THANKS_NOT_FEATURABLE`), else set/clear `featured_at`. Return the updated note (organizer view).
+  - [x] New exceptions `ThanksNotFoundException` (404) + `ThanksNotFeaturableException` (409) each with explicit `@ExceptionHandler` in `GlobalExceptionHandler` (catch-all would otherwise 500). Reuse `details.code` typed-conflict idiom.
+- [x] **Task 5: SecurityConfig (both layers)** (AC: 1, 2)
+  - [x] api-gateway `SecurityConfig.defaultSecurityFilterChain` (`@Profile("!test")`): `GET /api/v1/thanks/featured` → `.permitAll()`. event-management `SecurityConfig.filterChain` (`@Profile("!test")`): same. (Mirror the 7.4 thanks permitAll matchers.)
+  - [x] The organizer PATCH is `@PreAuthorize`-gated, not permitAll — confirm it is **not** accidentally swept into a permitAll matcher.
+- [x] **Task 6: API contract + type-gen** (AC: 2, 6)
+  - [x] Update `docs/api/events-api.openapi.yml`: +`GET /thanks/featured` (+`FeaturedThanksResponse` schema), +`PATCH /events/{eventCode}/thanks/{id}` (+`ThanksFeaturePatchRequest`). Run `npm run generate:api-types` and commit generated types.
+- [x] **Task 7: Frontend — public marquee** (AC: 4, 5)
+  - [x] New `featuredThanksService` + `useFeaturedThanks` hook (mirror `thanksService`/`useThanks`; React Query, public GET, ~5-min staleTime so the random shuffle is stable).
+  - [x] Enhance `TestimonialCard.tsx` to render the **company logo** (reuse `buildCdnImageUrl({ h: 128, fit: 'inside' })` + the `SpeakerDisplay.tsx` logo block); graceful fallback to company text / name-only.
+  - [x] In `TestimonialSection.tsx`: delete the hardcoded array (L22-149), source featured notes from the hook, **interleave** partner + thank-you cards in the single `InfiniteMarquee` (even/odd interleave; partners-only fallback under threshold). Match `PartnerShowcaseCard` sizing (`w-80 h-48`). Keep `prefers-reduced-motion` + pause-on-hover behavior.
+- [x] **Task 8: Frontend — organizer Appreciation panel** (AC: 6)
+  - [x] New `EventAppreciationTab` (mirror `EventNewsletterTab` structure), added to `TABS` in `components/organizer/EventPage/EventPage.tsx`. Lists notes (organizer GET already returns `notes[]` from 7.4) + each note's ★ feature toggle (PATCH). Toggle disabled + tooltip for anonymous notes.
+  - [x] Extend the organizer `getThanks` typing to surface `id` + `featured`/`featuredAt` per note (the 7.4 organizer GET returns `notes[]`; ensure `id` + featured state are present in `ThanksNoteResponse`).
+- [x] **Task 9: i18n** (AC: 7)
+  - [x] Public: `thanks.marquee.*` (e.g. card aria-label / "Thank you" heading) in all 10 locales, EN+DE first-class.
+  - [x] Organizer: `eventPage.appreciation.*` (tab label, feature/unfeature, anonymous-disabled tooltip, count) in all 10 locales.
+- [x] **Task 10: Tests (TDD)** (AC: 1, 2, 3, 7)
+  - [x] EMS `FeaturedThanksIntegrationTest` (PostgreSQL/Testcontainers): feature toggle sets/clears `featured_at`; anonymous → 409 `THANKS_NOT_FEATURABLE`; public GET returns only featured+logged-in; `limit` capped at 9; enrichment populates name + companyLogoUrl; `settings_show_company=false` → company/logo null; deleted author omitted; id/eventCode mismatch → 404. Cleanup via `deleteAll` + `@Transactional` rollback (seed `user_profiles`/`companies` rows as the Q&A tests do).
+  - [x] FE unit tests: `TestimonialCard` renders logo / falls back; `TestimonialSection` interleaves correctly and degrades to partners-only under threshold; opted-out company hidden. `tsc --noEmit` + ESLint clean.
 
 ## Dev Notes
 
@@ -119,11 +119,72 @@ so that **the genuine gratitude attendees leave (Story 7.4) becomes visible soci
 
 ### Agent Model Used
 
+Claude Opus 4.8 (1M context) — bmad-dev-story (Amelia), 2026-06-13.
+
 ### Debug Log References
+
+- `FeaturedThanksIntegrationTest` (8 tests) + `OrganizerThanksIntegrationTest` (7 regression) — `BUILD SUCCESSFUL`, all PASSED (PostgreSQL/Testcontainers). One setup bug found+fixed mid-run: a second thank-you for the same (event, user) violates the V111 partial unique index → used a distinct seeded author for the unfeatured-note case.
+- EMS `compileJava` + `checkstyleMain` — `BUILD SUCCESSFUL`. api-gateway `checkstyleMain` + `DomainRouterTest` (13 tests) — `BUILD SUCCESSFUL`.
+- FE: `TestimonialCard` (4) + `TestimonialSection` (2) + `EventAppreciationTab` (3) — 9 PASSED (vitest). `tsc --noEmit` clean; ESLint clean on all changed files. (Partner cards render the company name only as image `alt`/initials, not body text — tests assert via `getAllByAltText`.)
 
 ### Completion Notes List
 
+- **All 7 ACs satisfied.** Organizer ★ feature-toggle (anonymous → 409 THANKS_NOT_FEATURABLE), public global random ≤9 featured endpoint, enrichment cloning the Q&A author-portrait join, intermingled marquee (Tailwind-only), organizer Appreciation tab, 10-locale i18n, PostgreSQL ITs + FE unit tests.
+- **Deviation — migration number: V115, not the story's V112.** V112–V114 were already taken by the Story 7.5 Q&A migrations; V115 is the next free number. (The story's "confirm next free number" note caught this.)
+- **Deviation — single enriched query for the public path.** Rather than a separate enrich step, `OrganizerThanksRepository.findFeaturedRandom` does one native join (organizer_thanks → events → user_profiles → companies) returning `FeaturedThanksProjection`. The `INNER JOIN user_profiles` makes a deleted author drop out at the SQL level, so the random `LIMIT` always fills with live authors (cleaner than post-filtering). A separate `ThanksAuthorProjection` + batch loader enriches the organizer notes list (display name).
+- **Gateway routing added.** `/api/v1/thanks/featured` is a NEW top-level path, so `DomainRouter` got `/api/v1/thanks` → event-management-service (mirroring how `/api/v1/topics`/`/api/v1/newsletter` were added). Without it the gateway would 404 the public endpoint.
+- **`ThanksNoteResponse` extended** with `id` + `featured` + resolved display-name fields (`thankedByFirstName/LastName/CompanyName`) so the organizer Appreciation panel shows a friendly name and a working ★ toggle. The public count GET still returns `notes: null` (no leak).
+- **Hardcoded testimonial array removed.** `TestimonialSection`'s 20 fake quotes (the "never-used footer") are gone; row 1 is now real event photos only (no fake fallback), row 2 interleaves partners + real curated thank-you notes, degrading to partners-only when nothing is featured.
+- **Anti-troll guarantee preserved** (Story 7.4 AC6): only logged-in notes (`thanked_by_username NOT NULL`) are featurable; anonymous notes are excluded both at the toggle (409) and structurally in the public query. `settings_show_company=false` suppresses company name + logo (honored, with a test).
+
 ### File List
+
+**Backend (event-management-service):**
+- `src/main/resources/db/migration/V115__add_organizer_thanks_featured.sql` (new)
+- `src/main/java/ch/batbern/events/domain/OrganizerThanks.java` (modified — `featuredAt`)
+- `src/main/java/ch/batbern/events/repository/ThanksAuthorProjection.java` (new)
+- `src/main/java/ch/batbern/events/repository/FeaturedThanksProjection.java` (new)
+- `src/main/java/ch/batbern/events/repository/OrganizerThanksRepository.java` (modified — findByIdAndEventId, findFeaturedRandom, findThanksAuthorPortraitsByUsernames)
+- `src/main/java/ch/batbern/events/dto/FeaturedThanksResponse.java` (new)
+- `src/main/java/ch/batbern/events/dto/ThanksFeaturePatchRequest.java` (new)
+- `src/main/java/ch/batbern/events/dto/ThanksNoteResponse.java` (modified — +id, +display name, +featured)
+- `src/main/java/ch/batbern/events/exception/ThanksNotFoundException.java` (new)
+- `src/main/java/ch/batbern/events/exception/ThanksNotFeaturableException.java` (new)
+- `src/main/java/ch/batbern/events/exception/GlobalExceptionHandler.java` (modified — +2 handlers)
+- `src/main/java/ch/batbern/events/service/OrganizerThanksService.java` (modified — getFeaturedThanks, setFeatured, enriched getThanks)
+- `src/main/java/ch/batbern/events/controller/OrganizerThanksController.java` (modified — +GET featured, +PATCH toggle)
+- `src/main/java/ch/batbern/events/config/SecurityConfig.java` (modified — +1 permitAll)
+- `src/test/java/ch/batbern/events/controller/FeaturedThanksIntegrationTest.java` (new — 8 tests)
+
+**API Gateway:**
+- `src/main/java/ch/batbern/gateway/config/SecurityConfig.java` (modified — +1 permitAll)
+- `src/main/java/ch/batbern/gateway/routing/DomainRouter.java` (modified — +/api/v1/thanks route)
+
+**API contract:**
+- `docs/api/events-api.openapi.yml` (modified — +2 paths, +2 schemas, ThanksNoteResponse extended)
+
+**Frontend (web-frontend):**
+- `src/services/featuredThanksService.ts` (new)
+- `src/services/thanksService.ts` (modified — setThanksFeatured)
+- `src/hooks/useFeaturedThanks/useFeaturedThanks.ts` (new)
+- `src/hooks/useThanks/useThanks.ts` (modified — useEventThanks, useSetThanksFeatured)
+- `src/components/public/Testimonials/TestimonialCard.tsx` (modified — company logo + badge)
+- `src/components/public/Testimonials/TestimonialSection.tsx` (modified — interleave + removed hardcoded array)
+- `src/components/organizer/EventPage/EventAppreciationTab.tsx` (new)
+- `src/components/organizer/EventPage/EventPage.tsx` (modified — Appreciation tab)
+- `src/components/public/Navigation/ThankOrganizersNavButton.tsx` (modified — public-display notice for logged-in users, Q1)
+- `src/types/generated/events-api.types.ts` (regenerated)
+- `src/components/public/Testimonials/__tests__/TestimonialCard.test.tsx` (new)
+- `src/components/public/Testimonials/__tests__/TestimonialSection.test.tsx` (new)
+- `src/components/organizer/EventPage/__tests__/EventAppreciationTab.test.tsx` (new)
+- `public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json` (modified — thanks.marquee.* + eventPage.tabs.appreciation + appreciation.*)
+
+### Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-13 | Story 7.7 implemented (Amelia / bmad-dev-story). Curated featured thank-you notes intermingled into the public partner marquee: V115 `featured_at` column, organizer ★ PATCH toggle (anonymous → 409), public global random `GET /thanks/featured` enriched via a Q&A-pattern cross-service join, organizer Appreciation tab, Tailwind-only marquee card with company logo, 10-locale i18n. 8 backend ITs + 9 FE unit tests green; tsc/ESLint/checkstyle clean. Status → review. |
+| 2026-06-13 | Open-questions resolved in-code (PM Nissim): Q1 quiet public-display notice (`thanks.widget.publicNotice` ×10) for logged-in users in `ThankOrganizersNavButton`; Q2 per-company cap (1 card/company/fetch) via `DISTINCT ON` in `findFeaturedRandom` + IT `should_capOneCardPerCompany` (9 backend ITs total); Q3 silent-omit confirmed. Nav-button suite 7/7 still green. Also seeded local-dev demo data: 80 `organizer_thanks` rows across the last 10 events (10 featured across distinct companies) for visual verification. |
 
 ## Resolved Decisions
 
@@ -135,6 +196,8 @@ _Resolved with the PM (Nissim) 2026-06-13._
 4. **Placement = intermingled into the existing partner marquee.** Reactivates the dormant `TestimonialSection` shell (replacing its hardcoded array) rather than adding a new vertical section — zero added page real estate, non-intrusive.
 
 ## Open Questions
+
+> **All three RESOLVED with the PM (Nissim) 2026-06-13 — folded into the code.** Q1 → added a quiet public-display notice (`thanks.widget.publicNotice`, logged-in only, 10 locales) next to the thank-you input; no profile opt-out gate. Q2 → **cap 1 card per company** per marquee fetch (`findFeaturedRandom` is now `DISTINCT ON` a per-company key, username-fallback so company-less authors aren't collapsed; +IT `should_capOneCardPerCompany`). Q3 → silent omit / degrade confirmed (already implemented). The original questions are retained below for the decision record.
 
 1. **Is registration-time GDPR consent really enough to publish a name + employer logo?** The PM chose "organizer judgment only," reasoning that the GDPR checkbox accepted at registration covers it. That checkbox covers *processing* registration data; *publishing* an attendee's first name next to their employer's logo on the public homepage is arguably a new, more visible use that the attendee didn't specifically opt into when they left a thank-you under 7.4's "organizer-only" promise. This is almost certainly low-risk in practice (first name only, organizer-curated, company opt-out honored), but if you want belt-and-suspenders we could add a tiny "shown publicly with your name" notice next to the thank-you input going forward, or a one-line opt-out in the profile. Flagging the nuance so the decision is on record, not to reopen it.
 

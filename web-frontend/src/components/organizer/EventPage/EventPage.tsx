@@ -39,6 +39,7 @@ import {
   Slideshow as SlideshowIcon,
   PhotoLibrary as PhotosIcon,
   LiveTv as LiveTvIcon,
+  Favorite as AppreciationIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
@@ -56,6 +57,7 @@ import { EventSettingsTab } from './EventSettingsTab';
 import { EventNewsletterTab } from './EventNewsletterTab';
 import { EventRegistrantNoticesTab } from './EventRegistrantNoticesTab';
 import { EventPhotosTab } from './EventPhotosTab';
+import { EventAppreciationTab } from './EventAppreciationTab';
 import { EventForm } from '@/components/organizer/EventManagement';
 
 // Tab configuration
@@ -73,6 +75,7 @@ const TABS = [
   },
   { id: 'settings', labelKey: 'eventPage.tabs.settings', icon: <SettingsIcon /> },
   { id: 'photos', labelKey: 'eventPage.tabs.photos', icon: <PhotosIcon /> },
+  { id: 'appreciation', labelKey: 'eventPage.tabs.appreciation', icon: <AppreciationIcon /> },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -203,6 +206,8 @@ export const EventPage: React.FC = () => {
         return <EventSettingsTab event={event} eventCode={eventCode!} />;
       case 'photos':
         return <EventPhotosTab eventCode={eventCode!} />;
+      case 'appreciation':
+        return <EventAppreciationTab eventCode={eventCode!} />;
       default:
         return <EventOverviewTab event={event} eventCode={eventCode!} />;
     }

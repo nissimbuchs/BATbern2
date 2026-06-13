@@ -13,7 +13,8 @@
       "newsletter": "Newsletter",
       "settings": "Paramètres",
       "photos": "Photos",
-      "registrantNotices": "Infos participants"
+      "registrantNotices": "Infos participants",
+      "appreciation": "Remerciements"
     },
     "tabsAriaLabel": "Navigation de la page événement",
     "overview": {
@@ -913,7 +914,11 @@
       "count_one": "{{count}} remerciement jusqu'à présent",
       "count_other": "{{count}} remerciements jusqu'à présent",
       "success": "Merci d'avoir dit merci ! 🎉",
-      "error": "Une erreur s'est produite. Veuillez réessayer."
+      "error": "Une erreur s'est produite. Veuillez réessayer.",
+      "publicNotice": "Les remerciements connectés peuvent être affichés publiquement avec votre nom et votre entreprise."
+    },
+    "marquee": {
+      "badge": "Merci"
     }
   },
   "qna": {
@@ -947,5 +952,16 @@
         "attended": "Participé"
       }
     }
+  },
+  "appreciation": {
+    "title": "Messages de remerciement",
+    "subtitle": "{{count}} remerciement(s) pour cet événement. Mettez en avant un message pour l’afficher sur le bandeau public.",
+    "empty": "Pas encore de messages de remerciement pour cet événement.",
+    "noNote": "(applaudissement sans message)",
+    "anonymous": "Anonyme",
+    "featured": "Mis en avant",
+    "featureToggle": "Afficher sur le bandeau public",
+    "cannotFeatureAnonymous": "Les remerciements anonymes ne peuvent pas être mis en avant (pas de nom).",
+    "loadError": "Impossible de charger les messages de remerciement."
   }
 }

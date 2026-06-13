@@ -13,7 +13,8 @@
       "newsletter": "Newsletter",
       "settings": "Istellige",
       "photos": "Fotos",
-      "registrantNotices": "Teilnähmer-Infos"
+      "registrantNotices": "Teilnähmer-Infos",
+      "appreciation": "Wertschätzig"
     },
     "tabsAriaLabel": "Veranstautigsnavigation",
     "overview": {
@@ -915,7 +916,11 @@
       "count_one": "{{count}} Merci bishär",
       "count_other": "{{count}} Merci bishär",
       "success": "Merci fürs Merci säge! 🎉",
-      "error": "Öppis isch schiefgloffe. Probier's nomal."
+      "error": "Öppis isch schiefgloffe. Probier's nomal.",
+      "publicNotice": "Iigloggti Merci chöi öffentlech mit dim Name u dyner Firma zeigt wärde."
+    },
+    "marquee": {
+      "badge": "Merci"
     }
   },
   "qna": {
@@ -949,5 +954,16 @@
         "attended": "Debi gsi"
       }
     }
+  },
+  "appreciation": {
+    "title": "Danke-Nachrichte",
+    "subtitle": "{{count}} Merci für dää Aaläss. E Nachricht häärvorhebe, zum sii im öffentleche Banner z zeige.",
+    "empty": "No kener Danke-Nachrichte für dää Aaläss.",
+    "noNote": "(Applaus ohni Nachricht)",
+    "anonymous": "Anonym",
+    "featured": "Häärvorghobe",
+    "featureToggle": "Im öffentleche Banner zeige",
+    "cannotFeatureAnonymous": "Anonymi Merci chöi nid häärvorghobe wärde (kä Name).",
+    "loadError": "D Danke-Nachrichte hei nid chöne glade wärde."
   }
 }

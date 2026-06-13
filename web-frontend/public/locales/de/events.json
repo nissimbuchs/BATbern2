@@ -13,7 +13,8 @@
       "newsletter": "Newsletter",
       "settings": "Einstellungen",
       "photos": "Fotos",
-      "registrantNotices": "Teilnehmer-Infos"
+      "registrantNotices": "Teilnehmer-Infos",
+      "appreciation": "Wertschätzung"
     },
     "tabsAriaLabel": "Veranstaltungsseiten-Navigation",
     "overview": {
@@ -937,7 +938,11 @@
       "count_one": "{{count}} Dankeschön bisher",
       "count_other": "{{count}} Dankeschöns bisher",
       "success": "Danke fürs Dankesagen! 🎉",
-      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+      "publicNotice": "Eingeloggte Dankeschöns können öffentlich mit Ihrem Namen und Ihrer Firma gezeigt werden."
+    },
+    "marquee": {
+      "badge": "Danke"
     }
   },
   "qna": {
@@ -971,5 +976,16 @@
         "attended": "Teilgenommen"
       }
     }
+  },
+  "appreciation": {
+    "title": "Dankesnachrichten",
+    "subtitle": "{{count}} Dankeschön(s) für diesen Event. Nachricht hervorheben, um sie im öffentlichen Banner zu zeigen.",
+    "empty": "Noch keine Dankesnachrichten für diesen Event.",
+    "noNote": "(Applaus ohne Nachricht)",
+    "anonymous": "Anonym",
+    "featured": "Hervorgehoben",
+    "featureToggle": "Im öffentlichen Banner zeigen",
+    "cannotFeatureAnonymous": "Anonyme Dankeschöns können nicht hervorgehoben werden (kein Name).",
+    "loadError": "Dankesnachrichten konnten nicht geladen werden."
   }
 }

@@ -113,7 +113,9 @@ function OrganizerCard({ organizer }: { organizer: User }): JSX.Element {
 
       {/* Name + company */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '1.25vw', fontWeight: 500, color: '#ffffff', marginBottom: '0.313vw' }}>
+        <div
+          style={{ fontSize: '1.25vw', fontWeight: 500, color: '#ffffff', marginBottom: '0.313vw' }}
+        >
           {organizer.firstName} {organizer.lastName}
         </div>
         {companyName && (
