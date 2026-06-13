@@ -129,6 +129,30 @@ describe('SessionQnaThread', () => {
     expect(screen.getByTestId('qna-count')).toHaveTextContent('1');
   });
 
+  it('excludes removed (tombstoned) questions from the count badge', () => {
+    mockThread('FROZEN', [
+      {
+        id: 'p1',
+        parentPostId: null,
+        postedByUsername: 'jane',
+        body: 'A live question',
+        removed: false,
+        createdAt: '',
+      },
+      {
+        id: 'p2',
+        parentPostId: null,
+        postedByUsername: null,
+        body: null,
+        removed: true,
+        createdAt: '',
+      },
+    ]);
+    mockAuth(false);
+    renderThread();
+    expect(screen.getByTestId('qna-count')).toHaveTextContent('1');
+  });
+
   it('shows an OPEN badge and the question form for a logged-in user once expanded', () => {
     mockThread('OPEN', []);
     mockAuth(true);
@@ -180,10 +204,18 @@ describe('SessionQnaThread', () => {
     expect(screen.getByText('Archived question')).toBeInTheDocument();
   });
 
-  it('renders removed posts as a tombstone once expanded', () => {
+  it('does not render removed posts at all (completely dropped, not tombstoned)', () => {
     mockThread('FROZEN', [
       {
         id: 'p1',
+        parentPostId: null,
+        postedByUsername: 'jane',
+        body: 'A live question',
+        removed: false,
+        createdAt: '',
+      },
+      {
+        id: 'p2',
         parentPostId: null,
         postedByUsername: null,
         body: null,
@@ -194,7 +226,9 @@ describe('SessionQnaThread', () => {
     mockAuth(false);
     renderThread();
     expandThread();
-    expect(screen.getByTestId('qna-tombstone')).toHaveTextContent('Removed by an organizer');
+    expect(screen.queryByTestId('qna-tombstone')).not.toBeInTheDocument();
+    expect(screen.getByText('A live question')).toBeInTheDocument();
+    expect(screen.getAllByTestId('qna-post')).toHaveLength(1);
   });
 
   it('shows a takedown button for organizers and calls remove once expanded', () => {

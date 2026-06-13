@@ -50,7 +50,9 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
   }
 
   const isOpen = thread.status === 'OPEN';
-  const posts = thread.posts ?? [];
+  // Taken-down posts are removed from the thread entirely (the backend already drops them; this
+  // is a defensive client-side guard so a removed post never renders or inflates the count).
+  const posts = (thread.posts ?? []).filter((p) => !p.removed);
   const questions = posts.filter((p) => !p.parentPostId);
   const answersByParent = posts.reduce<Record<string, QnaPostResponse[]>>((acc, p) => {
     if (p.parentPostId) {
@@ -86,33 +88,25 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
         className={`rounded bg-zinc-800/40 p-3 ${isAnswer ? 'ml-6 mt-2' : ''}`}
         data-testid="qna-post"
       >
-        {post.removed ? (
-          <p className="text-sm italic text-zinc-500" data-testid="qna-tombstone">
-            {t('qna.removed')}
-          </p>
-        ) : (
-          <>
-            <p className="whitespace-pre-wrap text-sm text-zinc-200">{post.body}</p>
-            <div
-              className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500"
-              data-testid="qna-post-author"
-            >
-              {post.postedByCompanyLogoUrl && (
-                <img
-                  src={
-                    buildCdnImageUrl(post.postedByCompanyLogoUrl, { h: 32, fit: 'inside' }) ??
-                    post.postedByCompanyLogoUrl
-                  }
-                  alt={post.postedByCompanyName ?? ''}
-                  className="h-4 w-auto max-w-[64px] object-contain"
-                  loading="lazy"
-                />
-              )}
-              <span>{posterName(post)}</span>
-            </div>
-          </>
-        )}
-        {isOrganizer && !post.removed && (
+        <p className="whitespace-pre-wrap text-sm text-zinc-200">{post.body}</p>
+        <div
+          className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500"
+          data-testid="qna-post-author"
+        >
+          {post.postedByCompanyLogoUrl && (
+            <img
+              src={
+                buildCdnImageUrl(post.postedByCompanyLogoUrl, { h: 32, fit: 'inside' }) ??
+                post.postedByCompanyLogoUrl
+              }
+              alt={post.postedByCompanyName ?? ''}
+              className="h-4 w-auto max-w-[64px] object-contain"
+              loading="lazy"
+            />
+          )}
+          <span>{posterName(post)}</span>
+        </div>
+        {isOrganizer && (
           <button
             type="button"
             onClick={() => removePost.mutate(post.id)}
