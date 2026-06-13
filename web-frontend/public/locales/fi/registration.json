@@ -198,6 +198,7 @@
     "registered": "[MISSING] You are registered for this event. Check your email for confirmation.",
     "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
     "cancelled": "[MISSING] Your registration was cancelled.",
+    "attended": "Osallistuit tähän tapahtumaan. Kiitos, että olit mukana!",
     "manageLink": "[MISSING] Manage Registration",
     "registerAgain": "[MISSING] Register again",
     "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."

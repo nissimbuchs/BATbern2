@@ -199,6 +199,7 @@
     "waitlist": "You are on the waitlist. We'll notify you if a spot opens.",
     "waitlistWithPosition": "You are #{{position}} on the waitlist. We'll notify you if a spot opens.",
     "cancelled": "Your registration was cancelled.",
+    "attended": "You attended this event. Thanks for joining us!",
     "manageLink": "Manage Registration",
     "registerAgain": "Register again"
   },
