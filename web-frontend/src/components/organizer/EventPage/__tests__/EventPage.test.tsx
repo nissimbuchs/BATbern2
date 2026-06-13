@@ -1,7 +1,9 @@
 /**
- * EventPage Component Tests (Story 5.6)
+ * EventPage Component Tests
  *
- * Tests for the unified event page with tab-based navigation.
+ * Story 5.6 — unified tab-based event page.
+ * Epic 14 Phase A — lifecycle-aware 8-tab IA: relevance-driven dim/lock,
+ * count-driven attention badges, recomposed tab slots.
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -11,36 +13,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventPage } from '../EventPage';
-import type { Event } from '@/types/event.types';
 
-// Mock useEvent hook - inline data to avoid hoisting issues
-vi.mock('@/hooks/useEvents', () => ({
-  useEvent: vi.fn().mockReturnValue({
-    data: {
-      eventId: '123e4567-e89b-12d3-a456-426614174000',
-      eventCode: 'BAT54',
-      eventNumber: 54,
-      title: 'Spring Conference 2025',
-      description: 'Advanced microservices architecture',
-      date: '2025-03-15T09:00:00Z',
-      registrationDeadline: '2025-03-10T23:59:59Z',
-      venueName: 'Kursaal Bern',
-      venueAddress: 'Kornhausstrasse 3, 3013 Bern',
-      venueCapacity: 200,
-      status: 'published',
-      workflowState: 'SPEAKER_CONFIRMATION',
-      organizerUsername: 'john.doe',
-      currentAttendeeCount: 87,
-      createdAt: '2024-12-01T10:00:00Z',
-      updatedAt: '2025-01-15T14:30:00Z',
-    },
-    isLoading: false,
-    error: null,
-  }),
-}));
-
-// Mock event data for test assertions
-const mockEvent: Event = {
+// A valid early-stage event (Wrap-up is locked at SPEAKER_IDENTIFICATION).
+const baseEvent = {
   eventId: '123e4567-e89b-12d3-a456-426614174000',
   eventCode: 'BAT54',
   eventNumber: 54,
@@ -52,12 +27,16 @@ const mockEvent: Event = {
   venueAddress: 'Kornhausstrasse 3, 3013 Bern',
   venueCapacity: 200,
   status: 'published',
-  workflowState: 'SPEAKER_CONFIRMATION',
+  workflowState: 'SPEAKER_IDENTIFICATION',
   organizerUsername: 'john.doe',
   currentAttendeeCount: 87,
   createdAt: '2024-12-01T10:00:00Z',
   updatedAt: '2025-01-15T14:30:00Z',
 };
+
+vi.mock('@/hooks/useEvents', () => ({
+  useEvent: vi.fn(),
+}));
 
 // Mock useNavigate
 const mockNavigate = vi.fn();
@@ -69,39 +48,50 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-// Mock child tab components
+// Control the attention badges directly (the hook's data wiring is covered by
+// tabBadges.test.ts).
+vi.mock('../useTabBadges', () => ({
+  useTabBadges: vi.fn(),
+}));
+
+// Mock child tab components / containers
 vi.mock('../EventOverviewTab', () => ({
   EventOverviewTab: ({ eventCode }: { eventCode: string }) => (
     <div data-testid="event-overview-tab">Overview Tab - {eventCode}</div>
   ),
 }));
-
 vi.mock('../EventSpeakersTab', () => ({
   EventSpeakersTab: ({ eventCode }: { eventCode: string }) => (
     <div data-testid="event-speakers-tab">Speakers Tab - {eventCode}</div>
   ),
 }));
-
-vi.mock('../EventVenueTab', () => ({
-  EventVenueTab: () => <div data-testid="event-venue-tab">Venue Tab</div>,
-}));
-
 vi.mock('../EventParticipantsTab', () => ({
-  default: ({ event }: { event: any }) => (
+  default: ({ event }: { event: { eventCode: string } }) => (
     <div data-testid="event-participants-tab">Participants Tab - {event.eventCode}</div>
   ),
 }));
-
 vi.mock('../EventPublishingTab', () => ({
   EventPublishingTab: ({ eventCode }: { eventCode: string }) => (
     <div data-testid="event-publishing-tab">Publishing Tab - {eventCode}</div>
   ),
 }));
-
 vi.mock('../EventSettingsTab', () => ({
   EventSettingsTab: ({ eventCode }: { eventCode: string }) => (
     <div data-testid="event-settings-tab">Settings Tab - {eventCode}</div>
   ),
+}));
+vi.mock('../EventCommunicationsContainer', () => ({
+  EventCommunicationsContainer: ({ eventCode }: { eventCode: string }) => (
+    <div data-testid="event-communications-tab">Communications - {eventCode}</div>
+  ),
+}));
+vi.mock('../EventWrapupContainer', () => ({
+  EventWrapupContainer: ({ eventCode }: { eventCode: string }) => (
+    <div data-testid="event-wrapup-tab">Wrap-up - {eventCode}</div>
+  ),
+}));
+vi.mock('../EventDetailsTab', () => ({
+  EventDetailsTab: () => <div data-testid="event-details-tab">Details Tab</div>,
 }));
 
 // Mock Breadcrumbs component
@@ -115,28 +105,39 @@ vi.mock('@/components/shared/Breadcrumbs', () => ({
   ),
 }));
 
-// Mock getWorkflowStateLabel
-vi.mock('@/utils/workflow/workflowState', () => ({
-  getWorkflowStateLabel: (state: string) => state,
-}));
-
-// Mock useMediaQuery
+// Mock useMediaQuery (desktop by default)
 vi.mock('@mui/material', async () => {
   const actual = await vi.importActual('@mui/material');
   return {
     ...actual,
-    useMediaQuery: vi.fn().mockReturnValue(false), // Desktop by default
+    useMediaQuery: vi.fn().mockReturnValue(false),
   };
 });
 
-// Test wrapper with providers
-const renderWithProviders = (initialRoute = '/organizer/events/BAT54') => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-    },
+const setEvent = async (overrides: Record<string, unknown> = {}) => {
+  const { useEvent } = await import('@/hooks/useEvents');
+  (useEvent as ReturnType<typeof vi.fn>).mockReturnValue({
+    data: { ...baseEvent, ...overrides },
+    isLoading: false,
+    error: null,
   });
+};
 
+const setBadges = async (badges: {
+  speakers?: number;
+  publishingReady?: boolean;
+  commsOverdue?: boolean;
+}) => {
+  const { useTabBadges } = await import('../useTabBadges');
+  (useTabBadges as ReturnType<typeof vi.fn>).mockReturnValue({
+    speakers: badges.speakers ?? 0,
+    publishingReady: badges.publishingReady ?? false,
+    commsOverdue: badges.commsOverdue ?? false,
+  });
+};
+
+const renderWithProviders = (initialRoute = '/organizer/events/BAT54') => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
       <QueryClientProvider client={queryClient}>
@@ -150,266 +151,196 @@ const renderWithProviders = (initialRoute = '/organizer/events/BAT54') => {
   );
 };
 
-describe('EventPage Component (Story 5.6)', () => {
+describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    // Reset the mock to return valid event data for each test
-    const { useEvent } = await import('@/hooks/useEvents');
-    (useEvent as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        eventId: '123e4567-e89b-12d3-a456-426614174000',
-        eventCode: 'BAT54',
-        eventNumber: 54,
-        title: 'Spring Conference 2025',
-        description: 'Advanced microservices architecture',
-        date: '2025-03-15T09:00:00Z',
-        registrationDeadline: '2025-03-10T23:59:59Z',
-        venueName: 'Kursaal Bern',
-        venueAddress: 'Kornhausstrasse 3, 3013 Bern',
-        venueCapacity: 200,
-        status: 'published',
-        workflowState: 'SPEAKER_CONFIRMATION',
-        organizerUsername: 'john.doe',
-        currentAttendeeCount: 87,
-        createdAt: '2024-12-01T10:00:00Z',
-        updatedAt: '2025-01-15T14:30:00Z',
-      },
-      isLoading: false,
-      error: null,
-    });
+    await setEvent();
+    await setBadges({});
   });
 
   describe('Header', () => {
-    it.skip('should_displayEventTitle_when_rendered', () => {
+    it('keeps the event title in the header (FR2)', () => {
       renderWithProviders();
-
-      expect(screen.getByText('Spring Conference 2025')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Spring Conference 2025' })).toBeInTheDocument();
     });
 
-    it('should_displayEventCode_when_rendered', () => {
+    it('renders breadcrumbs', () => {
       renderWithProviders();
-
-      expect(screen.getByText('BAT54', { exact: false })).toBeInTheDocument();
-    });
-
-    it('should_displayBreadcrumbs_when_rendered', () => {
-      renderWithProviders();
-
       expect(screen.getByTestId('breadcrumbs')).toBeInTheDocument();
       expect(screen.getByText(/Events/i)).toBeInTheDocument();
     });
   });
 
-  describe('Tab Navigation', () => {
-    it('should_displayAllTabs_when_rendered', () => {
+  describe('8-tab IA (FR1/FR3)', () => {
+    it('renders exactly 8 tabs', () => {
       renderWithProviders();
+      expect(screen.getAllByRole('tab')).toHaveLength(8);
+    });
 
-      expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
+    it('renders the 8 lifecycle tabs in two clusters', () => {
+      renderWithProviders();
+      expect(screen.getByRole('tab', { name: /cockpit/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /speakers/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /venue/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /participants/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /registrations/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /communications/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /publishing/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /wrap-?up/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /details/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
     });
 
-    it('should_selectOverviewTab_byDefault', () => {
+    it('no longer shows the old consolidated standalone tabs', () => {
       renderWithProviders();
-
-      expect(screen.getByTestId('event-overview-tab')).toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /newsletter/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /registrant notices/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /photos/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /appreciation/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /participants/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /^overview$/i })).not.toBeInTheDocument();
     });
 
-    it('should_switchToSpeakersTab_when_clicked', async () => {
+    it('lands on the Cockpit by default', () => {
       renderWithProviders();
-
-      const speakersTab = screen.getByRole('tab', { name: /speakers/i });
-      fireEvent.click(speakersTab);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('event-speakers-tab')).toBeInTheDocument();
-      });
-    });
-
-    it('should_switchToVenueTab_when_clicked', async () => {
-      renderWithProviders();
-
-      const venueTab = screen.getByRole('tab', { name: /venue/i });
-      fireEvent.click(venueTab);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('event-venue-tab')).toBeInTheDocument();
-      });
-    });
-
-    it('should_switchToParticipantsTab_when_clicked', async () => {
-      renderWithProviders();
-
-      const participantsTab = screen.getByRole('tab', { name: /participants/i });
-      fireEvent.click(participantsTab);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('event-participants-tab')).toBeInTheDocument();
-      });
-    });
-
-    it('should_switchToPublishingTab_when_clicked', async () => {
-      renderWithProviders();
-
-      const publishingTab = screen.getByRole('tab', { name: /publishing/i });
-      fireEvent.click(publishingTab);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('event-publishing-tab')).toBeInTheDocument();
-      });
-    });
-
-    it('should_switchToSettingsTab_when_clicked', async () => {
-      renderWithProviders();
-
-      const settingsTab = screen.getByRole('tab', { name: /settings/i });
-      fireEvent.click(settingsTab);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('event-settings-tab')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('URL-based Tab Selection', () => {
-    it('should_selectTabFromUrl_when_tabParamProvided', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=speakers');
-
-      expect(screen.getByTestId('event-speakers-tab')).toBeInTheDocument();
-    });
-
-    it('should_selectVenueTab_when_urlHasVenueParam', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=venue');
-
-      expect(screen.getByTestId('event-venue-tab')).toBeInTheDocument();
-    });
-
-    it('should_selectParticipantsTab_when_urlHasParticipantsParam', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=participants');
-
-      expect(screen.getByTestId('event-participants-tab')).toBeInTheDocument();
-    });
-
-    it('should_selectPublishingTab_when_urlHasPublishingParam', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=publishing');
-
-      expect(screen.getByTestId('event-publishing-tab')).toBeInTheDocument();
-    });
-
-    it('should_selectSettingsTab_when_urlHasSettingsParam', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=settings');
-
-      expect(screen.getByTestId('event-settings-tab')).toBeInTheDocument();
-    });
-
-    it('should_defaultToOverview_when_invalidTabParam', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=invalid');
-
       expect(screen.getByTestId('event-overview-tab')).toBeInTheDocument();
     });
   });
 
-  describe('Tab Content', () => {
-    it('should_passEventCodeToOverviewTab', () => {
+  describe('Tab navigation', () => {
+    it('switches to Speakers & Agenda', async () => {
       renderWithProviders();
-
-      expect(screen.getByText(/Overview Tab - BAT54/)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('tab', { name: /speakers/i }));
+      await waitFor(() => expect(screen.getByTestId('event-speakers-tab')).toBeInTheDocument());
     });
 
-    it('should_passEventCodeToSpeakersTab', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=speakers');
-
-      expect(screen.getByText(/Speakers Tab - BAT54/)).toBeInTheDocument();
+    it('switches to Registrations', async () => {
+      renderWithProviders();
+      fireEvent.click(screen.getByRole('tab', { name: /registrations/i }));
+      await waitFor(() => expect(screen.getByTestId('event-participants-tab')).toBeInTheDocument());
     });
 
-    it('should_passEventCodeToParticipantsTab', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=participants');
+    it('switches to Communications', async () => {
+      renderWithProviders();
+      fireEvent.click(screen.getByRole('tab', { name: /communications/i }));
+      await waitFor(() =>
+        expect(screen.getByTestId('event-communications-tab')).toBeInTheDocument()
+      );
+    });
 
-      expect(screen.getByText(/Participants Tab - BAT54/)).toBeInTheDocument();
+    it('switches to Details', async () => {
+      renderWithProviders();
+      fireEvent.click(screen.getByRole('tab', { name: /details/i }));
+      await waitFor(() => expect(screen.getByTestId('event-details-tab')).toBeInTheDocument());
     });
   });
 
-  describe('Loading State', () => {
-    it('should_displayLoadingSpinner_when_loading', async () => {
+  describe('URL-based tab selection', () => {
+    it('selects a tab from the ?tab= param', () => {
+      renderWithProviders('/organizer/events/BAT54?tab=communications');
+      expect(screen.getByTestId('event-communications-tab')).toBeInTheDocument();
+    });
+
+    it('defaults to Cockpit for an invalid ?tab=', () => {
+      renderWithProviders('/organizer/events/BAT54?tab=bogus');
+      expect(screen.getByTestId('event-overview-tab')).toBeInTheDocument();
+    });
+  });
+
+  describe('Lifecycle dim/lock (FR5)', () => {
+    it('locks Wrap-up before EVENT_LIVE (disabled tab)', () => {
+      renderWithProviders();
+      expect(screen.getByRole('tab', { name: /wrap-?up/i })).toBeDisabled();
+    });
+
+    it('falls back to Cockpit when the URL targets a locked tab', () => {
+      renderWithProviders('/organizer/events/BAT54?tab=wrapup');
+      expect(screen.getByTestId('event-overview-tab')).toBeInTheDocument();
+      expect(screen.queryByTestId('event-wrapup-tab')).not.toBeInTheDocument();
+    });
+
+    it('unlocks Wrap-up from EVENT_LIVE onward', async () => {
+      await setEvent({ workflowState: 'EVENT_LIVE' });
+      renderWithProviders('/organizer/events/BAT54?tab=wrapup');
+      expect(screen.getByRole('tab', { name: /wrap-?up/i })).not.toBeDisabled();
+      expect(screen.getByTestId('event-wrapup-tab')).toBeInTheDocument();
+    });
+
+    it('keeps Cockpit, Details, and Settings active in every state', async () => {
+      await setEvent({ workflowState: 'CREATED' });
+      renderWithProviders();
+      expect(screen.getByRole('tab', { name: /cockpit/i })).not.toBeDisabled();
+      expect(screen.getByRole('tab', { name: /details/i })).not.toBeDisabled();
+      expect(screen.getByRole('tab', { name: /settings/i })).not.toBeDisabled();
+    });
+  });
+
+  describe('Attention badges (FR6)', () => {
+    it('shows the Speakers count badge when work is waiting', async () => {
+      await setBadges({ speakers: 3 });
+      renderWithProviders();
+      expect(screen.getByTestId('event-tab-badge-speakers')).toBeInTheDocument();
+    });
+
+    it('shows the Publishing ready dot', async () => {
+      await setBadges({ publishingReady: true });
+      renderWithProviders();
+      expect(screen.getByTestId('event-tab-badge-publishing')).toBeInTheDocument();
+    });
+
+    it('shows the Communications overdue dot', async () => {
+      await setBadges({ commsOverdue: true });
+      renderWithProviders();
+      expect(screen.getByTestId('event-tab-badge-communications')).toBeInTheDocument();
+    });
+
+    it('shows no badges when all counts are zero', () => {
+      renderWithProviders();
+      expect(screen.queryByTestId('event-tab-badge-speakers')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('event-tab-badge-publishing')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('event-tab-badge-communications')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Loading / error / not-found states', () => {
+    it('shows the loading spinner', async () => {
       const { useEvent } = await import('@/hooks/useEvents');
       (useEvent as ReturnType<typeof vi.fn>).mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
       });
-
       renderWithProviders();
-
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
-  });
 
-  describe('Error State', () => {
-    it('should_displayErrorAlert_when_errorOccurs', async () => {
+    it('shows an error alert + back button', async () => {
       const { useEvent } = await import('@/hooks/useEvents');
       (useEvent as ReturnType<typeof vi.fn>).mockReturnValue({
         data: null,
         isLoading: false,
         error: { message: 'Failed to load event' },
       });
-
       renderWithProviders();
-
       expect(screen.getByText(/Failed to load event/i)).toBeInTheDocument();
-    });
-
-    it('should_displayBackButton_when_errorOccurs', async () => {
-      const { useEvent } = await import('@/hooks/useEvents');
-      (useEvent as ReturnType<typeof vi.fn>).mockReturnValue({
-        data: null,
-        isLoading: false,
-        error: { message: 'Failed to load event' },
-      });
-
-      renderWithProviders();
-
       expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
     });
-  });
 
-  describe('Not Found State', () => {
-    it('should_displayNotFoundAlert_when_eventNotFound', async () => {
+    it('shows the not-found alert', async () => {
       const { useEvent } = await import('@/hooks/useEvents');
       (useEvent as ReturnType<typeof vi.fn>).mockReturnValue({
         data: null,
         isLoading: false,
         error: null,
       });
-
       renderWithProviders();
-
       expect(screen.getByText(/Event not found/i)).toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('should_haveProperTabListRole', () => {
+    it('exposes a tablist with an aria-label', () => {
       renderWithProviders();
-
-      expect(screen.getByRole('tablist')).toBeInTheDocument();
-    });
-
-    it('should_haveProperTabRoles', () => {
-      renderWithProviders();
-
-      const tabs = screen.getAllByRole('tab');
-      // 10 tabs: Overview, Speakers, Venue, Participants, Publishing, Newsletter,
-      // Registrant Notices, Settings, Photos, Appreciation
-      expect(tabs.length).toBe(10);
-    });
-
-    it('should_haveAriaLabel_forTabNavigation', () => {
-      renderWithProviders();
-
       const tablist = screen.getByRole('tablist');
+      expect(tablist).toBeInTheDocument();
       expect(tablist).toHaveAttribute('aria-label');
     });
   });

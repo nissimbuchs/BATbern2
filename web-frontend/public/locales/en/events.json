@@ -14,7 +14,13 @@
       "settings": "Settings",
       "photos": "Photos",
       "registrantNotices": "Registrant Notices",
-      "appreciation": "Appreciation"
+      "appreciation": "Appreciation",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Speakers & Agenda",
+      "registrations": "Registrations",
+      "communications": "Communications",
+      "wrapup": "Wrap-up",
+      "details": "Details"
     },
     "tabsAriaLabel": "Event page navigation",
     "overview": {
@@ -247,6 +253,13 @@
       "sendResultSkipped": "{{count}} had no email address on file (skipped).",
       "sendResultFailed": "{{count}} failed.",
       "alreadySent": "This notice has already been sent (or a send is in progress) for this event."
+    },
+    "lockedTabSuffix": "{{tab}} (locked until the event is live)",
+    "details": {
+      "heading": "Event details",
+      "intro": "The event's identity, topic, and schedule. Set these once early — they rarely change.",
+      "editButton": "Edit event details",
+      "noTopic": "No topic selected yet"
     }
   },
   "dashboard": {

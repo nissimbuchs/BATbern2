@@ -1,16 +1,19 @@
 /**
- * EventPage Component (Story 5.6)
+ * EventPage Component (Story 5.6; Epic 14 Phase A — lifecycle-aware 8-tab shell)
  *
- * Unified event page with tab-based navigation consolidating:
- * - EventDetail (overview + speaker status)
- * - EventDetailEdit (edit + sessions)
- * - SpeakerOutreachPage (outreach tracking)
+ * Unified organizer event-detail page. As of Epic 14 Phase A the page presents
+ * a lifecycle-aware 8-tab IA in two clusters — a "work" cluster
+ * (Cockpit · Speakers & Agenda · Registrations · Communications · Publishing ·
+ * Wrap-up) and a "config" cluster (Details · Settings) — driven by the
+ * declarative workflowState → relevance map (tabs dim / lock per state) and
+ * count-driven attention badges. Existing tab components are recomposed into
+ * the new slots with unchanged content; Phases B–G replace each tab's internals.
  *
  * Route: /organizer/events/:eventCode
- * URL params: ?tab=overview|speakers|venue|participants|publishing|settings
+ * URL params: ?tab=cockpit|speakers|registrations|communications|publishing|wrapup|details|settings
  */
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -21,6 +24,7 @@ import {
   Alert,
   Button,
   Stack,
+  Badge,
   useTheme,
   useMediaQuery,
   BottomNavigation,
@@ -29,56 +33,79 @@ import {
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
-  Dashboard as OverviewIcon,
+  Dashboard as CockpitIcon,
   People as SpeakersIcon,
-  LocationOn as VenueIcon,
-  PersonAdd as ParticipantsIcon,
+  PersonAdd as RegistrationsIcon,
+  EmailOutlined as CommunicationsIcon,
   Publish as PublishIcon,
+  CardGiftcard as WrapupIcon,
+  Description as DetailsIcon,
   Settings as SettingsIcon,
-  EmailOutlined as NewsletterIcon,
   Slideshow as SlideshowIcon,
-  PhotoLibrary as PhotosIcon,
   LiveTv as LiveTvIcon,
-  Favorite as AppreciationIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
 import { useEventStore } from '@/stores/eventStore';
+import { getTabRelevance, type EventTabId } from '@/utils/workflow/workflowState';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 
 import { EventOverviewTab } from './EventOverviewTab';
 import { EventSpeakersTab } from './EventSpeakersTab';
-import { EventVenueTab } from './EventVenueTab';
 import EventParticipantsTab from './EventParticipantsTab';
 import { EventPublishingTab } from './EventPublishingTab';
 import { EventSettingsTab } from './EventSettingsTab';
-import { EventNewsletterTab } from './EventNewsletterTab';
-import { EventRegistrantNoticesTab } from './EventRegistrantNoticesTab';
-import { EventPhotosTab } from './EventPhotosTab';
-import { EventAppreciationTab } from './EventAppreciationTab';
+import { EventCommunicationsContainer } from './EventCommunicationsContainer';
+import { EventWrapupContainer } from './EventWrapupContainer';
+import { EventDetailsTab } from './EventDetailsTab';
+import { useTabBadges } from './useTabBadges';
 import { EventForm } from '@/components/organizer/EventManagement';
 
-// Tab configuration
+// 8-tab lifecycle IA: "work" cluster (cockpit…wrapup) then "config" cluster.
+// `id` values are the stable ?tab= keys + EventTabId values consumed by the
+// relevance map.
 const TABS = [
-  { id: 'overview', labelKey: 'common:labels.overview', icon: <OverviewIcon /> },
-  { id: 'speakers', labelKey: 'common:navigation.speakers', icon: <SpeakersIcon /> },
-  { id: 'venue', labelKey: 'eventPage.tabs.venue', icon: <VenueIcon /> },
-  { id: 'participants', labelKey: 'eventPage.tabs.participants', icon: <ParticipantsIcon /> },
-  { id: 'publishing', labelKey: 'eventPage.tabs.publishing', icon: <PublishIcon /> },
-  { id: 'newsletter', labelKey: 'eventPage.tabs.newsletter', icon: <NewsletterIcon /> },
+  { id: 'cockpit', labelKey: 'eventPage.tabs.cockpit', icon: <CockpitIcon />, cluster: 'work' },
   {
-    id: 'registrant-notices',
-    labelKey: 'eventPage.tabs.registrantNotices',
-    icon: <SlideshowIcon />,
+    id: 'speakers',
+    labelKey: 'eventPage.tabs.speakersAgenda',
+    icon: <SpeakersIcon />,
+    cluster: 'work',
   },
-  { id: 'settings', labelKey: 'eventPage.tabs.settings', icon: <SettingsIcon /> },
-  { id: 'photos', labelKey: 'eventPage.tabs.photos', icon: <PhotosIcon /> },
-  { id: 'appreciation', labelKey: 'eventPage.tabs.appreciation', icon: <AppreciationIcon /> },
+  {
+    id: 'registrations',
+    labelKey: 'eventPage.tabs.registrations',
+    icon: <RegistrationsIcon />,
+    cluster: 'work',
+  },
+  {
+    id: 'communications',
+    labelKey: 'eventPage.tabs.communications',
+    icon: <CommunicationsIcon />,
+    cluster: 'work',
+  },
+  {
+    id: 'publishing',
+    labelKey: 'eventPage.tabs.publishing',
+    icon: <PublishIcon />,
+    cluster: 'work',
+  },
+  { id: 'wrapup', labelKey: 'eventPage.tabs.wrapup', icon: <WrapupIcon />, cluster: 'work' },
+  { id: 'details', labelKey: 'eventPage.tabs.details', icon: <DetailsIcon />, cluster: 'config' },
+  {
+    id: 'settings',
+    labelKey: 'eventPage.tabs.settings',
+    icon: <SettingsIcon />,
+    cluster: 'config',
+  },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
+
+const DEFAULT_TAB: TabId = 'cockpit';
 
 const isValidTab = (tab: string | null): tab is TabId => {
   return tab !== null && TABS.some((t) => t.id === tab);
@@ -93,8 +120,10 @@ export const EventPage: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { openEditModal, isEditModalOpen, selectedEventCode, closeEditModal } = useEventStore();
 
-  // Get current tab from URL, default to 'overview'
-  const currentTab = isValidTab(searchParams.get('tab')) ? searchParams.get('tab')! : 'overview';
+  // Get current tab from URL, default to the Cockpit.
+  const currentTab: TabId = isValidTab(searchParams.get('tab'))
+    ? (searchParams.get('tab') as TabId)
+    : DEFAULT_TAB;
 
   // Fetch event data with resource expansion including registrations for accurate counts
   const {
@@ -102,6 +131,29 @@ export const EventPage: React.FC = () => {
     isLoading,
     error,
   } = useEvent(eventCode, ['venue', 'topics', 'sessions', 'workflow', 'metrics', 'registrations']);
+
+  const workflowState = (event as { workflowState?: string } | undefined)?.workflowState ?? '';
+  const badges = useTabBadges(event, eventCode);
+
+  // If the URL points at a tab that is locked for this state (e.g. a stale
+  // ?tab=wrapup on an early-stage event), fall back to the Cockpit so we never
+  // render a locked tab's content.
+  const effectiveTab: TabId =
+    getTabRelevance(workflowState, currentTab as EventTabId) === 'locked'
+      ? DEFAULT_TAB
+      : currentTab;
+
+  // If the URL pointed at a locked tab we render the Cockpit instead; normalize
+  // the URL so the address bar (and any stale ?view=) matches the rendered tab.
+  useEffect(() => {
+    if (event && effectiveTab !== currentTab) {
+      const params = new URLSearchParams(searchParams);
+      params.delete('tab'); // effectiveTab is the default Cockpit
+      params.delete('view');
+      setSearchParams(params, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event, effectiveTab, currentTab]);
 
   // Build breadcrumb items
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
@@ -112,24 +164,20 @@ export const EventPage: React.FC = () => {
     [event?.title, t]
   );
 
-  // Handle tab change
+  // Handle tab change (ignores locked tabs defensively — disabled tabs don't fire onChange).
   const handleTabChange = (_event: React.SyntheticEvent, newValue: TabId) => {
+    if (getTabRelevance(workflowState, newValue as EventTabId) === 'locked') return;
     const newParams = new URLSearchParams(searchParams);
-    if (newValue === 'overview') {
+    if (newValue === DEFAULT_TAB) {
       newParams.delete('tab');
     } else {
       newParams.set('tab', newValue);
     }
-    // Clear view param when switching away from speakers tab
+    // Clear view param when switching away from the speakers tab
     if (newValue !== 'speakers') {
       newParams.delete('view');
     }
     setSearchParams(newParams, { replace: true });
-  };
-
-  // Handle mobile bottom nav change
-  const handleMobileNavChange = (_event: React.SyntheticEvent, newValue: TabId) => {
-    handleTabChange(_event, newValue);
   };
 
   const handleBack = () => {
@@ -178,40 +226,76 @@ export const EventPage: React.FC = () => {
     );
   }
 
-  // Handle edit button click
+  // Handle edit button click (opens the existing event-edit modal)
   const handleEdit = () => {
     if (eventCode) {
       openEditModal(eventCode);
     }
   };
 
+  // Per-tab attention badge content (FR6). Returns null when nothing is waiting.
+  const tabBadge = (
+    id: TabId
+  ): { content: React.ReactNode; variant: 'standard' | 'dot' } | null => {
+    if (id === 'speakers' && badges.speakers > 0) {
+      return { content: badges.speakers, variant: 'standard' };
+    }
+    if (id === 'publishing' && badges.publishingReady) {
+      return { content: '', variant: 'dot' };
+    }
+    if (id === 'communications' && badges.commsOverdue) {
+      return { content: '', variant: 'dot' };
+    }
+    return null;
+  };
+
+  // Render a tab label, wrapping it in an attention badge when relevant.
+  const renderTabLabel = (id: TabId, labelKey: string, locked: boolean) => {
+    const label = t(labelKey, id);
+    const badge = locked ? null : tabBadge(id);
+    if (!badge) return label;
+    return (
+      <Badge
+        color={badge.variant === 'dot' ? 'error' : 'primary'}
+        variant={badge.variant}
+        badgeContent={badge.variant === 'standard' ? badge.content : undefined}
+        sx={{ '& .MuiBadge-badge': { right: -10, top: 2 } }}
+        data-testid={`event-tab-badge-${id}`}
+      >
+        <span>{label}</span>
+      </Badge>
+    );
+  };
+
   // Render current tab content
   const renderTabContent = () => {
-    switch (currentTab) {
-      case 'overview':
+    switch (effectiveTab) {
+      case 'cockpit':
+        // Interim Cockpit = today's Overview content (replaced in Phase B).
         return <EventOverviewTab event={event} eventCode={eventCode!} onEdit={handleEdit} />;
       case 'speakers':
         return <EventSpeakersTab eventCode={eventCode!} />;
-      case 'venue':
-        return <EventVenueTab event={event} />;
-      case 'participants':
+      case 'registrations':
         return <EventParticipantsTab event={event} />;
+      case 'communications':
+        return <EventCommunicationsContainer event={event} eventCode={eventCode!} />;
       case 'publishing':
         return <EventPublishingTab event={event} eventCode={eventCode!} />;
-      case 'newsletter':
-        return <EventNewsletterTab eventCode={eventCode!} eventTitle={event.title || ''} />;
-      case 'registrant-notices':
-        return <EventRegistrantNoticesTab eventCode={eventCode!} eventTitle={event.title || ''} />;
+      case 'wrapup':
+        return <EventWrapupContainer eventCode={eventCode!} />;
+      case 'details':
+        return <EventDetailsTab event={event} onEdit={handleEdit} />;
       case 'settings':
         return <EventSettingsTab event={event} eventCode={eventCode!} />;
-      case 'photos':
-        return <EventPhotosTab eventCode={eventCode!} />;
-      case 'appreciation':
-        return <EventAppreciationTab eventCode={eventCode!} />;
       default:
-        return <EventOverviewTab event={event} eventCode={eventCode!} />;
+        return <EventOverviewTab event={event} eventCode={eventCode!} onEdit={handleEdit} />;
     }
   };
+  // (default delegates to the Cockpit's Overview content, with the same onEdit wiring.)
+
+  // Index of the first config-cluster tab — used to draw a divider between the
+  // two clusters.
+  const firstConfigIndex = TABS.findIndex((t) => t.cluster === 'config');
 
   return (
     <Box sx={{ pb: isMobile ? 8 : 0 }}>
@@ -219,7 +303,7 @@ export const EventPage: React.FC = () => {
         {/* Breadcrumbs */}
         <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
 
-        {/* Header */}
+        {/* Header — event title persists on every tab (FR2) */}
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           justifyContent="space-between"
@@ -261,23 +345,43 @@ export const EventPage: React.FC = () => {
         {!isMobile && (
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
             <Tabs
-              value={currentTab}
+              value={effectiveTab}
               onChange={handleTabChange}
               aria-label={t('eventPage.tabsAriaLabel', 'Event page navigation')}
               variant="scrollable"
               scrollButtons="auto"
             >
-              {TABS.map((tab) => (
-                <Tab
-                  key={tab.id}
-                  value={tab.id}
-                  label={t(tab.labelKey, tab.id)}
-                  icon={tab.icon}
-                  iconPosition="start"
-                  data-testid={`event-tab-${tab.id}`}
-                  sx={{ minHeight: 48 }}
-                />
-              ))}
+              {TABS.map((tab, index) => {
+                const relevance = getTabRelevance(workflowState, tab.id as EventTabId);
+                const locked = relevance === 'locked';
+                const dimmed = relevance === 'dimmed';
+                const isClusterStart = index === firstConfigIndex;
+                return (
+                  <Tab
+                    key={tab.id}
+                    value={tab.id}
+                    label={renderTabLabel(tab.id, tab.labelKey, locked)}
+                    icon={locked ? <LockIcon fontSize="small" /> : tab.icon}
+                    iconPosition="start"
+                    disabled={locked}
+                    aria-label={
+                      locked
+                        ? t('eventPage.lockedTabSuffix', '{{tab}} (locked)', {
+                            tab: t(tab.labelKey, tab.id),
+                          })
+                        : undefined
+                    }
+                    data-testid={`event-tab-${tab.id}`}
+                    sx={{
+                      minHeight: 48,
+                      opacity: dimmed ? 0.55 : undefined,
+                      ...(isClusterStart
+                        ? { borderLeft: 2, borderColor: 'divider', ml: 1, pl: 2 }
+                        : {}),
+                    }}
+                  />
+                );
+              })}
             </Tabs>
           </Box>
         )}
@@ -288,20 +392,31 @@ export const EventPage: React.FC = () => {
 
       {/* Mobile Bottom Navigation — icon-only for every tab (consistent + compact). Labels are
           provided via aria-label for accessibility but never rendered, so the selected tab does
-          not widen the bar (MUI shows the selected action's label by default). */}
+          not widen the bar. Locked tabs are disabled. Phase G reshapes this into a 4-primary
+          bottom nav + a ⋯ More sheet. */}
       {isMobile && (
         <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
-          <BottomNavigation value={currentTab} onChange={handleMobileNavChange} showLabels={false}>
-            {TABS.map((tab) => (
-              <BottomNavigationAction
-                key={tab.id}
-                value={tab.id}
-                icon={tab.icon}
-                aria-label={t(tab.labelKey, tab.id)}
-                data-testid={`event-tab-${tab.id}`}
-                sx={{ minWidth: 0, flex: 1, px: 0 }}
-              />
-            ))}
+          <BottomNavigation value={effectiveTab} onChange={handleTabChange} showLabels={false}>
+            {TABS.map((tab) => {
+              const locked = getTabRelevance(workflowState, tab.id as EventTabId) === 'locked';
+              return (
+                <BottomNavigationAction
+                  key={tab.id}
+                  value={tab.id}
+                  disabled={locked}
+                  icon={locked ? <LockIcon fontSize="small" /> : tab.icon}
+                  aria-label={
+                    locked
+                      ? t('eventPage.lockedTabSuffix', '{{tab}} (locked)', {
+                          tab: t(tab.labelKey, tab.id),
+                        })
+                      : t(tab.labelKey, tab.id)
+                  }
+                  data-testid={`event-tab-${tab.id}`}
+                  sx={{ minWidth: 0, flex: 1, px: 0 }}
+                />
+              );
+            })}
           </BottomNavigation>
         </Paper>
       )}

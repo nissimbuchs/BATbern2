@@ -14,7 +14,13 @@
       "settings": "Parameters",
       "photos": "Fotografias",
       "registrantNotices": "Infos participants",
-      "appreciation": "Engraziaments"
+      "appreciation": "Engraziaments",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Referents & Agenda",
+      "registrations": "Inscripziuns",
+      "communications": "Communicaziuns",
+      "wrapup": "Conclusiun",
+      "details": "Detagls"
     },
     "tabsAriaLabel": "Navigaziun da la pagina eveniment",
     "overview": {
@@ -233,6 +239,13 @@
       "sendResultSkipped": "{{count}} senza adressa d’e-mail (sursaglì).",
       "sendResultFailed": "{{count}} betg reussì.",
       "alreadySent": "Questa infurmaziun è gia vegnida tramessa (u in process è en curs) per quest eveniment."
+    },
+    "lockedTabSuffix": "{{tab}} (serrà fin che l'occurrenza è en direct)",
+    "details": {
+      "heading": "Detagls da l'occurrenza",
+      "intro": "Identitad, tema e termin da l'occurrenza. Definir baud — chaschuna paucs midaments.",
+      "editButton": "Modifitgar ils detagls",
+      "noTopic": "Nagin tema tschernì"
     }
   },
   "dashboard": {

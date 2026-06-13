@@ -7,7 +7,7 @@
  *
  * Displays workflow progress with:
  * - Progress bar showing completion percentage (0-100%)
- * - Current step indicator (Step X/9: Step Name)
+ * - Current step indicator (Step X/8: Step Name)
  * - Clickable progress bar navigation to workflow visualization
  * - Warning indicators for blockers (⚠️)
  * - [View Workflow Details] button

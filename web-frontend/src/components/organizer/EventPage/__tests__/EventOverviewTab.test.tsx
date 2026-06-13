@@ -186,7 +186,7 @@ describe('EventOverviewTab Component (Story 5.6)', () => {
       const editButton = screen.getByRole('button', { name: /edit/i });
       fireEvent.click(editButton);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/events/BAT54?tab=overview&edit=true');
+      expect(mockNavigate).toHaveBeenCalledWith('/organizer/events/BAT54?tab=cockpit&edit=true');
     });
 
     it('should_displayPreviewButton_when_rendered', () => {

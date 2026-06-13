@@ -159,7 +159,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
       onEdit();
     } else {
       // Default behavior: navigate to edit mode
-      navigate(`/organizer/events/${eventCode}?tab=overview&edit=true`);
+      navigate(`/organizer/events/${eventCode}?tab=cockpit&edit=true`);
     }
   };
 

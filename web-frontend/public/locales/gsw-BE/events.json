@@ -14,7 +14,13 @@
       "settings": "Istellige",
       "photos": "Fotos",
       "registrantNotices": "Teilnähmer-Infos",
-      "appreciation": "Wertschätzig"
+      "appreciation": "Wertschätzig",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Referänte & Agenda",
+      "registrations": "Aamäldige",
+      "communications": "Kommunikation",
+      "wrapup": "Nachbereitig",
+      "details": "Details"
     },
     "tabsAriaLabel": "Veranstautigsnavigation",
     "overview": {
@@ -239,6 +245,13 @@
       "sendResultSkipped": "{{count}} ohni E-Mail-Adrässe (übersprunge).",
       "sendResultFailed": "{{count}} fehlgschlage.",
       "alreadySent": "Die Mitteilig isch für dää Event scho gschickt worde (oder e Versand louft grad)."
+    },
+    "lockedTabSuffix": "{{tab}} (gsperrt bis d Veraastaltig live isch)",
+    "details": {
+      "heading": "Eckdate",
+      "intro": "Identität, Thema u Termin vor Veraastaltig. Eimal früeh festlege – ändered sech sälte.",
+      "editButton": "Eckdate bearbeite",
+      "noTopic": "No kes Thema gwählt"
     }
   },
   "dashboard": {

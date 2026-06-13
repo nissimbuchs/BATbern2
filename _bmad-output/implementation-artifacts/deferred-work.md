@@ -200,6 +200,45 @@ Everything else: test-hardening, kanban/modal UX papercuts, sprint-status YAML h
 - **`resolveCallerCompanyNameOrNull()` fail-open on resolution error** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:227`] — swallows all exceptions and returns null, so a partner whose company resolution transiently fails (User Service hiccup) is treated as a null-company organizer and bypasses the ownership guard in `updateTopic`/`deleteTopic` (`callerCompanyName != null && ...` short-circuits). Pre-existing — this commit only flipped the `.equals()` operand order to be null-safe for community topics (correct). Consider distinguishing "organizer (no company)" from "partner whose company could not be resolved." [Edge]
 - **`getCurrentUsername()` empty-string trap → blank `suggestedBy`** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:108`] — `suggestCommunityTopic` persists `suggestedBy` with no null/blank guard; per the project's documented Pattern 3b twin, the JWT username claim can be empty in some auth paths, yielding an un-attributable community topic. Dormant in staging (JWT always carries username); a local-dev/edge risk. [Blind]
 
+## Deferred from: code review of Epic 14 Phase A shell (2026-06-13)
+
+Incidental, low-severity items surfaced reviewing `spec-14-a-event-detail-shell.md` (the 8-tab
+shell). All are bounded by the interim badge heuristics; the real fix lands with Phase E's
+first-class Communications audience model.
+
+- **Comms-overdue dot under-matches venue/caterer tasks** [`web-frontend/src/components/organizer/EventPage/tabBadges.ts` `COMMS_TASK_PATTERN`] — the regex was deliberately narrowed to clearly comms-owned names (newsletter / registrant-notice / Teilnehmer-Info) to avoid false positives like "Book the venue". Consequence: an overdue `Venue Booking` / `Catering Coordination` task does NOT raise the Communications dot, even though Venue & Caterer is a comms sub-surface. Phase E (14.E.2) should fold venue/caterer tasks into the audience model and re-derive the dot from a first-class category instead of a name heuristic. [Edge-case hunter M3]
+- **Speakers attention-badge can double-count one speaker** [`tabBadges.ts` `computeTabBadges`] — `speakers = sessionsNeedingSlot + pendingMaterialsCount`; a speaker with an unslotted session who also owes materials counts in both terms. Intended as an "open items" count, not a headcount; if Phase B wants a true headcount, de-dupe by speaker. [Blind #1 / Edge L5]
+- **Unknown/absent `workflowState` leaves Wrap-up active (not locked)** [`web-frontend/src/utils/workflow/workflowState.ts` `getTabRelevance`] — by frozen design ("never hide a tab"; unknown → active) and harmless since `workflowState` is always present on `/organizer/events/:eventCode`. Noted as a conscious trade-off, NOT a fix; revisit only if a real legacy/empty-state event is ever observed exposing post-event tools early. [Edge-case hunter H1 — accepted-by-design]
+
+## Deferred from: quick-dev scoping of Epic 14 (2026-06-13)
+
+`/bmad-quick-dev` was pointed at `docs/prd/epic-14-event-detail-redesign.md` (the full epic = 24
+stories, FR1–FR47, 7 ordered phases A–G). Per quick-dev's single-goal scope rule, **Phase A (the
+8-tab lifecycle-aware shell — Stories 14.A.1 + 14.A.2 + 14.A.3)** was carved off as the active goal
+(spec `spec-14-a-event-detail-shell.md`). The remaining phases are deferred — each is a natural
+follow-up quick-dev pass (or per-story `/bmad-create-story` → `/bmad-dev-story`), and all assume the
+Phase A shell + the `workflowState → relevance` map already exist:
+
+- **Phase B — Cockpit** (14.B.1–14.B.5): 8-step lifecycle spine, "Needs your attention" task cards,
+  the §12.1 per-card completion-signal model (done cards disappear), event-day virtual cards
+  (@ AGENDA_PUBLISHED onward), 4 clickable metric tiles, ＋Add task. _(FR7–FR13 · AR3,AR4)_
+- **Phase C — Speakers & Agenda** (14.C.1–14.C.5): Pool/Agenda/Slots sub-view toggle, 4-phase
+  kanban + workflow-safe drag grammar + collapsible Declined, Agenda session table, **2-column
+  in-tab Slots** (rework `DragDropSlotAssignment`, retire the `/slot-assignment` route + `100vh`
+  lock + repoint every in-app navigator). _(FR14–FR23 · AR5,AR6)_
+- **Phase D — Registrations** (14.D.1–14.D.4): header (count, capacity bar, badge exports, Enrol),
+  search + status filters, row actions, **waitlist-as-filter**, pagination/virtualization. _(FR24–FR28 · NFR3)_
+- **Phase E — Communications** (14.E.1–14.E.3): 4-audience compose switch, **wire the existing
+  `useSendReminder` hook** for speaker bulk comms, Venue & Caterer audience moved from Settings. _(FR29–FR34)_
+- **Phase F — Config cluster + remaining tabs** (14.F.1–14.F.5): Publishing & Settings finalization,
+  Wrap-up (photos + thank-you notes), Details (identity + topic), the **Topic focused overlay**
+  (pick → pin → brainstorm), and removing the interim Overview. _(FR35–FR43 · AR7)_
+- **Phase G — Mobile** (14.G.1–14.G.4): bottom nav + ⋯ More sheet, tap-to-assign Slots,
+  tables→cards, mobile Cockpit. _(FR44–FR47 · NFR4)_
+
+Cross-cutting constraint on **every** deferred phase: NFR9/AR9 beta-first dual-serve — frontend-only,
+additive-and-backward-compatible backend only, recompose-don't-rewrite. (Full detail in the epic.)
+
 ## Deferred from: code review of story-7.2 (2026-06-10)
 
 - **`@PreAuthorize("hasRole('ATTENDEE')")` runtime-assumption (verify-in-prod)** [`services/event-management-service/src/main/java/ch/batbern/events/controller/SelfNominationController.java:50`] — the entire self-nomination feature depends on logged-in attendees carrying an explicit `ROLE_ATTENDEE` claim/assignment. `JwtRolesConverter` maps `ROLE_ATTENDEE` from `custom:role` / `role_assignments`; JIT provisioning defaults ATTENDEE and Pattern 3b provides a DB-fallback, so it should hold — but the integration tests use `@WithMockUser(roles={"ATTENDEE"})` and cannot detect a missing real-world claim. If absent, every nomination returns 403 and the feature is dead-on-arrival. Confirm a real registered/federated attendee's token carries ATTENDEE before sign-off. [Auditor]

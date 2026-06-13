@@ -14,7 +14,13 @@
       "settings": "Instellingen",
       "photos": "Foto's",
       "registrantNotices": "Deelnemersberichten",
-      "appreciation": "Waardering"
+      "appreciation": "Waardering",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Sprekers & Agenda",
+      "registrations": "Inschrijvingen",
+      "communications": "Communicatie",
+      "wrapup": "Afronding",
+      "details": "Details"
     },
     "tabsAriaLabel": "Navigatie evenementenpagina",
     "overview": {
@@ -233,6 +239,13 @@
       "sendResultSkipped": "{{count}} zonder e-mailadres in het bestand (overgeslagen).",
       "sendResultFailed": "{{count}} mislukt.",
       "alreadySent": "Dit bericht is al verstuurd (of een verzending is bezig) voor dit evenement."
+    },
+    "lockedTabSuffix": "{{tab}} (vergrendeld tot het evenement live is)",
+    "details": {
+      "heading": "Evenementdetails",
+      "intro": "Identiteit, thema en planning van het evenement. Stel deze vroeg in — ze veranderen zelden.",
+      "editButton": "Details bewerken",
+      "noTopic": "Nog geen thema gekozen"
     }
   },
   "dashboard": {

@@ -14,7 +14,13 @@
       "settings": "Asetukset",
       "photos": "Valokuvat",
       "registrantNotices": "Ilmoittautuneiden tiedotteet",
-      "appreciation": "Kiitokset"
+      "appreciation": "Kiitokset",
+      "cockpit": "Ohjaamo",
+      "speakersAgenda": "Puhujat & Ohjelma",
+      "registrations": "Ilmoittautumiset",
+      "communications": "Viestintä",
+      "wrapup": "Jälkityöt",
+      "details": "Tiedot"
     },
     "tabsAriaLabel": "Tapahtumassivun navigointi",
     "overview": {
@@ -233,6 +239,13 @@
       "sendResultSkipped": "{{count}} ilman sähköpostiosoitetta (ohitettu).",
       "sendResultFailed": "{{count}} epäonnistui.",
       "alreadySent": "Tämä tiedote on jo lähetetty (tai lähetys on käynnissä) tälle tapahtumalle."
+    },
+    "lockedTabSuffix": "{{tab}} (lukittu kunnes tapahtuma on käynnissä)",
+    "details": {
+      "heading": "Tapahtuman tiedot",
+      "intro": "Tapahtuman identiteetti, aihe ja aikataulu. Aseta nämä ajoissa — ne muuttuvat harvoin.",
+      "editButton": "Muokkaa tietoja",
+      "noTopic": "Aihetta ei ole vielä valittu"
     }
   },
   "dashboard": {

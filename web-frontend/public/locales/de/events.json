@@ -14,7 +14,13 @@
       "settings": "Einstellungen",
       "photos": "Fotos",
       "registrantNotices": "Teilnehmer-Infos",
-      "appreciation": "Wertschätzung"
+      "appreciation": "Wertschätzung",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Referenten & Agenda",
+      "registrations": "Anmeldungen",
+      "communications": "Kommunikation",
+      "wrapup": "Nachbereitung",
+      "details": "Details"
     },
     "tabsAriaLabel": "Veranstaltungsseiten-Navigation",
     "overview": {
@@ -247,6 +253,13 @@
       "sendResultSkipped": "{{count}} ohne E-Mail-Adresse hinterlegt (übersprungen).",
       "sendResultFailed": "{{count}} fehlgeschlagen.",
       "alreadySent": "Diese Mitteilung wurde für diesen Event bereits gesendet (oder ein Versand läuft)."
+    },
+    "lockedTabSuffix": "{{tab}} (gesperrt bis die Veranstaltung live ist)",
+    "details": {
+      "heading": "Eckdaten",
+      "intro": "Identität, Thema und Termin der Veranstaltung. Einmal früh festlegen – ändert sich selten.",
+      "editButton": "Eckdaten bearbeiten",
+      "noTopic": "Noch kein Thema gewählt"
     }
   },
   "dashboard": {

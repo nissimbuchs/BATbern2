@@ -14,7 +14,13 @@
       "settings": "Paramètres",
       "photos": "Photos",
       "registrantNotices": "Infos participants",
-      "appreciation": "Remerciements"
+      "appreciation": "Remerciements",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Intervenants & Programme",
+      "registrations": "Inscriptions",
+      "communications": "Communications",
+      "wrapup": "Bilan",
+      "details": "Détails"
     },
     "tabsAriaLabel": "Navigation de la page événement",
     "overview": {
@@ -233,6 +239,13 @@
       "sendResultSkipped": "{{count}} sans adresse e-mail enregistrée (ignorés).",
       "sendResultFailed": "{{count}} en échec.",
       "alreadySent": "Cette information a déjà été envoyée (ou un envoi est en cours) pour cet événement."
+    },
+    "lockedTabSuffix": "{{tab}} (verrouillé jusqu'au début de l'événement)",
+    "details": {
+      "heading": "Détails de l'événement",
+      "intro": "Identité, thème et calendrier de l'événement. À définir tôt — ils changent rarement.",
+      "editButton": "Modifier les détails",
+      "noTopic": "Aucun thème sélectionné"
     }
   },
   "dashboard": {

@@ -14,7 +14,13 @@
       "settings": "Configuración",
       "photos": "Fotos",
       "registrantNotices": "Avisos a inscritos",
-      "appreciation": "Agradecimientos"
+      "appreciation": "Agradecimientos",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Ponentes y Agenda",
+      "registrations": "Inscripciones",
+      "communications": "Comunicaciones",
+      "wrapup": "Cierre",
+      "details": "Detalles"
     },
     "tabsAriaLabel": "Navegación de la página de evento",
     "overview": {
@@ -233,6 +239,13 @@
       "sendResultSkipped": "{{count}} sin dirección de correo registrada (omitidos).",
       "sendResultFailed": "{{count}} con error.",
       "alreadySent": "Este aviso ya se ha enviado (o hay un envío en curso) para este evento."
+    },
+    "lockedTabSuffix": "{{tab}} (bloqueado hasta que el evento esté en directo)",
+    "details": {
+      "heading": "Detalles del evento",
+      "intro": "Identidad, tema y calendario del evento. Defínelos pronto — rara vez cambian.",
+      "editButton": "Editar detalles",
+      "noTopic": "Aún no hay tema seleccionado"
     }
   },
   "dashboard": {

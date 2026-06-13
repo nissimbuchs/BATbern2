@@ -14,7 +14,13 @@
       "settings": "設定",
       "photos": "写真",
       "registrantNotices": "参加者へのお知らせ",
-      "appreciation": "感謝"
+      "appreciation": "感謝",
+      "cockpit": "コックピット",
+      "speakersAgenda": "講演者と議題",
+      "registrations": "登録",
+      "communications": "コミュニケーション",
+      "wrapup": "まとめ",
+      "details": "詳細"
     },
     "tabsAriaLabel": "イベントページのナビゲーション",
     "overview": {
@@ -233,6 +239,13 @@
       "sendResultSkipped": "{{count}} 名はメールアドレス未登録のためスキップしました。",
       "sendResultFailed": "{{count}} 名が失敗しました。",
       "alreadySent": "このお知らせはこのイベントに対して既に送信済みです（または送信中です）。"
+    },
+    "lockedTabSuffix": "{{tab}}（イベント開催までロック）",
+    "details": {
+      "heading": "イベント詳細",
+      "intro": "イベントのアイデンティティ、テーマ、スケジュール。早めに一度設定すれば、変更はほとんどありません。",
+      "editButton": "詳細を編集",
+      "noTopic": "テーマ未選択"
     }
   },
   "dashboard": {
