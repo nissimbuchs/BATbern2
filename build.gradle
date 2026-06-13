@@ -87,6 +87,9 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             
             // Spring Boot Core
             implementation 'org.springframework.boot:spring-boot-starter-web'
+            // Epic 13 (SB4): RestTemplate/RestTemplateBuilder support is its own module now
+            // (org.springframework.boot.restclient) — no longer transitive from starter-web.
+            implementation 'org.springframework.boot:spring-boot-starter-restclient'
             implementation 'org.springframework.boot:spring-boot-starter-actuator'
             implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
             implementation 'org.springframework.boot:spring-boot-starter-validation'

@@ -55,13 +55,12 @@ public class VpcInternalAuthorizationManager implements AuthorizationManager<Req
     }
 
     /**
-     * Spring Security 6.4+ entry point. {@code check(...)} is abstract on Spring
-     * Security 6.x and removed in 7; we implement the logic here in {@code authorize}
-     * (the SS7 abstract method) and keep a thin {@code check} delegate for 6.x.
-     * Epic 13-3 (CUMS → Spring Security 7) deletes the {@code check} override.
+     * Spring Security 7 entry point. {@code authorize} is the single abstract method
+     * (the deprecated {@code check} was removed in SS7); note the {@code ? extends}
+     * wildcard on the authentication supplier added in SS7.
      */
     @Override
-    public AuthorizationResult authorize(Supplier<Authentication> authentication,
+    public AuthorizationResult authorize(Supplier<? extends Authentication> authentication,
             RequestAuthorizationContext context) {
         HttpServletRequest request = context.getRequest();
         String remoteAddr = getClientIpAddress(request);
@@ -91,18 +90,6 @@ public class VpcInternalAuthorizationManager implements AuthorizationManager<Req
             log.error("Failed to parse IP address: {}", remoteAddr, e);
             return new AuthorizationDecision(false);
         }
-    }
-
-    /**
-     * Abstract on Spring Security 6.x (removed in 7) — delegates to {@link #authorize}.
-     * Epic 13-3 deletes this override once CUMS is on Spring Security 7.
-     */
-    @Override
-    @Deprecated
-    @SuppressWarnings("deprecation")
-    public AuthorizationDecision check(Supplier<Authentication> authentication,
-            RequestAuthorizationContext context) {
-        return (AuthorizationDecision) authorize(authentication, context);
     }
 
     /**

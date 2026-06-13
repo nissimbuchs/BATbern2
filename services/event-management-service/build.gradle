@@ -59,8 +59,11 @@ dependencies {
     // Service-specific: WebSocket for real-time push notifications (BAT-7)
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
-    // Service-specific: Hypersistence Utils for JSONB support (BAT-7)
-    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.0'
+    // Service-specific: Hypersistence Utils for JSONB support (BAT-7).
+    // Epic 13 (SB4): the artifact is Hibernate-version-specific; SB 4.0.7 manages Hibernate
+    // 7.2, so -hibernate-63 (Hibernate 6.3) is replaced by -hibernate-71 (Hibernate 7.1+).
+    // The 6.x JsonBinaryType referenced the moved org.hibernate...BindableType -> "cannot access".
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-71:3.15.3'
 
     // Service-specific: JWT for email confirmation tokens
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
