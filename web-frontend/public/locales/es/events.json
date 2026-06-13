@@ -13,7 +13,8 @@
       "newsletter": "Newsletter",
       "settings": "Configuración",
       "photos": "Fotos",
-      "registrantNotices": "Avisos a inscritos"
+      "registrantNotices": "Avisos a inscritos",
+      "appreciation": "Agradecimientos"
     },
     "tabsAriaLabel": "Navegación de la página de evento",
     "overview": {
@@ -913,7 +914,11 @@
       "count_one": "{{count}} agradecimiento hasta ahora",
       "count_other": "{{count}} agradecimientos hasta ahora",
       "success": "¡Gracias por dar las gracias! 🎉",
-      "error": "Algo salió mal. Inténtalo de nuevo."
+      "error": "Algo salió mal. Inténtalo de nuevo.",
+      "publicNotice": "Los agradecimientos con sesión iniciada pueden mostrarse públicamente con tu nombre y empresa."
+    },
+    "marquee": {
+      "badge": "Gracias"
     }
   },
   "qna": {
@@ -947,5 +952,16 @@
         "attended": "Asistió"
       }
     }
+  },
+  "appreciation": {
+    "title": "Mensajes de agradecimiento",
+    "subtitle": "{{count}} agradecimiento(s) para este evento. Destaca un mensaje para mostrarlo en el carrusel público.",
+    "empty": "Aún no hay mensajes de agradecimiento para este evento.",
+    "noNote": "(aplauso sin mensaje)",
+    "anonymous": "Anónimo",
+    "featured": "Destacado",
+    "featureToggle": "Mostrar en el carrusel público",
+    "cannotFeatureAnonymous": "Los agradecimientos anónimos no se pueden destacar (sin nombre).",
+    "loadError": "No se pudieron cargar los mensajes de agradecimiento."
   }
 }

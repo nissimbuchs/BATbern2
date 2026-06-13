@@ -502,6 +502,56 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/thanks/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Feature/un-feature a thank-you note (curated marquee)
+     * @description Organizer-only. Marks a logged-in thank-you note as featured (or un-features it) for the
+     *     PUBLIC curated marquee. Featuring an anonymous note is rejected (409 `THANKS_NOT_FEATURABLE`)
+     *     — anonymous claps have no name and can never reach the public surface.
+     *
+     *     **Story**: 7.7 - "Curated Thank-You Notes in the Partner Marquee"
+     *     **Authorization**: ORGANIZER only.
+     */
+    patch: operations['setThanksFeatured'];
+    trace?: never;
+  };
+  '/thanks/featured': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get curated featured thank-you notes for the public marquee
+     * @description Returns up to `limit` (capped at 9) RANDOM organizer-featured, logged-in thank-you notes
+     *     across ALL events, enriched with the author's first name + company logo. Anonymous notes
+     *     are structurally excluded; the raw username is never returned. PUBLIC.
+     *
+     *     **Story**: 7.7 - "Curated Thank-You Notes in the Partner Marquee"
+     *     **Authorization**: PUBLIC.
+     */
+    get: operations['getFeaturedThanks'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/sessions/{sessionSlug}/qna': {
     parameters: {
       query?: never;
@@ -4931,18 +4981,57 @@ export interface components {
     };
     /**
      * @description Story 7.4: a single organizer-visible thank-you note. Returned ONLY in the
-     *     organizer-authenticated GET response — never to anonymous/public callers.
+     *     organizer-authenticated GET response — never to anonymous/public callers. Story 7.7 adds
+     *     the row `id` + `featured` flag (for the ★ feature toggle) and the resolved author display
+     *     name so the Appreciation panel can show a friendly name rather than the raw username.
      */
     ThanksNoteResponse: {
+      /**
+       * Format: uuid
+       * @description The thank-you note id (for the organizer feature toggle).
+       */
+      id?: string;
       /** @description The submitted note (may be null if the thank-you carried no note). */
       note?: string | null;
       /** @description The logged-in attendee's username, or null for an anonymous clap. */
       thankedByUsername?: string | null;
+      /** @description Resolved author first name (null for anonymous). */
+      thankedByFirstName?: string | null;
+      /** @description Resolved author last name (null for anonymous). */
+      thankedByLastName?: string | null;
+      /** @description Resolved company display name (null when anonymous or opted out). */
+      thankedByCompanyName?: string | null;
+      /** @description Whether this note is currently featured on the public marquee (Story 7.7). */
+      featured?: boolean;
       /**
        * Format: date-time
        * @description When the thank-you was submitted.
        */
       createdAt?: string;
+    };
+    /** @description Story 7.7: organizer request to feature/un-feature a thank-you note on the public marquee. */
+    ThanksFeaturePatchRequest: {
+      /** @description true to feature the note publicly; false to remove it. */
+      featured: boolean;
+    };
+    /**
+     * @description Story 7.7: one featured thank-you note for the PUBLIC marquee — organizer-curated,
+     *     logged-in-only, enriched with the author's name + company logo. The raw username is never
+     *     exposed; company name/logo are null when the author opted out of showing their company.
+     */
+    FeaturedThanksResponse: {
+      /** @description The submitted note text. */
+      note?: string | null;
+      /** @description The event the thank-you was for. */
+      eventCode?: string;
+      /** @description Author first name (shown on the card). */
+      thankedByFirstName?: string | null;
+      /** @description Author last name. */
+      thankedByLastName?: string | null;
+      /** @description Company display name (null when the author opted out). */
+      thankedByCompanyName?: string | null;
+      /** @description Company logo CloudFront URL (null when opted out or no logo). */
+      thankedByCompanyLogoUrl?: string | null;
     };
     /**
      * @description Story 7.4: response for both the POST submit and the GET aggregate. `count` (the public
@@ -6676,6 +6765,96 @@ export interface operations {
            *     }
            */
           'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  setThanksFeatured: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        /** @description The thank-you note id */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ThanksFeaturePatchRequest'];
+      };
+    };
+    responses: {
+      /** @description The updated organizer note view. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ThanksNoteResponse'];
+        };
+      };
+      /** @description Validation error (missing featured flag) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description `THANKS_NOT_FOUND` — no such thank-you for this event. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description `THANKS_NOT_FEATURABLE` — the note is anonymous and cannot be featured. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Anonymous thank-yous cannot be featured on the public marquee.",
+           *       "status": 409,
+           *       "error": "Conflict",
+           *       "details": {
+           *         "code": "THANKS_NOT_FEATURABLE"
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getFeaturedThanks: {
+    parameters: {
+      query?: {
+        /** @description Max notes to return (default 9, hard-capped at 9). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Up to `limit` random featured thank-you notes (may be empty). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FeaturedThanksResponse'][];
         };
       };
       500: components['responses']['InternalServerError'];

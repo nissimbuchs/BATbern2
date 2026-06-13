@@ -13,7 +13,8 @@
       "newsletter": "ニュースレター",
       "settings": "設定",
       "photos": "写真",
-      "registrantNotices": "参加者へのお知らせ"
+      "registrantNotices": "参加者へのお知らせ",
+      "appreciation": "感謝"
     },
     "tabsAriaLabel": "イベントページのナビゲーション",
     "overview": {
@@ -913,7 +914,11 @@
       "count_one": "これまでに{{count}}件の感謝",
       "count_other": "これまでに{{count}}件の感謝",
       "success": "感謝を伝えていただきありがとうございます！🎉",
-      "error": "問題が発生しました。もう一度お試しください。"
+      "error": "問題が発生しました。もう一度お試しください。",
+      "publicNotice": "ログイン済みの感謝は、お名前と会社名とともに公開される場合があります。"
+    },
+    "marquee": {
+      "badge": "ありがとう"
     }
   },
   "qna": {
@@ -947,5 +952,16 @@
         "attended": "参加済み"
       }
     }
+  },
+  "appreciation": {
+    "title": "感謝のメッセージ",
+    "subtitle": "このイベントへの感謝が{{count}}件。メッセージを公開バナーに表示するには注目に設定します。",
+    "empty": "このイベントへの感謝メッセージはまだありません。",
+    "noNote": "（メッセージなしの拍手）",
+    "anonymous": "匿名",
+    "featured": "注目",
+    "featureToggle": "公開バナーに表示",
+    "cannotFeatureAnonymous": "匿名の感謝は注目に設定できません（名前なし）。",
+    "loadError": "感謝のメッセージを読み込めませんでした。"
   }
 }

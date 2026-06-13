@@ -55,6 +55,9 @@ Physical location where event takes place. Includes:
 - **Capacity** (maximum attendee count)
 - **Facilities** (WiFi, projectors, accessibility)
 
+### Waitlist
+A queue for an event whose registrations have reached venue [capacity](#venue). Once capacity is enforced, further sign-ups join the waitlist instead of registering directly; if a spot frees up (e.g. through self-service deregistration), waitlisted attendees can be moved into the event. Introduced by the Epic 10 registration-lifecycle work.
+
 ---
 
 ## Users & Roles
@@ -78,21 +81,25 @@ User with ORGANIZER role who plans and manages events. Has full system access in
 **Note**: In BATbern, Organizers have complete administrative access to ensure operational flexibility.
 
 ### Speaker
-Individual who presents at events. May or may not have platform user account.
+Individual who presents at events. Speakers log in to the platform via **AWS Cognito** (email/password or "Continue with Google") to upload materials, view their schedule, and update their bio. Organizers can also manage speaker data on their behalf.
 
-**With Account**: Can log in to upload materials, view schedule, update bio
-**Without Account**: Organizers manage all data on their behalf; speaker self-service available via magic link
+**Note**: Earlier releases used a passwordless **magic link** for the speaker portal. Epic 11 retired magic-link login entirely; speaker authentication is now Cognito-based, and a Cognito account is provisioned for a speaker at the `READY` workflow transition.
 
-See also: [Speaker Portal](#speaker-portal), [Magic Link](#magic-link)
+See also: [Speaker Portal](#speaker-portal), [SSO / "Continue with Google"](#sso--continue-with-google)
 
 ### Partner
 Organization collaborating with or sponsoring BATbern events. Partners can log in to view their own attendance analytics, vote on session topics, and access meeting coordination. See [Partner Portal](#partner-portal).
 
 ### Attendee
-Individual who registers for and attends events. May have platform account for:
-- Registration management
+Individual who registers for and attends events. The default platform role (`ATTENDEE`) — including users created via ["Continue with Google"](#sso--continue-with-google) — and sufficient for all Epic 7 contribution features. May use a platform account for:
+- Registration management and self-service deregistration
+- [Attendee event history](#workflow) (events registered for / attended)
+- [Topics from the floor](#topics-from-the-floor--community-sourced-topic) and [speaker self-nomination](#speaker-self-nomination-i-could-speak-on-that)
+- [Thank-the-organizers](#thank-the-organizers--appreciation-counter) and [post-event Q&A](#post-event-qa-window--freeze-the-apéro-continues)
 - Event materials access
-- Networking features `[PLANNED]`
+
+### Newsletter Subscriber
+A person who has opted in to receive BATbern newsletters. Subscribers need not have a full platform account. The Epic 10 newsletter feature manages the subscriber list (subscribe/unsubscribe, including email-reply unsubscribe), template selection and sending, and list hygiene driven by SES bounce processing.
 
 ### Company
 Organization associated with users, speakers, or partners. Includes:
@@ -111,8 +118,8 @@ BATbern uses **3 independent workflow systems** that operate in parallel:
 1. **Event Workflow** (9 states):
    - CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 
-2. **Speaker Workflow** (11 states per speaker):
-   - identified → contacted → ready → accepted/declined → content_submitted → quality_reviewed → confirmed → overflow/withdrew
+2. **Speaker Workflow** (8 states per speaker — see [8-State Speaker Workflow](#8-state-speaker-workflow)):
+   - the unified 8-state model introduced by Epic 11; `SpeakerWorkflowService` is the sole status writer
 
 3. **Task System** (4 states):
    - TODO → IN_PROGRESS → COMPLETED/CANCELLED
@@ -138,6 +145,15 @@ Conceptual grouping of workflow activities for documentation purposes:
 
 **Note**: Phases are documentation constructs, not workflow states. Events don't "transition between phases" - they transition between states.
 
+### 8-State Speaker Workflow
+The unified per-speaker lifecycle introduced by **Epic 11** (Unified Speaker Workflow Refactor, ADR-009), which reduced an earlier, larger state set to an **8-state model**. Key properties:
+- `SpeakerWorkflowService` is the **single source of truth** and the only writer of speaker status.
+- The workflow is unified inside the **event-management service** — the standalone `speakers` table and the separate speaker-coordination service references were dropped.
+- A **Cognito account is provisioned at the `READY` transition**, replacing the retired [magic-link](#magic-link-retired) flow.
+- Organizers drive transitions through the redesigned kanban drawer (guided drag).
+
+See [Workflow](#workflow) for how the speaker workflow runs in parallel with the event workflow and task system.
+
 ### State / Status
 Current condition of an entity. Uses lowercase snake_case in database, UPPERCASE in some UI displays.
 
@@ -152,17 +168,15 @@ Current condition of an entity. Uses lowercase snake_case in database, UPPERCASE
 - `EVENT_COMPLETED` - Event finished (auto-transition after event ends)
 - `ARCHIVED` - Historical record, read-only
 
-**Speaker States** (11 states):
+**Speaker States** — see [8-State Speaker Workflow](#8-state-speaker-workflow). Epic 11 (ADR-009) consolidated the speaker lifecycle to an 8-state model; `SpeakerWorkflowService` is the sole writer of speaker status. The longer list of lowercase states below reflects the pre-Epic-11 model and is retained for historical reference:
 - `identified` - Added to brainstorm list
 - `contacted` - Invitation sent
-- `ready` - Ready to accept/decline
+- `ready` - Ready to accept/decline (Cognito account provisioned at this transition)
 - `accepted` - Committed to presenting
 - `declined` - Not available
 - `content_submitted` - Materials uploaded
 - `quality_reviewed` - Content approved
 - `confirmed` - Quality reviewed AND slot assigned (auto-state)
-- `overflow` - Accepted but no slot available
-- `withdrew` - Dropped out after accepting
 
 **Task States** (4 states):
 - `TODO` - Not started
@@ -271,21 +285,47 @@ Phase C of the organizer workflow where organizers evaluate speaker content agai
 - **Quality** - Professional, well-structured, engaging
 - **Length** - Fits time slot (typically 30-45 min presentation)
 
+### Topics From the Floor / Community-Sourced Topic
+A future-event topic suggested by a logged-in attendee (title + rationale) rather than by an organizer or partner. Such suggestions land in the existing topic-suggestion pool tagged `source = community` and surface with a **community badge** in the organizer triage UI. Introduced by Epic 7 (Story 7.1).
+
+### Speaker Self-Nomination ("I Could Speak on That")
+An Epic 7 (Story 7.2) feature: once an event's topic is set and the event is published, a logged-in attendee can nominate themselves to speak by submitting a session title + abstract. This creates a `speaker_pool` entry at the `IDENTIFIED` state for the organizer to triage through the normal [Speaker Workflow](#workflow). No Cognito account or SPEAKER role is provisioned at nomination time.
+
+### Thank-the-Organizers / Appreciation Counter
+An Epic 7 (Story 7.4) post-event feature letting attendees send a one-click thank-you, optionally with a note. Anonymous thank-yous are allowed (protected by [Turnstile](#turnstile) and rate-limiting); logged-in users are deduplicated to one per event. The aggregate count is shown publicly as an **appreciation counter**; free-text notes are visible to organizers.
+
+### Post-Event Q&A Window / Freeze ("The Apéro Continues")
+An Epic 7 (Story 7.5) per-session, time-boxed (~14-day, organizer-overridable) question-and-answer space that opens after an event. Logged-in attendees post questions and answers; organizers can take down posts and extend or close the window early. When the window closes, the Q&A **freezes** read-only and attaches permanently to the session's archive page. Reading frozen Q&A is public; posting is login-gated.
+
 ---
 
 ## Technical Terms
 
-### Magic Link
-Passwordless authentication URL emailed to speakers. Clicking the link automatically logs the speaker into their portal without requiring a username or password.
+### Magic Link `[RETIRED]`
+Historical: a passwordless authentication URL emailed to speakers (RS256-signed JWT, 30-day reusable session). Clicking the link logged the speaker into their portal without a username or password.
 
-**Properties**:
-- **Format**: JWT (JSON Web Token), RS256-signed
-- **Duration**: 30-day reusable session
-- **Scope**: Speaker-specific; grants access to own events only
-- **Issuer**: `batbern-speaker-coordination` service
-- **Cookie**: HTTP-only, secure; not accessible to JavaScript
+**Status**: Fully **retired** by Epic 11. Speaker authentication is now [AWS Cognito](#authentication--auth)-based (email/password or ["Continue with Google"](#sso--continue-with-google)). Old magic-link emails no longer authenticate. Retained here only to explain references in older releases.
 
-**Flow**: Organizer sends invitation → email contains magic link → speaker clicks → JWT issued → speaker authenticated → redirected to portal
+### SSO / "Continue with Google"
+**Single Sign-On** via Google. Users can sign in with their Google account through OIDC federation at `auth.batbern.ch` instead of an email/password. Delivered by Epic 12 (ADR-010).
+
+**Capabilities**:
+- **Transparent account linking** — a Google identity is linked to an existing account by matching email
+- **[JIT provisioning](#jit-provisioning--just-in-time-provisioning)** — a new account is created on first SSO login
+- **Terms-of-Service consent gate** — federated onboarding completion collects consent / company / newsletter preference
+- **Avatar import** — the user's Google profile photo is imported
+- **Runtime kill-switch** — `FEATURES_SSO_ENABLED` can disable SSO without redeploy
+
+Apple / generic OIDC providers are deferred (Story 12-10).
+
+### Federated Identity
+An authentication model where a user's identity is asserted by an external identity provider (e.g. Google) and trusted by BATbern, rather than BATbern holding the credentials directly. See [SSO / "Continue with Google"](#sso--continue-with-google).
+
+### JIT Provisioning / Just-in-Time Provisioning
+Automatic creation of a BATbern user account at the moment a person first signs in via [SSO](#sso--continue-with-google), using the verified profile data from the identity provider. Avoids a separate manual account-creation step.
+
+### Turnstile
+Cloudflare Turnstile — a privacy-friendly, CAPTCHA-style bot-protection challenge. BATbern uses Turnstile to protect public submit flows (e.g. anonymous [thank-the-organizers](#thank-the-organizers--appreciation-counter)). The gateway can fail-open if Turnstile is disabled in config.
 
 ### ICS / Calendar Invite (RFC 5545)
 Standard iCalendar file format (`.ics`) for calendar invitations, defined by RFC 5545. BATbern generates ICS files for partner meeting coordination.
@@ -329,10 +369,11 @@ Content Delivery Network - distributes files geographically for fast access worl
 
 ### Authentication / Auth
 Process of verifying user identity. BATbern uses AWS Cognito for:
-- Username/password login
+- Email/password login
+- ["Continue with Google"](#sso--continue-with-google) federated sign-on (Epic 12)
 - Password reset
 - Session management (8-hour sessions)
-- MFA (multi-factor authentication) `[PLANNED]`
+- MFA (multi-factor authentication) `[BACKLOG]`
 
 ### Authorization / Permissions
 Rules determining what actions a user can perform. Based on:
@@ -402,7 +443,7 @@ Quick reference for all workflow states:
 | EVENT_COMPLETED | Event finished (auto-transition after event ends) | ARCHIVED |
 | ARCHIVED | Historical record, read-only | Terminal |
 
-**Speaker Workflow** (11 states - parallel per speaker):
+**Speaker Workflow** (parallel per speaker) — Epic 11 consolidated this to an [8-state model](#8-state-speaker-workflow); the table below retains the longer pre-Epic-11 state names for historical reference:
 
 | State | Meaning | Common Transitions |
 |-------|---------|-------------------|
@@ -433,7 +474,7 @@ Quick reference for all workflow states:
 ## Portals
 
 ### Speaker Portal
-Self-service web interface for speakers, accessible via [Magic Link](#magic-link). Speakers do not need a platform account.
+Self-service web interface for speakers, accessed with an **AWS Cognito** login (email/password or ["Continue with Google"](#sso--continue-with-google)). A Cognito account is provisioned for the speaker at the `READY` transition of the [8-state speaker workflow](#8-state-speaker-workflow). (Earlier releases used a passwordless [magic link](#magic-link-retired), now retired.)
 
 **Capabilities**:
 - Accept or decline speaking invitations
@@ -441,7 +482,7 @@ Self-service web interface for speakers, accessible via [Magic Link](#magic-link
 - View upcoming and past speaking engagements
 - Track material submission status and deadlines
 
-**Access**: `https://www.batbern.ch/speaker/` + magic link token
+**Access**: `https://www.batbern.ch/speaker/` after Cognito login
 **Languages**: English and German (i18n)
 **Accessibility**: WCAG 2.1 AA compliant
 
@@ -485,6 +526,8 @@ See [Partner Portal documentation](../partner-portal/README.md) for full details
 | **MVP** | Minimum Viable Product | Initial feature release |
 | **NPS** | Net Promoter Score | Recommendation metric (-100 to +100) |
 | **OAuth** | Open Authorization | Authentication protocol |
+| **OIDC** | OpenID Connect | Identity layer over OAuth 2.0 (used for Google SSO) |
+| **JIT** | Just-in-Time (provisioning) | Auto-create account on first SSO login |
 | **PDF** | Portable Document Format | Document standard |
 | **PPTX** | PowerPoint XML | Presentation file format |
 | **QA** | Quality Assurance | Testing and validation |
@@ -492,7 +535,7 @@ See [Partner Portal documentation](../partner-portal/README.md) for full details
 | **ROI** | Return on Investment | Value/cost metric |
 | **S3** | Simple Storage Service | AWS file storage |
 | **SPA** | Single-Page Application | Frontend architecture (React) |
-| **SSO** | Single Sign-On | Enterprise authentication |
+| **SSO** | Single Sign-On | "Continue with Google" federated login (Epic 12, live) |
 | **TDD** | Test-Driven Development | Development methodology |
 | **UI/UX** | User Interface / User Experience | Design domains |
 | **UID** | Unique Identifier | Swiss business ID number |

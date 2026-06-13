@@ -13,7 +13,8 @@
       "newsletter": "Uutiskirje",
       "settings": "Asetukset",
       "photos": "Valokuvat",
-      "registrantNotices": "Ilmoittautuneiden tiedotteet"
+      "registrantNotices": "Ilmoittautuneiden tiedotteet",
+      "appreciation": "Kiitokset"
     },
     "tabsAriaLabel": "Tapahtumassivun navigointi",
     "overview": {
@@ -913,7 +914,11 @@
       "count_one": "{{count}} kiitos tähän mennessä",
       "count_other": "{{count}} kiitosta tähän mennessä",
       "success": "Kiitos, kun sanoit kiitos! 🎉",
-      "error": "Jotain meni vikaan. Yritä uudelleen."
+      "error": "Jotain meni vikaan. Yritä uudelleen.",
+      "publicNotice": "Kirjautuneena annetut kiitokset voidaan näyttää julkisesti nimesi ja yrityksesi kanssa."
+    },
+    "marquee": {
+      "badge": "Kiitos"
     }
   },
   "qna": {
@@ -947,5 +952,16 @@
         "attended": "Osallistui"
       }
     }
+  },
+  "appreciation": {
+    "title": "Kiitosviestit",
+    "subtitle": "{{count}} kiitos(ta) tälle tapahtumalle. Nosta viesti esiin näyttääksesi sen julkisessa palkissa.",
+    "empty": "Ei vielä kiitosviestejä tälle tapahtumalle.",
+    "noNote": "(aplodit ilman viestiä)",
+    "anonymous": "Nimetön",
+    "featured": "Esillä",
+    "featureToggle": "Näytä julkisessa palkissa",
+    "cannotFeatureAnonymous": "Nimettömiä kiitoksia ei voi nostaa esiin (ei nimeä).",
+    "loadError": "Kiitosviestien lataaminen epäonnistui."
   }
 }

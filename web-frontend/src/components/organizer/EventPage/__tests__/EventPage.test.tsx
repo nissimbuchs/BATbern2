@@ -401,9 +401,9 @@ describe('EventPage Component (Story 5.6)', () => {
       renderWithProviders();
 
       const tabs = screen.getAllByRole('tab');
-      // 9 tabs: Overview, Speakers, Venue, Participants, Publishing, Newsletter,
-      // Registrant Notices, Settings, Photos
-      expect(tabs.length).toBe(9);
+      // 10 tabs: Overview, Speakers, Venue, Participants, Publishing, Newsletter,
+      // Registrant Notices, Settings, Photos, Appreciation
+      expect(tabs.length).toBe(10);
     });
 
     it('should_haveAriaLabel_forTabNavigation', () => {

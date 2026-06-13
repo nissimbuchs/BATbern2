@@ -1,5 +1,7 @@
 # File Uploads `[IMPLEMENTED]`
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 The BATbern file upload system provides secure, direct-to-S3 file handling for:
@@ -334,6 +336,8 @@ sequenceDiagram
 - One-time use (cannot reuse for different file)
 - Content-Type validation (prevents MIME confusion attacks)
 - CORS restrictions (only batbern.ch origin allowed)
+
+> **Note:** Upload flows are authenticated (organizer / speaker) and are not exposed as public submit endpoints, so they do not require bot protection. Cloudflare Turnstile (Story 10.31) protects the **public** submit flows — newsletter subscription and event registration — at the API gateway. See [Notification System](notifications.md).
 
 ### S3 Bucket Structure
 

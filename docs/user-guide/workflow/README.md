@@ -2,6 +2,8 @@
 
 > Event lifecycle management through state machines and task coordination
 
+> **Last Updated:** 2026-06-13 — Speaker workflow aligned to the unified 8-state model (ADR-009 / Epic 11). The legacy lowercase free-form speaker states (`overflow`, `withdrew`, `confirmed`, `slot_assigned`, `tentative`) are removed.
+
 ## 🎥 Video Tutorials
 
 **Complete Workflow Demonstration** (12 minutes each):
@@ -54,7 +56,7 @@ AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARC
 | **CREATED**                | Event created, ready for setup          | Event creation form submitted     | Topic selected (→ TOPIC_SELECTION or directly to SPEAKER_IDENTIFICATION) |
 | **TOPIC_SELECTION**        | Topics selected, ready for speakers     | Minimum 1 topic selected          | Minimum speakers in pool             |
 | **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach ongoing | Min speaker candidates identified | All slots filled                     |
-| **SLOT_ASSIGNMENT**        | Assigning speakers to time slots        | All confirmed speakers assigned   | Agenda published                     |
+| **SLOT_ASSIGNMENT**        | Assigning speakers to time slots        | Publishable speakers assigned     | Agenda published                     |
 | **AGENDA_PUBLISHED**       | Public agenda, accepting registrations  | Publish agenda action             | Manual finalization (2 weeks before) |
 | **AGENDA_FINALIZED**       | Agenda locked for printing              | Finalize agenda action            | Event day arrives                    |
 | **EVENT_LIVE**             | Event currently happening               | Automatic when event start time passed (hourly check) | Automatic when event end time passed |
@@ -75,6 +77,7 @@ For documentation purposes, we organize the 9 states into user-friendly phases:
 
 - States: SPEAKER_IDENTIFICATION (speakers moving through their own workflow)
 - Actions: Contact speakers, track responses, collect content submissions
+- UX: redesigned **kanban board** (guided drag with valid-transition highlighting, a unified speaker drawer, primary-action buttons, and time-in-state colour coding) per Story 11.D.x and the speaker-drawer redesign (Story 10-30)
 - [Learn more →](phase-b-outreach.md)
 
 **Phase C: Quality** <span class="feature-status implemented">Implemented</span>
@@ -103,56 +106,63 @@ For documentation purposes, we organize the 9 states into user-friendly phases:
 
 ---
 
-## 2. Speaker Workflow (Per-Speaker State Machine)
+## 2. Speaker Workflow (8-State Machine — ADR-009)
 
 **Critical Concept**: Each speaker progresses through their own workflow **independently and in parallel**. Quality review and slot assignment can happen in any order.
+
+Per **ADR-009 (Unified Speaker Workflow)** delivered in **Epic 11**, the speaker workflow is a single **8-state** machine. States are stored UPPER_CASE in code/JSON (lowercase_snake_case in the database). `SpeakerWorkflowService` is the **sole writer** of speaker status — every other service delegates to it.
 
 ### State Progression
 
 ```
-identified → contacted → ready → accepted/declined
-                                    ↓ (if accepted)
-                                content_submitted
-                                    ↓
-                                quality_reviewed
-                                    ↓
-                                confirmed
-                    (auto-confirmed when quality_reviewed AND session.startTime exists)
-
-Special states:
-- overflow (backup speaker - accepted but no slots)
-- withdrew (speaker drops out after accepting)
+IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED
+     │           │         │        │          │              │                  │
+     └───────────┴─────────┴────────┴──────────┴──────────────┴──────────────────┴──→ DECLINED
+                       (DECLINED is reachable from every non-terminal state)
 ```
+
+- **CONTACTED → READY** is the **provisioning gate** — promoting a speaker to `READY` looks up or creates the User, grants the SPEAKER role, and provisions the AWS Cognito account. This step is **organizer-only**, via the promote action (`POST /api/v1/events/{code}/speakers/{speakerId}/promote`).
+- **READY → INVITED** sends the formal invitation email (login link + temporary password). It is blocked by a **slot-capacity gate**: `READY → INVITED` is rejected when `count(ACCEPTED) + count(INVITED) >= max_slots` (this replaces the removed `overflow` parking state).
+- **DECLINED** is the single terminal "not happening" state, reachable from any non-terminal state. It covers a lead that didn't pan out, a refusal to an invitation, and a speaker who accepted then dropped out (the previous state and reason are recorded in `speaker_status_history`). This replaces the removed `withdrew` state.
 
 ### State Definitions
 
-| State                 | Description                     | How to Reach                                          |
-| --------------------- | ------------------------------- | ----------------------------------------------------- |
-| **identified**        | Added to speaker pool           | Brainstormed in Phase A                               |
-| **contacted**         | Organizer recorded outreach     | Mark as contacted in Kanban board                     |
-| **ready**             | Speaker ready to accept/decline | Speaker receives invitation                           |
-| **accepted**          | Speaker accepted invitation     | Speaker accepts or organizer marks accepted           |
-| **declined**          | Speaker declined invitation     | Speaker declines or organizer marks declined          |
-| **content_submitted** | Title/abstract submitted        | Speaker submits via content form                      |
-| **quality_reviewed**  | Content approved by organizer   | Organizer approves in quality review drawer           |
-| **confirmed**         | Ready for publication           | Auto-set when quality_reviewed AND session has timing |
-| **overflow**          | Backup (no slot available)      | Accepted when all slots filled                        |
-| **withdrew**          | Dropped out after accepting     | Speaker cancels after acceptance                      |
+| State                 | Description                                                                                          | How to Reach                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **IDENTIFIED**        | Name on the brainstorm list (candidate, lead, or contact). No User, no Cognito account yet.          | Brainstormed in Phase A, or dropped in via attendee self-nomination (Epic 7.2) |
+| **CONTACTED**         | Still brainstorming — organizer is reaching out to figure out who will actually speak. No User yet.  | Mark as contacted on the Kanban board                              |
+| **READY**             | Provisioning gate — the real speaker is chosen; User + SPEAKER role + Cognito account provisioned.   | Organizer **promotes** the candidate (organizer-only)              |
+| **INVITED**           | Formal invitation email sent (login link + temporary password). Speaker can authenticate via Cognito. | Organizer sends invitation (subject to slot-capacity gate)         |
+| **ACCEPTED**          | Speaker committed via the portal.                                                                    | Speaker accepts, or organizer records acceptance                   |
+| **CONTENT_SUBMITTED** | Title + abstract submitted to `content_submissions`.                                                 | Speaker submits via portal, or organizer submits on their behalf   |
+| **QUALITY_REVIEWED**  | Moderator approved content. Happy end-state of the content lifecycle.                                | Organizer approves in the quality review drawer                    |
+| **DECLINED**          | Terminal "not happening" state, reachable from any non-terminal state; reason recorded.              | Speaker declines, or organizer records a decline/dropout           |
+
+### Derived Flags (computed at read time — not persisted)
+
+The removed `confirmed` and `slot_assigned` states are now **derived flags**, computed on read:
+
+- **`is_slot_assigned`** := `session.start_time IS NOT NULL` — true once the speaker's session has a time slot.
+- **`is_publishable`** := `QUALITY_REVIEWED AND is_slot_assigned` — true when the speaker is content-approved **and** scheduled. This replaces the old `confirmed` state and is the gate the event workflow checks before `AGENDA_PUBLISHED`.
 
 ### Parallel Workflow Feature
 
 **Quality review and slot assignment are independent:**
 
-- Scenario 1: Quality review first → slot assigned later → auto-confirms when slot assigned
-- Scenario 2: Slot assigned first → quality review later → auto-confirms when quality approved
-- Order doesn't matter: Confirmation happens when BOTH complete
+- Scenario 1: Quality review first → slot assigned later → `is_publishable` becomes true once the slot is assigned
+- Scenario 2: Slot assigned first → quality review later → `is_publishable` becomes true once content is approved
+- Order doesn't matter: a speaker is publishable when BOTH `QUALITY_REVIEWED` and `is_slot_assigned` hold
 
 **Data Storage:**
 
-- **speaker_pool table**: Tracks speaker workflow state
+- **speaker_pool table**: Tracks the speaker workflow state (`status`)
 - **sessions table**: Stores presentation details and timing (startTime, endTime, room)
-- **session_users table**: Links speakers to sessions
-- Session timing (startTime exists) triggers auto-confirmation check
+- **session_users table**: Links speakers to sessions; the `PRIMARY_SPEAKER` row carries the canonical username post-`READY`
+- Session timing (`start_time` set) drives the derived `is_slot_assigned` / `is_publishable` flags
+
+> **How Epic 7 attendee features touch this workflow:**
+> - **Speaker self-nomination (Story 7.2)** — once an event's topic is set and published, a logged-in attendee can self-nominate ("I could speak on that"). This creates a `speaker_pool` entry at **`IDENTIFIED`** for the organizer to triage through the normal 8-state workflow. No Cognito account or SPEAKER role is created at nomination — provisioning still happens only at the organizer-driven `READY` promotion.
+> - **Topics from the floor (Story 7.1)** — logged-in attendees suggest future topics into the existing topic-suggestion pool, tagged `source = community`. These feed Phase A topic selection (organizers triage them with a community badge); they do not enter the speaker workflow directly.
 
 ---
 
@@ -248,7 +258,7 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 **Speaker State**: Individual speaker progress
 
 - Example: "Is this speaker ready to present?"
-- Answer: Each speaker has their own state (accepted, quality_reviewed, confirmed, etc.)
+- Answer: Each speaker has their own state (`ACCEPTED`, `QUALITY_REVIEWED`, etc.) plus the derived `is_publishable` flag
 
 **Tasks**: Actionable work items
 
@@ -260,13 +270,13 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 **Event progresses while speakers progress independently:**
 
 - Event can be in SPEAKER_IDENTIFICATION state
-- Speaker A is "identified", Speaker B is "contacted", Speaker C is "content_submitted"
+- Speaker A is `IDENTIFIED`, Speaker B is `CONTACTED`, Speaker C is `CONTENT_SUBMITTED`
 - All happening simultaneously
 
 **Quality review and slot assignment are flexible:**
 
 - No rigid order - whichever completes first
-- Auto-confirmation when both complete
+- A speaker becomes `is_publishable` when both `QUALITY_REVIEWED` and a slot assignment hold
 - Supports real-world workflow variations
 
 ### Task Flexibility
@@ -293,30 +303,30 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 
 3. **Identify Speakers** (Phase A → Step 3)
    - Event state: TOPIC_SELECTION → SPEAKER_IDENTIFICATION
-   - Speakers created in "identified" state
+   - Speakers created in `IDENTIFIED` state (also where attendee self-nominations land, per Epic 7.2)
 
 ### Managing Speaker Outreach
 
-4. **Contact Speakers** (Phase B)
+4. **Contact & Promote Speakers** (Phase B)
    - Event state: Still SPEAKER_IDENTIFICATION
-   - Update speaker states individually: identified → contacted → accepted
-   - Some speakers at "contacted", others at "accepted", others still "identified"
+   - Update speaker states individually: `IDENTIFIED → CONTACTED`, then **promote** the chosen speaker to `READY` (provisions Cognito), then `INVITED → ACCEPTED`
+   - Some speakers at `CONTACTED`, others at `ACCEPTED`, others still `IDENTIFIED`
 
 5. **Collect Content** (Phase B)
    - Event state: Still SPEAKER_IDENTIFICATION
-   - Speakers submit content: accepted → content_submitted
+   - Speakers submit content: `ACCEPTED → CONTENT_SUBMITTED`
 
 ### Quality and Assignment
 
 6. **Review Content** (Phase C)
    - Event state: Still SPEAKER_IDENTIFICATION
-   - Review each speaker: content_submitted → quality_reviewed
+   - Review each speaker: `CONTENT_SUBMITTED → QUALITY_REVIEWED`
    - Can happen before OR after slot assignment
 
 7. **Assign Slots** (Phase D)
    - Event state: SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT
    - Assign presentations to time slots (sets session.startTime)
-   - Speakers auto-confirm when quality_reviewed AND session.startTime exists
+   - A speaker becomes `is_publishable` once `QUALITY_REVIEWED` AND `session.start_time` is set
 
 ### Publishing and Execution
 
@@ -378,20 +388,20 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 
 **Update States Promptly**:
 
-- Mark speakers as "contacted" immediately after outreach
-- Update to "accepted"/"declined" as responses come in
+- Mark speakers as `CONTACTED` immediately after outreach
+- Update to `ACCEPTED` / `DECLINED` as responses come in
 - Keeps Kanban board accurate
 
 **Parallel Quality Review and Slot Assignment**:
 
 - Review content as soon as submitted (don't wait for all speakers)
 - Assign slots whenever ready (don't wait for all quality reviews)
-- System auto-confirms when both complete
+- A speaker is publishable once both `QUALITY_REVIEWED` and a slot assignment hold
 
 **Handle Dropouts Quickly**:
 
-- Mark speaker as "withdrew" immediately
-- Promote overflow speaker if available
+- Move the speaker to `DECLINED` immediately (the previous state and reason are recorded in `speaker_status_history`)
+- Promote and invite a backup candidate — freeing a slot lets the slot-capacity gate admit another `READY → INVITED`
 - Update published agenda promptly
 
 ### Task Management
@@ -429,20 +439,20 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 8. **EVENT_COMPLETED** - Event finished
 9. **ARCHIVED** - Historical record
 
-### Complete Speaker State List
+### Complete Speaker State List (8 states — ADR-009)
 
-1. **identified** - In speaker pool
-2. **contacted** - Outreach recorded
-3. **invited** - Invitation email dispatched (before speaker marks ready)
-4. **ready** - Ready to accept/decline
-5. **accepted** - Committed to presenting
-6. **declined** - Not available (reachable from any active state including confirmed)
-7. **slot_assigned** - Slot automatically assigned by the system (cannot be set manually)
-8. **content_submitted** - Content received
-9. **quality_reviewed** - Content approved
-10. **confirmed** - Ready for publication
-11. **overflow** - Backup speaker
-12. **withdrew** - Cancelled after accepting
+1. **IDENTIFIED** - On the brainstorm list; no User / Cognito account yet
+2. **CONTACTED** - Outreach recorded; still brainstorming who will actually speak
+3. **READY** - Provisioning gate: User + SPEAKER role + Cognito account provisioned (organizer-only promote)
+4. **INVITED** - Invitation email dispatched (login link + temp password); subject to slot-capacity gate
+5. **ACCEPTED** - Committed to presenting
+6. **CONTENT_SUBMITTED** - Title + abstract received
+7. **QUALITY_REVIEWED** - Content approved (happy end-state of the content lifecycle)
+8. **DECLINED** - Terminal "not happening" state; reachable from any non-terminal state (replaces the removed `withdrew`)
+
+**Derived flags** (read-time, not states): `is_slot_assigned := session.start_time IS NOT NULL`; `is_publishable := QUALITY_REVIEWED AND is_slot_assigned` (replaces the removed `confirmed`).
+
+> **Removed per ADR-009 / Epic 11:** `slot_assigned` and `confirmed` (now derived flags), `overflow` (replaced by the slot-capacity gate on `READY → INVITED`), `withdrew` (collapsed into `DECLINED`), and the `tentative` speaker response (responses are now `ACCEPT` or `DECLINE` only).
 
 ---
 
@@ -454,19 +464,21 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 
 **Solution**:
 
-- Check if minimum speakers are confirmed
-- Verify all slots have confirmed speakers assigned
-- System validates speaker count before allowing transition
+- Check if minimum speakers are publishable (`QUALITY_REVIEWED` + slot assigned)
+- Verify all slots have publishable speakers assigned
+- System validates the publishable-speaker count before allowing transition
 
-### "Speaker not auto-confirming"
+### "Speaker not showing as publishable"
 
-**Problem**: Speaker has quality_reviewed AND slot assigned but still not confirmed.
+**Problem**: Speaker has `QUALITY_REVIEWED` AND a slot assigned but `is_publishable` is still false.
 
 **Solution**:
 
-- Check session.startTime is set (not just session created)
-- Verify speaker status is exactly "quality_reviewed"
-- Check speaker_pool.session_id links to correct session
+- Check `session.start_time` is set (not just the session created) — `is_slot_assigned` derives from it
+- Verify speaker status is exactly `QUALITY_REVIEWED`
+- Check `speaker_pool.session_id` links to the correct session
+
+> **Note:** There is no longer a `confirmed` state. Publish-readiness is the derived `is_publishable` flag (`QUALITY_REVIEWED AND is_slot_assigned`), recomputed on read — there is no stored state to "get stuck".
 
 ### "Tasks not auto-creating"
 

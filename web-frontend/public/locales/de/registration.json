@@ -199,6 +199,7 @@
     "waitlist": "Sie stehen auf der Warteliste. Wir benachrichtigen Sie, falls ein Platz frei wird.",
     "waitlistWithPosition": "Sie stehen auf Platz #{{position}} der Warteliste. Wir benachrichtigen Sie, falls ein Platz frei wird.",
     "cancelled": "Ihre Anmeldung wurde storniert.",
+    "attended": "Sie haben an dieser Veranstaltung teilgenommen. Danke, dass Sie dabei waren!",
     "manageLink": "Anmeldung verwalten",
     "registerAgain": "Erneut anmelden"
   },

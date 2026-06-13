@@ -1,21 +1,29 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.dto.FeaturedThanksResponse;
 import ch.batbern.events.dto.SubmitThanksRequest;
 import ch.batbern.events.dto.ThanksCountResponse;
+import ch.batbern.events.dto.ThanksFeaturePatchRequest;
+import ch.batbern.events.dto.ThanksNoteResponse;
 import ch.batbern.events.service.OrganizerThanksService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -65,6 +73,30 @@ public class OrganizerThanksController {
             Authentication authentication) {
         boolean isOrganizer = hasRole(authentication, "ROLE_ORGANIZER");
         return ResponseEntity.ok(thanksService.getThanks(eventCode, isOrganizer));
+    }
+
+    /**
+     * PUBLIC featured marquee (Story 7.7). Up to {@code limit} (capped at 9) random organizer-
+     * featured, logged-in thank-yous across ALL events, enriched with first name + company logo.
+     * Anonymous notes are structurally excluded; the raw username is never returned.
+     */
+    @GetMapping("/thanks/featured")
+    public ResponseEntity<List<FeaturedThanksResponse>> getFeaturedThanks(
+            @RequestParam(name = "limit", defaultValue = "9") int limit) {
+        return ResponseEntity.ok(thanksService.getFeaturedThanks(limit));
+    }
+
+    /**
+     * ORGANIZER feature-toggle (Story 7.7). Marks/un-marks a thank-you for the public marquee.
+     * Featuring an anonymous note is rejected (409 THANKS_NOT_FEATURABLE).
+     */
+    @PatchMapping("/events/{eventCode}/thanks/{id}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ThanksNoteResponse> setFeatured(
+            @PathVariable String eventCode,
+            @PathVariable UUID id,
+            @Valid @RequestBody ThanksFeaturePatchRequest request) {
+        return ResponseEntity.ok(thanksService.setFeatured(eventCode, id, request.featured()));
     }
 
     /**

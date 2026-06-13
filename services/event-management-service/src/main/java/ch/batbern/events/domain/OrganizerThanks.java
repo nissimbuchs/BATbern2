@@ -54,6 +54,13 @@ public class OrganizerThanks {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    /**
+     * When an organizer featured this note for the public marquee (Story 7.7); {@code null} when
+     * not featured. Only logged-in notes ({@code thankedByUsername != null}) are featurable.
+     */
+    @Column(name = "featured_at")
+    private Instant featuredAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

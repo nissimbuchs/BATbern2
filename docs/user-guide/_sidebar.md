@@ -22,6 +22,15 @@
   * [Topic Voting](partner-portal/topic-voting.md)
   * [Meeting Coordination](partner-portal/meetings.md)
 
+* 🙋 Attendee Experience
+  * [Overview](attendee-experience/README.md)
+  * [Topics From the Floor](attendee-experience/topics-from-the-floor.md)
+  * [Speaker Self-Nomination](attendee-experience/speaker-self-nomination.md)
+  * [Slides-Online Email](attendee-experience/slides-online-email.md)
+  * [Thank the Organizers](attendee-experience/thank-the-organizers.md)
+  * [Post-Event Q&A](attendee-experience/post-event-qna.md)
+  * [Event History](attendee-experience/event-history.md)
+
 * 🎤 Speaker Portal
   * [Overview](speaker-portal/README.md)
   * [Invitation & Response](speaker-portal/invitation-response.md)
@@ -42,6 +51,7 @@
   * [Topic Heat Map](features/heat-maps.md)
   * [Notification System](features/notifications.md)
   * [File Uploads](features/file-uploads.md)
+  * [Media & Content](features/media-and-content.md)
   * [Analytics & Reporting](features/analytics.md)
 
 * ⚙️ Administration

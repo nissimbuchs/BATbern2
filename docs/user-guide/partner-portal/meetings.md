@@ -2,7 +2,9 @@
 
 > How BATbern organises the annual partner meetings and sends calendar invites
 
-<span class="feature-status implemented">Implemented</span> — Epic 8.3
+> **Last Updated**: 2026-06-13
+
+<span class="feature-status implemented">Implemented</span> — Epic 8.3 (calendar invites) · Story 10-27 (iCal RSVP tracking)
 
 ## Overview
 
@@ -136,6 +138,41 @@ The system sends the `.ics` file asynchronously to all contacts on all partner r
 The meeting list shows an **Invite Sent** timestamp once the emails have been dispatched.
 </div>
 
+## For Organisers — Tracking RSVPs
+
+Once an invite has been sent, the platform tracks who has **accepted**, **declined**, or marked themselves **tentative** — directly from the recipients' own calendar clients. No extra action is needed from partners: when they click Accept or Decline in Outlook, Apple Calendar, Gmail, etc., their calendar client emails an RSVP reply back to BATbern, and the response appears in the meeting detail.
+
+### How it works
+
+The calendar invite is sent as a proper RFC 5545 `METHOD:REQUEST` with one `ATTENDEE` line per recipient and an `ORGANIZER` address (`replies@batbern.ch`) that BATbern monitors. When a recipient responds, their calendar client sends a `METHOD:REPLY` email to that address; BATbern's inbound-email pipeline parses it and records the response against the meeting.
+
+- Each attendee email gets a single tracked response; re-responding (e.g. changing **Tentative** to **Accepted**) updates the existing record in place.
+- Responses are matched to the meeting via the invite's calendar `UID`, so they attach to the correct meeting automatically.
+
+### The Attendee Responses panel
+
+An **Attendee Responses** section appears in the meeting detail panel once the invite has been sent (it stays hidden before then). It shows a summary and a colour-coded list:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Attendee Responses                                                  │
+│  2 Accepted · 1 Declined · 1 Tentative                              │
+│                                                                      │
+│  🟢 ACCEPTED   alice@partner.com      responded 2 Feb 2026, 09:14   │
+│  🟢 ACCEPTED   dan@partner.com        responded 2 Feb 2026, 11:02   │
+│  🔴 DECLINED   bob@partner.com        responded 3 Feb 2026, 08:40   │
+│  🟡 TENTATIVE  carl@partner.com       responded 3 Feb 2026, 15:21   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+| Chip | Status | Meaning |
+|------|--------|---------|
+| 🟢 **ACCEPTED** | green | Attendee accepted the invite in their calendar |
+| 🔴 **DECLINED** | red | Attendee declined |
+| 🟡 **TENTATIVE** | amber | Attendee marked the invite as tentative |
+
+The panel refreshes automatically when you (re)send the invite. RSVP tracking is **organiser-only** — partners see their own Accept/Decline buttons in their calendar client but do not see the aggregated response list.
+
 ## For Organisers — Adding Meeting Notes
 
 After the meeting takes place, organisers can record notes directly on the meeting record:
@@ -205,6 +242,8 @@ The `.ics` file follows **RFC 5545** (iCalendar specification) and uses `METHOD:
 
 Email delivery uses **AWS SES** with the `.ics` file attached as `text/calendar; method=REQUEST`.
 
+For RSVP tracking (Story 10-27), the partner-lunch `VEVENT` includes an `ORGANIZER:mailto:replies@batbern.ch` line plus one `ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:{email}` line per recipient — these are what tell calendar clients to send a reply. Replies arrive as `METHOD:REPLY` emails at the monitored `replies@batbern.ch` address, are parsed by the inbound-email pipeline, and are matched back to the meeting by the calendar `UID`.
+
 ## Troubleshooting
 
 ### "A partner says they didn't receive the invite"
@@ -221,6 +260,15 @@ Update the meeting record (edit the Agenda field) and resend the invite. Partner
 ### "The meeting date is wrong"
 
 The meeting date is derived from the linked BATbern event. If the event date changed, update the linked event first, then re-save the meeting record and resend the invite.
+
+### "A partner accepted but their RSVP isn't showing"
+
+RSVP tracking depends on the recipient's calendar client actually sending a reply email back to `replies@batbern.ch`:
+
+1. Some clients (or some configurations) accept an invite silently without sending a reply. The response can only be recorded if a `METHOD:REPLY` is sent.
+2. The reply must come from the same address the invite was addressed to (the one listed as an `ATTENDEE`). A response sent from a different alias may not match.
+3. Replies are processed asynchronously through the inbound-email pipeline — allow a few minutes after the partner responds, then reopen the meeting detail (the panel refetches on open and on re-send).
+4. If the panel is missing entirely, confirm the invite has actually been sent — the **Attendee Responses** section only appears once **Invite Sent** is set.
 
 ## Related
 

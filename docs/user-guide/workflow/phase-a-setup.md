@@ -2,12 +2,14 @@
 
 > Define event structure, select topics, and identify speaker candidates
 
+> **Last Updated:** 2026-06-13 — Speaker states aligned to the 8-state model (ADR-009 / Epic 11).
+
 <div class="workflow-phase phase-a">
 <strong>Phase A: Setup</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 1-2 weeks<br>
 Event State Transitions: CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION<br>
-Speaker States: N/A → identified (speakers added to pool)
+Speaker States: N/A → IDENTIFIED (speakers added to pool)
 </div>
 
 ## Overview
@@ -392,6 +394,8 @@ Click **+ Add Speaker Candidate** to open the brainstorming form.
 *The speaker brainstorming form collects candidate information: First Name, Last Name, Email (required fields), Company (with autocomplete search), Expertise Match (High/Medium/Low dropdown), Notes (optional, for recording speaker background or presentation history), and Source (Past Speaker, Company Referral, Industry Expert, or Internal). Candidates are created with status IDENTIFIED.*
 
 Candidate is created with status: **IDENTIFIED**
+
+> **No account is created here.** A brainstormed candidate is just a name on the pool list — no User, no SPEAKER role, no Cognito account. Provisioning happens later, only when an organizer **promotes** the chosen speaker to `READY` (Phase B). See [Speaker Workflow →](README.md#2-speaker-workflow-8-state-machine--adr-009).
 </div>
 
 <div class="step" data-step="3">
@@ -422,10 +426,14 @@ Once minimum candidates identified, click **Complete Brainstorming**.
 
 Event state: TOPIC_SELECTION → **SPEAKER_IDENTIFICATION**
 
-**Note**: Speakers are created with state **identified** and stored in the speaker_pool table.
+**Note**: Speakers are created with state **`IDENTIFIED`** and stored in the speaker_pool table.
 
 Phase A is complete! ✅
 </div>
+
+> **Where else `IDENTIFIED` candidates come from (Epic 7):**
+> - **Speaker self-nomination (Story 7.2)** — once the event's topic is set and published, logged-in attendees can self-nominate ("I could speak on that") with a proposed session title + abstract. Each nomination creates a `speaker_pool` entry at **`IDENTIFIED`**, appearing alongside your brainstormed candidates for triage through the normal 8-state workflow. No account is provisioned at nomination.
+> - **Topics from the floor (Story 7.1)** — logged-in attendees suggest future topics into the topic-suggestion pool, tagged `source = community`. These surface in the topic-selection admin UI (Step 2) with a **community** badge for organizers to triage; they do not create speaker-pool entries.
 
 ### Brainstorming Tips
 

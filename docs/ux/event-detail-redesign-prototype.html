@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BATbern · Event Page Redesign (Desktop)</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --surface:#ffffff; --ink:#1a2330; --ink-soft:#5b6675;
+    --line:#e3e8f0; --line-soft:#eef1f6;
+    --primary:#0a4d8c; --primary-soft:#e7f0fb; --primary-ink:#0a4d8c;
+    --accent:#1f8a5b; --accent-soft:#e4f4ec;
+    --warn:#b9770a; --warn-soft:#fdf3e0; --warn-line:#f0d9ac;
+    --danger:#c0392b; --danger-soft:#fbeae8; --danger-line:#f1c9c3;
+    --muted:#9aa6b6;
+    --radius:12px; --shadow:0 1px 2px rgba(16,30,54,.06),0 4px 16px rgba(16,30,54,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.45;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px 24px 80px}
+  a{color:var(--primary);text-decoration:none}
+  .proto{background:#0e1b2e;color:#cdd8e6;font-size:12.5px;padding:8px 24px;display:flex;
+    gap:14px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .proto b{color:#fff}.proto .pill{background:#1b2c44;border-radius:999px;padding:2px 10px;color:#9fc1ec}
+  .proto a{color:#7fb2ee}
+
+  .crumb{font-size:13px;color:var(--ink-soft);margin:6px 0 14px}
+  .crumb a{color:var(--ink-soft)}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+  .head h1{font-size:25px;margin:0 0 6px;letter-spacing:-.2px}
+  .head .meta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;color:var(--ink-soft);font-size:13.5px}
+  .state-chip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-soft);
+    color:var(--primary-ink);font-weight:600;font-size:12.5px;padding:4px 11px;border-radius:999px}
+  .state-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--primary)}
+  .head .actions{display:flex;gap:9px}
+  .btn{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:13.5px;font-weight:600;
+    border-radius:9px;padding:8px 14px;border:1px solid var(--line);background:var(--surface);
+    color:var(--ink);cursor:pointer;transition:.12s}
+  .btn:hover{border-color:#c7d2e2;background:#fafcff}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:#0c5aa3}
+  .btn.danger{color:var(--danger);border-color:var(--danger-line)}
+  .btn.danger:hover{background:var(--danger-soft)}
+  .btn.warn{color:var(--warn);border-color:var(--warn-line)}
+  .btn.sm{padding:5px 11px;font-size:12.5px}
+
+  .rail{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:20px 0 24px;overflow-x:auto}
+  .tab{position:relative;display:inline-flex;align-items:center;gap:8px;padding:12px 15px;
+    font-size:14px;font-weight:600;color:var(--ink-soft);cursor:pointer;white-space:nowrap;
+    border-bottom:2.5px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+  .tab .ico{font-size:16px;opacity:.85}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+  .tab.dim{opacity:.42;cursor:not-allowed}
+  .tab .count{font-size:12px;font-weight:700;color:var(--muted)}
+  .tab.active .count{color:var(--primary)}
+  .tab .badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;
+    padding:0 5px;border-radius:999px;font-size:11px;font-weight:700;background:var(--warn);color:#fff}
+  .tab .dotmark{position:absolute;top:9px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--danger)}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card.pad{padding:18px 20px}
+  .card-title{font-size:15px;font-weight:700;margin:0 0 2px}
+  .card-sub{font-size:13px;color:var(--ink-soft);margin:0}
+  .sec-label{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  .grid{display:grid;gap:16px}
+  .panel{display:none}.panel.show{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .stepper{display:flex;align-items:center;overflow-x:auto;padding:4px 2px}
+  .step{display:flex;align-items:center;flex:0 0 auto}
+  .step .node{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:92px;text-align:center}
+  .step .bub{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;background:#fff;border:2px solid var(--line);color:var(--muted)}
+  .step.done .bub{background:var(--accent);border-color:var(--accent);color:#fff}
+  .step.current .bub{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 4px var(--primary-soft)}
+  .step .lbl{font-size:11px;color:var(--ink-soft);max-width:88px}
+  .step.current .lbl{color:var(--primary);font-weight:700}
+  .step .bar{width:34px;height:2.5px;background:var(--line);margin-bottom:20px}
+  .step.done .bar{background:var(--accent)}
+
+  .attn{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+  .task{display:flex;gap:12px;padding:14px 15px;border-radius:11px;border:1px solid var(--line);background:var(--surface);align-items:flex-start}
+  .task .strip{width:4px;align-self:stretch;border-radius:4px;background:var(--muted)}
+  .task.over .strip{background:var(--danger)}.task.soon .strip{background:var(--warn)}.task.ok .strip{background:var(--accent)}
+  .task .body{flex:1;min-width:0}
+  .task .tname{font-weight:700;font-size:14px;margin:0 0 3px}
+  .task .tmeta{font-size:12.5px;color:var(--ink-soft);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .due{font-weight:700;font-size:12px;padding:2px 8px;border-radius:999px}
+  .due.over{background:var(--danger-soft);color:var(--danger)}.due.soon{background:var(--warn-soft);color:var(--warn)}.due.ok{background:var(--accent-soft);color:var(--accent)}
+  .who{display:inline-flex;align-items:center;gap:5px}
+  .who .av{width:18px;height:18px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .task .go{margin-top:9px}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+  .tile{padding:16px 17px}
+  .tile .tl{font-size:12.5px;color:var(--ink-soft);display:flex;gap:7px;align-items:center;margin-bottom:8px}
+  .tile .num{font-size:23px;font-weight:800;letter-spacing:-.5px}
+  .tile .num small{font-size:14px;font-weight:600;color:var(--muted)}
+  .prog{height:7px;border-radius:6px;background:var(--line-soft);margin-top:9px;overflow:hidden}
+  .prog>i{display:block;height:100%;border-radius:6px;background:var(--primary)}
+  .prog>i.g{background:var(--accent)}.prog>i.w{background:var(--warn)}.prog>i.r{background:var(--danger)}
+  .tile .cap{font-size:11.5px;color:var(--muted);margin-top:6px}
+
+  .subtoggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+  .subtoggle button{font:inherit;font-size:13px;font-weight:600;padding:7px 15px;border:none;background:none;color:var(--ink-soft);cursor:pointer;display:inline-flex;gap:7px;align-items:center;border-right:1px solid var(--line)}
+  .subtoggle button:last-child{border-right:none}
+  .subtoggle button.on{background:var(--primary);color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:9px 12px;border-bottom:1px solid var(--line)}
+  td{padding:10px 12px;border-bottom:1px solid var(--line-soft)}
+  tr:last-child td{border-bottom:none}
+  .tag{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .tag.g{background:var(--accent-soft);color:var(--accent)}.tag.w{background:var(--warn-soft);color:var(--warn)}
+  .tag.n{background:var(--line-soft);color:var(--ink-soft)}.tag.b{background:var(--primary-soft);color:var(--primary)}
+  .tag.r{background:var(--danger-soft);color:var(--danger)}
+  .avatar{width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle}
+  .iconbtn{border:none;background:none;cursor:pointer;font-size:15px;padding:3px 5px;border-radius:6px;color:var(--ink-soft)}
+  .iconbtn:hover{background:var(--line-soft)}
+
+  .kan{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .lane{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:160px}
+  .lane h4{margin:0 0 9px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);display:flex;justify-content:space-between}
+  .scard{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-bottom:8px;font-size:13px;box-shadow:0 1px 1px rgba(16,30,54,.04)}
+  .scard .nm{font-weight:600}.scard .co{font-size:12px;color:var(--ink-soft)}
+  .scard .st{font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px}
+  .scard.act{border-left:3px solid var(--primary);padding-left:8px}
+  .scard.act .act-link{color:var(--primary);font-weight:700}
+  .scard.wait{opacity:.74}
+  .lane h4 .sub2{font-weight:500;color:var(--muted)}
+  .waithdr{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:2px 0 7px;display:flex;align-items:center;gap:6px}
+  .waithdr::before,.waithdr::after{content:"";flex:1;height:1px;background:var(--line)}
+  .declined{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+  .declined summary{cursor:pointer;padding:10px 14px;font-size:12.5px;font-weight:700;color:var(--ink-soft);list-style:none}
+  .declined summary::-webkit-details-marker{display:none}
+  .declined .dbody{padding:2px 14px 13px;display:flex;gap:10px;flex-wrap:wrap}
+  .declined .scard{margin:0;min-width:170px;opacity:.68}
+  .dragnote{font-size:12px;color:var(--ink-soft);background:var(--bg);border:1px dashed var(--line);border-radius:9px;padding:8px 12px;margin-bottom:13px}
+
+  /* slots 2-col */
+  .slotbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:11px;margin-bottom:14px}
+  .slotbar .sum{font-size:13px;color:var(--ink-soft)}
+  .slotbar .sum b{color:var(--ink)}
+  .slots2{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+  .tray h5,.tl5{margin:0 0 10px;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .chipdrag{background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:9px;font-size:13px;cursor:grab;box-shadow:0 1px 1px rgba(16,30,54,.05)}
+  .chipdrag .nm{font-weight:600}.chipdrag .co{font-size:12px;color:var(--ink-soft)}
+  .timeline{display:flex;flex-direction:column;gap:8px}
+  .slot{border:1.5px dashed var(--line);border-radius:9px;padding:10px 12px;display:flex;gap:12px;align-items:center;min-height:50px}
+  .slot .time{font-size:12px;font-weight:700;color:var(--ink-soft);width:96px}
+  .slot.filled{border-style:solid;border-color:var(--primary-soft);background:var(--primary-soft)}
+  .slot.struct{border-style:solid;border-color:var(--line);background:var(--line-soft)}
+  .slot .ses{font-weight:600;font-size:13.5px}.slot .ses small{font-weight:500;color:var(--ink-soft)}
+  .slot.empty .ses{color:var(--muted);font-style:italic;font-weight:500}
+  .match{margin-left:auto;font-size:11.5px;color:var(--accent);font-weight:700}
+
+  .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;flex-wrap:wrap}
+  .seg button{font:inherit;font-size:13px;font-weight:600;border:none;background:none;color:var(--ink-soft);padding:7px 14px;border-radius:7px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+  .seg button.on{background:#fff;color:var(--primary);box-shadow:var(--shadow)}
+  .audience-note{font-size:13px;padding:10px 13px;border-radius:9px;margin-top:14px}
+  .audience-note.subs{background:var(--primary-soft);color:var(--primary-ink)}
+  .audience-note.regs{background:var(--accent-soft);color:#15694a}
+  .audience-note.spk{background:#f3edfb;color:#5a3a8c}
+  .preview-frame{border:1px solid var(--line);border-radius:11px;height:280px;background:linear-gradient(#fff,#f8fafd);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center}
+  .switch{width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;display:inline-block;cursor:pointer;flex:0 0 auto}
+  .switch.on{background:var(--accent)}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+  .switch.on::after{left:18px}
+
+  .checkitem{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+  .checkitem:last-child{border:none}
+  .ckbox{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:0 0 auto}
+  .ckbox.g{background:var(--accent);color:#fff}.ckbox.w{background:var(--warn);color:#fff}.ckbox.n{background:var(--line);color:var(--muted)}
+
+  .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+  .photo{aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#dce6f3,#eef2f8);display:flex;align-items:center;justify-content:center;color:#a9b8cc;font-size:24px;border:1px solid var(--line);position:relative}
+  .note{padding:13px 15px;border:1px solid var(--line);border-radius:11px;margin-bottom:11px;display:flex;gap:12px;align-items:flex-start}
+  .note .nb{flex:1}.note .nq{font-size:14px;margin:0 0 7px;font-style:italic}
+  .note .nf{font-size:12.5px;color:var(--ink-soft);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px}
+  .field input,.field textarea,.field select{width:100%;font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  .settings-sec{padding:16px 18px;margin-bottom:14px}
+  .settings-sec h3{font-size:14.5px;margin:0 0 4px;display:flex;gap:8px;align-items:center}
+  .settings-sec p.h{font-size:12.5px;color:var(--ink-soft);margin:0 0 12px}
+  .danger-zone{border-color:var(--danger-line)!important;background:var(--danger-soft)}
+  .dz-row{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:9px;background:rgba(255,255,255,.6);margin-bottom:9px}
+  .dz-row .sp{flex:1}.dz-row .t{font-weight:700;font-size:13.5px}.dz-row .d{font-size:12.5px;color:var(--ink-soft)}
+
+  .row{display:flex;gap:8px;align-items:center}.sp{flex:1}.hint{font-size:12.5px;color:var(--ink-soft)}
+  .footrow{display:flex;justify-content:space-between;align-items:center;padding:11px 4px 2px;font-size:12.5px;color:var(--ink-soft)}
+  /* clickable metric tiles */
+  .tile.clk{cursor:pointer;transition:.12s;position:relative}
+  .tile.clk:hover{border-color:#c7d2e2;box-shadow:0 5px 20px rgba(16,30,54,.1);transform:translateY(-1px)}
+  .tile.clk .arrow{position:absolute;top:13px;right:14px;color:var(--muted);font-size:14px}
+  .tile.clk:hover .arrow{color:var(--primary)}
+  /* event-day card */
+  .eventday{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:12px;border:1px dashed var(--line);background:var(--bg);box-shadow:var(--shadow)}
+  .eventday .ed-ico{font-size:20px;opacity:.55}
+  .eventday .ed-txt{flex:1;font-size:13px;color:var(--ink-soft)}.eventday .ed-txt b{color:var(--ink)}
+  .ed-pre-actions .btn{opacity:.55}
+  .eventday.live{border:none;background:linear-gradient(100deg,#c0392b,#e0533f);box-shadow:0 8px 30px rgba(192,57,43,.28)}
+  .eventday.live .ed-ico{opacity:1}
+  .eventday.live .ed-txt,.eventday.live .ed-txt b{color:#fff}
+  .eventday.live .ed-pre-actions .btn{opacity:1;background:#fff;border-color:#fff;color:#c0392b}
+  .eventday.live .ed-pre-actions .btn.l2{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.55)}
+  .eventday.live #edToggle{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.55)}
+  /* topic overlay */
+  .tov{position:fixed;inset:0;background:rgba(14,27,46,.55);display:none;z-index:50;backdrop-filter:blur(2px)}
+  .tov.show{display:block}
+  .tfocus{position:fixed;inset:16px;background:var(--surface);border-radius:16px;box-shadow:0 8px 44px rgba(16,30,54,.28);z-index:51;display:none;flex-direction:column;overflow:hidden}
+  .tfocus.show{display:flex}
+  .tbar{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .tbar .ttl{font-weight:700;font-size:15px}
+  .tbody{flex:1;overflow:auto;padding:18px 20px}
+  .topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:11px;margin-bottom:16px}
+  .topbar input,.topbar select{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .topicgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .tcard{border:1px solid var(--line);border-left-width:4px;border-radius:11px;padding:13px 14px;background:#fff;box-shadow:var(--shadow)}
+  .tcard.green{border-left-color:var(--accent)}.tcard.yellow{border-left-color:var(--warn)}.tcard.red{border-left-color:var(--danger)}
+  .tcard .tt{font-weight:700;font-size:14px;margin:0 0 6px}
+  .tcard .tmeta{font-size:12px;color:var(--ink-soft);margin-bottom:9px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tcard .tsim{font-size:11.5px;color:var(--warn);background:var(--warn-soft);border-radius:7px;padding:5px 9px;margin-bottom:10px}
+  .tcard .tact{display:flex;gap:7px;align-items:center}
+  .selected-topic{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:var(--accent-soft);border:1px solid #bfe3cf;margin-bottom:18px}
+  .selected-topic .big{font-size:16px;font-weight:700}
+  .brain2{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
+  .brain-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+  .poolrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft)}.poolrow:last-child{border:none}
+  /* interactive lifecycle map */
+  .step{cursor:pointer}
+  .step .node:hover .bub{box-shadow:0 0 0 3px var(--primary-soft)}
+  .tab.dim{opacity:.5;cursor:pointer}
+  .tab.lock{opacity:.36;cursor:not-allowed}
+  .stepname{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .maphint{font-size:12px;color:var(--primary);font-weight:600;margin:0 0 12px}
+  @media(max-width:880px){.slots2{grid-template-columns:1fr}.kan{grid-template-columns:1fr 1fr}.topicgrid{grid-template-columns:1fr}.brain2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="proto">
+  <b>PROTOTYPE · DESKTOP</b>
+  <span class="pill">state = SLOT_ASSIGNMENT · step 4/9</span>
+  <span>Speakers&amp;Agenda now has 3 sub-views (Pool · Agenda · Slots). Communications has 3 audiences.</span>
+  <a href="event-detail-redesign-mobile.html">→ open mobile prototype</a>
+</div>
+
+<div class="wrap">
+  <div class="crumb"><a href="#">Events</a> &nbsp;›&nbsp; <span>BATbern 76 — Cloud Native Architecture</span></div>
+
+  <div class="head">
+    <div>
+      <h1>BATbern 76 — Cloud Native Architecture</h1>
+      <div class="meta">
+        <span class="state-chip"><span class="dot"></span> Slot Assignment · Step 4 of 9</span>
+        <span>📅 Thu, 18 Sep 2026 · 17:30</span>
+        <span>📍 Welle 7, Bern</span>
+        <span>⏳ in 34 days</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rail" id="rail">
+    <button class="tab active" data-tab="cockpit"><span class="ico">🧭</span> Cockpit</button>
+    <button class="tab" data-tab="speakers"><span class="ico">🎤</span> Speakers &amp; Agenda <span class="badge" id="badgeSpeakers">2</span></button>
+    <button class="tab" data-tab="registrations"><span class="ico">🎟️</span> Registrations <span class="count">140</span></button>
+    <button class="tab" data-tab="comms"><span class="ico">✉️</span> Communications <span class="dotmark" id="dotComms"></span></button>
+    <button class="tab" data-tab="publishing"><span class="ico">📢</span> Publishing</button>
+    <button class="tab" data-tab="wrapup" title="Unlocks after the event goes live"><span class="ico">🎁</span> Wrap-up <span class="lk" id="wrapLk" style="display:none">🔒</span></button>
+    <button class="tab" data-tab="details"><span class="ico">📝</span> Details</button>
+    <button class="tab" data-tab="settings"><span class="ico">⚙️</span> Settings</button>
+  </div>
+
+  <!-- COCKPIT -->
+  <section class="panel show" id="p-cockpit">
+    <div class="grid" style="grid-template-columns:1fr">
+
+      <div class="card pad">
+        <p class="sec-label">Where this event is</p>
+        <p class="maphint">▶ Tap any step to preview that state — the tasks below and the tab rail above update to match the lifecycle map.</p>
+        <div class="stepper" id="stepper"></div>
+        <div class="stepname" id="cockpitNow"></div>
+      </div>
+
+      <div class="card pad">
+        <div class="row" style="margin-bottom:14px">
+          <div><p class="card-title">Needs your attention</p>
+            <p class="card-sub">From the event task list — overdue first, then due soon. (GET /events/&#123;code&#125;/tasks)</p></div>
+          <div class="sp"></div>
+          <button class="btn sm">＋ Add task</button>
+        </div>
+        <div class="attn" id="attnList"></div>
+      </div>
+
+      <div>
+        <p class="sec-label">At a glance</p>
+        <div class="tiles">
+          <div class="card tile clk" data-tile="registrations"><span class="arrow">→</span><div class="tl">🎟️ Registrations</div><div class="num">128 <small>/ 180</small></div><div class="prog"><i style="width:71%"></i></div><div class="cap">71% filled · 12 on waitlist</div></div>
+          <div class="card tile clk" data-tile="pool"><span class="arrow">→</span><div class="tl">🎤 Speakers</div><div class="num">6 <small>/ 6</small></div><div class="prog"><i class="g" style="width:100%"></i></div><div class="cap">All slots confirmed ✓</div></div>
+          <div class="card tile clk" data-tile="agenda"><span class="arrow">→</span><div class="tl">📋 Materials</div><div class="num">3 <small>/ 6</small></div><div class="prog"><i class="w" style="width:50%"></i></div><div class="cap">50% sessions complete</div></div>
+          <div class="card tile clk" data-tile="slots"><span class="arrow">→</span><div class="tl">🗓️ Agenda</div><div class="num">4 <small>/ 6</small></div><div class="prog"><i class="w" style="width:66%"></i></div><div class="cap">2 sessions need a slot</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPEAKERS & AGENDA -->
+  <section class="panel" id="p-speakers">
+    <div class="card pad" style="margin-bottom:16px">
+      <div class="row">
+        <div class="subtoggle" id="sub">
+          <button class="on" data-sub="pool">🗂️ Pool (Kanban)</button>
+          <button data-sub="agenda">🗓️ Agenda (Sessions)</button>
+          <button data-sub="slots">🧩 Slots</button>
+        </div>
+        <div class="sp"></div>
+        <button class="btn sm">＋ Add speakers</button>
+      </div>
+    </div>
+
+    <div id="sub-pool" class="card pad">
+      <div class="dragnote">🃏 <b>4 phase columns</b>, not 8 state columns. Each card keeps its exact state as a chip + its primary action. Within a column, <b>“your move”</b> cards (accent border) sit above <b>“waiting on speaker”</b> cards. Dragging a card forward runs its primary action (opening any confirm) — one step, never a silent email.</div>
+      <div class="kan">
+
+        <div class="lane"><h4>Sourcing <span class="sub2">3</span></h4>
+          <div class="scard act"><span class="st">Identified</span><div class="nm">Lena Vogt</div><div class="co">Postfinance · <span class="act-link">Log outreach →</span></div></div>
+          <div class="scard act"><span class="st">Identified</span><div class="nm">Marco Frei</div><div class="co">SBB · <span class="act-link">Log outreach →</span></div></div>
+          <div class="scard act"><span class="st">Contacted</span><div class="nm">Dr. Amir Roth</div><div class="co">ETH Zürich · <span class="act-link">Promote →</span></div></div>
+        </div>
+
+        <div class="lane"><h4>Inviting <span class="sub2">2</span></h4>
+          <div class="scard act"><span class="st">Ready</span><div class="nm">Klara Brun</div><div class="co">Mobiliar · <span class="act-link">Send invitation →</span></div></div>
+          <div class="waithdr">waiting on speaker</div>
+          <div class="scard wait"><span class="st">Invited</span><div class="nm">Felix Roth</div><div class="co">SBB · awaiting response · <span style="color:var(--primary)">Remind</span></div></div>
+        </div>
+
+        <div class="lane"><h4>Content <span class="sub2">3</span></h4>
+          <div class="scard act"><span class="st">Content submitted</span><div class="nm">Tobias Brun</div><div class="co">Swisscom · <span class="act-link">Review content →</span></div></div>
+          <div class="waithdr">waiting on speaker</div>
+          <div class="scard wait"><span class="st">Accepted</span><div class="nm">Sophie Meier</div><div class="co">Google ZH · no content yet · <span style="color:var(--primary)">Enter on behalf</span></div></div>
+          <div class="scard wait"><span class="st">Accepted</span><div class="nm">Nadia Kex</div><div class="co">Zühlke · no content yet</div></div>
+        </div>
+
+        <div class="lane"><h4>Confirmed <span class="sub2">3</span></h4>
+          <div class="scard act"><span class="st">Quality reviewed</span><div class="nm">Pia Stöckli</div><div class="co">Mimacom · <span class="act-link">⚠ Needs a slot →</span></div></div>
+          <div class="waithdr">done</div>
+          <div class="scard wait"><span class="st">Quality reviewed</span><div class="nm">Jan Keller</div><div class="co">Adnovum · ✓ slot 19:35</div></div>
+          <div class="scard wait"><span class="st">Quality reviewed</span><div class="nm">Rui Costa</div><div class="co">VSHN · ✓ slot 18:45</div></div>
+        </div>
+      </div>
+
+      <details class="declined">
+        <summary>▸ Declined (2) — collapsed by default</summary>
+        <div class="dbody">
+          <div class="scard"><span class="st">Declined</span><div class="nm">Anna Frei</div><div class="co">Helvetia · “no capacity this quarter”</div></div>
+          <div class="scard"><span class="st">Declined</span><div class="nm">Beat Iten</div><div class="co">AXA · withdrew after accepting</div></div>
+        </div>
+      </details>
+    </div>
+
+    <div id="sub-agenda" class="card pad" style="display:none">
+      <div class="row" style="margin-bottom:14px">
+        <div><p class="card-title">Session agenda</p><p class="card-sub">Edit titles, abstracts, durations &amp; materials. 2 of 6 still need a slot.</p></div>
+        <div class="sp"></div>
+        <button class="btn sm" onclick="goSub('slots')">🧩 Arrange slots →</button>
+      </div>
+      <table>
+        <thead><tr><th>Session</th><th>Speaker</th><th>Slot</th><th>Materials</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Platform Engineering at Scale</td><td>Sophie Meier</td><td><span class="tag b">17:35–18:05</span></td><td><span class="tag g">Approved</span></td><td><button class="iconbtn">✏️</button></td></tr>
+          <tr><td>GitOps in Regulated Banking</td><td>Tobias Brun</td><td><span class="tag b">18:10–18:40</span></td><td><span class="tag w">In review</span></td><td><button class="iconbtn">✏️</button></td></tr>
+          <tr><td>eBPF for Observability</td><td>Rui Costa</td><td><span class="tag b">18:45–19:15</span></td><td><span class="tag g">Approved</span></td><td><button class="iconbtn">✏️</button></td></tr>
+          <tr><td>FinOps &amp; Kubernetes Cost</td><td>Jan Keller</td><td><span class="tag b">19:35–20:05</span></td><td><span class="tag g">Approved</span></td><td><button class="iconbtn">✏️</button></td></tr>
+          <tr><td>Multi-cluster Service Mesh</td><td>Pia Stöckli</td><td><span class="tag n">— no slot —</span></td><td><span class="tag w">Pending</span></td><td><button class="iconbtn">✏️</button></td></tr>
+          <tr><td>Edge-native Workloads</td><td>Nadia Kex</td><td><span class="tag n">— no slot —</span></td><td><span class="tag w">Pending</span></td><td><button class="iconbtn">✏️</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SLOTS as a sub-tab, 2 columns, action bar on top -->
+    <div id="sub-slots" class="card pad" style="display:none">
+      <div class="slotbar">
+        <button class="btn sm">🧱 Generate structure</button>
+        <button class="btn sm primary">✨ Auto-assign</button>
+        <button class="btn sm warn">🗑️ Clear all timings</button>
+        <div class="sp"></div>
+        <div class="sum">Total <b>6</b> · Assigned <b>4</b> · Pending <b style="color:var(--warn)">2</b></div>
+      </div>
+      <div class="slots2">
+        <div class="tray">
+          <h5>Unassigned sessions (2)</h5>
+          <div class="chipdrag"><div class="nm">Multi-cluster Service Mesh</div><div class="co">Pia Stöckli · 30 min</div></div>
+          <div class="chipdrag"><div class="nm">Edge-native Workloads</div><div class="co">Nadia Kex · 30 min</div></div>
+          <p class="hint" style="margin-top:12px">Drag a session onto a slot. Hover shows the speaker’s preference-match %.</p>
+        </div>
+        <div>
+          <p class="tl5">Timeline — Thu 18 Sep · Main Hall</p>
+          <div class="timeline">
+            <div class="slot struct"><div class="time">17:30</div><div class="ses">🎙️ Welcome &amp; moderation</div></div>
+            <div class="slot filled"><div class="time">17:35–18:05</div><div class="ses">Platform Engineering at Scale <small>· Sophie Meier</small></div></div>
+            <div class="slot filled"><div class="time">18:10–18:40</div><div class="ses">GitOps in Regulated Banking <small>· Tobias Brun</small></div></div>
+            <div class="slot filled"><div class="time">18:45–19:15</div><div class="ses">eBPF for Observability <small>· Rui Costa</small></div></div>
+            <div class="slot struct"><div class="time">19:15</div><div class="ses">🍷 Apéro break</div></div>
+            <div class="slot filled"><div class="time">19:35–20:05</div><div class="ses">FinOps &amp; Kubernetes Cost <small>· Jan Keller</small></div></div>
+            <div class="slot empty"><div class="time">20:10–20:40</div><div class="ses">drop a session here…</div><span class="match">92% match</span></div>
+            <div class="slot empty"><div class="time">20:45–21:15</div><div class="ses">drop a session here…</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REGISTRATIONS -->
+  <section class="panel" id="p-registrations">
+    <div class="card pad" style="margin-bottom:16px">
+      <div class="row" style="margin-bottom:12px">
+        <p class="card-title">Registrations <span class="tag b" style="margin-left:6px">140 active</span></p>
+        <div class="sp"></div>
+        <button class="btn sm">⬇ Name badges (XLSX)</button>
+        <button class="btn sm">⬇ Name badges (DOCX)</button>
+        <button class="btn sm">👥 Enroll organizers &amp; partners</button>
+      </div>
+      <div class="hint" style="margin-bottom:6px">128 confirmed / 180 cap · 12 on waitlist</div>
+      <div class="prog"><i style="width:71%"></i></div>
+      <div class="row" style="margin-top:14px;flex-wrap:wrap">
+        <input class="field" style="margin:0;max-width:240px" placeholder="🔍 Search name / email / company">
+        <div class="seg" id="regFilter" style="padding:2px">
+          <button class="on" data-f="all">All</button><button data-f="confirmed">Confirmed</button><button data-f="registered">Registered</button>
+          <button data-f="attended">Attended</button><button data-f="cancelled">Cancelled</button><button data-f="wait">Waitlisted</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pad">
+      <!-- default list -->
+      <div id="reg-all">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td><span class="avatar">AB</span>Anna Brunner</td><td>anna.b@mobiliar.ch</td><td>Mobiliar</td><td><span class="tag g">Confirmed</span></td><td>02 Aug</td><td><button class="iconbtn" title="Resend confirmation">✉️</button><button class="iconbtn" title="Cancel">🚫</button><button class="iconbtn" title="Delete">🗑️</button></td></tr>
+            <tr><td><span class="avatar">FW</span>Felix Wyss</td><td>f.wyss@six.ch</td><td>SIX</td><td><span class="tag b">Registered</span></td><td>05 Aug</td><td><button class="iconbtn" title="Resend confirmation">✉️</button><button class="iconbtn" title="Cancel">🚫</button><button class="iconbtn" title="Delete">🗑️</button></td></tr>
+            <tr><td><span class="avatar">UG</span>Urs Gerber</td><td>urs.gerber@post.ch</td><td>Die Post</td><td><span class="tag g">Confirmed</span></td><td>14 Aug</td><td><button class="iconbtn" title="Resend confirmation">✉️</button><button class="iconbtn" title="Cancel">🚫</button><button class="iconbtn" title="Delete">🗑️</button></td></tr>
+            <tr><td><span class="avatar">MR</span>Mara Roth</td><td>mara@adnovum.ch</td><td>Adnovum</td><td><span class="tag n">Cancelled</span></td><td>09 Aug</td><td><button class="iconbtn" title="Delete">🗑️</button></td></tr>
+          </tbody>
+        </table>
+        <div class="footrow"><span>Showing 1–25 of 140</span><span class="row"><button class="btn sm">‹ Prev</button><button class="btn sm">Next ›</button></span></div>
+      </div>
+      <!-- Waitlisted filter = the SAME list, ordered by queue position with Promote. No separate table. -->
+      <div id="reg-wait" style="display:none">
+        <div class="hint" style="margin-bottom:10px">⏳ Waitlisted registrants in <b>queue order</b>. “Promote” pulls the next person into a freed seat — the only behavior the separate table added, now inline.</div>
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Company</th><th>Registered</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><span class="avatar">CI</span>Carla Item</td><td>carla@helvetia.ch</td><td>Helvetia</td><td>11 Aug</td><td><button class="btn sm primary">Promote</button> <button class="iconbtn" title="Delete">🗑️</button></td></tr>
+            <tr><td>2</td><td><span class="avatar">BL</span>Beat Lüthi</td><td>b.luethi@axa.ch</td><td>AXA</td><td>12 Aug</td><td><button class="btn sm primary">Promote</button> <button class="iconbtn" title="Delete">🗑️</button></td></tr>
+            <tr><td>3</td><td><span class="avatar">RM</span>Rita Moser</td><td>rita@mobiliar.ch</td><td>Mobiliar</td><td>13 Aug</td><td><button class="btn sm primary">Promote</button> <button class="iconbtn" title="Delete">🗑️</button></td></tr>
+          </tbody>
+        </table>
+        <div class="footrow"><span>12 on the waitlist</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMUNICATIONS -->
+  <section class="panel" id="p-comms">
+    <div class="card pad" style="margin-bottom:16px">
+      <p class="card-title" style="margin-bottom:10px">Who are you emailing?</p>
+      <div class="seg" id="aud">
+        <button class="on" data-aud="subs">📰 Newsletter subscribers</button>
+        <button data-aud="regs">🎟️ Event registrants</button>
+        <button data-aud="spk">🎤 Speakers</button>
+        <button data-aud="venue">🏛️ Venue &amp; Caterer</button>
+      </div>
+      <div class="audience-note subs" id="note-subs">Global <b>newsletter list</b> (~2,400). Templates: <i>newsletter-event</i>. Test-mode toggle sends to organizers only. Supports <b>Send Newsletter</b> + <b>Send Reminder</b>, with a send-history table &amp; retry.</div>
+      <div class="audience-note regs" id="note-regs" style="display:none">This event’s <b>active registrants only</b> (128). Templates: <i>REGISTRANT_NOTICE</i> (e.g. “slides are online”). Each registrant receives it in <b>their own language</b> — the picker only changes your preview. Single send, no history.</div>
+      <div class="audience-note spk" id="note-spk" style="display:none"><b>Speakers of this event.</b> Replaces the ad-hoc “send from my mail client” workflow. Bulk templates: <i>content-deadline reminder</i>, <i>logistics &amp; arrival info</i>, <i>thank-you</i>. Individual invitation &amp; per-speaker reminders still live on a speaker’s card in <b>Speakers &amp; Agenda</b>.</div>
+      <div class="audience-note" id="note-venue" style="display:none;background:#fef0e7;color:#8a4b1f">Templated email to the <b>venue and/or caterer contacts</b> (Welle 7 · Gastro AG). Templates: <i>VENUE_COORDINATION</i> (booking confirmation, catering headcount, setup &amp; logistics). Reply-To is the configured venue coordinator. <b>Moved here from Settings</b> — it’s a communication, so it belongs with the others.</div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:340px 1fr">
+      <div class="card pad" id="comm-form">
+        <div class="field"><label>Template</label><select id="tmplSel"><option>Speaker line-up announcement</option><option>Final agenda</option></select></div>
+        <div class="field"><label>Preview language</label><select><option>Deutsch</option><option>English</option></select></div>
+        <div class="row" id="testRow" style="margin-bottom:14px"><span class="switch"></span><span class="hint">Test mode — send to organizers only</span></div>
+        <div id="recipBox" class="hint" style="margin-bottom:12px"></div>
+        <button class="btn primary" style="width:100%;margin-bottom:8px">✉️ <span id="sendLbl">Send Newsletter…</span></button>
+        <button class="btn" id="reminderBtn" style="width:100%">🔔 Send Reminder…</button>
+        <p class="hint" id="spkLink" style="margin-top:12px;display:none">Need to invite a single speaker? → use the speaker’s card in Speakers &amp; Agenda.</p>
+      </div>
+      <div>
+        <div class="card pad" style="margin-bottom:16px">
+          <p class="sec-label">Preview</p>
+          <div class="preview-frame">📧 Rendered email preview (iframe)</div>
+        </div>
+        <div class="card pad" id="histCard">
+          <p class="sec-label">Send history</p>
+          <table>
+            <thead><tr><th>Date</th><th>Type</th><th>Recipients</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>30 Jul · 09:12</td><td>Newsletter</td><td>2,388</td><td><span class="tag g">Completed</span></td><td></td></tr>
+              <tr><td>01 Aug · 14:05</td><td>Reminder <span class="tag n">TEST</span></td><td>4</td><td><span class="tag w">Partial</span></td><td><button class="btn sm">Retry</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PUBLISHING -->
+  <section class="panel" id="p-publishing">
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="card pad">
+        <p class="card-title" style="margin-bottom:6px">Validation</p>
+        <p class="card-sub" style="margin-bottom:12px">Content auto-validates before each phase can publish.</p>
+        <div class="checkitem"><span class="ckbox g">✓</span> Topic defined</div>
+        <div class="checkitem"><span class="ckbox g">✓</span> Speakers added &amp; confirmed (6)</div>
+        <div class="checkitem"><span class="ckbox w">!</span> 2 sessions not yet assigned to a slot</div>
+        <div class="checkitem"><span class="ckbox w">!</span> 3 sessions awaiting material review</div>
+      </div>
+      <div class="card pad">
+        <p class="card-title" style="margin-bottom:12px">Publishing phases</p>
+        <div class="timeline">
+          <div class="slot filled"><div class="time">Topic</div><div class="ses">Published immediately</div><span class="match">Live ✓</span></div>
+          <div class="slot filled"><div class="time">Speakers</div><div class="ses">Auto-published 30 days before</div><span class="match">Live ✓</span></div>
+          <div class="slot"><div class="time">Agenda</div><div class="ses empty">Blocked — finish validation</div><span class="match" style="color:var(--warn)">Blocked</span></div>
+          <div class="slot"><div class="time">Final</div><div class="ses empty">Locks &amp; prints 14 days before</div></div>
+        </div>
+        <button class="btn primary" style="margin-top:14px;width:100%">📢 Publish agenda phase</button>
+      </div>
+    </div>
+    <div class="card pad" style="margin-top:16px">
+      <p class="sec-label">Live preview — current published content</p>
+      <div class="preview-frame">🌐 Public event page preview (iframe)</div>
+    </div>
+  </section>
+
+  <!-- WRAP-UP -->
+  <section class="panel" id="p-wrapup">
+    <div class="card pad" style="margin-bottom:16px;background:var(--warn-soft);border-color:var(--warn-line)">
+      🔒 <b>Locked until the event is live.</b> Post-event tools light up at <b>EVENT_LIVE</b>. Previewed here for layout.
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="card pad">
+        <div class="row" style="margin-bottom:12px"><p class="card-title">📸 Photos <span class="hint">0 / —</span></p><div class="sp"></div><button class="btn sm">⬆ Upload photos</button></div>
+        <div class="photos"><div class="photo">🖼️</div><div class="photo">🖼️</div><div class="photo">🖼️</div><div class="photo">🖼️</div><div class="photo">＋</div></div>
+      </div>
+      <div class="card pad">
+        <div class="row" style="margin-bottom:12px"><p class="card-title">💌 Thank-you notes <span class="hint">Total: 2</span></p></div>
+        <div class="note"><div class="nb"><p class="nq">“Best BATbern in years — the GitOps talk alone was worth it.”</p>
+          <div class="nf"><span>Anna Brunner · Mobiliar</span><span class="tag g">♥ Featured</span></div></div>
+          <span class="switch on" title="Feature on public marquee"></span></div>
+        <div class="note"><div class="nb"><p class="nq">“Loved the venue and the networking. Thank you!”</p>
+          <div class="nf"><span>Anonymous</span><span class="tag n">Anonymous</span></div></div>
+          <span class="switch" title="Cannot feature anonymous notes" style="opacity:.4"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DETAILS (event identity / setup — touched once at the start, then frozen) -->
+  <section class="panel" id="p-details">
+    <div class="card pad" style="margin-bottom:16px;background:var(--primary-soft);border-color:#cfe0f5;color:var(--primary-ink);font-size:13px">
+      📝 The event’s <b>identity</b> — set once at the start (title, description, date, theme image, topic), then it rarely changes. Lives here next to Settings rather than competing with the Cockpit’s “what now?”. The title still shows in the page header on every tab.
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div>
+        <div class="card" style="overflow:hidden;margin-bottom:16px">
+          <div style="height:170px;background:linear-gradient(120deg,#0a4d8c,#1f8a5b);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);font-size:13px">🖼️ Event theme image</div>
+          <div class="pad"><div class="row"><span class="hint">Shown on the public page &amp; cockpit header.</span><div class="sp"></div><button class="btn sm">⬆ Replace</button><button class="btn sm">✨ Generate (AI)</button></div></div>
+        </div>
+        <div class="card settings-sec">
+          <h3>📝 Event details</h3>
+          <div class="field"><label>Title</label><input value="Cloud Native Architecture"></div>
+          <div class="field" style="margin-bottom:8px"><label>Description</label><textarea rows="4">A deep-dive into platform engineering, GitOps and cloud-native operations in Swiss enterprises — practitioner talks, real-world case studies, and an extended apéro for the community.</textarea></div>
+          <button class="btn sm">✨ Generate description with AI</button>
+        </div>
+      </div>
+      <div>
+        <div class="card settings-sec">
+          <h3>🏷️ Topic</h3>
+          <p class="h">Pick from the backlog (with duplicate-detection). The one decision after the basics.</p>
+          <div class="row"><span class="tag b">Cloud Native Architecture</span><div class="sp"></div><button class="btn sm" id="openTopic">Change topic</button></div>
+        </div>
+        <div class="card settings-sec">
+          <h3>📅 When &amp; where</h3>
+          <div class="field"><label>Date &amp; start time</label><input value="2026-09-18 · 17:30"></div>
+          <div class="field"><label>Event type</label><select><option>Evening event</option><option>Afternoon</option><option>Full day</option></select></div>
+          <div class="field"><label>Registration deadline</label><input value="2026-09-15"></div>
+          <div class="field"><label>Venue</label><input value="Welle 7, Bern"></div>
+          <div class="field" style="margin:0"><label>Address</label><input value="Schanzenstrasse 5, 3008 Bern"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="panel" id="p-settings">
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div>
+        <div class="card settings-sec"><h3>👤 Event moderator</h3><p class="h">The organizer responsible for moderating this event.</p>
+          <div class="field"><select><option>Nissim Buchs</option><option>Sandra Keller</option></select></div></div>
+
+        <div class="card settings-sec"><h3>👥 Registration capacity</h3><p class="h">Leave blank for unlimited. Cannot exceed venue capacity (220).</p>
+          <div class="field"><input value="180"></div><button class="btn sm">Save</button></div>
+
+        <div class="card settings-sec"><h3>💬 Session Q&amp;A <span class="hint">(“The Apéro Continues”)</span></h3>
+          <p class="h">Per-session Q&amp;A threads that freeze into the archive.</p>
+          <div class="row" style="margin-bottom:12px"><span class="switch on"></span><span class="hint">Enable per-session Q&amp;A</span></div>
+          <div class="field"><label>Open the Q&amp;A</label><select><option>After the event (afterglow)</option><option>When speakers published (pre-event)</option></select></div>
+          <div class="field"><label>Open for (days after event)</label><input value="14"></div>
+          <div class="row"><button class="btn sm primary">Save</button><button class="btn sm warn">Close Q&amp;A now</button><button class="btn sm">Open Q&amp;A</button></div></div>
+      </div>
+      <div>
+        <div class="card settings-sec"><h3>🖼️ Teaser images <span class="hint">3 / 10</span></h3>
+          <p class="h">Full-screen slides on the presentation page.</p>
+          <div class="photos" style="grid-template-columns:repeat(3,1fr)"><div class="photo">🖼️</div><div class="photo">🖼️</div><div class="photo">＋</div></div></div>
+
+        <div class="card settings-sec danger-zone"><h3 style="color:var(--danger)">⚠️ Danger zone</h3>
+          <p class="h">These actions are irreversible.</p>
+          <div class="dz-row"><div><div class="t">Cancel event</div><div class="d">Cancels &amp; notifies all 128 registrants</div></div><div class="sp"></div><button class="btn warn sm">Cancel event</button></div>
+          <div class="dz-row"><div><div class="t">Delete event</div><div class="d">Only if no attendee registrations</div></div><div class="sp"></div><button class="btn danger sm">Delete event</button></div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===== TOPIC SELECTION + BRAINSTORMING overlay (opens from Details → Change topic) ===== -->
+<div class="tov" id="topicOv"></div>
+<div class="tfocus" id="topicFocus">
+  <div class="tbar">
+    <div class="ttl">🏷️ Topic for BATbern 76</div>
+    <button class="btn sm" id="topicClose">✕ Close</button>
+  </div>
+  <div class="tbody">
+
+    <!-- STATE A — pick a topic (filters on top, actions on the card, single grid) -->
+    <div id="topicPick">
+      <div class="topbar">
+        <input placeholder="🔍 Search topics" style="flex:1;min-width:150px">
+        <select><option>All categories</option><option>Technical</option><option>Management</option><option>Soft skills</option><option>Industry trends</option></select>
+        <select><option>All statuses</option><option>Available</option><option>Caution</option><option>Unavailable</option></select>
+        <select><option>Sort: Safest first</option><option>Recent first</option><option>Newest</option><option>Title A–Z</option><option>Most used</option></select>
+        <div class="subtoggle"><button class="on">☰ List</button><button>▦ Heat-map</button></div>
+        <button class="btn sm primary">＋ New topic</button>
+      </div>
+      <div class="topicgrid">
+        <div class="tcard green"><p class="tt">Platform Engineering &amp; IDPs</p>
+          <div class="tmeta"><span class="tag g">staleness 88 · safe</span><span>Technical</span><span>never used</span></div>
+          <div class="tact"><button class="btn sm primary selectbtn" data-t="Platform Engineering &amp; IDPs">Select for event</button><button class="btn sm">✏️ Edit</button><button class="btn sm">🗑️</button></div></div>
+        <div class="tcard green"><p class="tt">Developer Experience (DevEx)</p>
+          <div class="tmeta"><span class="tag g">staleness 91 · safe</span><span>Soft skills</span><span>never used</span></div>
+          <div class="tact"><button class="btn sm primary selectbtn" data-t="Developer Experience (DevEx)">Select for event</button><button class="btn sm">✏️ Edit</button><button class="btn sm">🗑️</button></div></div>
+        <div class="tcard green"><p class="tt">AI-Assisted Software Delivery</p>
+          <div class="tmeta"><span class="tag g">staleness 79 · safe</span><span>Industry trends</span><span>used 1×</span></div>
+          <div class="tact"><button class="btn sm primary selectbtn" data-t="AI-Assisted Software Delivery">Select for event</button><button class="btn sm">✏️ Edit</button><button class="btn sm" title="Used — can’t delete" style="opacity:.35">🗑️</button></div></div>
+        <div class="tcard yellow"><p class="tt">Event-Driven Architecture</p>
+          <div class="tmeta"><span class="tag w">staleness 58 · caution</span><span>Technical</span><span>last used 14 mo ago · 2×</span></div>
+          <div class="tsim">⚠ 82% similar to “Async Messaging Patterns” — possible duplicate</div>
+          <div class="tact"><button class="btn sm primary selectbtn" data-t="Event-Driven Architecture">Select for event</button><button class="btn sm">✏️ Edit</button><button class="btn sm" style="opacity:.35">🗑️</button></div></div>
+        <div class="tcard yellow"><p class="tt">FinOps &amp; Cloud Cost</p>
+          <div class="tmeta"><span class="tag w">staleness 61 · caution</span><span>Management</span><span>last used 13 mo ago · 1×</span></div>
+          <div class="tact"><button class="btn sm primary selectbtn" data-t="FinOps &amp; Cloud Cost">Select for event</button><button class="btn sm">✏️ Edit</button><button class="btn sm" style="opacity:.35">🗑️</button></div></div>
+        <div class="tcard red"><p class="tt">Kubernetes in Production</p>
+          <div class="tmeta"><span class="tag r">staleness 32 · too recent</span><span>Technical</span><span>last used 6 mo ago · 4×</span></div>
+          <div class="tsim" style="color:var(--danger);background:var(--danger-soft)">⚠ High duplication risk — used recently &amp; often</div>
+          <div class="tact"><button class="btn sm warn selectbtn" data-t="Kubernetes in Production">Select anyway…</button><button class="btn sm">✏️ Edit</button><button class="btn sm" style="opacity:.35">🗑️</button></div></div>
+      </div>
+    </div>
+
+    <!-- STATE B — topic pinned on top, view becomes speaker brainstorming (1–2 columns) -->
+    <div id="topicBrain" style="display:none">
+      <div class="selected-topic">
+        <span style="font-size:22px">✓</span>
+        <div style="flex:1"><div class="big" id="selTopicName">Platform Engineering &amp; IDPs</div><div class="hint">staleness 88 · safe to use · selected for BATbern 76</div></div>
+        <button class="btn sm" id="changeTopic">↩ Change topic</button>
+      </div>
+      <p class="sec-label">Now brainstorm speakers — add candidates to the pool</p>
+      <div class="brain2">
+        <div class="card pad">
+          <p class="card-title" style="margin-bottom:12px">Add a potential speaker</p>
+          <div class="field"><label>Name *</label><input placeholder="e.g. Sophie Meier"></div>
+          <div class="field"><label>Company</label><input placeholder="e.g. Google ZH"></div>
+          <div class="field"><label>Expertise</label><input placeholder="e.g. Platform engineering"></div>
+          <div class="field"><label>Assign to organizer</label><select><option>Unassigned</option><option>Nissim Buchs</option><option>Sandra Keller</option></select></div>
+          <div class="field"><label>Notes</label><textarea rows="2" placeholder="why they’d be great…"></textarea></div>
+          <button class="btn primary" style="width:100%">＋ Add to pool</button>
+        </div>
+        <div class="card pad">
+          <p class="card-title" style="margin-bottom:5px">Speaker pool (3)</p>
+          <p class="card-sub" style="margin-bottom:11px">Promote a contacted speaker when they’re ready — that provisions their account.</p>
+          <div class="poolrow"><span class="avatar">SM</span><div style="flex:1"><div style="font-weight:600">Sophie Meier</div><div class="hint">Google ZH · Platform engineering</div></div><span class="tag n">Identified</span></div>
+          <div class="poolrow"><span class="avatar">AR</span><div style="flex:1"><div style="font-weight:600">Dr. Amir Roth</div><div class="hint">ETH Zürich · Distributed systems</div></div><button class="btn sm primary">Promote</button></div>
+          <div class="poolrow"><span class="avatar">TB</span><div style="flex:1"><div style="font-weight:600">Tobias Brun</div><div class="hint">Swisscom · GitOps</div></div><span class="tag n">Identified</span></div>
+        </div>
+      </div>
+      <div class="brain-foot">
+        <button class="btn" id="brainSkip">Skip for now</button>
+        <button class="btn primary" id="brainContinue">Continue to outreach →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const rail=document.getElementById('rail');
+  function activate(id){
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    const tab=document.querySelector('.tab[data-tab="'+id+'"]'); tab.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('show'));
+    document.getElementById('p-'+id).classList.add('show');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  rail.addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;
+    if(t.classList.contains('lock'))return; activate(t.dataset.tab);});
+  document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>activate(b.dataset.goto)));
+
+  function goSub(s){document.querySelector('#sub button[data-sub="'+s+'"]').click();}
+  document.getElementById('sub').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    document.querySelectorAll('#sub button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    ['pool','agenda','slots'].forEach(s=>document.getElementById('sub-'+s).style.display=(b.dataset.sub===s)?'block':'none');});
+
+  document.getElementById('aud').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    document.querySelectorAll('#aud button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    const a=b.dataset.aud;
+    ['subs','regs','spk','venue'].forEach(x=>document.getElementById('note-'+x).style.display=(a===x)?'block':'none');
+    // adapt the compose form per audience
+    const tmpl=document.getElementById('tmplSel'), sendLbl=document.getElementById('sendLbl'),
+      reminderBtn=document.getElementById('reminderBtn'), testRow=document.getElementById('testRow'),
+      hist=document.getElementById('histCard'), recip=document.getElementById('recipBox'), spkLink=document.getElementById('spkLink');
+    if(a==='subs'){tmpl.innerHTML='<option>Speaker line-up announcement</option><option>Final agenda</option>';
+      sendLbl.textContent='Send Newsletter…';reminderBtn.style.display='';testRow.style.display='';hist.style.display='';recip.textContent='~2,400 subscribers';spkLink.style.display='none';}
+    if(a==='regs'){tmpl.innerHTML='<option>Slides are online</option><option>Room change</option><option>Reminder: tomorrow</option>';
+      sendLbl.textContent='Send to registrants…';reminderBtn.style.display='none';testRow.style.display='none';hist.style.display='none';recip.textContent='128 active registrants · each in their own language';spkLink.style.display='none';}
+    if(a==='spk'){tmpl.innerHTML='<option>Content-deadline reminder</option><option>Logistics &amp; arrival info</option><option>Thank-you to speakers</option>';
+      sendLbl.textContent='Send to speakers…';reminderBtn.style.display='none';testRow.style.display='none';hist.style.display='';recip.textContent='6 confirmed speakers';spkLink.style.display='block';}
+  });
+
+  // registrations status filter — Waitlisted swaps to the ordered + promote view (no separate table)
+  const regFilter=document.getElementById('regFilter');
+  if(regFilter){regFilter.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    document.querySelectorAll('#regFilter button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    const w=b.dataset.f==='wait';
+    document.getElementById('reg-all').style.display=w?'none':'block';
+    document.getElementById('reg-wait').style.display=w?'block':'none';});}
+
+  // venue audience branch (added to the comms form handler)
+  document.querySelector('#aud button[data-aud="venue"]').addEventListener('click',()=>{
+    const tmpl=document.getElementById('tmplSel'),sendLbl=document.getElementById('sendLbl'),
+      reminderBtn=document.getElementById('reminderBtn'),testRow=document.getElementById('testRow'),
+      hist=document.getElementById('histCard'),recip=document.getElementById('recipBox'),spkLink=document.getElementById('spkLink');
+    tmpl.innerHTML='<option>Booking confirmation</option><option>Catering headcount</option><option>Setup &amp; logistics</option>';
+    sendLbl.textContent='Send to venue/caterer…';reminderBtn.style.display='none';testRow.style.display='none';
+    hist.style.display='none';recip.textContent='Welle 7 + Gastro AG · Reply-To: coordinator';spkLink.style.display='none';
+  });
+
+  // cockpit metric tiles → deep-link to the matching tab/sub-view
+  document.querySelectorAll('[data-tile]').forEach(t=>t.addEventListener('click',()=>{
+    const d=t.dataset.tile;
+    if(d==='registrations'){activate('registrations');}
+    else{activate('speakers');goSub(d);}   // pool | agenda | slots
+  }));
+
+  // ===== Interactive lifecycle map: click a state → cockpit tasks + tab rail update =====
+  const STATES=[
+    {label:'Created',now:'Define the event — fill in the details and pick a topic.',
+     tasks:[{n:'Add event details & pick a topic',d:'soon',o:'NB',go:'details'}],
+     dim:['speakers','registrations','comms','publishing'],lock:['wrapup'],bs:'',dot:false},
+    {label:'Topic',now:'Confirm the topic, assign a moderator, and start the speaker pool.',
+     tasks:[{n:'Confirm the topic',d:'soon',o:'NB',go:'details'},
+            {n:'Assign the moderator',d:'soon',o:'NB',go:'settings'},
+            {n:'Send the topic-announcement newsletter',d:'ok',o:'SK',go:'comms'},
+            {n:'Add the first speakers to the pool',d:'ok',o:'NB',go:'pool'}],
+     dim:['registrations','publishing'],lock:['wrapup'],bs:'',dot:true},
+    {label:'Speakers',now:'Fill the speaker pool; review submissions and start slotting as speakers confirm.',
+     tasks:[{n:'Fill the speaker pool — 3 / 12 confirmed',d:'soon',o:'NB',go:'pool'},
+            {n:'Assign the moderator',d:'soon',o:'NB',go:'settings'},
+            {n:'Review speaker submissions',d:'soon',o:'NB',go:'agenda'},
+            {n:'2 sessions still need a slot',d:'ok',o:'NB',go:'slots'},
+            {n:'Schedule the partner meeting',d:'ok',o:'SK',go:'comms'}],
+     dim:['registrations'],lock:['wrapup'],bs:'2',dot:false},
+    {label:'Slot Assignment',now:'Assign speakers to time slots and finish reviews, then publish the agenda.',
+     tasks:[{n:'Assign the moderator',d:'over',o:'NB',go:'settings'},
+            {n:'2 sessions still need a slot',d:'soon',o:'NB',go:'slots'},
+            {n:'Review speaker submissions',d:'soon',o:'NB',go:'agenda'},
+            {n:'Send the “Speaker line-up” newsletter',d:'soon',o:'SK',go:'comms'},
+            {n:'Finalize & publish the agenda',d:'soon',o:'NB',go:'publishing'}],
+     dim:['registrations'],lock:['wrapup'],bs:'2',dot:false},
+    {label:'Agenda Published',now:'Agenda is live — collect any outstanding presentations and watch registrations fill.',
+     tasks:[{n:'Registrations 128 / 180 — watch capacity & waitlist',d:'ok',o:'SK',go:'registrations'},
+            {n:'Collect any outstanding presentations',d:'soon',o:'NB',go:'agenda'}],
+     dim:[],lock:['wrapup'],bs:'',dot:false},
+    {label:'Agenda Finalized',now:'Final newsletter, request the catering offer, print the agenda. Day-of controls are now available for rehearsal.',
+     tasks:[{n:'Send the final newsletter (14 days before)',d:'over',o:'SK',go:'comms'},
+            {n:'Send mail to request the catering offer',d:'soon',o:'SK',go:'comms'},
+            {n:'▶ Open presentation (rehearsal)',d:'ok',o:'NB',go:'present'},
+            {n:'📡 Live Control (test run)',d:'ok',o:'NB',go:'live'}],
+     dim:[],lock:['wrapup'],bs:'',dot:true},
+    {label:'Live',now:'🔴 Run the event — present the deck or open Live Control.',
+     tasks:[{n:'🔴 Start the presentation',d:'live',o:'NB',go:'present'},
+            {n:'📡 Open Live Control',d:'live',o:'NB',go:'live'},
+            {n:'Check-in & print walk-in badges',d:'soon',o:'SK',go:'registrations'}],
+     dim:[],lock:[],bs:'',dot:false},
+    {label:'Completed',now:'Send “slides are online”, upload photos, curate thank-yous, and book the venue for the years ahead.',
+     tasks:[{n:'Send “slides are online” to registrants',d:'soon',o:'SK',go:'comms'},
+            {n:'Book the venue for the next 2 years (annual)',d:'ok',o:'SK',go:'comms'},
+            {n:'Upload event photos',d:'ok',o:'NB',go:'wrapup'},
+            {n:'Curate & feature thank-you notes',d:'ok',o:'NB',go:'wrapup'},
+            {n:'Open session Q&A',d:'ok',o:'SK',go:'settings'}],
+     dim:['speakers'],lock:[],bs:'',dot:true},
+    {label:'Archived',now:'Event archived — read-only.',
+     tasks:[{n:'Nothing to do — the event is archived',d:'ok',o:'',go:''}],
+     dim:['speakers','registrations','comms','publishing'],lock:[],bs:'',dot:false},
+  ];
+  const DUE={over:['over','Overdue'],soon:['soon','Due soon'],ok:['ok','Upcoming'],live:['over','Now · live']};
+  const stepper=document.getElementById('stepper'),cockpitNow=document.getElementById('cockpitNow'),
+    attnList=document.getElementById('attnList'),badgeSpeakers=document.getElementById('badgeSpeakers'),
+    dotComms=document.getElementById('dotComms'),wrapLk=document.getElementById('wrapLk');
+  function renderState(idx){
+    const s=STATES[idx];
+    stepper.innerHTML=STATES.map((st,i)=>{
+      const cls=i<idx?'done':(i===idx?'current':'');
+      const bub=i<idx?'✓':(i+1);
+      const bar=i<STATES.length-1?'<div class="bar"></div>':'';
+      return `<div class="step ${cls}" data-si="${i}"><div class="node"><div class="bub">${bub}</div><div class="lbl">${st.label}</div></div>${bar}</div>`;
+    }).join('');
+    cockpitNow.innerHTML=`<b>Step ${idx+1} of ${STATES.length} · ${s.label}</b> — ${s.now}`;
+    attnList.innerHTML=s.tasks.map(t=>{
+      const due=DUE[t.d];
+      const go=t.go?`<button class="btn sm ${t.d==='live'?'primary ':''}go" data-go="${t.go}">Open →</button>`:'';
+      const who=t.o?`<span class="who"><span class="av">${t.o}</span></span>`:'';
+      return `<div class="task ${due[0]}"><div class="strip"></div><div class="body"><p class="tname">${t.n}</p><div class="tmeta"><span class="due ${due[0]}">${due[1]}</span>${who}</div>${go}</div></div>`;
+    }).join('');
+    document.querySelectorAll('.tab').forEach(tab=>{const id=tab.dataset.tab;tab.classList.remove('dim','lock');
+      if(s.lock.includes(id))tab.classList.add('lock');
+      else if(s.dim.includes(id))tab.classList.add('dim');});
+    badgeSpeakers.style.display=s.bs?'inline-flex':'none';if(s.bs)badgeSpeakers.textContent=s.bs;
+    dotComms.style.display=s.dot?'block':'none';
+    wrapLk.style.display=s.lock.includes('wrapup')?'inline':'none';
+  }
+  stepper.addEventListener('click',e=>{const st=e.target.closest('.step');if(!st)return;renderState(+st.dataset.si);});
+  function goTask(t){
+    if(['pool','agenda','slots'].includes(t)){activate('speakers');goSub(t);}
+    else if(['registrations','comms','publishing','wrapup','details','settings','speakers'].includes(t)){activate(t);}
+    // present / live have no destination in this prototype
+  }
+  attnList.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;goTask(b.dataset.go);});
+  renderState(3); // start at SLOT_ASSIGNMENT, matching the rest of the prototype
+
+  // topic overlay
+  const topicOv=document.getElementById('topicOv'),topicFocus=document.getElementById('topicFocus');
+  function topicState(s){document.getElementById('topicPick').style.display=s==='pick'?'block':'none';
+    document.getElementById('topicBrain').style.display=s==='brain'?'block':'none';}
+  function openTopicFn(){topicOv.classList.add('show');topicFocus.classList.add('show');topicState('pick');}
+  function closeTopicFn(){topicOv.classList.remove('show');topicFocus.classList.remove('show');}
+  document.getElementById('openTopic').addEventListener('click',openTopicFn);
+  document.getElementById('topicClose').addEventListener('click',closeTopicFn);
+  topicOv.addEventListener('click',closeTopicFn);
+  document.querySelectorAll('.selectbtn').forEach(b=>b.addEventListener('click',()=>{
+    document.getElementById('selTopicName').innerHTML=b.dataset.t;topicState('brain');}));
+  document.getElementById('changeTopic').addEventListener('click',()=>topicState('pick'));
+  document.getElementById('brainSkip').addEventListener('click',closeTopicFn);
+  document.getElementById('brainContinue').addEventListener('click',()=>{closeTopicFn();activate('speakers');goSub('pool');});
+</script>
+</body>
+</html>

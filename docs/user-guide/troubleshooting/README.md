@@ -1,5 +1,7 @@
 # Troubleshooting Guide
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
 This section provides solutions to common issues organizers encounter while using the BATbern platform. For each problem, you'll find:

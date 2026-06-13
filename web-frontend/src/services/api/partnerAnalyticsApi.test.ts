@@ -136,7 +136,9 @@ describe('Partner Analytics API Client - Story 8.1', () => {
     });
 
     it('should_callGetEndpointWithBlob_when_exportInvoked', async () => {
-      const mockBlob = new Blob(['data'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const mockBlob = new Blob(['data'], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
       vi.mocked(apiClient.get).mockResolvedValue({
         data: mockBlob,
         headers: {},

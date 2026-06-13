@@ -1,16 +1,20 @@
 # User Management
 
-> Manage organizers, speakers, attendees, and partners
+> Manage organizers, speakers, attendees, partners, and admins
 
 <span class="feature-status implemented">Implemented</span>
 
+> **Last Updated:** 2026-06-13
+
 ## Overview
 
-Users are individuals with BATbern accounts. Each user has exactly one **role** that determines their permissions and platform capabilities.
+Users are individuals with BATbern accounts. Each user has one or more **roles** that determine their permissions and platform capabilities. Multi-role users get a single session with grouped navigation (section dividers per role) — no separate logins per role.
+
+Users sign in with **email + password** or **"Continue with Google"** (see [Continue with Google (SSO)](#continue-with-google-sso) below).
 
 ## User Roles
 
-BATbern supports 4 distinct roles:
+BATbern supports 5 roles:
 
 ### 🔵 Organizer
 
@@ -81,6 +85,38 @@ BATbern supports 4 distinct roles:
 
 **Typical Users**: Sponsoring companies and collaborating organizations (Diamond through Bronze tier)
 
+### ⚫ Admin
+
+<span style="background: #2C3E50; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">ADMIN</span>
+
+**Platform administration** - Full system access, including administrative configuration not exposed to regular organizers.
+
+**Permissions**:
+- ✅ All Organizer permissions
+- ✅ Platform configuration and administrative tooling
+- ✅ Manage other users' roles
+
+**Typical Users**: BATbern platform administrators
+
+## Continue with Google (SSO)
+
+<span class="feature-status implemented">Implemented</span> — Epic 12
+
+BATbern supports federated login via **"Continue with Google"** at `auth.batbern.ch`. SSO is live in production.
+
+### How it works
+
+- **Account linking** — when a user signs in with Google using an email that already exists as a BATbern account, the federated identity is transparently linked to the existing profile (no duplicate account is created).
+- **JIT (just-in-time) provisioning** — a brand-new Google sign-in creates a profile on first login with the default `ATTENDEE` role; organizers can promote later.
+- **Terms-of-Service consent gate** — first-time federated users complete a consent step before reaching the app.
+- **Federated onboarding completion** — first login collects consent, company, and newsletter preference.
+- **Google avatar import** — the user's Google profile photo is imported as their avatar.
+- **Runtime kill-switch** — SSO can be disabled at runtime via the `FEATURES_SSO_ENABLED` flag without a redeploy.
+
+<div class="alert info">
+ℹ️ <strong>Note:</strong> Apple / generic OIDC providers are not yet available (deferred — Story 12.10). Google is the only federated provider live today.
+</div>
+
 ## Creating a User
 
 <div class="alert info">
@@ -114,7 +150,7 @@ Complete the user creation form:
 - **Phone** - Contact number (optional)
 
 **Profile Information**:
-- **Role*** - Select one: Organizer, Speaker, Attendee, Partner
+- **Role*** - Select one: Organizer, Speaker, Attendee, Partner, Admin
 - **Company** - Select from autocomplete dropdown (optional)
 - **Job Title** - Position at company (optional)
 - **Bio** - Short biography (for speakers)
@@ -220,14 +256,14 @@ BATbern uses **AWS Cognito** for authentication but stores user profiles in **Po
 
 ### How Sync Works
 
-**Automatic Sync** (when implemented):
-1. User logs in via Cognito
+**Automatic Sync** (production):
+1. User logs in via Cognito (email/password or "Continue with Google")
 2. JWT token contains user attributes
 3. API Gateway extracts user info from token
-4. Backend creates/updates user record in PostgreSQL
-5. User can now interact with application
+4. Backend creates/updates the user record in PostgreSQL (JIT provisioning for first-time federated logins — default role `ATTENDEE`)
+5. User can now interact with the application
 
-**Manual Sync** (current):
+**Manual Sync** (local development — mirrors staging users into the local DB):
 ```bash
 # Sync all users from staging Cognito to local PostgreSQL
 ./scripts/dev/sync-users-from-cognito.sh
@@ -245,6 +281,25 @@ BATbern uses **AWS Cognito** for authentication but stores user profiles in **Po
 - **Existing Users**: Profile updated with latest Cognito data
 - **Role Assignment**: Default role is ATTENDEE (can be promoted)
 - **Deleted Cognito Users**: Flagged but not auto-deleted (data retention)
+
+## Additional Email Addresses
+
+<span class="feature-status implemented">Implemented</span> — Story 10-32
+
+Any user (primarily organizers) can register **additional email addresses** on their profile, on the Account sub-tab of the user-settings page. These are authorised aliases that work in two directions:
+
+- **Receive-at**: mail BATbern would have sent to the user's primary email also reaches every additional address — e.g. the `ok@batbern.ch` organizer fan-out, the `partner@batbern.ch` partner fan-out, `batbern{N}@…` registrant fan-out, and event-registration confirmations.
+- **Send-as**: mail the user sends to BATbern from any registered additional address is treated as coming from an authorised sender. For organizers this means the email-forwarder no longer silently drops a message sent from a legacy/shared/personal mailbox (e.g. a Hostpoint shared inbox) instead of the primary address.
+
+**Key details**:
+- The **primary email stays the login identifier** — adding aliases does NOT change the Cognito-linked primary address.
+- Each address can carry an optional free-text **label** (e.g. "Hostpoint shared") as a reminder.
+- Up to **5** additional addresses per user.
+- Addresses must be **globally unique** across all users' primary and additional emails; a collision is rejected.
+
+<div class="alert info">
+ℹ️ <strong>Note:</strong> v1 does not verify ownership of an added address (no confirmation email yet). Newsletter delivery to additional addresses is also out of scope (the newsletter keeps its own subscriber list).
+</div>
 
 ## GDPR Compliance
 
@@ -594,6 +649,9 @@ DELETE /api/users/{id}             Delete user (soft delete)
 POST   /api/users/{id}/promote     Promote user role
 POST   /api/users/{id}/demote      Demote user role
 GET    /api/users/{id}/data-export Export user's personal data (GDPR)
+GET    /api/users/me               Current user (includes additionalEmails)
+POST   /api/users/me/additional-emails        Add an additional email alias
+DELETE /api/users/me/additional-emails/{email} Remove an additional email alias
 ```
 
 See [API Documentation](../../api/) for complete specifications.

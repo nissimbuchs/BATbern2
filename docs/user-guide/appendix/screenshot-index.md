@@ -1,6 +1,6 @@
 # Screenshot Index
 
-**Last Updated**: 2026-01-09
+**Last Updated**: 2026-06-13
 
 This index catalogs all workflow screenshots used throughout the user guide documentation. Screenshots are automatically captured by the E2E test suite and organized by workflow phase.
 
