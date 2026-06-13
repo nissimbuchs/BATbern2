@@ -217,20 +217,21 @@ the BOM is imported via the plugin's own idiom in a root `subprojects { pluginMa
 'io.spring.dependency-management') { dependencyManagement { imports { mavenBom 'org.testcontainers:
 testcontainers-bom:2.0.5' } } } }` block. TC coordinates now resolve estate-wide.
 
-**Still TODO — SB4 test-module relocations** (all moved OUT of `spring-boot-test-autoconfigure` into
-per-technology test modules; each likely needs both an import change AND a new module dependency):
-1. `@AutoConfigureMockMvc` / `@WebMvcTest` — `org.springframework.boot.test.autoconfigure.web.servlet`
-   → SB4 webmvc-test module. **27 sites** (shared-kernel `AbstractIntegrationTest` — the shared base,
-   so fixing it unblocks all service test compiles — plus api-gateway ×4 and service ITs).
-2. `TestRestTemplate` — `org.springframework.boot.test.web.client` → SB4 restclient-test module
-   (api-gateway `OpenApiConfigTest`).
-3. `@AutoConfigureTestDatabase` — `org.springframework.boot.test.autoconfigure.jdbc` → SB4 jdbc-test
-   module (shared-kernel `AbstractIntegrationTest`).
-   → Find each new package + module via jar inspection (as with the main-source moves); add the
-   test-module deps to the root services block / shared-kernel testFixtures / api-gateway.
-4. Then expect **TC 2.0 Java API changes** in `AbstractIntegrationTest` (singleton `PostgreSQLContainer`).
-- After test sources compile: run all suites (fix runtime SB4 behaviour), per-`SecurityConfig`
-  CSRF/DSL audit (6 configs), Bruno (payload-diff) + Playwright, finally flip Jackson-2-compat OFF.
+✅ **SB4 test-module relocations — DONE. ALL TEST SOURCES COMPILE GREEN ON SB 4.0.7** (whole estate,
+main + test). The slices moved OUT of `spring-boot-test-autoconfigure` into per-technology modules;
+each needed an import change + a new test-module dep (added `spring-boot-starter-webmvc-test`,
+`spring-boot-jdbc-test`, `spring-boot-resttestclient`, `spring-boot-restclient-test`):
+- `@AutoConfigureMockMvc` / `@WebMvcTest` → `org.springframework.boot.webmvc.test.autoconfigure` (27 sites)
+- `TestRestTemplate` → `org.springframework.boot.resttestclient`
+- `@AutoConfigureTestDatabase` → `org.springframework.boot.jdbc.test.autoconfigure`
+- `@RestClientTest` → `org.springframework.boot.restclient.test.autoconfigure` (partner client tests)
+- Spring 7 API: `HttpHeaders` no longer implements `Map` → `containsKey()` → `containsHeader()`.
+
+**Remaining = RUN the tests on SB4** (sources all compile; execution not yet validated):
+- Run every service Testcontainers suite — fix runtime SB4 behaviour (likely: Spring Security 7
+  `SecurityConfig` CSRF/DSL audit ×6, TC 2.0 `AbstractIntegrationTest` singleton container runtime,
+  Jackson payload parity, Hibernate 7 query runtime).
+- Then Bruno (payload-diff gate) + Playwright; finally flip Jackson-2-compat OFF estate-wide.
 
 ### Pre-existing tidy-ups surfaced (fold into 13-2/13-3)
 - Flyway version skew: `shared-kernel/build.gradle` buildscript pins `flyway-database-postgresql:12.5.0` while the root plugin is `11.18.0` — reconcile to one 11.x line.

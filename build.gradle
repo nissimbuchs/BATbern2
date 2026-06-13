@@ -137,6 +137,9 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             // Testing
             testImplementation 'org.springframework.boot:spring-boot-starter-test'
             testImplementation 'org.springframework.security:spring-security-test'
+            // Epic 13 (SB4): MockMvc test slice moved out of spring-boot-test-autoconfigure
+            // into its own module.
+            testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
             // Epic 13 (SB4): Testcontainers 2.0 versions come from the testcontainers-bom
             // imported in the root subprojects dependencyManagement block (io.spring.dependency-
             // management doesn't recurse into SB4's nested testcontainers-bom import).

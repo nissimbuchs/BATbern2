@@ -109,6 +109,10 @@ dependencies {
 
     // Test Fixtures dependencies (exposed to consuming projects)
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Epic 13 (SB4): AbstractIntegrationTest uses @AutoConfigureMockMvc + @AutoConfigureTestDatabase,
+    // which moved out of spring-boot-test-autoconfigure into per-technology test modules.
+    testFixturesImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testFixturesImplementation 'org.springframework.boot:spring-boot-jdbc-test'
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-web'
     testFixturesImplementation 'org.testcontainers:testcontainers'
     testFixturesImplementation 'org.testcontainers:testcontainers-postgresql'

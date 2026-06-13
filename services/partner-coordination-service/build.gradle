@@ -39,6 +39,8 @@ dependencies {
     // Service-specific: Testing libraries
     testImplementation 'io.rest-assured:rest-assured:5.5.6'
     testImplementation 'org.awaitility:awaitility:4.2.0'
+    // Epic 13 (SB4): @RestClientTest moved to the spring-boot-restclient-test module.
+    testImplementation 'org.springframework.boot:spring-boot-restclient-test'
 
     // Service-specific: OpenAPI nullable (if needed for this service)
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
