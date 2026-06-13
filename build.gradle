@@ -58,6 +58,19 @@ subprojects {
             maxWarnings = 0
         }
     }
+
+    // Epic 13 (SB4): Testcontainers 2.0. SB4's spring-boot-dependencies imports testcontainers-bom
+    // with <scope>import</scope>, but io.spring.dependency-management (1.1.7) does not recurse into
+    // that nested import, so version-less org.testcontainers:* modules resolve to empty. Import the
+    // testcontainers-bom directly via the plugin's own idiom (Gradle's platform() is overridden by
+    // io.spring.dependency-management and has no effect here). Single source for the TC version.
+    pluginManager.withPlugin('io.spring.dependency-management') {
+        dependencyManagement {
+            imports {
+                mavenBom 'org.testcontainers:testcontainers-bom:2.0.5'
+            }
+        }
+    }
 }
 
 // Configuration for all service subprojects ONLY
@@ -124,9 +137,12 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             // Testing
             testImplementation 'org.springframework.boot:spring-boot-starter-test'
             testImplementation 'org.springframework.security:spring-security-test'
-            testImplementation 'org.testcontainers:testcontainers:1.21.3'
-            testImplementation 'org.testcontainers:postgresql:1.21.3'
-            testImplementation 'org.testcontainers:junit-jupiter:1.21.3'
+            // Epic 13 (SB4): Testcontainers 2.0 versions come from the testcontainers-bom
+            // imported in the root subprojects dependencyManagement block (io.spring.dependency-
+            // management doesn't recurse into SB4's nested testcontainers-bom import).
+            testImplementation 'org.testcontainers:testcontainers'
+            testImplementation 'org.testcontainers:testcontainers-postgresql'
+            testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
         }
         
         // Test configuration

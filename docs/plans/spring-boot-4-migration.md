@@ -205,19 +205,32 @@ rewrite, and they are now pre-cleared on 3.5.7).
   `authorize(Supplier<? extends Authentication>, …)` (the `? extends` wildcard) and the `check()`
   delegate is removed (gone from the SS7 interface). *(This supersedes the 13-1 deferral note.)*
 
-**Remaining = TEST LAYER ONLY** (every module's MAIN compiles; service test sources mostly compile):
-1. **Testcontainers 1.21.3 → 2.0.5** — SB 4.0.7 manages TC 2.0.5 via `testcontainers-bom`, but
-   `io.spring.dependency-management` isn't exposing the nested module versions →
-   `org.testcontainers:postgresql`/`junit-jupiter` resolve to empty. Blocks `shared-kernel`
-   testFixtures (which blocks all service test compiles). Fix the BOM wiring (likely import
-   `testcontainers-bom` explicitly or pin via platform), then expect TC 2.0 API changes in
-   `AbstractIntegrationTest` (singleton container pattern) + the explicit `:1.21.3` pins in root.
-2. **`@WebMvcTest` / `@AutoConfigureMockMvc`** moved out of `spring-boot-test-autoconfigure` into a
-   dedicated SB4 webmvc-test module — add that dep (api-gateway hit it first; ~20 errors there).
-3. **`TestRestTemplate`** `org.springframework.boot.test.web.client` → relocated (api-gateway
-   `OpenApiConfigTest`).
-- Then: per-`SecurityConfig` CSRF/DSL audit (6 configs), full test + Bruno (payload-diff) +
-  Playwright, finally flip Jackson-2-compat OFF.
+**Remaining = TEST LAYER ONLY** (every module's MAIN compiles green; test-source compile errors
+down to 30, all SB4 test-module relocations + TC 2.0):
+
+✅ **Testcontainers 1.21.3 → 2.0.5 — DONE.** Root cause was a **coordinate rename in TC 2.0**: the
+modules are now `testcontainers-<name>` (`org.testcontainers:postgresql` → `testcontainers-postgresql`,
+`junit-jupiter` → `testcontainers-junit-jupiter`, `localstack` → `testcontainers-localstack`; core
+`org.testcontainers:testcontainers` unchanged). Plus: `io.spring.dependency-management` does NOT
+recurse into SB4's nested `testcontainers-bom` import (and it *overrides* Gradle's `platform()`), so
+the BOM is imported via the plugin's own idiom in a root `subprojects { pluginManager.withPlugin(
+'io.spring.dependency-management') { dependencyManagement { imports { mavenBom 'org.testcontainers:
+testcontainers-bom:2.0.5' } } } }` block. TC coordinates now resolve estate-wide.
+
+**Still TODO — SB4 test-module relocations** (all moved OUT of `spring-boot-test-autoconfigure` into
+per-technology test modules; each likely needs both an import change AND a new module dependency):
+1. `@AutoConfigureMockMvc` / `@WebMvcTest` — `org.springframework.boot.test.autoconfigure.web.servlet`
+   → SB4 webmvc-test module. **27 sites** (shared-kernel `AbstractIntegrationTest` — the shared base,
+   so fixing it unblocks all service test compiles — plus api-gateway ×4 and service ITs).
+2. `TestRestTemplate` — `org.springframework.boot.test.web.client` → SB4 restclient-test module
+   (api-gateway `OpenApiConfigTest`).
+3. `@AutoConfigureTestDatabase` — `org.springframework.boot.test.autoconfigure.jdbc` → SB4 jdbc-test
+   module (shared-kernel `AbstractIntegrationTest`).
+   → Find each new package + module via jar inspection (as with the main-source moves); add the
+   test-module deps to the root services block / shared-kernel testFixtures / api-gateway.
+4. Then expect **TC 2.0 Java API changes** in `AbstractIntegrationTest` (singleton `PostgreSQLContainer`).
+- After test sources compile: run all suites (fix runtime SB4 behaviour), per-`SecurityConfig`
+  CSRF/DSL audit (6 configs), Bruno (payload-diff) + Playwright, finally flip Jackson-2-compat OFF.
 
 ### Pre-existing tidy-ups surfaced (fold into 13-2/13-3)
 - Flyway version skew: `shared-kernel/build.gradle` buildscript pins `flyway-database-postgresql:12.5.0` while the root plugin is `11.18.0` — reconcile to one 11.x line.

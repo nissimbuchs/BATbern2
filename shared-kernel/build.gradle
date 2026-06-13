@@ -101,16 +101,18 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
+    // Epic 13 (SB4): testcontainers versions from the testcontainers-bom imported in the root
+    // subprojects dependencyManagement block.
     testImplementation 'org.testcontainers:testcontainers'
-    testImplementation 'org.testcontainers:localstack'
-    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-localstack'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 
     // Test Fixtures dependencies (exposed to consuming projects)
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-web'
     testFixturesImplementation 'org.testcontainers:testcontainers'
-    testFixturesImplementation 'org.testcontainers:postgresql'
-    testFixturesImplementation 'org.testcontainers:junit-jupiter'
+    testFixturesImplementation 'org.testcontainers:testcontainers-postgresql'
+    testFixturesImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 }
 
 // Apply Trivy security scanning
