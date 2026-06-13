@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
@@ -82,6 +83,9 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SessionQnaScheduledService scheduledService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @MockBean
     private LockProvider lockProvider;
@@ -149,6 +153,41 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("OPEN")))
                 .andExpect(jsonPath("$.posts.length()", is(1)));
+    }
+
+    @Test
+    @DisplayName("Q&A poster is enriched with display name + company logo (not the raw username)")
+    void should_enrichPoster_withNameAndCompanyLogo() throws Exception {
+        SessionQnaWindow window = openWindow(QnaWindowStatus.FROZEN, Instant.now().minus(1, ChronoUnit.DAYS));
+        seedAuthor(ATTENDEE, "Jane", "Attendee", "bkw", true,
+                "BKW Energie AG", "https://cdn.batbern.ch/logos/bkw.png");
+        postRepository.save(SessionQnaPost.builder().windowId(window.getId())
+                .postedByUsername(ATTENDEE).body("Great talk").build());
+
+        mockMvc.perform(get("/api/v1/events/{e}/sessions/{s}/qna", EVENT_CODE, SLUG))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.posts[0].postedByUsername", is(ATTENDEE)))
+                .andExpect(jsonPath("$.posts[0].postedByFirstName", is("Jane")))
+                .andExpect(jsonPath("$.posts[0].postedByLastName", is("Attendee")))
+                .andExpect(jsonPath("$.posts[0].postedByCompanyName", is("BKW Energie AG")))
+                .andExpect(jsonPath("$.posts[0].postedByCompanyLogoUrl",
+                        is("https://cdn.batbern.ch/logos/bkw.png")));
+    }
+
+    @Test
+    @DisplayName("Poster who opted out of showing company → name kept, company fields suppressed")
+    void should_suppressCompany_when_showCompanyFalse() throws Exception {
+        SessionQnaWindow window = openWindow(QnaWindowStatus.FROZEN, Instant.now().minus(1, ChronoUnit.DAYS));
+        seedAuthor(ATTENDEE, "Jane", "Attendee", "bkw", false,
+                "BKW Energie AG", "https://cdn.batbern.ch/logos/bkw.png");
+        postRepository.save(SessionQnaPost.builder().windowId(window.getId())
+                .postedByUsername(ATTENDEE).body("Great talk").build());
+
+        mockMvc.perform(get("/api/v1/events/{e}/sessions/{s}/qna", EVENT_CODE, SLUG))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.posts[0].postedByFirstName", is("Jane")))
+                .andExpect(jsonPath("$.posts[0].postedByCompanyName", nullValue()))
+                .andExpect(jsonPath("$.posts[0].postedByCompanyLogoUrl", nullValue()));
     }
 
     // ==================== AC3: anonymous cannot post; can read ====================
@@ -359,6 +398,27 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ==================== Helpers ====================
+
+    /**
+     * Seed the cross-service rows the Q&A poster-enrichment native query reads: a company, the
+     * poster's user_profiles row (with the show-company privacy flag), and an ASSOCIATED company
+     * logo. These live in CUMS-owned tables stubbed for the EMS test container.
+     */
+    private void seedAuthor(String username, String firstName, String lastName, String companyKey,
+                            boolean showCompany, String companyDisplayName, String logoUrl) {
+        java.util.UUID companyId = java.util.UUID.randomUUID();
+        jdbcTemplate.update("INSERT INTO companies (id, name, display_name) VALUES (?, ?, ?)",
+                companyId, companyKey, companyDisplayName);
+        jdbcTemplate.update(
+                "INSERT INTO user_profiles (username, company_id, first_name, last_name, settings_show_company) "
+                        + "VALUES (?, ?, ?, ?, ?)",
+                username, companyKey, firstName, lastName, showCompany);
+        jdbcTemplate.update(
+                "INSERT INTO logos (upload_id, s3_key, cloudfront_url, file_extension, file_size, mime_type, "
+                        + "status, associated_entity_type, associated_entity_id) "
+                        + "VALUES (?, ?, ?, 'png', 1024, 'image/png', 'ASSOCIATED', 'COMPANY', ?)",
+                "upl-" + companyKey, "logos/" + companyKey + ".png", logoUrl, companyId.toString());
+    }
 
     private SessionQnaWindow openWindow(QnaWindowStatus status, Instant closesAt) {
         Event event = saveEvent(EventWorkflowState.EVENT_COMPLETED);

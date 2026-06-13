@@ -2,7 +2,7 @@ name: Doc Drift Auditor
 
 on:
   schedule:
-    - cron: '0 8 * * 1'   # Monday 08:00 UTC
+    - cron: '27 8 * * 1'   # Monday 08:27 UTC — off the top of the hour (':00' crons get delayed)
   workflow_dispatch:
     inputs:
       since:

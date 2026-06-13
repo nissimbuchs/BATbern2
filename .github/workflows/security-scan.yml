@@ -31,8 +31,9 @@ on:
         options:
           - staging
   schedule:
-    # Every Monday at 03:00 UTC
-    - cron: '0 3 * * 1'
+    # Every Monday at 02:42 UTC — off the top of the hour (':00' crons get delayed by GitHub),
+    # and de-collided from the nightly-e2e schedule.
+    - cron: '42 2 * * 1'
 
 env:
   API_BASE_URL: https://api.batbern.ch

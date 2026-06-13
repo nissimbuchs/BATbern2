@@ -13,6 +13,8 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionQnaPostRepository;
 import ch.batbern.events.repository.SessionQnaWindowRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
+import ch.batbern.events.repository.QnaAuthorProjection;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for per-session Q&A (Story 7.5 "The Apéro Continues").
@@ -41,6 +48,7 @@ public class SessionQnaService {
     private final SessionQnaPostRepository postRepository;
     private final SessionRepository sessionRepository;
     private final EventRepository eventRepository;
+    private final SessionUserRepository sessionUserRepository;
 
     /**
      * Story 7.5 rework: open a Q&A window for every session of an event, but ONLY when the event's
@@ -172,7 +180,7 @@ public class SessionQnaService {
                 .body(body)
                 .build());
         log.info("Q&A post by {} on session {} (event {})", username, sessionSlug, eventCode);
-        return toPostResponse(saved);
+        return toPostResponse(saved, loadAuthorPortraits(List.of(username)));
     }
 
     /**
@@ -233,23 +241,51 @@ public class SessionQnaService {
     }
 
     private QnaWindowResponse toWindowResponse(SessionQnaWindow window) {
-        List<QnaPostResponse> posts = postRepository
-                .findByWindowIdOrderByCreatedAtAsc(window.getId())
-                .stream()
-                .map(this::toPostResponse)
-                .toList();
+        List<SessionQnaPost> postEntities =
+                postRepository.findByWindowIdOrderByCreatedAtAsc(window.getId());
+        // Enrich each (non-removed) poster with display name + company logo in ONE batched,
+        // anonymous-safe local DB query (the Q&A GET is public — no JWT for UserApiClient).
+        Set<String> authorUsernames = postEntities.stream()
+                .filter(p -> !p.isRemoved())
+                .map(SessionQnaPost::getPostedByUsername)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, QnaAuthorProjection> portraits = loadAuthorPortraits(authorUsernames);
+        List<QnaPostResponse> posts =
+                postEntities.stream().map(p -> toPostResponse(p, portraits)).toList();
         return new QnaWindowResponse(window.getStatus().name(), window.getOpensAt(),
                 window.getClosesAt(), posts);
     }
 
-    private QnaPostResponse toPostResponse(SessionQnaPost post) {
-        boolean removed = post.isRemoved();
+    /** Batch-load poster portraits keyed by username (empty map for no usernames). */
+    private Map<String, QnaAuthorProjection> loadAuthorPortraits(Collection<String> usernames) {
+        if (usernames.isEmpty()) {
+            return Map.of();
+        }
+        return sessionUserRepository.findQnaAuthorPortraitsByUsernames(usernames).stream()
+                .collect(Collectors.toMap(QnaAuthorProjection::getUsername, p -> p, (a, b) -> a));
+    }
+
+    private QnaPostResponse toPostResponse(SessionQnaPost post,
+                                           Map<String, QnaAuthorProjection> portraits) {
+        if (post.isRemoved()) {
+            // Tombstone — null out identity + content (the UI shows "removed by organizer").
+            return new QnaPostResponse(post.getId(), post.getParentPostId(),
+                    null, null, null, null, null, null, true, post.getCreatedAt());
+        }
+        QnaAuthorProjection a = portraits.get(post.getPostedByUsername());
+        // Honour the user's "show company" preference; absent projection → no enrichment.
+        boolean showCompany = a != null && !Boolean.FALSE.equals(a.getShowCompany());
         return new QnaPostResponse(
                 post.getId(),
                 post.getParentPostId(),
-                removed ? null : post.getPostedByUsername(),
-                removed ? null : post.getBody(),
-                removed,
+                post.getPostedByUsername(),
+                a != null ? a.getFirstName() : null,
+                a != null ? a.getLastName() : null,
+                showCompany ? a.getCompanyDisplayName() : null,
+                showCompany ? a.getCompanyLogoUrl() : null,
+                post.getBody(),
+                false,
                 post.getCreatedAt());
     }
 }

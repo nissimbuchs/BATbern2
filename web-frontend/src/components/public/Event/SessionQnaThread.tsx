@@ -17,6 +17,13 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useSessionQna, useAddQnaPost, useRemoveQnaPost } from '@/hooks/useQna/useQna';
 import type { QnaPostResponse } from '@/services/qnaService';
+import { buildCdnImageUrl } from '@/utils/cdnImage';
+
+/** Poster display name: "First Last", falling back to the username when the name is unknown. */
+function posterName(post: QnaPostResponse): string {
+  const name = [post.postedByFirstName, post.postedByLastName].filter(Boolean).join(' ').trim();
+  return name || post.postedByUsername || '';
+}
 
 interface SessionQnaThreadProps {
   eventCode: string;
@@ -86,7 +93,23 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
         ) : (
           <>
             <p className="whitespace-pre-wrap text-sm text-zinc-200">{post.body}</p>
-            <p className="mt-1 text-xs text-zinc-500">{post.postedByUsername}</p>
+            <div
+              className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500"
+              data-testid="qna-post-author"
+            >
+              {post.postedByCompanyLogoUrl && (
+                <img
+                  src={
+                    buildCdnImageUrl(post.postedByCompanyLogoUrl, { h: 32, fit: 'inside' }) ??
+                    post.postedByCompanyLogoUrl
+                  }
+                  alt={post.postedByCompanyName ?? ''}
+                  className="h-4 w-auto max-w-[64px] object-contain"
+                  loading="lazy"
+                />
+              )}
+              <span>{posterName(post)}</span>
+            </div>
           </>
         )}
         {isOrganizer && !post.removed && (

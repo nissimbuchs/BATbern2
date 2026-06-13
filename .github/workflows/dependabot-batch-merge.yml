@@ -6,7 +6,7 @@ name: Dependabot Batch Merge
 on:
   # Scheduled run: First Monday of each month at 10:00 AM
   schedule:
-    - cron: '0 10 1-7 * 1'  # First Monday of month
+    - cron: '36 10 1-7 * 1'  # First Monday of month, 10:36 UTC — off the top of the hour (':00' delayed)
 
   # Manual trigger for testing or emergency runs
   workflow_dispatch:

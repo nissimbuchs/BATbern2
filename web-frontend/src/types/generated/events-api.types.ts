@@ -5001,8 +5001,16 @@ export interface components {
        * @description Parent question id; null for a top-level question.
        */
       parentPostId?: string | null;
-      /** @description Poster username; null if removed. */
+      /** @description Poster username (stable id / takedown target); null if removed. */
       postedByUsername?: string | null;
+      /** @description Poster first name (enriched from the user profile); null if removed/unknown. */
+      postedByFirstName?: string | null;
+      /** @description Poster last name (enriched from the user profile); null if removed/unknown. */
+      postedByLastName?: string | null;
+      /** @description Poster company display name; null if removed, unknown, or hidden by preference. */
+      postedByCompanyName?: string | null;
+      /** @description Poster company logo CDN URL; null if removed, unknown, or hidden by preference. */
+      postedByCompanyLogoUrl?: string | null;
       /** @description Post text; null if removed. */
       body?: string | null;
       /** @description True if the post was taken down by an organizer. */

@@ -13,8 +13,10 @@ name: Nightly E2E (full @gate suite)
 
 on:
   schedule:
-    # 03:00 UTC daily — low-traffic window (BATbern runs ~3 events/year).
-    - cron: '0 3 * * *'
+    # 01:17 UTC daily (~02:17 CET / 03:17 CEST — genuine Swiss night). Off the top of the hour
+    # deliberately: ':00' crons are heavily congested and GitHub delays them by hours (this '0 3'
+    # cron was actually firing ~07-08 UTC = 9-10am Swiss). An uncommon minute runs near schedule.
+    - cron: '17 1 * * *'
   workflow_dispatch:
     inputs:
       scope:

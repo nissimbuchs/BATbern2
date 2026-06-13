@@ -45,6 +45,10 @@ type Post = {
   id: string;
   parentPostId: string | null;
   postedByUsername: string | null;
+  postedByFirstName?: string | null;
+  postedByLastName?: string | null;
+  postedByCompanyName?: string | null;
+  postedByCompanyLogoUrl?: string | null;
   body: string | null;
   removed: boolean;
   createdAt: string;
@@ -210,5 +214,29 @@ describe('SessionQnaThread', () => {
     const takedown = screen.getByTestId('qna-takedown');
     fireEvent.click(takedown);
     expect(removeMutate).toHaveBeenCalledWith('p1');
+  });
+
+  it('shows the poster name + company logo, not the raw username', () => {
+    mockThread('FROZEN', [
+      {
+        id: 'p1',
+        parentPostId: null,
+        postedByUsername: 'jane.doe',
+        postedByFirstName: 'Jane',
+        postedByLastName: 'Doe',
+        postedByCompanyName: 'BKW',
+        postedByCompanyLogoUrl: 'https://cdn.batbern.ch/logos/bkw.png',
+        body: 'Great talk',
+        removed: false,
+        createdAt: '',
+      },
+    ]);
+    mockAuth(false);
+    renderThread();
+    expandThread();
+    const author = screen.getByTestId('qna-post-author');
+    expect(author).toHaveTextContent('Jane Doe');
+    expect(author).not.toHaveTextContent('jane.doe');
+    expect(author.querySelector('img')).toHaveAttribute('alt', 'BKW');
   });
 });
