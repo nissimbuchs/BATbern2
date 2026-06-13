@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     last_name VARCHAR(100) DEFAULT '',
     profile_picture_url VARCHAR(2048),
     bio TEXT,
+    -- Privacy flag honored by SessionQnaService when enriching Q&A poster portraits:
+    settings_show_company BOOLEAN NOT NULL DEFAULT TRUE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP

@@ -195,4 +195,28 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
            nativeQuery = true)
     List<UserPortraitProjection> findUserPortraitsByUsernames(
             @Param("usernames") java.util.Collection<String> usernames);
+
+    /**
+     * Batch-load Q&A author display data (first/last name + company logo) for a set of usernames.
+     * Same intentional, read-only cross-service join as {@link #findUserPortraitsByUsernames} —
+     * used to enrich the PUBLIC Q&A thread without a JWT (see {@link QnaAuthorProjection}).
+     *
+     * @param usernames distinct poster usernames from session_qna_post
+     * @return username → { firstName, lastName, showCompany, companyDisplayName, companyLogoUrl }
+     */
+    @Query(value = "SELECT up.username AS username, "
+            + "up.first_name AS firstName, "
+            + "up.last_name AS lastName, "
+            + "up.settings_show_company AS showCompany, "
+            + "COALESCE(c.display_name, c.name, up.company_id) AS companyDisplayName, "
+            + "(SELECT l.cloudfront_url FROM logos l "
+            + " WHERE l.associated_entity_id = c.id::text "
+            + "   AND l.associated_entity_type = 'COMPANY' "
+            + " LIMIT 1) AS companyLogoUrl "
+            + "FROM user_profiles up "
+            + "LEFT JOIN companies c ON c.name = up.company_id "
+            + "WHERE up.username IN :usernames",
+           nativeQuery = true)
+    List<QnaAuthorProjection> findQnaAuthorPortraitsByUsernames(
+            @Param("usernames") java.util.Collection<String> usernames);
 }

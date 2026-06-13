@@ -9360,7 +9360,23 @@ components:
         postedByUsername:
           type: string
           nullable: true
-          description: Poster username; null if removed.
+          description: Poster username (stable id / takedown target); null if removed.
+        postedByFirstName:
+          type: string
+          nullable: true
+          description: Poster first name (enriched from the user profile); null if removed/unknown.
+        postedByLastName:
+          type: string
+          nullable: true
+          description: Poster last name (enriched from the user profile); null if removed/unknown.
+        postedByCompanyName:
+          type: string
+          nullable: true
+          description: Poster company display name; null if removed, unknown, or hidden by preference.
+        postedByCompanyLogoUrl:
+          type: string
+          nullable: true
+          description: Poster company logo CDN URL; null if removed, unknown, or hidden by preference.
         body:
           type: string
           nullable: true
