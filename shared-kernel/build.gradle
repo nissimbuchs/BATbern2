@@ -39,10 +39,17 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    // Epic 13 (SB4): spring-boot-starter-aop was removed in SB4. Spring AOP proxy infra comes
+    // transitively via spring-boot-starter (spring-context); AuditLoggingAspect's @Aspect/@Around
+    // annotations need aspectjweaver directly (BOM-managed version).
+    implementation 'org.aspectj:aspectjweaver'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    // Epic 13 (SB4): keep Jackson 2 (com.fasterxml) for shared-kernel's ObjectMapper/JsonNode
+    // usage so its compiled bytecode stays binary-compatible during the migration. BOM-managed.
+    implementation 'org.springframework.boot:spring-boot-jackson2'
 
     // AWS SDK for EventBridge, CloudWatch, Cognito, and SES
     implementation platform('software.amazon.awssdk:bom:2.43.2')
@@ -53,7 +60,8 @@ dependencies {
     implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
 
     // Resilience4j for circuit breaker, bulkhead, and retry patterns
-    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.4.0'
+    // Epic 13 (SB4): the Spring Boot integration module is renamed -spring-boot3 -> -spring-boot4.
+    implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-bulkhead:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'

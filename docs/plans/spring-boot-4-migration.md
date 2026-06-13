@@ -174,6 +174,38 @@ estimate here. The zero-deprecation baseline above already de-risks the mechanic
 (the deprecation removals are the bulk of what `UpgradeSpringBoot_4_0` would mechanically
 rewrite, and they are now pre-cleared on 3.5.7).
 
+### 13-2 Phase 2 progress + remaining-work map (2026-06-13, branch `feature/epic-13-spring-boot-4`)
+
+**Done & verified:**
+- Gradle wrapper **8.12 → 8.14.5** (SB4 plugin requires 8.14+ / 9.x).
+- Single source `settings.gradle` pluginManagement `org.springframework.boot` **3.5.7 → 4.0.7**.
+- Jackson-2 compat: `org.springframework.boot:spring-boot-jackson2` added to root (services),
+  api-gateway, shared-kernel — keeps `com.fasterxml` databind during the migration.
+- springdoc-openapi `2.8.14 → 3.0.3` (root + api-gateway); resilience4j `-spring-boot3 →
+  -spring-boot4` (shared-kernel); `spring-boot-starter-aop` (removed in SB4) → `aspectjweaver`.
+- Lombok **un-pinned** in root build.gradle (was hard-pinned 1.18.36, which silently stopped
+  processing under SB4 → ~90 phantom "cannot find symbol"); now BOM-managed like the others.
+- **`shared-kernel` main compiles green on SB4.** Estate compile errors 326 → 238.
+
+**Remaining compile errors (238, by ROOT cause — most of event-management's 196 are a *cascade*
+from a `cannot access` that aborts the Lombok round, so fixing these few clears the bulk):**
+1. **`RestTemplateBuilder` / `org.springframework.boot.web.client` removed** (~16) — relocated in
+   SB4; update imports (event-management `RestClientConfig`, others). Find the new coordinates.
+2. **`org.springframework.boot.autoconfigure.{domain,orm.jpa,jdbc,flyway}` package moves** (~12) —
+   `@EntityScan` and the auto-config classes moved under SB4's modularized autoconfigure. Update
+   imports in `EventManagementApplication` + any explicit `@Import`s.
+3. **Hibernate 7 `cannot access BindableType`** (`Notification.java:82`, +`BindableType` x2) — a
+   Hibernate/JPA query-API type moved; this is the error that aborts event-management's Lombok
+   round and cascades the 196. **Fix first.**
+4. **Spring Security 7 `authorize` signature** (x2) — `VpcInternalAuthorizationManager` must
+   override `authorize(Supplier<? extends Authentication>, …)` (note the `? extends` wildcard
+   added in SS7); the 13-1 `Supplier<Authentication>` signature no longer matches. Also drop the
+   `check()` delegate (removed in SS7).
+5. **`Persistable.getId()` on `EventPhoto`** (x2) — Spring Data `Persistable` contract; verify
+   once Lombok round completes (may be cascade).
+- Then: per-`SecurityConfig` CSRF/DSL audit (6 configs), Testcontainers **1.21.3 → 2.0** test
+  migration, full test + Bruno (payload-diff) + Playwright, finally flip Jackson-2-compat OFF.
+
 ### Pre-existing tidy-ups surfaced (fold into 13-2/13-3)
 - Flyway version skew: `shared-kernel/build.gradle` buildscript pins `flyway-database-postgresql:12.5.0` while the root plugin is `11.18.0` — reconcile to one 11.x line.
 - `lombok 1.18.36` → `1.18.40+`.

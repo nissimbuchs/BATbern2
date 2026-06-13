@@ -92,23 +92,31 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             implementation 'org.springframework.boot:spring-boot-starter-validation'
             implementation 'org.springframework.boot:spring-boot-starter-security'
             implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-            
+
+            // Epic 13 (SB4): keep Jackson 2 (com.fasterxml) defaults during the migration so
+            // API payloads stay byte-identical; the Bruno suite is the payload-diff gate. The
+            // final story flips to native Jackson 3 (tools.jackson). BOM-managed version.
+            implementation 'org.springframework.boot:spring-boot-jackson2'
+
             // Database - PostgreSQL + Flyway
             runtimeOnly 'org.postgresql:postgresql:42.7.7'
             implementation 'org.flywaydb:flyway-core'
             implementation 'org.flywaydb:flyway-database-postgresql'
             
             // OpenAPI/Swagger
-            implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
+            implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
             implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
             implementation 'jakarta.validation:jakarta.validation-api'
             implementation 'jakarta.annotation:jakarta.annotation-api'
             
-            // Lombok - reduce boilerplate
-            compileOnly 'org.projectlombok:lombok:1.18.36'
-            annotationProcessor 'org.projectlombok:lombok:1.18.36'
-            testCompileOnly 'org.projectlombok:lombok:1.18.36'
-            testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
+            // Lombok - reduce boilerplate. Version BOM-managed (Epic 13): the SB4 BOM pins a
+            // Lombok that supports the current JDK/Gradle annotation processing. The old hard
+            // pin 1.18.36 silently failed to run under SB4 → @Slf4j/@Builder/@Data members
+            // vanished and cascaded into ~200 "cannot find symbol" errors.
+            compileOnly 'org.projectlombok:lombok'
+            annotationProcessor 'org.projectlombok:lombok'
+            testCompileOnly 'org.projectlombok:lombok'
+            testAnnotationProcessor 'org.projectlombok:lombok'
             
             // Testing
             testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -43,6 +43,8 @@ dependencies {
     implementation 'com.auth0:jwks-rsa:0.23.1'
 
     // Jackson for JSON processing (version managed by Spring Boot)
+    // Epic 13 (SB4): keep Jackson 2 (com.fasterxml) defaults during migration — payload parity.
+    implementation 'org.springframework.boot:spring-boot-jackson2'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     // Caffeine — application-level cache (project standard, no Redis). Used by the
@@ -51,7 +53,7 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
 
     // OpenAPI Support
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 
     // Monitoring & Logging
     implementation 'io.micrometer:micrometer-registry-prometheus'
