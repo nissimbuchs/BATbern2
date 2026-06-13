@@ -29,6 +29,19 @@ allprojects {
     repositories {
         mavenCentral()
     }
+
+    // Epic 13 (Spring Boot 4 migration) — Story 13-1 zero-deprecation baseline.
+    // SB4 removes ~88% of 2.x/3.x deprecations; surface every Java deprecation
+    // warning across ALL modules (shared-kernel, api-gateway, services) so we can
+    // drive the count to zero BEFORE switching the framework version. Pass
+    // -PfailOnDeprecation to enforce zero (the final 13-1 gate); without it the
+    // warnings are visible but non-fatal so the baseline can be measured.
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << '-Xlint:deprecation'
+        if (project.hasProperty('failOnDeprecation')) {
+            options.compilerArgs << '-Werror'
+        }
+    }
 }
 
 // Checkstyle — single source of truth for EVERY module that applies the plugin

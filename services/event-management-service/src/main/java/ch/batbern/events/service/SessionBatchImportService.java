@@ -129,6 +129,10 @@ public class SessionBatchImportService {
      * @param sequenceIndex Index in the batch (for time slot calculation)
      * @return SessionImportDetail with result
      */
+    // getPdf() reads the intentionally @Deprecated legacy `pdf` field (superseded by
+    // materialUrl, Story 5.9) to keep importing historical payloads — suppress the
+    // expected deprecation warning rather than drop backward compatibility.
+    @SuppressWarnings("deprecation")
     private SessionImportDetail importSingleSession(
             Event event,
             BatchImportSessionRequest request,

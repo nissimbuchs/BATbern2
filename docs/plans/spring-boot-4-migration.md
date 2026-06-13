@@ -62,3 +62,85 @@ Migrate the whole Java estate — `shared-kernel`, `api-gateway`, 5 domain servi
 - [Spring Framework 7.0 release notes](https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-Notes)
 - [Spring support policy / EOL dates](https://spring.io/support-policy/)
 - OpenRewrite recipe: `org.openrewrite.java.spring.boot4.UpgradeSpringBoot_4_0`
+
+---
+
+## Story 13-1 — Deliverables (on 3.5.7)
+
+**Status:** in progress · branch `feature/epic-13-1-zero-deprecation-baseline` · started 2026-06-13
+
+### Zero-deprecation baseline
+
+`-Xlint:deprecation` is now enabled across **all 7 modules** via the root `build.gradle`
+`allprojects { tasks.withType(JavaCompile) }` block, with a `-PfailOnDeprecation` flag
+that adds `-Werror` (the enforcement gate — run `./gradlew classes testClasses -PfailOnDeprecation`).
+
+Baseline measured 2026-06-13: **27 unique deprecation sites in 9 categories**, all resolved:
+
+| Deprecated API | Sites | Fix |
+|---|---|---|
+| `new java.net.URL(String)` | 9 (1 main, 8 test) | `URI.create(s).toURL()` (test); kept + `@SuppressWarnings` in `SessionMaterialsService` where lenient parsing of space-bearing URLs is required (URL ctor is deprecated **not** for-removal) |
+| `@MockBean` / `@SpyBean` (`o.s.boot.test.mock.mockito`, *marked for removal*) | 6 | → `@MockitoBean` / `@MockitoSpyBean` (`o.s.test.context.bean.override.mockito`) |
+| `UriComponentsBuilder.fromHttpUrl(String)` | 4 | → `fromUriString(String)` |
+| `SXSSFWorkbook.dispose()` | 2 | removed — redundant under existing try-with-resources `close()` (POI 5.x disposes temp files) |
+| Lombok `@Builder` ignores field initializer | 2 (`SpeakerPool`) | added `@Builder.Default` (matches the existing `source` field pattern) |
+| `XmlCursor.dispose()` | 1 | → `close()` |
+| `BatchImportSessionRequest.getPdf()` (our own `@Deprecated` legacy field) | 1 | `@SuppressWarnings` — intentional backward-compat read of legacy `pdf` (superseded by `materialUrl`, Story 5.9) |
+| `AuthorizationManager.check(...)` (Spring Security) | 1 | implemented logic in `authorize(...)` (the SS7 abstract method); thin `check()` delegate retained for SS6 — **13-3 deletes the `check` override** |
+| `@Mock(lenient = true)` (Mockito) | 1 | → `@Mock(strictness = Mock.Strictness.LENIENT)` |
+
+### Third-party SB4 compatibility matrix
+
+Researched against the [SB4 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide) / release notes, mid-2026.
+
+| Dependency | Current | SB4 target | Coord. change? | Notes |
+|---|---|---|---|---|
+| spring-boot plugin + starters | 3.5.7 | **4.0.x** | No | Java 21 fine (SB4 baseline 17) |
+| dependency-management-plugin | 1.1.7 | 1.1.7 | No | Consider SB-provided BOM instead |
+| spring-cloud-dependencies BOM | 2025.1.1 | **2025.1.2** (Oakwood, 2026-06-11) | No | 2025.1.x is the SB4-aligned train; 2025.0.x is NOT |
+| **springdoc-openapi-starter-webmvc-ui** | 2.8.14 | **3.0.x** (verify Jackson-3 patch) | No | **#1 friction.** Early 3.0.0/3.0.1 still bundled Jackson 2 → `ClassNotFoundException ...ObjectNode` on SB4. Conditional blocker — spike `/v3/api-docs` + Swagger UI first |
+| swagger-annotations | 2.2.20 | 2.2.3x (let springdoc manage) | No | Annotations namespace-neutral |
+| openapi-generator-gradle-plugin | 7.2.0 | **7.16/7.17** | No | Use `useSpringBoot3`/`useJakartaEe`; verify generated `*Api` compiles vs Spring 7 + Jackson 3 (issue #22294) |
+| flyway plugin / core / db-postgresql | plugin 11.18.0; SK pins db-postgresql **12.5.0** | one Flyway 11.x line (SB4 manages 11.11) | No | **Reconcile the 12.5.0 skew in `shared-kernel` buildscript vs 11.x core** |
+| **resilience4j-spring-boot3** | 2.4.0 | **resilience4j-spring-boot4 2.4.0** | **YES — artifact rename** | **#2 friction.** New module in 2.4.0; the resilience4j BOM omits it (#2423) → depend explicitly |
+| aws-sdk BOM | 2.43.2 | 2.43.2+ | No | Independent of Spring |
+| auth0 java-jwt / jwks-rsa | 4.5.2 / 0.23.1 | same | No | **Plan's "JJWT" assumption was wrong — gateway uses auth0 java-jwt, JJWT not present** |
+| lombok | 1.18.36 | **1.18.40+** | No | Bump for SB4 / forward JDK AP |
+| guava | 33.6.0-jre | BOM-managed | No | |
+| angus-mail / jakarta.mail-api | 2.0.3 / 2.1.3 | BOM-managed | No | Already Jakarta namespace |
+| caffeine | 3.2.3 | BOM-managed | No | |
+| micrometer-registry-prometheus | managed | Micrometer 1.16 (BOM) | No | Don't pin |
+| logstash-logback-encoder / logback-awslogs | 9.0 / 1.6.0 | 9.x / 1.6.0 | No | Verify vs SB4's managed Logback |
+| postgresql | 42.7.11 / 42.7.7 | 42.7.x (BOM) | No | Consolidate to one 42.7.x |
+| **testcontainers** | 1.21.3 | **2.0.x** | No (same group) | **Major bump** — review `AbstractIntegrationTest` singleton pattern |
+| junit-jupiter | 5.11.3 | 5.13.x (BOM) | No | Don't pin |
+| mockito | 5.23.0 | 5.20 managed (newer fine) | No | |
+| assertj | 3.27.7 | 3.27.x (BOM) | No | |
+| rest-assured | 6.0.0 | 6.0.x (BOM) | No | |
+| checkstyle / jacoco / git-properties | 10.12.5 / 0.8.10 / 2.5.3 | build-tooling, no SB4 coupling | No | jacoco → 0.8.12+ if past Java 21 |
+
+**Blockers / conditional:** springdoc 3.0.x Jackson-3 readiness (verify patch via spike); openapi-generator Jackson-3 model output (watch).
+**Coordinate changes:** (1) resilience4j `-spring-boot3` → `-spring-boot4`; (2) Jackson `com.fasterxml.jackson:*` → `tools.jackson:*` (except `jackson-annotations`, which keeps `com.fasterxml.jackson.core`).
+**Major version jumps to plan for:** Testcontainers 2.0; Spring Security 6→7; Hibernate 6→7.1; Tomcat 11; Micrometer 1.16.
+
+### OpenRewrite dry-run sizing — deferred to 13-2 setup
+
+Attempted via a throwaway init script (apply `org.openrewrite:plugin` + `rewrite-spring`
+to every Java module, run `rewriteDryRun`). The `UpgradeSpringBoot_3_5` no-op confirm
+**failed at the tooling layer** with `NoSuchMethodError: Environment.activateRecipes(Iterable)`
+— the plugin's bundled rewrite-core and `rewrite-spring:latest.release` resolve to
+incompatible rewrite-core versions when applied via init script.
+
+**Decision:** the OpenRewrite *sizing* dry-run is folded into **Story 13-2 setup**, which
+applies OpenRewrite for real on `shared-kernel` + the pilot service. 13-2 must wire it via
+the `org.openrewrite:rewrite-recipe-bom` (in the `rewrite` configuration) with a plugin
+version matched to the BOM so plugin-core == recipe-core. Doing the version-matrix work
+there — where the recipe actually runs against source — is higher-value than an init-script
+estimate here. The zero-deprecation baseline above already de-risks the mechanical diff
+(the deprecation removals are the bulk of what `UpgradeSpringBoot_4_0` would mechanically
+rewrite, and they are now pre-cleared on 3.5.7).
+
+### Pre-existing tidy-ups surfaced (fold into 13-2/13-3)
+- Flyway version skew: `shared-kernel/build.gradle` buildscript pins `flyway-database-postgresql:12.5.0` while the root plugin is `11.18.0` — reconcile to one 11.x line.
+- `lombok 1.18.36` → `1.18.40+`.
+- OpenRewrite tooling: pin plugin + `rewrite-recipe-bom` to matched versions (see above) before running `rewriteDryRun`/`rewriteRun`.

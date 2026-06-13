@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
@@ -53,8 +54,15 @@ public class VpcInternalAuthorizationManager implements AuthorizationManager<Req
         log.info("VPC Internal Authorization Manager initialized for CIDR: {}", vpcCidr);
     }
 
+    /**
+     * Spring Security 6.4+ entry point. {@code check(...)} is abstract on Spring
+     * Security 6.x and removed in 7; we implement the logic here in {@code authorize}
+     * (the SS7 abstract method) and keep a thin {@code check} delegate for 6.x.
+     * Epic 13-3 (CUMS → Spring Security 7) deletes the {@code check} override.
+     */
     @Override
-    public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+    public AuthorizationResult authorize(Supplier<Authentication> authentication,
+            RequestAuthorizationContext context) {
         HttpServletRequest request = context.getRequest();
         String remoteAddr = getClientIpAddress(request);
 
@@ -83,6 +91,18 @@ public class VpcInternalAuthorizationManager implements AuthorizationManager<Req
             log.error("Failed to parse IP address: {}", remoteAddr, e);
             return new AuthorizationDecision(false);
         }
+    }
+
+    /**
+     * Abstract on Spring Security 6.x (removed in 7) — delegates to {@link #authorize}.
+     * Epic 13-3 deletes this override once CUMS is on Spring Security 7.
+     */
+    @Override
+    @Deprecated
+    @SuppressWarnings("deprecation")
+    public AuthorizationDecision check(Supplier<Authentication> authentication,
+            RequestAuthorizationContext context) {
+        return (AuthorizationDecision) authorize(authentication, context);
     }
 
     /**

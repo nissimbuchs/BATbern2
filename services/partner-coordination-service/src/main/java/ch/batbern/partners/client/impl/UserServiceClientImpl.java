@@ -151,7 +151,7 @@ public class UserServiceClientImpl implements UserServiceClient {
         log.debug("Fetching users for company={}, role={}", companyName, role);
 
         String url = UriComponentsBuilder
-                .fromHttpUrl(userServiceBaseUrl + "/api/v1/users/by-company")
+                .fromUriString(userServiceBaseUrl + "/api/v1/users/by-company")
                 .queryParam("company", companyName)
                 .queryParam("role", role)
                 .queryParam("limit", 100)
@@ -170,7 +170,7 @@ public class UserServiceClientImpl implements UserServiceClient {
         log.debug("Fetching all users with role={}", role);
 
         String url = UriComponentsBuilder
-                .fromHttpUrl(userServiceBaseUrl + "/api/v1/users")
+                .fromUriString(userServiceBaseUrl + "/api/v1/users")
                 .queryParam("role", role)
                 .queryParam("limit", 100)
                 .toUriString();
