@@ -107,8 +107,9 @@ export interface SectionVisibility {
  * self-gate on window existence (it renders nothing on a 404). We only skip when Q&A is
  * explicitly disabled for the event (`qnaEnabled === false`).
  *
- * Note: session cards only render in PRE_EVENT/SPEAKERS, POST_EVENT and ARCHIVE; the AGENDA
- * sub-phase shows the timetable (EventProgram) instead, which has no Q&A surface yet.
+ * Note: SPEAKERS / POST_EVENT / ARCHIVE render SessionCards while the AGENDA sub-phase renders
+ * the EventProgram timeline instead — both mount SessionQnaThread, so this returns true for all
+ * of them (the timeline cards carry the Q&A thread too).
  */
 export function showSessionQna(
   phase: HomePagePhase,
@@ -122,7 +123,9 @@ export function showSessionQna(
     case 'ARCHIVE':
       return true;
     case 'PRE_EVENT':
-      return phase.sub === 'SPEAKERS';
+      // SPEAKERS renders SessionCards, AGENDA renders the EventProgram timeline — both mount
+      // the Q&A thread, so pre-event Q&A stays visible across both published phases.
+      return phase.sub === 'SPEAKERS' || phase.sub === 'AGENDA';
     default:
       return false;
   }

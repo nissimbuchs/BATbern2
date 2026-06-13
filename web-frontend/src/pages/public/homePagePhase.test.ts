@@ -134,8 +134,8 @@ describe('showSessionQna', () => {
   it('does NOT mount PRE_EVENT in the TOPIC sub-phase (no session cards)', () =>
     expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'TOPIC' }, enabled)).toBe(false));
 
-  it('does NOT mount PRE_EVENT in the AGENDA sub-phase (timetable, no session cards)', () =>
-    expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'AGENDA' }, enabled)).toBe(false));
+  it('mounts PRE_EVENT in the AGENDA sub-phase (Q&A on the EventProgram timeline cards)', () =>
+    expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'AGENDA' }, enabled)).toBe(true));
 
   it('does NOT mount in COMING_SOON', () =>
     expect(showSessionQna({ kind: 'COMING_SOON' }, enabled)).toBe(false));
