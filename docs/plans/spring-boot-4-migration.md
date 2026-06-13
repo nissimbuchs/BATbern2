@@ -28,6 +28,21 @@ Migrate the whole Java estate — `shared-kernel`, `api-gateway`, 5 domain servi
 
 ## Stories
 
+> **Strategy revision (2026-06-13, per product owner).** The original 13-2/13-3 design was an
+> *incremental mixed fleet* (pilot service on SB4, rest on 3.5.7). The PO chose a **single
+> version source with no per-module pinning** — `org.springframework.boot` is declared
+> version-less in every module and resolved once from `settings.gradle` pluginManagement (the
+> way `event-management` already does it), so Dependabot's `chore` updates auto-bump it within
+> 4.x. Consequence: the **whole estate moves to SB4 together** (no mixed fleet), so 13-2/13-3/13-4
+> collapse into one unified SB4 migration vetted as a unit on the `feature/epic-13-spring-boot-4`
+> branch before a single merge (the chosen hybrid). The shared-kernel binary-compat constraint
+> above is **moot under this strategy** (everything is on SB4/Jackson together). Revised execution:
+> **Phase 1** unify the plugin mechanism on the single settings.gradle source (still 3.5.7, green
+> refactor) → **Phase 2** bump that one coordinate to 4.0.7 and migrate the estate (Jackson via
+> the compat module first, springdoc 3.x, resilience4j-spring-boot4, Spring Security 7, Hibernate
+> 7, Testcontainers 2.0) → **Phase 3** full test + Bruno/Playwright validation, then flip
+> Jackson-2-compat defaults OFF.
+
 ### 13-1 — Zero-deprecation baseline + compatibility matrix (on 3.5.7)
 - Turn on `-Xlint:deprecation`/`-Werror`-equivalent visibility; fix **every** Java deprecation warning across all modules (SB4 removes those APIs).
 - Build the third-party compatibility matrix (springdoc, OpenAPI Generator, Flyway, Testcontainers/JUnit, JJWT, AWS SDK, resilience4j, Lombok, Checkstyle/Spotless toolchain) — pin the SB4-compatible target versions.

@@ -7,9 +7,10 @@ buildscript {
         gradlePluginPortal()
     }
     dependencies {
-        // Spring Boot Gradle Plugin
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.5.7'
-        classpath 'io.spring.gradle:dependency-management-plugin:1.1.7'
+        // Spring Boot + dependency-management are NOT pinned here. They are resolved
+        // once from settings.gradle pluginManagement and applied per-module via the
+        // version-less plugins {} DSL (Epic 13 — single version source, no per-module
+        // pins, so a chore/Dependabot bump of the one coordinate moves the whole estate).
 
         // Flyway
         classpath 'org.flywaydb:flyway-gradle-plugin:11.18.0'
@@ -62,8 +63,9 @@ subprojects {
 // Configuration for all service subprojects ONLY
 configure(subprojects.findAll { it.path.startsWith(':services:') }) {
         apply plugin: 'java'
-        apply plugin: 'org.springframework.boot'
-        apply plugin: 'io.spring.dependency-management'
+        // org.springframework.boot + io.spring.dependency-management are applied per-module
+        // via the version-less plugins {} DSL (resolved from settings.gradle pluginManagement),
+        // not here — single version source, no per-module pins (Epic 13).
         apply plugin: 'jacoco'
         apply plugin: 'checkstyle'
         apply plugin: 'org.flywaydb.flyway'
@@ -210,9 +212,13 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
         // Apply Trivy security scanning
         apply from: "${rootProject.projectDir}/gradle/trivy-security.gradle"
         
-        // Spring Boot Actuator build info
-        springBoot {
-            buildInfo()
+        // Spring Boot Actuator build info. The SB plugin is now applied per-module via
+        // the version-less plugins {} DSL (resolved from settings.gradle), which runs after
+        // this configure block — so defer the springBoot {} config until the plugin lands.
+        pluginManager.withPlugin('org.springframework.boot') {
+            springBoot {
+                buildInfo()
+            }
         }
 
         // Note: Git properties plugin configured in individual service build.gradle files
