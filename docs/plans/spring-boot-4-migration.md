@@ -39,6 +39,25 @@ Migrate the whole Java estate — `shared-kernel`, `api-gateway`, 5 domain servi
 - Jackson-2-compatible defaults flag ON. Shared-kernel types (`ErrorResponse`, EmailService, JwtRolesConverter — Pattern 3b must survive!) are the highest-leverage validation.
 - `:shared-kernel:publishToMavenLocal` → pilot service full Testcontainers suite → deploy → Bruno + Playwright gates.
 - **Gate:** staging (=prod) runs the pilot service on SB4 for ≥2 days with the other services on 3.5.7 (mixed fleet is fine — services share no Spring wire format, only HTTP+JSON).
+- **Target version:** Spring Boot **4.0.7** (matches the spring-cloud 2025.1.2 train).
+
+> **⚠️ shared-kernel binary-compatibility constraint (analysed 2026-06-13, governs the whole epic).**
+> shared-kernel is NOT just a wire contract — it is a **compile-time `project(':shared-kernel')`
+> dependency bundled into every service's bootJar**. While the 4 non-pilot services stay on
+> 3.5.7 (Spring 6 / Jackson 2), shared-kernel's *compiled bytecode* must reference only symbols
+> present in BOTH Spring 6/7 and Jackson 2/3, or those services hit `NoSuchMethodError` /
+> `ClassNotFoundException` at runtime. Audit of shared-kernel's 59 classes:
+> - **Jackson:** ~24 of ~34 imports are *annotations* (`@JsonProperty/@JsonIgnore/@JsonInclude`)
+>   which keep the `com.fasterxml.jackson` coordinates even in Jackson 3 → safe. The ~10
+>   `databind` usages (`ObjectMapper`, `JsonNode`, `SerializationFeature`, `JavaTimeModule`,
+>   `JsonProcessingException`) are namespace-sensitive. **HARD RULE: keep shared-kernel's
+>   databind on Jackson 2 (`com.fasterxml`) via SB4's `spring-boot-jackson2` compat module —
+>   do NOT let OpenRewrite rewrite these to `tools.jackson`.** One jar then serves both fleets.
+> - **Spring Security / context / web:** only binary-stable APIs (`Authentication`,
+>   `GrantedAuthority`, `SimpleGrantedAuthority`, `SecurityContextHolder`, `oauth2.jwt.Jwt`,
+>   `core.convert.Converter`, `@Configuration`, `web.bind`) — no 6→7 signature breaks. Safe.
+> - **Consequence:** the pilot SERVICE (attendee) may rewrite ITS OWN databind to `tools.jackson`
+>   (it's not a shared dependency), but shared-kernel may not until 13-4 flips the whole fleet.
 
 ### 13-3 — Remaining domain services (4 PRs: company-user-management, event-management, speaker-coordination, partner-coordination)
 - Same recipe per service, one PR each, sequenced by blast radius (CUMS first — auth-critical, best-tested; EMS last — biggest).
