@@ -238,6 +238,23 @@ All 20 living feature ideas published as GitHub issues in `nissimbuchs/BATbern2`
 - **Idea issues:** #746–#765 (session idea → issue): 01→746, 02→747, 03→748, 04→749, 05→750, 06→751, 07→752, 08→753, 11→754, 12→755, 13→756, 14→757, 15→758, 16→759, 17→760, 19→761, 20→762, 21→763, 22→764, 23→765
 - **Results view:** [issues sorted by 👍](https://github.com/nissimbuchs/BATbern2/issues?q=is%3Aissue+is%3Aopen+label%3Aidea-vote+sort%3Areactions-%2B1-desc)
 
+## Implementation Status — Epic 7 (2026-06-13)
+
+The five highest-voted ideas were built as **Epic 7 — Attendee Experience** and merged to develop.
+Their idea-vote issues are closed (see `docs/prd/epic-7-attendee-experience-enhancements.md` and the
+`_bmad-output/implementation-artifacts/7-*.md` story files):
+
+| Idea | Issue | Votes | Story | Feature |
+|------|-------|-------|-------|---------|
+| 05   | [#750](https://github.com/nissimbuchs/BATbern2/issues/750) | 4 | 7.1 | Topics From the Floor — attendee topic suggestions |
+| 06   | [#751](https://github.com/nissimbuchs/BATbern2/issues/751) | 4 | 7.2 | "I Could Speak on That" — speaker self-nomination |
+| 07   | [#752](https://github.com/nissimbuchs/BATbern2/issues/752) | 3 | 7.3 | "The Slides Are Online" registrant mail |
+| 02   | [#747](https://github.com/nissimbuchs/BATbern2/issues/747) | 3 | 7.4 | Thank-the-Organizers button |
+| 01   | [#746](https://github.com/nissimbuchs/BATbern2/issues/746) | 3 | 7.5 | The Apéro Continues — time-boxed post-event Q&A |
+
+A sixth story, 7.6 (attendee event-history dashboard), was added as supporting scope and is not one
+of the five voted ideas. The remaining idea-vote issues stay open as the Epic 7+ backlog.
+
 ## Session Summary and Insights
 
 **Key Achievements:**
