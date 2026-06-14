@@ -352,7 +352,8 @@
       "result": "{{sent}} 件送信、{{failed}} 件失敗。",
       "retryFailed": "失敗した {{count}} 件を再試行",
       "loadError": "登壇者プールを読み込めませんでした。",
-      "retry": "再試行"
+      "retry": "再試行",
+      "noPreview": "リマインダーは各登壇者の言語の標準テンプレートで送信されます — プレビューはありません。"
     }
   },
   "dashboard": {

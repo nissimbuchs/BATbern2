@@ -352,7 +352,8 @@
       "result": "{{sent}} verstuurd, {{failed}} mislukt.",
       "retryFailed": "Probeer de {{count}} mislukte opnieuw",
       "loadError": "Kan de sprekerspool niet laden.",
-      "retry": "Opnieuw proberen"
+      "retry": "Opnieuw proberen",
+      "noPreview": "Herinneringen worden verzonden met de standaardsjablonen in de taal van elke spreker — geen voorbeeld om te tonen."
     }
   },
   "dashboard": {

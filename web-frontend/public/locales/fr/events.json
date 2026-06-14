@@ -352,7 +352,8 @@
       "result": "{{sent}} envoyés, {{failed}} en échec.",
       "retryFailed": "Réessayer les {{count}} en échec",
       "loadError": "Impossible de charger le pool d'intervenants.",
-      "retry": "Réessayer"
+      "retry": "Réessayer",
+      "noPreview": "Les rappels sont envoyés avec les modèles standards dans la langue de chaque intervenant·e — aucun aperçu à afficher."
     }
   },
   "dashboard": {

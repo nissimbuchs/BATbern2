@@ -366,7 +366,8 @@
       "result": "Sent {{sent}}, failed {{failed}}.",
       "retryFailed": "Retry the {{count}} that failed",
       "loadError": "Could not load the speaker pool.",
-      "retry": "Retry"
+      "retry": "Retry",
+      "noPreview": "Reminders are sent with the standard speaker templates in each speaker's language — no preview to show."
     }
   },
   "dashboard": {

@@ -250,253 +250,279 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
         </Box>
       )}
 
-      {/* Section 2 — Compose & send */}
-      <Box>
-        <Typography variant="subtitle1" gutterBottom fontWeight="medium">
-          {t('eventPage.newsletter.composeTitle')}
-        </Typography>
-        <Stack spacing={2} maxWidth={400}>
-          <FormControl size="small">
-            <InputLabel>{t('eventPage.newsletter.locale')}</InputLabel>
-            <Select
-              value={locale}
-              label={t('eventPage.newsletter.locale')}
-              onChange={(e) => setLocale(e.target.value as 'de' | 'en')}
-            >
-              <MenuItem value="de">Deutsch</MenuItem>
-              <MenuItem value="en">English</MenuItem>
-            </Select>
-          </FormControl>
+      {/* Section 2 — Compose & send (two-column 30/70 split) */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'minmax(300px, 34%) 1fr' },
+          gap: 3,
+          alignItems: 'start',
+        }}
+      >
+        {/* LEFT: compose form controls */}
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Typography variant="subtitle1" gutterBottom fontWeight="medium">
+            {t('eventPage.newsletter.composeTitle')}
+          </Typography>
+          <Stack spacing={2}>
+            <FormControl size="small">
+              <InputLabel>{t('eventPage.newsletter.locale')}</InputLabel>
+              <Select
+                value={locale}
+                label={t('eventPage.newsletter.locale')}
+                onChange={(e) => setLocale(e.target.value as 'de' | 'en')}
+              >
+                <MenuItem value="de">Deutsch</MenuItem>
+                <MenuItem value="en">English</MenuItem>
+              </Select>
+            </FormControl>
 
-          {/* Template selector */}
-          <FormControl size="small">
-            <InputLabel>{t('organizer:newsletter.templateSelect.label')}</InputLabel>
-            <Select
-              value={selectedTemplateKey}
-              label={t('organizer:newsletter.templateSelect.label')}
-              onChange={(e) => setSelectedTemplateKey(e.target.value)}
-              disabled={newsletterTemplatesQuery.isLoading}
-              SelectDisplayProps={
-                {
-                  'data-testid': 'newsletter-template-select',
-                } as React.HTMLAttributes<HTMLDivElement>
-              }
-            >
-              {filteredTemplates.length === 0 && !newsletterTemplatesQuery.isLoading ? (
-                <MenuItem value={selectedTemplateKey} disabled>
-                  {selectedTemplateKey}
-                </MenuItem>
-              ) : (
-                filteredTemplates.map((tpl) => (
-                  <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
-                    {tpl.templateKey}
+            {/* Template selector */}
+            <FormControl size="small">
+              <InputLabel>{t('organizer:newsletter.templateSelect.label')}</InputLabel>
+              <Select
+                value={selectedTemplateKey}
+                label={t('organizer:newsletter.templateSelect.label')}
+                onChange={(e) => setSelectedTemplateKey(e.target.value)}
+                disabled={newsletterTemplatesQuery.isLoading}
+                SelectDisplayProps={
+                  {
+                    'data-testid': 'newsletter-template-select',
+                  } as React.HTMLAttributes<HTMLDivElement>
+                }
+              >
+                {filteredTemplates.length === 0 && !newsletterTemplatesQuery.isLoading ? (
+                  <MenuItem value={selectedTemplateKey} disabled>
+                    {selectedTemplateKey}
                   </MenuItem>
-                ))
-              )}
-            </Select>
-          </FormControl>
+                ) : (
+                  filteredTemplates.map((tpl) => (
+                    <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
+                      {tpl.templateKey}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
 
-          {/* Create new template link */}
-          <Link
-            href="/organizer/admin?tab=email-templates"
-            variant="caption"
-            color="text.secondary"
-            underline="hover"
-          >
-            {t('organizer:newsletter.templateSelect.createNew')} ↗
-          </Link>
+            {/* Create new template link */}
+            <Link
+              href="/organizer/admin?tab=email-templates"
+              variant="caption"
+              color="text.secondary"
+              underline="hover"
+            >
+              {t('organizer:newsletter.templateSelect.createNew')} ↗
+            </Link>
 
-          {/* Test mode toggle — send only to organizer subscribers */}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={testMode}
-                onChange={(e) => setTestMode(e.target.checked)}
-                color="warning"
-                data-testid="newsletter-test-mode-switch"
-              />
-            }
-            label={t('eventPage.newsletter.testMode', 'Test Mode (organizers only)')}
-          />
-          {testMode && (
-            <Alert severity="warning" data-testid="newsletter-test-mode-warning">
-              {t(
-                'eventPage.newsletter.testModeWarning',
-                'Test mode enabled — newsletter will only be sent to organizer subscribers.'
-              )}
-            </Alert>
-          )}
+            {/* Test mode toggle — send only to organizer subscribers */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={testMode}
+                  onChange={(e) => setTestMode(e.target.checked)}
+                  color="warning"
+                  data-testid="newsletter-test-mode-switch"
+                />
+              }
+              label={t('eventPage.newsletter.testMode', 'Test Mode (organizers only)')}
+            />
+            {testMode && (
+              <Alert severity="warning" data-testid="newsletter-test-mode-warning">
+                {t(
+                  'eventPage.newsletter.testModeWarning',
+                  'Test mode enabled — newsletter will only be sent to organizer subscribers.'
+                )}
+              </Alert>
+            )}
 
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            <Button
-              variant="outlined"
-              startIcon={previewMutation.isPending ? <CircularProgress size={16} /> : <EmailIcon />}
-              onClick={handlePreview}
-              disabled={previewMutation.isPending}
-            >
-              {t('eventPage.newsletter.preview')}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => openConfirm('newsletter')}
-              disabled={sendMutation.isPending || isJobActive}
-            >
-              {t('eventPage.newsletter.sendNewsletter')}
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={() => openConfirm('reminder')}
-              disabled={sendMutation.isPending || isJobActive}
-            >
-              {t('eventPage.newsletter.sendReminder')}
-            </Button>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Button
+                variant="outlined"
+                startIcon={
+                  previewMutation.isPending ? <CircularProgress size={16} /> : <EmailIcon />
+                }
+                onClick={handlePreview}
+                disabled={previewMutation.isPending}
+              >
+                {t('eventPage.newsletter.preview')}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => openConfirm('newsletter')}
+                disabled={sendMutation.isPending || isJobActive}
+              >
+                {t('eventPage.newsletter.sendNewsletter')}
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={() => openConfirm('reminder')}
+                disabled={sendMutation.isPending || isJobActive}
+              >
+                {t('eventPage.newsletter.sendReminder')}
+              </Button>
+            </Stack>
+
+            {sendMutation.isError && (
+              <Alert severity="error">
+                {t('eventPage.newsletter.sendError', 'Failed to send. Please try again.')}
+              </Alert>
+            )}
           </Stack>
+        </Paper>
 
-          {sendMutation.isError && (
-            <Alert severity="error">
-              {t('eventPage.newsletter.sendError', 'Failed to send. Please try again.')}
-            </Alert>
-          )}
-        </Stack>
-
-        {/* Preview iframe */}
-        {previewHtml && (
-          <Box mt={3}>
+        {/* RIGHT: preview + send history */}
+        <Stack spacing={2}>
+          {/* Preview iframe */}
+          <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {t('eventPage.newsletter.previewTitle', 'Email Preview')}
             </Typography>
-            <Box
-              component="iframe"
-              srcDoc={previewHtml}
-              sx={{
-                width: '100%',
-                height: 600,
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1,
-              }}
-              title="newsletter-preview"
-              sandbox="allow-same-origin"
-            />
-          </Box>
-        )}
-      </Box>
-
-      {/* Section 3 — Send history (collapsible) */}
-      <Accordion variant="outlined" disableGutters>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="subtitle1" fontWeight="medium">
-            {t('eventPage.newsletter.sendHistory')}
-            {historyQuery.data && historyQuery.data.length > 0 && (
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                ({historyQuery.data.length})
+            {previewHtml ? (
+              <Box
+                component="iframe"
+                srcDoc={previewHtml}
+                sx={{
+                  width: '100%',
+                  height: 600,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                }}
+                title="newsletter-preview"
+                sandbox="allow-same-origin"
+              />
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {t('eventPage.newsletter.previewPlaceholder', 'Preview will appear here')}
               </Typography>
             )}
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails sx={{ p: 0 }}>
-          {historyQuery.isLoading ? (
-            <Box p={2}>
-              <Skeleton variant="rectangular" height={100} />
-            </Box>
-          ) : historyQuery.data && historyQuery.data.length > 0 ? (
-            <Paper variant="outlined" sx={{ border: 0 }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>{t('common:labels.date')}</TableCell>
-                    <TableCell>{t('eventPage.newsletter.historyType', 'Type')}</TableCell>
-                    <TableCell align="right">
-                      {t('eventPage.newsletter.historyRecipients', 'Recipients')}
-                    </TableCell>
-                    <TableCell align="center">
-                      {t('eventPage.newsletter.historyStatus', 'Status')}
-                    </TableCell>
-                    <TableCell />
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {historyQuery.data.map((send) => (
-                    <TableRow key={send.id}>
-                      <TableCell>{new Date(send.sentAt).toLocaleString()}</TableCell>
-                      <TableCell>
-                        {send.isReminder
-                          ? t('eventPage.newsletter.typeReminder', 'Reminder')
-                          : t('eventPage.newsletter.typeNewsletter', 'Newsletter')}
-                        {send.testMode && (
-                          <Chip
-                            label="TEST"
-                            size="small"
-                            color="warning"
-                            variant="outlined"
-                            sx={{ ml: 0.5 }}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        {send.id === activeSendId && isJobActive
-                          ? `${sendStatusQuery.data?.sentCount ?? send.sentCount ?? 0} / ${send.recipientCount}`
-                          : send.recipientCount}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography
-                          variant="caption"
-                          color={
-                            send.status === 'COMPLETED'
-                              ? 'success.main'
-                              : send.status === 'PARTIAL'
-                                ? 'warning.main'
-                                : send.status === 'FAILED'
-                                  ? 'error.main'
-                                  : 'text.secondary'
-                          }
-                        >
-                          {send.status ?? 'COMPLETED'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {(send.status === 'PARTIAL' || send.status === 'FAILED') && (
-                          <Tooltip
-                            title={t(
-                              'eventPage.newsletter.retryTooltip',
-                              'Retry failed recipients'
-                            )}
-                          >
-                            <span>
-                              <Button
-                                size="small"
-                                variant="text"
-                                color="warning"
-                                onClick={() => {
-                                  retryMutation.mutate(send.id, {
-                                    onSuccess: (data) => {
-                                      if (data.id) setActiveSendId(data.id);
-                                    },
-                                  });
-                                }}
-                                disabled={retryMutation.isPending || isJobActive}
+          </Paper>
+
+          {/* Section 3 — Send history */}
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Accordion variant="outlined" disableGutters>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle1" fontWeight="medium">
+                  {t('eventPage.newsletter.sendHistory')}
+                  {historyQuery.data && historyQuery.data.length > 0 && (
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ ml: 1 }}
+                    >
+                      ({historyQuery.data.length})
+                    </Typography>
+                  )}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ p: 0 }}>
+                {historyQuery.isLoading ? (
+                  <Box p={2}>
+                    <Skeleton variant="rectangular" height={100} />
+                  </Box>
+                ) : historyQuery.data && historyQuery.data.length > 0 ? (
+                  <Paper variant="outlined" sx={{ border: 0 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>{t('common:labels.date')}</TableCell>
+                          <TableCell>{t('eventPage.newsletter.historyType', 'Type')}</TableCell>
+                          <TableCell align="right">
+                            {t('eventPage.newsletter.historyRecipients', 'Recipients')}
+                          </TableCell>
+                          <TableCell align="center">
+                            {t('eventPage.newsletter.historyStatus', 'Status')}
+                          </TableCell>
+                          <TableCell />
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {historyQuery.data.map((send) => (
+                          <TableRow key={send.id}>
+                            <TableCell>{new Date(send.sentAt).toLocaleString()}</TableCell>
+                            <TableCell>
+                              {send.isReminder
+                                ? t('eventPage.newsletter.typeReminder', 'Reminder')
+                                : t('eventPage.newsletter.typeNewsletter', 'Newsletter')}
+                              {send.testMode && (
+                                <Chip
+                                  label="TEST"
+                                  size="small"
+                                  color="warning"
+                                  variant="outlined"
+                                  sx={{ ml: 0.5 }}
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell align="right">
+                              {send.id === activeSendId && isJobActive
+                                ? `${sendStatusQuery.data?.sentCount ?? send.sentCount ?? 0} / ${send.recipientCount}`
+                                : send.recipientCount}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography
+                                variant="caption"
+                                color={
+                                  send.status === 'COMPLETED'
+                                    ? 'success.main'
+                                    : send.status === 'PARTIAL'
+                                      ? 'warning.main'
+                                      : send.status === 'FAILED'
+                                        ? 'error.main'
+                                        : 'text.secondary'
+                                }
                               >
-                                {t('eventPage.newsletter.retryButton', 'Retry')}
-                              </Button>
-                            </span>
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Paper>
-          ) : (
-            <Box p={2}>
-              <Typography variant="body2" color="text.secondary">
-                {t('eventPage.newsletter.noHistory')}
-              </Typography>
-            </Box>
-          )}
-        </AccordionDetails>
-      </Accordion>
+                                {send.status ?? 'COMPLETED'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              {(send.status === 'PARTIAL' || send.status === 'FAILED') && (
+                                <Tooltip
+                                  title={t(
+                                    'eventPage.newsletter.retryTooltip',
+                                    'Retry failed recipients'
+                                  )}
+                                >
+                                  <span>
+                                    <Button
+                                      size="small"
+                                      variant="text"
+                                      color="warning"
+                                      onClick={() => {
+                                        retryMutation.mutate(send.id, {
+                                          onSuccess: (data) => {
+                                            if (data.id) setActiveSendId(data.id);
+                                          },
+                                        });
+                                      }}
+                                      disabled={retryMutation.isPending || isJobActive}
+                                    >
+                                      {t('eventPage.newsletter.retryButton', 'Retry')}
+                                    </Button>
+                                  </span>
+                                </Tooltip>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Paper>
+                ) : (
+                  <Box p={2}>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('eventPage.newsletter.noHistory')}
+                    </Typography>
+                  </Box>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          </Paper>
+        </Stack>
+      </Box>
 
       {/* Confirmation dialog */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} fullScreen={isMobile}>

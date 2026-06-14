@@ -352,7 +352,8 @@
       "result": "{{sent}} enviados, {{failed}} fallidos.",
       "retryFailed": "Reintentar los {{count}} fallidos",
       "loadError": "No se pudo cargar el grupo de ponentes.",
-      "retry": "Reintentar"
+      "retry": "Reintentar",
+      "noPreview": "Los recordatorios se envían con las plantillas estándar en el idioma de cada ponente — no hay vista previa que mostrar."
     }
   },
   "dashboard": {

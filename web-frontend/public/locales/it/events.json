@@ -352,7 +352,8 @@
       "result": "{{sent}} inviati, {{failed}} non riusciti.",
       "retryFailed": "Riprova i {{count}} non riusciti",
       "loadError": "Impossibile caricare il pool dei relatori.",
-      "retry": "Riprova"
+      "retry": "Riprova",
+      "noPreview": "I promemoria vengono inviati con i modelli standard nella lingua di ciascun relatore — nessuna anteprima da mostrare."
     }
   },
   "dashboard": {

@@ -366,7 +366,8 @@
       "result": "{{sent}} gesendet, {{failed}} fehlgeschlagen.",
       "retryFailed": "Die {{count}} fehlgeschlagenen erneut versuchen",
       "loadError": "Der Referent:innen-Pool konnte nicht geladen werden.",
-      "retry": "Erneut versuchen"
+      "retry": "Erneut versuchen",
+      "noPreview": "Erinnerungen werden mit den Standard-Vorlagen in der Sprache der Referent:innen gesendet — keine Vorschau."
     }
   },
   "dashboard": {

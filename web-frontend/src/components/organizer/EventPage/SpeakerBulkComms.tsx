@@ -31,6 +31,7 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
+  Paper,
   Select,
   Stack,
   Typography,
@@ -144,89 +145,114 @@ export const SpeakerBulkComms: React.FC<SpeakerBulkCommsProps> = ({ eventCode, e
         </Typography>
       </Box>
 
-      <Stack spacing={2} maxWidth={420}>
-        <FormControl size="small">
-          <InputLabel>{t('eventPage.speakerComms.reminderType', 'Reminder type')}</InputLabel>
-          <Select
-            value={reminderType}
-            label={t('eventPage.speakerComms.reminderType', 'Reminder type')}
-            disabled={sending}
-            onChange={(e) => {
-              setReminderType(e.target.value as ReminderType);
-              setResult(null);
-            }}
-            SelectDisplayProps={
-              { 'data-testid': 'speaker-comms-type-select' } as React.HTMLAttributes<HTMLDivElement>
-            }
-          >
-            <MenuItem value="RESPONSE">
-              {t('eventPage.speakerComms.typeResponse', 'Response deadline (invited speakers)')}
-            </MenuItem>
-            <MenuItem value="CONTENT">
-              {t('eventPage.speakerComms.typeContent', 'Content deadline (accepted speakers)')}
-            </MenuItem>
-          </Select>
-        </FormControl>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'minmax(300px, 34%) 1fr' },
+          gap: 3,
+          alignItems: 'start',
+        }}
+      >
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Stack spacing={2}>
+            <FormControl size="small">
+              <InputLabel>{t('eventPage.speakerComms.reminderType', 'Reminder type')}</InputLabel>
+              <Select
+                value={reminderType}
+                label={t('eventPage.speakerComms.reminderType', 'Reminder type')}
+                disabled={sending}
+                onChange={(e) => {
+                  setReminderType(e.target.value as ReminderType);
+                  setResult(null);
+                }}
+                SelectDisplayProps={
+                  {
+                    'data-testid': 'speaker-comms-type-select',
+                  } as React.HTMLAttributes<HTMLDivElement>
+                }
+              >
+                <MenuItem value="RESPONSE">
+                  {t('eventPage.speakerComms.typeResponse', 'Response deadline (invited speakers)')}
+                </MenuItem>
+                <MenuItem value="CONTENT">
+                  {t('eventPage.speakerComms.typeContent', 'Content deadline (accepted speakers)')}
+                </MenuItem>
+              </Select>
+            </FormControl>
 
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          data-testid="speaker-comms-recipient-count"
-        >
-          {t('eventPage.speakerComms.recipientCount', {
-            count: recipients.length,
-            defaultValue: `${recipients.length} speaker(s) will be reminded`,
-          })}
-        </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              data-testid="speaker-comms-recipient-count"
+            >
+              {t('eventPage.speakerComms.recipientCount', {
+                count: recipients.length,
+                defaultValue: `${recipients.length} speaker(s) will be reminded`,
+              })}
+            </Typography>
 
-        {noRecipients && (
-          <Alert severity="info" data-testid="speaker-comms-empty">
-            {t('eventPage.speakerComms.empty', 'No speakers are currently awaiting this reminder.')}
-          </Alert>
-        )}
+            {noRecipients && (
+              <Alert severity="info" data-testid="speaker-comms-empty">
+                {t(
+                  'eventPage.speakerComms.empty',
+                  'No speakers are currently awaiting this reminder.'
+                )}
+              </Alert>
+            )}
 
-        <Box>
-          <Button
-            variant="contained"
-            startIcon={sending ? <CircularProgress size={16} /> : <ReminderIcon />}
-            onClick={() => setConfirmOpen(true)}
-            disabled={noRecipients || sending}
-            data-testid="speaker-comms-send-button"
-          >
-            {t('eventPage.speakerComms.send', 'Send reminders')}
-          </Button>
-        </Box>
+            <Box>
+              <Button
+                variant="contained"
+                startIcon={sending ? <CircularProgress size={16} /> : <ReminderIcon />}
+                onClick={() => setConfirmOpen(true)}
+                disabled={noRecipients || sending}
+                data-testid="speaker-comms-send-button"
+              >
+                {t('eventPage.speakerComms.send', 'Send reminders')}
+              </Button>
+            </Box>
 
-        {result && (
-          <Alert
-            severity={result.failed.length === 0 ? 'success' : 'warning'}
-            onClose={() => setResult(null)}
-            data-testid="speaker-comms-result"
-            action={
-              result.failed.length > 0 ? (
-                <Button
-                  color="inherit"
-                  size="small"
-                  disabled={sending}
-                  onClick={() => runSend(result.failed)}
-                  data-testid="speaker-comms-retry-failed"
-                >
-                  {t('eventPage.speakerComms.retryFailed', {
-                    count: result.failed.length,
-                    defaultValue: `Retry the ${result.failed.length} that failed`,
-                  })}
-                </Button>
-              ) : undefined
-            }
-          >
-            {t('eventPage.speakerComms.result', {
-              sent: result.sent,
-              failed: result.failed.length,
-              defaultValue: `Sent ${result.sent}, failed ${result.failed.length}.`,
-            })}
-          </Alert>
-        )}
-      </Stack>
+            {result && (
+              <Alert
+                severity={result.failed.length === 0 ? 'success' : 'warning'}
+                onClose={() => setResult(null)}
+                data-testid="speaker-comms-result"
+                action={
+                  result.failed.length > 0 ? (
+                    <Button
+                      color="inherit"
+                      size="small"
+                      disabled={sending}
+                      onClick={() => runSend(result.failed)}
+                      data-testid="speaker-comms-retry-failed"
+                    >
+                      {t('eventPage.speakerComms.retryFailed', {
+                        count: result.failed.length,
+                        defaultValue: `Retry the ${result.failed.length} that failed`,
+                      })}
+                    </Button>
+                  ) : undefined
+                }
+              >
+                {t('eventPage.speakerComms.result', {
+                  sent: result.sent,
+                  failed: result.failed.length,
+                  defaultValue: `Sent ${result.sent}, failed ${result.failed.length}.`,
+                })}
+              </Alert>
+            )}
+          </Stack>
+        </Paper>
+
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            {t(
+              'eventPage.speakerComms.noPreview',
+              "Reminders are sent with the standard speaker templates in each speaker's language — no preview to show."
+            )}
+          </Typography>
+        </Paper>
+      </Box>
 
       {/* Confirmation dialog (NFR1 — opens before any send call). */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} fullScreen={isMobile}>

@@ -352,7 +352,8 @@
       "result": "{{sent}} tramess, {{failed}} betg reussì.",
       "retryFailed": "Reempruvar ils {{count}} betg reussids",
       "loadError": "Impussibel da chargiar il pool dals relaturs.",
-      "retry": "Reempruvar"
+      "retry": "Reempruvar",
+      "noPreview": "Las regurdientschas vegnan tramessas cun ils models standard en la lingua da mintga referent — nagina prevista da mussar."
     }
   },
   "dashboard": {

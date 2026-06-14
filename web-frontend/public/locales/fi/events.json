@@ -352,7 +352,8 @@
       "result": "{{sent}} lähetetty, {{failed}} epäonnistui.",
       "retryFailed": "Yritä {{count}} epäonnistunutta uudelleen",
       "loadError": "Puhujapoolia ei voitu ladata.",
-      "retry": "Yritä uudelleen"
+      "retry": "Yritä uudelleen",
+      "noPreview": "Muistutukset lähetetään vakiopohjilla kunkin puhujan kielellä — ei esikatselua näytettäväksi."
     }
   },
   "dashboard": {

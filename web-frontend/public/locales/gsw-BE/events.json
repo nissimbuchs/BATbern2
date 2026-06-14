@@ -358,7 +358,8 @@
       "result": "{{sent}} gschickt, {{failed}} fählgschlage.",
       "retryFailed": "Di {{count}} Fählgschlagene nomal probiere",
       "loadError": "Dr Referänte-Pool het nid chönne glade wärde.",
-      "retry": "Nomal probiere"
+      "retry": "Nomal probiere",
+      "noPreview": "D Erinnerige wärde mit de Standard-Vorlage i dr Sprach vo jedem Referänt gschickt — kei Vorschau zum zeige."
     }
   },
   "dashboard": {
