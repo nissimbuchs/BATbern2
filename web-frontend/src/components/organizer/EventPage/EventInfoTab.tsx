@@ -147,13 +147,17 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
     setSaveError(null);
     const changed: PartialEventFormData = getChangedFields(data, initialValues);
     const payload = transformDatesForApi(changed);
-    if (themeImageUploadId) {
+    if (imageRemoved) {
+      // The PATCH endpoint clears the theme image when themeImageUploadId is blank.
+      (payload as Record<string, unknown>).themeImageUploadId = '';
+    } else if (themeImageUploadId) {
       (payload as Record<string, unknown>).themeImageUploadId = themeImageUploadId;
     }
     if (Object.keys(payload).length === 0) return;
     try {
       await updateEvent.mutateAsync({ eventCode, data: payload });
       setThemeImageUploadId(undefined);
+      setImageRemoved(false);
       setSaved(true);
     } catch (e) {
       setSaveError(
@@ -162,7 +166,7 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
     }
   });
 
-  const dirty = isDirty || !!themeImageUploadId;
+  const dirty = isDirty || !!themeImageUploadId || imageRemoved;
 
   const cardSx = { p: 2 } as const;
 
@@ -222,7 +226,7 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
 
               {/* Top-right: AI-generate + replace */}
               <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
-                {aiContentEnabled && event.topicCode && (
+                {aiContentEnabled && (
                   <Tooltip title={t('eventPage.details.aiGenerateImage', '✨ Generate (AI)')}>
                     <IconButton
                       size="small"
@@ -331,7 +335,7 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
                   />
                 )}
               />
-              {aiContentEnabled && event.topicCode && (
+              {aiContentEnabled && (
                 <Box>
                   <Button
                     size="small"
