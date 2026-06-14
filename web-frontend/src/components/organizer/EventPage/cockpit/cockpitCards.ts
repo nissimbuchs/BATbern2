@@ -139,8 +139,8 @@ export function classifyDue(dueDate: string | null | undefined, now: number): Du
  * Unmatched tasks get no jump button (graceful — the card still shows).
  */
 const TASK_TARGET_RULES: Array<{ re: RegExp; target: CardTarget }> = [
-  { re: /moderat/i, target: { kind: 'tab', tab: 'settings' } },
-  { re: /q\s*&\s*a|q&a|apéro|apero|session q/i, target: { kind: 'tab', tab: 'settings' } },
+  { re: /moderat/i, target: { kind: 'tab', tab: 'details' } },
+  { re: /q\s*&\s*a|q&a|apéro|apero|session q/i, target: { kind: 'tab', tab: 'details' } },
   { re: /photo|foto/i, target: { kind: 'tab', tab: 'wrapup' } },
   { re: /thank|danke|appreciat/i, target: { kind: 'tab', tab: 'wrapup' } },
   { re: /publish|veröffentlich|agenda finali/i, target: { kind: 'tab', tab: 'publishing' } },

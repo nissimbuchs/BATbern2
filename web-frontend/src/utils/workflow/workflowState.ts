@@ -186,10 +186,12 @@ export function isValidWorkflowState(state: string): boolean {
  * ------------------------------------------------------------------------- */
 
 /**
- * The 8 tabs of the redesigned organizer event-detail page.
+ * The 7 tabs of the redesigned organizer event-detail page.
  * Two clusters: the "work" cluster (cockpit … wrapup) and the "config"
- * cluster (details, settings). These ids are the stable `?tab=` keys and the
- * `data-testid="event-tab-{id}"` suffixes consumed by EventPage.
+ * cluster — a single `details` tab whose Info / Tasks / Settings sub-tabs hold
+ * what used to be the separate Details + Settings tabs (Story 14.F.2 merge).
+ * These ids are the stable `?tab=` keys and the `data-testid="event-tab-{id}"`
+ * suffixes consumed by EventPage.
  */
 export type EventTabId =
   | 'cockpit'
@@ -198,8 +200,7 @@ export type EventTabId =
   | 'communications'
   | 'publishing'
   | 'wrapup'
-  | 'details'
-  | 'settings';
+  | 'details'; // config cluster — Info / Tasks / Settings sub-tabs
 
 /**
  * Per-tab relevance for a given workflow state.
@@ -227,11 +228,7 @@ export interface WorkflowRelevance {
  * set-and-forget config. Checked first in {@link getTabRelevance} so a map
  * authoring mistake can never dim or lock them (FR5).
  */
-export const ALWAYS_ACTIVE_TABS: readonly EventTabId[] = [
-  'cockpit',
-  'details',
-  'settings',
-] as const;
+export const ALWAYS_ACTIVE_TABS: readonly EventTabId[] = ['cockpit', 'details'] as const;
 
 /**
  * The single declarative `workflowState → relevance` table (FR4, AR2).
@@ -243,7 +240,7 @@ export const ALWAYS_ACTIVE_TABS: readonly EventTabId[] = [
  * due-date-driven tasks, not a separate state.
  *
  * Invariants (enforced by getTabRelevance + unit tests):
- * - `cockpit`, `details`, `settings` never appear in any dimmed/locked list.
+ * - `cockpit`, `details` never appear in any dimmed/locked list.
  * - `wrapup` is locked for CREATED…AGENDA_PUBLISHED and active from EVENT_LIVE.
  */
 export const WORKFLOW_RELEVANCE: Record<WorkflowStateType, WorkflowRelevance> = {

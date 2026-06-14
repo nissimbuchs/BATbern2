@@ -326,7 +326,17 @@
       "heading": "Eckdaten",
       "intro": "Identität, Thema und Termin der Veranstaltung. Einmal früh festlegen – ändert sich selten.",
       "editButton": "Eckdaten bearbeiten",
-      "noTopic": "Noch kein Thema gewählt"
+      "noTopic": "Noch kein Thema gewählt",
+      "subtabs": {
+        "info": "Info",
+        "tasks": "Aufgaben",
+        "settings": "Einstellungen"
+      },
+      "whenWhere": "Wann & wo",
+      "changeTopic": "Thema ändern",
+      "aiAssist": "✨ KI-generieren",
+      "save": "Änderungen speichern",
+      "saved": "Änderungen gespeichert"
     },
     "communications": {
       "audiences": {
@@ -464,7 +474,9 @@
     "criticalTasksWidget": "Kritische Aufgaben",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Diese Aufgabe löschen?",
+    "deleteConfirmBody": "„{{name}}“ löschen? Das kann nicht rückgängig gemacht werden."
   },
   "form": {
     "createEvent": "Neue Veranstaltung erstellen",

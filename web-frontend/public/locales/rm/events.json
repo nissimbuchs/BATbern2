@@ -312,7 +312,17 @@
       "heading": "Detagls da l'occurrenza",
       "intro": "Identitad, tema e termin da l'occurrenza. Definir baud — chaschuna paucs midaments.",
       "editButton": "Modifitgar ils detagls",
-      "noTopic": "Nagin tema tschernì"
+      "noTopic": "Nagin tema tschernì",
+      "subtabs": {
+        "info": "Infos",
+        "tasks": "Incumbensas",
+        "settings": "Parameters"
+      },
+      "whenWhere": "Cura & nua",
+      "changeTopic": "Midar il tema",
+      "aiAssist": "✨ Generar cun IA",
+      "save": "Memorisar las midadas",
+      "saved": "Midadas memorisadas"
     },
     "communications": {
       "audiences": {
@@ -450,7 +460,9 @@
     "criticalTasksWidget": "Incumbensas criticas",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Stizzar questa incumbensa?",
+    "deleteConfirmBody": "Stizzar «{{name}}»? Quai na po betg vegnir revocà."
   },
   "form": {
     "createEvent": "Crear nov eveniment",

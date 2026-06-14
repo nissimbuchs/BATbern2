@@ -318,7 +318,17 @@
       "heading": "Eckdate",
       "intro": "Identität, Thema u Termin vor Veraastaltig. Eimal früeh festlege – ändered sech sälte.",
       "editButton": "Eckdate bearbeite",
-      "noTopic": "No kes Thema gwählt"
+      "noTopic": "No kes Thema gwählt",
+      "subtabs": {
+        "info": "Info",
+        "tasks": "Ufgabe",
+        "settings": "Iistellige"
+      },
+      "whenWhere": "Wänn & wo",
+      "changeTopic": "Thema ändere",
+      "aiAssist": "✨ KI-generiere",
+      "save": "Ändrige speichere",
+      "saved": "Ändrige gspeicheret"
     },
     "communications": {
       "audiences": {
@@ -455,7 +465,9 @@
     },
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Die Ufgab lösche?",
+    "deleteConfirmBody": "«{{name}}» lösche? Das cha nid rückgängig gmacht wärde."
   },
   "form": {
     "createEvent": "Neui Veranstatig erstelle",

@@ -40,7 +40,6 @@ import {
   Publish as PublishIcon,
   CardGiftcard as WrapupIcon,
   Description as DetailsIcon,
-  Settings as SettingsIcon,
   Slideshow as SlideshowIcon,
   LiveTv as LiveTvIcon,
   Lock as LockIcon,
@@ -59,10 +58,9 @@ import type { CardTarget } from './cockpit/cockpitCards';
 import { EventSpeakersTab } from './EventSpeakersTab';
 import EventParticipantsTab from './EventParticipantsTab';
 import { EventPublishingTab } from './EventPublishingTab';
-import { EventSettingsTab } from './EventSettingsTab';
+import { EventDetailsContainer } from './EventDetailsContainer';
 import { EventCommunicationsContainer } from './EventCommunicationsContainer';
 import { EventWrapupContainer } from './EventWrapupContainer';
-import { EventDetailsTab } from './EventDetailsTab';
 import { useTabBadges } from './useTabBadges';
 import { EventForm } from '@/components/organizer/EventManagement';
 
@@ -96,13 +94,9 @@ const TABS = [
     cluster: 'work',
   },
   { id: 'wrapup', labelKey: 'eventPage.tabs.wrapup', icon: <WrapupIcon />, cluster: 'work' },
+  // Config cluster: a single "Details" tab with Info / Tasks / Settings sub-tabs
+  // (Story 14.F.2 merge — the former standalone Settings tab folds in here).
   { id: 'details', labelKey: 'eventPage.tabs.details', icon: <DetailsIcon />, cluster: 'config' },
-  {
-    id: 'settings',
-    labelKey: 'eventPage.tabs.settings',
-    icon: <SettingsIcon />,
-    cluster: 'config',
-  },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -334,9 +328,7 @@ export const EventPage: React.FC = () => {
       case 'wrapup':
         return <EventWrapupContainer eventCode={eventCode!} />;
       case 'details':
-        return <EventDetailsTab event={event} onEdit={handleEdit} />;
-      case 'settings':
-        return <EventSettingsTab event={event} eventCode={eventCode!} />;
+        return <EventDetailsContainer event={event} eventCode={eventCode!} />;
       default:
         return <EventOverviewTab event={event} eventCode={eventCode!} onEdit={handleEdit} />;
     }

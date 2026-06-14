@@ -312,7 +312,17 @@
       "heading": "Dettagli dell'evento",
       "intro": "Identità, tema e calendario dell'evento. Da impostare presto — cambiano raramente.",
       "editButton": "Modifica i dettagli",
-      "noTopic": "Nessun tema selezionato"
+      "noTopic": "Nessun tema selezionato",
+      "subtabs": {
+        "info": "Info",
+        "tasks": "Attività",
+        "settings": "Impostazioni"
+      },
+      "whenWhere": "Quando e dove",
+      "changeTopic": "Cambia argomento",
+      "aiAssist": "✨ Genera con IA",
+      "save": "Salva modifiche",
+      "saved": "Modifiche salvate"
     },
     "communications": {
       "audiences": {
@@ -450,7 +460,9 @@
     "criticalTasksWidget": "Attività critiche",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Eliminare questa attività?",
+    "deleteConfirmBody": "Eliminare «{{name}}»? L'azione è irreversibile."
   },
   "form": {
     "createEvent": "Crea nuovo evento",

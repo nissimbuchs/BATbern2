@@ -77,7 +77,7 @@ describe('classifyDue', () => {
 
 describe('resolveTaskTarget', () => {
   it.each([
-    ['Assign the moderator', 'settings'],
+    ['Assign the moderator', 'details'],
     ['Send the final newsletter', 'communications'],
     ['Request the catering offer', 'communications'],
     ['Venue Booking', 'communications'],
@@ -85,7 +85,7 @@ describe('resolveTaskTarget', () => {
     ['Finalize & publish the agenda', 'publishing'],
     ['2 sessions still need a slot', 'speakers'],
     ['Review speaker submissions', 'speakers'],
-    ['Open session Q&A', 'settings'],
+    ['Open session Q&A', 'details'],
   ])('maps "%s" → %s tab', (name, tab) => {
     const target = resolveTaskTarget(task({ taskName: name }));
     expect(target?.kind).toBe('tab');

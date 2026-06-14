@@ -312,7 +312,17 @@
       "heading": "Evenementdetails",
       "intro": "Identiteit, thema en planning van het evenement. Stel deze vroeg in — ze veranderen zelden.",
       "editButton": "Details bewerken",
-      "noTopic": "Nog geen thema gekozen"
+      "noTopic": "Nog geen thema gekozen",
+      "subtabs": {
+        "info": "Info",
+        "tasks": "Taken",
+        "settings": "Instellingen"
+      },
+      "whenWhere": "Wanneer & waar",
+      "changeTopic": "Onderwerp wijzigen",
+      "aiAssist": "✨ AI-genereren",
+      "save": "Wijzigingen opslaan",
+      "saved": "Wijzigingen opgeslagen"
     },
     "communications": {
       "audiences": {
@@ -450,7 +460,9 @@
     "criticalTasksWidget": "Kritieke taken",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Deze taak verwijderen?",
+    "deleteConfirmBody": "\"{{name}}\" verwijderen? Dit kan niet ongedaan worden gemaakt."
   },
   "form": {
     "createEvent": "Nieuw evenement aanmaken",

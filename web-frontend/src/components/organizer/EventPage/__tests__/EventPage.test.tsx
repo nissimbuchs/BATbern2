@@ -97,8 +97,14 @@ vi.mock('../EventWrapupContainer', () => ({
     <div data-testid="event-wrapup-tab">Wrap-up - {eventCode}</div>
   ),
 }));
-vi.mock('../EventDetailsTab', () => ({
-  EventDetailsTab: () => <div data-testid="event-details-tab">Details Tab</div>,
+vi.mock('../EventDetailsContainer', () => ({
+  EventDetailsContainer: () => (
+    <div data-testid="event-details-tab">
+      <div data-testid="details-subtab-info" />
+      <div data-testid="details-subtab-tasks" />
+      <div data-testid="details-subtab-settings" />
+    </div>
+  ),
 }));
 
 // Mock Breadcrumbs component
@@ -178,13 +184,13 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
     });
   });
 
-  describe('8-tab IA (FR1/FR3)', () => {
-    it('renders exactly 8 tabs', () => {
+  describe('7-tab IA (FR1/FR3 — config cluster merged into Details)', () => {
+    it('renders exactly 7 tabs', () => {
       renderWithProviders();
-      expect(screen.getAllByRole('tab')).toHaveLength(8);
+      expect(screen.getAllByRole('tab')).toHaveLength(7);
     });
 
-    it('renders the 8 lifecycle tabs in two clusters', () => {
+    it('renders the 7 lifecycle tabs (Settings folded into Details)', () => {
       renderWithProviders();
       expect(screen.getByRole('tab', { name: /cockpit/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /speakers/i })).toBeInTheDocument();
@@ -193,7 +199,8 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
       expect(screen.getByRole('tab', { name: /publishing/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /wrap-?up/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /details/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
+      // Settings is no longer a top-level tab — it's a sub-tab of Details now.
+      expect(screen.queryByRole('tab', { name: /^settings$/i })).not.toBeInTheDocument();
     });
 
     it('no longer shows the old consolidated standalone tabs', () => {
@@ -233,10 +240,12 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
       );
     });
 
-    it('switches to Details', async () => {
+    it('switches to Details (Info/Tasks/Settings sub-tabs)', async () => {
       renderWithProviders();
       fireEvent.click(screen.getByRole('tab', { name: /details/i }));
-      await waitFor(() => expect(screen.getByTestId('event-details-tab')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByTestId('details-subtab-info')).toBeInTheDocument());
+      expect(screen.getByTestId('details-subtab-tasks')).toBeInTheDocument();
+      expect(screen.getByTestId('details-subtab-settings')).toBeInTheDocument();
     });
   });
 
@@ -271,12 +280,11 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
       expect(screen.getByTestId('event-wrapup-tab')).toBeInTheDocument();
     });
 
-    it('keeps Cockpit, Details, and Settings active in every state', async () => {
+    it('keeps Cockpit and Details active in every state', async () => {
       await setEvent({ workflowState: 'CREATED' });
       renderWithProviders();
       expect(screen.getByRole('tab', { name: /cockpit/i })).not.toBeDisabled();
       expect(screen.getByRole('tab', { name: /details/i })).not.toBeDisabled();
-      expect(screen.getByRole('tab', { name: /settings/i })).not.toBeDisabled();
     });
   });
 

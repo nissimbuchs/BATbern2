@@ -326,7 +326,17 @@
       "heading": "Event details",
       "intro": "The event's identity, topic, and schedule. Set these once early — they rarely change.",
       "editButton": "Edit event details",
-      "noTopic": "No topic selected yet"
+      "noTopic": "No topic selected yet",
+      "subtabs": {
+        "info": "Info",
+        "tasks": "Tasks",
+        "settings": "Settings"
+      },
+      "whenWhere": "When & where",
+      "changeTopic": "Change topic",
+      "aiAssist": "✨ AI-generate",
+      "save": "Save changes",
+      "saved": "Changes saved"
     },
     "communications": {
       "audiences": {
@@ -464,7 +474,9 @@
     "criticalTasksWidget": "Critical tasks widget",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Delete this task?",
+    "deleteConfirmBody": "Delete \"{{name}}\"? This can't be undone."
   },
   "form": {
     "createEvent": "Create New Event",

@@ -312,7 +312,17 @@
       "heading": "Tapahtuman tiedot",
       "intro": "Tapahtuman identiteetti, aihe ja aikataulu. Aseta nämä ajoissa — ne muuttuvat harvoin.",
       "editButton": "Muokkaa tietoja",
-      "noTopic": "Aihetta ei ole vielä valittu"
+      "noTopic": "Aihetta ei ole vielä valittu",
+      "subtabs": {
+        "info": "Tiedot",
+        "tasks": "Tehtävät",
+        "settings": "Asetukset"
+      },
+      "whenWhere": "Milloin & missä",
+      "changeTopic": "Vaihda aihe",
+      "aiAssist": "✨ Luo tekoälyllä",
+      "save": "Tallenna muutokset",
+      "saved": "Muutokset tallennettu"
     },
     "communications": {
       "audiences": {
@@ -450,7 +460,9 @@
     "criticalTasksWidget": "Kriittiset tehtävät",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Poistetaanko tämä tehtävä?",
+    "deleteConfirmBody": "Poistetaanko \"{{name}}\"? Tätä ei voi kumota."
   },
   "form": {
     "createEvent": "Luo uusi tapahtuma",
