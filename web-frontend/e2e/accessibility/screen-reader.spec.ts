@@ -16,6 +16,7 @@
 
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { waitForAppShell } from '../helpers/app-shell';
 
 test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () => {
   // `/dashboard` redirects organizers to `/organizer/events`; `networkidle` lets the redirect +
@@ -23,6 +24,9 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () 
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
+    // Vite dev can hit `networkidle` during the "Loading" Suspense fallback, before the shell
+    // (aria-live regions, icon buttons, nav links) exists. Wait for BaseLayout to render.
+    await waitForAppShell(page);
   });
 
   test('should have proper ARIA live regions for dynamic content', async ({ page }) => {

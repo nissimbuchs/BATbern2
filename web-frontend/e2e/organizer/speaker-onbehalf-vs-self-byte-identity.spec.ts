@@ -77,6 +77,20 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
       'in this env. Story 11.D.4 §"AC10 cross-auth byte-identity e2e (case 51)" PATCH item — ' +
       'the spec exists but skips cleanly until the staging Cognito test-speaker seed ticket lands.'
   );
+  // The FLAGSHIP cross-auth assertion (step 5) needs a primed, ACCEPTED speaker addressable
+  // by E2E_SPEAKER_EVENT_CODE/_POOL_ID whose JWT is SPEAKER_AUTH_TOKEN. The runner always
+  // supplies SPEAKER_AUTH_TOKEN, but that seed is NOT provisioned on local dev or in CI, so
+  // without the pointer the test would otherwise run an organizer-only path that (a) drives
+  // the flaky promote-to-READY out-of-band Cognito write (leaking a staging Cognito user and
+  // risking a real invite email — staging IS production), and (b) skips the very comparison
+  // the spec exists to make. Skip cleanly until the seed ticket lands (matches the deferral
+  // documented above + in the file header).
+  test.skip(
+    !process.env.E2E_SPEAKER_EVENT_CODE,
+    'E2E_SPEAKER_EVENT_CODE not set — the primed ACCEPTED speaker fixture for the cross-auth ' +
+      'byte-identity diff is not provisioned in this environment (local dev / CI). Skipping ' +
+      'rather than running the flaky, Cognito-polluting organizer-only path.'
+  );
 
   // Playwright requires the first test arg to use object-destructuring even when no
   // fixtures are needed — `async (_, testInfo)` throws at collection time and poisons the

@@ -36,7 +36,7 @@ async function openFirstArchivedEvent(page: Page) {
   await expect(page.getByTestId('event-hero-title')).toBeVisible({ timeout: 15_000 });
 }
 
-test.describe('Archive Event Detail', { tag: '@gate' }, () => {
+test.describe('Archive Event Detail', { tag: ['@gate', '@smoke'] }, () => {
   test('navigates from a card to the event detail page', async ({ page }) => {
     await openFirstArchivedEvent(page);
     await expect(page.getByTestId('back-to-archive')).toBeVisible();

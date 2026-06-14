@@ -13,6 +13,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { forceEnglishUserProfile } from '../helpers/mock-user-profile';
 import { BASE_URL } from '../../playwright.config';
 
 const ORGANIZER_TOPICS_URL = `${BASE_URL}/organizer/partner-topics`;
@@ -33,17 +34,7 @@ const TOPICS = [
 
 test.describe('Organizer Partner-Topic Status Panel @gate', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'org',
-          email: 'org@example.com',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    await forceEnglishUserProfile(page);
 
     await page.route('**/api/v1/partners/topics', async (route) => {
       if (route.request().method() === 'GET') {
