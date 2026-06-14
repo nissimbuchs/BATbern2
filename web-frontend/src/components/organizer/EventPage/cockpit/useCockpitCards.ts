@@ -47,9 +47,16 @@ export function useCockpitCards(
 
   const ctx: CockpitCardCtx = useMemo(() => {
     const e = (event ?? {}) as Record<string, unknown> & {
-      sessions?: { startTime?: string | null }[];
+      sessions?: { startTime?: string | null; sessionType?: string | null }[];
     };
     const sessions = e.sessions ?? [];
+    // Structural sessions (moderation/break/lunch) are not speaker slots — exclude them
+    // so the "needs a slot" card counts only speaker sessions still missing a start time
+    // (mirrors the Agenda metric tile + DragDropSlotAssignment's STRUCTURAL_TYPES).
+    const STRUCTURAL_SESSION_TYPES = ['moderation', 'break', 'lunch'];
+    const speakerSessions = sessions.filter(
+      (s) => !STRUCTURAL_SESSION_TYPES.includes((s.sessionType ?? '').toLowerCase())
+    );
     const num = (v: unknown) => (typeof v === 'number' ? v : 0);
     return {
       eventCode: eventCode ?? '',
@@ -57,7 +64,7 @@ export function useCockpitCards(
       topicCode: (e.topicCode as string | null | undefined) ?? null,
       minSlots: eventTypeQuery.data?.minSlots ?? 0,
       confirmedSpeakersCount: num(e.confirmedSpeakersCount),
-      sessionsNeedingSlot: sessions.filter((s) => !s.startTime).length,
+      sessionsNeedingSlot: speakerSessions.filter((s) => !s.startTime).length,
       sessionsWithMaterialsCount: num(e.sessionsWithMaterialsCount),
       totalSessionsCount: num(e.totalSessionsCount) || sessions.length,
       awaitingReviewCount:

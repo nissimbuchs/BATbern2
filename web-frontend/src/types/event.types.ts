@@ -428,7 +428,8 @@ export interface SessionTimingRequest {
     | 'panel_discussion'
     | 'networking'
     | 'break'
-    | 'lunch';
+    | 'lunch'
+    | 'moderation';
   changeReason?:
     | 'initial_assignment'
     | 'drag_drop_reassignment'

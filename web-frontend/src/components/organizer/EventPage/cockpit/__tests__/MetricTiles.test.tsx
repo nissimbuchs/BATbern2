@@ -16,7 +16,13 @@ const event = {
   maxSpeakerSlots: 8,
   sessionsWithMaterialsCount: 3,
   totalSessionsCount: 6,
-  sessions: [{ startTime: '2026-06-13T09:00:00Z' }, { startTime: null }, { startTime: null }],
+  // 2 speaker sessions (1 slotted) + a moderation session that HAS a startTime but must
+  // be excluded from the agenda count (it's a structural slot, not a speaker slot).
+  sessions: [
+    { startTime: '2026-06-13T09:00:00Z', sessionType: 'presentation' },
+    { startTime: null, sessionType: 'presentation' },
+    { startTime: '2026-06-13T08:55:00Z', sessionType: 'moderation' },
+  ],
 } as never;
 
 const renderTiles = (onNavigate = vi.fn()) => {
@@ -38,9 +44,9 @@ describe('MetricTiles', () => {
     expect(screen.getByText('128 / 180')).toBeInTheDocument(); // registrations
     expect(screen.getByText('4 / 8')).toBeInTheDocument(); // speakers
     expect(screen.getByText('3 / 6')).toBeInTheDocument(); // materials (metric-based)
-    // agenda: 1 of the 3 hydrated sessions has a startTime → numerator & denominator
-    // both come from the sessions array (internally consistent), so "1 / 3".
-    expect(screen.getByText('1 / 3')).toBeInTheDocument();
+    // agenda: of the 2 SPEAKER sessions, 1 is slotted (has a startTime); the moderation
+    // session is excluded even though it has a startTime. Denominator = maxSpeakerSlots (8).
+    expect(screen.getByText('1 / 8')).toBeInTheDocument();
   });
 
   it('deep-links Speakers → pool sub-view', () => {

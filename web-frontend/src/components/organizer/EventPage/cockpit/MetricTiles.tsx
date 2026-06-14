@@ -46,12 +46,21 @@ export const MetricTiles: React.FC<MetricTilesProps> = ({ event, onNavigate }) =
   const materials = num(e.sessionsWithMaterialsCount);
   const totalSessions =
     num(e.totalSessionsCount) || ((e.sessions as unknown[] | undefined)?.length ?? 0);
-  // Agenda fraction sources BOTH numerator and denominator from the sessions array
-  // so they are always internally consistent (slotted ≤ total); fall back to the
-  // metric count only when sessions aren't hydrated.
-  const sessionsArr = (e.sessions as { startTime?: string | null }[] | undefined) ?? [];
-  const sessionsSlotted = sessionsArr.filter((s) => !!s.startTime).length;
-  const agendaTotal = sessionsArr.length > 0 ? sessionsArr.length : totalSessions;
+  // Agenda tile = speaker sessions that have a start time, out of the event's max
+  // speaker slots. Structural sessions (moderation/break/lunch) are NOT speaker slots,
+  // so they must be excluded — counting them inflated the fraction (e.g. 8/8 for an
+  // event with 5 talks slotted + 2 moderation + 1 break). The structural set mirrors
+  // STRUCTURAL_TYPES in DragDropSlotAssignment (the timetable's non-SPEAKER_SLOT types).
+  const STRUCTURAL_SESSION_TYPES = ['moderation', 'break', 'lunch'];
+  const sessionsArr =
+    (e.sessions as { startTime?: string | null; sessionType?: string | null }[] | undefined) ?? [];
+  const speakerSessions = sessionsArr.filter(
+    (s) => !STRUCTURAL_SESSION_TYPES.includes((s.sessionType ?? '').toLowerCase())
+  );
+  const sessionsSlotted = speakerSessions.filter((s) => !!s.startTime).length;
+  // Denominator = max speaker slots (the agenda capacity); fall back to the count of
+  // speaker sessions, then the metric, when maxSpeakerSlots isn't hydrated.
+  const agendaTotal = maxSpeakerSlots || speakerSessions.length || totalSessions;
 
   const pctFilled =
     registrationCapacity && registrationCapacity > 0
