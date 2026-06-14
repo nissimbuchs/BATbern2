@@ -45,22 +45,22 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
         >
           <Tab
             value="newsletter"
-            label={`📰 ${t('eventPage.communications.audiences.newsletter', 'Newsletter subscribers')}`}
+            label={t('eventPage.communications.audiences.newsletter', 'Newsletter subscribers')}
             data-testid="comms-subtab-newsletter"
           />
           <Tab
             value="registrant-notices"
-            label={`🎟️ ${t('eventPage.communications.audiences.registrants', 'Event registrants')}`}
+            label={t('eventPage.communications.audiences.registrants', 'Event registrants')}
             data-testid="comms-subtab-registrant-notices"
           />
           <Tab
             value="speakers"
-            label={`🎤 ${t('eventPage.communications.audiences.speakers', 'Speakers')}`}
+            label={t('eventPage.communications.audiences.speakers', 'Speakers')}
             data-testid="comms-subtab-speakers"
           />
           <Tab
             value="venue"
-            label={`🏛️ ${t('eventPage.communications.audiences.venue', 'Venue & Caterer')}`}
+            label={t('eventPage.communications.audiences.venue', 'Venue & Caterer')}
             data-testid="comms-subtab-venue"
           />
         </Tabs>
