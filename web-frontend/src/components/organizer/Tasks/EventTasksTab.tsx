@@ -388,7 +388,10 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                         </Typography>
                         <Typography variant="caption">
                           {t('tasks.assignedTo')}:{' '}
-                          {task.assignedOrganizerUsername || t('tasks.unassigned')}
+                          {task.assignedOrganizerUsername
+                            ? (organizers.find((o) => o.id === task.assignedOrganizerUsername)
+                                ?.name ?? task.assignedOrganizerUsername)
+                            : t('tasks.unassigned')}
                         </Typography>
                         {task.notes && (
                           <Typography variant="caption" sx={{ fontStyle: 'italic' }}>

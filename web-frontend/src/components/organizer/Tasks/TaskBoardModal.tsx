@@ -54,6 +54,7 @@ import { format } from 'date-fns';
 import { de, enUS, type Locale } from 'date-fns/locale';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { CustomTaskModal } from './CustomTaskModal';
+import { useOrganizers } from '@/components/shared/OrganizerSelect';
 
 interface TaskBoardModalProps {
   open: boolean;
@@ -350,6 +351,9 @@ interface TaskColumnProps {
 }
 
 const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComplete, t }) => {
+  // Resolve assignee usernames → "First Last" display names (id === username), like the kanban.
+  const { organizers } = useOrganizers();
+
   if (tasks.length === 0) {
     return (
       <Box textAlign="center" py={4}>
@@ -402,7 +406,9 @@ const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComple
                 )}
                 {task.assignedOrganizerUsername && (
                   <Typography variant="caption" color="text.secondary">
-                    {t('tasks.assignedTo', 'Assigned to')}: {task.assignedOrganizerUsername}
+                    {t('tasks.assignedTo', 'Assigned to')}:{' '}
+                    {organizers.find((o) => o.id === task.assignedOrganizerUsername)?.name ??
+                      task.assignedOrganizerUsername}
                   </Typography>
                 )}
                 {task.triggerState && (
