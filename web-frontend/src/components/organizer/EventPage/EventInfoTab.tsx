@@ -214,40 +214,40 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
                 </Box>
               )}
 
-              {/* Top-right: AI-generate + replace */}
-              <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
-                {aiContentEnabled && (
-                  <Tooltip title={t('eventPage.details.aiGenerateImage', '✨ Generate (AI)')}>
-                    <IconButton
-                      size="small"
-                      sx={{
-                        bgcolor: 'background.paper',
-                        '&:hover': { bgcolor: 'background.paper' },
-                      }}
-                      onClick={() => setAiDrawerOpen(true)}
-                      data-testid="info-ai-theme"
-                    >
-                      <AutoAwesome fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                <Tooltip title={t('eventPage.details.replaceImage', 'Replace image')}>
-                  <span>
-                    <IconButton
-                      size="small"
-                      sx={{
-                        bgcolor: 'background.paper',
-                        '&:hover': { bgcolor: 'background.paper' },
-                      }}
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      data-testid="info-replace-theme"
-                    >
-                      <ReplaceIcon fontSize="small" />
-                    </IconButton>
-                  </span>
+              {/* Top-right: replace */}
+              <Tooltip title={t('eventPage.details.replaceImage', 'Replace image')}>
+                <span style={{ position: 'absolute', top: 8, right: 8 }}>
+                  <IconButton
+                    size="small"
+                    sx={{ bgcolor: 'background.paper', '&:hover': { bgcolor: 'background.paper' } }}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    data-testid="info-replace-theme"
+                  >
+                    <ReplaceIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+
+              {/* Bottom-left: AI-generate */}
+              {aiContentEnabled && (
+                <Tooltip title={t('eventPage.details.aiGenerateImage', '✨ Generate (AI)')}>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      position: 'absolute',
+                      bottom: 8,
+                      left: 8,
+                      bgcolor: 'background.paper',
+                      '&:hover': { bgcolor: 'background.paper' },
+                    }}
+                    onClick={() => setAiDrawerOpen(true)}
+                    data-testid="info-ai-theme"
+                  >
+                    <AutoAwesome fontSize="small" />
+                  </IconButton>
                 </Tooltip>
-              </Box>
+              )}
 
               {/* Bottom-right: delete badge */}
               {shownImage && (
