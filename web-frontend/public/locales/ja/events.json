@@ -111,7 +111,9 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "キャンセル待ちから繰り上げますか？",
+      "promoteConfirmMessage": "{{name}} をキャンセル待ちから繰り上げますか？確定済みに変更され、確認メールが送信されます。"
     },
     "participantTable": {
       "headers": {
@@ -155,7 +157,9 @@
       },
       "actions": {
         "retry": "再試行"
-      }
+      },
+      "showing": "{{total}}件中 {{from}}–{{to}}件を表示",
+      "showingEmpty": "0件中 0件を表示"
     },
     "settings": {
       "moderator": "イベントモデレーター",

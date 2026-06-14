@@ -73,6 +73,7 @@ describe('eventRegistrationService', () => {
         },
         status: 'CONFIRMED' as RegistrationStatus,
         registrationDate: '2024-01-15T10:30:00Z',
+        waitlistPosition: null,
       },
       {
         registrationCode: 'REG-002',
@@ -83,6 +84,7 @@ describe('eventRegistrationService', () => {
         email: 'jane.smith@example.com',
         status: 'REGISTERED' as RegistrationStatus,
         registrationDate: '2024-01-16T14:20:00Z',
+        waitlistPosition: null,
       },
     ];
 
@@ -112,6 +114,38 @@ describe('eventRegistrationService', () => {
       expect(result.data[0].firstName).toBe('John'); // Transformed from attendeeFirstName
       expect(result.data[0].lastName).toBe('Doe'); // Transformed from attendeeLastName
       expect(result.data[0].email).toBe('john.doe@example.com'); // Transformed from attendeeEmail
+    });
+
+    it('maps the backend waitlistPosition through to the frontend type (Epic 14 FR28)', async () => {
+      const backendResponse = {
+        data: [
+          {
+            registrationCode: 'WL-3',
+            eventCode,
+            attendeeUsername: 'wl.three',
+            attendeeFirstName: 'Wai',
+            attendeeLastName: 'Ting',
+            attendeeEmail: 'wl.three@example.com',
+            status: 'WAITLIST',
+            registrationDate: '2024-02-03T10:00:00Z',
+            waitlistPosition: 3,
+          },
+        ],
+        pagination: {
+          page: 1,
+          limit: 25,
+          totalItems: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
+      };
+
+      mockAxios.onGet(`/events/${eventCode}/registrations`).reply(200, backendResponse);
+
+      const result = await getEventRegistrations(eventCode);
+
+      expect(result.data[0].waitlistPosition).toBe(3);
     });
 
     it('should include pagination parameters in request', async () => {

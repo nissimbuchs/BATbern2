@@ -35,6 +35,12 @@ export interface EventParticipant {
   company?: ParticipantCompany;
   status: RegistrationStatus;
   registrationDate: string; // ISO 8601 format
+  /**
+   * 1-based position on the waitlist (Story 10.11 / Epic 14 FR28). Present only
+   * for WAITLIST registrations; the API already returns it. Additive + optional
+   * so the old www frontend that ignores it keeps working (NFR9/AR9).
+   */
+  waitlistPosition?: number | null;
 }
 
 /**

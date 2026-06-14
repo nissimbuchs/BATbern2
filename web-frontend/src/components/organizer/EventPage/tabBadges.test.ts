@@ -64,6 +64,20 @@ describe('computeTabBadges — Speakers count', () => {
   });
 });
 
+describe('computeTabBadges — Registrations count (Epic 14 FR24)', () => {
+  it('surfaces the active registration total passed in', () => {
+    expect(computeTabBadges({ registrationsCount: 140, now: NOW }).registrations).toBe(140);
+  });
+
+  it('is 0 when there are no registrations (no muted count shown)', () => {
+    expect(computeTabBadges({ registrationsCount: 0, now: NOW }).registrations).toBe(0);
+  });
+
+  it('defaults to 0 when not provided', () => {
+    expect(computeTabBadges({ now: NOW }).registrations).toBe(0);
+  });
+});
+
 describe('computeTabBadges — Publishing ready', () => {
   it('is true when the next unpublished phase is valid', () => {
     const badges = computeTabBadges({

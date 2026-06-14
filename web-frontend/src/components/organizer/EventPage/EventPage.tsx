@@ -265,9 +265,10 @@ export const EventPage: React.FC = () => {
   };
 
   // Per-tab attention badge content (FR6). Returns null when nothing is waiting.
+  // The 'muted' variant (FR24) is a subtle inline count, NOT a heavy attention badge.
   const tabBadge = (
     id: TabId
-  ): { content: React.ReactNode; variant: 'standard' | 'dot' } | null => {
+  ): { content: React.ReactNode; variant: 'standard' | 'dot' | 'muted' } | null => {
     if (id === 'speakers' && badges.speakers > 0) {
       return { content: badges.speakers, variant: 'standard' };
     }
@@ -277,6 +278,9 @@ export const EventPage: React.FC = () => {
     if (id === 'communications' && badges.commsOverdue) {
       return { content: '', variant: 'dot' };
     }
+    if (id === 'registrations' && badges.registrations > 0) {
+      return { content: badges.registrations, variant: 'muted' };
+    }
     return null;
   };
 
@@ -285,6 +289,21 @@ export const EventPage: React.FC = () => {
     const label = t(labelKey, id);
     const badge = locked ? null : tabBadge(id);
     if (!badge) return label;
+    // Subtle muted count (Registrations, FR24) — appended inline, low emphasis.
+    if (badge.variant === 'muted') {
+      return (
+        <span>
+          {label}{' '}
+          <Box
+            component="span"
+            sx={{ color: 'text.secondary', fontWeight: 400, ml: 0.25 }}
+            data-testid={`event-tab-badge-${id}`}
+          >
+            {badge.content}
+          </Box>
+        </span>
+      );
+    }
     return (
       <Badge
         color={badge.variant === 'dot' ? 'error' : 'primary'}

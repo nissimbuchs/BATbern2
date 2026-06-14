@@ -115,7 +115,9 @@
       "waitlistTableCompany": "Unternehmen",
       "waitlistTableRegisteredOn": "Angemeldet am",
       "waitlistTableActions": "Aktionen",
-      "statusCancelled": "Abgemeldet"
+      "statusCancelled": "Abgemeldet",
+      "promoteConfirmTitle": "Von der Warteliste nachrücken?",
+      "promoteConfirmMessage": "{{name}} von der Warteliste nachrücken lassen? Die Person wird bestätigt und erhält eine Bestätigungs-E-Mail."
     },
     "settings": {
       "moderator": "Veranstaltungsmoderation",
@@ -212,7 +214,9 @@
       },
       "actions": {
         "retry": "Erneut versuchen"
-      }
+      },
+      "showing": "Zeige {{from}}–{{to}} von {{total}}",
+      "showingEmpty": "Zeige 0 von 0"
     },
     "speakers": {
       "progress": "Fortschritt",

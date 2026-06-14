@@ -25,6 +25,7 @@ interface BackendRegistrationItem {
   attendeeLastName: string; // Backend uses attendeeLastName
   attendeeEmail: string; // Backend uses attendeeEmail
   attendeeCompany?: string; // Company ID (optional)
+  waitlistPosition?: number | null; // Story 10.11 — 1-based; null unless status === WAITLIST
 }
 
 interface BackendPaginatedResponse {
@@ -54,6 +55,9 @@ const transformRegistration = (backendReg: BackendRegistrationItem): EventPartic
     : undefined,
   status: backendReg.status as EventParticipant['status'],
   registrationDate: backendReg.registrationDate,
+  // Epic 14 FR28: carry the authoritative 1-based queue position so the
+  // Waitlisted-filter view numbers rows by the backend, not by page index.
+  waitlistPosition: backendReg.waitlistPosition ?? null,
 });
 
 /**

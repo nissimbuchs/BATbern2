@@ -30,6 +30,7 @@ import {
   Typography,
   TableSortLabel,
   Skeleton,
+  Button,
 } from '@mui/material';
 import { People as PeopleIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +43,17 @@ interface EventParticipantTableProps {
   participants: EventParticipant[];
   isLoading: boolean;
   onRowClick?: (participant: EventParticipant) => void;
+  /**
+   * Epic 14 FR28: waitlist mode. When true the list is the "Waitlisted" filter —
+   * rows are queue-ordered (#1, #2 …) and an inline Promote action is shown.
+   */
+  waitlistMode?: boolean;
+  /** Offset of the first row on the current page (for the position fallback). */
+  pageOffset?: number;
+  /** Opens the promote-confirm flow for a waitlisted row (owned by the parent). */
+  onPromote?: (participant: EventParticipant) => void;
+  /** registrationCode currently being promoted, for the button's pending state. */
+  promotingCode?: string | null;
 }
 
 type SortField = 'name' | 'email' | 'company' | 'status' | 'registrationDate';
@@ -51,6 +63,10 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
   participants,
   isLoading,
   onRowClick,
+  waitlistMode = false,
+  pageOffset = 0,
+  onPromote,
+  promotingCode = null,
 }) => {
   const { t } = useTranslation('events');
   const { isMobile } = useBreakpoints();
@@ -100,6 +116,22 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
     const comparison = aValue.toString().localeCompare(bValue.toString());
     return sortDirection === 'asc' ? comparison : -comparison;
   });
+
+  // In waitlist mode the list is a queue: order by the backend waitlistPosition
+  // (1-based), falling back to registration date, and ignore the column sort.
+  const orderedParticipants = waitlistMode
+    ? [...participants].sort((a, b) => {
+        const pa = a.waitlistPosition ?? Number.MAX_SAFE_INTEGER;
+        const pb = b.waitlistPosition ?? Number.MAX_SAFE_INTEGER;
+        if (pa !== pb) {
+          return pa - pb;
+        }
+        return new Date(a.registrationDate).getTime() - new Date(b.registrationDate).getTime();
+      })
+    : sortedParticipants;
+
+  const positionOf = (participant: EventParticipant, index: number): number =>
+    participant.waitlistPosition ?? pageOffset + index + 1;
 
   const getStatusLabel = (status: RegistrationStatus): string => {
     const key: Record<RegistrationStatus, string> = {
@@ -204,7 +236,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
   if (isMobile) {
     return (
       <Box data-testid="participant-cards">
-        {sortedParticipants.map((participant) => (
+        {orderedParticipants.map((participant, index) => (
           <Card
             key={participant.registrationCode}
             sx={{ mb: 2, cursor: onRowClick ? 'pointer' : 'default' }}
@@ -214,6 +246,14 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
             <CardContent>
               <Stack spacing={1}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {waitlistMode && (
+                    <Chip
+                      label={`#${positionOf(participant, index)}`}
+                      size="small"
+                      color="warning"
+                      data-testid={`waitlist-position-${participant.registrationCode}`}
+                    />
+                  )}
                   <Avatar sx={{ width: 40, height: 40 }}>
                     {participant.firstName?.[0] ?? ''}
                     {participant.lastName?.[0] ?? ''}
@@ -242,6 +282,18 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
               </Stack>
             </CardContent>
             <CardActions onClick={(e) => e.stopPropagation()}>
+              {waitlistMode && onPromote && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  disabled={promotingCode === participant.registrationCode}
+                  onClick={() => onPromote(participant)}
+                  data-testid={`waitlist-promote-${participant.registrationCode}`}
+                >
+                  {t('eventPage.participantsTab.waitlistPromote')}
+                </Button>
+              )}
               <RegistrationActionsMenu participant={participant} />
             </CardActions>
           </Card>
@@ -255,6 +307,11 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
       <Table>
         <TableHead>
           <TableRow>
+            {waitlistMode && (
+              <TableCell sx={{ width: 56 }}>
+                {t('eventPage.participantsTab.waitlistTablePosition')}
+              </TableCell>
+            )}
             <TableCell>
               <TableSortLabel
                 active={sortField === 'name'}
@@ -304,13 +361,18 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {sortedParticipants.map((participant) => (
+          {orderedParticipants.map((participant, index) => (
             <TableRow
               key={participant.registrationCode}
               hover
               onClick={() => onRowClick?.(participant)}
               sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
             >
+              {waitlistMode && (
+                <TableCell data-testid={`waitlist-position-${participant.registrationCode}`}>
+                  #{positionOf(participant, index)}
+                </TableCell>
+              )}
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Avatar sx={{ width: 32, height: 32 }}>
@@ -343,7 +405,21 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 </Typography>
               </TableCell>
               <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                <RegistrationActionsMenu participant={participant} />
+                <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                  {waitlistMode && onPromote && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="success"
+                      disabled={promotingCode === participant.registrationCode}
+                      onClick={() => onPromote(participant)}
+                      data-testid={`waitlist-promote-${participant.registrationCode}`}
+                    >
+                      {t('eventPage.participantsTab.waitlistPromote')}
+                    </Button>
+                  )}
+                  <RegistrationActionsMenu participant={participant} />
+                </Stack>
               </TableCell>
             </TableRow>
           ))}

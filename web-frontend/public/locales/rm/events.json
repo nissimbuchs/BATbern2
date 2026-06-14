@@ -111,7 +111,9 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Promover da la glista d'spetga?",
+      "promoteConfirmMessage": "Promover {{name}} da la glista d'spetga? La persuna vegn confermada e survegn ina e-mail da conferma."
     },
     "participantTable": {
       "headers": {
@@ -155,7 +157,9 @@
       },
       "actions": {
         "retry": "Emprova puspè"
-      }
+      },
+      "showing": "Mussà {{from}}–{{to}} da {{total}}",
+      "showingEmpty": "Mussà 0 da 0"
     },
     "settings": {
       "moderator": "Moderatur dal eveniment",

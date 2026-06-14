@@ -111,7 +111,9 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Promuovere dalla lista d'attesa?",
+      "promoteConfirmMessage": "Promuovere {{name}} dalla lista d'attesa? La persona verrà confermata e riceverà un'e-mail di conferma."
     },
     "participantTable": {
       "headers": {
@@ -155,7 +157,9 @@
       },
       "actions": {
         "retry": "Riprova"
-      }
+      },
+      "showing": "Visualizzati {{from}}–{{to}} di {{total}}",
+      "showingEmpty": "Visualizzati 0 di 0"
     },
     "settings": {
       "moderator": "Moderatore dell'evento",

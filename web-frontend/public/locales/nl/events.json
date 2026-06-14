@@ -111,7 +111,9 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Promoveren vanaf wachtlijst?",
+      "promoteConfirmMessage": "{{name}} promoveren vanaf de wachtlijst? De persoon wordt bevestigd en ontvangt een bevestigingsmail."
     },
     "participantTable": {
       "headers": {
@@ -155,7 +157,9 @@
       },
       "actions": {
         "retry": "Opnieuw proberen"
-      }
+      },
+      "showing": "{{from}}–{{to}} van {{total}} weergegeven",
+      "showingEmpty": "0 van 0 weergegeven"
     },
     "settings": {
       "moderator": "Evenementmoderator",

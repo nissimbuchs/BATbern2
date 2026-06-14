@@ -32,6 +32,10 @@ export function useTabBadges(
   const sessions = (event as { sessions?: { startTime?: string | null }[] } | undefined)?.sessions;
   const pendingMaterialsCount = (event as { pendingMaterialsCount?: number } | undefined)
     ?.pendingMaterialsCount;
+  // Active registration total for the muted Registrations count (FR24).
+  const confirmedCount = (event as { confirmedCount?: number } | undefined)?.confirmedCount ?? 0;
+  const waitlistCount = (event as { waitlistCount?: number } | undefined)?.waitlistCount ?? 0;
+  const registrationsCount = confirmedCount + waitlistCount;
 
   return useMemo(
     () =>
@@ -40,8 +44,9 @@ export function useTabBadges(
         pendingMaterialsCount,
         tasks,
         publishingStatus,
+        registrationsCount,
         now: Date.now(),
       }),
-    [sessions, pendingMaterialsCount, tasks, publishingStatus]
+    [sessions, pendingMaterialsCount, tasks, publishingStatus, registrationsCount]
   );
 }

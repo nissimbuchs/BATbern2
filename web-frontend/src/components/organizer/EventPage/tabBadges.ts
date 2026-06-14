@@ -16,6 +16,12 @@ export interface TabBadges {
   publishingReady: boolean;
   /** Communications: at least one comms task is overdue (renders as a red dot). */
   commsOverdue: boolean;
+  /**
+   * Registrations: active registration total (confirmed + waitlist). Rendered as a
+   * SUBTLE MUTED count on the tab label, not a heavy attention badge (Epic 14 FR24).
+   * 0 = no count shown.
+   */
+  registrations: number;
 }
 
 interface SessionLike {
@@ -28,6 +34,8 @@ export interface ComputeTabBadgesInput {
   pendingMaterialsCount?: number;
   tasks?: EventTaskResponse[];
   publishingStatus?: PublishingStatusResponse;
+  /** Active registration total (confirmed + waitlist) for the muted Registrations count. */
+  registrationsCount?: number;
   /** Epoch ms used for overdue comparison (injected for testability). */
   now: number;
 }
@@ -62,7 +70,14 @@ function isOverdue(task: EventTaskResponse, now: number): boolean {
 }
 
 export function computeTabBadges(input: ComputeTabBadgesInput): TabBadges {
-  const { sessions = [], pendingMaterialsCount = 0, tasks = [], publishingStatus, now } = input;
+  const {
+    sessions = [],
+    pendingMaterialsCount = 0,
+    tasks = [],
+    publishingStatus,
+    registrationsCount = 0,
+    now,
+  } = input;
 
   const sessionsNeedingSlot = sessions.filter((s) => !s.startTime).length;
   const speakers = sessionsNeedingSlot + Math.max(0, pendingMaterialsCount);
@@ -75,5 +90,6 @@ export function computeTabBadges(input: ComputeTabBadgesInput): TabBadges {
     speakers,
     publishingReady: isPublishingReady(publishingStatus),
     commsOverdue,
+    registrations: Math.max(0, registrationsCount),
   };
 }

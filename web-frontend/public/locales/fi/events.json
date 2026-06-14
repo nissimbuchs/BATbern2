@@ -111,7 +111,9 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Siirretäänkö jonosta?",
+      "promoteConfirmMessage": "Siirretäänkö {{name}} jonosta? Hänet vahvistetaan ja hänelle lähetetään vahvistussähköposti."
     },
     "participantTable": {
       "headers": {
@@ -155,7 +157,9 @@
       },
       "actions": {
         "retry": "Yritä uudelleen"
-      }
+      },
+      "showing": "Näytetään {{from}}–{{to}} / {{total}}",
+      "showingEmpty": "Näytetään 0 / 0"
     },
     "settings": {
       "moderator": "Tapahtuman moderaattori",

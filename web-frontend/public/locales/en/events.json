@@ -115,7 +115,9 @@
       "waitlistTableCompany": "Company",
       "waitlistTableRegisteredOn": "Registered On",
       "waitlistTableActions": "Actions",
-      "statusCancelled": "Cancelled"
+      "statusCancelled": "Cancelled",
+      "promoteConfirmTitle": "Promote from waitlist?",
+      "promoteConfirmMessage": "Promote {{name}} from the waitlist? They will be moved to confirmed and sent a confirmation email."
     },
     "settings": {
       "moderator": "Event Moderator",
@@ -212,7 +214,9 @@
       },
       "actions": {
         "retry": "Retry"
-      }
+      },
+      "showing": "Showing {{from}}–{{to}} of {{total}}",
+      "showingEmpty": "Showing 0 of 0"
     },
     "speakers": {
       "progress": "Progress",

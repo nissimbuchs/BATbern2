@@ -111,7 +111,9 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Vo dr Wartlischte nahrucke?",
+      "promoteConfirmMessage": "{{name}} vo dr Wartlischte nahrucke la? D Persoon wird bestätigt u überchunnt e Bestätigungs-E-Mail."
     },
     "participantTable": {
       "headers": {
@@ -160,7 +162,9 @@
       },
       "actions": {
         "retry": "Nomol versuche"
-      }
+      },
+      "showing": "Zeigt {{from}}–{{to}} vo {{total}}",
+      "showingEmpty": "Zeigt 0 vo 0"
     },
     "settings": {
       "moderator": "Veranstautigsmoderator",
