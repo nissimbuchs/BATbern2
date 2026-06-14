@@ -53,15 +53,17 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
     // Verify progress bar is displayed
     await expect(page.locator('[data-testid="workflow-progress-bar"]').first()).toBeVisible();
 
-    // Verify workflow step indicator (e.g., "Step 7/9" - 9 workflow states)
+    // Verify workflow step indicator (e.g., "Step 7/8" - WORKFLOW_STATE_ORDER has 8 states:
+    // CREATED→TOPIC_SELECTION→SPEAKER_IDENTIFICATION→SLOT_ASSIGNMENT→AGENDA_PUBLISHED→
+    // EVENT_LIVE→EVENT_COMPLETED→ARCHIVED). Step count is data-driven from that constant.
     await expect(page.locator('[data-testid="workflow-step-indicator"]').first()).toBeVisible();
     await expect(page.locator('[data-testid="workflow-step-indicator"]').first()).toContainText(
-      /Step \d+\/9|Schritt \d+\/9/
+      /Step \d+\/8|Schritt \d+\/8/
     );
   });
 
   test('should_displayProgressPercentage_when_workflowActive', async ({ page }) => {
-    // AC1: Show workflow step (Step 7/9, Step 2/9) for each event - 9 workflow states
+    // AC1: Show workflow step (Step 7/8, Step 2/8) for each event - 8 workflow states
 
     const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
     await firstEventCard.waitFor({ state: 'visible' });

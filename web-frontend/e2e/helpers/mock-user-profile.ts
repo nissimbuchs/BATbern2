@@ -22,10 +22,14 @@
 
 import type { Page } from '@playwright/test';
 
-export async function forceEnglishUserProfile(page: Page): Promise<void> {
+export async function forceUserProfileLanguage(
+  page: Page,
+  language: 'en' | 'de' | 'fr' | 'it' = 'en'
+): Promise<void> {
   // Match the bare profile endpoint with or without a query string, but NOT its
   // sub-resources (`/users/me/additional-emails`, `/users/me/picture`, …): `me` must be
-  // followed by end-of-URL or a `?`.
+  // followed by end-of-URL or a `?`. Playwright runs the most-recently-registered matching
+  // route first, so a per-test override registered after a beforeEach default wins.
   await page.route(/\/api\/v1\/users\/me(\?|$)/, async (route) => {
     if (route.request().method() !== 'GET') {
       await route.continue();
@@ -34,7 +38,7 @@ export async function forceEnglishUserProfile(page: Page): Promise<void> {
     try {
       const response = await route.fetch();
       const body = await response.json();
-      body.preferences = { ...(body.preferences ?? {}), language: 'en' };
+      body.preferences = { ...(body.preferences ?? {}), language };
       await route.fulfill({ response, json: body });
     } catch {
       // Fail-open: if the real call can't be replayed, let it through unmodified rather
@@ -42,4 +46,9 @@ export async function forceEnglishUserProfile(page: Page): Promise<void> {
       await route.continue();
     }
   });
+}
+
+/** Convenience wrapper: pin the authenticated user's UI language to English. */
+export async function forceEnglishUserProfile(page: Page): Promise<void> {
+  await forceUserProfileLanguage(page, 'en');
 }
