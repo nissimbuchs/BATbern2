@@ -327,6 +327,22 @@ describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
     expect(screen.queryByTestId(`needs-slot-link-${speaker.id}`)).not.toBeInTheDocument();
   });
 
+  it('should_showSlotTime_forNonConfirmedSpeaker_when_sessionHasStartTime', () => {
+    // A READY speaker can be slotted from the Agenda — the time must show on the card
+    // even though they are not yet QUALITY_REVIEWED.
+    const session = {
+      id: 'sess-rd',
+      title: 'Ready talk',
+      startTime: '2026-06-01T09:15:00Z',
+      speakers: [],
+    } as never;
+    const speaker = makeSpeaker('READY', { id: 's-ready-slot', sessionId: 'sess-rd' });
+    renderLanes([speaker], { sessions: [session], maxSlots: 8 });
+    expect(screen.getByTestId(`slot-assigned-${speaker.id}`)).toBeInTheDocument();
+    // No "needs a slot" nudge for a non-confirmed speaker.
+    expect(screen.queryByTestId(`needs-slot-link-${speaker.id}`)).not.toBeInTheDocument();
+  });
+
   // FR18 — collapsible Declined strip.
   it('should_renderDeclinedStrip_collapsedByDefault', () => {
     const declined = makeSpeaker('DECLINED', { id: 's-dec' });

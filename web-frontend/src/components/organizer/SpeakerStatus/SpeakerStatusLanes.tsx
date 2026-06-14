@@ -876,10 +876,12 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     ? organizers.find((o) => o.id === speaker.assignedOrganizerId)
     : null;
 
-  // FR17 — Confirmed-column slot tie-in. QUALITY_REVIEWED with no slot → "⚠ Needs a slot →"
-  // (triggers the existing onAssignSessionSlot); slotted → ✓ + time.
+  // Slot tie-in: the source of truth for "slotted" is the session's `startTime` — a
+  // speaker can be slotted from the Agenda as soon as they reach READY (they have a
+  // session from promotion onward). So the assigned time is shown on the card for ANY
+  // status once `startTime` is set. For a confirmed speaker still without a time, the
+  // card nudges to assign one (FR17, "⚠ Needs a slot →" → onAssignSessionSlot).
   const isQualityReviewed = speaker.status === 'QUALITY_REVIEWED';
-  const hasSlot = speaker.isSlotAssigned === true || speaker.sessionId != null;
   const slotTimeLabel = session?.startTime
     ? new Date(session.startTime).toLocaleTimeString(i18n.language, {
         hour: '2-digit',
@@ -1109,22 +1111,21 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
           </Box>
         )}
 
-        {/* FR17 — Confirmed-column slot tie-in. */}
-        {isQualityReviewed && !isDragging && (
+        {/* Slot tie-in — show the assigned start time as soon as the session has one
+            (any status); a confirmed speaker still missing a time is nudged to assign it. */}
+        {!isDragging && (slotTimeLabel != null || isQualityReviewed) && (
           <Box
             sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}
             data-testid={`slot-tie-in-${speaker.id}`}
           >
-            {hasSlot ? (
+            {slotTimeLabel != null ? (
               <Box
                 sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}
                 data-testid={`slot-assigned-${speaker.id}`}
               >
                 <CheckCircleIcon fontSize="small" />
                 <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  {slotTimeLabel
-                    ? t('organizer:speakerCard.slotAssignedAt', { time: slotTimeLabel })
-                    : t('organizer:speakerCard.slotAssigned')}
+                  {t('organizer:speakerCard.slotAssignedAt', { time: slotTimeLabel })}
                 </Typography>
               </Box>
             ) : (
