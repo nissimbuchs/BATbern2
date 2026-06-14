@@ -20,7 +20,7 @@ import { test, expect } from '@playwright/test';
 
 const TOPIC_CHECKBOX = '[data-testid^="topic-checkbox-"]';
 
-test.describe('Archive Filtering', { tag: ['@gate', '@smoke'] }, () => {
+test.describe('Archive Filtering', { tag: '@gate' }, () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/archive');
     await expect(page.getByTestId('filter-sidebar')).toBeVisible();
