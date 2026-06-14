@@ -143,12 +143,9 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
         </Alert>
       )}
 
-      {/* Phase Publishing Buttons */}
-      <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
-        {t('publishing.controls.publishPhases')}
-      </Typography>
-
-      <Stack direction="row" spacing={2} sx={{ mb: 3 }} flexWrap="wrap" useFlexGap>
+      {/* Phase Publishing Buttons (the column title is provided by the parent
+          EventPublishingTab — "Publish next phase" — so no heading here). */}
+      <Stack direction="column" spacing={1} sx={{ mb: 3 }} alignItems="stretch">
         {(['topic', 'speakers', 'agenda'] as PublishingPhase[]).map((phase) => {
           const isPublished = isPhasePublished(phase);
           const canPublish = canPublishPhase(phase);
@@ -163,10 +160,11 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
               }
               arrow
             >
-              <span>
+              <span style={{ display: 'block', width: '100%' }}>
                 <Button
                   variant={isPublished ? 'outlined' : 'contained'}
                   color={isPublished ? 'success' : 'primary'}
+                  size="small"
                   onClick={() => handlePublish(phase)}
                   disabled={isPublishing || isPublished || !canPublish}
                   startIcon={
@@ -182,7 +180,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
                   aria-label={t('publishing.controls.publishPhase', {
                     phase: getPhaseLabel(phase),
                   })}
-                  sx={{ minWidth: 160 }}
+                  sx={{ width: '100%', justifyContent: 'flex-start' }}
                 >
                   {isPublished
                     ? t('publishing.controls.published', { phase: getPhaseLabel(phase) })

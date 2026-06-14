@@ -708,6 +708,11 @@
       "speakers": "Speakers",
       "agenda": "Agenda",
       "updates": "Updates"
+    },
+    "sections": {
+      "validation": "Validation",
+      "phases": "Publishing phase",
+      "publishNext": "Publish next phase"
     }
   },
   "notifications": {

@@ -686,6 +686,11 @@
       "speakers": "Puhujat",
       "agenda": "Ohjelma",
       "updates": "Päivitykset"
+    },
+    "sections": {
+      "validation": "Validointi",
+      "phases": "Julkaisuvaihe",
+      "publishNext": "Julkaise seuraava vaihe"
     }
   },
   "notifications": {

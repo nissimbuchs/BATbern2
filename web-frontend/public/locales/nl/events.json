@@ -686,6 +686,11 @@
       "speakers": "Sprekers",
       "agenda": "Agenda",
       "updates": "Updates"
+    },
+    "sections": {
+      "validation": "Validatie",
+      "phases": "Publicatiefase",
+      "publishNext": "Volgende fase publiceren"
     }
   },
   "notifications": {

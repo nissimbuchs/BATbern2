@@ -686,6 +686,11 @@
       "speakers": "Conférenciers",
       "agenda": "Programme",
       "updates": "Mises à jour"
+    },
+    "sections": {
+      "validation": "Validation",
+      "phases": "Phase de publication",
+      "publishNext": "Publier la phase suivante"
     }
   },
   "notifications": {

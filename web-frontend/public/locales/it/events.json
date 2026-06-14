@@ -686,6 +686,11 @@
       "speakers": "Relatori",
       "agenda": "Programma",
       "updates": "Aggiornamenti"
+    },
+    "sections": {
+      "validation": "Validazione",
+      "phases": "Fase di pubblicazione",
+      "publishNext": "Pubblica la fase successiva"
     }
   },
   "notifications": {

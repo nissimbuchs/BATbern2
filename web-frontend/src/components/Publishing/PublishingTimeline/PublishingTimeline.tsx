@@ -158,7 +158,7 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
         orientation="vertical"
         sx={{
           '& .MuiStepConnector-line': {
-            minHeight: '40px',
+            minHeight: '12px',
           },
         }}
       >

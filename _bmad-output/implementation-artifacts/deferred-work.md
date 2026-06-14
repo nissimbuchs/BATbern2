@@ -270,3 +270,6 @@ All four inherit the epic's cross-cutting DoD (NFR1/5/7/8/9) and the beta-first 
 
 ## Deferred from: spec-14-f-1-wrapup-tab (Epic 14 Story 14.F.1, 2026-06-14)
 - **Dead i18n keys after the sub-tab removal (LOW):** `eventPage.tabs.photos` and `eventPage.tabs.appreciation` (×10 locales) were the Wrap-up sub-tab labels; the stacked layout no longer uses them. Left in place (the children's own `photos.title`/`appreciation.title` headers are unaffected). Sweep with the Story 10.9 unused-key analyzer (`web-frontend/scripts/i18n/analyze-unused.py`) rather than a bespoke 10-locale edit.
+
+## Deferred from: spec-14-f-4-publishing-settings (Epic 14 Story 14.F.4, 2026-06-14)
+- **Settings "Cancel event" is a `console.log` stub** [`web-frontend/src/components/organizer/EventPage/EventSettingsTab.tsx` `handleCancelEvent`] — FR43 specifies "Cancel event (notifies registrants)", but the handler only logs. Pre-existing (not touched by 14.F.4, which was Publishing-layout-only). Wire it to the real cancel-event flow + registrant notification in a focused follow-up. [verify]

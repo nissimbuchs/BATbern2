@@ -686,6 +686,11 @@
       "speakers": "登壇者",
       "agenda": "プログラム",
       "updates": "更新情報"
+    },
+    "sections": {
+      "validation": "検証",
+      "phases": "公開フェーズ",
+      "publishNext": "次のフェーズを公開"
     }
   },
   "notifications": {

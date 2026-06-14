@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { Stack, Skeleton, Box } from '@mui/material';
+import { Stack, Skeleton, Box, Typography, Paper } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import type { Event, EventDetailUI, PublishingPhase } from '@/types/event.types';
 import { ValidationDashboard } from '@/components/Publishing/ValidationDashboard/ValidationDashboard';
 import { PublishingControls } from '@/components/Publishing/PublishingControls/PublishingControls';
@@ -21,6 +22,7 @@ interface EventPublishingTabProps {
 }
 
 export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, eventCode }) => {
+  const { t } = useTranslation('events');
   const { publishingStatus, isLoadingStatus, validationErrors } = usePublishing(eventCode);
   const { unassignedSessions } = useSlotAssignment(eventCode);
 
@@ -83,35 +85,72 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
 
   return (
     <Stack spacing={3}>
-      {/* Validation Dashboard - Shows content validation status */}
-      <Box data-testid="validation-dashboard-container">
-        <ValidationDashboard
-          eventCode={eventCode}
-          phase={currentPhase}
-          validation={validationData}
-        />
+      {/* Top row: three even columns — Validation · Publishing phases · Publish
+          actions. Held at three columns (minmax(0,1fr)) even when the viewport
+          narrows, so the publish buttons stay beside the phases rather than far
+          below them. */}
+      <Box
+        sx={{
+          display: 'grid',
+          // 40 / 40 / 20 — Validation and Phases get the room; the publish-button
+          // column stays narrow. Held even when the viewport narrows.
+          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr)',
+          gap: 3,
+          alignItems: 'stretch',
+        }}
+      >
+        {/* Validation Dashboard - Shows content validation status */}
+        <Box
+          data-testid="validation-dashboard-container"
+          sx={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <Typography variant="subtitle2" gutterBottom>
+            {t('publishing.sections.validation', 'Validation')}
+          </Typography>
+          <ValidationDashboard
+            eventCode={eventCode}
+            phase={currentPhase}
+            validation={validationData}
+          />
+        </Box>
+
+        {/* Publishing Timeline - Visual timeline of phases */}
+        <Box
+          data-testid="publishing-timeline-container"
+          sx={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <Typography variant="subtitle2" gutterBottom>
+            {t('publishing.sections.phases', 'Publishing phase')}
+          </Typography>
+          <Paper sx={{ p: 2, flexGrow: 1 }}>
+            <PublishingTimeline
+              eventCode={eventCode}
+              currentPhase={currentPhase}
+              publishedPhases={publishedPhases}
+              eventDate={eventDate}
+            />
+          </Paper>
+        </Box>
+
+        {/* Publishing Controls - phase publish buttons, stacked vertically */}
+        <Box
+          data-testid="publishing-controls-container"
+          sx={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <Typography variant="subtitle2" gutterBottom>
+            {t('publishing.sections.publishNext', 'Publish next phase')}
+          </Typography>
+          <Paper sx={{ p: 2, flexGrow: 1 }}>
+            <PublishingControls
+              eventCode={eventCode}
+              currentPhase={currentPhase}
+              validationErrors={validationErrors}
+            />
+          </Paper>
+        </Box>
       </Box>
 
-      {/* Publishing Controls - Phase publishing buttons */}
-      <Box data-testid="publishing-controls-container">
-        <PublishingControls
-          eventCode={eventCode}
-          currentPhase={currentPhase}
-          validationErrors={validationErrors}
-        />
-      </Box>
-
-      {/* Publishing Timeline - Visual timeline of phases */}
-      <Box data-testid="publishing-timeline-container">
-        <PublishingTimeline
-          eventCode={eventCode}
-          currentPhase={currentPhase}
-          publishedPhases={publishedPhases}
-          eventDate={eventDate}
-        />
-      </Box>
-
-      {/* Live Preview - Preview published content */}
+      {/* Live Preview - full width below the three columns */}
       <Box data-testid="live-preview-container">
         <LivePreview eventCode={eventCode} phase={currentPhase} />
       </Box>

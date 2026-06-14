@@ -691,6 +691,11 @@
       "speakers": "Referente",
       "agenda": "Agenda",
       "updates": "Aktualisieriige"
+    },
+    "sections": {
+      "validation": "Validierig",
+      "phases": "Veröffentlechigsphase",
+      "publishNext": "Nächschti Phase veröffentleche"
     }
   },
   "notifications": {

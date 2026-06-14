@@ -686,6 +686,11 @@
       "speakers": "Referents",
       "agenda": "Agenda",
       "updates": "Actualisaziuns"
+    },
+    "sections": {
+      "validation": "Validaziun",
+      "phases": "Fasa da publicaziun",
+      "publishNext": "Publitgar la proxima fasa"
     }
   },
   "notifications": {
