@@ -44,6 +44,12 @@ import type { Session } from '@/types/event.types';
 
 export interface DragDropSlotAssignmentProps {
   eventCode: string;
+  /**
+   * 14.C.5: optional speaker (username) to focus on arrival. When set, the
+   * matching unassigned session in the tray is highlighted and scrolled into
+   * view. Best-effort — silently ignored when no unassigned session matches.
+   */
+  focusSpeakerId?: string;
 }
 
 // Story 5.7: Single conference room (Main Hall)
@@ -88,7 +94,10 @@ const timetableTypeToStructural = (type: TimetableSlot['type']): StructuralType 
   return null;
 };
 
-export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ eventCode }) => {
+export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
+  eventCode,
+  focusSpeakerId,
+}) => {
   const { t } = useTranslation('events');
   const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
@@ -154,6 +163,16 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         return unassignedSessions;
     }
   }, [speakerFilter, event?.sessions, assignedSessions, unassignedSessions]);
+
+  // 14.C.5: resolve the focus speaker (username) to a session in the current
+  // tray so the list can highlight + scroll it. Best-effort: null when no match.
+  const focusSessionSlug = useMemo(() => {
+    if (!focusSpeakerId) return null;
+    const match = filteredSessions.find((s) =>
+      s.speakers?.some((sp) => sp.username === focusSpeakerId)
+    );
+    return match?.sessionSlug ?? null;
+  }, [focusSpeakerId, filteredSessions]);
 
   // TIME_SLOTS and structural slot lookup are now derived from the backend timetable.
   // This guarantees the grid displays exactly the same positions as the backend algorithm.
@@ -368,7 +387,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
   return (
     <Box
       sx={{
-        height: { md: '100vh' },
         display: 'flex',
         flexDirection: 'column',
         p: { xs: 1, md: 3 },
@@ -382,16 +400,96 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         </Box>
       )}
 
-      {/* Main Layout */}
+      {/* Top Action Bar — summary + bulk actions (14.C.5) */}
       {!isLoading && (
-        <Grid
-          container
-          spacing={3}
-          sx={{ flex: { md: 1 }, overflow: { xs: 'visible', md: 'hidden' } }}
+        <Paper
+          data-testid="slot-action-bar"
+          role="toolbar"
+          aria-label={t('slotAssignment.actionBar.label')}
+          sx={{
+            p: 2,
+            mb: 3,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'stretch', md: 'center' },
+            gap: 2,
+            flexWrap: 'wrap',
+          }}
         >
-          {/* Left Sidebar: Unassigned Speakers */}
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Paper sx={{ height: { md: '100%' }, overflow: { md: 'hidden' } }}>
+          {/* Session Summary */}
+          <Box
+            sx={{
+              display: 'flex',
+              gap: { xs: 1, md: 3 },
+              flexWrap: 'wrap',
+              flexGrow: 1,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {t('slotAssignment.quickActions.total', { count: totalSessions })}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('slotAssignment.quickActions.assigned', { count: assignedCount })}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('slotAssignment.quickActions.pending', { count: unassignedSessions.length })}
+            </Typography>
+          </Box>
+
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              startIcon={<CalendarMonth />}
+              onClick={() => {
+                setGenerateStructuralError(null);
+                setStructuralAlreadyExist(false);
+                setGenerateStructuralOpen(true);
+              }}
+              data-testid="generate-structural-button"
+            >
+              {t('slotAssignment.actions.generateStructure')}
+            </Button>
+
+            <Button
+              variant="contained"
+              startIcon={<AutoAwesome />}
+              onClick={() => setAutoAssignModalOpen(true)}
+              data-testid="auto-assign-button"
+            >
+              {t('slotAssignment.actions.autoAssign')}
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={<ClearAll />}
+              onClick={() => setClearAllModalOpen(true)}
+              data-testid="clear-all-button"
+            >
+              {t('slotAssignment.actions.clearAll')}
+            </Button>
+          </Box>
+        </Paper>
+      )}
+
+      {/* Success Banner (above the two columns) */}
+      {!isLoading && allSessionsAssigned && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          <Typography variant="body2" gutterBottom>
+            {t('slotAssignment.quickActions.allAssigned')}
+          </Typography>
+          <Link href="#" underline="hover">
+            {t('slotAssignment.quickActions.goToPublishing')}
+          </Link>
+        </Alert>
+      )}
+
+      {/* Main Layout — 2 columns: tray (left) + timeline (right) */}
+      {!isLoading && (
+        <Grid container spacing={3} sx={{ overflow: 'visible' }}>
+          {/* Left: Unassigned Speakers tray */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper>
               <UnassignedSpeakersList
                 sessions={filteredSessions}
                 totalSessions={totalSessions}
@@ -400,16 +498,14 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 activeFilter={speakerFilter}
                 onFilterChange={setSpeakerFilter}
                 isLoading={isLoading}
+                focusSessionSlug={focusSessionSlug}
               />
             </Paper>
           </Grid>
 
-          {/* Center: Session Timeline Grid */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper
-              data-testid="session-timeline-grid"
-              sx={{ height: { md: '100%' }, overflow: 'auto', p: 2 }}
-            >
+          {/* Right: Session Timeline Grid (drop targets) */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Paper data-testid="session-timeline-grid" sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>
                 {t('slotAssignment.timeline.title')}
               </Typography>
@@ -565,76 +661,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                   })}
                 </Box>
               </Box>
-            </Paper>
-          </Grid>
-
-          {/* Right Sidebar: Quick Actions */}
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Paper data-testid="quick-actions-panel" sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                {t('slotAssignment.quickActions.title')}
-              </Typography>
-
-              {/* Session Summary */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('slotAssignment.quickActions.total', { count: totalSessions })}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('slotAssignment.quickActions.assigned', { count: assignedCount })}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('slotAssignment.quickActions.pending', { count: unassignedSessions.length })}
-                </Typography>
-              </Box>
-
-              {/* Action Buttons */}
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<CalendarMonth />}
-                onClick={() => {
-                  setGenerateStructuralError(null);
-                  setStructuralAlreadyExist(false);
-                  setGenerateStructuralOpen(true);
-                }}
-                sx={{ mb: 2 }}
-                data-testid="generate-structural-button"
-              >
-                {t('slotAssignment.actions.generateStructure')}
-              </Button>
-
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AutoAwesome />}
-                onClick={() => setAutoAssignModalOpen(true)}
-                sx={{ mb: 2 }}
-                data-testid="auto-assign-button"
-              >
-                {t('slotAssignment.actions.autoAssign')}
-              </Button>
-
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<ClearAll />}
-                onClick={() => setClearAllModalOpen(true)}
-              >
-                {t('slotAssignment.actions.clearAll')}
-              </Button>
-
-              {/* Success Banner */}
-              {allSessionsAssigned && (
-                <Alert severity="success" sx={{ mt: 3 }}>
-                  <Typography variant="body2" gutterBottom>
-                    {t('slotAssignment.quickActions.allAssigned')}
-                  </Typography>
-                  <Link href="#" underline="hover">
-                    {t('slotAssignment.quickActions.goToPublishing')}
-                  </Link>
-                </Alert>
-              )}
             </Paper>
           </Grid>
         </Grid>

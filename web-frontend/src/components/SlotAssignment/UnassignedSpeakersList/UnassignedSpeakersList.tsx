@@ -7,7 +7,7 @@
  * AC7: View preferences button per speaker
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -32,6 +32,11 @@ export interface UnassignedSpeakersListProps {
   activeFilter?: 'all' | 'assigned' | 'unassigned';
   onFilterChange?: (filter: 'all' | 'assigned' | 'unassigned') => void;
   isLoading?: boolean;
+  /**
+   * 14.C.5: when set, the matching session card is visually highlighted and
+   * scrolled into view (best-effort — no-op if no session matches).
+   */
+  focusSessionSlug?: string | null;
 }
 
 export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
@@ -42,7 +47,17 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   activeFilter = 'unassigned',
   onFilterChange,
   isLoading = false,
+  focusSessionSlug = null,
 }) => {
+  const focusedCardRef = useRef<HTMLDivElement | null>(null);
+
+  // Best-effort scroll the focused card into view when it (or the target) changes.
+  useEffect(() => {
+    if (focusSessionSlug && focusedCardRef.current) {
+      focusedCardRef.current.scrollIntoView({ block: 'nearest' });
+    }
+  }, [focusSessionSlug, sessions]);
+
   const { t } = useTranslation('events');
   const assignedCount = totalSessions - sessions.length;
   const progressPercent = totalSessions > 0 ? Math.round((assignedCount / totalSessions) * 100) : 0;
@@ -157,9 +172,13 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
                 ? `${speaker.firstName} ${speaker.lastName}`
                 : 'Unknown Speaker';
 
+              const isFocused = !!focusSessionSlug && session.sessionSlug === focusSessionSlug;
+
               return (
                 <Card
                   key={session.sessionSlug}
+                  ref={isFocused ? focusedCardRef : undefined}
+                  data-testid={isFocused ? `focused-session-${session.sessionSlug}` : undefined}
                   draggable
                   onDragStart={onDragStart?.(session)}
                   role="article"
@@ -167,6 +186,11 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
                   tabIndex={0}
                   sx={{
                     cursor: 'grab',
+                    ...(isFocused && {
+                      borderLeft: 4,
+                      borderColor: 'primary.main',
+                      boxShadow: 4,
+                    }),
                     '&:hover': {
                       boxShadow: 3,
                       '& .drag-handle': {

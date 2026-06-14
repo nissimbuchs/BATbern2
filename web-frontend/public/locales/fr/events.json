@@ -221,7 +221,17 @@
       "addSpeakers": "Ajouter des intervenants",
       "addToPool": "Ajouter des intervenants au pool",
       "kanbanView": "Vue Kanban",
-      "sessionsView": "Vue sessions"
+      "sessionsView": "Vue sessions",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Créneaux",
+      "poolView": "Vue du pool d’intervenants",
+      "agendaView": "Vue agenda",
+      "slotsView": "Vue des créneaux",
+      "needsSlotSummary": "{{count}} sur {{total}} sessions ont besoin d’un créneau",
+      "allSlotted": "Toutes les sessions sont planifiées",
+      "arrangeSlots": "Organiser les créneaux",
+      "noSessionsYet": "Aucune session pour l’instant"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -876,6 +886,9 @@
         "projector": "Projecteur",
         "recording": "Enregistrement"
       }
+    },
+    "actionBar": {
+      "label": "Actions d'attribution des créneaux"
     }
   },
   "newsletter": {

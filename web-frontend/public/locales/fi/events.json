@@ -221,7 +221,17 @@
       "addSpeakers": "Lisää puhujia",
       "addToPool": "Lisää puhujia pooliin",
       "kanbanView": "Kanban-näkymä",
-      "sessionsView": "Istuntonäkymä"
+      "sessionsView": "Istuntonäkymä",
+      "pool": "Pool",
+      "agenda": "Ohjelma",
+      "slots": "Aikavälit",
+      "poolView": "Puhujapoolin näkymä",
+      "agendaView": "Ohjelmanäkymä",
+      "slotsView": "Aikavälinäkymä",
+      "needsSlotSummary": "{{count}}/{{total}} istuntoa tarvitsee aikavälin",
+      "allSlotted": "Kaikki istunnot on aikataulutettu",
+      "arrangeSlots": "Järjestä aikavälit",
+      "noSessionsYet": "Ei vielä istuntoja"
     },
     "newsletter": {
       "title": "Uutiskirje",
@@ -876,6 +886,9 @@
         "projector": "Projektori",
         "recording": "Nauhoitus"
       }
+    },
+    "actionBar": {
+      "label": "Aikavälien määritystoiminnot"
     }
   },
   "newsletter": {

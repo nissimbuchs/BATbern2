@@ -221,7 +221,17 @@
       "addSpeakers": "Agiuntar referents",
       "addToPool": "Agiuntar referents al pool",
       "kanbanView": "Vista Kanban",
-      "sessionsView": "Vista sessiuns"
+      "sessionsView": "Vista sessiuns",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Fanestras",
+      "poolView": "Vista dal pool da referents",
+      "agendaView": "Vista agenda",
+      "slotsView": "Vista da las fanestras",
+      "needsSlotSummary": "{{count}} da {{total}} sesidas dovran ina fanestra",
+      "allSlotted": "Tut las sesidas èn planisadas",
+      "arrangeSlots": "Organisar las fanestras",
+      "noSessionsYet": "Anc naginas sesidas"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -876,6 +886,9 @@
         "projector": "Proiector",
         "recording": "Registraziun"
       }
+    },
+    "actionBar": {
+      "label": "Acziuns d'assegnaziun da fanestras"
     }
   },
   "newsletter": {

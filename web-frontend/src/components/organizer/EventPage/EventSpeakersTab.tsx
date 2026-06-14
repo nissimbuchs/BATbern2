@@ -1,16 +1,18 @@
 /**
- * EventSpeakersTab Component (Story 5.6)
+ * EventSpeakersTab Component (Story 5.6 · Epic 14 Phase C)
  *
- * Unified speaker management tab with three views:
- * - Kanban: Drag-drop status lanes (SpeakerStatusLanes)
- * - Table: List with outreach tracking (from SpeakerOutreachDashboard)
- * - Sessions: Slot-based assignment (from SpeakersSessionsTable)
+ * Unified Speakers & Agenda tab with three sub-views (Epic 14 Phase C, 14.C.1):
+ * - Pool:   4-phase speaker kanban (SpeakerStatusLanes)
+ * - Agenda: editable session table + "N of M need a slot" summary (SpeakersSessionsTable)
+ * - Slots:  in-tab slot assignment (DragDropSlotAssignment) — replaces the retired
+ *           /slot-assignment route (14.C.5)
  *
- * URL params: ?tab=speakers&view=kanban|table|sessions
+ * URL params: ?tab=speakers&view=pool|agenda|slots  (legacy kanban→pool, sessions→agenda).
+ * The keys pool|agenda|slots are the stable Cockpit deep-link contract (cockpitCards.ts).
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -27,12 +29,11 @@ import {
   Snackbar,
 } from '@mui/material';
 import {
-  ViewKanban as KanbanIcon,
-  CalendarMonth as SessionsIcon,
+  ViewKanban as PoolIcon,
+  CalendarMonth as AgendaIcon,
   Add as AddIcon,
   Close as CloseIcon,
-  AutoAwesome as AutoAssignIcon,
-  Schedule as SlotAssignmentIcon,
+  Schedule as SlotsIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
@@ -46,6 +47,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/SpeakerStatusLanes';
 import { computeSlotCapacity } from '@/components/organizer/SpeakerStatus/getPrimaryAction';
 import { SpeakersSessionsTable } from '@/components/organizer/EventManagement/SpeakersSessionsTable';
+import { DragDropSlotAssignment } from '@/components/SlotAssignment/DragDropSlotAssignment/DragDropSlotAssignment';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import { SpeakerDetailDrawer } from '@/components/organizer/SpeakerDrawer';
 import MarkContactedModal from '@/components/organizer/SpeakerOutreach/MarkContactedModal';
@@ -53,7 +55,16 @@ import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
 import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
 
-type ViewMode = 'kanban' | 'sessions';
+type ViewMode = 'pool' | 'agenda' | 'slots';
+
+// Map the URL ?view= param to a sub-view. The stable keys are pool|agenda|slots
+// (the Cockpit deep-link contract). Legacy values are tolerated so old links/bookmarks
+// don't dead-end: kanban→pool, sessions→agenda.
+const resolveViewMode = (viewParam: string | null): ViewMode => {
+  if (viewParam === 'agenda' || viewParam === 'sessions') return 'agenda';
+  if (viewParam === 'slots') return 'slots';
+  return 'pool'; // 'pool', 'kanban', and absent all land on the kanban
+};
 
 interface EventSpeakersTabProps {
   eventCode: string;
@@ -61,13 +72,14 @@ interface EventSpeakersTabProps {
 
 export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useTranslation(['events', 'organizer']);
 
-  // Get view mode from URL, default to 'kanban'
-  const viewParam = searchParams.get('view');
-  const currentView: ViewMode = viewParam === 'sessions' ? 'sessions' : 'kanban';
+  // Get view mode from URL, default to 'pool' (the kanban). 14.C.1.
+  const currentView: ViewMode = resolveViewMode(searchParams.get('view'));
+  // Speaker context carried into the Slots sub-view (FR17 "⚠ Needs a slot →" jump and
+  // the retired-route redirect). Matched best-effort against session.speakers[].username.
+  const focusSpeakerId = searchParams.get('speakerId') ?? undefined;
 
   // Local state
   const [addSpeakerDrawerOpen, setAddSpeakerDrawerOpen] = useState(false);
@@ -87,8 +99,6 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const [initialDrawerView, setInitialDrawerView] = useState<
     null | 'content-submission' | 'quality-review' | 'promote'
   >(null);
-  const [autoAssignLoading, setAutoAssignLoading] = useState(false);
-  const [autoAssignError, setAutoAssignError] = useState<string | null>(null);
   // Story 11.D.2 — hoist modal state so kanban primary-action buttons can drive it.
   const [outreachModalState, setOutreachModalState] = useState<{
     open: boolean;
@@ -176,13 +186,25 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const progressPercent = minRequired > 0 ? Math.round((acceptedCount / minRequired) * 100) : 0;
   const thresholdMet = summary?.thresholdMet || false;
 
-  // Handle view change
+  // Switch sub-view in-tab via the ?view= param — no route change (14.C.1/14.C.5).
+  // When switching to Slots with a speaker context, carry it as ?speakerId= so the
+  // tray can highlight that speaker's unassigned session (FR17); otherwise clear it.
+  const switchToView = (view: ViewMode, speakerContext?: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', 'speakers');
+    newParams.set('view', view);
+    if (view === 'slots' && speakerContext) {
+      newParams.set('speakerId', speakerContext);
+    } else {
+      newParams.delete('speakerId');
+    }
+    setSearchParams(newParams, { replace: true });
+  };
+
+  // Handle view change from the Pool/Agenda/Slots toggle.
   const handleViewChange = (_event: React.MouseEvent, newView: ViewMode | null) => {
     if (newView) {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set('tab', 'speakers');
-      newParams.set('view', newView);
-      setSearchParams(newParams, { replace: true });
+      switchToView(newView);
     }
   };
 
@@ -258,12 +280,12 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     setDetailsDrawerOpen(true);
   };
 
-  // Story 11.D.2 — QUALITY_REVIEWED-no-slot card primary-action button.
-  // Speaker context is forwarded via `?speakerId=` so the slot-assignment page can
-  // optionally focus/highlight the originating speaker. The page is non-breaking if the
-  // query param is unread.
+  // Story 11.D.2 · Epic 14 14.C.5 — QUALITY_REVIEWED-no-slot card primary-action.
+  // Switches to the in-tab Slots sub-view (no route change) carrying the speaker's
+  // username so the tray highlights their unassigned session (FR17). Falls back to the
+  // pool id if the username isn't resolved; the tray match is best-effort (no-op on miss).
   const handleAssignSessionSlotForSpeaker = (speaker: SpeakerPoolEntry) => {
-    navigate(`/organizer/events/${eventCode}/slot-assignment?speakerId=${speaker.id}`);
+    switchToView('slots', speaker.username ?? speaker.id);
   };
 
   // Session handlers
@@ -301,29 +323,10 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     console.log('View materials:', sessionId);
   };
 
-  const handleAutoAssignSpeakers = async () => {
-    try {
-      setAutoAssignLoading(true);
-      setAutoAssignError(null);
-      const result = await slotAssignmentService.autoAssignTimings(eventCode);
-      console.log('Auto-assigned', result.assignedCount, 'sessions');
-      // Refresh event data to show updated assignments
-      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
-    } catch (error) {
-      console.error('Failed to auto-assign speakers:', error);
-      setAutoAssignError(
-        error instanceof Error
-          ? error.message
-          : t('events:speakers.autoAssignError', 'Failed to auto-assign speakers')
-      );
-    } finally {
-      setAutoAssignLoading(false);
-    }
-  };
-
-  const handleManageSlotAssignments = () => {
-    navigate(`/organizer/events/${eventCode}/slot-assignment`);
-  };
+  // Epic 14 14.C.4 — Agenda sub-view "needs a slot" summary (a session is slotted when
+  // it has a startTime). Drives the "N of M need a slot" line + the "Arrange slots →" jump.
+  const totalSessions = sessions.length;
+  const needsSlotCount = sessions.filter((s) => !s.startTime).length;
 
   // Loading state
   const isLoading = summaryLoading || speakersLoading;
@@ -437,20 +440,28 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             aria-label={t('events:eventPage.speakers.viewMode', 'View mode')}
           >
             <ToggleButton
-              value="kanban"
-              aria-label={t('events:eventPage.speakers.kanbanView', 'Kanban view')}
-              data-testid="kanban-view-toggle"
+              value="pool"
+              aria-label={t('events:eventPage.speakers.poolView', 'Speaker pool view')}
+              data-testid="pool-view-toggle"
             >
-              <KanbanIcon sx={{ mr: 1 }} />
-              {t('events:eventPage.speakers.kanban', 'Kanban')}
+              <PoolIcon sx={{ mr: 1 }} />
+              {t('events:eventPage.speakers.pool', 'Pool')}
             </ToggleButton>
             <ToggleButton
-              value="sessions"
-              aria-label={t('events:eventPage.speakers.sessionsView', 'Sessions view')}
-              data-testid="sessions-view-toggle"
+              value="agenda"
+              aria-label={t('events:eventPage.speakers.agendaView', 'Agenda view')}
+              data-testid="agenda-view-toggle"
             >
-              <SessionsIcon sx={{ mr: 1 }} />
-              {t('common:labels.sessions')}
+              <AgendaIcon sx={{ mr: 1 }} />
+              {t('events:eventPage.speakers.agenda', 'Agenda')}
+            </ToggleButton>
+            <ToggleButton
+              value="slots"
+              aria-label={t('events:eventPage.speakers.slotsView', 'Slots view')}
+              data-testid="slots-view-toggle"
+            >
+              <SlotsIcon sx={{ mr: 1 }} />
+              {t('events:eventPage.speakers.slots', 'Slots')}
             </ToggleButton>
           </ToggleButtonGroup>
         </Stack>
@@ -458,7 +469,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
       {/* View Content */}
       <Box sx={{ flex: 1, minHeight: 0 }}>
-        {currentView === 'kanban' && speakers && (
+        {currentView === 'pool' && speakers && (
           <SpeakerStatusLanes
             eventCode={eventCode}
             speakers={speakers}
@@ -476,8 +487,41 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
           />
         )}
 
-        {currentView === 'sessions' && (
+        {currentView === 'agenda' && (
           <Paper sx={{ p: 2 }}>
+            {/* 14.C.4 — "N of M need a slot" summary + jump to Slots */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              spacing={1}
+              sx={{ mb: 2 }}
+            >
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                data-testid="needs-slot-summary"
+              >
+                {totalSessions === 0
+                  ? t('events:eventPage.speakers.noSessionsYet', 'No sessions yet')
+                  : needsSlotCount === 0
+                    ? t('events:eventPage.speakers.allSlotted', 'All sessions slotted')
+                    : t('events:eventPage.speakers.needsSlotSummary', {
+                        count: needsSlotCount,
+                        total: totalSessions,
+                        defaultValue: '{{count}} of {{total}} sessions need a slot',
+                      })}
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<SlotsIcon />}
+                onClick={() => switchToView('slots')}
+                data-testid="arrange-slots-button"
+              >
+                {t('events:eventPage.speakers.arrangeSlots', 'Arrange slots')}
+              </Button>
+            </Stack>
             <SpeakersSessionsTable
               sessions={sessions}
               eventCode={eventCode}
@@ -488,38 +532,11 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             />
           </Paper>
         )}
-      </Box>
 
-      {/* Action Buttons (Sessions View Only) */}
-      {currentView === 'sessions' && (
-        <Paper sx={{ p: 2, flexShrink: 0 }}>
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button
-              variant="contained"
-              startIcon={<SlotAssignmentIcon />}
-              onClick={handleManageSlotAssignments}
-              data-testid="manage-slot-assignments-button"
-            >
-              {t('events:speakers.manageSlotAssignments', 'Slot Assignment')}
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<AutoAssignIcon />}
-              onClick={handleAutoAssignSpeakers}
-              disabled={autoAssignLoading}
-            >
-              {autoAssignLoading
-                ? t('events:speakers.autoAssigning', 'Auto-Assigning...')
-                : t('events:speakers.autoAssignSpeakers', 'Auto-Assign Slots')}
-            </Button>
-          </Stack>
-          {autoAssignError && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {autoAssignError}
-            </Alert>
-          )}
-        </Paper>
-      )}
+        {currentView === 'slots' && (
+          <DragDropSlotAssignment eventCode={eventCode} focusSpeakerId={focusSpeakerId} />
+        )}
+      </Box>
 
       {/* Speaker Detail Drawer — Story 11.D.4 redesigned: 2 tabs (Details + History) +
           primary-action header strip + secondary-actions list + Content sub-tab chip.

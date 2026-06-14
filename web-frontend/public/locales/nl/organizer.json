@@ -271,7 +271,15 @@
     "confirmChangeMessage": "Status van {{speaker}} wijzigen van {{from}} naar {{to}}?",
     "reasonHelperText": "Optioneel (max {{max}} tekens)",
     "reasonPlaceholder": "bijv. Spreker bevestigd via e-mail",
-    "reasonTooLong": "De reden is te lang ({{current}}/{{max}} tekens)"
+    "reasonTooLong": "De reden is te lang ({{current}}/{{max}} tekens)",
+    "phaseColumns": {
+      "sourcing": "Werving",
+      "inviting": "Uitnodigen",
+      "content": "Inhoud",
+      "confirmed": "Bevestigd"
+    },
+    "declinedStrip": "▸ Afgewezen ({{count}})",
+    "waitingOnSpeakerDivider": "Wacht op spreker"
   },
   "speakerContent": {
     "submitContent": "Sprekerinhoud indienen",
@@ -544,7 +552,10 @@
       "filterClearedAnnouncement": "Kolomfilter opgeheven",
       "filterAppliedAnnouncement": "Kolom {{state}} gefilterd, {{count}} kaarten zichtbaar"
     },
-    "selfNominated": "Zelf voorgesteld"
+    "selfNominated": "Zelf voorgesteld",
+    "needsASlot": "⚠ Tijdslot nodig →",
+    "slotAssigned": "Tijdslot toegewezen",
+    "slotAssignedAt": "✓ {{time}}"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
@@ -559,7 +570,8 @@
     "declineDialog": {
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
-    }
+    },
+    "invalidColumnTooltip": "Geen geldige stap vooruit naar deze kolom."
   },
   "speakerDrawer": {
     "secondaryActions": {

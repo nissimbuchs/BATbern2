@@ -221,7 +221,17 @@
       "addSpeakers": "Añadir ponentes",
       "addToPool": "Añadir ponentes al grupo",
       "kanbanView": "Vista Kanban",
-      "sessionsView": "Vista de sesiones"
+      "sessionsView": "Vista de sesiones",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Franjas",
+      "poolView": "Vista del grupo de ponentes",
+      "agendaView": "Vista de agenda",
+      "slotsView": "Vista de franjas",
+      "needsSlotSummary": "{{count}} de {{total}} sesiones necesitan una franja",
+      "allSlotted": "Todas las sesiones están planificadas",
+      "arrangeSlots": "Organizar franjas",
+      "noSessionsYet": "Aún no hay sesiones"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -876,6 +886,9 @@
         "projector": "Proyector",
         "recording": "Grabación"
       }
+    },
+    "actionBar": {
+      "label": "Acciones de asignación de franjas"
     }
   },
   "newsletter": {

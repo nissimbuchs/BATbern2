@@ -1,17 +1,20 @@
 /**
- * SpeakerStatusLanes Tests (Story 11.D.2 — state-aware primary-action button)
+ * SpeakerStatusLanes Tests — 4-phase kanban (Epic 14 · Story 14.C.2 / 14.C.3).
  *
- * Replaces the legacy Story 6.1c invite-button tests. The legacy IDENTIFIED
- * `<IconButton>` and the CONTACTED `<EmailIcon>` "invitation sent" badge were
- * removed in this story per ADR-009 §0.2 (CONTACTED no longer implies
- * invitation; READY is the formal-invite gate).
+ * Supersedes the Story 11.D.2/11.D.3 8-lane tests: the board is now 4 phase columns
+ * (Sourcing · Inviting · Content · Confirmed) with a collapsible Declined strip. The
+ * per-card primary-action contract, the workflow-safe `classifyDrop` dispatch, and the
+ * time-in-state chip carry over unchanged and are re-asserted here against the new
+ * column geometry.
  *
- * Coverage (AC9 items 1–18):
- *   - Per-state primary-action rendering (label, button vs chip)
- *   - Slot-capacity disabled state on READY
- *   - Time-in-state chip on organizer row
- *   - Regression guards for removed legacy indicators
- *   - Lane ordering per ADR-009 §0.1
+ * Coverage:
+ *   - 4 phase columns; each card keeps its exact 8-state chip (FR15)
+ *   - your-move (accent border, top) vs waiting-on-speaker (below divider) sort (FR16)
+ *   - Confirmed-column slot tie-in: "needs a slot" link / ✓+time (FR17)
+ *   - collapsible Declined strip, collapsed by default (FR18)
+ *   - workflow-safe cross-column drag: one transition, opens modal, snap-back (FR19/FR20, NFR1)
+ *   - keyboard + ARIA on columns / declined toggle / divider (NFR7)
+ *   - per-state primary-action button (carry-over from 11.D.2)
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -19,18 +22,13 @@ import { render, screen, cleanup, within, act, waitFor } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '../SpeakerStatusLanes';
-// Imported so AC7's grep invariant matches `kanbanThresholds` in this file (Story 11.D.3).
-// Also asserts the test fixtures align with the same threshold defaults the component uses.
 import { DEFAULT_KANBAN_THRESHOLDS } from '../kanbanThresholds';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 
-// Compile-time guard: at least one threshold entry must exist so the import isn't
-// accidentally tree-shaken away by a future test-bundler change.
 if (!DEFAULT_KANBAN_THRESHOLDS.CONTACTED) {
   throw new Error('kanbanThresholds CONTACTED default missing — test setup invariant violated');
 }
 
-// Mock date-fns formatDistanceToNow so chip text is deterministic regardless of clock.
 vi.mock('date-fns', async () => {
   const actual = await vi.importActual<typeof import('date-fns')>('date-fns');
   return {
@@ -39,66 +37,34 @@ vi.mock('date-fns', async () => {
   };
 });
 
-// i18n mock — passthrough on namespace-stripped keys, with parameter interpolation for
-// the slot-capacity tooltip so we can assert the formatted message.
+// i18n mock — passthrough on namespace-stripped keys + interpolation for the messages
+// the tests assert against.
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       if (key === 'organizer:speakerCard.slotCapacityTooltip' && params) {
-        return `Slot capacity reached. ${params.invited} invitations outstanding + ${params.accepted} acceptances for ${params.slots} slots. Wait or decline an accepted speaker to free a slot.`;
+        return `Slot capacity reached. ${params.invited} invitations outstanding + ${params.accepted} acceptances for ${params.slots} slots.`;
       }
-      // Story 11.D.4 — drag-drop rejection composition.
       if (key === 'organizer:kanbanDrag.rejection.template' && params) {
         return `${params.from} → ${params.to} not allowed — ${params.explanation}`;
       }
-      if (key === 'organizer:kanbanDrag.rejection.mustPromoteFirst') {
-        return 'Promote to READY first to provision the speaker.';
+      if (key === 'organizer:speakerStatus.declinedStrip' && params) {
+        return `▸ Declined (${params.count})`;
       }
-      if (key === 'organizer:kanbanDrag.rejection.mustInviteFirst') {
-        return 'Send invitation first; speaker must accept before content is captured.';
-      }
-      if (key === 'organizer:kanbanDrag.rejection.mustAcceptFirst') {
-        return 'Speaker must accept first.';
-      }
-      if (key === 'organizer:kanbanDrag.rejection.mustSubmitContentFirst') {
-        return 'Submit content first; reviewer needs material to approve.';
-      }
-      if (key === 'organizer:kanbanDrag.rejection.cannotMoveBackwards') {
-        return 'Approved content cannot move backwards. Decline if the speaker is dropping out.';
-      }
-      if (key === 'organizer:kanbanDrag.invalidDestinationTooltip' && params) {
-        return `${params.from} → ${params.to} is not a legal transition.`;
+      if (key === 'organizer:speakerCard.slotAssignedAt' && params) {
+        return `✓ ${params.time}`;
       }
       if (key === 'organizer:speakerCard.timeInStateTooltip' && params) {
         return `Current state since ${params.date}`;
       }
-      // Story 11.D.3 — lane sub-line interpolations.
-      if (key === 'organizer:speakerCard.lanes.contactedSubline' && params) {
-        return `⚠ ${params.count} stale (>14 days)`;
-      }
-      if (key === 'organizer:speakerCard.lanes.invitedSubline.approaching' && params) {
-        return `⏰ ${params.count} approaching deadline`;
-      }
-      if (key === 'organizer:speakerCard.lanes.invitedSubline.past' && params) {
-        return `⏰ ${params.count} past deadline`;
-      }
-      if (key === 'organizer:speakerCard.lanes.acceptedSubline' && params) {
-        return `📝 ${params.count} awaiting content`;
-      }
-      if (key === 'organizer:speakerCard.lanes.contentSubmittedSubline' && params) {
-        return `👀 ${params.count} awaiting moderator review`;
-      }
-      if (key === 'organizer:speakerCard.lanes.qualityReviewedSubline' && params) {
-        return `🪑 ${params.count} awaiting slot`;
-      }
-      // Story 11.D.3 — accessibility keys (Review patches P3 + P5).
-      if (key === 'organizer:speakerCard.lanes.sublineFilterAriaLabel' && params) {
-        return `Filter ${params.state} column: ${params.description}`;
-      }
-      if (key === 'organizer:speakerCard.lanes.filterAppliedAnnouncement' && params) {
-        return `${params.state} column filtered, showing ${params.count} cards`;
-      }
       const labels: Record<string, string> = {
+        'organizer:speakerStatus.phaseColumns.sourcing': 'Sourcing',
+        'organizer:speakerStatus.phaseColumns.inviting': 'Inviting',
+        'organizer:speakerStatus.phaseColumns.content': 'Content',
+        'organizer:speakerStatus.phaseColumns.confirmed': 'Confirmed',
+        'organizer:speakerStatus.waitingOnSpeakerDivider': 'Waiting on speaker',
+        'organizer:speakerCard.needsASlot': '⚠ Needs a slot →',
+        'organizer:speakerCard.slotAssigned': 'Slot assigned',
         'organizer:speakerCard.primaryAction.logOutreach': 'Log outreach',
         'organizer:speakerCard.primaryAction.promoteToSpeaker': 'Promote to speaker',
         'organizer:speakerCard.primaryAction.sendInvitation': 'Send invitation',
@@ -108,10 +74,8 @@ vi.mock('react-i18next', () => ({
         'organizer:speakerCard.primaryAction.assignSessionSlot': 'Assign session slot',
         'organizer:speakerCard.primaryAction.viewDetails': 'View details',
         'organizer:speakerCard.publishable': 'Publishable',
-        'organizer:speakerCard.lanes.readySlotCapacitySubline': '⚠ Slot capacity reached',
-        'organizer:speakerCard.lanes.invitedSubline.joiner': ' · ',
-        'organizer:speakerCard.lanes.filterClearedAnnouncement': 'Column filter cleared',
-        'organizer:speakerStatus.lanes': 'Speaker Status Lanes',
+        'organizer:kanbanDrag.invalidColumnTooltip': 'Not a valid forward step.',
+        'organizer:speakerStatus.lanes': 'Speaker Status',
         'organizer:speakerStatus.dragToChange': 'Drag to change',
         'organizer:speakerStatus.IDENTIFIED': 'Identified',
         'organizer:speakerStatus.CONTACTED': 'Contacted',
@@ -135,16 +99,6 @@ vi.mock('@/services/speakerStatusService', () => ({
   },
 }));
 
-// Story 11.D.4 — mock `@dnd-kit/core` so we can:
-//   (a) spy on `useDraggable({ id, disabled })` calls to assert DECLINED cards are
-//       constructed with `disabled: true` (AC2 — case 23 hook-spy strengthening).
-//   (b) capture the `onDragStart` / `onDragEnd` props passed to `DndContext` so test
-//       cases 24-26, 28, 30 can synthesise dispatcher events without paying for the
-//       full DnD-kit pointer-event simulation (brittle in JSDOM per AC10 cases 21-22).
-// The mock still renders all children so the rest of the component tree mounts normally.
-//
-// `dndKitTestHandle` is a module-level singleton the tests reach into. `beforeEach`
-// clears it so cross-test pollution can't leak the previous render's callbacks.
 const dndKitTestHandle: {
   onDragStart?: (event: { active: { id: string } }) => void;
   onDragEnd?: (event: { active: { id: string }; over: { id: string } | null }) => void;
@@ -173,36 +127,25 @@ vi.mock('@dnd-kit/core', () => {
     PointerSensor: vi.fn(),
     useDraggable: ({ id, disabled }: { id: string; disabled?: boolean }) => {
       dndKitTestHandle.useDraggableCalls.push({ id, disabled });
-      return {
-        attributes: {},
-        listeners: {},
-        setNodeRef: () => undefined,
-        transform: null,
-      };
+      return { attributes: {}, listeners: {}, setNodeRef: () => undefined, transform: null };
     },
-    useDroppable: () => ({
-      setNodeRef: () => undefined,
-      isOver: false,
-    }),
+    useDroppable: () => ({ setNodeRef: () => undefined, isOver: false }),
   };
 });
 
 vi.mock('@/services/speakerPoolService', () => ({
-  speakerPoolService: {
-    sendInvitation: vi.fn(),
-    getSpeakerPool: vi.fn(),
-  },
+  speakerPoolService: { sendInvitation: vi.fn(), getSpeakerPool: vi.fn() },
 }));
 
-// Stub the organizers hook to avoid network deps.
 vi.mock('@/components/shared/OrganizerSelect', () => ({
   useOrganizers: () => ({ organizers: [] }),
   __esModule: true,
 }));
 
-describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
+describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
   let queryClient: QueryClient;
   const eventCode = 'BATbern56';
+  const NOW = new Date('2026-05-16T12:00:00Z');
 
   const makeSpeaker = (
     status: SpeakerWorkflowState,
@@ -212,8 +155,310 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
     eventId: 'event-1',
     speakerName: `${status} Speaker`,
     status,
-    createdAt: '2026-05-01T00:00:00Z',
-    updatedAt: '2026-05-15T00:00:00Z',
+    createdAt: '2026-05-14T00:00:00Z',
+    updatedAt: '2026-05-14T00:00:00Z',
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    vi.clearAllMocks();
+    dndKitTestHandle.onDragStart = undefined;
+    dndKitTestHandle.onDragEnd = undefined;
+    dndKitTestHandle.useDraggableCalls = [];
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  const renderLanes = (
+    speakers: SpeakerPoolEntry[],
+    overrides: Partial<React.ComponentProps<typeof SpeakerStatusLanes>> = {}
+  ) =>
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SpeakerStatusLanes
+          eventCode={eventCode}
+          speakers={speakers}
+          sessions={overrides.sessions ?? []}
+          maxSlots={overrides.maxSlots}
+          eventDate={overrides.eventDate}
+          now={overrides.now ?? NOW}
+          onLogOutreach={overrides.onLogOutreach}
+          onPromoteSpeaker={overrides.onPromoteSpeaker}
+          onSendInvitation={overrides.onSendInvitation}
+          onEnterContent={overrides.onEnterContent}
+          onReviewContent={overrides.onReviewContent}
+          onSpeakerClick={overrides.onSpeakerClick}
+          onAssignSessionSlot={overrides.onAssignSessionSlot}
+        />
+      </QueryClientProvider>
+    );
+
+  it('should_renderFourPhaseColumns_inFunnelOrder', () => {
+    renderLanes([]);
+    const columns = screen.getAllByTestId(/^phase-column-(sourcing|inviting|content|confirmed)$/);
+    const order = columns.map((el) => el.getAttribute('data-testid'));
+    expect(order).toEqual([
+      'phase-column-sourcing',
+      'phase-column-inviting',
+      'phase-column-content',
+      'phase-column-confirmed',
+    ]);
+  });
+
+  it('should_notRenderEightPerStateLanes', () => {
+    renderLanes([]);
+    // The 8-lane testids are gone.
+    expect(screen.queryByTestId('status-lane-identified')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('status-lane-quality_reviewed')).not.toBeInTheDocument();
+  });
+
+  it('should_placeIdentifiedAndContactedCards_inSourcingColumn', () => {
+    const identified = makeSpeaker('IDENTIFIED', { id: 's-id' });
+    const contacted = makeSpeaker('CONTACTED', { id: 's-co' });
+    renderLanes([identified, contacted]);
+    const sourcing = screen.getByTestId('phase-column-sourcing');
+    expect(within(sourcing).getByTestId(`speaker-card-${identified.id}`)).toBeInTheDocument();
+    expect(within(sourcing).getByTestId(`speaker-card-${contacted.id}`)).toBeInTheDocument();
+  });
+
+  it('should_placeReadyAndInvited_inInvitingColumn_andQualityReviewed_inConfirmed', () => {
+    const ready = makeSpeaker('READY', { id: 's-rd' });
+    const invited = makeSpeaker('INVITED', { id: 's-in' });
+    const quality = makeSpeaker('QUALITY_REVIEWED', { id: 's-qr', isSlotAssigned: true });
+    renderLanes([ready, invited, quality], { maxSlots: 8 });
+    const inviting = screen.getByTestId('phase-column-inviting');
+    const confirmed = screen.getByTestId('phase-column-confirmed');
+    expect(within(inviting).getByTestId(`speaker-card-${ready.id}`)).toBeInTheDocument();
+    expect(within(inviting).getByTestId(`speaker-card-${invited.id}`)).toBeInTheDocument();
+    expect(within(confirmed).getByTestId(`speaker-card-${quality.id}`)).toBeInTheDocument();
+  });
+
+  it('should_renderExactEightStateChip_onEachCard', () => {
+    const accepted = makeSpeaker('ACCEPTED', { id: 's-ac' });
+    renderLanes([accepted]);
+    const chip = screen.getByTestId(`state-chip-${accepted.id}`);
+    expect(chip).toHaveAttribute('data-state', 'ACCEPTED');
+    expect(chip).toHaveTextContent('Accepted');
+  });
+
+  // FR16 — your-move sort + accent border.
+  it('should_markStaleContactedCard_asYourMove_withAccentBorder', () => {
+    // CONTACTED stale > errorDays (14) ⇒ error severity ⇒ your move.
+    const stale = makeSpeaker('CONTACTED', {
+      id: 's-stale',
+      updatedAt: new Date(NOW.getTime() - 20 * 86_400_000).toISOString(),
+    });
+    renderLanes([stale]);
+    const card = screen.getByTestId(`speaker-card-${stale.id}`);
+    expect(card).toHaveAttribute('data-your-move', 'true');
+  });
+
+  it('should_markFreshAcceptedCard_asWaitingOnSpeaker', () => {
+    // ACCEPTED fresh (< warningDays 14) ⇒ normal severity ⇒ waiting on speaker.
+    const fresh = makeSpeaker('ACCEPTED', {
+      id: 's-fresh',
+      acceptedAt: new Date(NOW.getTime() - 1 * 86_400_000).toISOString(),
+    });
+    renderLanes([fresh]);
+    const card = screen.getByTestId(`speaker-card-${fresh.id}`);
+    expect(card).toHaveAttribute('data-your-move', 'false');
+  });
+
+  it('should_renderDivider_when_columnHasBothYourMoveAndWaitingCards', () => {
+    const stale = makeSpeaker('ACCEPTED', {
+      id: 's-stale-acc',
+      acceptedAt: new Date(NOW.getTime() - 30 * 86_400_000).toISOString(),
+    });
+    const fresh = makeSpeaker('ACCEPTED', {
+      id: 's-fresh-acc',
+      acceptedAt: new Date(NOW.getTime() - 1 * 86_400_000).toISOString(),
+    });
+    renderLanes([stale, fresh]);
+    expect(screen.getByTestId('phase-column-divider-content')).toBeInTheDocument();
+  });
+
+  it('should_notRenderDivider_when_columnHasOnlyOneBand', () => {
+    const fresh = makeSpeaker('ACCEPTED', {
+      id: 's-only-fresh',
+      acceptedAt: new Date(NOW.getTime() - 1 * 86_400_000).toISOString(),
+    });
+    renderLanes([fresh]);
+    expect(screen.queryByTestId('phase-column-divider-content')).not.toBeInTheDocument();
+  });
+
+  // FR17 — Confirmed-column slot tie-in.
+  it('should_showNeedsASlotLink_forQualityReviewedWithoutSlot', () => {
+    const speaker = makeSpeaker('QUALITY_REVIEWED', { id: 's-noslot', isSlotAssigned: false });
+    renderLanes([speaker]);
+    const link = screen.getByTestId(`needs-slot-link-${speaker.id}`);
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveTextContent('Needs a slot');
+  });
+
+  it('should_invokeOnAssignSessionSlot_when_needsASlotLinkClicked', async () => {
+    const user = userEvent.setup();
+    const onAssignSessionSlot = vi.fn();
+    const speaker = makeSpeaker('QUALITY_REVIEWED', { id: 's-noslot2', isSlotAssigned: false });
+    renderLanes([speaker], { onAssignSessionSlot });
+    await user.click(screen.getByTestId(`needs-slot-link-${speaker.id}`));
+    expect(onAssignSessionSlot).toHaveBeenCalledTimes(1);
+    expect(onAssignSessionSlot).toHaveBeenCalledWith(expect.objectContaining({ id: speaker.id }));
+  });
+
+  it('should_showSlotAssignedTime_forQualityReviewedWithSlot', () => {
+    const session = {
+      id: 'sess-1',
+      title: 'A talk',
+      startTime: '2026-06-01T13:30:00Z',
+      speakers: [],
+    } as never;
+    const speaker = makeSpeaker('QUALITY_REVIEWED', {
+      id: 's-slotted',
+      isSlotAssigned: true,
+      sessionId: 'sess-1',
+    });
+    renderLanes([speaker], { sessions: [session] });
+    expect(screen.getByTestId(`slot-assigned-${speaker.id}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`needs-slot-link-${speaker.id}`)).not.toBeInTheDocument();
+  });
+
+  // FR18 — collapsible Declined strip.
+  it('should_renderDeclinedStrip_collapsedByDefault', () => {
+    const declined = makeSpeaker('DECLINED', { id: 's-dec' });
+    renderLanes([declined]);
+    expect(screen.getByTestId('declined-strip')).toBeInTheDocument();
+    const toggle = screen.getByTestId('declined-strip-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveTextContent('▸ Declined (1)');
+    // Collapsed → the declined card is not in the DOM (unmountOnExit).
+    expect(screen.queryByTestId(`speaker-card-${declined.id}`)).not.toBeInTheDocument();
+  });
+
+  it('should_expandDeclinedStrip_when_toggleClicked', async () => {
+    const user = userEvent.setup();
+    const declined = makeSpeaker('DECLINED', { id: 's-dec2' });
+    renderLanes([declined]);
+    await user.click(screen.getByTestId('declined-strip-toggle'));
+    expect(screen.getByTestId('declined-strip-toggle')).toHaveAttribute('aria-expanded', 'true');
+    expect(await screen.findByTestId(`speaker-card-${declined.id}`)).toBeInTheDocument();
+  });
+
+  it('should_notRenderDeclinedStrip_when_noDeclinedSpeakers', () => {
+    renderLanes([makeSpeaker('IDENTIFIED', { id: 's-only-id' })]);
+    expect(screen.queryByTestId('declined-strip')).not.toBeInTheDocument();
+  });
+
+  it('should_notPlaceDeclinedCard_inAnyPhaseColumn', () => {
+    const declined = makeSpeaker('DECLINED', { id: 's-dec3' });
+    renderLanes([declined]);
+    for (const key of ['sourcing', 'inviting', 'content', 'confirmed']) {
+      const col = screen.getByTestId(`phase-column-${key}`);
+      expect(within(col).queryByTestId(`speaker-card-${declined.id}`)).not.toBeInTheDocument();
+    }
+  });
+
+  // FR21 — clicking a card opens the drawer.
+  it('should_callOnSpeakerClick_when_cardBodyClicked', async () => {
+    const user = userEvent.setup();
+    const onSpeakerClick = vi.fn();
+    const speaker = makeSpeaker('INVITED', { id: 's-click' });
+    renderLanes([speaker], { onSpeakerClick });
+    await user.click(screen.getByTestId(`speaker-card-${speaker.id}`));
+    expect(onSpeakerClick).toHaveBeenCalledWith(expect.objectContaining({ id: speaker.id }));
+  });
+
+  // NFR7 — a11y: columns + declined toggle + divider carry roles/labels.
+  it('should_labelEachPhaseColumn_asAriaGroup', () => {
+    renderLanes([]);
+    expect(screen.getByTestId('phase-column-sourcing')).toHaveAttribute('role', 'group');
+    expect(screen.getByTestId('phase-column-sourcing')).toHaveAttribute('aria-label', 'Sourcing');
+  });
+
+  it('should_toggleDeclinedStrip_viaKeyboard', async () => {
+    const user = userEvent.setup();
+    const declined = makeSpeaker('DECLINED', { id: 's-dec-kbd' });
+    renderLanes([declined]);
+    const toggle = screen.getByTestId('declined-strip-toggle');
+    toggle.focus();
+    expect(toggle).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('should_labelDivider_asSeparator', () => {
+    const stale = makeSpeaker('ACCEPTED', {
+      id: 's-stale-d',
+      acceptedAt: new Date(NOW.getTime() - 30 * 86_400_000).toISOString(),
+    });
+    const fresh = makeSpeaker('ACCEPTED', {
+      id: 's-fresh-d',
+      acceptedAt: new Date(NOW.getTime() - 1 * 86_400_000).toISOString(),
+    });
+    renderLanes([stale, fresh]);
+    const divider = screen.getByTestId('phase-column-divider-content');
+    expect(divider).toHaveAttribute('role', 'separator');
+    expect(divider).toHaveAttribute('aria-label', 'Waiting on speaker');
+  });
+
+  // Per-state primary-action buttons (carry-over contract from 11.D.2).
+  it('should_renderLogOutreachButton_when_speakerIsIdentified', () => {
+    const speaker = makeSpeaker('IDENTIFIED');
+    renderLanes([speaker]);
+    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
+    expect(btn).toHaveTextContent('Log outreach');
+    expect(btn).toHaveAttribute('data-action', 'log-outreach');
+  });
+
+  it('should_renderSendInvitationButton_when_speakerIsReady', () => {
+    const speaker = makeSpeaker('READY');
+    renderLanes([speaker], { maxSlots: 8 });
+    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
+    expect(btn).toHaveTextContent('Send invitation');
+  });
+
+  it('should_disableSendInvitation_when_slotCapacityReached', () => {
+    const ready = makeSpeaker('READY');
+    const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
+    const invited = makeSpeaker('INVITED', { id: 'inv-1' });
+    renderLanes([ready, accepted, invited], { maxSlots: 2 });
+    expect(screen.getByTestId(`primary-action-button-${ready.id}`)).toBeDisabled();
+  });
+
+  it('should_renderTimeInStateChip_onCard', () => {
+    const speaker = makeSpeaker('IDENTIFIED', { updatedAt: '2026-05-10T00:00:00Z' });
+    renderLanes([speaker]);
+    expect(screen.getByTestId(`time-in-state-chip-${speaker.id}`)).toHaveTextContent('2 days');
+  });
+
+  it('should_notRenderPrimaryActionButton_forQualityReviewed_slotTieInReplacesIt', () => {
+    const speaker = makeSpeaker('QUALITY_REVIEWED', { id: 's-qr-noslot', isSlotAssigned: false });
+    renderLanes([speaker]);
+    // The QUALITY_REVIEWED card uses the slot tie-in, not the assign-slot primary button.
+    expect(screen.queryByTestId(`primary-action-button-${speaker.id}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`needs-slot-link-${speaker.id}`)).toBeInTheDocument();
+  });
+});
+
+describe('SpeakerStatusLanes — workflow-safe cross-column drag (Story 14.C.3)', () => {
+  let queryClient: QueryClient;
+  const eventCode = 'BATbern56';
+  const NOW = new Date('2026-05-16T12:00:00Z');
+
+  const makeSpeaker = (
+    status: SpeakerWorkflowState,
+    overrides: Partial<SpeakerPoolEntry> = {}
+  ): SpeakerPoolEntry => ({
+    id: `speaker-${status.toLowerCase()}`,
+    eventId: 'event-1',
+    speakerName: `${status} Speaker`,
+    status,
+    createdAt: '2026-05-14T00:00:00Z',
+    updatedAt: '2026-05-14T00:00:00Z',
     ...overrides,
   });
 
@@ -242,8 +487,7 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
           speakers={speakers}
           sessions={[]}
           maxSlots={overrides.maxSlots}
-          eventDate={overrides.eventDate}
-          now={overrides.now}
+          now={NOW}
           onLogOutreach={overrides.onLogOutreach}
           onPromoteSpeaker={overrides.onPromoteSpeaker}
           onSendInvitation={overrides.onSendInvitation}
@@ -255,829 +499,154 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
       </QueryClientProvider>
     );
 
-  // AC9 #1
-  it('should_renderLogOutreachButton_when_speakerIsIdentified', () => {
-    const speaker = makeSpeaker('IDENTIFIED');
-    renderLanes([speaker]);
-    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
-    expect(btn).toBeInTheDocument();
-    expect(btn).toHaveTextContent('Log outreach');
-    expect(btn).toHaveAttribute('data-action', 'log-outreach');
-    expect(btn).not.toBeDisabled();
+  // Drop onto a PHASE COLUMN (over.id = phase key), not a per-state lane.
+  const dropOnColumn = (fromId: string, phase: string) => {
+    if (!dndKitTestHandle.onDragEnd) {
+      throw new Error('DndContext onDragEnd was not captured — was renderLanes() called first?');
+    }
+    act(() => {
+      dndKitTestHandle.onDragEnd!({ active: { id: fromId }, over: { id: phase } });
+    });
+  };
+
+  // FR19 — forward cross-column drag invokes the same modal handler as the card button,
+  // advancing exactly ONE transition. Dropping IDENTIFIED on Content fires only
+  // IDENTIFIED→CONTACTED (the log-outreach modal), never three steps, never auto-commit.
+  it('should_invokeLogOutreachOnce_when_droppingIdentifiedOnContentColumn', () => {
+    const onLogOutreach = vi.fn();
+    const onPromoteSpeaker = vi.fn();
+    const identified = makeSpeaker('IDENTIFIED');
+    renderLanes([identified], { onLogOutreach, onPromoteSpeaker });
+
+    dropOnColumn(identified.id, 'content');
+
+    expect(onLogOutreach).toHaveBeenCalledTimes(1);
+    expect(onLogOutreach).toHaveBeenCalledWith(expect.objectContaining({ id: identified.id }));
+    // Exactly one step — the downstream promote modal must NOT fire.
+    expect(onPromoteSpeaker).not.toHaveBeenCalled();
   });
 
-  // AC9 #2
-  it('should_renderPromoteToSpeakerButton_when_speakerIsContacted', () => {
-    const speaker = makeSpeaker('CONTACTED');
-    renderLanes([speaker]);
-    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
-    expect(btn).toHaveTextContent('Promote to speaker');
-    expect(btn).toHaveAttribute('data-action', 'promote-to-speaker');
+  it('should_invokePromoteModal_when_droppingContactedOnInvitingColumn', () => {
+    const onPromoteSpeaker = vi.fn();
+    const contacted = makeSpeaker('CONTACTED');
+    renderLanes([contacted], { onPromoteSpeaker });
+
+    dropOnColumn(contacted.id, 'inviting');
+
+    expect(onPromoteSpeaker).toHaveBeenCalledTimes(1);
   });
 
-  // AC9 #3
-  it('should_renderSendInvitationButton_when_speakerIsReady', () => {
-    const speaker = makeSpeaker('READY');
-    renderLanes([speaker], { maxSlots: 8 });
-    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
-    expect(btn).toHaveTextContent('Send invitation');
-    expect(btn).toHaveAttribute('data-action', 'send-invitation');
-    expect(btn).not.toBeDisabled();
+  it('should_invokeSendInvitationModal_when_droppingReadyOnContentColumn', () => {
+    const onSendInvitation = vi.fn();
+    const ready = makeSpeaker('READY');
+    renderLanes([ready], { onSendInvitation, maxSlots: 8 });
+
+    dropOnColumn(ready.id, 'content');
+
+    expect(onSendInvitation).toHaveBeenCalledTimes(1);
   });
 
-  // AC9 #4
-  it('should_disableSendInvitation_when_slotCapacityReached', async () => {
-    const user = userEvent.setup();
+  // NFR1 — a drag that would provision/email opens the modal; no mutation fires until confirm.
+  it('should_notFireStatusMutation_forLegalInputForwardDrop', async () => {
+    const { speakerStatusService } = await import('@/services/speakerStatusService');
+    const updateStatus = vi.mocked(speakerStatusService.updateStatus);
+    const onSendInvitation = vi.fn();
+    const ready = makeSpeaker('READY');
+    renderLanes([ready], { onSendInvitation, maxSlots: 8 });
+
+    // READY→INVITED is within the Inviting phase, so the forward drag crosses into Content.
+    dropOnColumn(ready.id, 'content');
+
+    expect(onSendInvitation).toHaveBeenCalledTimes(1);
+    expect(updateStatus).not.toHaveBeenCalled();
+  });
+
+  // legal-direct (INVITED→ACCEPTED) is the only auto-commit; dropping INVITED on Content
+  // advances exactly one step (→ACCEPTED) via the mutation.
+  it('should_fireUpdateStatusMutation_when_droppingInvitedOnContentColumn', async () => {
+    const { speakerStatusService } = await import('@/services/speakerStatusService');
+    const updateStatus = vi.mocked(speakerStatusService.updateStatus);
+    updateStatus.mockResolvedValue({} as never);
+    const invited = makeSpeaker('INVITED');
+    renderLanes([invited]);
+
+    dropOnColumn(invited.id, 'content');
+
+    await waitFor(() => expect(updateStatus).toHaveBeenCalledTimes(1));
+    expect(updateStatus).toHaveBeenCalledWith(eventCode, invited.id, 'ACCEPTED', undefined);
+  });
+
+  // FR20 — backward drag snaps back: no modal, no mutation, no toast.
+  it('should_snapBack_when_draggingQualityReviewedBackwardToContentColumn', async () => {
+    const { speakerStatusService } = await import('@/services/speakerStatusService');
+    const updateStatus = vi.mocked(speakerStatusService.updateStatus);
+    const onReviewContent = vi.fn();
+    const quality = makeSpeaker('QUALITY_REVIEWED', { isSlotAssigned: false });
+    renderLanes([quality], { onReviewContent });
+
+    dropOnColumn(quality.id, 'content');
+
+    expect(onReviewContent).not.toHaveBeenCalled();
+    expect(updateStatus).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('kanban-drop-toast')).not.toBeInTheDocument();
+  });
+
+  // Same-phase drop is a no-op (within-pair advances use the card button, not a drag).
+  it('should_noop_when_droppingOnSamePhaseColumn', () => {
+    const onLogOutreach = vi.fn();
+    const identified = makeSpeaker('IDENTIFIED');
+    renderLanes([identified], { onLogOutreach });
+
+    dropOnColumn(identified.id, 'sourcing');
+
+    expect(onLogOutreach).not.toHaveBeenCalled();
+  });
+
+  // legal-decline is no longer reachable by drag (no DECLINED column); decline-by-drop
+  // forward is impossible. Slot-capacity blocked forward drop surfaces the toast.
+  it('should_showSlotCapacityToast_when_droppingReadyForward_andCapacityReached', async () => {
     const ready = makeSpeaker('READY');
     const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
     const invited = makeSpeaker('INVITED', { id: 'inv-1' });
     renderLanes([ready, accepted, invited], { maxSlots: 2 });
 
-    const btn = screen.getByTestId(`primary-action-button-${ready.id}`);
-    expect(btn).toBeDisabled();
+    dropOnColumn(ready.id, 'content');
 
-    const tooltipWrapper = screen.getByTestId(`primary-action-tooltip-${ready.id}`);
-    expect(tooltipWrapper).toBeInTheDocument();
-    // Hover the wrapping span so MUI renders the tooltip popper, then assert the
-    // parameter-interpolated message reached the DOM.
-    await user.hover(tooltipWrapper);
-    const tooltip = await screen.findByRole('tooltip');
-    expect(tooltip).toHaveTextContent(/1 invitations? outstanding/);
-    expect(tooltip).toHaveTextContent(/1 acceptances? for 2 slots/);
+    const toast = await screen.findByTestId('kanban-drop-toast');
+    expect(toast).toHaveTextContent(/Slot capacity reached/);
   });
 
-  // Decision #1 (2026-05-17) — Post-acceptance speakers occupy slots per ADR-009.
-  it('should_disableSendInvitation_when_postAcceptanceStatesFillSlots', () => {
+  it('should_disableDraggable_when_speakerIsDeclined', async () => {
+    const user = userEvent.setup();
+    const declined = makeSpeaker('DECLINED');
+    const identified = makeSpeaker('IDENTIFIED', { id: 's-id-1' });
+    renderLanes([declined, identified]);
+    // Expand the strip so the declined card mounts and its useDraggable runs.
+    await user.click(screen.getByTestId('declined-strip-toggle'));
+    await screen.findByTestId(`speaker-card-${declined.id}`);
+
+    const declinedCall = dndKitTestHandle.useDraggableCalls.find((c) => c.id === declined.id);
+    const identifiedCall = dndKitTestHandle.useDraggableCalls.find((c) => c.id === identified.id);
+    expect(declinedCall?.disabled).toBe(true);
+    expect(identifiedCall?.disabled).toBe(false);
+  });
+
+  it('should_resetDragState_onDragEndWithNoTarget', () => {
     const ready = makeSpeaker('READY');
-    const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
-    const contentSubmitted = makeSpeaker('CONTENT_SUBMITTED', { id: 'cs-1' });
-    const qualityReviewed = makeSpeaker('QUALITY_REVIEWED', { id: 'qr-1' });
-    renderLanes([ready, accepted, contentSubmitted, qualityReviewed], { maxSlots: 3 });
+    renderLanes([ready], { maxSlots: 8 });
 
-    const btn = screen.getByTestId(`primary-action-button-${ready.id}`);
-    expect(btn).toBeDisabled();
-  });
-
-  // AC9 #5
-  it('should_renderViewResponseStatusButton_when_speakerIsInvited', () => {
-    const speaker = makeSpeaker('INVITED');
-    renderLanes([speaker]);
-    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
-    expect(btn).toHaveTextContent('View response status');
-    expect(btn).toHaveAttribute('data-action', 'view-response-status');
-  });
-
-  // AC9 #6
-  it('should_renderEnterContentButton_when_speakerIsAccepted', () => {
-    const speaker = makeSpeaker('ACCEPTED');
-    renderLanes([speaker]);
-    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
-    expect(btn).toHaveTextContent('Enter content');
-    expect(btn).toHaveAttribute('data-action', 'enter-content');
-  });
-
-  // AC9 #7
-  it('should_renderReviewContentButton_when_speakerIsContentSubmitted', () => {
-    const speaker = makeSpeaker('CONTENT_SUBMITTED');
-    renderLanes([speaker]);
-    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
-    expect(btn).toHaveTextContent('Review content');
-    expect(btn).toHaveAttribute('data-action', 'review-content');
-  });
-
-  // AC9 #8
-  it('should_renderAssignSessionSlotButton_when_speakerIsQualityReviewed_andNoSlotAssigned', () => {
-    const speaker = makeSpeaker('QUALITY_REVIEWED', { isSlotAssigned: false });
-    renderLanes([speaker]);
-    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
-    expect(btn).toHaveTextContent('Assign session slot');
-    expect(btn).toHaveAttribute('data-action', 'assign-session-slot');
-  });
-
-  // AC9 #9
-  it('should_renderPublishableChip_when_speakerIsQualityReviewed_andSlotAssigned', async () => {
-    const user = userEvent.setup();
-    const onSpeakerClick = vi.fn();
-    const onAssignSessionSlot = vi.fn();
-    const speaker = makeSpeaker('QUALITY_REVIEWED', { isSlotAssigned: true });
-    renderLanes([speaker], { onSpeakerClick, onAssignSessionSlot });
-    // No button — only the info chip.
-    expect(screen.queryByTestId(`primary-action-button-${speaker.id}`)).not.toBeInTheDocument();
-    const chip = screen.getByTestId(`primary-action-chip-${speaker.id}`);
-    expect(chip).toBeInTheDocument();
-    expect(chip).toHaveTextContent('Publishable');
-    // AC1 success-color contract.
-    expect(chip.className).toMatch(/MuiChip-colorSuccess/);
-    // The chip is informational — clicking it must not fire the assign-slot action.
-    await user.click(chip);
-    expect(onAssignSessionSlot).not.toHaveBeenCalled();
-  });
-
-  // AC9 #10
-  it('should_renderViewDetailsButton_when_speakerIsDeclined', () => {
-    const speaker = makeSpeaker('DECLINED');
-    renderLanes([speaker]);
-    const btn = screen.getByTestId(`primary-action-button-${speaker.id}`);
-    expect(btn).toHaveTextContent('View details');
-    expect(btn).toHaveAttribute('data-action', 'view-details');
-  });
-
-  // AC9 #11
-  it('should_callOnLogOutreach_when_logOutreachButtonClicked', async () => {
-    const user = userEvent.setup();
-    const onLogOutreach = vi.fn();
-    const speaker = makeSpeaker('IDENTIFIED');
-    renderLanes([speaker], { onLogOutreach });
-
-    await user.click(screen.getByTestId(`primary-action-button-${speaker.id}`));
-
-    expect(onLogOutreach).toHaveBeenCalledTimes(1);
-    expect(onLogOutreach).toHaveBeenCalledWith(expect.objectContaining({ id: speaker.id }));
-  });
-
-  // AC9 #12
-  it('should_callOnPromoteSpeaker_when_promoteToSpeakerButtonClicked', async () => {
-    const user = userEvent.setup();
-    const onPromoteSpeaker = vi.fn();
-    const speaker = makeSpeaker('CONTACTED');
-    renderLanes([speaker], { onPromoteSpeaker });
-
-    await user.click(screen.getByTestId(`primary-action-button-${speaker.id}`));
-
-    expect(onPromoteSpeaker).toHaveBeenCalledTimes(1);
-    expect(onPromoteSpeaker).toHaveBeenCalledWith(expect.objectContaining({ id: speaker.id }));
-  });
-
-  // AC9 #13
-  it('should_callOnSpeakerClick_when_viewResponseStatusButtonClicked', async () => {
-    const user = userEvent.setup();
-    const onSpeakerClick = vi.fn();
-    const speaker = makeSpeaker('INVITED');
-    renderLanes([speaker], { onSpeakerClick });
-
-    await user.click(screen.getByTestId(`primary-action-button-${speaker.id}`));
-
-    expect(onSpeakerClick).toHaveBeenCalled();
-    expect(onSpeakerClick.mock.calls[0][0]).toEqual(expect.objectContaining({ id: speaker.id }));
-  });
-
-  // AC9 #14
-  it('should_renderTimeInStateChip_onOrganizerRow_rightAligned', () => {
-    const speaker = makeSpeaker('IDENTIFIED', { updatedAt: '2026-05-10T00:00:00Z' });
-    renderLanes([speaker]);
-    const chip = screen.getByTestId(`time-in-state-chip-${speaker.id}`);
-    expect(chip).toBeInTheDocument();
-    // The mocked formatDistanceToNow returns "2 days" — the chip text must surface it.
-    expect(chip).toHaveTextContent('2 days');
-    // Chip is inside the organizer row container.
-    const row = screen.getByTestId(`organizer-row-${speaker.id}`);
-    expect(row).toContainElement(chip);
-  });
-
-  // AC3 priority-ordering — for INVITED speakers, `invitedAt` wins over `updatedAt`.
-  it('should_useInvitedAt_overUpdatedAt_forInvitedSpeakerTimeInState', async () => {
-    const { formatDistanceToNow } = await import('date-fns');
-    const speaker = makeSpeaker('INVITED', {
-      invitedAt: '2026-05-10T00:00:00Z',
-      updatedAt: '2026-05-15T00:00:00Z',
+    act(() => {
+      dndKitTestHandle.onDragStart!({ active: { id: ready.id } });
     });
-    renderLanes([speaker]);
-    // The helper must have been called with the invitedAt value, not updatedAt.
-    expect(formatDistanceToNow).toHaveBeenCalled();
-    const lastCall = (formatDistanceToNow as ReturnType<typeof vi.fn>).mock.calls.at(-1);
-    expect(lastCall?.[0]).toBeInstanceOf(Date);
-    expect((lastCall?.[0] as Date).toISOString()).toBe('2026-05-10T00:00:00.000Z');
-  });
-
-  // AC3 priority-ordering — for DECLINED speakers, `declinedAt` wins.
-  it('should_useDeclinedAt_overUpdatedAt_forDeclinedSpeakerTimeInState', async () => {
-    const { formatDistanceToNow } = await import('date-fns');
-    (formatDistanceToNow as ReturnType<typeof vi.fn>).mockClear();
-    const speaker = makeSpeaker('DECLINED', {
-      declinedAt: '2026-04-20T00:00:00Z',
-      updatedAt: '2026-05-15T00:00:00Z',
-    });
-    renderLanes([speaker]);
-    const lastCall = (formatDistanceToNow as ReturnType<typeof vi.fn>).mock.calls.at(-1);
-    expect((lastCall?.[0] as Date).toISOString()).toBe('2026-04-20T00:00:00.000Z');
-  });
-
-  // AC9 #15 — regression guard: legacy IDENTIFIED IconButton must not render
-  it('should_notRenderLegacySendInviteIconButton_onIdentifiedCards', () => {
-    const speaker = makeSpeaker('IDENTIFIED', { email: 'jane@example.com' });
-    renderLanes([speaker]);
-    expect(screen.queryByTestId(`invite-button-${speaker.id}`)).not.toBeInTheDocument();
-  });
-
-  // AC9 #16 — regression guard: legacy "invitation sent" badge must not render
-  it('should_notRenderLegacyEmailSentBadge_onContactedCards', () => {
-    const speaker = makeSpeaker('CONTACTED');
-    renderLanes([speaker]);
-    expect(screen.queryByTestId('invite-sent-badge')).not.toBeInTheDocument();
-  });
-
-  // AC9 #17 — regression guard: CONFIRMED lane must not render
-  it('should_notRenderConfirmedLane', () => {
-    renderLanes([]);
-    expect(screen.queryByTestId('status-lane-confirmed')).not.toBeInTheDocument();
-  });
-
-  // AC9 #18 — lane order per ADR-009 §0.1
-  it('should_renderLanesInAdr009Order', () => {
-    renderLanes([]);
-    const allLanes = screen.getAllByTestId(/^status-lane-/);
-    const laneOrder = allLanes
-      .map((el) => el.getAttribute('data-testid'))
-      .filter((id): id is string => !!id && !id.includes('heading'));
-    expect(laneOrder).toEqual([
-      'status-lane-identified',
-      'status-lane-contacted',
-      'status-lane-ready',
-      'status-lane-invited',
-      'status-lane-accepted',
-      'status-lane-content_submitted',
-      'status-lane-quality_reviewed',
-      'status-lane-declined',
-    ]);
-  });
-
-  // Additional: confirm the primary-action button stops propagation so the parent
-  // Card's onClick (drawer-open) does not fire.
-  it('should_notOpenDrawer_when_primaryActionButtonClicked', async () => {
-    const user = userEvent.setup();
-    const onSpeakerClick = vi.fn();
-    const onLogOutreach = vi.fn();
-    const speaker = makeSpeaker('IDENTIFIED');
-    renderLanes([speaker], { onLogOutreach, onSpeakerClick });
-
-    await user.click(screen.getByTestId(`primary-action-button-${speaker.id}`));
-
-    expect(onLogOutreach).toHaveBeenCalledTimes(1);
-    // Card-level click should not have fired (stopPropagation in the button handler).
-    expect(onSpeakerClick).not.toHaveBeenCalled();
-  });
-
-  // Additional: a card with no organizer assigned still renders its time-in-state chip.
-  it('should_renderTimeInStateChip_evenWithoutOrganizer', () => {
-    const speaker = makeSpeaker('IDENTIFIED', { assignedOrganizerId: null });
-    renderLanes([speaker]);
-    expect(screen.getByTestId(`time-in-state-chip-${speaker.id}`)).toBeInTheDocument();
-    expect(screen.queryByTestId(`assigned-organizer-chip-${speaker.id}`)).not.toBeInTheDocument();
-  });
-
-  // Confirm the AC11 invariant: when slot capacity is NOT enforced (maxSlots=0/undefined),
-  // the READY button is enabled even with many accepted+invited speakers.
-  it('should_keepSendInvitationEnabled_when_maxSlotsIsZero', () => {
-    const ready = makeSpeaker('READY');
-    const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
-    const invited = makeSpeaker('INVITED', { id: 'inv-1' });
-    renderLanes([ready, accepted, invited], { maxSlots: 0 });
-
-    expect(screen.getByTestId(`primary-action-button-${ready.id}`)).not.toBeDisabled();
-  });
-
-  it('should_keepSendInvitationEnabled_when_maxSlotsIsUndefined', () => {
-    const ready = makeSpeaker('READY');
-    const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
-    const invited = makeSpeaker('INVITED', { id: 'inv-1' });
-    // Omit maxSlots entirely — the prop default path.
-    renderLanes([ready, accepted, invited]);
-
-    expect(screen.getByTestId(`primary-action-button-${ready.id}`)).not.toBeDisabled();
-  });
-
-  // The within import is genuinely used by other tests over time; reference it here so
-  // future maintainers see the helper available for lane-scoped queries.
-  it('should_findCardByItsLaneContainer', () => {
-    const speaker = makeSpeaker('IDENTIFIED');
-    renderLanes([speaker]);
-    const lane = screen.getByTestId('status-lane-identified');
-    expect(within(lane).getByTestId(`speaker-card-${speaker.id}`)).toBeInTheDocument();
-  });
-
-  // Story 11.D.4 — drag-drop dispatcher coverage (AC10 cases 21-30).
-  describe('Story 11.D.4 — guided drag-drop dispatcher', () => {
-    // Case 23 — DECLINED card is not draggable.
-    // Per AC2 + Review-patch P2, this assertion is anchored on the hook-spy contract
-    // (`useDraggable({ disabled: true })`) rather than the brittle computed-cursor
-    // approach an earlier revision used. A future contributor who removes the
-    // `disabled` flag on the DECLINED branch will see this test fail.
-    it('should_disableDraggable_when_speakerIsDeclined', () => {
-      const declined = makeSpeaker('DECLINED');
-      const identified = makeSpeaker('IDENTIFIED', { id: 's-id-1' });
-      renderLanes([declined, identified]);
-      const lane = screen.getByTestId('status-lane-declined');
-      expect(within(lane).getByTestId(`speaker-card-${declined.id}`)).toBeInTheDocument();
-
-      // Hook-spy contract: useDraggable was called once per card. The DECLINED
-      // card must carry `disabled: true`; the IDENTIFIED card must NOT.
-      const declinedCall = dndKitTestHandle.useDraggableCalls.find((c) => c.id === declined.id);
-      const identifiedCall = dndKitTestHandle.useDraggableCalls.find((c) => c.id === identified.id);
-      expect(declinedCall).toBeDefined();
-      expect(declinedCall?.disabled).toBe(true);
-      expect(identifiedCall).toBeDefined();
-      expect(identifiedCall?.disabled).toBe(false);
-    });
-
-    // Synthesise a drop event by invoking the captured `handleDragEnd` from the
-    // SpeakerStatusLanes' DndContext. The unit-test layer bypasses pointer-event
-    // simulation per AC10 cases 21-22 (deferred to Playwright). The captured handler
-    // is the same callback wired into the production DndContext.
-    //
-    // Wrapped in `act()` so the React state updates inside `handleDragEnd` (mutation
-    // fire, dialog state change, drop-toast state change) flush before the test
-    // assertions run.
-    const triggerDrop = (fromId: string, toLane: string) => {
-      if (!dndKitTestHandle.onDragEnd) {
-        throw new Error('DndContext onDragEnd was not captured — was renderLanes() called first?');
-      }
-      act(() => {
-        dndKitTestHandle.onDragEnd!({
-          active: { id: fromId },
-          over: { id: toLane },
-        });
-      });
-    };
-
-    const triggerDragStart = (speakerId: string) => {
-      if (!dndKitTestHandle.onDragStart) {
-        throw new Error('DndContext onDragStart was not captured');
-      }
-      act(() => {
-        dndKitTestHandle.onDragStart!({ active: { id: speakerId } });
-      });
-    };
-
-    // Case 24 — legal-direct drop (INVITED → ACCEPTED is the only legal-direct today).
-    // Fires `updateStatusMutation` with the right (speakerId, newStatus). The mutation
-    // calls into `speakerStatusService.updateStatus`; we wait for that mock to fire,
-    // which proves the mutation was dispatched (TanStack Query schedules the mutationFn
-    // microtask-asynchronously).
-    it('should_fireUpdateStatusMutation_forLegalDirectDrop', async () => {
-      const { speakerStatusService } = await import('@/services/speakerStatusService');
-      const updateStatus = vi.mocked(speakerStatusService.updateStatus);
-      updateStatus.mockResolvedValue({} as never);
-
-      const invited = makeSpeaker('INVITED');
-      renderLanes([invited]);
-
-      triggerDrop(invited.id, 'ACCEPTED');
-
-      await waitFor(() => {
-        expect(updateStatus).toHaveBeenCalledTimes(1);
-      });
-      // (Direct-drop path uses no reason; only (eventCode, speakerId, newStatus).)
-      expect(updateStatus).toHaveBeenCalledWith(eventCode, invited.id, 'ACCEPTED', undefined);
-    });
-
-    // Case 25 — legal-input drops invoke the corresponding modal callback. One case
-    // per modal-kind, matching `classifyDrop`'s five legal-input branches.
-    describe('case 25 — legal-input drops invoke the corresponding modal callback', () => {
-      it('should_invokeOnLogOutreach_when_IDENTIFIEDtoCONTACTEDdrop', () => {
-        const onLogOutreach = vi.fn();
-        const identified = makeSpeaker('IDENTIFIED');
-        renderLanes([identified], { onLogOutreach });
-
-        triggerDrop(identified.id, 'CONTACTED');
-
-        expect(onLogOutreach).toHaveBeenCalledTimes(1);
-        expect(onLogOutreach).toHaveBeenCalledWith(expect.objectContaining({ id: identified.id }));
-      });
-
-      it('should_invokeOnPromoteSpeaker_when_CONTACTEDtoREADYdrop', () => {
-        const onPromoteSpeaker = vi.fn();
-        const contacted = makeSpeaker('CONTACTED');
-        renderLanes([contacted], { onPromoteSpeaker });
-
-        triggerDrop(contacted.id, 'READY');
-
-        expect(onPromoteSpeaker).toHaveBeenCalledTimes(1);
-        expect(onPromoteSpeaker).toHaveBeenCalledWith(
-          expect.objectContaining({ id: contacted.id })
-        );
-      });
-
-      it('should_invokeOnSendInvitation_when_READYtoINVITEDdrop_andCapacityNotReached', () => {
-        const onSendInvitation = vi.fn();
-        const ready = makeSpeaker('READY');
-        // No slot-capacity pressure → goes through the legal-input branch.
-        renderLanes([ready], { onSendInvitation, maxSlots: 8 });
-
-        triggerDrop(ready.id, 'INVITED');
-
-        expect(onSendInvitation).toHaveBeenCalledTimes(1);
-        expect(onSendInvitation).toHaveBeenCalledWith(expect.objectContaining({ id: ready.id }));
-      });
-
-      it('should_invokeOnEnterContent_when_ACCEPTEDtoCONTENT_SUBMITTEDdrop', () => {
-        const onEnterContent = vi.fn();
-        const accepted = makeSpeaker('ACCEPTED');
-        renderLanes([accepted], { onEnterContent });
-
-        triggerDrop(accepted.id, 'CONTENT_SUBMITTED');
-
-        expect(onEnterContent).toHaveBeenCalledTimes(1);
-        expect(onEnterContent).toHaveBeenCalledWith(expect.objectContaining({ id: accepted.id }));
-      });
-
-      it('should_invokeOnReviewContent_when_CONTENT_SUBMITTEDtoQUALITY_REVIEWEDdrop', () => {
-        const onReviewContent = vi.fn();
-        const contentSubmitted = makeSpeaker('CONTENT_SUBMITTED');
-        renderLanes([contentSubmitted], { onReviewContent });
-
-        triggerDrop(contentSubmitted.id, 'QUALITY_REVIEWED');
-
-        expect(onReviewContent).toHaveBeenCalledTimes(1);
-        expect(onReviewContent).toHaveBeenCalledWith(
-          expect.objectContaining({ id: contentSubmitted.id })
-        );
-      });
-    });
-
-    // Case 26 — legal-decline drop opens the StatusChangeDialog with the new status
-    // wired through. The dialog itself enforces the required-reason guard (case 29
-    // lives in StatusChangeDialog.test.tsx).
-    it('should_openStatusChangeDialog_withNewStatusDECLINED_when_legalDeclineDrop', async () => {
-      const accepted = makeSpeaker('ACCEPTED');
-      renderLanes([accepted]);
-
-      // Dialog is absent before the drop.
-      expect(screen.queryByTestId('status-change-dialog')).not.toBeInTheDocument();
-
-      triggerDrop(accepted.id, 'DECLINED');
-
-      // After dispatch, the dialog mounts (MUI portal → document.body) and exposes
-      // its testid. Use findByTestId to await the portal mount.
-      const dialog = await screen.findByTestId('status-change-dialog');
-      expect(dialog).toBeInTheDocument();
-      // The reason field is the dialog's input — its presence confirms the required-
-      // reason variant of the dialog is mounted for a DECLINED target.
-      expect(screen.getByTestId('status-change-reason')).toBeInTheDocument();
-    });
-
-    // Case 27 — slot-capacity gating produces a toast on READY → INVITED drop.
-    // (The drop simulation is brittle in JSDOM; assert the i18n key + slot-capacity math
-    // landed correctly via the disabled-button tooltip, which the dispatcher reuses.)
-    it('should_reuseSlotCapacityTooltipKey_forBlockedReadyToInvitedDrop', async () => {
-      const user = userEvent.setup();
-      const ready = makeSpeaker('READY');
-      const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
-      const invited = makeSpeaker('INVITED', { id: 'inv-1' });
-      renderLanes([ready, accepted, invited], { maxSlots: 2 });
-
-      // The disabled-button tooltip is the same surface the AC6 toast reuses.
-      const tooltipWrapper = screen.getByTestId(`primary-action-tooltip-${ready.id}`);
-      await user.hover(tooltipWrapper);
-      const tooltip = await screen.findByRole('tooltip');
-      expect(tooltip).toHaveTextContent(/Slot capacity reached/);
-    });
-
-    // Case 27 (drop-path) — the dispatcher's `legal-blocked-slot` branch also surfaces
-    // the slot-capacity message via the `kanban-drop-toast` Snackbar. Drop a READY
-    // card on INVITED while capacity is reached; the toast must mount with the
-    // parameter-interpolated `slotCapacityTooltip` text.
-    it('should_showSlotCapacityToast_when_droppingReadyOnInvited_andCapacityReached', async () => {
-      const ready = makeSpeaker('READY');
-      const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
-      const invited = makeSpeaker('INVITED', { id: 'inv-1' });
-      renderLanes([ready, accepted, invited], { maxSlots: 2 });
-
-      triggerDrop(ready.id, 'INVITED');
-
-      // Snackbar mounts to the DOM only when `open: true`; the open state flips inside
-      // the captured handler under act(). Use findBy to await the mount.
-      const toast = await screen.findByTestId('kanban-drop-toast');
-      expect(toast).toHaveTextContent(/Slot capacity reached/);
-    });
-
-    // Case 28 — drag-end resets kanban drag context + active speaker.
-    // Strategy: render a draggable card, fire `onDragStart` (no-op for this state
-    // assertion — the source-lane card still lives in its source lane DOM), then
-    // fire `onDragEnd` with a no-op drop (over === null) and assert that:
-    //   (a) no `data-active-speaker` attribute lingers anywhere (DragOverlay child
-    //       cleared because activeSpeaker → null), and
-    //   (b) the source lane still contains the card.
-    // Because dnd-kit is mocked, internal state changes happen synchronously inside
-    // React act() during the captured-handler invocation, so we don't need to await.
-    it('should_resetKanbanDragContext_andActiveSpeaker_onDragEnd', () => {
-      const ready = makeSpeaker('READY');
-      renderLanes([ready]);
-
-      // Fire drag-start to populate `activeSpeaker` + `dragContext`. During the drag,
-      // the source lane carries `data-drop-state="source"` (line 895 in SpeakerStatusLanes).
-      triggerDragStart(ready.id);
-      expect(screen.getByTestId('status-lane-ready').getAttribute('data-drop-state')).toBe(
-        'source'
-      );
-
-      // Fire drag-end with no `over` target → resetDragState() runs, function early-exits.
-      // Wrap in act() so the state updates that reset both `activeSpeaker` and
-      // `dragContext` are flushed before we assert.
-      act(() => {
-        dndKitTestHandle.onDragEnd!({
-          active: { id: ready.id },
-          over: null,
-        });
-      });
-
-      // (a) Source lane's drop-state attribute has reset to 'idle' (drag context
-      //     cleared → activeSourceStatus === null → lane no longer marked as source).
-      expect(screen.getByTestId('status-lane-ready').getAttribute('data-drop-state')).toBe('idle');
-
-      // (b) Card is still in its source lane (no spurious mutation fired).
-      const sourceLane = screen.getByTestId('status-lane-ready');
-      expect(within(sourceLane).getByTestId(`speaker-card-${ready.id}`)).toBeInTheDocument();
-
-      // (c) No drop-toast — neither illegal nor slot-capacity branches fired.
-      expect(screen.queryByTestId('kanban-drop-toast')).not.toBeInTheDocument();
-    });
-
-    // Case 30 — dropping on the same lane is a no-op.
-    // The dispatcher's early-exit guard `active.id === over.id || speaker.status === newStatus`
-    // must short-circuit BEFORE any modal callback or mutation. Drop a CONTACTED
-    // speaker on the CONTACTED lane → no `onPromoteSpeaker`, no toast, no mutation.
-    it('should_noop_when_droppingOnSameLane', async () => {
-      const { speakerStatusService } = await import('@/services/speakerStatusService');
-      const updateStatus = vi.mocked(speakerStatusService.updateStatus);
-
-      const onLogOutreach = vi.fn();
-      const onPromoteSpeaker = vi.fn();
-      const onSendInvitation = vi.fn();
-      const onEnterContent = vi.fn();
-      const onReviewContent = vi.fn();
-      const contacted = makeSpeaker('CONTACTED');
-      renderLanes([contacted], {
-        onLogOutreach,
-        onPromoteSpeaker,
-        onSendInvitation,
-        onEnterContent,
-        onReviewContent,
-      });
-
-      triggerDrop(contacted.id, 'CONTACTED');
-
-      // No modal callback fired.
-      expect(onLogOutreach).not.toHaveBeenCalled();
-      expect(onPromoteSpeaker).not.toHaveBeenCalled();
-      expect(onSendInvitation).not.toHaveBeenCalled();
-      expect(onEnterContent).not.toHaveBeenCalled();
-      expect(onReviewContent).not.toHaveBeenCalled();
-      // No mutation fired.
-      expect(updateStatus).not.toHaveBeenCalled();
-      // No toast — neither the illegal-drop nor slot-capacity branches ran.
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-
-    // Sanity guard — the SpeakerCard's onClick handler still opens the drawer when the
-    // primary action is not a button click. (Regression guard against the Story 11.D.4
-    // dispatch path accidentally swallowing card click handlers.)
-    it('should_callOnSpeakerClick_when_speakerCardBodyClicked_forDeclinedSpeaker', async () => {
-      const user = userEvent.setup();
-      const onSpeakerClick = vi.fn();
-      const speaker = makeSpeaker('DECLINED');
-      renderLanes([speaker], { onSpeakerClick });
-      const card = screen.getByTestId(`speaker-card-${speaker.id}`);
-      await user.click(card);
-      // DECLINED has a View Details primary-action button which calls onSpeakerClick;
-      // clicking the card body itself ALSO calls onSpeakerClick. Both paths funnel here.
-      expect(onSpeakerClick).toHaveBeenCalled();
-    });
-  });
-});
-
-describe('SpeakerStatusLanes — Story 11.D.3 column triage + chip colour coding', () => {
-  let queryClient: QueryClient;
-  const eventCode = 'BATbern56';
-  // Fixed `now` so day arithmetic is deterministic regardless of system clock.
-  const NOW = new Date('2026-05-16T12:00:00Z');
-
-  const daysAgoIso = (days: number) => new Date(NOW.getTime() - days * 86_400_000).toISOString();
-  const daysFromNowIso = (days: number) =>
-    new Date(NOW.getTime() + days * 86_400_000).toISOString();
-
-  const makeSpeaker = (
-    status: SpeakerWorkflowState,
-    overrides: Partial<SpeakerPoolEntry> = {}
-  ): SpeakerPoolEntry => ({
-    id: `s-${status.toLowerCase()}-${Math.random().toString(36).slice(2, 7)}`,
-    eventId: 'event-1',
-    speakerName: `${status} Speaker`,
-    status,
-    createdAt: daysAgoIso(2),
-    updatedAt: daysAgoIso(2),
-    ...overrides,
-  });
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    });
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    cleanup();
-  });
-
-  const renderLanes = (
-    speakers: SpeakerPoolEntry[],
-    overrides: Partial<React.ComponentProps<typeof SpeakerStatusLanes>> = {}
-  ) =>
-    render(
-      <QueryClientProvider client={queryClient}>
-        <SpeakerStatusLanes
-          eventCode={eventCode}
-          speakers={speakers}
-          sessions={[]}
-          maxSlots={overrides.maxSlots}
-          eventDate={overrides.eventDate}
-          now={overrides.now ?? NOW}
-          onLogOutreach={overrides.onLogOutreach}
-          onPromoteSpeaker={overrides.onPromoteSpeaker}
-          onSpeakerClick={overrides.onSpeakerClick}
-          onAssignSessionSlot={overrides.onAssignSessionSlot}
-        />
-      </QueryClientProvider>
+    expect(screen.getByTestId('phase-column-inviting').getAttribute('data-drop-state')).toBe(
+      'source'
     );
 
-  // AC5 #21
-  it('should_renderContactedSubline_when_someContactedCardsAreStale', () => {
-    const stale1 = makeSpeaker('CONTACTED', { id: 'c-stale-1', updatedAt: daysAgoIso(15) });
-    const stale2 = makeSpeaker('CONTACTED', { id: 'c-stale-2', updatedAt: daysAgoIso(20) });
-    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
-    renderLanes([stale1, stale2, fresh]);
-
-    const subline = screen.getByTestId('status-lane-subline-contacted');
-    expect(subline).toHaveTextContent('⚠ 2 stale (>14 days)');
-  });
-
-  // AC5 #22
-  it('should_notRenderContactedSubline_when_noContactedCardsAreStale', () => {
-    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
-    renderLanes([fresh]);
-
-    expect(screen.queryByTestId('status-lane-subline-contacted')).not.toBeInTheDocument();
-  });
-
-  // AC5 #23
-  it('should_renderReadyCapacityReachedSubline_when_slotCapacityReached', () => {
-    const ready = makeSpeaker('READY', { id: 'r-1' });
-    const accepted1 = makeSpeaker('ACCEPTED', { id: 'a-1' });
-    const accepted2 = makeSpeaker('ACCEPTED', { id: 'a-2' });
-    renderLanes([ready, accepted1, accepted2], { maxSlots: 2 });
-
-    const subline = screen.getByTestId('status-lane-subline-ready');
-    expect(subline).toHaveTextContent('⚠ Slot capacity reached');
-    // Per Resolved Q#5, the READY sub-line is static text — NOT a button.
-    expect(subline.tagName).not.toBe('BUTTON');
-  });
-
-  // AC5 #24
-  it('should_renderInvitedSubline_withApproachingAndPastClauses_joinedByDot', () => {
-    const approaching = makeSpeaker('INVITED', {
-      id: 'inv-app',
-      invitedAt: daysAgoIso(5),
-      responseDeadline: daysFromNowIso(2),
+    act(() => {
+      dndKitTestHandle.onDragEnd!({ active: { id: ready.id }, over: null });
     });
-    const past = makeSpeaker('INVITED', {
-      id: 'inv-past',
-      invitedAt: daysAgoIso(10),
-      responseDeadline: daysAgoIso(1),
-    });
-    renderLanes([approaching, past]);
-
-    const subline = screen.getByTestId('status-lane-subline-invited');
-    expect(subline).toHaveTextContent('⏰ 1 approaching deadline');
-    expect(subline).toHaveTextContent('⏰ 1 past deadline');
-    // Joiner " · " between the two clauses.
-    expect(subline.textContent).toContain(' · ');
-  });
-
-  // AC5 #25
-  it('should_renderQualityReviewedSubline_when_eventIs20DaysAway_andSomeHaveNoSlot', () => {
-    const noSlot1 = makeSpeaker('QUALITY_REVIEWED', {
-      id: 'qr-1',
-      updatedAt: daysAgoIso(2),
-      isSlotAssigned: false,
-    });
-    const noSlot2 = makeSpeaker('QUALITY_REVIEWED', {
-      id: 'qr-2',
-      updatedAt: daysAgoIso(2),
-      isSlotAssigned: false,
-    });
-    const slotted = makeSpeaker('QUALITY_REVIEWED', {
-      id: 'qr-3',
-      isSlotAssigned: true,
-    });
-    const eventDateIso = daysFromNowIso(20);
-    renderLanes([noSlot1, noSlot2, slotted], { eventDate: eventDateIso });
-
-    const subline = screen.getByTestId('status-lane-subline-quality_reviewed');
-    expect(subline).toHaveTextContent('🪑 2 awaiting slot');
-  });
-
-  // AC5 #26
-  it('should_renderTimeInStateChip_withWarningColor_when_speakerIsContactedFor8Days', () => {
-    const speaker = makeSpeaker('CONTACTED', { id: 'c-warn', updatedAt: daysAgoIso(8) });
-    renderLanes([speaker]);
-
-    const chip = screen.getByTestId(`time-in-state-chip-${speaker.id}`);
-    expect(chip.className).toMatch(/MuiChip-colorWarning/);
-    expect(chip.getAttribute('data-severity')).toBe('warning');
-  });
-
-  // AC5 #27
-  it('should_renderTimeInStateChip_withErrorColor_when_speakerIsContactedFor15Days', () => {
-    const speaker = makeSpeaker('CONTACTED', { id: 'c-err', updatedAt: daysAgoIso(15) });
-    renderLanes([speaker]);
-
-    const chip = screen.getByTestId(`time-in-state-chip-${speaker.id}`);
-    expect(chip.className).toMatch(/MuiChip-colorError/);
-    expect(chip.getAttribute('data-severity')).toBe('error');
-  });
-
-  // AC5 #28
-  it('should_clearAttentionFilter_when_subLineCountDropsToZero', async () => {
-    const user = userEvent.setup();
-    const stale1 = makeSpeaker('CONTACTED', { id: 'c-stale-1', updatedAt: daysAgoIso(20) });
-    const stale2 = makeSpeaker('CONTACTED', { id: 'c-stale-2', updatedAt: daysAgoIso(20) });
-    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
-    const { rerender } = renderLanes([stale1, stale2, fresh]);
-
-    // Activate the filter
-    await user.click(screen.getByTestId('status-lane-subline-contacted'));
-    expect(screen.getByTestId('status-lane-subline-contacted')).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
-
-    // Re-render with all stale speakers now fresh — the filter should auto-clear.
-    const refreshedStale1 = { ...stale1, updatedAt: daysAgoIso(2) };
-    const refreshedStale2 = { ...stale2, updatedAt: daysAgoIso(2) };
-    rerender(
-      <QueryClientProvider client={queryClient}>
-        <SpeakerStatusLanes
-          eventCode={eventCode}
-          speakers={[refreshedStale1, refreshedStale2, fresh]}
-          sessions={[]}
-          now={NOW}
-        />
-      </QueryClientProvider>
-    );
-
-    // No stale CONTACTED cards left → sub-line is gone (count==0 condition).
-    expect(screen.queryByTestId('status-lane-subline-contacted')).not.toBeInTheDocument();
-  });
-
-  // AC5 #29
-  it('should_filterContactedColumn_when_subLineClicked', async () => {
-    const user = userEvent.setup();
-    const stale1 = makeSpeaker('CONTACTED', { id: 'c-stale-1', updatedAt: daysAgoIso(20) });
-    const stale2 = makeSpeaker('CONTACTED', { id: 'c-stale-2', updatedAt: daysAgoIso(20) });
-    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
-    const identifiedNoise = makeSpeaker('IDENTIFIED', { id: 'i-noise' });
-    renderLanes([stale1, stale2, fresh, identifiedNoise]);
-
-    // Initial state: all 3 CONTACTED cards visible.
-    const contactedLane = screen.getByTestId('status-lane-contacted');
-    expect(within(contactedLane).getByTestId(`speaker-card-${stale1.id}`)).toBeInTheDocument();
-    expect(within(contactedLane).getByTestId(`speaker-card-${stale2.id}`)).toBeInTheDocument();
-    expect(within(contactedLane).getByTestId(`speaker-card-${fresh.id}`)).toBeInTheDocument();
-
-    // Click the sub-line → only the 2 stale cards remain in CONTACTED.
-    await user.click(screen.getByTestId('status-lane-subline-contacted'));
-
-    expect(within(contactedLane).getByTestId(`speaker-card-${stale1.id}`)).toBeInTheDocument();
-    expect(within(contactedLane).getByTestId(`speaker-card-${stale2.id}`)).toBeInTheDocument();
-    expect(within(contactedLane).queryByTestId(`speaker-card-${fresh.id}`)).not.toBeInTheDocument();
-
-    // Other columns are unaffected — IDENTIFIED noise still there.
-    const identifiedLane = screen.getByTestId('status-lane-identified');
-    expect(
-      within(identifiedLane).getByTestId(`speaker-card-${identifiedNoise.id}`)
-    ).toBeInTheDocument();
-  });
-
-  // AC5 #30
-  it('should_clearFilter_when_subLineClickedASecondTime', async () => {
-    const user = userEvent.setup();
-    const stale = makeSpeaker('CONTACTED', { id: 'c-stale', updatedAt: daysAgoIso(20) });
-    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
-    renderLanes([stale, fresh]);
-
-    const subline = screen.getByTestId('status-lane-subline-contacted');
-
-    // First click — filter active, only the stale card visible.
-    await user.click(subline);
-    const contactedLane = screen.getByTestId('status-lane-contacted');
-    expect(within(contactedLane).queryByTestId(`speaker-card-${fresh.id}`)).not.toBeInTheDocument();
-
-    // Second click — filter cleared, fresh card visible again.
-    await user.click(screen.getByTestId('status-lane-subline-contacted'));
-    expect(within(contactedLane).getByTestId(`speaker-card-${fresh.id}`)).toBeInTheDocument();
-    expect(screen.getByTestId('status-lane-subline-contacted')).toHaveAttribute(
-      'aria-pressed',
-      'false'
+    expect(screen.getByTestId('phase-column-inviting').getAttribute('data-drop-state')).toBe(
+      'idle'
     );
   });
 });

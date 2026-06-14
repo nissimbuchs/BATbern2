@@ -225,7 +225,17 @@
       "addSpeakers": "Referenten hinzufügen",
       "addToPool": "Referenten zum Pool hinzufügen",
       "kanbanView": "Kanban-Ansicht",
-      "sessionsView": "Sessions-Ansicht"
+      "sessionsView": "Sessions-Ansicht",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Zeitfenster",
+      "poolView": "Referenten-Pool-Ansicht",
+      "agendaView": "Agenda-Ansicht",
+      "slotsView": "Zeitfenster-Ansicht",
+      "needsSlotSummary": "{{count}} von {{total}} Sessions brauchen ein Zeitfenster",
+      "allSlotted": "Alle Sessions eingeplant",
+      "arrangeSlots": "Zeitfenster zuweisen",
+      "noSessionsYet": "Noch keine Sessions"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -900,6 +910,9 @@
         "projector": "Projektor",
         "recording": "Aufzeichnung"
       }
+    },
+    "actionBar": {
+      "label": "Zeitfenster-Aktionen"
     }
   },
   "newsletter": {

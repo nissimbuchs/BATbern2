@@ -221,7 +221,17 @@
       "addSpeakers": "スピーカーを追加",
       "addToPool": "プールにスピーカーを追加",
       "kanbanView": "カンバンビュー",
-      "sessionsView": "セッションビュー"
+      "sessionsView": "セッションビュー",
+      "pool": "プール",
+      "agenda": "アジェンダ",
+      "slots": "スロット",
+      "poolView": "スピーカープール表示",
+      "agendaView": "アジェンダ表示",
+      "slotsView": "スロット表示",
+      "needsSlotSummary": "{{total}}件中{{count}}件のセッションにスロットが必要です",
+      "allSlotted": "すべてのセッションが割り当て済みです",
+      "arrangeSlots": "スロットを割り当てる",
+      "noSessionsYet": "セッションはまだありません"
     },
     "newsletter": {
       "title": "ニュースレター",
@@ -876,6 +886,9 @@
         "projector": "プロジェクター",
         "recording": "録音"
       }
+    },
+    "actionBar": {
+      "label": "スロット割り当てのアクション"
     }
   },
   "newsletter": {

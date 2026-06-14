@@ -221,7 +221,17 @@
       "addSpeakers": "Sprekers toevoegen",
       "addToPool": "Sprekers aan pool toevoegen",
       "kanbanView": "Kanban-weergave",
-      "sessionsView": "Sessieweergave"
+      "sessionsView": "Sessieweergave",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Tijdvakken",
+      "poolView": "Sprekerspoolweergave",
+      "agendaView": "Agendaweergave",
+      "slotsView": "Tijdvakweergave",
+      "needsSlotSummary": "{{count}} van {{total}} sessies hebben een tijdvak nodig",
+      "allSlotted": "Alle sessies zijn ingepland",
+      "arrangeSlots": "Tijdvakken indelen",
+      "noSessionsYet": "Nog geen sessies"
     },
     "newsletter": {
       "title": "Nieuwsbrief",
@@ -876,6 +886,9 @@
         "projector": "Projector",
         "recording": "Opname"
       }
+    },
+    "actionBar": {
+      "label": "Acties voor tijdvaktoewijzing"
     }
   },
   "newsletter": {

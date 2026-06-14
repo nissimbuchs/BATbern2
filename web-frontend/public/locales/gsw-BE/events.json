@@ -227,7 +227,17 @@
       "addSpeakers": "Redneri hinzuefüege",
       "addToPool": "Redneri zum Pool hinzuefüege",
       "kanbanView": "Kanban-Ansicht",
-      "sessionsView": "Sessione-Ansicht"
+      "sessionsView": "Sessione-Ansicht",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Zytfänschter",
+      "poolView": "Referänte-Pool-Asicht",
+      "agendaView": "Agenda-Asicht",
+      "slotsView": "Zytfänschter-Asicht",
+      "needsSlotSummary": "{{count}} vo {{total}} Sessione bruuche es Zytfänschter",
+      "allSlotted": "Alli Sessione si iplant",
+      "arrangeSlots": "Zytfänschter zueteile",
+      "noSessionsYet": "No kener Sessione"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -878,6 +888,9 @@
         "projector": "Beamer",
         "recording": "Ufnahm"
       }
+    },
+    "actionBar": {
+      "label": "Zytfänschter-Aktione"
     }
   },
   "newsletter": {

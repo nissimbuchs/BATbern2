@@ -271,7 +271,15 @@
     "confirmChangeMessage": "Vaihdetaanko {{speaker}}:n tila tilasta {{from}} tilaan {{to}}?",
     "reasonHelperText": "Valinnainen (enintään {{max}} merkkiä)",
     "reasonPlaceholder": "esim. Puhuja vahvistettu sähköpostitse",
-    "reasonTooLong": "Syy on liian pitkä ({{current}}/{{max}} merkkiä)"
+    "reasonTooLong": "Syy on liian pitkä ({{current}}/{{max}} merkkiä)",
+    "phaseColumns": {
+      "sourcing": "Kartoitus",
+      "inviting": "Kutsuminen",
+      "content": "Sisältö",
+      "confirmed": "Vahvistettu"
+    },
+    "declinedStrip": "▸ Kieltäytyneet ({{count}})",
+    "waitingOnSpeakerDivider": "Odottaa puhujaa"
   },
   "speakerContent": {
     "submitContent": "Lähetä puhujan sisältö",
@@ -544,7 +552,10 @@
       "filterClearedAnnouncement": "Sarakesuodatin poistettu",
       "filterAppliedAnnouncement": "Sarake {{state}} suodatettu, näkyvissä {{count}} korttia"
     },
-    "selfNominated": "Itse ehdottanut"
+    "selfNominated": "Itse ehdottanut",
+    "needsASlot": "⚠ Tarvitsee aikavälin →",
+    "slotAssigned": "Aikaväli varattu",
+    "slotAssignedAt": "✓ {{time}}"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
@@ -559,7 +570,8 @@
     "declineDialog": {
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
-    }
+    },
+    "invalidColumnTooltip": "Ei kelvollinen eteenpäin siirtyminen tähän sarakkeeseen."
   },
   "speakerDrawer": {
     "secondaryActions": {

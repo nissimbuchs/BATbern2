@@ -1,8 +1,9 @@
 /**
- * DragDropSlotAssignment Component Tests (Story 5.7 - Task 4a RED Phase)
+ * DragDropSlotAssignment Component Tests
  *
- * Tests for drag-and-drop slot assignment interface
- * Following TDD: These tests MUST fail until implementation (Task 4b)
+ * Story 5.7 — original drag-and-drop slot assignment behaviour.
+ * Epic 14 Phase C (14.C.5) — reworked to a 2-column in-tab layout with a top
+ * action bar (no viewport lock) plus an optional `focusSpeakerId` highlight.
  *
  * Coverage:
  * - AC5: Drag-and-drop UI to drag speaker cards to time slots
@@ -10,6 +11,7 @@
  * - AC7: Display speaker time preferences
  * - AC11: Highlight when slot matches speaker preference
  * - AC12: Show unassigned speakers list with real-time updates
+ * - 14.C.5: 2-column layout, top action bar, no 100vh lock, focusSpeakerId
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -113,7 +115,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
   );
 };
 
-describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () => {
+describe('DragDropSlotAssignment Component', () => {
   const mockEventCode = 'BATbern142';
 
   // Default mock return value for useSlotAssignment
@@ -164,27 +166,46 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
     } as any);
   });
 
-  describe('Component Rendering', () => {
-    it('should_renderThreeColumnLayout_when_initialized', () => {
-      // AC5-AC6: Three-column layout (wireframe story-5.7-slot-assignment-page.md)
-      // Given: Component is initialized
-      // When: Component renders
+  describe('Component Rendering (14.C.5 two-column in-tab layout)', () => {
+    it('should_renderTwoColumnLayoutWithTopActionBar_when_initialized', () => {
+      // 14.C.5: 2 columns (tray + timeline) + a top action bar above them.
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
-      // Then: Shows three main sections
+      // Then: the unassigned tray, the timeline, and the new top action bar exist.
       expect(screen.getByTestId('speaker-pool-sidebar')).toBeInTheDocument();
       expect(screen.getByTestId('session-timeline-grid')).toBeInTheDocument();
-      expect(screen.getByTestId('quick-actions-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('slot-action-bar')).toBeInTheDocument();
+    });
+
+    it('should_notRenderSeparateQuickActionsPanel_when_initialized', () => {
+      // 14.C.5: the right-hand 3rd column ("quick-actions-panel") is retired;
+      // its actions move into the top action bar.
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      expect(screen.queryByTestId('quick-actions-panel')).not.toBeInTheDocument();
+    });
+
+    it('should_notLockToViewportHeight_when_renderedInTab', () => {
+      // 14.C.5: the `height: { md: '100vh' }` viewport lock is removed so the
+      // component sizes to its content when mounted inside the Speakers tab.
+      const { container } = renderWithProviders(
+        <DragDropSlotAssignment eventCode={mockEventCode} />
+      );
+
+      const css = Array.from(container.ownerDocument.querySelectorAll('style'))
+        .map((s) => s.textContent ?? '')
+        .join('\n');
+
+      // The viewport-height lock must not survive anywhere in the injected styles.
+      expect(/height:\s*100vh/.test(css)).toBe(false);
     });
 
     it('should_displayProgressIndicator_when_sessionsLoaded', () => {
       // AC12: Progress tracking (e.g., "3 of 10 assigned (30%)")
-      // Given: Event has 10 total sessions, 3 assigned (from mockUseSlotAssignment)
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
-      // Then: Shows progress text (3 Assigned in Quick Actions panel)
+      // Then: Shows progress text (3 Assigned in the top action bar)
       expect(screen.getByText(/3 Assigned/i)).toBeInTheDocument();
-      // Note: Actual progressbar implementation would be in UnassignedSessionsList component
     });
 
     it('should_showLoadingState_when_fetchingData', async () => {
@@ -208,7 +229,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
   describe('Unassigned Speakers List', () => {
     it('should_displayUnassignedSessions_when_loaded', () => {
       // AC12: Show unassigned speakers list
-      // Given: 2 unassigned sessions exist
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       // Then: Displays both unassigned speakers
@@ -218,7 +238,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
 
     it('should_showDraggableIndicator_when_hoveringOverSpeakerCard', async () => {
       // AC5: Draggable speaker cards with grab handle
-      // Given: User hovers over speaker card
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
@@ -246,10 +265,36 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
     });
   });
 
+  describe('Focus speaker (14.C.5 carry speaker context)', () => {
+    it('should_highlightMatchingUnassignedSession_when_focusSpeakerIdMatches', async () => {
+      renderWithProviders(
+        <DragDropSlotAssignment eventCode={mockEventCode} focusSpeakerId="jane.smith" />
+      );
+
+      // The matching session card carries a focus marker that the tray scrolls to.
+      await waitFor(() => {
+        expect(screen.getByTestId('focused-session-session-2')).toBeInTheDocument();
+      });
+      // The non-matching session is NOT marked.
+      expect(screen.queryByTestId('focused-session-session-1')).not.toBeInTheDocument();
+    });
+
+    it('should_renderNormally_when_focusSpeakerIdHasNoMatch', () => {
+      renderWithProviders(
+        <DragDropSlotAssignment eventCode={mockEventCode} focusSpeakerId="nobody.here" />
+      );
+
+      // No error, no focus marker, both sessions still render.
+      expect(screen.queryByTestId('focused-session-session-1')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('focused-session-session-2')).not.toBeInTheDocument();
+      expect(screen.getByText('John Doe - Acme Corp')).toBeInTheDocument();
+      expect(screen.getByText('Jane Smith - Tech Inc')).toBeInTheDocument();
+    });
+  });
+
   describe('Session Timeline Grid', () => {
     it('should_displayTimelineGrid_when_initialized', () => {
       // AC6: Visual timeline showing all slots and assignments
-      // Given: Component is initialized
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       // Then: Shows timeline with time slots
@@ -260,7 +305,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
 
     it('should_showDropZones_when_draggingSession', async () => {
       // AC5: Droppable zones for each slot
-      // Given: User starts dragging a session
       const { container } = renderWithProviders(
         <DragDropSlotAssignment eventCode={mockEventCode} />
       );
@@ -283,7 +327,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
 
     it('should_highlightPreferenceMatch_when_draggingOverMatchingSlot', async () => {
       // AC11: Highlight when slot matches speaker preference
-      // Given: Speaker prefers morning slots (09:00-12:00)
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
@@ -302,7 +345,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
 
     it('should_showYellowHighlight_when_partialPreferenceMatch', async () => {
       // AC11: Color-coded highlights (yellow for 50-79% match)
-      // Given: Speaker slightly prefers morning but slot is early afternoon
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
@@ -321,7 +363,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
 
     it('should_showRedHighlight_when_poorPreferenceMatch', async () => {
       // AC11: Color-coded highlights (red for <50% match)
-      // Given: Speaker prefers morning but slot is late evening
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
@@ -342,7 +383,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
   describe('Drag and Drop Interaction', () => {
     it('should_assignTiming_when_sessionDroppedOnSlot', async () => {
       // AC5: Complete drag-and-drop assignment workflow
-      // Given: User drags session to empty slot
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
@@ -367,7 +407,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
 
     it('should_updateUnassignedCount_when_sessionAssigned', async () => {
       // AC12: Real-time updates to unassigned count
-      // Given: Initially 2 unassigned sessions (from mock)
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       // Initial pending count shows 2 unassigned sessions
@@ -408,51 +447,58 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
     });
   });
 
-  describe('Quick Actions Panel', () => {
+  describe('Top Action Bar (14.C.5)', () => {
     it('should_displaySessionSummary_when_rendered', () => {
       // Given: Event has 10 total sessions, 3 assigned, 2 unassigned/pending
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
-      // Then: Shows session summary in Quick Actions panel
+      // Then: Shows session summary in the top action bar
       expect(screen.getByText('10 Total Sessions')).toBeInTheDocument();
       expect(screen.getByText('3 Assigned')).toBeInTheDocument();
-      expect(screen.getByText('2 Pending')).toBeInTheDocument(); // 2 unassigned sessions from mock
+      expect(screen.getByText('2 Pending')).toBeInTheDocument();
+    });
+
+    it('should_renderAllThreeActionButtons_when_rendered', () => {
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      expect(screen.getByTestId('generate-structural-button')).toBeInTheDocument();
+      expect(screen.getByTestId('auto-assign-button')).toBeInTheDocument();
+      // Clear-all button (the action-bar variant).
+      expect(screen.getByRole('button', { name: /clear all/i })).toBeInTheDocument();
     });
 
     it('should_openAutoAssignModal_when_autoAssignClicked', () => {
       // AC13: Bulk auto-assignment feature
-      // Given: Auto-assign button exists (uses translation key)
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
-      // Find button by icon and contained text (more flexible than exact translation)
       const autoAssignButton = screen.getByRole('button', { name: /auto.*assign/i });
-
-      // When: Button is clicked
       fireEvent.click(autoAssignButton);
 
-      // Then: Modal opens
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
     it('should_clearAllAssignments_when_clearButtonClicked', () => {
-      // Given: Some sessions are assigned
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       const clearButton = screen.getByRole('button', { name: /clear all/i });
-
-      // When: [Clear All Assignments] is clicked
       fireEvent.click(clearButton);
 
-      // Then: Confirmation modal appears
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
+    });
+
+    it('should_labelActionBarForScreenReaders_when_rendered', () => {
+      // NFR7: the top action bar is a labelled toolbar region.
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      const bar = screen.getByTestId('slot-action-bar');
+      expect(bar).toHaveAttribute('aria-label');
     });
   });
 
   describe('Success States', () => {
     it('should_showSuccessBanner_when_allSessionsAssigned', async () => {
       // Given: All sessions are already assigned (totalSessions === assignedCount)
-      // Override mock to show all sessions assigned
       vi.mocked(useSlotAssignment).mockReturnValue({
         ...mockUseSlotAssignment,
         assignedCount: 10, // Same as totalSessions
@@ -568,7 +614,6 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       // Then: ARIA live region announces the current assignment count
-      // The ARIA live region shows "{assignedCount} sessions assigned successfully"
       const announcement = screen.getByRole('status', { hidden: true });
       expect(announcement).toHaveTextContent('3 sessions assigned successfully');
     });

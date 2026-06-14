@@ -221,7 +221,17 @@
       "addSpeakers": "Aggiungi relatori",
       "addToPool": "Aggiungi relatori al pool",
       "kanbanView": "Vista Kanban",
-      "sessionsView": "Vista sessioni"
+      "sessionsView": "Vista sessioni",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Slot",
+      "poolView": "Vista pool relatori",
+      "agendaView": "Vista agenda",
+      "slotsView": "Vista slot",
+      "needsSlotSummary": "{{count}} di {{total}} sessioni necessitano di uno slot",
+      "allSlotted": "Tutte le sessioni sono pianificate",
+      "arrangeSlots": "Organizza gli slot",
+      "noSessionsYet": "Nessuna sessione ancora"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -876,6 +886,9 @@
         "projector": "Proiettore",
         "recording": "Registrazione"
       }
+    },
+    "actionBar": {
+      "label": "Azioni di assegnazione slot"
     }
   },
   "newsletter": {

@@ -277,7 +277,15 @@
     "confirmChangeMessage": "Status von {{speaker}} von {{from}} zu {{to}} ändern?",
     "reasonHelperText": "Optional (max. {{max}} Zeichen)",
     "reasonPlaceholder": "z.B. Sprecher hat per E-Mail zugesagt",
-    "reasonTooLong": "Grund ist zu lang ({{current}}/{{max}} Zeichen)"
+    "reasonTooLong": "Grund ist zu lang ({{current}}/{{max}} Zeichen)",
+    "phaseColumns": {
+      "sourcing": "Akquise",
+      "inviting": "Einladung",
+      "content": "Inhalt",
+      "confirmed": "Bestätigt"
+    },
+    "declinedStrip": "▸ Abgesagt ({{count}})",
+    "waitingOnSpeakerDivider": "Warten auf Referent"
   },
   "speakerContent": {
     "submitContent": "Sprecher-Inhalt einreichen",
@@ -321,7 +329,8 @@
     "declineDialog": {
       "title": "{{speakerName}} absagen?",
       "reasonHint": "Ein Grund ist erforderlich für abgesagte Sprecher. Der Grund erscheint in der Statushistorie und in jeder Absage-Benachrichtigung."
-    }
+    },
+    "invalidColumnTooltip": "Kein gültiger Vorwärtsschritt in diese Spalte."
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -613,6 +622,9 @@
       "filterClearedAnnouncement": "Spaltenfilter aufgehoben",
       "filterAppliedAnnouncement": "Spalte {{state}} gefiltert, {{count}} Karten sichtbar"
     },
-    "selfNominated": "Selbst vorgeschlagen"
+    "selfNominated": "Selbst vorgeschlagen",
+    "needsASlot": "⚠ Slot benötigt →",
+    "slotAssigned": "Slot zugewiesen",
+    "slotAssignedAt": "✓ {{time}}"
   }
 }

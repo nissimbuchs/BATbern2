@@ -225,7 +225,17 @@
       "addSpeakers": "Add Speakers",
       "addToPool": "Add Speakers to Pool",
       "kanbanView": "Kanban view",
-      "sessionsView": "Sessions view"
+      "sessionsView": "Sessions view",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Slots",
+      "poolView": "Speaker pool view",
+      "agendaView": "Agenda view",
+      "slotsView": "Slots view",
+      "needsSlotSummary": "{{count}} of {{total}} sessions need a slot",
+      "allSlotted": "All sessions slotted",
+      "arrangeSlots": "Arrange slots",
+      "noSessionsYet": "No sessions yet"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -900,6 +910,9 @@
         "projector": "Projector",
         "recording": "Recording"
       }
+    },
+    "actionBar": {
+      "label": "Slot assignment actions"
     }
   },
   "newsletter": {
