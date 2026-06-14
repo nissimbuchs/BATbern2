@@ -313,6 +313,31 @@
       "intro": "Identidad, tema y calendario del evento. Defínelos pronto — rara vez cambian.",
       "editButton": "Editar detalles",
       "noTopic": "Aún no hay tema seleccionado"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Suscriptores del boletín",
+        "registrants": "Asistentes al evento",
+        "speakers": "Ponentes",
+        "venue": "Lugar y catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Recordatorios a ponentes",
+      "description": "Envía un recordatorio de plazo a los ponentes que aún deben una respuesta o su contenido. Cada ponente recibe un correo individual; las invitaciones y avisos puntuales permanecen en la ficha del ponente.",
+      "reminderType": "Tipo de recordatorio",
+      "typeResponse": "Plazo de respuesta (ponentes invitados)",
+      "typeContent": "Plazo de contenido (ponentes que han aceptado)",
+      "recipientCount": "Se recordará a {{count}} ponente(s)",
+      "empty": "Actualmente ningún ponente espera este recordatorio.",
+      "send": "Enviar recordatorios",
+      "confirmTitle": "¿Enviar recordatorios a los ponentes?",
+      "confirmBody": "¿Enviar un recordatorio «{{type}}» a {{count}} ponente(s) de «{{eventTitle}}»? Cada uno recibe un correo individual.",
+      "sending": "Enviando recordatorios…",
+      "result": "{{sent}} enviados, {{failed}} fallidos.",
+      "retryFailed": "Reintentar los {{count}} fallidos",
+      "loadError": "No se pudo cargar el grupo de ponentes.",
+      "retry": "Reintentar"
     }
   },
   "dashboard": {

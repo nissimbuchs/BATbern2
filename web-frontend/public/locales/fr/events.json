@@ -313,6 +313,31 @@
       "intro": "Identité, thème et calendrier de l'événement. À définir tôt — ils changent rarement.",
       "editButton": "Modifier les détails",
       "noTopic": "Aucun thème sélectionné"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Abonnés à la newsletter",
+        "registrants": "Participants à l'événement",
+        "speakers": "Intervenants",
+        "venue": "Lieu et traiteur"
+      }
+    },
+    "speakerComms": {
+      "title": "Rappels aux intervenants",
+      "description": "Envoyez un rappel d'échéance aux intervenants qui doivent encore une réponse ou leur contenu. Chaque intervenant reçoit un e-mail individuel — les invitations et relances ponctuelles restent sur la fiche de l'intervenant.",
+      "reminderType": "Type de rappel",
+      "typeResponse": "Échéance de réponse (intervenants invités)",
+      "typeContent": "Échéance de contenu (intervenants ayant accepté)",
+      "recipientCount": "{{count}} intervenant(s) seront relancés",
+      "empty": "Aucun intervenant n'attend actuellement ce rappel.",
+      "send": "Envoyer les rappels",
+      "confirmTitle": "Envoyer les rappels aux intervenants ?",
+      "confirmBody": "Envoyer un rappel « {{type}} » à {{count}} intervenant(s) de «{{eventTitle}}» ? Chacun reçoit un e-mail individuel.",
+      "sending": "Envoi des rappels…",
+      "result": "{{sent}} envoyés, {{failed}} en échec.",
+      "retryFailed": "Réessayer les {{count}} en échec",
+      "loadError": "Impossible de charger le pool d'intervenants.",
+      "retry": "Réessayer"
     }
   },
   "dashboard": {

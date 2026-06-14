@@ -313,6 +313,31 @@
       "intro": "イベントのアイデンティティ、テーマ、スケジュール。早めに一度設定すれば、変更はほとんどありません。",
       "editButton": "詳細を編集",
       "noTopic": "テーマ未選択"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "ニュースレター購読者",
+        "registrants": "イベント参加者",
+        "speakers": "登壇者",
+        "venue": "会場・ケータリング"
+      }
+    },
+    "speakerComms": {
+      "title": "登壇者へのリマインダー",
+      "description": "回答または資料がまだ未提出の登壇者に締め切りリマインダーを送信します。各登壇者には個別にメールが送られます。招待や個別の催促は登壇者カードに残ります。",
+      "reminderType": "リマインダーの種類",
+      "typeResponse": "回答期限（招待済みの登壇者）",
+      "typeContent": "資料の期限（承諾済みの登壇者）",
+      "recipientCount": "{{count}} 名の登壇者にリマインダーを送信します",
+      "empty": "現在、このリマインダーを待っている登壇者はいません。",
+      "send": "リマインダーを送信",
+      "confirmTitle": "登壇者にリマインダーを送信しますか？",
+      "confirmBody": "「{{eventTitle}}」の登壇者 {{count}} 名に「{{type}}」リマインダーを送信しますか？各自に個別にメールが送られます。",
+      "sending": "リマインダーを送信中…",
+      "result": "{{sent}} 件送信、{{failed}} 件失敗。",
+      "retryFailed": "失敗した {{count}} 件を再試行",
+      "loadError": "登壇者プールを読み込めませんでした。",
+      "retry": "再試行"
     }
   },
   "dashboard": {

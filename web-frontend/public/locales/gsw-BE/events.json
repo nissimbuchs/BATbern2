@@ -319,6 +319,31 @@
       "intro": "Identität, Thema u Termin vor Veraastaltig. Eimal früeh festlege – ändered sech sälte.",
       "editButton": "Eckdate bearbeite",
       "noTopic": "No kes Thema gwählt"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Newsletter-Abonnänte",
+        "registrants": "Event-Teilnähmer",
+        "speakers": "Referänte",
+        "venue": "Lokal & Catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Erinnerige a d'Referänte",
+      "description": "Schick e Termin-Erinnerig a d'Referänte, wo no e Antwort oder ihre Inhalt schulde. Jede überchunnt einzeln es Mail – Iiladige u einzelni Nachfroge blybe uf der Referänte-Charte.",
+      "reminderType": "Erinnerigs-Typ",
+      "typeResponse": "Antwort-Termin (iiglademi Referänte)",
+      "typeContent": "Inhalt-Termin (zuegseiti Referänte)",
+      "recipientCount": "{{count}} Referänt(e) wärde erinneret",
+      "empty": "Im Moment wartet kä Referänt uf die Erinnerig.",
+      "send": "Erinnerige schicke",
+      "confirmTitle": "Erinnerige a d'Referänte schicke?",
+      "confirmBody": "E «{{type}}»-Erinnerig a {{count}} Referänt(e) vo «{{eventTitle}}» schicke? Jede überchunnt einzeln es Mail.",
+      "sending": "D'Erinnerige wärde gschickt…",
+      "result": "{{sent}} gschickt, {{failed}} fählgschlage.",
+      "retryFailed": "Di {{count}} Fählgschlagene nomal probiere",
+      "loadError": "Dr Referänte-Pool het nid chönne glade wärde.",
+      "retry": "Nomal probiere"
     }
   },
   "dashboard": {

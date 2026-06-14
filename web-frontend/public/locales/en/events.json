@@ -327,6 +327,31 @@
       "intro": "The event's identity, topic, and schedule. Set these once early — they rarely change.",
       "editButton": "Edit event details",
       "noTopic": "No topic selected yet"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Newsletter subscribers",
+        "registrants": "Event registrants",
+        "speakers": "Speakers",
+        "venue": "Venue & Caterer"
+      }
+    },
+    "speakerComms": {
+      "title": "Speaker reminders",
+      "description": "Send a deadline reminder to the speakers who still owe a response or their content. Each speaker is emailed individually — invitations and one-off nudges stay on the speaker card.",
+      "reminderType": "Reminder type",
+      "typeResponse": "Response deadline (invited speakers)",
+      "typeContent": "Content deadline (accepted speakers)",
+      "recipientCount": "{{count}} speaker(s) will be reminded",
+      "empty": "No speakers are currently awaiting this reminder.",
+      "send": "Send reminders",
+      "confirmTitle": "Send speaker reminders?",
+      "confirmBody": "Send a “{{type}}” reminder to {{count}} speaker(s) of «{{eventTitle}}»? Each is emailed individually.",
+      "sending": "Sending reminders…",
+      "result": "Sent {{sent}}, failed {{failed}}.",
+      "retryFailed": "Retry the {{count}} that failed",
+      "loadError": "Could not load the speaker pool.",
+      "retry": "Retry"
     }
   },
   "dashboard": {

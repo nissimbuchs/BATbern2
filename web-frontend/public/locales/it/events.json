@@ -313,6 +313,31 @@
       "intro": "Identità, tema e calendario dell'evento. Da impostare presto — cambiano raramente.",
       "editButton": "Modifica i dettagli",
       "noTopic": "Nessun tema selezionato"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Iscritti alla newsletter",
+        "registrants": "Partecipanti all'evento",
+        "speakers": "Relatori",
+        "venue": "Sede e catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Promemoria ai relatori",
+      "description": "Invia un promemoria di scadenza ai relatori che devono ancora una risposta o i loro contenuti. Ogni relatore riceve un'e-mail individuale: gli inviti e i solleciti singoli restano sulla scheda del relatore.",
+      "reminderType": "Tipo di promemoria",
+      "typeResponse": "Scadenza di risposta (relatori invitati)",
+      "typeContent": "Scadenza dei contenuti (relatori che hanno accettato)",
+      "recipientCount": "{{count}} relatore/i verranno sollecitati",
+      "empty": "Al momento nessun relatore è in attesa di questo promemoria.",
+      "send": "Invia promemoria",
+      "confirmTitle": "Inviare i promemoria ai relatori?",
+      "confirmBody": "Inviare un promemoria «{{type}}» a {{count}} relatore/i di «{{eventTitle}}»? Ognuno riceve un'e-mail individuale.",
+      "sending": "Invio dei promemoria…",
+      "result": "{{sent}} inviati, {{failed}} non riusciti.",
+      "retryFailed": "Riprova i {{count}} non riusciti",
+      "loadError": "Impossibile caricare il pool dei relatori.",
+      "retry": "Riprova"
     }
   },
   "dashboard": {

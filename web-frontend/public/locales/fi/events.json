@@ -313,6 +313,31 @@
       "intro": "Tapahtuman identiteetti, aihe ja aikataulu. Aseta nämä ajoissa — ne muuttuvat harvoin.",
       "editButton": "Muokkaa tietoja",
       "noTopic": "Aihetta ei ole vielä valittu"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Uutiskirjeen tilaajat",
+        "registrants": "Tapahtuman osallistujat",
+        "speakers": "Puhujat",
+        "venue": "Tila ja pitopalvelu"
+      }
+    },
+    "speakerComms": {
+      "title": "Muistutukset puhujille",
+      "description": "Lähetä määräaikamuistutus puhujille, joilta puuttuu vielä vastaus tai sisältö. Jokaiselle puhujalle lähetetään oma sähköposti – kutsut ja yksittäiset muistutukset pysyvät puhujakortilla.",
+      "reminderType": "Muistutuksen tyyppi",
+      "typeResponse": "Vastauksen määräaika (kutsutut puhujat)",
+      "typeContent": "Sisällön määräaika (suostuneet puhujat)",
+      "recipientCount": "{{count}} puhujalle lähetetään muistutus",
+      "empty": "Tällä hetkellä yksikään puhuja ei odota tätä muistutusta.",
+      "send": "Lähetä muistutukset",
+      "confirmTitle": "Lähetetäänkö muistutukset puhujille?",
+      "confirmBody": "Lähetetäänkö ”{{type}}”-muistutus {{count}} puhujalle tapahtumasta «{{eventTitle}}»? Jokainen saa oman sähköpostin.",
+      "sending": "Lähetetään muistutuksia…",
+      "result": "{{sent}} lähetetty, {{failed}} epäonnistui.",
+      "retryFailed": "Yritä {{count}} epäonnistunutta uudelleen",
+      "loadError": "Puhujapoolia ei voitu ladata.",
+      "retry": "Yritä uudelleen"
     }
   },
   "dashboard": {

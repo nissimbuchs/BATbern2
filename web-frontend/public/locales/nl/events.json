@@ -313,6 +313,31 @@
       "intro": "Identiteit, thema en planning van het evenement. Stel deze vroeg in — ze veranderen zelden.",
       "editButton": "Details bewerken",
       "noTopic": "Nog geen thema gekozen"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Nieuwsbriefabonnees",
+        "registrants": "Deelnemers aan het evenement",
+        "speakers": "Sprekers",
+        "venue": "Locatie & catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Herinneringen aan sprekers",
+      "description": "Stuur een deadlineherinnering naar de sprekers die nog een reactie of hun content verschuldigd zijn. Elke spreker krijgt een individuele e-mail — uitnodigingen en losse aansporingen blijven op de sprekerkaart.",
+      "reminderType": "Type herinnering",
+      "typeResponse": "Reactiedeadline (uitgenodigde sprekers)",
+      "typeContent": "Contentdeadline (sprekers die hebben toegezegd)",
+      "recipientCount": "{{count}} spreker(s) worden herinnerd",
+      "empty": "Er wachten momenteel geen sprekers op deze herinnering.",
+      "send": "Herinneringen versturen",
+      "confirmTitle": "Herinneringen naar sprekers sturen?",
+      "confirmBody": "Een “{{type}}”-herinnering sturen naar {{count}} spreker(s) van «{{eventTitle}}»? Iedereen krijgt een individuele e-mail.",
+      "sending": "Herinneringen worden verstuurd…",
+      "result": "{{sent}} verstuurd, {{failed}} mislukt.",
+      "retryFailed": "Probeer de {{count}} mislukte opnieuw",
+      "loadError": "Kan de sprekerspool niet laden.",
+      "retry": "Opnieuw proberen"
     }
   },
   "dashboard": {

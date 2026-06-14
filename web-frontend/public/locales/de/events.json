@@ -327,6 +327,31 @@
       "intro": "Identität, Thema und Termin der Veranstaltung. Einmal früh festlegen – ändert sich selten.",
       "editButton": "Eckdaten bearbeiten",
       "noTopic": "Noch kein Thema gewählt"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Newsletter-Abonnenten",
+        "registrants": "Event-Teilnehmende",
+        "speakers": "Referent:innen",
+        "venue": "Location & Catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Referent:innen-Erinnerungen",
+      "description": "Senden Sie eine Frist-Erinnerung an die Referent:innen, die noch eine Antwort oder ihre Inhalte schulden. Jede Person wird einzeln per E-Mail benachrichtigt – Einladungen und einzelne Nachfragen bleiben auf der Referent:innen-Karte.",
+      "reminderType": "Erinnerungstyp",
+      "typeResponse": "Antwortfrist (eingeladene Referent:innen)",
+      "typeContent": "Inhaltsfrist (zugesagte Referent:innen)",
+      "recipientCount": "{{count}} Referent:in(nen) werden erinnert",
+      "empty": "Aktuell warten keine Referent:innen auf diese Erinnerung.",
+      "send": "Erinnerungen senden",
+      "confirmTitle": "Referent:innen-Erinnerungen senden?",
+      "confirmBody": "Eine „{{type}}“-Erinnerung an {{count}} Referent:in(nen) von «{{eventTitle}}» senden? Jede Person wird einzeln benachrichtigt.",
+      "sending": "Erinnerungen werden gesendet…",
+      "result": "{{sent}} gesendet, {{failed}} fehlgeschlagen.",
+      "retryFailed": "Die {{count}} fehlgeschlagenen erneut versuchen",
+      "loadError": "Der Referent:innen-Pool konnte nicht geladen werden.",
+      "retry": "Erneut versuchen"
     }
   },
   "dashboard": {

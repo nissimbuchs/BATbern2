@@ -313,6 +313,31 @@
       "intro": "Identitad, tema e termin da l'occurrenza. Definir baud — chaschuna paucs midaments.",
       "editButton": "Modifitgar ils detagls",
       "noTopic": "Nagin tema tschernì"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Abunents da la newsletter",
+        "registrants": "Participants da l'occurrenza",
+        "speakers": "Relaturs",
+        "venue": "Lieu & catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Endrizzas als relaturs",
+      "description": "Trametta in endriz da termin als relaturs che dastgan anc ina resposta u lur cuntegn. Mintga relatur retschaiva in e-mail individual – las invitaziuns ed ils endrizs singuls restan sin la carta dal relatur.",
+      "reminderType": "Tip d'endriz",
+      "typeResponse": "Termin da resposta (relaturs envidads)",
+      "typeContent": "Termin dal cuntegn (relaturs ch'han acceptà)",
+      "recipientCount": "{{count}} relatur(s) vegnan endrizzads",
+      "empty": "Actualmain spetga nagin relatur sin quest endriz.",
+      "send": "Trametter ils endrizs",
+      "confirmTitle": "Trametter ils endrizs als relaturs?",
+      "confirmBody": "Trametter in endriz «{{type}}» a {{count}} relatur(s) da «{{eventTitle}}»? Mintgin retschaiva in e-mail individual.",
+      "sending": "Ils endrizs vegnan tramess…",
+      "result": "{{sent}} tramess, {{failed}} betg reussì.",
+      "retryFailed": "Reempruvar ils {{count}} betg reussids",
+      "loadError": "Impussibel da chargiar il pool dals relaturs.",
+      "retry": "Reempruvar"
     }
   },
   "dashboard": {
