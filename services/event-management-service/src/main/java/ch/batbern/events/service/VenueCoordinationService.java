@@ -80,6 +80,9 @@ public class VenueCoordinationService {
     @Value("${app.email.configuration-set:}")
     private String configurationSetName;
 
+    @Value("${app.base-url:https://batbern.ch}")
+    private String baseUrl;
+
     // ── Preview ───────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -194,6 +197,10 @@ public class VenueCoordinationService {
         // Required by the shared batbern-default layout footer ("© {{currentYear}} BATbern").
         // Same pattern as NewsletterEmailService / SpeakerInvitationEmailService.
         vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
+        // Required by the shared batbern-default layout header <img src="{{logoUrl}}">.
+        // Without this the literal {{logoUrl}} placeholder leaks into the sent email.
+        // Same asset + pattern as RegistrationEmailService / SpeakerInvitationEmailService.
+        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
         return vars;
     }
 
