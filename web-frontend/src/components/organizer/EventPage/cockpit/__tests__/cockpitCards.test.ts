@@ -23,6 +23,7 @@ const baseCtx = (over: Partial<CockpitCardCtx> = {}): CockpitCardCtx => ({
   eventCode: 'BAT54',
   workflowState: 'SPEAKER_IDENTIFICATION',
   topicCode: 'cloud-native',
+  moderatorUsername: 'nissim.buchs',
   minSlots: 6,
   confirmedSpeakersCount: 0,
   sessionsNeedingSlot: 0,
@@ -189,6 +190,19 @@ describe('event-day cards (FR12 gate)', () => {
     const cards = getVirtualCards(baseCtx({ workflowState: 'EVENT_LIVE', eventCode: 'BAT99' }));
     const start = cards.find((c) => c.id === 'start-presentation');
     expect(start?.target).toEqual({ kind: 'route', path: '/present/BAT99', newTab: true });
+  });
+
+  it('stamps the event moderator as the assignee on every virtual card', () => {
+    const cards = getVirtualCards(
+      baseCtx({ workflowState: 'EVENT_LIVE', moderatorUsername: 'sandra.keller' })
+    );
+    expect(cards.length).toBeGreaterThan(0);
+    expect(cards.every((c) => c.assignee === 'sandra.keller')).toBe(true);
+  });
+
+  it('leaves the assignee null when no moderator is set', () => {
+    const cards = getVirtualCards(baseCtx({ moderatorUsername: null }));
+    expect(cards.every((c) => c.assignee === null)).toBe(true);
   });
 });
 

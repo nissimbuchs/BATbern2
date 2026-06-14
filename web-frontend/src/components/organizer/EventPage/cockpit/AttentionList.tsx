@@ -16,6 +16,7 @@ import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { CustomTaskModal } from '@/components/organizer/Tasks/CustomTaskModal';
+import { useOrganizers } from '@/components/shared/OrganizerSelect';
 import { AttentionCard } from './AttentionCard';
 import type { CockpitCard, CardTarget } from './cockpitCards';
 
@@ -40,6 +41,7 @@ export const AttentionList: React.FC<AttentionListProps> = ({
 }) => {
   const { t } = useTranslation('events');
   const queryClient = useQueryClient();
+  const { organizers } = useOrganizers();
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleModalClose = () => {
@@ -93,11 +95,24 @@ export const AttentionList: React.FC<AttentionListProps> = ({
         </Alert>
       )}
 
-      <Stack spacing={1.5}>
+      {/* Responsive auto-fill grid (prototype `.attn`, UX-DR16): cards fill
+          horizontally and reflow to fewer columns as the width shrinks, rather
+          than stacking one per row. Inline grid template keeps the column rule
+          deterministic (and testable) across themes. */}
+      <Box
+        data-testid="cockpit-attention-grid"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))' }}
+        sx={{ gap: 1.5 }}
+      >
         {cards.map((card) => (
-          <AttentionCard key={card.id} card={card} onNavigate={onNavigate} />
+          <AttentionCard
+            key={card.id}
+            card={card}
+            onNavigate={onNavigate}
+            organizers={organizers}
+          />
         ))}
-      </Stack>
+      </Box>
 
       {modalOpen && (
         <CustomTaskModal

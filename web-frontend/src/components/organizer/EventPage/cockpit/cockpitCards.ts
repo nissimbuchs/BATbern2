@@ -50,6 +50,12 @@ export type CardSeverity = 'overdue' | 'dueSoon' | 'upcoming' | 'live';
 export interface CockpitCardCtx {
   eventCode: string;
   workflowState: string;
+  /**
+   * The event moderator (= `Event.organizerUsername`, the same field the Settings
+   * "Event Moderator" selector edits). Stamped onto virtual / event-day cards as
+   * their assignee avatar, since those aren't backed by an assignable task row.
+   */
+  moderatorUsername?: string | null;
   topicCode?: string | null;
   /** Minimum viable speaker count for this event type (from the event-type config). */
   minSlots: number;
@@ -289,6 +295,9 @@ export function getVirtualCards(ctx: CockpitCardCtx): CockpitCard[] {
     target: typeof d.target === 'function' ? d.target(ctx) : d.target,
     severity: d.severity,
     pinned: d.pinned,
+    // Virtual cards aren't task-backed, so they have no assignee of their own —
+    // the event moderator owns them by default (the avatar matches task cards).
+    assignee: ctx.moderatorUsername ?? null,
   }));
 }
 

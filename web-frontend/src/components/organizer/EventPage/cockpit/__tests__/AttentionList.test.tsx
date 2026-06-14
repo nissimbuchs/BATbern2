@@ -14,6 +14,13 @@ vi.mock('@/components/organizer/Tasks/CustomTaskModal', () => ({
     open ? <div data-testid="custom-task-modal-mock" /> : null,
 }));
 
+vi.mock('@/components/shared/OrganizerSelect', () => ({
+  useOrganizers: () => ({
+    organizers: [{ id: 'sandra.keller', name: 'Sandra Keller' }],
+    isLoading: false,
+  }),
+}));
+
 const renderList = (props: Partial<React.ComponentProps<typeof AttentionList>> = {}) => {
   const onNavigate = vi.fn();
   const onRetry = vi.fn();
@@ -58,11 +65,38 @@ describe('AttentionList', () => {
     expect(screen.queryByTestId('cockpit-attention-empty')).not.toBeInTheDocument();
   });
 
-  it('renders open cards and deep-links via their button', () => {
+  it('renders open cards and deep-links by clicking the whole card', () => {
     const { onNavigate } = renderList({ cards: [card] });
-    expect(screen.getByTestId('cockpit-attention-card')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('cockpit-attention-deeplink-needs-slot'));
+    // The whole card is the button — clicking it navigates (no nested button).
+    fireEvent.click(screen.getByTestId('cockpit-attention-card'));
     expect(onNavigate).toHaveBeenCalledWith({ kind: 'tab', tab: 'speakers', view: 'slots' });
+  });
+
+  it('shows the assignee avatar on a task-backed card', () => {
+    const taskCard: CockpitCard = {
+      id: 'task:42',
+      labelKey: '',
+      labelVars: { name: 'Confirm caterer headcount' },
+      target: { kind: 'tab', tab: 'communications' },
+      severity: 'overdue',
+      dueDays: -2,
+      assignee: 'sandra.keller',
+      taskBacked: true,
+    };
+    renderList({ cards: [taskCard] });
+    // Username resolves to the organizer's display name (id === username), like the kanban chip.
+    const chip = screen.getByTestId('cockpit-attention-assignee-task:42');
+    expect(chip).toHaveTextContent('Sandra Keller');
+    expect(chip).toHaveTextContent('SK'); // avatar initials
+  });
+
+  it('lays cards out in a responsive auto-fill grid, not one per row (UX-DR16, prototype .attn)', () => {
+    renderList({ cards: [card] });
+    const grid = screen.getByTestId('cockpit-attention-grid');
+    expect(grid.style.display).toBe('grid');
+    expect(grid.style.gridTemplateColumns).toBe('repeat(auto-fill, minmax(290px, 1fr))');
+    // the card lives inside the grid container
+    expect(grid).toContainElement(screen.getByTestId('cockpit-attention-card'));
   });
 
   it('opens the CustomTaskModal from "Add task"', () => {
