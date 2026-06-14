@@ -108,12 +108,6 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
 
   return (
     <Box data-testid="event-tasks-tab-content">
-      <Typography variant="body2" color="text.secondary" gutterBottom>
-        {t('tasks.eventTasksDescription')}
-      </Typography>
-
-      <Divider sx={{ my: 3 }} />
-
       {/* Default Templates Section */}
       <Stack spacing={2}>
         <Typography variant="h6">{t('tasks.defaultTemplates')}</Typography>

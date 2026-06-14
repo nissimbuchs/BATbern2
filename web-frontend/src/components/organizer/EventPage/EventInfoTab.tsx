@@ -172,16 +172,6 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
 
   return (
     <Stack spacing={2} data-testid="event-info-tab">
-      {/* Intro banner */}
-      <Paper variant="outlined" sx={{ p: 2, bgcolor: 'action.hover' }}>
-        <Typography variant="body2" color="text.secondary">
-          {t(
-            'eventPage.details.intro',
-            "The event's identity, topic, and schedule. Set these once early — they rarely change."
-          )}
-        </Typography>
-      </Paper>
-
       {/* Two columns (per prototype #p-details): identity on the left, topic + when/where on the right. */}
       <Box
         sx={{
@@ -376,6 +366,7 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
               )}
               <Button
                 size="small"
+                variant="outlined"
                 onClick={() => navigate(`/organizer/topics?eventCode=${eventCode}`)}
                 data-testid="info-change-topic"
               >
