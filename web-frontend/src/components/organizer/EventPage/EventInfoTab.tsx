@@ -32,7 +32,6 @@ import {
   PhotoCamera as ReplaceIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useUpdateEvent } from '@/hooks/useEvents';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
@@ -41,6 +40,7 @@ import type { Topic } from '@/types/topic.types';
 import type { Event, EventDetailUI, EventUI } from '@/types/event.types';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
 import { AiAssistDrawer } from './AiAssistDrawer';
+import { TopicSelectionOverlay } from './topicOverlay/TopicSelectionOverlay';
 import {
   createEventSchema,
   normalizeEventType,
@@ -64,11 +64,11 @@ function toDateInput(value?: string): string {
 
 export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) => {
   const { t } = useTranslation('events');
-  const navigate = useNavigate();
   const { aiContentEnabled } = useFeatureFlags();
   const updateEvent = useUpdateEvent();
 
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [topicOverlayOpen, setTopicOverlayOpen] = useState(false);
   const [themeImageUploadId, setThemeImageUploadId] = useState<string | undefined>();
   const [topic, setTopic] = useState<Topic | null>(null);
   const [saved, setSaved] = useState(false);
@@ -367,7 +367,7 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
               <Button
                 size="small"
                 variant="outlined"
-                onClick={() => navigate(`/organizer/topics?eventCode=${eventCode}`)}
+                onClick={() => setTopicOverlayOpen(true)}
                 data-testid="info-change-topic"
               >
                 {t('eventPage.details.changeTopic', 'Change topic')}
@@ -512,6 +512,13 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
           setValue('description', text, { shouldDirty: true })
         }
         onImageGenerated={() => setAiDrawerOpen(false)}
+      />
+
+      <TopicSelectionOverlay
+        open={topicOverlayOpen}
+        eventCode={eventCode}
+        currentTopicCode={event.topicCode ?? undefined}
+        onClose={() => setTopicOverlayOpen(false)}
       />
     </Stack>
   );

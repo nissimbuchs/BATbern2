@@ -125,7 +125,8 @@
         "delete": "Eliminar registro",
         "resendConfirmation": "Reenviar email de confirmación",
         "resendSuccess": "Email de confirmación reenviado con éxito",
-        "resendError": "Error al reenviar el email de confirmación"
+        "resendError": "Error al reenviar el email de confirmación",
+        "menu": "Acciones"
       },
       "deleteDialog": {
         "title": "Eliminar registro",
@@ -354,6 +355,26 @@
       "loadError": "No se pudo cargar el grupo de ponentes.",
       "retry": "Reintentar",
       "noPreview": "Los recordatorios se envían con las plantillas estándar en el idioma de cada ponente — no hay vista previa que mostrar."
+    },
+    "topicOverlay": {
+      "title": "Tema y ponentes",
+      "pickHeading": "Elegir un tema",
+      "searchPlaceholder": "Buscar temas",
+      "emptyHint": "Ningún tema coincide — ajusta los filtros o la búsqueda.",
+      "similarityWarning": "Tema similar detectado",
+      "selectAnyway": "Seleccionar igualmente…",
+      "banner": {
+        "selected": "Tema seleccionado",
+        "change": "Cambiar tema"
+      },
+      "footer": {
+        "skip": "Más tarde",
+        "continue": "Continuar con el contacto →"
+      }
+    },
+    "mobile": {
+      "more": "Más",
+      "moreSheetTitle": "Más"
     }
   },
   "dashboard": {
@@ -941,6 +962,9 @@
     },
     "actionBar": {
       "label": "Acciones de asignación de franjas"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Ahora toca una franja resaltada para colocarla"
     }
   },
   "newsletter": {

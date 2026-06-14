@@ -18,7 +18,7 @@
  *       – depended on the speaker workflow + content flows that belong to slice 8 (speaker pool),
  *         and on automatic/cron transitions a UI walk can't drive deterministically.
  *
- * Reality (verified in EventWorkflowController / EventWorkflowStateMachine / EventOverviewTab):
+ * Reality (verified in EventWorkflowController / EventWorkflowStateMachine / CockpitTab):
  *   • The 8-state lifecycle is CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION →
  *     SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED. Most
  *     transitions are AUTOMATIC (event listeners + cron at 00:01/23:59 Bern), so a pure-UI walk

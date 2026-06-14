@@ -61,6 +61,13 @@ vi.mock('@/hooks/useTimetable/useTimetable', () => ({
   useTimetable: vi.fn(),
 }));
 
+// Mobile detection — desktop by default so existing tests are unaffected; the
+// 14.G.3 block flips it to mobile.
+let mockIsMobile = false;
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: () => ({ isMobile: mockIsMobile, isTablet: false, isDesktop: !mockIsMobile }),
+}));
+
 // Mock DnD library
 vi.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -616,6 +623,45 @@ describe('DragDropSlotAssignment Component', () => {
       // Then: ARIA live region announces the current assignment count
       const announcement = screen.getByRole('status', { hidden: true });
       expect(announcement).toHaveTextContent('3 sessions assigned successfully');
+    });
+  });
+
+  describe('Mobile tap-to-assign (14.G.3)', () => {
+    beforeEach(() => {
+      mockIsMobile = true;
+    });
+    afterEach(() => {
+      mockIsMobile = false;
+    });
+
+    it('arms empty slots after a tray session is tapped, then assigns on slot tap', async () => {
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      // No slot is armed before a session is picked up.
+      expect(document.querySelector('[data-armed="true"]')).toBeNull();
+
+      // Tap a tray session → empty slots become armed tap targets.
+      fireEvent.click(screen.getByTestId('tray-session-session-1'));
+      await waitFor(() => {
+        expect(document.querySelector('[data-armed="true"]')).toBeTruthy();
+      });
+
+      // Tap an armed slot → assigns the selected session via the shared path.
+      const armed = document.querySelector('[data-armed="true"]') as HTMLElement;
+      fireEvent.click(armed);
+      await waitFor(() => {
+        expect(mockUseSlotAssignment.assignTiming).toHaveBeenCalledWith(
+          'session-1',
+          expect.objectContaining({ room: 'Main Hall' })
+        );
+      });
+    });
+
+    it('does not arm slots on desktop (drag-drop unchanged)', () => {
+      mockIsMobile = false;
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      fireEvent.click(screen.getByTestId('tray-session-session-1'));
+      expect(document.querySelector('[data-armed="true"]')).toBeNull();
     });
   });
 });

@@ -12,6 +12,15 @@ vi.mock('../useCockpitCards', () => ({
   useCockpitCards: () => ({ cards: [], isLoading: false, isError: false, refetch: vi.fn() }),
 }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { username: 'john.doe' } }) }));
+let mockIsMobile = false;
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: () => ({ isMobile: mockIsMobile, isTablet: false, isDesktop: !mockIsMobile }),
+}));
+vi.mock('../LifecycleSpine', () => ({
+  LifecycleSpine: ({ compact }: { compact?: boolean }) => (
+    <div data-testid="cockpit-lifecycle-spine" data-compact={String(!!compact)} />
+  ),
+}));
 vi.mock('@/components/organizer/Tasks/CustomTaskModal', () => ({
   CustomTaskModal: () => null,
 }));
@@ -57,5 +66,18 @@ describe('CockpitTab', () => {
   it('does NOT render an event-identity block (identity lives in Details, FR7)', () => {
     renderCockpit();
     expect(screen.queryByText('Spring Conference 2025')).not.toBeInTheDocument();
+  });
+
+  it('renders the spine non-compact on desktop', () => {
+    mockIsMobile = false;
+    renderCockpit();
+    expect(screen.getByTestId('cockpit-lifecycle-spine')).toHaveAttribute('data-compact', 'false');
+  });
+
+  it('collapses the spine to compact on mobile (14.G.2)', () => {
+    mockIsMobile = true;
+    renderCockpit();
+    expect(screen.getByTestId('cockpit-lifecycle-spine')).toHaveAttribute('data-compact', 'true');
+    mockIsMobile = false;
   });
 });

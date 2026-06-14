@@ -125,7 +125,8 @@
         "delete": "Registratie verwijderen",
         "resendConfirmation": "Bevestigingsmail opnieuw verzenden",
         "resendSuccess": "Bevestigingsmail succesvol opnieuw verzonden",
-        "resendError": "Fout bij het opnieuw verzenden van de bevestigingsmail"
+        "resendError": "Fout bij het opnieuw verzenden van de bevestigingsmail",
+        "menu": "Acties"
       },
       "deleteDialog": {
         "title": "Registratie verwijderen",
@@ -354,6 +355,26 @@
       "loadError": "Kan de sprekerspool niet laden.",
       "retry": "Opnieuw proberen",
       "noPreview": "Herinneringen worden verzonden met de standaardsjablonen in de taal van elke spreker — geen voorbeeld om te tonen."
+    },
+    "topicOverlay": {
+      "title": "Onderwerp & sprekers",
+      "pickHeading": "Kies een onderwerp",
+      "searchPlaceholder": "Onderwerpen zoeken",
+      "emptyHint": "Geen onderwerpen gevonden — pas filters of zoekopdracht aan.",
+      "similarityWarning": "Vergelijkbaar onderwerp gevonden",
+      "selectAnyway": "Toch selecteren…",
+      "banner": {
+        "selected": "Onderwerp geselecteerd",
+        "change": "Onderwerp wijzigen"
+      },
+      "footer": {
+        "skip": "Later",
+        "continue": "Doorgaan naar contact →"
+      }
+    },
+    "mobile": {
+      "more": "Meer",
+      "moreSheetTitle": "Meer"
     }
   },
   "dashboard": {
@@ -941,6 +962,9 @@
     },
     "actionBar": {
       "label": "Acties voor tijdvaktoewijzing"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Tik nu op een gemarkeerd tijdvak om het te plaatsen"
     }
   },
   "newsletter": {

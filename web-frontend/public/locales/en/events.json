@@ -182,7 +182,8 @@
         "delete": "Delete Registration",
         "resendConfirmation": "Resend Confirmation Email",
         "resendSuccess": "Confirmation email resent successfully",
-        "resendError": "Failed to resend confirmation email"
+        "resendError": "Failed to resend confirmation email",
+        "menu": "Actions"
       },
       "deleteDialog": {
         "title": "Delete Registration",
@@ -368,6 +369,26 @@
       "loadError": "Could not load the speaker pool.",
       "retry": "Retry",
       "noPreview": "Reminders are sent with the standard speaker templates in each speaker's language — no preview to show."
+    },
+    "topicOverlay": {
+      "title": "Topic & speakers",
+      "pickHeading": "Choose a topic",
+      "searchPlaceholder": "Search topics",
+      "emptyHint": "No topics match — adjust filters or search.",
+      "similarityWarning": "Similar topic detected",
+      "selectAnyway": "Select anyway…",
+      "banner": {
+        "selected": "Topic selected",
+        "change": "Change topic"
+      },
+      "footer": {
+        "skip": "Skip for now",
+        "continue": "Continue to outreach →"
+      }
+    },
+    "mobile": {
+      "more": "More",
+      "moreSheetTitle": "More"
     }
   },
   "dashboard": {
@@ -965,6 +986,9 @@
     },
     "actionBar": {
       "label": "Slot assignment actions"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Now tap a highlighted slot to place it"
     }
   },
   "newsletter": {

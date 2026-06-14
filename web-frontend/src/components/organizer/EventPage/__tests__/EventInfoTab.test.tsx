@@ -20,6 +20,10 @@ vi.mock('@/hooks/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ aiContentEnabled: false }),
 }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigateMock }));
+vi.mock('../topicOverlay/TopicSelectionOverlay', () => ({
+  TopicSelectionOverlay: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="topic-overlay" /> : null,
+}));
 vi.mock('@/services/topicService', () => ({
   topicService: { getTopicById: vi.fn().mockResolvedValue({ title: 'Cloud Native' }) },
 }));
@@ -90,10 +94,12 @@ describe('EventInfoTab', () => {
     expect(screen.getByTestId('info-save-button')).toBeDisabled();
   });
 
-  it('navigates to the topics route on Change topic (interim)', () => {
+  it('opens the topic overlay on Change topic (14.F.3 — no route change)', () => {
     renderTab();
+    expect(screen.queryByTestId('topic-overlay')).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('info-change-topic'));
-    expect(navigateMock).toHaveBeenCalledWith('/organizer/topics?eventCode=BAT54');
+    expect(screen.getByTestId('topic-overlay')).toBeInTheDocument();
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it('does not show Preview-public or Enrol affordances (FR39)', () => {

@@ -125,7 +125,8 @@
         "delete": "Elimina iscrizione",
         "resendConfirmation": "Rinvia email di conferma",
         "resendSuccess": "Email di conferma rinviata con successo",
-        "resendError": "Errore durante il rinvio dell'email di conferma"
+        "resendError": "Errore durante il rinvio dell'email di conferma",
+        "menu": "Azioni"
       },
       "deleteDialog": {
         "title": "Elimina iscrizione",
@@ -354,6 +355,26 @@
       "loadError": "Impossibile caricare il pool dei relatori.",
       "retry": "Riprova",
       "noPreview": "I promemoria vengono inviati con i modelli standard nella lingua di ciascun relatore — nessuna anteprima da mostrare."
+    },
+    "topicOverlay": {
+      "title": "Tema e relatori",
+      "pickHeading": "Scegli un tema",
+      "searchPlaceholder": "Cerca temi",
+      "emptyHint": "Nessun tema corrisponde — modifica i filtri o la ricerca.",
+      "similarityWarning": "Tema simile rilevato",
+      "selectAnyway": "Seleziona comunque…",
+      "banner": {
+        "selected": "Tema selezionato",
+        "change": "Cambia tema"
+      },
+      "footer": {
+        "skip": "Più tardi",
+        "continue": "Continua con i contatti →"
+      }
+    },
+    "mobile": {
+      "more": "Altro",
+      "moreSheetTitle": "Altro"
     }
   },
   "dashboard": {
@@ -941,6 +962,9 @@
     },
     "actionBar": {
       "label": "Azioni di assegnazione slot"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Ora tocca uno slot evidenziato per posizionarla"
     }
   },
   "newsletter": {

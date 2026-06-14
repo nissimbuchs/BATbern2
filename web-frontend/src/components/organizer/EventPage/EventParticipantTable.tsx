@@ -294,7 +294,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                   {t('eventPage.participantsTab.waitlistPromote')}
                 </Button>
               )}
-              <RegistrationActionsMenu participant={participant} />
+              <RegistrationActionsMenu participant={participant} variant="overflow" />
             </CardActions>
           </Card>
         ))}

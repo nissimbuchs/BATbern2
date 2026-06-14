@@ -125,7 +125,8 @@
         "delete": "Supprimer l'inscription",
         "resendConfirmation": "Renvoyer l'e-mail de confirmation",
         "resendSuccess": "E-mail de confirmation renvoyé avec succès",
-        "resendError": "Échec de l'envoi de l'e-mail de confirmation"
+        "resendError": "Échec de l'envoi de l'e-mail de confirmation",
+        "menu": "Actions"
       },
       "deleteDialog": {
         "title": "Supprimer l'inscription",
@@ -354,6 +355,26 @@
       "loadError": "Impossible de charger le pool d'intervenants.",
       "retry": "Réessayer",
       "noPreview": "Les rappels sont envoyés avec les modèles standards dans la langue de chaque intervenant·e — aucun aperçu à afficher."
+    },
+    "topicOverlay": {
+      "title": "Sujet & intervenants",
+      "pickHeading": "Choisir un sujet",
+      "searchPlaceholder": "Rechercher des sujets",
+      "emptyHint": "Aucun sujet ne correspond — ajustez les filtres ou la recherche.",
+      "similarityWarning": "Sujet similaire détecté",
+      "selectAnyway": "Sélectionner quand même…",
+      "banner": {
+        "selected": "Sujet sélectionné",
+        "change": "Changer de sujet"
+      },
+      "footer": {
+        "skip": "Plus tard",
+        "continue": "Continuer vers la prise de contact →"
+      }
+    },
+    "mobile": {
+      "more": "Plus",
+      "moreSheetTitle": "Plus"
     }
   },
   "dashboard": {
@@ -941,6 +962,9 @@
     },
     "actionBar": {
       "label": "Actions d'attribution des créneaux"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Touchez maintenant un créneau en surbrillance pour la placer"
     }
   },
   "newsletter": {

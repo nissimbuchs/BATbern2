@@ -130,7 +130,8 @@
         "delete": "Amäldig lösche",
         "resendConfirmation": "Bestätigungsmail nochimol schicke",
         "resendSuccess": "Bestätigungsmail isch erfolgrig verschickt worde",
-        "resendError": "Fehler bim Versende vo dr Bestätigungsmail"
+        "resendError": "Fehler bim Versende vo dr Bestätigungsmail",
+        "menu": "Aktione"
       },
       "deleteDialog": {
         "title": "Amäldig lösche",
@@ -360,6 +361,26 @@
       "loadError": "Dr Referänte-Pool het nid chönne glade wärde.",
       "retry": "Nomal probiere",
       "noPreview": "D Erinnerige wärde mit de Standard-Vorlage i dr Sprach vo jedem Referänt gschickt — kei Vorschau zum zeige."
+    },
+    "topicOverlay": {
+      "title": "Thema & Referänte",
+      "pickHeading": "Thema uswähle",
+      "searchPlaceholder": "Themene sueche",
+      "emptyHint": "Kei Themene gfunde – Filter oder Sueche aapasse.",
+      "similarityWarning": "Ähnlechs Thema gfunde",
+      "selectAnyway": "Trotzdäm wähle…",
+      "banner": {
+        "selected": "Thema usgwählt",
+        "change": "Thema ändere"
+      },
+      "footer": {
+        "skip": "Spöter",
+        "continue": "Wyter zur Kontaktufnahm →"
+      }
+    },
+    "mobile": {
+      "more": "Meh",
+      "moreSheetTitle": "Meh"
     }
   },
   "dashboard": {
@@ -943,6 +964,9 @@
     },
     "actionBar": {
       "label": "Zytfänschter-Aktione"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Jetz uf e markierte Slot tippe zum platziere"
     }
   },
   "newsletter": {

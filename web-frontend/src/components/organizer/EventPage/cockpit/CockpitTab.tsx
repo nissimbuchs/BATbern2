@@ -15,6 +15,7 @@ import { Stack, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { Event, EventDetailUI } from '@/types/event.types';
 import { useAuth } from '@/hooks/useAuth';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { WORKFLOW_RELEVANCE, type WorkflowStateType } from '@/utils/workflow/workflowState';
 import { LifecycleSpine } from './LifecycleSpine';
 import { AttentionList } from './AttentionList';
@@ -32,6 +33,7 @@ interface CockpitTabProps {
 export const CockpitTab: React.FC<CockpitTabProps> = ({ event, eventCode, onNavigate }) => {
   const { t } = useTranslation('events');
   const { user } = useAuth();
+  const { isMobile } = useBreakpoints();
   const workflowState = (event as { workflowState?: string }).workflowState ?? '';
   const { cards, isLoading, isError, refetch } = useCockpitCards(event, eventCode);
 
@@ -41,7 +43,8 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({ event, eventCode, onNavi
     <Stack spacing={4} data-testid="cockpit-tab">
       {/* Region 1 — lifecycle spine */}
       <div>
-        <LifecycleSpine workflowState={workflowState} />
+        {/* Mobile (Phase G — 14.G.2): the spine collapses to a "Step N/8" bar. */}
+        <LifecycleSpine workflowState={workflowState} compact={isMobile} />
         {emphasis && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             {t(`eventPage.cockpit.emphasis.${emphasis}`, '')}

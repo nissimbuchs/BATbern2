@@ -125,7 +125,8 @@
         "delete": "登録を削除",
         "resendConfirmation": "確認メールを再送",
         "resendSuccess": "確認メールを再送しました",
-        "resendError": "確認メールの再送に失敗しました"
+        "resendError": "確認メールの再送に失敗しました",
+        "menu": "操作"
       },
       "deleteDialog": {
         "title": "登録を削除",
@@ -354,6 +355,26 @@
       "loadError": "登壇者プールを読み込めませんでした。",
       "retry": "再試行",
       "noPreview": "リマインダーは各登壇者の言語の標準テンプレートで送信されます — プレビューはありません。"
+    },
+    "topicOverlay": {
+      "title": "トピックと登壇者",
+      "pickHeading": "トピックを選択",
+      "searchPlaceholder": "トピックを検索",
+      "emptyHint": "一致するトピックがありません — フィルターまたは検索を調整してください。",
+      "similarityWarning": "類似トピックを検出",
+      "selectAnyway": "それでも選択…",
+      "banner": {
+        "selected": "トピックを選択しました",
+        "change": "トピックを変更"
+      },
+      "footer": {
+        "skip": "後で",
+        "continue": "アウトリーチに進む →"
+      }
+    },
+    "mobile": {
+      "more": "その他",
+      "moreSheetTitle": "その他"
     }
   },
   "dashboard": {
@@ -941,6 +962,9 @@
     },
     "actionBar": {
       "label": "スロット割り当てのアクション"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ ハイライトされたスロットをタップして配置します"
     }
   },
   "newsletter": {

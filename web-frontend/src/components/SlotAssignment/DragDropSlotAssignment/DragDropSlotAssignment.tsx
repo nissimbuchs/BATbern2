@@ -129,6 +129,8 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
   const [structuralAlreadyExist, setStructuralAlreadyExist] = useState(false);
   const [draggedSession, setDraggedSession] = useState<Session | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<{ time: string; room: string } | null>(null);
+  // 14.G.3 (mobile tap-to-assign): the tray session "picked up" by a tap.
+  const [selectedSessionSlug, setSelectedSessionSlug] = useState<string | null>(null);
   const [speakerFilter, setSpeakerFilter] = useState<'all' | 'assigned' | 'unassigned'>(
     'unassigned'
   );
@@ -263,37 +265,18 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     setHoveredSlot(null);
   };
 
-  const handleDrop = (time: string, room: string) => async (e: React.DragEvent) => {
-    e.preventDefault();
-    setHoveredSlot(null);
-
-    if (!draggedSession) {
-      console.warn('No dragged session');
-      return;
-    }
-
+  // Shared assignment path for BOTH drag-drop (desktop) and tap-to-assign (mobile,
+  // 14.G.3). Resolves the slot's exact start/end from the backend timetable and
+  // commits via the same `assignTiming` contract — no behaviour divergence.
+  const assignSessionToSlot = async (session: Session, time: string, room: string) => {
     if (!event) {
       console.error('Event not loaded - cannot assign timing');
       return;
     }
-
     if (!timetable) {
       console.error('Timetable not loaded - cannot assign timing');
       return;
     }
-
-    const isReassignment = !!(draggedSession.startTime && draggedSession.endTime);
-    console.log('Dropping session:', {
-      sessionSlug: draggedSession.sessionSlug,
-      title: draggedSession.title,
-      time,
-      room,
-      event: event.eventCode,
-      eventType: event.eventType,
-      rawDate: event.date,
-      isReassignment,
-      currentTime: draggedSession.startTime,
-    });
 
     // Use actual event date and slot duration from event type config
     // Extract just the date part (YYYY-MM-DD) in case event.date is a full ISO datetime
@@ -329,22 +312,15 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
       endTime = new Date(startDate.getTime() + slotDurationMs).toISOString();
     }
 
-    console.log('Assigning timing:', { startTime, endTime, room });
-
     try {
-      await assignTiming(draggedSession.sessionSlug, {
+      await assignTiming(session.sessionSlug, {
         startTime,
         endTime,
         room,
         changeReason: 'drag_drop_reassignment',
       });
-      console.log('✓ Successfully assigned timing');
-
-      await queryClient.invalidateQueries({
-        queryKey: ['event', eventCode, ['sessions']],
-      });
+      await queryClient.invalidateQueries({ queryKey: ['event', eventCode, ['sessions']] });
       await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
-
       await queryClient.refetchQueries({
         queryKey: ['event', eventCode, ['sessions']],
         exact: true,
@@ -352,8 +328,35 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     } catch (err) {
       console.error('✗ Failed to assign timing:', err);
     }
+  };
 
+  const handleDrop = (time: string, room: string) => async (e: React.DragEvent) => {
+    e.preventDefault();
+    setHoveredSlot(null);
+    if (!draggedSession) {
+      console.warn('No dragged session');
+      return;
+    }
+    await assignSessionToSlot(draggedSession, time, room);
     setDraggedSession(null);
+  };
+
+  // Mobile tap-to-assign (14.G.3): tap a tray session to "pick it up", then tap a
+  // highlighted empty slot to place it.
+  const handleTraySelect = (session: Session) => {
+    setSelectedSessionSlug((prev) => (prev === session.sessionSlug ? null : session.sessionSlug));
+  };
+
+  const handleSlotTap = (time: string, room: string) => async () => {
+    if (!selectedSessionSlug) {
+      return;
+    }
+    const session = filteredSessions.find((s) => s.sessionSlug === selectedSessionSlug);
+    if (!session) {
+      return;
+    }
+    await assignSessionToSlot(session, time, room);
+    setSelectedSessionSlug(null);
   };
 
   // Get session assigned to a specific time slot and room
@@ -499,7 +502,22 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                 onFilterChange={setSpeakerFilter}
                 isLoading={isLoading}
                 focusSessionSlug={focusSessionSlug}
+                onSessionTap={isMobile ? handleTraySelect : undefined}
+                selectedSessionSlug={selectedSessionSlug}
               />
+              {isMobile && selectedSessionSlug && (
+                <Typography
+                  variant="caption"
+                  color="primary"
+                  sx={{ display: 'block', px: 2, pb: 1 }}
+                  data-testid="tap-assign-hint"
+                >
+                  {t(
+                    'slotAssignment.tapToAssign.placeHint',
+                    '↓ Now tap a highlighted slot to place it'
+                  )}
+                </Typography>
+              )}
             </Paper>
           </Grid>
 
@@ -584,6 +602,9 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                             const matchClass = isHovered ? getPreferenceMatchClass(time) : '';
                             const matchPercent = isHovered ? getPreferenceMatchPercentage(time) : 0;
                             const assignedSession = getSessionForSlot(time, room);
+                            // 14.G.3: an empty cell is "armed" (a tap target) while a
+                            // tray session is tap-selected on mobile.
+                            const armed = isMobile && !assignedSession && !!selectedSessionSlug;
 
                             return (
                               <Grid size={10 / ROOMS.length} key={room}>
@@ -591,10 +612,12 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                                   data-testid={slotId}
                                   data-slot-time={time}
                                   data-slot-room={room}
+                                  data-armed={armed ? 'true' : undefined}
                                   draggable={!!assignedSession}
                                   onDragStart={
                                     assignedSession ? handleDragStart(assignedSession) : undefined
                                   }
+                                  onClick={armed ? handleSlotTap(time, room) : undefined}
                                   className={`${isHovered ? 'drop-zone-active' : ''} ${matchClass}`}
                                   onDragOver={handleDragOver(time, room)}
                                   onDragLeave={handleDragLeave}
@@ -603,17 +626,21 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                                     p: 1,
                                     minHeight: 60,
                                     border: 2,
-                                    borderColor: isHovered
-                                      ? 'primary.main'
-                                      : assignedSession
-                                        ? 'success.main'
-                                        : 'divider',
-                                    borderStyle: isHovered ? 'dashed' : 'solid',
-                                    bgcolor: isHovered
-                                      ? 'action.hover'
-                                      : assignedSession
-                                        ? 'success.light'
-                                        : 'background.default',
+                                    borderColor: armed
+                                      ? 'secondary.main'
+                                      : isHovered
+                                        ? 'primary.main'
+                                        : assignedSession
+                                          ? 'success.main'
+                                          : 'divider',
+                                    borderStyle: isHovered || armed ? 'dashed' : 'solid',
+                                    bgcolor: armed
+                                      ? 'action.selected'
+                                      : isHovered
+                                        ? 'action.hover'
+                                        : assignedSession
+                                          ? 'success.light'
+                                          : 'background.default',
                                     cursor: assignedSession ? 'grab' : 'pointer',
                                     transition: 'all 0.2s',
                                     '&:hover': {

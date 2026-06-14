@@ -13,7 +13,7 @@
  * URL params: ?tab=cockpit|speakers|registrations|communications|publishing|wrapup|details|settings
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -30,6 +30,11 @@ import {
   BottomNavigation,
   BottomNavigationAction,
   Paper,
+  Drawer,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -43,6 +48,7 @@ import {
   Slideshow as SlideshowIcon,
   LiveTv as LiveTvIcon,
   Lock as LockIcon,
+  MoreHoriz as MoreIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
@@ -52,7 +58,6 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 
-import { EventOverviewTab } from './EventOverviewTab';
 import { CockpitTab } from './cockpit/CockpitTab';
 import type { CardTarget } from './cockpit/cockpitCards';
 import { EventSpeakersTab } from './EventSpeakersTab';
@@ -103,6 +108,11 @@ type TabId = (typeof TABS)[number]['id'];
 
 const DEFAULT_TAB: TabId = 'cockpit';
 
+// Mobile (Phase G — 14.G.1): the four day-to-day destinations live in the bottom
+// bar; the occasional ones live behind a ⋯ More bottom sheet.
+const PRIMARY_TAB_IDS: TabId[] = ['cockpit', 'speakers', 'registrations', 'communications'];
+const MORE_TAB_IDS: TabId[] = ['publishing', 'wrapup', 'details'];
+
 const isValidTab = (tab: string | null): tab is TabId => {
   return tab !== null && TABS.some((t) => t.id === tab);
 };
@@ -114,7 +124,8 @@ export const EventPage: React.FC = () => {
   const { t } = useTranslation('events');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { openEditModal, isEditModalOpen, selectedEventCode, closeEditModal } = useEventStore();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const { isEditModalOpen, selectedEventCode, closeEditModal } = useEventStore();
 
   // Get current tab from URL, default to the Cockpit.
   const currentTab: TabId = isValidTab(searchParams.get('tab'))
@@ -251,13 +262,6 @@ export const EventPage: React.FC = () => {
     );
   }
 
-  // Handle edit button click (opens the existing event-edit modal)
-  const handleEdit = () => {
-    if (eventCode) {
-      openEditModal(eventCode);
-    }
-  };
-
   // Per-tab attention badge content (FR6). Returns null when nothing is waiting.
   // The 'muted' variant (FR24) is a subtle inline count, NOT a heavy attention badge.
   const tabBadge = (
@@ -311,6 +315,31 @@ export const EventPage: React.FC = () => {
     );
   };
 
+  // Bottom-nav / More-sheet icon, wrapping the tab icon in its attention badge
+  // (locked tabs show a lock; the muted Registrations count is desktop-only).
+  const navIcon = (tab: (typeof TABS)[number], locked: boolean): React.ReactNode => {
+    if (locked) return <LockIcon fontSize="small" />;
+    const badge = tabBadge(tab.id);
+    if (!badge || badge.variant === 'muted') return tab.icon;
+    return (
+      <Badge
+        color={badge.variant === 'dot' ? 'error' : 'primary'}
+        variant={badge.variant}
+        badgeContent={badge.variant === 'standard' ? badge.content : undefined}
+        data-testid={`event-mobile-badge-${tab.id}`}
+      >
+        {tab.icon}
+      </Badge>
+    );
+  };
+
+  const primaryTabs = TABS.filter((tab) => PRIMARY_TAB_IDS.includes(tab.id));
+  const moreTabs = TABS.filter((tab) => MORE_TAB_IDS.includes(tab.id));
+  // The bottom bar highlights "More" whenever the active tab lives in the sheet.
+  const bottomNavValue: TabId | 'more' = PRIMARY_TAB_IDS.includes(effectiveTab)
+    ? effectiveTab
+    : 'more';
+
   // Render current tab content
   const renderTabContent = () => {
     switch (effectiveTab) {
@@ -330,10 +359,11 @@ export const EventPage: React.FC = () => {
       case 'details':
         return <EventDetailsContainer event={event} eventCode={eventCode!} />;
       default:
-        return <EventOverviewTab event={event} eventCode={eventCode!} onEdit={handleEdit} />;
+        // `effectiveTab` is already clamped to a valid tab, so this is purely
+        // defensive — the Cockpit is the canonical landing surface (14.F.5).
+        return <CockpitTab event={event} eventCode={eventCode!} onNavigate={handleCardNavigate} />;
     }
   };
-  // (default delegates to the Cockpit's Overview content, with the same onEdit wiring.)
 
   // Index of the first config-cluster tab — used to draw a divider between the
   // two clusters.
@@ -432,21 +462,66 @@ export const EventPage: React.FC = () => {
         <Box>{renderTabContent()}</Box>
       </Container>
 
-      {/* Mobile Bottom Navigation — icon-only for every tab (consistent + compact). Labels are
-          provided via aria-label for accessibility but never rendered, so the selected tab does
-          not widen the bar. Locked tabs are disabled. Phase G reshapes this into a 4-primary
-          bottom nav + a ⋯ More sheet. */}
+      {/* Mobile Bottom Navigation (Phase G — 14.G.1): four day-to-day destinations
+          + a ⋯ More entry opening a bottom sheet with the occasional tabs. Badges/dots
+          ride on the icons; locked tabs (e.g. Wrap-up before EVENT_LIVE) live in the
+          sheet with a 🔒 and are non-interactive. */}
       {isMobile && (
         <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
-          <BottomNavigation value={effectiveTab} onChange={handleTabChange} showLabels={false}>
-            {TABS.map((tab) => {
+          <BottomNavigation
+            value={bottomNavValue}
+            onChange={(_e, value: TabId | 'more') => {
+              if (value === 'more') {
+                setMoreOpen(true);
+              } else {
+                handleTabChange(_e, value);
+              }
+            }}
+            showLabels={false}
+          >
+            {primaryTabs.map((tab) => (
+              <BottomNavigationAction
+                key={tab.id}
+                value={tab.id}
+                icon={navIcon(tab, false)}
+                aria-label={t(tab.labelKey, tab.id)}
+                data-testid={`event-tab-${tab.id}`}
+                sx={{ minWidth: 0, flex: 1, px: 0 }}
+              />
+            ))}
+            <BottomNavigationAction
+              value="more"
+              icon={<MoreIcon />}
+              aria-label={t('eventPage.mobile.more', 'More')}
+              data-testid="event-more-button"
+              sx={{ minWidth: 0, flex: 1, px: 0 }}
+            />
+          </BottomNavigation>
+        </Paper>
+      )}
+
+      {/* ⋯ More sheet — occasional tabs (Publishing · Wrap-up · Details). */}
+      <Drawer anchor="bottom" open={moreOpen} onClose={() => setMoreOpen(false)}>
+        <Box sx={{ pb: 2 }} role="presentation" data-testid="event-more-sheet">
+          <Typography
+            variant="overline"
+            sx={{ display: 'block', px: 2, pt: 2, color: 'text.secondary' }}
+          >
+            {t('eventPage.mobile.moreSheetTitle', 'More')}
+          </Typography>
+          <List>
+            {moreTabs.map((tab) => {
               const locked = getTabRelevance(workflowState, tab.id as EventTabId) === 'locked';
               return (
-                <BottomNavigationAction
+                <ListItemButton
                   key={tab.id}
-                  value={tab.id}
+                  selected={effectiveTab === tab.id}
                   disabled={locked}
-                  icon={locked ? <LockIcon fontSize="small" /> : tab.icon}
+                  onClick={() => {
+                    navigateToTab(tab.id as EventTabId);
+                    setMoreOpen(false);
+                  }}
+                  data-testid={`event-more-tab-${tab.id}`}
                   aria-label={
                     locked
                       ? t('eventPage.lockedTabSuffix', '{{tab}} (locked)', {
@@ -454,14 +529,22 @@ export const EventPage: React.FC = () => {
                         })
                       : t(tab.labelKey, tab.id)
                   }
-                  data-testid={`event-tab-${tab.id}`}
-                  sx={{ minWidth: 0, flex: 1, px: 0 }}
-                />
+                >
+                  <ListItemIcon>{locked ? <LockIcon fontSize="small" /> : tab.icon}</ListItemIcon>
+                  <ListItemText primary={t(tab.labelKey, tab.id)} />
+                  {locked && (
+                    <LockIcon
+                      fontSize="small"
+                      color="disabled"
+                      data-testid={`event-more-lock-${tab.id}`}
+                    />
+                  )}
+                </ListItemButton>
               );
             })}
-          </BottomNavigation>
-        </Paper>
-      )}
+          </List>
+        </Box>
+      </Drawer>
 
       {/* Edit Event Modal */}
       {isEditModalOpen && selectedEventCode && (

@@ -37,6 +37,13 @@ export interface UnassignedSpeakersListProps {
    * scrolled into view (best-effort — no-op if no session matches).
    */
   focusSessionSlug?: string | null;
+  /**
+   * 14.G.3 (mobile tap-to-assign): when provided, tapping a card selects it
+   * (drag-drop is hostile on touch). The selected card is highlighted via
+   * `selectedSessionSlug`.
+   */
+  onSessionTap?: (session: Session) => void;
+  selectedSessionSlug?: string | null;
 }
 
 export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
@@ -48,6 +55,8 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   onFilterChange,
   isLoading = false,
   focusSessionSlug = null,
+  onSessionTap,
+  selectedSessionSlug = null,
 }) => {
   const focusedCardRef = useRef<HTMLDivElement | null>(null);
 
@@ -173,24 +182,39 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
                 : 'Unknown Speaker';
 
               const isFocused = !!focusSessionSlug && session.sessionSlug === focusSessionSlug;
+              const isSelected =
+                !!selectedSessionSlug && session.sessionSlug === selectedSessionSlug;
 
               return (
                 <Card
                   key={session.sessionSlug}
                   ref={isFocused ? focusedCardRef : undefined}
-                  data-testid={isFocused ? `focused-session-${session.sessionSlug}` : undefined}
+                  data-testid={
+                    isFocused
+                      ? `focused-session-${session.sessionSlug}`
+                      : `tray-session-${session.sessionSlug}`
+                  }
                   draggable
                   onDragStart={onDragStart?.(session)}
+                  onClick={onSessionTap ? () => onSessionTap(session) : undefined}
+                  aria-pressed={onSessionTap ? isSelected : undefined}
                   role="article"
                   aria-label={`${t('common:role.speaker')}: ${displayName}`}
                   tabIndex={0}
                   sx={{
-                    cursor: 'grab',
-                    ...(isFocused && {
+                    cursor: onSessionTap ? 'pointer' : 'grab',
+                    ...(isSelected && {
                       borderLeft: 4,
-                      borderColor: 'primary.main',
-                      boxShadow: 4,
+                      borderColor: 'secondary.main',
+                      boxShadow: 6,
+                      bgcolor: 'action.selected',
                     }),
+                    ...(isFocused &&
+                      !isSelected && {
+                        borderLeft: 4,
+                        borderColor: 'primary.main',
+                        boxShadow: 4,
+                      }),
                     '&:hover': {
                       boxShadow: 3,
                       '& .drag-handle': {

@@ -182,7 +182,8 @@
         "delete": "Anmeldung löschen",
         "resendConfirmation": "Bestätigungsmail erneut senden",
         "resendSuccess": "Bestätigungsmail wurde erfolgreich versendet",
-        "resendError": "Fehler beim Versenden der Bestätigungsmail"
+        "resendError": "Fehler beim Versenden der Bestätigungsmail",
+        "menu": "Aktionen"
       },
       "deleteDialog": {
         "title": "Anmeldung löschen",
@@ -368,6 +369,26 @@
       "loadError": "Der Referent:innen-Pool konnte nicht geladen werden.",
       "retry": "Erneut versuchen",
       "noPreview": "Erinnerungen werden mit den Standard-Vorlagen in der Sprache der Referent:innen gesendet — keine Vorschau."
+    },
+    "topicOverlay": {
+      "title": "Thema & Referenten",
+      "pickHeading": "Thema auswählen",
+      "searchPlaceholder": "Themen suchen",
+      "emptyHint": "Keine Themen gefunden – Filter oder Suche anpassen.",
+      "similarityWarning": "Ähnliches Thema erkannt",
+      "selectAnyway": "Trotzdem auswählen…",
+      "banner": {
+        "selected": "Thema ausgewählt",
+        "change": "Thema ändern"
+      },
+      "footer": {
+        "skip": "Später",
+        "continue": "Weiter zur Kontaktaufnahme →"
+      }
+    },
+    "mobile": {
+      "more": "Mehr",
+      "moreSheetTitle": "Mehr"
     }
   },
   "dashboard": {
@@ -965,6 +986,9 @@
     },
     "actionBar": {
       "label": "Zeitfenster-Aktionen"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Tippe jetzt auf einen markierten Slot, um sie zu platzieren"
     }
   },
   "newsletter": {

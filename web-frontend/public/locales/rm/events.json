@@ -125,7 +125,8 @@
         "delete": "Stizzar registraziun",
         "resendConfirmation": "Turnar a trametter il mail da conferma",
         "resendSuccess": "Mail da conferma tramess cun success",
-        "resendError": "Errur tar il trametter dal mail da conferma"
+        "resendError": "Errur tar il trametter dal mail da conferma",
+        "menu": "Acziuns"
       },
       "deleteDialog": {
         "title": "Stizzar registraziun",
@@ -354,6 +355,26 @@
       "loadError": "Impussibel da chargiar il pool dals relaturs.",
       "retry": "Reempruvar",
       "noPreview": "Las regurdientschas vegnan tramessas cun ils models standard en la lingua da mintga referent — nagina prevista da mussar."
+    },
+    "topicOverlay": {
+      "title": "Tema e referents",
+      "pickHeading": "Tscherner in tema",
+      "searchPlaceholder": "Tschertgar temas",
+      "emptyHint": "Nagin tema correspunda — adatta ils filters u la tschertga.",
+      "similarityWarning": "Tema sumegliant chattà",
+      "selectAnyway": "Tscherner tuttina…",
+      "banner": {
+        "selected": "Tema tschernì",
+        "change": "Midar tema"
+      },
+      "footer": {
+        "skip": "Pli tard",
+        "continue": "Cuntinuar cun ils contacts →"
+      }
+    },
+    "mobile": {
+      "more": "Dapli",
+      "moreSheetTitle": "Dapli"
     }
   },
   "dashboard": {
@@ -941,6 +962,9 @@
     },
     "actionBar": {
       "label": "Acziuns d'assegnaziun da fanestras"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Tutgar ussa in slot marcà per la plazzar"
     }
   },
   "newsletter": {

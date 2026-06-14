@@ -55,11 +55,6 @@ vi.mock('../useTabBadges', () => ({
 }));
 
 // Mock child tab components / containers
-vi.mock('../EventOverviewTab', () => ({
-  EventOverviewTab: ({ eventCode }: { eventCode: string }) => (
-    <div data-testid="event-overview-tab">Overview Tab - {eventCode}</div>
-  ),
-}));
 // Phase B: the Cockpit tab mounts CockpitTab (its internals are covered by the
 // cockpit/* test suite). Mock it here to keep EventPage tests focused on the shell.
 vi.mock('../cockpit/CockpitTab', () => ({
@@ -357,6 +352,51 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
       const tablist = screen.getByRole('tablist');
       expect(tablist).toBeInTheDocument();
       expect(tablist).toHaveAttribute('aria-label');
+    });
+  });
+
+  describe('Mobile navigation (Phase G — 14.G.1)', () => {
+    beforeEach(async () => {
+      const { useMediaQuery } = await import('@mui/material');
+      (useMediaQuery as ReturnType<typeof vi.fn>).mockReturnValue(true); // isMobile
+    });
+    afterEach(async () => {
+      const { useMediaQuery } = await import('@mui/material');
+      (useMediaQuery as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    });
+
+    it('shows the four day-to-day destinations + a ⋯ More entry in the bottom bar', () => {
+      renderWithProviders();
+      expect(screen.getByTestId('event-tab-cockpit')).toBeInTheDocument();
+      expect(screen.getByTestId('event-tab-speakers')).toBeInTheDocument();
+      expect(screen.getByTestId('event-tab-registrations')).toBeInTheDocument();
+      expect(screen.getByTestId('event-tab-communications')).toBeInTheDocument();
+      expect(screen.getByTestId('event-more-button')).toBeInTheDocument();
+      // Occasional tabs are NOT in the bottom bar — they live in the More sheet.
+      expect(screen.queryByTestId('event-tab-publishing')).not.toBeInTheDocument();
+    });
+
+    it('opens the More sheet listing Publishing · Wrap-up · Details', () => {
+      renderWithProviders();
+      fireEvent.click(screen.getByTestId('event-more-button'));
+      expect(screen.getByTestId('event-more-sheet')).toBeInTheDocument();
+      expect(screen.getByTestId('event-more-tab-publishing')).toBeInTheDocument();
+      expect(screen.getByTestId('event-more-tab-wrapup')).toBeInTheDocument();
+      expect(screen.getByTestId('event-more-tab-details')).toBeInTheDocument();
+    });
+
+    it('locks Wrap-up in the More sheet before EVENT_LIVE', async () => {
+      await setEvent({ workflowState: 'SPEAKER_IDENTIFICATION' });
+      renderWithProviders();
+      fireEvent.click(screen.getByTestId('event-more-button'));
+      expect(screen.getByTestId('event-more-lock-wrapup')).toBeInTheDocument();
+    });
+
+    it('unlocks Wrap-up in the More sheet once EVENT_LIVE', async () => {
+      await setEvent({ workflowState: 'EVENT_LIVE' });
+      renderWithProviders();
+      fireEvent.click(screen.getByTestId('event-more-button'));
+      expect(screen.queryByTestId('event-more-lock-wrapup')).not.toBeInTheDocument();
     });
   });
 });

@@ -125,7 +125,8 @@
         "delete": "Poista rekisteröinti",
         "resendConfirmation": "Lähetä vahvistussähköposti uudelleen",
         "resendSuccess": "Vahvistussähköposti lähetetty uudelleen",
-        "resendError": "Vahvistussähköpostin lähetys epäonnistui"
+        "resendError": "Vahvistussähköpostin lähetys epäonnistui",
+        "menu": "Toiminnot"
       },
       "deleteDialog": {
         "title": "Poista rekisteröinti",
@@ -354,6 +355,26 @@
       "loadError": "Puhujapoolia ei voitu ladata.",
       "retry": "Yritä uudelleen",
       "noPreview": "Muistutukset lähetetään vakiopohjilla kunkin puhujan kielellä — ei esikatselua näytettäväksi."
+    },
+    "topicOverlay": {
+      "title": "Aihe ja puhujat",
+      "pickHeading": "Valitse aihe",
+      "searchPlaceholder": "Hae aiheita",
+      "emptyHint": "Yksikään aihe ei vastaa — säädä suodattimia tai hakua.",
+      "similarityWarning": "Samankaltainen aihe havaittu",
+      "selectAnyway": "Valitse silti…",
+      "banner": {
+        "selected": "Aihe valittu",
+        "change": "Vaihda aihe"
+      },
+      "footer": {
+        "skip": "Myöhemmin",
+        "continue": "Jatka yhteydenottoon →"
+      }
+    },
+    "mobile": {
+      "more": "Lisää",
+      "moreSheetTitle": "Lisää"
     }
   },
   "dashboard": {
@@ -941,6 +962,9 @@
     },
     "actionBar": {
       "label": "Aikavälien määritystoiminnot"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Napauta nyt korostettua aikaväliä sijoittaaksesi sen"
     }
   },
   "newsletter": {
