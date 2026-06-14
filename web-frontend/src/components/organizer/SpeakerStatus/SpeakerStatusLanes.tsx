@@ -946,33 +946,9 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                 />
               ))}
             </Stack>
-
-            {speaker.submittedTitle && (
-              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
-                <Typography
-                  variant="caption"
-                  color="success.dark"
-                  sx={{ display: 'block', fontWeight: 600 }}
-                >
-                  {speaker.submittedTitle}
-                </Typography>
-                {speaker.submittedAbstract && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      mt: 0.5,
-                    }}
-                  >
-                    {speaker.submittedAbstract}
-                  </Typography>
-                )}
-              </Box>
-            )}
+            {/* Epic 14 — no second title/abstract block below the speaker: post-Epic-11
+                normalization, speaker_pool content IS the session content, so
+                `submittedTitle`/`submittedAbstract` only duplicated `session.title` above. */}
           </Box>
         ) : (
           <Box>
@@ -1118,33 +1094,10 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                   )}
                 </Box>
               )}
-
-            {speaker.submittedTitle && (
-              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
-                <Typography
-                  variant="caption"
-                  color="success.dark"
-                  sx={{ display: 'block', fontWeight: 600 }}
-                >
-                  {speaker.submittedTitle}
-                </Typography>
-                {speaker.submittedAbstract && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      mt: 0.5,
-                    }}
-                  >
-                    {speaker.submittedAbstract}
-                  </Typography>
-                )}
-              </Box>
-            )}
+            {/* Epic 14 — `submittedTitle`/`submittedAbstract` (legacy Story 6.3 content fields)
+                are no longer rendered on the card: post-normalization they equal the session's
+                title/abstract, and a content-submitting speaker always has a session (shown in
+                the session branch above). Content lives in the drawer Content tab. */}
 
             {speaker.status === 'DECLINED' && speaker.declineReason && (
               <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
