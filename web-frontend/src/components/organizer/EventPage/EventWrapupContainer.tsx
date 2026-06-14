@@ -1,21 +1,20 @@
 /**
- * EventWrapupContainer (Epic 14, Phase A — interim)
+ * EventWrapupContainer (Epic 14 — Wrap-up tab)
  *
- * Consolidation container for the new "Wrap-up" tab. Stacks today's two
- * post-event surfaces — Photos and Appreciation (thank-you notes) — behind a
- * lightweight internal sub-tab switch, with NO change to their content or
- * behaviour (recompose, not rewrite; NFR9).
+ * The post-event Wrap-up surface. Photos and Thank-you notes are shown as two
+ * stacked sections in one panel (per the redesign prototype's #p-wrapup), so an
+ * organizer sees both at once — replacing the Phase A interim sub-tab switch.
+ * The two children are reused unchanged (recompose, not rewrite; NFR9): each
+ * already renders its own heading and owns its data/behaviour (FR36 photos;
+ * FR37 thank-you notes + ★-feature-disabled-for-anonymous).
  *
- * The tab itself is locked (dimmed + 🔒, non-interactive) until the event is
+ * The tab is locked (dimmed + 🔒, non-interactive) until the event is
  * EVENT_LIVE — that gating lives on the EventPage tab rail via the relevance
  * map, so this container only ever mounts when Wrap-up is active.
- *
- * Phase F (Story 14.F.1) refines the photo grid + thank-you-notes layout.
  */
 
-import React, { useState } from 'react';
-import { Box, Tabs, Tab } from '@mui/material';
-import { useTranslation } from 'react-i18next';
+import React from 'react';
+import { Divider, Stack } from '@mui/material';
 import { EventPhotosTab } from './EventPhotosTab';
 import { EventAppreciationTab } from './EventAppreciationTab';
 
@@ -23,38 +22,13 @@ interface EventWrapupContainerProps {
   eventCode: string;
 }
 
-type WrapupSubView = 'photos' | 'appreciation';
-
 export const EventWrapupContainer: React.FC<EventWrapupContainerProps> = ({ eventCode }) => {
-  const { t } = useTranslation('events');
-  const [subView, setSubView] = useState<WrapupSubView>('photos');
-
   return (
-    <Box>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs
-          value={subView}
-          onChange={(_e, v: WrapupSubView) => setSubView(v)}
-          aria-label={t('eventPage.tabs.wrapup', 'Wrap-up')}
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          <Tab
-            value="photos"
-            label={t('eventPage.tabs.photos', 'Photos')}
-            data-testid="wrapup-subtab-photos"
-          />
-          <Tab
-            value="appreciation"
-            label={t('eventPage.tabs.appreciation', 'Appreciation')}
-            data-testid="wrapup-subtab-appreciation"
-          />
-        </Tabs>
-      </Box>
-
-      {subView === 'photos' && <EventPhotosTab eventCode={eventCode} />}
-      {subView === 'appreciation' && <EventAppreciationTab eventCode={eventCode} />}
-    </Box>
+    <Stack spacing={4} data-testid="wrapup-panel">
+      <EventPhotosTab eventCode={eventCode} />
+      <Divider />
+      <EventAppreciationTab eventCode={eventCode} />
+    </Stack>
   );
 };
 
