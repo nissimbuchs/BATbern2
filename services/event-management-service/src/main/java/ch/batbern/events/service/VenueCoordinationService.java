@@ -77,7 +77,10 @@ public class VenueCoordinationService {
     private final UserApiClient userApiClient;
     private final ObjectMapper objectMapper;
 
-    @Value("${app.email.configuration-set:}")
+    // Transactional SES configuration set (delivery tracking, no suppression). Bound to
+    // the shared default property so venue/partner-meeting invites are tracked like all
+    // other transactional mail. See spec-transactional-ses-config-set.md.
+    @Value("${batbern.ses.configuration-set-name:#{null}}")
     private String configurationSetName;
 
     // ── Preview ───────────────────────────────────────────────────────────────

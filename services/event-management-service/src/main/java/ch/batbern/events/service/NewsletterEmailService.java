@@ -132,8 +132,14 @@ public class NewsletterEmailService {
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
 
-    /** Story 10.29 AC4: SES Configuration Set name for bounce/complaint tracking. Null = disabled. */
-    @Value("${batbern.ses.configuration-set-name:#{null}}")
+    /**
+     * Newsletter-only SES Configuration Set (bounce/complaint → SNS → SQS →
+     * BounceProcessingService suppression). Bound to its OWN property so newsletter
+     * blasts always use the newsletter set regardless of the shared EmailService
+     * default (which now points at the transactional set). Null = disabled.
+     * See spec-transactional-ses-config-set.md.
+     */
+    @Value("${batbern.ses.newsletter-configuration-set-name:#{null}}")
     private String configurationSetName;
 
     /**
@@ -530,7 +536,7 @@ public class NewsletterEmailService {
                     String mergedHtml = emailService.replaceVariables(
                             emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                             recipientVars);
-                    emailService.sendHtmlEmailSync(email, subject, mergedHtml);
+                    emailService.sendHtmlEmailSync(email, subject, mergedHtml, configurationSetName);
                     newlySent++;
                 } catch (Exception e) {
                     log.error("Newsletter retry (failed) failed for {}: {}", email, e.getMessage());
@@ -559,7 +565,7 @@ public class NewsletterEmailService {
                     String mergedHtml = emailService.replaceVariables(
                             emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                             recipientVars);
-                    emailService.sendHtmlEmailSync(email, subject, mergedHtml);
+                    emailService.sendHtmlEmailSync(email, subject, mergedHtml, configurationSetName);
                     newlySent++;
                 } catch (Exception e) {
                     log.error("Newsletter retry (uncontacted) failed for {}: {}", email, e.getMessage());
