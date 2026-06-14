@@ -324,7 +324,10 @@
       "save": "Wijzigingen opslaan",
       "saved": "Wijzigingen opgeslagen",
       "aiGenerateImage": "✨ Genereren (AI)",
-      "aiGenerateDescription": "✨ Beschrijving genereren met AI"
+      "aiGenerateDescription": "✨ Beschrijving genereren met AI",
+      "uploadImage": "Klik om een thema-afbeelding te uploaden",
+      "uploadingImage": "Uploaden…",
+      "replaceImage": "Afbeelding vervangen"
     },
     "communications": {
       "audiences": {

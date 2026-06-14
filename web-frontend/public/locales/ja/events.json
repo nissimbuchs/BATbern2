@@ -324,7 +324,10 @@
       "save": "変更を保存",
       "saved": "変更を保存しました",
       "aiGenerateImage": "✨ 生成（AI）",
-      "aiGenerateDescription": "✨ AIで説明を生成"
+      "aiGenerateDescription": "✨ AIで説明を生成",
+      "uploadImage": "クリックしてテーマ画像をアップロード",
+      "uploadingImage": "アップロード中…",
+      "replaceImage": "画像を置き換える"
     },
     "communications": {
       "audiences": {

@@ -338,7 +338,10 @@
       "save": "Save changes",
       "saved": "Changes saved",
       "aiGenerateImage": "✨ Generate (AI)",
-      "aiGenerateDescription": "✨ Generate description with AI"
+      "aiGenerateDescription": "✨ Generate description with AI",
+      "uploadImage": "Click to upload a theme image",
+      "uploadingImage": "Uploading…",
+      "replaceImage": "Replace image"
     },
     "communications": {
       "audiences": {

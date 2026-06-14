@@ -338,7 +338,10 @@
       "save": "Änderungen speichern",
       "saved": "Änderungen gespeichert",
       "aiGenerateImage": "✨ Generieren (KI)",
-      "aiGenerateDescription": "✨ Beschreibung mit KI generieren"
+      "aiGenerateDescription": "✨ Beschreibung mit KI generieren",
+      "uploadImage": "Klicken, um ein Themenbild hochzuladen",
+      "uploadingImage": "Wird hochgeladen…",
+      "replaceImage": "Bild ersetzen"
     },
     "communications": {
       "audiences": {

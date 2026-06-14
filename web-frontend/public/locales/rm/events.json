@@ -324,7 +324,10 @@
       "save": "Memorisar las midadas",
       "saved": "Midadas memorisadas",
       "aiGenerateImage": "✨ Generar (IA)",
-      "aiGenerateDescription": "✨ Generar la descripziun cun IA"
+      "aiGenerateDescription": "✨ Generar la descripziun cun IA",
+      "uploadImage": "Cliccar per chargiar si in maletg",
+      "uploadingImage": "Chargiar si…",
+      "replaceImage": "Remplazar il maletg"
     },
     "communications": {
       "audiences": {

@@ -9,7 +9,7 @@
  * an interim route nav; Story 14.F.3 swaps it for the focused overlay.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -18,20 +18,27 @@ import {
   Button,
   Chip,
   CircularProgress,
+  IconButton,
   Paper,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import { AutoAwesome, Topic as TopicIcon } from '@mui/icons-material';
+import {
+  AutoAwesome,
+  Topic as TopicIcon,
+  Delete as DeleteIcon,
+  PhotoCamera as ReplaceIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useUpdateEvent } from '@/hooks/useEvents';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
 import type { Event, EventDetailUI, EventUI } from '@/types/event.types';
-import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
 import { AiAssistDrawer } from './AiAssistDrawer';
 import {
@@ -66,6 +73,25 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
   const [topic, setTopic] = useState<Topic | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Theme image: a custom full-width preview with overlay actions (AI / replace /
+  // delete), driven by the shared presigned-upload hook.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
+  const { uploadFile, isUploading } = useFileUpload({
+    uploadEndpoint: '/logos/presigned-url',
+    maxFileSize: 5 * 1024 * 1024,
+    allowedTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
+    onUploadSuccess: (data) => {
+      setThemeImageUploadId(data.uploadId);
+      setPreviewUrl(data.tempFileUrl ?? null);
+      setImageRemoved(false);
+      setSaved(false);
+    },
+    onUploadError: (err) => setSaveError(err.message),
+  });
+  const shownImage = imageRemoved ? null : (previewUrl ?? event.themeImageUrl ?? null);
 
   const ev = event as EventUI;
   const initialValues = useMemo<EventFormData>(
@@ -163,34 +189,110 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
       >
         {/* LEFT column */}
         <Stack spacing={2}>
-          {/* Theme image card */}
-          <Paper variant="outlined" sx={cardSx}>
-            <Typography variant="subtitle1" gutterBottom>
-              {t('form.themeImage', 'Theme image')}
-            </Typography>
-            <FileUpload
-              currentFileUrl={event.themeImageUrl ?? undefined}
-              onUploadSuccess={(data) => {
-                setThemeImageUploadId(data.uploadId);
-                setSaved(false);
-              }}
-              onFileRemove={() => setThemeImageUploadId('')}
-              maxFileSize={5 * 1024 * 1024}
-              allowedTypes={['image/png', 'image/jpeg', 'image/svg+xml']}
-              altText={t('form.themeImageAlt', 'Event theme image')}
-              removeButtonLabel={t('form.removeThemeImage', 'Remove image')}
-            />
-            {aiContentEnabled && event.topicCode && (
-              <Button
-                size="small"
-                startIcon={<AutoAwesome />}
-                onClick={() => setAiDrawerOpen(true)}
-                sx={{ mt: 1 }}
-                data-testid="info-ai-theme"
-              >
-                {t('eventPage.details.aiGenerateImage', '✨ Generate (AI)')}
-              </Button>
-            )}
+          {/* Theme image card — full-width banner with overlay actions */}
+          <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+            <Box sx={{ position: 'relative' }} data-testid="info-theme-image">
+              {shownImage ? (
+                <Box
+                  component="img"
+                  src={shownImage}
+                  alt={t('form.themeImageAlt', 'Event theme image')}
+                  sx={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }}
+                />
+              ) : (
+                <Box
+                  onClick={() => fileInputRef.current?.click()}
+                  sx={{
+                    width: '100%',
+                    height: 180,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'action.hover',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    {isUploading
+                      ? t('eventPage.details.uploadingImage', 'Uploading…')
+                      : t('eventPage.details.uploadImage', 'Click to upload a theme image')}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Top-right: AI-generate + replace */}
+              <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+                {aiContentEnabled && event.topicCode && (
+                  <Tooltip title={t('eventPage.details.aiGenerateImage', '✨ Generate (AI)')}>
+                    <IconButton
+                      size="small"
+                      sx={{
+                        bgcolor: 'background.paper',
+                        '&:hover': { bgcolor: 'background.paper' },
+                      }}
+                      onClick={() => setAiDrawerOpen(true)}
+                      data-testid="info-ai-theme"
+                    >
+                      <AutoAwesome fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Tooltip title={t('eventPage.details.replaceImage', 'Replace image')}>
+                  <span>
+                    <IconButton
+                      size="small"
+                      sx={{
+                        bgcolor: 'background.paper',
+                        '&:hover': { bgcolor: 'background.paper' },
+                      }}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      data-testid="info-replace-theme"
+                    >
+                      <ReplaceIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
+
+              {/* Bottom-right: delete badge */}
+              {shownImage && (
+                <Tooltip title={t('form.removeThemeImage', 'Remove image')}>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    sx={{
+                      position: 'absolute',
+                      bottom: 8,
+                      right: 8,
+                      bgcolor: 'background.paper',
+                      '&:hover': { bgcolor: 'background.paper' },
+                    }}
+                    onClick={() => {
+                      setImageRemoved(true);
+                      setPreviewUrl(null);
+                      setThemeImageUploadId('');
+                      setSaved(false);
+                    }}
+                    data-testid="info-delete-theme"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                accept="image/png,image/jpeg,image/svg+xml"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void uploadFile(file);
+                  e.target.value = '';
+                }}
+              />
+            </Box>
           </Paper>
 
           {/* Event details card */}
@@ -284,48 +386,73 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
               {t('eventPage.details.whenWhere', 'When & where')}
             </Typography>
             <Stack spacing={2}>
-              <Controller
-                name="date"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    type="date"
-                    label={t('form.eventDate', 'Event date')}
-                    InputLabelProps={{ shrink: true }}
-                    error={!!errors.date}
-                    helperText={errors.date?.message}
-                    fullWidth
-                    inputProps={{ 'data-testid': 'info-date-field' }}
+              {/* Date + registration deadline on one line */}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Controller
+                  name="date"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      type="date"
+                      label={t('form.eventDate', 'Event date')}
+                      InputLabelProps={{ shrink: true }}
+                      error={!!errors.date}
+                      helperText={errors.date?.message}
+                      fullWidth
+                      inputProps={{ 'data-testid': 'info-date-field' }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="registrationDeadline"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      type="date"
+                      label={t('form.registrationDeadline', 'Registration deadline')}
+                      InputLabelProps={{ shrink: true }}
+                      error={!!errors.registrationDeadline}
+                      helperText={errors.registrationDeadline?.message}
+                      fullWidth
+                      inputProps={{ 'data-testid': 'info-deadline-field' }}
+                    />
+                  )}
+                />
+              </Stack>
+
+              {/* Event type + capacity on one line */}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start">
+                <Box sx={{ flex: 1, width: '100%' }}>
+                  <Controller
+                    name="eventType"
+                    control={control}
+                    render={({ field }) => (
+                      <EventTypeSelector
+                        value={normalizeEventType(field.value)}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
-                )}
-              />
-              <Controller
-                name="registrationDeadline"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    type="date"
-                    label={t('form.registrationDeadline', 'Registration deadline')}
-                    InputLabelProps={{ shrink: true }}
-                    error={!!errors.registrationDeadline}
-                    helperText={errors.registrationDeadline?.message}
-                    fullWidth
-                    inputProps={{ 'data-testid': 'info-deadline-field' }}
-                  />
-                )}
-              />
-              <Controller
-                name="eventType"
-                control={control}
-                render={({ field }) => (
-                  <EventTypeSelector
-                    value={normalizeEventType(field.value)}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
+                </Box>
+                <Controller
+                  name="venueCapacity"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      type="number"
+                      label={t('form.capacity', 'Venue capacity')}
+                      error={!!errors.venueCapacity}
+                      helperText={errors.venueCapacity?.message}
+                      fullWidth
+                      inputProps={{ 'data-testid': 'info-capacity-field' }}
+                    />
+                  )}
+                />
+              </Stack>
+
               <Controller
                 name="venueName"
                 control={control}
@@ -337,21 +464,6 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
                     helperText={errors.venueName?.message}
                     fullWidth
                     inputProps={{ 'data-testid': 'info-venue-name-field' }}
-                  />
-                )}
-              />
-              <Controller
-                name="venueCapacity"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    type="number"
-                    label={t('form.capacity', 'Venue capacity')}
-                    error={!!errors.venueCapacity}
-                    helperText={errors.venueCapacity?.message}
-                    fullWidth
-                    inputProps={{ 'data-testid': 'info-capacity-field' }}
                   />
                 )}
               />

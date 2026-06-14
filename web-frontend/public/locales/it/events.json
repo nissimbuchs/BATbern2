@@ -324,7 +324,10 @@
       "save": "Salva modifiche",
       "saved": "Modifiche salvate",
       "aiGenerateImage": "✨ Genera (IA)",
-      "aiGenerateDescription": "✨ Genera descrizione con IA"
+      "aiGenerateDescription": "✨ Genera descrizione con IA",
+      "uploadImage": "Clicca per caricare un'immagine",
+      "uploadingImage": "Caricamento…",
+      "replaceImage": "Sostituisci immagine"
     },
     "communications": {
       "audiences": {

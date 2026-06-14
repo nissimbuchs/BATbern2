@@ -24,8 +24,8 @@ vi.mock('@/services/topicService', () => ({
   topicService: { getTopicById: vi.fn().mockResolvedValue({ title: 'Cloud Native' }) },
 }));
 vi.mock('../AiAssistDrawer', () => ({ AiAssistDrawer: () => null }));
-vi.mock('@/components/shared/FileUpload/FileUpload', () => ({
-  FileUpload: () => <div data-testid="file-upload" />,
+vi.mock('@/hooks/useFileUpload/useFileUpload', () => ({
+  useFileUpload: () => ({ uploadFile: vi.fn(), isUploading: false, reset: vi.fn() }),
 }));
 vi.mock('@/components/organizer/EventTypeSelector/EventTypeSelector', () => ({
   EventTypeSelector: () => <div data-testid="event-type-selector" />,
@@ -68,7 +68,7 @@ describe('EventInfoTab', () => {
     renderTab();
     expect(screen.getByTestId('info-title-field')).toHaveValue('Cloud Native Architecture');
     expect(screen.getByTestId('info-venue-name-field')).toHaveValue('Kursaal Bern');
-    expect(screen.getByTestId('file-upload')).toBeInTheDocument();
+    expect(screen.getByTestId('info-theme-image')).toBeInTheDocument();
   });
 
   it('Saves only the changed field via useUpdateEvent', async () => {

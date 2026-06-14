@@ -324,7 +324,10 @@
       "save": "Tallenna muutokset",
       "saved": "Muutokset tallennettu",
       "aiGenerateImage": "✨ Luo (tekoäly)",
-      "aiGenerateDescription": "✨ Luo kuvaus tekoälyllä"
+      "aiGenerateDescription": "✨ Luo kuvaus tekoälyllä",
+      "uploadImage": "Lataa teemakuva napsauttamalla",
+      "uploadingImage": "Ladataan…",
+      "replaceImage": "Vaihda kuva"
     },
     "communications": {
       "audiences": {
