@@ -328,7 +328,9 @@
       "changeTopic": "Thema ändere",
       "aiAssist": "✨ KI-generiere",
       "save": "Ändrige speichere",
-      "saved": "Ändrige gspeicheret"
+      "saved": "Ändrige gspeicheret",
+      "aiGenerateImage": "✨ Generiere (KI)",
+      "aiGenerateDescription": "✨ Beschribig mit KI generiere"
     },
     "communications": {
       "audiences": {

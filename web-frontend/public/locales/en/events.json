@@ -336,7 +336,9 @@
       "changeTopic": "Change topic",
       "aiAssist": "✨ AI-generate",
       "save": "Save changes",
-      "saved": "Changes saved"
+      "saved": "Changes saved",
+      "aiGenerateImage": "✨ Generate (AI)",
+      "aiGenerateDescription": "✨ Generate description with AI"
     },
     "communications": {
       "audiences": {

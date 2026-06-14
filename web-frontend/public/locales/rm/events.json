@@ -322,7 +322,9 @@
       "changeTopic": "Midar il tema",
       "aiAssist": "✨ Generar cun IA",
       "save": "Memorisar las midadas",
-      "saved": "Midadas memorisadas"
+      "saved": "Midadas memorisadas",
+      "aiGenerateImage": "✨ Generar (IA)",
+      "aiGenerateDescription": "✨ Generar la descripziun cun IA"
     },
     "communications": {
       "audiences": {

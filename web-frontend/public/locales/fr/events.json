@@ -322,7 +322,9 @@
       "changeTopic": "Changer le sujet",
       "aiAssist": "✨ Générer par IA",
       "save": "Enregistrer",
-      "saved": "Modifications enregistrées"
+      "saved": "Modifications enregistrées",
+      "aiGenerateImage": "✨ Générer (IA)",
+      "aiGenerateDescription": "✨ Générer la description par IA"
     },
     "communications": {
       "audiences": {

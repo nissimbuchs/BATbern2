@@ -336,7 +336,9 @@
       "changeTopic": "Thema ändern",
       "aiAssist": "✨ KI-generieren",
       "save": "Änderungen speichern",
-      "saved": "Änderungen gespeichert"
+      "saved": "Änderungen gespeichert",
+      "aiGenerateImage": "✨ Generieren (KI)",
+      "aiGenerateDescription": "✨ Beschreibung mit KI generieren"
     },
     "communications": {
       "audiences": {

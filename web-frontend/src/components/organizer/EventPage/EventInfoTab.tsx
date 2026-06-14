@@ -18,6 +18,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Paper,
   Stack,
   TextField,
   Typography,
@@ -137,194 +138,241 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
 
   const dirty = isDirty || !!themeImageUploadId;
 
+  const cardSx = { p: 2 } as const;
+
   return (
-    <Stack spacing={3} data-testid="event-info-tab">
-      {/* Theme image */}
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
-          {t('form.themeImage', 'Theme image')}
-        </Typography>
-        <FileUpload
-          currentFileUrl={event.themeImageUrl ?? undefined}
-          onUploadSuccess={(data) => {
-            setThemeImageUploadId(data.uploadId);
-            setSaved(false);
-          }}
-          onFileRemove={() => setThemeImageUploadId('')}
-          maxFileSize={5 * 1024 * 1024}
-          allowedTypes={['image/png', 'image/jpeg', 'image/svg+xml']}
-          altText={t('form.themeImageAlt', 'Event theme image')}
-          removeButtonLabel={t('form.removeThemeImage', 'Remove image')}
-        />
-        {aiContentEnabled && event.topicCode && (
-          <Button
-            size="small"
-            startIcon={<AutoAwesome />}
-            onClick={() => setAiDrawerOpen(true)}
-            sx={{ mt: 1 }}
-            data-testid="info-ai-assist"
-          >
-            {t('eventPage.details.aiAssist', '✨ AI-generate')}
-          </Button>
-        )}
-      </Box>
-
-      {/* Title */}
-      <Controller
-        name="title"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            label={t('form.title', 'Title')}
-            fullWidth
-            error={!!errors.title}
-            helperText={errors.title?.message}
-            inputProps={{ 'data-testid': 'info-title-field' }}
-          />
-        )}
-      />
-
-      {/* Description */}
-      <Controller
-        name="description"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            label={t('form.description', 'Description')}
-            fullWidth
-            multiline
-            minRows={4}
-            error={!!errors.description}
-            helperText={errors.description?.message}
-            inputProps={{ 'data-testid': 'info-description-field' }}
-          />
-        )}
-      />
-
-      {/* Topic */}
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
-          {t('eventPage.overview.selectedTopic', 'Selected Topic')}
-        </Typography>
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-          {topic || event.topicCode ? (
-            <Chip
-              icon={<TopicIcon />}
-              label={topic?.title ?? event.topicCode}
-              color="primary"
-              variant="outlined"
-            />
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              {t('eventPage.details.noTopic', 'No topic selected yet')}
-            </Typography>
+    <Stack spacing={2} data-testid="event-info-tab">
+      {/* Intro banner */}
+      <Paper variant="outlined" sx={{ p: 2, bgcolor: 'action.hover' }}>
+        <Typography variant="body2" color="text.secondary">
+          {t(
+            'eventPage.details.intro',
+            "The event's identity, topic, and schedule. Set these once early — they rarely change."
           )}
-          <Button
-            size="small"
-            onClick={() => navigate(`/organizer/topics?eventCode=${eventCode}`)}
-            data-testid="info-change-topic"
-          >
-            {t('eventPage.details.changeTopic', 'Change topic')}
-          </Button>
+        </Typography>
+      </Paper>
+
+      {/* Two columns (per prototype #p-details): identity on the left, topic + when/where on the right. */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+          gap: 2,
+          alignItems: 'start',
+        }}
+      >
+        {/* LEFT column */}
+        <Stack spacing={2}>
+          {/* Theme image card */}
+          <Paper variant="outlined" sx={cardSx}>
+            <Typography variant="subtitle1" gutterBottom>
+              {t('form.themeImage', 'Theme image')}
+            </Typography>
+            <FileUpload
+              currentFileUrl={event.themeImageUrl ?? undefined}
+              onUploadSuccess={(data) => {
+                setThemeImageUploadId(data.uploadId);
+                setSaved(false);
+              }}
+              onFileRemove={() => setThemeImageUploadId('')}
+              maxFileSize={5 * 1024 * 1024}
+              allowedTypes={['image/png', 'image/jpeg', 'image/svg+xml']}
+              altText={t('form.themeImageAlt', 'Event theme image')}
+              removeButtonLabel={t('form.removeThemeImage', 'Remove image')}
+            />
+            {aiContentEnabled && event.topicCode && (
+              <Button
+                size="small"
+                startIcon={<AutoAwesome />}
+                onClick={() => setAiDrawerOpen(true)}
+                sx={{ mt: 1 }}
+                data-testid="info-ai-theme"
+              >
+                {t('eventPage.details.aiGenerateImage', '✨ Generate (AI)')}
+              </Button>
+            )}
+          </Paper>
+
+          {/* Event details card */}
+          <Paper variant="outlined" sx={cardSx}>
+            <Typography variant="subtitle1" gutterBottom>
+              {t('eventPage.details.heading', 'Event details')}
+            </Typography>
+            <Stack spacing={2}>
+              <Controller
+                name="title"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.title', 'Title')}
+                    fullWidth
+                    error={!!errors.title}
+                    helperText={errors.title?.message}
+                    inputProps={{ 'data-testid': 'info-title-field' }}
+                  />
+                )}
+              />
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.description', 'Description')}
+                    fullWidth
+                    multiline
+                    minRows={4}
+                    error={!!errors.description}
+                    helperText={errors.description?.message}
+                    inputProps={{ 'data-testid': 'info-description-field' }}
+                  />
+                )}
+              />
+              {aiContentEnabled && event.topicCode && (
+                <Box>
+                  <Button
+                    size="small"
+                    startIcon={<AutoAwesome />}
+                    onClick={() => setAiDrawerOpen(true)}
+                    data-testid="info-ai-assist"
+                  >
+                    {t(
+                      'eventPage.details.aiGenerateDescription',
+                      '✨ Generate description with AI'
+                    )}
+                  </Button>
+                </Box>
+              )}
+            </Stack>
+          </Paper>
+        </Stack>
+
+        {/* RIGHT column */}
+        <Stack spacing={2}>
+          {/* Topic card */}
+          <Paper variant="outlined" sx={cardSx}>
+            <Typography variant="subtitle1" gutterBottom>
+              {t('eventPage.overview.selectedTopic', 'Selected Topic')}
+            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              {topic || event.topicCode ? (
+                <Chip
+                  icon={<TopicIcon />}
+                  label={topic?.title ?? event.topicCode}
+                  color="primary"
+                  variant="outlined"
+                />
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {t('eventPage.details.noTopic', 'No topic selected yet')}
+                </Typography>
+              )}
+              <Button
+                size="small"
+                onClick={() => navigate(`/organizer/topics?eventCode=${eventCode}`)}
+                data-testid="info-change-topic"
+              >
+                {t('eventPage.details.changeTopic', 'Change topic')}
+              </Button>
+            </Stack>
+          </Paper>
+
+          {/* When & where card */}
+          <Paper variant="outlined" sx={cardSx}>
+            <Typography variant="subtitle1" gutterBottom>
+              {t('eventPage.details.whenWhere', 'When & where')}
+            </Typography>
+            <Stack spacing={2}>
+              <Controller
+                name="date"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    type="date"
+                    label={t('form.eventDate', 'Event date')}
+                    InputLabelProps={{ shrink: true }}
+                    error={!!errors.date}
+                    helperText={errors.date?.message}
+                    fullWidth
+                    inputProps={{ 'data-testid': 'info-date-field' }}
+                  />
+                )}
+              />
+              <Controller
+                name="registrationDeadline"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    type="date"
+                    label={t('form.registrationDeadline', 'Registration deadline')}
+                    InputLabelProps={{ shrink: true }}
+                    error={!!errors.registrationDeadline}
+                    helperText={errors.registrationDeadline?.message}
+                    fullWidth
+                    inputProps={{ 'data-testid': 'info-deadline-field' }}
+                  />
+                )}
+              />
+              <Controller
+                name="eventType"
+                control={control}
+                render={({ field }) => (
+                  <EventTypeSelector
+                    value={normalizeEventType(field.value)}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              <Controller
+                name="venueName"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.venue', 'Venue name')}
+                    error={!!errors.venueName}
+                    helperText={errors.venueName?.message}
+                    fullWidth
+                    inputProps={{ 'data-testid': 'info-venue-name-field' }}
+                  />
+                )}
+              />
+              <Controller
+                name="venueCapacity"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    type="number"
+                    label={t('form.capacity', 'Venue capacity')}
+                    error={!!errors.venueCapacity}
+                    helperText={errors.venueCapacity?.message}
+                    fullWidth
+                    inputProps={{ 'data-testid': 'info-capacity-field' }}
+                  />
+                )}
+              />
+              <Controller
+                name="venueAddress"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.venueAddress', 'Venue address')}
+                    error={!!errors.venueAddress}
+                    helperText={errors.venueAddress?.message}
+                    fullWidth
+                    inputProps={{ 'data-testid': 'info-venue-address-field' }}
+                  />
+                )}
+              />
+            </Stack>
+          </Paper>
         </Stack>
       </Box>
-
-      {/* When & where */}
-      <Typography variant="subtitle2">
-        {t('eventPage.details.whenWhere', 'When & where')}
-      </Typography>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <Controller
-          name="date"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              type="date"
-              label={t('form.eventDate', 'Event date')}
-              InputLabelProps={{ shrink: true }}
-              error={!!errors.date}
-              helperText={errors.date?.message}
-              fullWidth
-              inputProps={{ 'data-testid': 'info-date-field' }}
-            />
-          )}
-        />
-        <Controller
-          name="registrationDeadline"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              type="date"
-              label={t('form.registrationDeadline', 'Registration deadline')}
-              InputLabelProps={{ shrink: true }}
-              error={!!errors.registrationDeadline}
-              helperText={errors.registrationDeadline?.message}
-              fullWidth
-              inputProps={{ 'data-testid': 'info-deadline-field' }}
-            />
-          )}
-        />
-      </Stack>
-
-      <Controller
-        name="eventType"
-        control={control}
-        render={({ field }) => (
-          <EventTypeSelector value={normalizeEventType(field.value)} onChange={field.onChange} />
-        )}
-      />
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <Controller
-          name="venueName"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              label={t('form.venue', 'Venue name')}
-              error={!!errors.venueName}
-              helperText={errors.venueName?.message}
-              fullWidth
-              inputProps={{ 'data-testid': 'info-venue-name-field' }}
-            />
-          )}
-        />
-        <Controller
-          name="venueCapacity"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              type="number"
-              label={t('form.capacity', 'Venue capacity')}
-              error={!!errors.venueCapacity}
-              helperText={errors.venueCapacity?.message}
-              sx={{ maxWidth: { sm: 200 } }}
-              fullWidth
-              inputProps={{ 'data-testid': 'info-capacity-field' }}
-            />
-          )}
-        />
-      </Stack>
-
-      <Controller
-        name="venueAddress"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            label={t('form.venueAddress', 'Venue address')}
-            error={!!errors.venueAddress}
-            helperText={errors.venueAddress?.message}
-            fullWidth
-            inputProps={{ 'data-testid': 'info-venue-address-field' }}
-          />
-        )}
-      />
 
       {saveError && (
         <Alert severity="error" data-testid="info-save-error">

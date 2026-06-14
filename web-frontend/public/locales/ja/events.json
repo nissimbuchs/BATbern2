@@ -322,7 +322,9 @@
       "changeTopic": "トピックを変更",
       "aiAssist": "✨ AI生成",
       "save": "変更を保存",
-      "saved": "変更を保存しました"
+      "saved": "変更を保存しました",
+      "aiGenerateImage": "✨ 生成（AI）",
+      "aiGenerateDescription": "✨ AIで説明を生成"
     },
     "communications": {
       "audiences": {

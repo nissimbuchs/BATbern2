@@ -322,7 +322,9 @@
       "changeTopic": "Vaihda aihe",
       "aiAssist": "✨ Luo tekoälyllä",
       "save": "Tallenna muutokset",
-      "saved": "Muutokset tallennettu"
+      "saved": "Muutokset tallennettu",
+      "aiGenerateImage": "✨ Luo (tekoäly)",
+      "aiGenerateDescription": "✨ Luo kuvaus tekoälyllä"
     },
     "communications": {
       "audiences": {

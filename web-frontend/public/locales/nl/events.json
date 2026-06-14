@@ -322,7 +322,9 @@
       "changeTopic": "Onderwerp wijzigen",
       "aiAssist": "✨ AI-genereren",
       "save": "Wijzigingen opslaan",
-      "saved": "Wijzigingen opgeslagen"
+      "saved": "Wijzigingen opgeslagen",
+      "aiGenerateImage": "✨ Genereren (AI)",
+      "aiGenerateDescription": "✨ Beschrijving genereren met AI"
     },
     "communications": {
       "audiences": {
