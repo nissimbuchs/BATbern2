@@ -42,6 +42,7 @@ import { useQuery } from '@tanstack/react-query';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { CustomTaskModal } from './CustomTaskModal';
 import { OrganizerSelect, useOrganizers } from '@/components/shared/OrganizerSelect';
+import { OrganizerChip } from '@/components/shared/OrganizerChip';
 
 interface EventTasksTabProps {
   eventId: string | null; // Null for new event creation
@@ -386,13 +387,17 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                           {t('tasks.trigger')}:{' '}
                           {t(`tasks.workflowStates.${task.triggerState}`, task.triggerState)}
                         </Typography>
-                        <Typography variant="caption">
-                          {t('tasks.assignedTo')}:{' '}
-                          {task.assignedOrganizerUsername
-                            ? (organizers.find((o) => o.id === task.assignedOrganizerUsername)
-                                ?.name ?? task.assignedOrganizerUsername)
-                            : t('tasks.unassigned')}
-                        </Typography>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Typography variant="caption">{t('tasks.assignedTo')}:</Typography>
+                          {task.assignedOrganizerUsername ? (
+                            <OrganizerChip
+                              username={task.assignedOrganizerUsername}
+                              organizers={organizers}
+                            />
+                          ) : (
+                            <Typography variant="caption">{t('tasks.unassigned')}</Typography>
+                          )}
+                        </Stack>
                         {task.notes && (
                           <Typography variant="caption" sx={{ fontStyle: 'italic' }}>
                             {task.notes}

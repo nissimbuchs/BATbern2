@@ -16,7 +16,6 @@ import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { CustomTaskModal } from '@/components/organizer/Tasks/CustomTaskModal';
-import { useOrganizers } from '@/components/shared/OrganizerSelect';
 import { AttentionCard } from './AttentionCard';
 import type { CockpitCard, CardTarget } from './cockpitCards';
 
@@ -41,7 +40,6 @@ export const AttentionList: React.FC<AttentionListProps> = ({
 }) => {
   const { t } = useTranslation('events');
   const queryClient = useQueryClient();
-  const { organizers } = useOrganizers();
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleModalClose = () => {
@@ -105,12 +103,7 @@ export const AttentionList: React.FC<AttentionListProps> = ({
         sx={{ gap: 1.5 }}
       >
         {cards.map((card) => (
-          <AttentionCard
-            key={card.id}
-            card={card}
-            onNavigate={onNavigate}
-            organizers={organizers}
-          />
+          <AttentionCard key={card.id} card={card} onNavigate={onNavigate} />
         ))}
       </Box>
 

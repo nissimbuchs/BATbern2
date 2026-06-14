@@ -30,7 +30,7 @@ import {
 import { format } from 'date-fns';
 import { type Locale } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { useOrganizers } from '@/components/shared/OrganizerSelect';
+import { OrganizerChip } from '@/components/shared/OrganizerChip';
 import { type EventTaskResponse } from '@/services/taskService';
 import { type SxProps, type Theme } from '@mui/material/styles';
 import type { TFunction } from 'i18next';
@@ -79,14 +79,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   // `organizer` on the /organizer/tasks board), which lacks those keys — so
   // resolve the state chip from `events` directly, regardless of the caller.
   const { t: tWorkflowState } = useTranslation('events');
-
-  // Resolve the assignee username → "First Last" display name (id === username),
-  // mirroring the speaker kanban. Falls back to the username if not in the directory.
-  const { organizers } = useOrganizers();
-  const assigneeName = task.assignedOrganizerUsername
-    ? (organizers.find((o) => o.id === task.assignedOrganizerUsername)?.name ??
-      task.assignedOrganizerUsername)
-    : '';
 
   const formattedDueDate = task.dueDate
     ? format(new Date(task.dueDate), 'dd MMM yyyy HH:mm', { locale })
@@ -190,11 +182,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     {t('tasks.due', 'Due')}: {formattedDueDate}
                   </Typography>
                 )}
-                {task.assignedOrganizerUsername && (
-                  <Typography variant="caption" color="text.secondary">
-                    {assigneeName}
-                  </Typography>
-                )}
+                <OrganizerChip
+                  username={task.assignedOrganizerUsername}
+                  data-testid={`task-assignee-${task.id}`}
+                />
               </Stack>
             )}
 

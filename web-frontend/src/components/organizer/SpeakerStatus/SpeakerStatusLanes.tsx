@@ -49,6 +49,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { UserAvatar } from '@/components/shared/UserAvatar';
+import { OrganizerChip } from '@/components/shared/OrganizerChip';
 import {
   DndContext,
   DragEndEvent,
@@ -872,10 +873,6 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   };
   const primaryAction = getPrimaryAction(speaker, callbacks, slotCapacity, t);
 
-  const assignedOrg = speaker.assignedOrganizerId
-    ? organizers.find((o) => o.id === speaker.assignedOrganizerId)
-    : null;
-
   // Slot tie-in: the source of truth for "slotted" is the session's `startTime` — a
   // speaker can be slotted from the Agenda as soon as they reach READY (they have a
   // session from promotion onward). So the assigned time is shown on the card for ANY
@@ -1014,24 +1011,11 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}
               data-testid={`organizer-row-${speaker.id}`}
             >
-              {assignedOrg && (
-                <Chip
-                  size="small"
-                  label={assignedOrg.name}
-                  avatar={
-                    <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem' }}>
-                      {assignedOrg.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .slice(0, 2)}
-                    </Avatar>
-                  }
-                  variant="outlined"
-                  sx={{ height: 20, '& .MuiChip-label': { fontSize: '0.65rem', px: 0.5 } }}
-                  data-testid={`assigned-organizer-chip-${speaker.id}`}
-                />
-              )}
+              <OrganizerChip
+                username={speaker.assignedOrganizerId}
+                organizers={organizers}
+                data-testid={`assigned-organizer-chip-${speaker.id}`}
+              />
               {timeInState && (
                 <Tooltip
                   title={t('organizer:speakerCard.timeInStateTooltip', {

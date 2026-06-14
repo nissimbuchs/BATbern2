@@ -13,18 +13,16 @@
  */
 
 import React from 'react';
-import { Paper, Box, Typography, Chip, Avatar, ButtonBase } from '@mui/material';
+import { Paper, Box, Typography, Chip, ButtonBase } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import type { Organizer } from '@/components/shared/OrganizerSelect';
+import { OrganizerChip } from '@/components/shared/OrganizerChip';
 import type { CockpitCard, CardTarget, CardSeverity } from './cockpitCards';
 
 interface AttentionCardProps {
   card: CockpitCard;
   onNavigate: (target: CardTarget) => void;
-  /** Organizer directory (id === username) to resolve the assignee's display name. */
-  organizers?: Organizer[];
 }
 
 const STRIP_COLOR: Record<CardSeverity, string> = {
@@ -41,23 +39,8 @@ const CHIP_COLOR: Record<CardSeverity, 'error' | 'warning' | 'success'> = {
   upcoming: 'success',
 };
 
-function initials(username?: string | null): string {
-  if (!username) return '?';
-  const parts = username.split(/[.\s_-]+/).filter(Boolean);
-  return (parts[0]?.[0] ?? '').concat(parts[1]?.[0] ?? '').toUpperCase() || '?';
-}
-
-export const AttentionCard: React.FC<AttentionCardProps> = ({
-  card,
-  onNavigate,
-  organizers = [],
-}) => {
+export const AttentionCard: React.FC<AttentionCardProps> = ({ card, onNavigate }) => {
   const { t } = useTranslation('events');
-
-  // Resolve the assignee username → display name via the organizer directory
-  // (id === username), mirroring the speaker kanban's assigned-organizer chip.
-  const assignedOrg = card.assignee ? organizers.find((o) => o.id === card.assignee) : undefined;
-  const assignedName = assignedOrg?.name ?? card.assignee ?? '';
 
   const label = card.taskBacked
     ? String(card.labelVars?.name ?? '')
@@ -130,20 +113,10 @@ export const AttentionCard: React.FC<AttentionCardProps> = ({
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
         <Chip size="small" color={CHIP_COLOR[card.severity]} variant="outlined" label={dueText} />
-        {card.assignee && (
-          <Chip
-            size="small"
-            variant="outlined"
-            label={assignedName}
-            avatar={
-              <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem' }}>
-                {initials(assignedName)}
-              </Avatar>
-            }
-            data-testid={`cockpit-attention-assignee-${card.id}`}
-            sx={{ height: 22, '& .MuiChip-label': { fontSize: '0.7rem', px: 0.75 } }}
-          />
-        )}
+        <OrganizerChip
+          username={card.assignee}
+          data-testid={`cockpit-attention-assignee-${card.id}`}
+        />
       </Box>
 
       {target && actionLabel && (
