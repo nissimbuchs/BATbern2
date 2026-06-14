@@ -407,7 +407,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComple
                 )}
                 {task.triggerState && (
                   <Chip
-                    label={task.triggerState}
+                    label={t(`tasks.workflowStates.${task.triggerState}`, task.triggerState)}
                     size="small"
                     variant="outlined"
                     sx={{ fontSize: '0.65rem', height: 20, mt: 0.5 }}

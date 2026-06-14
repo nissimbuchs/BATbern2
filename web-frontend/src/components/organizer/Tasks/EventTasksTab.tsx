@@ -178,7 +178,11 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                         title={
                           <Stack spacing={0.5}>
                             <Typography variant="caption">
-                              <strong>{t('tasks.triggerState')}:</strong> {template.triggerState}
+                              <strong>{t('tasks.triggerState')}:</strong>{' '}
+                              {t(
+                                `tasks.workflowStates.${template.triggerState}`,
+                                template.triggerState
+                              )}
                             </Typography>
                             <Typography variant="caption">
                               <strong>{t('tasks.dueDate')}:</strong>{' '}
@@ -284,7 +288,10 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                               <Stack spacing={0.5}>
                                 <Typography variant="caption">
                                   <strong>{t('tasks.triggerState')}:</strong>{' '}
-                                  {template.triggerState}
+                                  {t(
+                                    `tasks.workflowStates.${template.triggerState}`,
+                                    template.triggerState
+                                  )}
                                 </Typography>
                                 <Typography variant="caption">
                                   <strong>{t('tasks.dueDate')}:</strong>{' '}
@@ -376,7 +383,8 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                     secondary={
                       <Stack spacing={0.5} mt={0.5}>
                         <Typography variant="caption">
-                          {t('tasks.trigger')}: {task.triggerState}
+                          {t('tasks.trigger')}:{' '}
+                          {t(`tasks.workflowStates.${task.triggerState}`, task.triggerState)}
                         </Typography>
                         <Typography variant="caption">
                           {t('tasks.assignedTo')}:{' '}
