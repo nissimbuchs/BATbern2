@@ -21,6 +21,7 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { BASE_URL, API_URL } from '../../../playwright.config';
+import { forceEnglishUserProfile } from '../../helpers/mock-user-profile';
 
 /**
  * Helper: Navigate to Partner Directory
@@ -52,23 +53,8 @@ async function navigateToPartnerDirectory(page: Page) {
 
 test.describe('Partner Directory @gate -User Journey', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock getUserProfile to return English language preference
-    // This prevents LanguageSync from changing language to German based on backend user preference
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-user-id',
-          email: 'test@example.com',
-          firstName: 'Test',
-          lastName: 'User',
-          preferences: {
-            language: 'en', // Force English for E2E tests
-          },
-        }),
-      });
-    });
+    // Force English UI so language-dependent assertions are deterministic.
+    await forceEnglishUserProfile(page);
 
     await page.goto('/organizer/events');
   });
@@ -125,18 +111,8 @@ test.describe('Partner Directory @gate -User Journey', () => {
 
 test.describe('Partner Directory @gate -Search Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock getUserProfile to return English language preference
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-user-id',
-          email: 'test@example.com',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    // Force English UI so language-dependent assertions are deterministic.
+    await forceEnglishUserProfile(page);
 
     // Navigate directly to partners page
     await page.goto(`${BASE_URL}/organizer/partners`);
@@ -199,18 +175,8 @@ test.describe('Partner Directory @gate -Search Functionality', () => {
 
 test.describe('Partner Directory @gate -Filter Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock getUserProfile to return English language preference
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-user-id',
-          email: 'test@example.com',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    // Force English UI so language-dependent assertions are deterministic.
+    await forceEnglishUserProfile(page);
 
     // Navigate directly to partners page
     await page.goto(`${BASE_URL}/organizer/partners`);
@@ -281,18 +247,8 @@ test.describe('Partner Directory @gate -Filter Functionality', () => {
 
 test.describe('Partner Directory @gate -View Mode Toggle', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock getUserProfile to return English language preference
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-user-id',
-          email: 'test@example.com',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    // Force English UI so language-dependent assertions are deterministic.
+    await forceEnglishUserProfile(page);
 
     // Navigate directly to partners page
     await page.goto(`${BASE_URL}/organizer/partners`);
@@ -326,18 +282,8 @@ test.describe('Partner Directory @gate -View Mode Toggle', () => {
 
 test.describe('Partner Directory @gate -Sorting', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock getUserProfile to return English language preference
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-user-id',
-          email: 'test@example.com',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    // Force English UI so language-dependent assertions are deterministic.
+    await forceEnglishUserProfile(page);
 
     // Navigate directly to partners page
     await page.goto(`${BASE_URL}/organizer/partners`);
@@ -374,18 +320,8 @@ test.describe('Partner Directory @gate -Sorting', () => {
 
 test.describe('Partner Directory @gate -Pagination', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock getUserProfile to return English language preference
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-user-id',
-          email: 'test@example.com',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    // Force English UI so language-dependent assertions are deterministic.
+    await forceEnglishUserProfile(page);
 
     // Navigate directly to partners page
     await page.goto(`${BASE_URL}/organizer/partners`);
@@ -427,18 +363,8 @@ test.describe('Partner Directory @gate -Pagination', () => {
 
 test.describe('Partner Directory @gate -Error Handling', () => {
   test('should handle network errors gracefully', async ({ page }) => {
-    // Mock getUserProfile to return English language preference
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-user-id',
-          email: 'test@example.com',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    // Force English UI so language-dependent assertions are deterministic.
+    await forceEnglishUserProfile(page);
 
     // Intercept API calls and simulate network error
     await page.route(`${API_URL}/api/v1/partners**`, (route) => {
@@ -454,18 +380,8 @@ test.describe('Partner Directory @gate -Error Handling', () => {
   });
 
   test('should handle API errors gracefully', async ({ page }) => {
-    // Mock getUserProfile to return English language preference
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-user-id',
-          email: 'test@example.com',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    // Force English UI so language-dependent assertions are deterministic.
+    await forceEnglishUserProfile(page);
 
     // Intercept API calls and simulate 500 error
     await page.route(`${API_URL}/api/v1/partners**`, (route) => {
