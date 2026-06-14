@@ -189,6 +189,13 @@ context:
 - Amendment: new resolver/auth tests written in Jest style.
 - KEEP: future specs touching `infrastructure/` should reference Jest.
 
+**§6 — 2026-06-14: speaker alias now includes CO_SPEAKER + single visible broadcast + delivery tracking**
+- Trigger: event-59 incident — an organizer mailed `batbern59-speaker@` and the 5 co-speakers never received it (resolver was PRIMARY_SPEAKER-only). Root-caused via CloudWatch: `Resolved 6 email(s)` = the 6 primaries; co-speakers silently dropped.
+- Amendment A (recipients): `SessionUserRepository.findScheduledPrimarySpeakersByEventId` → renamed `findScheduledSpeakersByEventId`, now `speaker_role IN (PRIMARY_SPEAKER, CO_SPEAKER)` on scheduled sessions (MODERATOR/PANELIST still excluded). `DistributionListService.resolveSpeakers` updated. This supersedes the F2 matrix rows / Code-Map line that say "PRIMARY_SPEAKER emails".
+- Amendment B (delivery shape): the `-speaker` alias now sends ONE visible mail — `To:` all speakers, `Cc:` the auto-resolved event moderator (the `-moderator` alias = organizer) — instead of one isolated copy per recipient, so the moderator can verify the recipient list. PII exposure between speakers is accepted (product decision, 2026-06-14). All other aliases keep the per-recipient (privacy-preserving) path. This supersedes the AC bullet "SES SendRawEmail invoked once per resolved recipient" for the speaker alias only.
+- Amendment C (tracking): dedicated SES configuration set `batbern-{env}-forwarder` (in `inbound-email-stack.ts`) routes delivery/bounce/complaint/reject to CloudWatch, decoupled from the newsletter bounce-SQS so a speaker bounce never auto-suppresses a newsletter recipient. Attached via an `X-SES-CONFIGURATION-SET` header (`email-rewriter.ts`) + `SES_CONFIGURATION_SET` Lambda env. Two event destinations on the set: (1) CloudWatch metrics = aggregate counts; (2) SNS topic `batbern-{env}-ses-forwarder-events` → `ses-event-logger` Lambda → log group `/aws/lambda/batbern-{env}-ses-event-logger` = ONE structured line PER RECIPIENT (`{eventType, recipient, status, diagnostic, messageId}`), so "did <address> deliver/bounce?" is a Logs Insights query. Full recipient address is logged on purpose (the diagnostic use case needs it); 3-month retention.
+- KEEP: "event speakers" = PRIMARY + CO across the codebase (matches `findEventSpeakersByEventId` badge-export definition).
+
 ## Design Notes
 
 **Why inline auto-registration (not async listener):** read-your-write semantics for organizer-facing flows. UserApiClient is cached (15-min); cost < 50ms. If perf later matters, refactor behind `@EventListener @Async` without API contract change.

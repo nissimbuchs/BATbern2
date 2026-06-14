@@ -75,24 +75,30 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
     List<SessionUser> findAllByEventId(@Param("eventId") UUID eventId);
 
     /**
-     * Find all PRIMARY_SPEAKER session_users on <strong>scheduled</strong> sessions of an event
-     * (i.e. sessions where {@code start_time IS NOT NULL}).
+     * Find all presenting speakers — PRIMARY_SPEAKER <strong>and</strong> CO_SPEAKER — on
+     * <strong>scheduled</strong> sessions of an event (i.e. sessions where
+     * {@code start_time IS NOT NULL}). MODERATOR and PANELIST roles are intentionally excluded.
      *
      * <p>Spec: {@code _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md}
      * (F2) — backs the {@code batbern{N}-speaker@} distribution-list resolution: only speakers
      * whose sessions have been timetabled (a real talk slot, not just a placeholder pool row)
      * should appear on the alias.
      *
+     * <p>Co-speakers were previously dropped (PRIMARY_SPEAKER-only), so a mail to the speaker
+     * alias never reached them — see event-59 incident (a co-speaker reported a missed mail).
+     *
      * @param eventId event UUID
-     * @return list of SessionUser rows; empty when no scheduled primary speakers exist yet
+     * @return list of SessionUser rows; empty when no scheduled speakers exist yet
      */
     @Query("SELECT su FROM SessionUser su "
         + "JOIN su.session s "
         + "WHERE s.eventId = :eventId "
         + "AND s.startTime IS NOT NULL "
-        + "AND su.speakerRole = ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER "
-        + "ORDER BY s.startTime ASC")
-    List<SessionUser> findScheduledPrimarySpeakersByEventId(@Param("eventId") UUID eventId);
+        + "AND su.speakerRole IN ("
+        + "  ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER, "
+        + "  ch.batbern.events.domain.SessionUser.SpeakerRole.CO_SPEAKER) "
+        + "ORDER BY s.startTime ASC, su.speakerRole ASC")
+    List<SessionUser> findScheduledSpeakersByEventId(@Param("eventId") UUID eventId);
 
     /**
      * Find PRIMARY_SPEAKER + CO_SPEAKER session_users for the given event.

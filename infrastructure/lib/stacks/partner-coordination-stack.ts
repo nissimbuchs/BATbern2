@@ -23,6 +23,12 @@ export interface PartnerCoordinationStackProps extends cdk.StackProps {
   userPoolClient: cognito.IUserPoolClient;
   eventBus?: events.IEventBus;
   alarmTopic?: sns.ITopic;
+  /**
+   * Transactional SES Configuration Set name — shared EmailService default so partner
+   * invite / meeting emails are delivery-tracked (no suppression).
+   * See spec-transactional-ses-config-set.md.
+   */
+  sesTransactionalConfigurationSetName?: string;
 }
 
 /**
@@ -46,6 +52,10 @@ export class PartnerCoordinationStack extends cdk.Stack {
       // EventBridge for domain events (PartnerCreatedEvent, TopicVoteSubmittedEvent, etc.)
       ...(props.eventBus && {
         EVENT_BUS_NAME: props.eventBus.eventBusName,
+      }),
+      // Transactional SES config set → shared EmailService default (delivery tracking)
+      ...(props.sesTransactionalConfigurationSetName && {
+        BATBERN_SES_CONFIGURATION_SET_NAME: props.sesTransactionalConfigurationSetName,
       }),
     };
 
@@ -101,6 +111,8 @@ export class PartnerCoordinationStack extends cdk.Stack {
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/${sesFromDomain}`,
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@${sesFromDomain}`,
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
+          // Configuration set — required when configurationSetName is attached to SendRawEmail
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/batbern-${envName}-*`,
         ],
       }),
     );

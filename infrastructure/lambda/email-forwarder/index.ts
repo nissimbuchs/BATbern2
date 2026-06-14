@@ -68,9 +68,16 @@ export const handler = async (event: S3Event): Promise<void> => {
     const truncatedSender = truncateEmail(senderEmail);
     console.log('Processing forwarding', { addresses: allAddresses, sender: truncatedSender });
 
-    // Resolve recipients for each authorized address, then deduplicate
-    const recipientSet = new Set<string>();
+    // Resolve recipients per authorized alias. The batbern{N}-speaker alias is
+    // special-cased: a SINGLE visible mail to all speakers (To) with the event
+    // moderator in Cc, so the moderator can verify the recipient list at a glance.
+    // Every other alias keeps the one-copy-per-recipient (privacy-preserving) path.
+    const recipientSet = new Set<string>();   // individual-send recipients
+    const speakerToSet = new Set<string>();   // single-mail visible To (speakers)
+    const moderatorCcSet = new Set<string>(); // single-mail Cc (event moderator)
     let anyAuthorized = false;
+    let speakerMode = false;
+
     for (const addr of allAddresses) {
       const authorized = await isAuthorizedSender(addr, senderEmail);
       if (!authorized) {
@@ -78,15 +85,77 @@ export const handler = async (event: S3Event): Promise<void> => {
         continue;
       }
       anyAuthorized = true;
+
+      const localPart = addr.split('@')[0]?.toLowerCase() ?? '';
+      const speakerMatch = localPart.match(/^batbern(\d+)-speaker$/);
+      const moderatorMatch = localPart.match(/^batbern(\d+)-moderator$/);
       const resolved = await resolveRecipients(addr);
-      for (const r of resolved) {
-        recipientSet.add(r);
+
+      if (speakerMatch) {
+        speakerMode = true;
+        for (const r of resolved) speakerToSet.add(r);
+        // Auto-resolve the event moderator (organizer) and Cc them.
+        const moderatorAddr = `batbern${speakerMatch[1]}-moderator@${forwardingDomain}`;
+        for (const m of await resolveRecipients(moderatorAddr)) moderatorCcSet.add(m);
+      } else if (moderatorMatch) {
+        for (const m of resolved) moderatorCcSet.add(m);
+      } else {
+        for (const r of resolved) recipientSet.add(r);
       }
     }
 
     if (!anyAuthorized) {
       await publishMetric('EmailsRejected');
       return;
+    }
+
+    const configurationSet = process.env.SES_CONFIGURATION_SET;
+
+    // ---- Single-mail speaker broadcast (visible To + moderator Cc) ----
+    if (speakerMode) {
+      // A mixed mail (speaker alias + other aliases) folds the extras into the To list.
+      for (const r of recipientSet) speakerToSet.add(r);
+      const toRecipients = [...speakerToSet];
+      const ccRecipients = [...moderatorCcSet].filter((m) => !speakerToSet.has(m));
+
+      if (toRecipients.length === 0) {
+        console.warn('No recipients resolved', { addresses: allAddresses });
+        await publishMetric('EmailsUnresolved');
+        continue;
+      }
+
+      const rewrittenEmail = rewriteEmail(rawEmail, {
+        originalFrom: headers.from,
+        senderName,
+        senderEmail,
+        sesSender: SES_SENDER,
+        toRecipients,
+        ccRecipients,
+        configurationSet,
+      });
+
+      try {
+        await ses.send(
+          new SendRawEmailCommand({
+            Source: SES_SENDER,
+            Destinations: [...toRecipients, ...ccRecipients],
+            RawMessage: { Data: Buffer.from(rewrittenEmail) },
+          }),
+        );
+        console.log('Forwarded email', {
+          addresses: allAddresses,
+          sender: truncatedSender,
+          recipientCount: toRecipients.length,
+          ccCount: ccRecipients.length,
+          mode: 'single-speaker-broadcast',
+          outcome: 'forwarded',
+        });
+        await publishMetric('EmailsForwarded');
+      } catch (err) {
+        console.error('Failed to send speaker broadcast', { error: err });
+        await publishMetric('EmailsFailed');
+      }
+      continue;
     }
 
     const recipients = [...recipientSet];
@@ -123,6 +192,7 @@ export const handler = async (event: S3Event): Promise<void> => {
       senderName: senderName,
       senderEmail: senderEmail,
       sesSender: SES_SENDER,
+      configurationSet,
     });
 
     // Send to each recipient with rate limiting

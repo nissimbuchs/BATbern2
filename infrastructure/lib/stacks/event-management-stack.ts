@@ -43,6 +43,13 @@ export interface EventManagementStackProps extends cdk.StackProps {
    * silently and bouncers stay active in newsletter_subscribers.
    */
   sesConfigurationSetName?: string;
+  /**
+   * Dedicated TRANSACTIONAL SES Configuration Set name. Becomes the shared EmailService
+   * default (BATBERN_SES_CONFIGURATION_SET_NAME) so all non-newsletter mail is tracked
+   * (CloudWatch + per-recipient SNS logger) without newsletter-style suppression.
+   * See spec-transactional-ses-config-set.md.
+   */
+  sesTransactionalConfigurationSetName?: string;
 }
 
 /**
@@ -127,11 +134,15 @@ export class EventManagementStack extends cdk.Stack {
             AWS_BOUNCE_QUEUE_URL: props.bounceQueueUrl,
             AWS_BOUNCE_ENABLED: 'true',
           }),
-          // Story 10.29: SES Configuration Set name — Spring reads this as
-          // batbern.ses.configuration-set-name (NewsletterEmailService:135) and
-          // attaches it to each SendEmail so BOUNCE/COMPLAINT events flow to SNS → SQS.
+          // Transactional set is the shared EmailService default (batbern.ses.configuration-set-name)
+          // → applied to every non-newsletter send for delivery tracking (no suppression).
+          ...(props.sesTransactionalConfigurationSetName && {
+            BATBERN_SES_CONFIGURATION_SET_NAME: props.sesTransactionalConfigurationSetName,
+          }),
+          // Newsletter set (batbern.ses.newsletter-configuration-set-name) → NewsletterEmailService
+          // only, so bulk blasts keep routing BOUNCE/COMPLAINT to SNS → SQS → BounceProcessingService.
           ...(props.sesConfigurationSetName && {
-            BATBERN_SES_CONFIGURATION_SET_NAME: props.sesConfigurationSetName,
+            BATBERN_SES_NEWSLETTER_CONFIGURATION_SET_NAME: props.sesConfigurationSetName,
           }),
         },
         additionalSecrets: {
@@ -205,9 +216,10 @@ export class EventManagementStack extends cdk.Stack {
           // TO identities - all verified emails (required for sandbox mode)
           // This allows sending to any verified recipient in sandbox mode
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
-          // Configuration set — required when configurationSetName is passed to SendRawEmail
-          ...(props.sesConfigurationSetName
-            ? [`arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/${props.sesConfigurationSetName}`]
+          // Configuration sets — required when configurationSetName is passed to SendRawEmail.
+          // Wildcard covers both the newsletter and transactional sets (batbern-{env}-*).
+          ...(props.sesConfigurationSetName || props.sesTransactionalConfigurationSetName
+            ? [`arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/batbern-${envName}-*`]
             : []),
         ],
       })

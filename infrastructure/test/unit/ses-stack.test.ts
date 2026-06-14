@@ -95,6 +95,62 @@ describe('SesStack', () => {
     expect(stack.configurationSetName).toBe('batbern-staging-newsletter');
   });
 
+  // ----- Dedicated transactional config set (Option 2) -----
+
+  test('should_createTransactionalConfigurationSet_when_sesStackDeployed', () => {
+    template.hasResourceProperties('AWS::SES::ConfigurationSet', {
+      Name: 'batbern-staging-transactional',
+    });
+  });
+
+  test('should_exposeTransactionalConfigurationSetName_when_sesStackCreated', () => {
+    expect(stack.transactionalConfigurationSetName).toBe('batbern-staging-transactional');
+  });
+
+  test('should_routeTransactionalEventsToCloudWatchAndSns_when_configSetCreated', () => {
+    // CloudWatch aggregate metrics destination
+    template.hasResourceProperties('AWS::SES::ConfigurationSetEventDestination', {
+      EventDestination: Match.objectLike({
+        Enabled: true,
+        MatchingEventTypes: Match.arrayWith(['delivery', 'bounce', 'complaint', 'reject']),
+        CloudWatchDestination: Match.anyValue(),
+      }),
+    });
+    // Per-recipient SNS destination
+    template.hasResourceProperties('AWS::SES::ConfigurationSetEventDestination', {
+      EventDestination: Match.objectLike({
+        MatchingEventTypes: Match.arrayWith(['delivery', 'bounce', 'complaint', 'reject']),
+        SnsDestination: Match.anyValue(),
+      }),
+    });
+  });
+
+  test('should_createTransactionalEventLogger_withOwnLogGroup_andSubscription', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      FunctionName: 'batbern-staging-transactional-event-logger',
+      Runtime: 'nodejs20.x',
+    });
+    template.hasResourceProperties('AWS::Logs::LogGroup', {
+      LogGroupName: '/aws/lambda/batbern-staging-transactional-event-logger',
+    });
+    template.hasResourceProperties('AWS::SNS::Subscription', {
+      Protocol: 'lambda',
+    });
+  });
+
+  test('should_keepNewsletterBounceSqsPipeline_intact_alongsideTransactionalSet', () => {
+    // Newsletter set still routes bounce/complaint to SNS (the suppression pipeline)
+    template.hasResourceProperties('AWS::SES::ConfigurationSetEventDestination', {
+      EventDestination: Match.objectLike({
+        MatchingEventTypes: ['bounce', 'complaint'],
+        SnsDestination: Match.anyValue(),
+      }),
+    });
+    template.hasResourceProperties('AWS::SQS::Queue', {
+      QueueName: 'batbern-staging-bounce-processing',
+    });
+  });
+
   // Tags applied
   test('should_applyEnvironmentTags_when_sesStackDeployed', () => {
     expect(stack.stackName).toBe('TestSesStack');

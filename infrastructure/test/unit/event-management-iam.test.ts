@@ -25,7 +25,10 @@ const TEST_ACCOUNT = '123456789012';
 const TEST_REGION = 'eu-central-1';
 const SES_CONFIG_SET = 'batbern-staging-newsletter';
 
-function buildTemplate(sesConfigurationSetName?: string): Template {
+function buildTemplate(
+  sesConfigurationSetName?: string,
+  sesTransactionalConfigurationSetName?: string,
+): Template {
   const app = new App();
   const parent = new Stack(app, 'Parent', {
     env: { account: TEST_ACCOUNT, region: TEST_REGION },
@@ -59,6 +62,7 @@ function buildTemplate(sesConfigurationSetName?: string): Template {
     userPool,
     userPoolClient,
     sesConfigurationSetName,
+    sesTransactionalConfigurationSetName,
     env: { account: TEST_ACCOUNT, region: TEST_REGION },
   });
 
@@ -84,7 +88,8 @@ describe('EventManagementStack — SES IAM policy', () => {
     });
 
     // Regression guard: this specific ARN was missing on 2026-05-05, causing silent
-    // AccessDenied on every registration confirmation email send.
+    // AccessDenied on every registration confirmation email send. The grant is now a
+    // wildcard covering both the newsletter and transactional sets (batbern-{env}-*).
     test('should_includeConfigurationSetArn_in_taskRolePolicy_when_sesConfigSetNameProvided', () => {
       template.hasResourceProperties('AWS::IAM::Policy', {
         PolicyDocument: {
@@ -92,7 +97,7 @@ describe('EventManagementStack — SES IAM policy', () => {
             Match.objectLike({
               Action: Match.arrayWith(['ses:SendRawEmail']),
               Resource: Match.arrayWith([
-                Match.stringLikeRegexp(`configuration-set/${SES_CONFIG_SET}$`),
+                Match.stringLikeRegexp('configuration-set/batbern-staging-'),
               ]),
             }),
           ]),
@@ -124,6 +129,27 @@ describe('EventManagementStack — SES IAM policy', () => {
             }),
           ]),
         },
+      });
+    });
+  });
+
+  describe('transactional + newsletter env wiring', () => {
+    let template: Template;
+
+    beforeAll(() => {
+      template = buildTemplate('batbern-staging-newsletter', 'batbern-staging-transactional');
+    });
+
+    test('should_setTransactionalSetAsDefault_and_newsletterAsSeparateEnv', () => {
+      template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        ContainerDefinitions: Match.arrayWith([
+          Match.objectLike({
+            Environment: Match.arrayWith([
+              { Name: 'BATBERN_SES_CONFIGURATION_SET_NAME', Value: 'batbern-staging-transactional' },
+              { Name: 'BATBERN_SES_NEWSLETTER_CONFIGURATION_SET_NAME', Value: 'batbern-staging-newsletter' },
+            ]),
+          }),
+        ]),
       });
     });
   });
