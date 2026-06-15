@@ -599,6 +599,22 @@ describe('T8 — Sender authorization', () => {
     expect(result).toBe(false);
   });
 
+  test('should_rejectNonOrganizer_when_sendingToParticipantsAlias', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern59-participants@batbern.ch', 'random@test.ch');
+    expect(result).toBe(false);
+  });
+
+  test('should_allowOrganizer_when_sendingToParticipantsAlias', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern59-participants@batbern.ch', 'org@test.ch');
+    expect(result).toBe(true);
+  });
+
   test('should_allowAnyone_when_sendingToInfo', async () => {
     const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
     resetCache();

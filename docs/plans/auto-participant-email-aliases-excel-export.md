@@ -164,7 +164,7 @@ Semantics:
 - Maps to event `BATbern{N}`.
 - Recipients = `attendeeEmail` of every active `Registration` (`registered`/`confirmed`/`attended`; excludes `waitlist` and `cancelled`), lowercased + deduped. Falls back to a CUMS lookup by username only when `attendeeEmail` is blank. Resolved by `DistributionListService.resolveParticipants` via `distribution-list/participants`.
 - This is **"Way 2"** of emailing every participant — it reaches the **same audience** as the organizer-facing **"Way 1"** (Communications → Event registrants, which sends a `REGISTRANT_NOTICE` template in each registrant's own language). Way 2 is a plain mailing alias for an ad-hoc reply-to-all; Way 1 is the templated, per-recipient-personalised broadcast (and the only one that injects the per-registrant one-click `{{deregistrationUrl}}`).
-- Sender authorization: same VPC-only forwarder + organizer-JWT model as the other aliases.
+- Sender authorization: **organizers only** (same as `ok@`, `partner@`, `batbern{N}@`, `batbern{N}-speaker@`). Enforced fail-closed in `sender-auth.ts`: the alias is neither a `PUBLIC_ADDRESS` nor the moderator contact, so it falls through to the organizer-email check — a non-organizer can never blast all participants.
 
 #### Implementation steps
 
