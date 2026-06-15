@@ -281,7 +281,7 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
               </Alert>
             )}
 
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap">
               <Button
                 variant="outlined"
                 startIcon={

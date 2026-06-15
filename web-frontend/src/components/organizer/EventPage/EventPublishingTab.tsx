@@ -85,16 +85,16 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
 
   return (
     <Stack spacing={3}>
-      {/* Top row: three even columns — Validation · Publishing phases · Publish
-          actions. Held at three columns (minmax(0,1fr)) even when the viewport
-          narrows, so the publish buttons stay beside the phases rather than far
-          below them. */}
+      {/* Top row: Validation · Publishing phases · Publish actions. On desktop a
+          40/40/20 three-column grid (publish buttons stay beside the phases); on
+          mobile the columns stack full-width (Phase G — three columns don't fit a phone). */}
       <Box
         sx={{
           display: 'grid',
-          // 40 / 40 / 20 — Validation and Phases get the room; the publish-button
-          // column stays narrow. Held even when the viewport narrows.
-          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr)',
+          gridTemplateColumns: {
+            xs: '1fr',
+            md: 'minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr)',
+          },
           gap: 3,
           alignItems: 'stretch',
         }}

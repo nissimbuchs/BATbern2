@@ -336,7 +336,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
               </Alert>
             )}
 
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap">
               <Button
                 variant="outlined"
                 startIcon={

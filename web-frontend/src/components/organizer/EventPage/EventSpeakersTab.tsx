@@ -43,6 +43,7 @@ import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssi
 import { sessionApiClient } from '@/services/api/sessionApiClient';
 import { speakerPoolKeys, useSendInvitation, useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useEvent } from '@/hooks/useEvents';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useQueryClient } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/SpeakerStatusLanes';
 import { computeSlotCapacity } from '@/components/organizer/SpeakerStatus/getPrimaryAction';
@@ -74,6 +75,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { t } = useTranslation(['events', 'organizer']);
+  const { isMobile } = useBreakpoints();
 
   // Get view mode from URL, default to 'pool' (the kanban). 14.C.1.
   const currentView: ViewMode = resolveViewMode(searchParams.get('view'));
@@ -439,29 +441,30 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             onChange={handleViewChange}
             aria-label={t('events:eventPage.speakers.viewMode', 'View mode')}
           >
+            {/* Mobile (Phase G): icon-only — the labelled toggle is too wide for a phone. */}
             <ToggleButton
               value="pool"
               aria-label={t('events:eventPage.speakers.poolView', 'Speaker pool view')}
               data-testid="pool-view-toggle"
             >
-              <PoolIcon sx={{ mr: 1 }} />
-              {t('events:eventPage.speakers.pool', 'Pool')}
+              <PoolIcon sx={{ mr: isMobile ? 0 : 1 }} />
+              {!isMobile && t('events:eventPage.speakers.pool', 'Pool')}
             </ToggleButton>
             <ToggleButton
               value="agenda"
               aria-label={t('events:eventPage.speakers.agendaView', 'Agenda view')}
               data-testid="agenda-view-toggle"
             >
-              <AgendaIcon sx={{ mr: 1 }} />
-              {t('events:eventPage.speakers.agenda', 'Agenda')}
+              <AgendaIcon sx={{ mr: isMobile ? 0 : 1 }} />
+              {!isMobile && t('events:eventPage.speakers.agenda', 'Agenda')}
             </ToggleButton>
             <ToggleButton
               value="slots"
               aria-label={t('events:eventPage.speakers.slotsView', 'Slots view')}
               data-testid="slots-view-toggle"
             >
-              <SlotsIcon sx={{ mr: 1 }} />
-              {t('events:eventPage.speakers.slots', 'Slots')}
+              <SlotsIcon sx={{ mr: isMobile ? 0 : 1 }} />
+              {!isMobile && t('events:eventPage.speakers.slots', 'Slots')}
             </ToggleButton>
           </ToggleButtonGroup>
         </Stack>

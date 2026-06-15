@@ -11,7 +11,14 @@
 
 import React, { useState } from 'react';
 import { Box, Tabs, Tab } from '@mui/material';
+import {
+  MailOutline as NewsletterIcon,
+  ConfirmationNumberOutlined as RegistrantsIcon,
+  MicNone as SpeakersIcon,
+  StorefrontOutlined as VenueIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { Event, EventDetailUI } from '@/types/event.types';
 import { EventNewsletterTab } from './EventNewsletterTab';
 import { EventRegistrantNoticesTab } from './EventRegistrantNoticesTab';
@@ -30,8 +37,35 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
   eventCode,
 }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const [audience, setAudience] = useState<CommAudience>('newsletter');
   const eventTitle = event.title || '';
+
+  // Each audience tab shows icon + label on desktop; on mobile (Phase G) it collapses to
+  // icon-only (the four labelled tabs are far too wide for a phone). The label stays in
+  // aria-label for screen readers regardless.
+  const audiences = [
+    {
+      value: 'newsletter' as const,
+      icon: <NewsletterIcon />,
+      label: t('eventPage.communications.audiences.newsletter', 'Newsletter subscribers'),
+    },
+    {
+      value: 'registrant-notices' as const,
+      icon: <RegistrantsIcon />,
+      label: t('eventPage.communications.audiences.registrants', 'Event registrants'),
+    },
+    {
+      value: 'speakers' as const,
+      icon: <SpeakersIcon />,
+      label: t('eventPage.communications.audiences.speakers', 'Speakers'),
+    },
+    {
+      value: 'venue' as const,
+      icon: <VenueIcon />,
+      label: t('eventPage.communications.audiences.venue', 'Venue & Caterer'),
+    },
+  ];
 
   return (
     <Box>
@@ -43,26 +77,18 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
           variant="scrollable"
           scrollButtons="auto"
         >
-          <Tab
-            value="newsletter"
-            label={t('eventPage.communications.audiences.newsletter', 'Newsletter subscribers')}
-            data-testid="comms-subtab-newsletter"
-          />
-          <Tab
-            value="registrant-notices"
-            label={t('eventPage.communications.audiences.registrants', 'Event registrants')}
-            data-testid="comms-subtab-registrant-notices"
-          />
-          <Tab
-            value="speakers"
-            label={t('eventPage.communications.audiences.speakers', 'Speakers')}
-            data-testid="comms-subtab-speakers"
-          />
-          <Tab
-            value="venue"
-            label={t('eventPage.communications.audiences.venue', 'Venue & Caterer')}
-            data-testid="comms-subtab-venue"
-          />
+          {audiences.map((a) => (
+            <Tab
+              key={a.value}
+              value={a.value}
+              icon={a.icon}
+              iconPosition="start"
+              label={isMobile ? undefined : a.label}
+              aria-label={a.label}
+              data-testid={`comms-subtab-${a.value}`}
+              sx={isMobile ? { minWidth: 0 } : undefined}
+            />
+          ))}
         </Tabs>
       </Box>
 
