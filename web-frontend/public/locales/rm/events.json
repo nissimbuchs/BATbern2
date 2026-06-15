@@ -114,7 +114,16 @@
       "waitlistTableActions": "[MISSING] Actions",
       "statusCancelled": "[MISSING] Cancelled",
       "promoteConfirmTitle": "Promover da la glista d'spetga?",
-      "promoteConfirmMessage": "Promover {{name}} da la glista d'spetga? La persuna vegn confermada e survegn ina e-mail da conferma."
+      "promoteConfirmMessage": "Promover {{name}} da la glista d'spetga? La persuna vegn confermada e survegn ina e-mail da conferma.",
+      "addParticipant": "Agiuntar participant",
+      "addParticipantTitle": "Agiuntar participant",
+      "addParticipantUserLabel": "Utilisader",
+      "addParticipantNotify": "Infurmar il participant per e-mail",
+      "addParticipantForce": "Agiuntar tuttina",
+      "addParticipantFull": "Questa occurrenza è cumplaina. Agiuntar tuttina quest participant ultra la capacitad?",
+      "addParticipantDuplicate": "Quest utilisader è gia annunzià per questa occurrenza.",
+      "addParticipantError": "Impussibel d'agiuntar quest participant.",
+      "addParticipantSuccess": "{{name}} agiuntà sco participant confermà"
     },
     "participantTable": {
       "headers": {

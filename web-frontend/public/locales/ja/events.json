@@ -114,7 +114,16 @@
       "waitlistTableActions": "[MISSING] Actions",
       "statusCancelled": "[MISSING] Cancelled",
       "promoteConfirmTitle": "キャンセル待ちから繰り上げますか？",
-      "promoteConfirmMessage": "{{name}} をキャンセル待ちから繰り上げますか？確定済みに変更され、確認メールが送信されます。"
+      "promoteConfirmMessage": "{{name}} をキャンセル待ちから繰り上げますか？確定済みに変更され、確認メールが送信されます。",
+      "addParticipant": "参加者を追加",
+      "addParticipantTitle": "参加者を追加",
+      "addParticipantUserLabel": "ユーザー",
+      "addParticipantNotify": "参加者にメールで通知する",
+      "addParticipantForce": "それでも追加",
+      "addParticipantFull": "このイベントは満員です。定員を超えてこの参加者を追加しますか？",
+      "addParticipantDuplicate": "このユーザーはすでにこのイベントに登録されています。",
+      "addParticipantError": "この参加者を追加できませんでした。",
+      "addParticipantSuccess": "{{name}} を確定参加者として追加しました"
     },
     "participantTable": {
       "headers": {

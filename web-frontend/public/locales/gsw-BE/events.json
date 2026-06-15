@@ -114,7 +114,16 @@
       "waitlistTableActions": "[MISSING] Actions",
       "statusCancelled": "[MISSING] Cancelled",
       "promoteConfirmTitle": "Vo dr Wartlischte nahrucke?",
-      "promoteConfirmMessage": "{{name}} vo dr Wartlischte nahrucke la? D Persoon wird bestätigt u überchunnt e Bestätigungs-E-Mail."
+      "promoteConfirmMessage": "{{name}} vo dr Wartlischte nahrucke la? D Persoon wird bestätigt u überchunnt e Bestätigungs-E-Mail.",
+      "addParticipant": "Teilnähmer hinzuefüege",
+      "addParticipantTitle": "Teilnähmer hinzuefüege",
+      "addParticipantUserLabel": "Benutzer",
+      "addParticipantNotify": "Teilnähmer per E-Mail benachrichtige",
+      "addParticipantForce": "Trotzdäm hinzuefüege",
+      "addParticipantFull": "Die Veranstaltig isch usgbuecht. Teilnähmer trotzdäm über d Kapazität hinus hinzuefüege?",
+      "addParticipantDuplicate": "Dä Benutzer isch scho für die Veranstaltig aagmäldet.",
+      "addParticipantError": "Teilnähmer het nid chönne hinzuegfüegt wärde.",
+      "addParticipantSuccess": "{{name}} als bestätigte Teilnähmer hinzuegfüegt"
     },
     "participantTable": {
       "headers": {

@@ -1261,6 +1261,37 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/participants': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add an existing user as a confirmed participant (organizer)
+     * @description Organizer-only. Adds an EXISTING BATbern user (chosen via the user autocomplete) onto
+     *     the event directly as a `confirmed` participant — skipping the self-registration +
+     *     email-confirmation step. The created row is a REAL attendee (counts toward capacity and
+     *     the event delete-guard), audited with `metadata.addedByOrganizer`.
+     *
+     *     - Capacity: respected by default; if the event is full, returns `409` with
+     *       `details.code = "capacity_exceeded"`. Pass `force: true` to add over capacity.
+     *     - Duplicate: an already-active registration returns `409` (generic). A `cancelled`
+     *       prior registration is replaced.
+     *     - `notify` (default true) sends the attendee a "you have a confirmed spot" email.
+     *
+     *     **Spec:** `_bmad-output/implementation-artifacts/spec-organizer-add-participant.md`.
+     */
+    post: operations['addParticipant'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/participants/export.xlsx': {
     parameters: {
       query?: never;
@@ -2855,6 +2886,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AddParticipantRequest: {
+      /**
+       * @description The chosen existing user's username (= UserResponse.id).
+       * @example jane.doe
+       */
+      username: string;
+      /**
+       * @description When the event is full, true adds over capacity; false returns 409.
+       * @default false
+       */
+      force: boolean;
+      /**
+       * @description Send the attendee a "you have a confirmed spot" email.
+       * @default true
+       */
+      notify: boolean;
+    };
     EventPhotoResponse: {
       /** Format: uuid */
       id: string;
@@ -8103,6 +8151,55 @@ export interface operations {
         };
       };
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  addParticipant: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddParticipantRequest'];
+      };
+    };
+    responses: {
+      /** @description Participant added as confirmed */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example BATbern57-A1B2C3 */
+            registrationCode?: string;
+            /** @example confirmed */
+            status?: string;
+            /** @example jane.doe */
+            attendeeUsername?: string;
+          };
+        };
+      };
+      400: components['responses']['BadRequest'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /**
+       * @description Conflict — either the user is already registered (generic) or the event is full
+       *     (`details.code = "capacity_exceeded"`; retry with `force: true`).
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

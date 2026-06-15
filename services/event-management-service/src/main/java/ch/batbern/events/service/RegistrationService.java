@@ -14,6 +14,7 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
+import ch.batbern.events.exception.RegistrationCapacityExceededException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
@@ -559,6 +560,90 @@ public class RegistrationService {
         log.info("Auto-enrolled {} as confirmed (programmatic) participant for event {}",
                 username, event.getEventCode());
         return true;
+    }
+
+    /**
+     * Organizer "Add participant": add an EXISTING user onto an event directly as a
+     * {@code confirmed} participant — no self-registration / email-confirmation step.
+     *
+     * <p>Unlike {@link #createInternalRegistration} (stakeholder auto-enrol), this is a REAL
+     * attendee: the row carries NO {@link Registration#AUTO_REGISTERED_FROM_KEY} marker, so it
+     * counts toward capacity and the event delete-guard. Capacity is respected unless
+     * {@code force} is set (organizer override). A {@code cancelled} prior registration is
+     * replaced; an active one is rejected (409 via {@link IllegalStateException}).
+     *
+     * @param event   the event entity (loaded by the controller)
+     * @param username the chosen existing user's username (= {@code UserResponse.id})
+     * @param force   add over capacity when the event is full
+     * @param notify  send the attendee a "you have a confirmed spot" email
+     * @param addedBy the organizer username performing the add (audit metadata)
+     * @return the created confirmed registration
+     * @throws UserNotFoundException                  unknown username (→ 404)
+     * @throws IllegalStateException                  user already actively registered (→ 409)
+     * @throws RegistrationCapacityExceededException  event full and {@code force=false} (→ 409)
+     */
+    @Transactional
+    public Registration addParticipant(Event event, String username, boolean force,
+                                       boolean notify, String addedBy) {
+        // Resolve the existing user (UserNotFoundException → 404).
+        ch.batbern.events.dto.generated.users.UserResponse user =
+                userApiClient.getUserByUsername(username);
+
+        // Dedupe (mirror the authenticated path): replace a cancelled row, reject an active one.
+        Optional<Registration> existing =
+                registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), username);
+        if (existing.isPresent()) {
+            Registration reg = existing.get();
+            if ("cancelled".equalsIgnoreCase(reg.getStatus())) {
+                registrationRepository.delete(reg);
+                registrationRepository.flush(); // free the (event_id, username) unique slot before re-insert
+            } else {
+                throw new IllegalStateException(
+                        "User " + username + " is already registered for event " + event.getEventCode());
+            }
+        }
+
+        // Capacity: organizer may override with force; otherwise a full event is rejected (409).
+        Integer capacity = event.getRegistrationCapacity();
+        if (capacity != null && !force) {
+            long activeCount = registrationRepository.countByEventIdAndStatusIn(
+                    event.getId(), Registration.CAPACITY_STATUSES);
+            if (activeCount >= capacity) {
+                throw new RegistrationCapacityExceededException(
+                        event.getEventCode(), activeCount, capacity);
+            }
+        }
+
+        // Real attendee — NO AUTO_REGISTERED_FROM_KEY (counts for capacity + delete-guard); audit
+        // who added them.
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("addedByOrganizer", addedBy);
+
+        Registration registration = Registration.builder()
+                .registrationCode(generateUniqueRegistrationCode(event.getEventCode()))
+                .eventId(event.getId())
+                .attendeeUsername(username)
+                .attendeeFirstName(user.getFirstName())
+                .attendeeLastName(user.getLastName())
+                .attendeeEmail(user.getEmail())
+                .attendeeCompanyId(user.getCompanyId())
+                .status("confirmed")
+                .registrationDate(Instant.now())
+                .metadata(metadata)
+                .build();
+
+        Registration saved = registrationRepository.save(registration);
+        log.info("Organizer {} added {} as confirmed participant for event {} (force={})",
+                addedBy, username, event.getEventCode(), force);
+
+        // Notify reuses the waitlist-promotion "you now have a confirmed spot" email (DE+EN
+        // templates exist; correct "you're in" semantic — unlike the double-opt-in registration-
+        // confirmation email). A dedicated "added-by-organizer" template is a future polish.
+        if (notify) {
+            waitlistPromotionEmailService.sendPromotionEmail(saved);
+        }
+
+        return saved;
     }
 
     /**

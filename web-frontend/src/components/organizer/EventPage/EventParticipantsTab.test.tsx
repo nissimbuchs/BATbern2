@@ -101,25 +101,23 @@ describe('EventParticipantsTab Component', () => {
       expect(screen.getByText('42')).toBeInTheDocument();
     });
 
-    it('should_stackHeaderColumn_atXs_andRow_atMd', () => {
-      // The header Stack is direction={{ xs: 'column', md: 'row' }} so the count
-      // block and export buttons stack vertically on phones. MUI compiles this to
-      // @media (min-width:0px) { flex-direction:column } and
-      // @media (min-width:900px) { flex-direction:row }; jsdom never evaluates the
-      // media queries, so inspect the injected emotion stylesheet directly.
+    it('should_stackActionButtonsColumn_atXs_andRow_atSm', () => {
+      // Epic 14 follow-up: the action buttons moved to their OWN line below the title
+      // (the header is now a column). The button group is
+      // direction={{ xs: 'column', sm: 'row' }} so the four buttons stack on phones and
+      // sit in a row on desktop. MUI compiles this to @media (min-width:0px) {
+      // flex-direction:column } and @media (min-width:600px) { flex-direction:row };
+      // jsdom never evaluates the media queries, so inspect the emotion stylesheet directly.
       renderWithProviders(<EventParticipantsTab event={mockEvent} />);
 
-      // Walk up from the title to the outermost MuiStack ancestor (the header row).
-      const title = screen.getByText('eventPage.participantsTab.title');
-      const stacks: HTMLElement[] = [];
-      let node = title.parentElement;
-      while (node) {
-        if (node.classList.contains('MuiStack-root')) stacks.push(node);
-        node = node.parentElement;
+      // Walk up from an action button to its nearest MuiStack ancestor (the button group).
+      const btn = screen.getByTestId('add-participant-button');
+      let buttonGroup: HTMLElement | null = btn.parentElement;
+      while (buttonGroup && !buttonGroup.classList.contains('MuiStack-root')) {
+        buttonGroup = buttonGroup.parentElement;
       }
-      const headerStack = stacks[stacks.length - 1];
-      expect(headerStack).toBeTruthy();
-      const cssClass = Array.from(headerStack.classList).find((c) => c.startsWith('css-'));
+      expect(buttonGroup).toBeTruthy();
+      const cssClass = Array.from(buttonGroup!.classList).find((c) => c.startsWith('css-'));
       expect(cssClass).toBeTruthy();
 
       let css = '';
@@ -134,10 +132,10 @@ describe('EventParticipantsTab Component', () => {
           `@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*flex-direction:\\s*column[^}]*\\}`
         ).test(css)
       ).toBe(true);
-      // md+ (min-width:900px) -> flex-direction:row
+      // sm+ (min-width:600px) -> flex-direction:row
       expect(
         new RegExp(
-          `@media\\s*\\(min-width:\\s*900px\\)\\s*\\{[^}]*flex-direction:\\s*row[^}]*\\}`
+          `@media\\s*\\(min-width:\\s*600px\\)\\s*\\{[^}]*flex-direction:\\s*row[^}]*\\}`
         ).test(css)
       ).toBe(true);
     });

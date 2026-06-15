@@ -27,10 +27,12 @@ import {
   Download as DownloadIcon,
   Article as ArticleIcon,
   GroupAdd as GroupAddIcon,
+  PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { Event } from '@/types/event.types';
 import EventParticipantList from '@/components/organizer/EventPage/EventParticipantList';
+import { AddParticipantDialog } from '@/components/organizer/EventPage/AddParticipantDialog';
 import { eventApiClient } from '@/services/eventApiClient';
 import { enrollStakeholders } from '@/services/api/eventRegistrationService';
 
@@ -43,6 +45,9 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  // Add participant (organizer manually adds an existing user as confirmed).
+  const [addOpen, setAddOpen] = useState(false);
 
   // Enrol organizers & partners (Epic 14 FR25 — moved here from the Overview).
   const [enrolling, setEnrolling] = useState(false);
@@ -139,14 +144,10 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
 
   return (
     <Box sx={{ py: 3 }}>
-      {/* Header with participant count + export button */}
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        alignItems={{ xs: 'stretch', md: 'center' }}
-        justifyContent="space-between"
-        spacing={2}
-        sx={{ mb: 3 }}
-      >
+      {/* Header: title row, then the action buttons on their OWN line below it — a single
+          row on desktop (sm+), stacked full-width on mobile (xs). (Epic 14 follow-up: the 4th
+          "Add participant" button no longer fits beside the title.) */}
+      <Stack direction="column" spacing={2} sx={{ mb: 3 }}>
         <Stack direction="row" spacing={2} alignItems="center">
           <PeopleIcon sx={{ fontSize: 32, color: 'primary.main' }} />
           <Typography variant="h5" component="h2">
@@ -154,7 +155,16 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
           </Typography>
           <Chip label={activeTotal} color="primary" size="small" sx={{ fontWeight: 'bold' }} />
         </Stack>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap" useFlexGap>
+          <Button
+            variant="contained"
+            startIcon={<PersonAddIcon />}
+            onClick={() => setAddOpen(true)}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+            data-testid="add-participant-button"
+          >
+            {t('eventPage.participantsTab.addParticipant', 'Add participant')}
+          </Button>
           <Button
             variant="outlined"
             startIcon={<DownloadIcon />}
@@ -189,6 +199,22 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
           </Button>
         </Stack>
       </Stack>
+
+      <AddParticipantDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        eventCode={event.eventCode}
+        onAdded={(name) =>
+          setEnrollSnackbar({
+            open: true,
+            severity: 'success',
+            message: t('eventPage.participantsTab.addParticipantSuccess', {
+              name,
+              defaultValue: 'Added {{name}} as a confirmed participant',
+            }),
+          })
+        }
+      />
 
       {exportError && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setExportError(null)}>

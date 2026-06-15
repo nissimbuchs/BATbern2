@@ -3209,6 +3209,73 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/{eventCode}/participants:
+    post:
+      tags:
+        - Registrations
+      summary: Add an existing user as a confirmed participant (organizer)
+      description: |
+        Organizer-only. Adds an EXISTING BATbern user (chosen via the user autocomplete) onto
+        the event directly as a `confirmed` participant — skipping the self-registration +
+        email-confirmation step. The created row is a REAL attendee (counts toward capacity and
+        the event delete-guard), audited with `metadata.addedByOrganizer`.
+
+        - Capacity: respected by default; if the event is full, returns `409` with
+          `details.code = "capacity_exceeded"`. Pass `force: true` to add over capacity.
+        - Duplicate: an already-active registration returns `409` (generic). A `cancelled`
+          prior registration is replaced.
+        - `notify` (default true) sends the attendee a "you have a confirmed spot" email.
+
+        **Spec:** `_bmad-output/implementation-artifacts/spec-organizer-add-participant.md`.
+      operationId: addParticipant
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddParticipantRequest'
+      responses:
+        '201':
+          description: Participant added as confirmed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registrationCode:
+                    type: string
+                    example: BATbern57-A1B2C3
+                  status:
+                    type: string
+                    example: confirmed
+                  attendeeUsername:
+                    type: string
+                    example: jane.doe
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Conflict — either the user is already registered (generic) or the event is full
+            (`details.code = "capacity_exceeded"`; retry with `force: true`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /events/{eventCode}/participants/export.xlsx:
     get:
       tags:
@@ -6476,6 +6543,26 @@ paths:
 
 components:
   schemas:
+
+    # ── Add Participant (organizer) ───────────────────────────────────────────
+
+    AddParticipantRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: The chosen existing user's username (= UserResponse.id).
+          example: jane.doe
+        force:
+          type: boolean
+          default: false
+          description: When the event is full, true adds over capacity; false returns 409.
+        notify:
+          type: boolean
+          default: true
+          description: Send the attendee a "you have a confirmed spot" email.
 
     # ── Event Photo Schemas (Story 10.21) ────────────────────────────────────
 

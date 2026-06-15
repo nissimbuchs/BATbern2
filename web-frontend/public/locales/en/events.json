@@ -118,7 +118,16 @@
       "waitlistTableActions": "Actions",
       "statusCancelled": "Cancelled",
       "promoteConfirmTitle": "Promote from waitlist?",
-      "promoteConfirmMessage": "Promote {{name}} from the waitlist? They will be moved to confirmed and sent a confirmation email."
+      "promoteConfirmMessage": "Promote {{name}} from the waitlist? They will be moved to confirmed and sent a confirmation email.",
+      "addParticipant": "Add participant",
+      "addParticipantTitle": "Add participant",
+      "addParticipantUserLabel": "User",
+      "addParticipantNotify": "Notify the participant by email",
+      "addParticipantForce": "Add anyway",
+      "addParticipantFull": "This event is full. Add this participant over capacity anyway?",
+      "addParticipantDuplicate": "This user is already registered for this event.",
+      "addParticipantError": "Could not add this participant.",
+      "addParticipantSuccess": "Added {{name}} as a confirmed participant"
     },
     "settings": {
       "moderator": "Event Moderator",
