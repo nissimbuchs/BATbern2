@@ -1234,12 +1234,16 @@ export interface paths {
     /**
      * Resolve the email distribution list for an event (internal Lambda route)
      * @description Returns the email addresses to fan out for the per-event mailing aliases
-     *     `batbern{N}-speaker@batbern.ch` and `batbern{N}-moderator@batbern.ch`.
+     *     `batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and
+     *     `batbern{N}-participants@batbern.ch`.
      *
      *     - `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)
      *       of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.
      *     - `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their
      *       verified `additionalEmails`.
+     *     - `participants`: every active registrant (`registered`/`confirmed`/`attended`;
+     *       excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the
+     *       same audience as the Communications → Event registrants send. Lowercase-deduped.
      *
      *     **Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:
      *       - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is
@@ -8083,7 +8087,7 @@ export interface operations {
       header?: never;
       path: {
         eventCode: string;
-        kind: 'speakers' | 'moderator';
+        kind: 'speakers' | 'moderator' | 'participants';
       };
       cookie?: never;
     };
