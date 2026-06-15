@@ -114,7 +114,16 @@
       "waitlistTableActions": "[MISSING] Actions",
       "statusCancelled": "[MISSING] Cancelled",
       "promoteConfirmTitle": "Promoveren vanaf wachtlijst?",
-      "promoteConfirmMessage": "{{name}} promoveren vanaf de wachtlijst? De persoon wordt bevestigd en ontvangt een bevestigingsmail."
+      "promoteConfirmMessage": "{{name}} promoveren vanaf de wachtlijst? De persoon wordt bevestigd en ontvangt een bevestigingsmail.",
+      "addParticipant": "Deelnemer toevoegen",
+      "addParticipantTitle": "Deelnemer toevoegen",
+      "addParticipantUserLabel": "Gebruiker",
+      "addParticipantNotify": "Deelnemer per e-mail op de hoogte stellen",
+      "addParticipantForce": "Toch toevoegen",
+      "addParticipantFull": "Dit evenement is vol. Deze deelnemer toch boven de capaciteit toevoegen?",
+      "addParticipantDuplicate": "Deze gebruiker is al ingeschreven voor dit evenement.",
+      "addParticipantError": "Kon deze deelnemer niet toevoegen.",
+      "addParticipantSuccess": "{{name}} toegevoegd als bevestigde deelnemer"
     },
     "participantTable": {
       "headers": {

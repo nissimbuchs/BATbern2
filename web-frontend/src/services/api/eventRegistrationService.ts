@@ -210,3 +210,29 @@ export const enrollStakeholders = async (
   );
   return response.data;
 };
+
+/**
+ * Add an existing user as a confirmed participant (organizer only).
+ *
+ * @param eventCode - Event code
+ * @param params - `username` of the chosen existing user; `force` to add over capacity;
+ *                 `notify` to email the attendee a "you have a confirmed spot" notice (default true)
+ * @returns the created registration's code + status
+ * @throws 404 unknown event/user; 409 already-registered (generic) or capacity-full
+ *         (`error.response.data.details.code === 'capacity_exceeded'`); 403 if not ORGANIZER
+ */
+export const addParticipant = async (
+  eventCode: string,
+  params: { username: string; force?: boolean; notify?: boolean }
+): Promise<{ registrationCode: string; status: string; attendeeUsername: string }> => {
+  const response = await apiClient.post<{
+    registrationCode: string;
+    status: string;
+    attendeeUsername: string;
+  }>(`/events/${eventCode}/participants`, {
+    username: params.username,
+    force: params.force ?? false,
+    notify: params.notify ?? true,
+  });
+  return response.data;
+};

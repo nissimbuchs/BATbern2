@@ -118,7 +118,16 @@
       "waitlistTableActions": "Aktionen",
       "statusCancelled": "Abgemeldet",
       "promoteConfirmTitle": "Von der Warteliste nachrücken?",
-      "promoteConfirmMessage": "{{name}} von der Warteliste nachrücken lassen? Die Person wird bestätigt und erhält eine Bestätigungs-E-Mail."
+      "promoteConfirmMessage": "{{name}} von der Warteliste nachrücken lassen? Die Person wird bestätigt und erhält eine Bestätigungs-E-Mail.",
+      "addParticipant": "Teilnehmer hinzufügen",
+      "addParticipantTitle": "Teilnehmer hinzufügen",
+      "addParticipantUserLabel": "Benutzer",
+      "addParticipantNotify": "Teilnehmer per E-Mail benachrichtigen",
+      "addParticipantForce": "Trotzdem hinzufügen",
+      "addParticipantFull": "Diese Veranstaltung ist ausgebucht. Teilnehmer trotzdem über die Kapazität hinaus hinzufügen?",
+      "addParticipantDuplicate": "Dieser Benutzer ist bereits für diese Veranstaltung angemeldet.",
+      "addParticipantError": "Teilnehmer konnte nicht hinzugefügt werden.",
+      "addParticipantSuccess": "{{name}} als bestätigten Teilnehmer hinzugefügt"
     },
     "settings": {
       "moderator": "Veranstaltungsmoderation",

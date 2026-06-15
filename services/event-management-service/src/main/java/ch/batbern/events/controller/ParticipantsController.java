@@ -1,17 +1,28 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Registration;
+import ch.batbern.events.dto.AddParticipantRequest;
+import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.DistributionListService;
 import ch.batbern.events.service.ParticipantsDocxExportService;
 import ch.batbern.events.service.ParticipantsExportService;
+import ch.batbern.events.service.RegistrationService;
+import ch.batbern.shared.exception.NotFoundException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,6 +57,9 @@ public class ParticipantsController {
     private final DistributionListService distributionListService;
     private final ParticipantsExportService participantsExportService;
     private final ParticipantsDocxExportService participantsDocxExportService;
+    private final RegistrationService registrationService;
+    private final EventRepository eventRepository;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * Resolve the distribution list for an event/kind pair. Anonymous from the in-VPC
@@ -71,6 +85,35 @@ public class ParticipantsController {
         body.put("kind", kind);
         body.put("emails", emails);
         return ResponseEntity.ok(body);
+    }
+
+    /**
+     * Organizer "Add participant": add an existing user onto the event as a confirmed
+     * participant (no self-registration / email-confirmation step). Organizer-only.
+     *
+     * @return 201 with the created registration's code/status; 404 unknown event/user;
+     *         409 already-registered (generic) or capacity-full ({@code details.code =
+     *         "capacity_exceeded"} unless {@code force=true}).
+     */
+    @PostMapping("/{eventCode}/participants")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Map<String, Object>> addParticipant(
+            @PathVariable String eventCode,
+            @Valid @RequestBody AddParticipantRequest request) {
+        log.debug("POST /events/{}/participants username={}", eventCode, request.getUsername());
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
+
+        String addedBy = securityContextHelper.getCurrentUsername();
+        Registration registration = registrationService.addParticipant(
+                event, request.getUsername(), request.isForce(), request.isNotify(), addedBy);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("registrationCode", registration.getRegistrationCode());
+        body.put("status", registration.getStatus());
+        body.put("attendeeUsername", registration.getAttendeeUsername());
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
     /**

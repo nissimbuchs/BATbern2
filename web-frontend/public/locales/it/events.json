@@ -114,7 +114,16 @@
       "waitlistTableActions": "[MISSING] Actions",
       "statusCancelled": "[MISSING] Cancelled",
       "promoteConfirmTitle": "Promuovere dalla lista d'attesa?",
-      "promoteConfirmMessage": "Promuovere {{name}} dalla lista d'attesa? La persona verrà confermata e riceverà un'e-mail di conferma."
+      "promoteConfirmMessage": "Promuovere {{name}} dalla lista d'attesa? La persona verrà confermata e riceverà un'e-mail di conferma.",
+      "addParticipant": "Aggiungi partecipante",
+      "addParticipantTitle": "Aggiungi partecipante",
+      "addParticipantUserLabel": "Utente",
+      "addParticipantNotify": "Notifica il partecipante via e-mail",
+      "addParticipantForce": "Aggiungi comunque",
+      "addParticipantFull": "Questo evento è al completo. Aggiungere comunque questo partecipante oltre la capienza?",
+      "addParticipantDuplicate": "Questo utente è già iscritto a questo evento.",
+      "addParticipantError": "Impossibile aggiungere questo partecipante.",
+      "addParticipantSuccess": "{{name}} aggiunto come partecipante confermato"
     },
     "participantTable": {
       "headers": {
