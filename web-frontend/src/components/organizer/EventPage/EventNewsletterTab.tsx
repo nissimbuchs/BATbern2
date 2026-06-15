@@ -250,11 +250,13 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
         </Box>
       )}
 
-      {/* Section 2 — Compose & send (two-column 30/70 split) */}
+      {/* Section 2 — Compose & send (two-column 30/70 split).
+          minmax(0, …) on both tracks so the send-history table (minWidth:max-content, scrolls
+          in its own overflowX box) can't expand a track past the viewport on mobile. */}
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: 'minmax(300px, 34%) 1fr' },
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(300px, 34%) minmax(0, 1fr)' },
           gap: 3,
           alignItems: 'start',
         }}
