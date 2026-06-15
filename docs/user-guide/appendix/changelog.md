@@ -44,7 +44,9 @@ Each release includes:
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
 **Improvements — Organizer Communications (Epic 14, 2026-06-15)**:
-- ✅ "Deregistration call" registrant-notice template (DE + EN) — asks registrants of a fully-booked event to free their seat; selectable in Communications → Event registrants
+- ✅ Two "deregistration call" registrant-notice templates (DE + EN) — ask registrants of a fully-booked event to free their seat; selectable in Communications → Event registrants:
+  - `registrant-notice-deregistration-call` — one-click cancel via a per-recipient `{{deregistrationUrl}}` (requires the send-side injection below; available once the backend deploys)
+  - `registrant-notice-deregistration-call-selfservice` — points to the already-live self-service ("Cancel my registration" on the event page → enter email → confirm link); works with no deploy
 - ✅ Registrant-notice sends now inject a per-recipient one-click `{{deregistrationUrl}}` (self-service cancel link, no login) — "Way 1"
 - ✅ New `batbern{N}-participants@batbern.ch` mailing alias fans out to every active registrant — "Way 2" (same audience as Way 1)
 
