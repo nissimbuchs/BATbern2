@@ -10,10 +10,12 @@
  * has declared on their profile. Backwards-compatible: missing
  * `additionalEmails` collapses to the primary-only behaviour.
  *
- * Note: `fetchEventRegistrants` reads `attendeeEmail` from
- * `/events/{eventCode}/registrations` and is intentionally NOT updated to
- * fan out to additional emails (Story 10.32 AC15). Registration-confirmation
- * CC'ing happens server-side in RegistrationEmailService, not here.
+ * Event participant aliases (PR #788): `batbern{N}-participants@` is the canonical
+ * "email every active registrant" alias (matches `-speaker@` / `-moderator@`). The older
+ * bare `batbern{N}@` is DEPRECATED but kept as a back-compat forward — it now resolves via
+ * the SAME participants distribution-list so the two can never diverge, and logs a
+ * deprecation warning. Both go through `fetchEventDistributionList(eventCode, 'participants')`,
+ * which (server-side) includes attended registrants and fans out to verified additionalEmails.
  */
 
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:8000';
@@ -30,18 +32,6 @@ interface UserResponse {
 
 interface PaginatedUsersResponse {
   data: UserResponse[];
-  pagination?: {
-    totalPages: number;
-    page: number;
-  };
-}
-
-interface RegistrationResponse {
-  attendeeEmail: string;
-}
-
-interface PaginatedRegistrationsResponse {
-  data: RegistrationResponse[];
   pagination?: {
     totalPages: number;
     page: number;
@@ -106,11 +96,18 @@ export async function resolveRecipients(toAddress: string): Promise<string[]> {
     return fetchEventDistributionList(`BATbern${participantsMatch[1]}`, 'participants');
   }
 
-  // batbern{N}@ → event registrants
+  // batbern{N}@ → DEPRECATED alias for the event's participants. Superseded by the clearer,
+  // self-documenting batbern{N}-participants@ (matches the -speaker@ / -moderator@ family).
+  // Consolidated to resolve via the SAME participants distribution-list as -participants@ (active
+  // registrants incl. attended, + additionalEmails fallback) so the two never diverge. Kept as a
+  // back-compat forward for existing bookmarks/automation; logs a deprecation warning so we can
+  // see when it's safe to retire.
   const eventMatch = localPart.match(/^batbern(\d+)$/);
   if (eventMatch) {
-    const eventNumber = eventMatch[1];
-    return fetchEventRegistrants(`BATbern${eventNumber}`);
+    console.warn(
+      `Deprecated alias batbern${eventMatch[1]}@ used — forward to batbern${eventMatch[1]}-participants@ instead`,
+    );
+    return fetchEventDistributionList(`BATbern${eventMatch[1]}`, 'participants');
   }
 
   // Unknown address
@@ -221,39 +218,4 @@ async function fetchEventDistributionList(
 
   const data = (await response.json()) as DistributionListResponse;
   return data.emails ?? [];
-}
-
-/** Fetch all registered attendees for an event. */
-async function fetchEventRegistrants(eventCode: string): Promise<string[]> {
-  const emails: string[] = [];
-  let page = 0;
-  let totalPages = 1;
-
-  while (page < totalPages) {
-    const url =
-      `${API_GATEWAY_URL}/api/v1/events/${eventCode}/registrations`
-      + `?status=registered&status=confirmed&limit=500&page=${page}`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.warn(`Event not found: ${eventCode}`);
-      } else {
-        console.error(`Failed to fetch registrations for ${eventCode}: ${response.status}`);
-      }
-      return emails;
-    }
-
-    const data = (await response.json()) as PaginatedRegistrationsResponse;
-    for (const reg of data.data) {
-      if (reg.attendeeEmail) {
-        emails.push(reg.attendeeEmail);
-      }
-    }
-
-    totalPages = data.pagination?.totalPages ?? 1;
-    page++;
-  }
-
-  return emails;
 }

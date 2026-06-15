@@ -49,6 +49,7 @@ Each release includes:
   - `registrant-notice-deregistration-call-selfservice` — points to the already-live self-service ("Cancel my registration" on the event page → enter email → confirm link); works with no deploy
 - ✅ Registrant-notice sends now inject a per-recipient one-click `{{deregistrationUrl}}` (self-service cancel link, no login) — "Way 1"
 - ✅ New `batbern{N}-participants@batbern.ch` mailing alias fans out to every active registrant — "Way 2" (same audience as Way 1)
+- ✅ Consolidated the older bare `batbern{N}@batbern.ch` alias: now **deprecated** and forwards to the same participants resolution as `batbern{N}-participants@` (clearer name, matches `-speaker@`/`-moderator@`); logs a deprecation warning, sender auth unchanged (organizers only)
 
 > **Note**: The former "v1.3.0 — Speaker Authentication Unification (Epic 9)" plan has shipped in a
 > different form. Epic 9's JWT magic-link approach was **superseded** by Epic 11 (unified Cognito
