@@ -50,10 +50,12 @@ export interface RegistrationEvent {
  */
 export function readOrganizerToken(): string {
   const testEnv = process.env.TEST_ENV || 'development';
+  // Beta is a frontend canary on the PRODUCTION backend → its tokens live in the staging files.
+  const tokenEnv = testEnv === 'beta' ? 'staging' : testEnv;
   const batbernDir = path.join(os.homedir(), '.batbern');
   const candidates = [
-    path.join(batbernDir, `${testEnv}-organizer.json`),
-    path.join(batbernDir, `${testEnv}.json`),
+    path.join(batbernDir, `${tokenEnv}-organizer.json`),
+    path.join(batbernDir, `${tokenEnv}.json`),
   ];
   const tokenFile = candidates.find((f) => fs.existsSync(f));
   if (!tokenFile) {
