@@ -424,8 +424,10 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
                     <Skeleton variant="rectangular" height={100} />
                   </Box>
                 ) : historyQuery.data && historyQuery.data.length > 0 ? (
-                  <Paper variant="outlined" sx={{ border: 0 }}>
-                    <Table size="small">
+                  // overflowX so the 5-column send-history table scrolls within its own box on
+                  // mobile instead of widening the whole Communications tab (Phase G).
+                  <Paper variant="outlined" sx={{ border: 0, overflowX: 'auto' }}>
+                    <Table size="small" sx={{ minWidth: 'max-content' }}>
                       <TableHead>
                         <TableRow>
                           <TableCell>{t('common:labels.date')}</TableCell>
