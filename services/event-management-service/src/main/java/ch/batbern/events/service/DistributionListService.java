@@ -117,6 +117,13 @@ public class DistributionListService {
             if (email != null && !email.isBlank()) {
                 addLowercased(email, result);
             } else {
+                // Divergence from the bare batbern{N}@ alias (PR #788 review item 1): when a
+                // registration has no captured attendeeEmail we fall back to a CUMS lookup, which
+                // ALSO fans out to the user's verified additionalEmails. The bare batbern{N}@ alias
+                // (email-forwarder fetchEventRegistrants) deliberately does NOT fan out per Story
+                // 10.32 AC15 — it reads attendeeEmail only. Intentional here: this alias is the
+                // "reach the participant on every known address" surface; the fallback is rare
+                // (registrations almost always capture attendeeEmail).
                 collectUserEmails(registration.getAttendeeUsername(), result);
             }
         }

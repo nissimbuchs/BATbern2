@@ -128,6 +128,27 @@ class DistributionListServiceTest {
     }
 
     @Test
+    @DisplayName("speakers: a generic CUMS failure (5xx/timeout) is swallowed, not propagated")
+    void should_skipUser_when_userApiClientThrowsGenericException() {
+        // PR #788 review item 5: collectUserEmails also catches generic Exception
+        // (UserServiceException / timeout / network) — the resolver must never propagate, or the
+        // inbound-email forwarder's HTTP call 5xxs and SES re-delivers indefinitely.
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
+        SessionUser ok = sessionUserOf("speaker.bob");
+        SessionUser flaky = sessionUserOf("speaker.flaky");
+        when(sessionUserRepository.findScheduledSpeakersByEventId(EVENT_ID))
+                .thenReturn(List.of(ok, flaky));
+        when(userApiClient.getUserByUsername("speaker.bob")).thenReturn(
+                userWithAdditional("speaker.bob", "bob@example.com", List.of()));
+        when(userApiClient.getUserByUsername("speaker.flaky"))
+                .thenThrow(new RuntimeException("CUMS 503 / connection timed out"));
+
+        Set<String> emails = service.resolveSpeakers(EVENT_CODE);
+
+        assertThat(emails).containsExactly("bob@example.com");
+    }
+
+    @Test
     @DisplayName("speakers: empty list when event has no scheduled primary speakers")
     void should_returnEmpty_when_noScheduledPrimarySpeakers() {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));

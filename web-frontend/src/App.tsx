@@ -479,8 +479,9 @@ function App() {
                     />
                     {/* Epic 14 Phase C (14.C.5): the dedicated slot-assignment page
                         is retired — slot assignment is now in-tab on the Speakers
-                        tab. This route redirects to ?tab=speakers&view=slots,
-                        preserving a stale ?speakerId= as in-tab speaker focus. */}
+                        tab. SlotAssignmentPage is a redirect-only component: it renders
+                        a <Navigate replace> to ?tab=speakers&view=slots (preserving a
+                        stale ?speakerId= as in-tab speaker focus), never any UI. */}
                     <Route
                       path="/organizer/events/:eventCode/slot-assignment"
                       element={

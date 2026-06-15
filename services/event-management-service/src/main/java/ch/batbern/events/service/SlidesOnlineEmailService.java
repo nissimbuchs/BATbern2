@@ -150,6 +150,13 @@ public class SlidesOnlineEmailService {
         requireRegistrantNoticeTemplate(templateKey);
         UUID eventId = event.getId();
 
+        // NOTE (PR #788 review item 3): the two guards below are read-then-act without an
+        // enclosing transaction, so two near-simultaneous requests could both pass before either
+        // writes the audit row (double-send). This is pre-existing behaviour inherited from
+        // sendSlidesOnline; the practical risk is low (a single organizer clicking a UI button).
+        // The robust fix is a partial unique index on (event_id, template_key) WHERE status IN
+        // (PENDING, IN_PROGRESS, COMPLETED, PARTIAL) — tracked as a hardening backlog item, not
+        // done here to avoid a Flyway migration in this frontend-focused PR.
         // AC5: in-progress guard, scoped to (event, templateKey).
         sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(eventId, templateKey, STATUS_IN_PROGRESS)
                 .ifPresent(active -> {
@@ -204,8 +211,9 @@ public class SlidesOnlineEmailService {
                 "attendeeFirstName", "en".equals(loc) ? "Jane" : "Erika");
         String htmlPreview = emailService.replaceVariables(mail.html(), sampleVars);
         String subjectPreview = emailService.replaceVariables(mail.subject(), sampleVars);
-        int recipientCount = registrationRepository
-                .findByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES).size();
+        // Count-only query — don't hydrate the full Registration list just to size it.
+        int recipientCount = (int) registrationRepository
+                .countByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES);
         return RegistrantNoticePreviewResponse.builder()
                 .subject(subjectPreview)
                 .htmlPreview(htmlPreview)
