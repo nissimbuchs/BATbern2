@@ -146,6 +146,34 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Event, UUID>
      *        (e.g. {@code %BRUNO-TEST-%})
      * @return number of notification rows deleted
      */
+    /**
+     * Delete leftover test task templates by name (Bruno {@code 02-create-task-template.bru}
+     * persists a {@code saveAsTemplate} template named "Test Custom Template" that has no
+     * per-run teardown, so they accumulate on the shared/prod DB).
+     *
+     * <p>Guards:
+     * <ul>
+     *   <li>{@code is_default = false} — a seeded default template can never be deleted (defence
+     *       in depth; the test templates are non-default and real defaults don't match the name);</li>
+     *   <li>{@code id NOT IN (referenced template_ids)} — never delete a template still referenced
+     *       by an {@code event_tasks.template_id} FK (no ON DELETE CASCADE on that column), so the
+     *       sweep can never FK-fail and roll back the whole cleanup transaction. The Bruno test
+     *       never creates tasks from its template, so its rows are always unreferenced.</li>
+     * </ul>
+     *
+     * @param namePattern {@code LIKE} pattern for the template {@code name} (e.g. {@code Test Custom Template%})
+     * @return number of task_template rows deleted
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM task_templates WHERE name LIKE :namePattern "
+                    + "AND is_default = false "
+                    + "AND id NOT IN (SELECT template_id FROM event_tasks "
+                    + "WHERE template_id IS NOT NULL)",
+            nativeQuery = true
+    )
+    int deleteTaskTemplatesByNameLike(@Param("namePattern") String namePattern);
+
     @Modifying
     @Query(
             value = "DELETE FROM notifications WHERE event_code LIKE :eventCodePattern "

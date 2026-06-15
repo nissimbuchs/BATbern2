@@ -19,10 +19,11 @@ import java.util.regex.Pattern;
 /**
  * Bruno test-fixture cleanup logic for EMS.
  *
- * <p>Removes rows in {@code events}, {@code sessions}, and {@code topics} that match
- * canonical Bruno test-data prefixes (see {@code bruno-tests/README.md}). The set of allowed
- * prefixes per entity type is locked in this class — request bodies cannot supply arbitrary
- * patterns, only one of the literal prefixes we recognize.
+ * <p>Removes rows in {@code events}, {@code sessions}, {@code topics}, {@code notifications},
+ * and {@code task_templates} that match canonical Bruno test-data prefixes/names (see
+ * {@code bruno-tests/README.md}). The set of allowed prefixes per entity type is locked in this
+ * class — request bodies cannot supply arbitrary patterns, only one of the literal prefixes we
+ * recognize.
  *
  * <p>Belt-and-suspenders gating:
  * <ol>
@@ -102,7 +103,20 @@ public class TestFixtureCleanupService {
          * their {@code subject}/{@code body} (which catches test notifications with a NULL
          * {@code event_code}) — none of which the bare event_code sentinel can reach.
          */
-        NOTIFICATIONS(Pattern.compile("^BRUNO-TEST-$"));
+        NOTIFICATIONS(Pattern.compile("^BRUNO-TEST-$")),
+        /**
+         * Sweeps leftover test task templates by NAME. Bruno
+         * {@code tasks-api/02-create-task-template.bru} creates a {@code saveAsTemplate}
+         * template named "Test Custom Template" with no per-run teardown, so they accumulate
+         * on the shared (= production) DB and pollute the organizer "Custom Templates" list.
+         *
+         * <p>Unlike the prefix sweeps above, the {@code prefix} field here carries the FULL
+         * literal template name "Test Custom Template" (validated by {@code ^Test Custom Template$}
+         * — the request body cannot supply an arbitrary name); the delete then runs
+         * {@code name LIKE 'Test Custom Template%'}, guarded to non-default + FK-unreferenced
+         * rows (see {@code TestFixtureCleanupRepository#deleteTaskTemplatesByNameLike}).
+         */
+        TASK_TEMPLATES(Pattern.compile("^Test Custom Template$"));
 
         private final Pattern allowedPrefix;
 
@@ -128,7 +142,8 @@ public class TestFixtureCleanupService {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Unknown entityType: '" + value
-                                + "'. Allowed: events, sessions, topics, events_by_number, notifications"
+                                + "'. Allowed: events, sessions, topics, events_by_number, "
+                                + "notifications, task_templates"
                 );
             }
         }
@@ -223,6 +238,13 @@ public class TestFixtureCleanupService {
                         + " OR BATbern{N>=" + TEST_EVENT_NUMBER_THRESHOLD + "}"
                         + " OR recipient_username LIKE bruno.test.%"
                         + " OR subject/body LIKE " + markerPattern + "]";
+                break;
+            case TASK_TEMPLATES:
+                // Sweep leftover "Test Custom Template" rows by name (non-default + not
+                // referenced by any event_tasks.template_id FK). No cascade — task templates
+                // are standalone; the Bruno test never creates tasks from its template.
+                int taskTemplates = repository.deleteTaskTemplatesByNameLike(likePattern);
+                counts.put("task_templates", taskTemplates);
                 break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);
