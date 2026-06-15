@@ -33,7 +33,8 @@
         "overdue": "Overdue · {{days}} days",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
-        "live": "Now · event is live"
+        "live": "Now · event is live",
+        "eventDay": "Evenementdag · {{date}}"
       },
       "cards": {
         "addDetailsPickTopic": "Add event details & pick a topic",

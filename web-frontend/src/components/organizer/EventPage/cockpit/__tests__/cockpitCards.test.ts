@@ -192,6 +192,16 @@ describe('event-day cards (FR12 gate)', () => {
     expect(start?.target).toEqual({ kind: 'route', path: '/present/BAT99', newTab: true });
   });
 
+  it('stamps the event date as the due date on event-day cards (due on the event day)', () => {
+    const cards = getVirtualCards(
+      baseCtx({ workflowState: 'AGENDA_PUBLISHED', eventDate: '2026-09-18T17:00:00Z' })
+    );
+    const start = cards.find((c) => c.id === 'start-presentation');
+    const live = cards.find((c) => c.id === 'open-live-control');
+    expect(start?.dueDate).toBe('2026-09-18T17:00:00Z');
+    expect(live?.dueDate).toBe('2026-09-18T17:00:00Z');
+  });
+
   it('stamps the event moderator as the assignee on every virtual card', () => {
     const cards = getVirtualCards(
       baseCtx({ workflowState: 'EVENT_LIVE', moderatorUsername: 'sandra.keller' })

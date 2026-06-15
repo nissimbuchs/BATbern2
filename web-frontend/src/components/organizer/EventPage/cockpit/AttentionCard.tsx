@@ -40,7 +40,7 @@ const CHIP_COLOR: Record<CardSeverity, 'error' | 'warning' | 'success'> = {
 };
 
 export const AttentionCard: React.FC<AttentionCardProps> = ({ card, onNavigate }) => {
-  const { t } = useTranslation('events');
+  const { t, i18n } = useTranslation('events');
 
   const label = card.taskBacked
     ? String(card.labelVars?.name ?? '')
@@ -49,7 +49,27 @@ export const AttentionCard: React.FC<AttentionCardProps> = ({ card, onNavigate }
   // Due chip text
   let dueText: string;
   if (card.severity === 'live') {
-    dueText = t('eventPage.cockpit.due.live', 'Now · event is live');
+    // Event-day cards are due ON the event date. Before that day, show the date
+    // ("Event day · 18 Sep 2026"); on/after it, the event is actually live.
+    const eventDate = card.dueDate ? new Date(card.dueDate) : null;
+    if (eventDate && !Number.isNaN(eventDate.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const eventDay = new Date(eventDate);
+      eventDay.setHours(0, 0, 0, 0);
+      dueText =
+        eventDay.getTime() > today.getTime()
+          ? t('eventPage.cockpit.due.eventDay', 'Event day · {{date}}', {
+              date: eventDate.toLocaleDateString(i18n.language, {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              }),
+            })
+          : t('eventPage.cockpit.due.live', 'Now · event is live');
+    } else {
+      dueText = t('eventPage.cockpit.due.live', 'Now · event is live');
+    }
   } else if (card.dueDays === undefined) {
     dueText = t('eventPage.cockpit.due.upcoming', 'Upcoming');
   } else if (card.severity === 'overdue') {

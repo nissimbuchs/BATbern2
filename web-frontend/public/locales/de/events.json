@@ -33,7 +33,8 @@
         "overdue": "Überfällig · {{days}} Tage",
         "dueSoon": "Fällig in {{days}} Tagen",
         "upcoming": "Demnächst",
-        "live": "Jetzt · Anlass ist live"
+        "live": "Jetzt · Anlass ist live",
+        "eventDay": "Veranstaltungstag · {{date}}"
       },
       "cards": {
         "addDetailsPickTopic": "Anlass-Details hinzufügen & Thema wählen",

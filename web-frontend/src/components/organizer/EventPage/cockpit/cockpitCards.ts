@@ -56,6 +56,8 @@ export interface CockpitCardCtx {
    * their assignee avatar, since those aren't backed by an assignable task row.
    */
   moderatorUsername?: string | null;
+  /** The event's scheduled date (ISO) — stamped onto event-day cards as their due date. */
+  eventDate?: string | null;
   topicCode?: string | null;
   /** Minimum viable speaker count for this event type (from the event-type config). */
   minSlots: number;
@@ -80,6 +82,8 @@ export interface CockpitCard {
   severity: CardSeverity;
   /** Days until/over due (negative = overdue). Undefined for virtual/event-day cards. */
   dueDays?: number;
+  /** ISO due date (event-day cards carry the event date so the chip shows the real day). */
+  dueDate?: string;
   /** Event-day live actions sort above everything else. */
   pinned?: boolean;
   /** Assignee username (task cards only) for the avatar. */
@@ -295,6 +299,10 @@ export function getVirtualCards(ctx: CockpitCardCtx): CockpitCard[] {
     target: typeof d.target === 'function' ? d.target(ctx) : d.target,
     severity: d.severity,
     pinned: d.pinned,
+    // Event-day cards are due on the event date — carry it so the chip shows the
+    // real day ("Event day · 18 Sep") rather than a blanket "Now · event is live"
+    // weeks ahead (they appear from AGENDA_PUBLISHED for rehearsal).
+    dueDate: d.severity === 'live' ? (ctx.eventDate ?? undefined) : undefined,
     // Virtual cards aren't task-backed, so they have no assignee of their own —
     // the event moderator owns them by default (the avatar matches task cards).
     assignee: ctx.moderatorUsername ?? null,

@@ -64,6 +64,7 @@ export function useCockpitCards(
       // Event moderator = Event.organizerUsername (see EventSettingsTab) — owns the
       // virtual / event-day cards that have no assignable task row.
       moderatorUsername: (e.organizerUsername as string | null | undefined) ?? null,
+      eventDate: (e.date as string | null | undefined) ?? null,
       topicCode: (e.topicCode as string | null | undefined) ?? null,
       minSlots: eventTypeQuery.data?.minSlots ?? 0,
       confirmedSpeakersCount: num(e.confirmedSpeakersCount),
