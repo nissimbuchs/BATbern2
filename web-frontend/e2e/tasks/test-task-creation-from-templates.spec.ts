@@ -108,26 +108,29 @@ test.describe('Event Tasks (Story 5.5)', { tag: '@gate' }, () => {
       // Use click (not check): the checkbox reflects `isSelected`, which only flips true AFTER
       // the create + query refetch — check() would fail asserting an immediate state change.
       const firstRow = page.locator('[data-testid^="task-template-"]').first();
-      await firstRow.getByRole('checkbox').click();
+      const checkbox = firstRow.getByRole('checkbox');
+      await checkbox.click();
 
-      // Wait for the live create to SETTLE before opening the assignee dropdown: the create's
-      // query-refetch re-renders the row and would otherwise close a just-opened menu (race).
-      await expect
-        .poll(
-          async () => {
-            const res = await request.get(
-              `${API_URL}/api/v1/events/${fixtureEvent.eventCode}/tasks`
-            );
-            return res.status() === 200 ? ((await res.json()) as EventTask[]).length : 0;
-          },
-          { timeout: 15_000 }
-        )
-        .toBeGreaterThan(0);
+      // SETTLE on the UI, not just the API: the assignee select only enables once the create's
+      // query-refetch lands and flips the row to selected. Asserting the *checkbox* is checked
+      // waits for that browser-side refetch to complete — an API-only poll returns while the
+      // refetch is still in flight, and that in-flight re-render tears down a just-opened menu
+      // (the original @smoke flake that took prod down on rollback).
+      await expect(checkbox).toBeChecked({ timeout: 15_000 });
+
+      const assignee = firstRow.locator('[data-testid^="task-assignee-"]');
+      await expect(assignee).toBeEnabled();
 
       // Assign the task to the current organizer. OrganizerSelect options are keyed by the
-      // organizer's meaningful id (= username); selecting one fires updateTask LIVE.
-      await firstRow.locator('[data-testid^="task-assignee-"]').click();
-      await page.getByTestId(`organizer-option-${username}`).click();
+      // organizer's meaningful id (= username); selecting one fires updateTask LIVE. Wrap the
+      // open in a retry: if a late refetch closes the MUI menu before the option is actionable,
+      // re-open and try again (Playwright-recommended pattern for flaky open/close races).
+      const option = page.getByTestId(`organizer-option-${username}`);
+      await expect(async () => {
+        await assignee.click();
+        await expect(option).toBeVisible({ timeout: 2_000 });
+      }).toPass({ timeout: 20_000 });
+      await option.click();
 
       // Verify the feature did what it claims: a template task was instantiated for the event
       // and carries our assignee. Poll — the toggle + assignee writes persist asynchronously
