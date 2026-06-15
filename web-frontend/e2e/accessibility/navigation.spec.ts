@@ -24,6 +24,7 @@
 
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { waitForAppShell } from '../helpers/app-shell';
 
 test.describe('Navigation Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () => {
   // `/dashboard` is a redirect shim → organizers land on `/organizer/events`. Waiting for
@@ -34,6 +35,9 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () => 
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
+    // On the Vite dev server `networkidle` can fire during the "Loading" Suspense fallback,
+    // before BaseLayout renders the skip link / aria-live regions / nav. Wait for the shell.
+    await waitForAppShell(page);
   });
 
   // @quarantine: catches REAL, pervasive WCAG-AA debt on the authenticated app shell — the
@@ -101,6 +105,7 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () => 
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
+    await waitForAppShell(page);
 
     await page.getByTestId('mobile-menu-button').click();
     const drawer = page.locator('[role="presentation"]').first();

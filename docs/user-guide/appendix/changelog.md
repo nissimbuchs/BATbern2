@@ -53,7 +53,6 @@ Each release includes:
 > **Note**: The former "v1.3.0 — Speaker Authentication Unification (Epic 9)" plan has shipped in a
 > different form. Epic 9's JWT magic-link approach was **superseded** by Epic 11 (unified Cognito
 > speaker workflow) and Epic 12 (Google SSO), both released in v1.3.0 below.
-
 ---
 
 ## v1.3.x - Current Release

@@ -19,6 +19,15 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { BASE_URL } from '../../playwright.config';
+import { forceUserProfileLanguage } from '../helpers/mock-user-profile';
+
+// The project's authenticated storageState makes the app shell mount LanguageSync, which
+// reads /users/me `preferences.language` and overrides the UI language on every load. Pin it
+// to English by default for the whole file so the (English) accessibility / validation specs
+// are deterministic; the i18n specs override per-test to the language under test.
+test.beforeEach(async ({ page }) => {
+  await forceUserProfileLanguage(page, 'en');
+});
 
 // Test configuration
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
@@ -34,6 +43,34 @@ const HAS_EMAIL_INTEGRATION =
 async function navigateToForgotPassword(page: Page) {
   await page.goto(`${BASE_URL}/auth/forgot-password`);
   await expect(page.locator('[data-testid="forgot-password-title"]')).toBeVisible();
+}
+
+/**
+ * Helper: stub Cognito's ForgotPassword so the submit neither sends a REAL reset email
+ * (no real outbound comms in tests — staging IS production) nor depends on a live Cognito
+ * round-trip. The frontend calls Amplify v6 `resetPassword()` which POSTs directly to
+ * `cognito-idp.<region>.amazonaws.com` with `X-Amz-Target: …ForgotPassword`. Fulfil a
+ * success body so the component flips to its confirmation screen deterministically.
+ */
+async function mockCognitoForgotPasswordSuccess(page: Page) {
+  await page.route(/cognito-idp\.[a-z0-9-]+\.amazonaws\.com\//, async (route) => {
+    const target = route.request().headers()['x-amz-target'] ?? '';
+    if (target.includes('ForgotPassword')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/x-amz-json-1.1',
+        body: JSON.stringify({
+          CodeDeliveryDetails: {
+            Destination: 't***@b***.ch',
+            DeliveryMedium: 'EMAIL',
+            AttributeName: 'email',
+          },
+        }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
 }
 
 /**
@@ -450,20 +487,35 @@ test.describe('Forgot Password - Accessibility', () => {
     // const results = await new AxeBuilder({ page }).analyze();
     // expect(results.violations).toEqual([]);
 
-    // Manual accessibility checks
+    // Manual accessibility checks. MUI's TextField auto-generates the input id and wires the
+    // <label for=…> to it — there is no literal for="email" — so assert via the accessible
+    // label (getByLabel resolves the label→input association). The submit button is
+    // intentionally disabled until a valid email is entered (see the disable/enable specs),
+    // so assert it is present, not enabled.
     await expect(page.locator('input[name="email"]')).toHaveAttribute('type', 'email');
-    await expect(page.locator('label[for="email"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toBeEnabled();
+    await expect(page.getByLabel(/email address/i)).toBeVisible();
+    await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
   test('should_supportKeyboardNavigation_when_interacting', async ({ page }) => {
-    // AC: Keyboard navigation support
+    // AC: Keyboard navigation support. Mock Cognito so submission is comms-free + deterministic.
+    await mockCognitoForgotPasswordSuccess(page);
     await navigateToForgotPassword(page);
 
-    await page.keyboard.press('Tab'); // Focus email input
+    // Drive the form by keyboard. The submit button is disabled until the field blurs
+    // (react-hook-form `onBlur` validation), so: focus the field, type, blur to validate,
+    // then keyboard-activate the (now-enabled) submit button with Enter. We focus the button
+    // explicitly because the disabled→enabled re-render drops focus to <body>, so a bare Tab
+    // would not reliably land on it.
+    const emailInput = page.locator('input[name="email"]');
+    await emailInput.focus();
     await page.keyboard.type(TEST_EMAIL);
-    await page.keyboard.press('Tab'); // Focus submit button
-    await page.keyboard.press('Enter'); // Submit form
+    await emailInput.blur(); // trigger onBlur validation → enables the submit button
+
+    const submitButton = page.locator('[data-testid="forgot-password-submit"]');
+    await expect(submitButton).toBeEnabled();
+    await submitButton.focus();
+    await page.keyboard.press('Enter'); // keyboard-activate the submit button
 
     await expect(page.getByText(/check your email/i)).toBeVisible();
   });
@@ -491,8 +543,9 @@ test.describe('Forgot Password - Accessibility', () => {
 
 test.describe('Forgot Password - Internationalization', () => {
   test('should_displayGermanText_when_languageIsGerman', async ({ page }) => {
-    // AC2: Multi-language support (German)
-    await page.setExtraHTTPHeaders({ 'Accept-Language': 'de-CH' });
+    // AC2: Multi-language support (German). LanguageSync applies the user's /users/me
+    // preference on load (overriding any header/localStorage), so drive the language there.
+    await forceUserProfileLanguage(page, 'de');
 
     await navigateToForgotPassword(page);
 
@@ -502,8 +555,9 @@ test.describe('Forgot Password - Internationalization', () => {
   });
 
   test('should_displayEnglishText_when_languageIsEnglish', async ({ page }) => {
-    // AC2: Multi-language support (English)
-    await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US' });
+    // AC2: Multi-language support (English). The file-level beforeEach already pins EN;
+    // this is explicit for clarity.
+    await forceUserProfileLanguage(page, 'en');
 
     await navigateToForgotPassword(page);
 

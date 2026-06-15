@@ -27,8 +27,9 @@ import java.util.Set;
  * <p>Spec: {@code _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md}
  * (F2). Three kinds are supported:
  * <ul>
- *   <li>{@code speakers} → {@code batbern{N}-speaker@}: PRIMARY_SPEAKER of every scheduled
- *       session of the event, plus each speaker's verified additionalEmails.</li>
+ *   <li>{@code speakers} → {@code batbern{N}-speaker@}: PRIMARY_SPEAKER + CO_SPEAKER of every
+ *       scheduled session of the event, plus each speaker's verified additionalEmails.
+ *       MODERATOR / PANELIST roles are excluded.</li>
  *   <li>{@code moderator} → {@code batbern{N}-moderator@}: the event lead organizer
  *       ({@code Event.organizerUsername}), plus their additionalEmails. BATbern's "event
  *       moderator" interpretation; {@code SessionUser.MODERATOR} is per-session and not
@@ -63,7 +64,7 @@ public class DistributionListService {
     public Set<String> resolveSpeakers(String eventCode) {
         Event event = loadEvent(eventCode);
         List<SessionUser> speakers =
-                sessionUserRepository.findScheduledPrimarySpeakersByEventId(event.getId());
+                sessionUserRepository.findScheduledSpeakersByEventId(event.getId());
 
         Set<String> result = new LinkedHashSet<>();
         for (SessionUser su : speakers) {

@@ -68,13 +68,13 @@ class DistributionListServiceTest {
     }
 
     @Test
-    @DisplayName("speakers: fans out PRIMARY_SPEAKER + additionalEmails, lowercased & deduped")
-    void should_returnPrimarySpeakerEmails_withAdditionalEmails() {
+    @DisplayName("speakers: fans out scheduled PRIMARY + CO speakers + additionalEmails, lowercased & deduped")
+    void should_returnSpeakerEmails_withAdditionalEmails() {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
-        SessionUser su1 = sessionUserOf("speaker.bob");
-        SessionUser su2 = sessionUserOf("speaker.carol");
-        when(sessionUserRepository.findScheduledPrimarySpeakersByEventId(EVENT_ID))
-                .thenReturn(List.of(su1, su2));
+        SessionUser primary = sessionUserOf("speaker.bob", SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        SessionUser coSpeaker = sessionUserOf("speaker.carol", SessionUser.SpeakerRole.CO_SPEAKER);
+        when(sessionUserRepository.findScheduledSpeakersByEventId(EVENT_ID))
+                .thenReturn(List.of(primary, coSpeaker));
         when(userApiClient.getUserByUsername("speaker.bob")).thenReturn(
                 userWithAdditional("speaker.bob", "Bob@Example.com",
                         List.of("bob.work@example.com")));
@@ -83,6 +83,7 @@ class DistributionListServiceTest {
 
         Set<String> emails = service.resolveSpeakers(EVENT_CODE);
 
+        // Co-speaker (carol) is included, not just the primary speaker (regression: event 59)
         assertThat(emails).containsExactly(
                 "bob@example.com",
                 "bob.work@example.com",
@@ -96,7 +97,7 @@ class DistributionListServiceTest {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
         SessionUser su1 = sessionUserOf("speaker.bob");
         SessionUser su2 = sessionUserOf("speaker.bob.alt"); // same person, different login
-        when(sessionUserRepository.findScheduledPrimarySpeakersByEventId(EVENT_ID))
+        when(sessionUserRepository.findScheduledSpeakersByEventId(EVENT_ID))
                 .thenReturn(List.of(su1, su2));
         when(userApiClient.getUserByUsername("speaker.bob")).thenReturn(
                 userWithAdditional("speaker.bob", "BOB@example.com", List.of()));
@@ -114,7 +115,7 @@ class DistributionListServiceTest {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
         SessionUser su1 = sessionUserOf("speaker.bob");
         SessionUser su2 = sessionUserOf("speaker.missing");
-        when(sessionUserRepository.findScheduledPrimarySpeakersByEventId(EVENT_ID))
+        when(sessionUserRepository.findScheduledSpeakersByEventId(EVENT_ID))
                 .thenReturn(List.of(su1, su2));
         when(userApiClient.getUserByUsername("speaker.bob")).thenReturn(
                 userWithAdditional("speaker.bob", "bob@example.com", List.of()));
@@ -130,7 +131,7 @@ class DistributionListServiceTest {
     @DisplayName("speakers: empty list when event has no scheduled primary speakers")
     void should_returnEmpty_when_noScheduledPrimarySpeakers() {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
-        when(sessionUserRepository.findScheduledPrimarySpeakersByEventId(EVENT_ID))
+        when(sessionUserRepository.findScheduledSpeakersByEventId(EVENT_ID))
                 .thenReturn(List.of());
 
         Set<String> emails = service.resolveSpeakers(EVENT_CODE);
@@ -241,9 +242,13 @@ class DistributionListServiceTest {
     }
 
     private SessionUser sessionUserOf(String username) {
+        return sessionUserOf(username, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+    }
+
+    private SessionUser sessionUserOf(String username, SessionUser.SpeakerRole role) {
         SessionUser su = new SessionUser();
         su.setUsername(username);
-        su.setSpeakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        su.setSpeakerRole(role);
         // Session FK is irrelevant for the service test (resolver only uses the username)
         return su;
     }

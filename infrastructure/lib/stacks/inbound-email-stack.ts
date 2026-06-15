@@ -1,6 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as ses from 'aws-cdk-lib/aws-ses';
 import * as sesActions from 'aws-cdk-lib/aws-ses-actions';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
@@ -209,6 +211,82 @@ export class InboundEmailStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // ========================
+    // Delivery tracking (Option A) — dedicated forwarder SES configuration set
+    // ========================
+    // A standalone config set (NOT the newsletter one) so forwarded speaker/
+    // broadcast mail emits delivery/bounce/complaint/reject events to CloudWatch
+    // metrics, isolated from the newsletter bounce-SQS + BounceProcessingService
+    // (a speaker bounce must never auto-suppress a newsletter recipient). The
+    // forwarder Lambda attaches this set via an X-SES-CONFIGURATION-SET header.
+    const forwarderConfigSetName = `batbern-${envName}-forwarder`;
+    const forwarderConfigSet = new ses.CfnConfigurationSet(this, 'ForwarderConfigSet', {
+      name: forwarderConfigSetName,
+    });
+
+    new ses.CfnConfigurationSetEventDestination(this, 'ForwarderEventDest', {
+      configurationSetName: forwarderConfigSet.ref,
+      eventDestination: {
+        name: 'forwarder-delivery-events',
+        enabled: true,
+        matchingEventTypes: ['delivery', 'bounce', 'complaint', 'reject'],
+        cloudWatchDestination: {
+          dimensionConfigurations: [
+            {
+              // Dimension sourced from the message tag SES sets per config set;
+              // defaultDimensionValue keeps metrics populated even without tags.
+              dimensionName: 'ses:configuration-set',
+              dimensionValueSource: 'messageTag',
+              defaultDimensionValue: forwarderConfigSetName,
+            },
+          ],
+        },
+      },
+    });
+
+    // Per-recipient detail: SES events → SNS → small logger Lambda → its own
+    // CloudWatch log group, so an operator can answer "did <address> deliver /
+    // bounce?" by querying the log group by recipient. This is the per-recipient
+    // complement to the aggregate CloudWatch metrics above. A dedicated topic +
+    // log group keeps it decoupled from the newsletter bounce SQS pipeline.
+    const forwarderEventsTopic = new sns.Topic(this, 'ForwarderEventsTopic', {
+      topicName: `batbern-${envName}-ses-forwarder-events`,
+    });
+
+    new ses.CfnConfigurationSetEventDestination(this, 'ForwarderSnsEventDest', {
+      configurationSetName: forwarderConfigSet.ref,
+      eventDestination: {
+        name: 'forwarder-per-recipient-events',
+        enabled: true,
+        matchingEventTypes: ['delivery', 'bounce', 'complaint', 'reject'],
+        snsDestination: { topicArn: forwarderEventsTopic.topicArn },
+      },
+    });
+
+    const sesEventLoggerLogGroup = new logs.LogGroup(this, 'SesEventLoggerLogGroup', {
+      logGroupName: `/aws/lambda/batbern-${envName}-ses-event-logger`,
+      retention: logs.RetentionDays.THREE_MONTHS,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const sesEventLogger = new NodejsFunction(this, 'SesEventLogger', {
+      functionName: `batbern-${envName}-ses-event-logger`,
+      runtime: lambda.Runtime.NODEJS_20_X,
+      entry: path.join(__dirname, '../../lambda/ses-event-logger/index.ts'),
+      handler: 'handler',
+      memorySize: 128,
+      timeout: cdk.Duration.seconds(30),
+      logGroup: sesEventLoggerLogGroup,
+      bundling: {
+        externalModules: ['@aws-sdk/*'],
+        minify: true,
+        sourceMap: false,
+        forceDockerBundling: false,
+      },
+    });
+
+    forwarderEventsTopic.addSubscription(new snsSubscriptions.LambdaSubscription(sesEventLogger));
+
     // API Gateway URL for the forwarder to call existing APIs.
     // ECS Service Connect DNS (api-gateway.batbern-{env}) is only resolvable from within ECS
     // tasks — VPC-native Lambda functions use the standard VPC DNS which cannot resolve it.
@@ -235,6 +313,7 @@ export class InboundEmailStack extends cdk.Stack {
         API_GATEWAY_URL: apiGatewayUrl,
         SES_SENDER_ADDRESS: `noreply@${forwardingDomain}`,
         FORWARDING_DOMAIN: forwardingDomain,
+        SES_CONFIGURATION_SET: forwarderConfigSetName,
       },
       bundling: {
         externalModules: ['@aws-sdk/*'],

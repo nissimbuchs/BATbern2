@@ -23,6 +23,7 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { BASE_URL } from '../../playwright.config';
+import { forceEnglishUserProfile } from '../helpers/mock-user-profile';
 
 const TOPICS_URL = `${BASE_URL}/partners/topics`;
 
@@ -74,22 +75,7 @@ async function mockTopicApi(page: Page, mutate?: (topics: MockTopic[]) => void):
   mutate?.(topics);
 
   // Force EN so LanguageSync doesn't switch to the user's backend (German) preference.
-  await page.route('**/api/v1/users/me*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        id: 'test-partner',
-        email: 'partner@example.com',
-        // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
-        // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
-        roles: ['partner'],
-        currentRole: 'partner',
-        termsAcceptedAt: '2020-01-01T00:00:00Z',
-        preferences: { language: 'en' },
-      }),
-    });
-  });
+  await forceEnglishUserProfile(page);
 
   // Vote toggle (POST cast / DELETE remove) — mutate state then 204.
   await page.route('**/api/v1/partners/topics/*/vote', async (route) => {

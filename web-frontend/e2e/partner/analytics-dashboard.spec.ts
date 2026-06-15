@@ -25,6 +25,7 @@
 
 import { test, expect } from '@playwright/test';
 import { BASE_URL } from '../../playwright.config';
+import { forceEnglishUserProfile } from '../helpers/mock-user-profile';
 
 const ANALYTICS_URL = `${BASE_URL}/partners/analytics`;
 
@@ -64,23 +65,7 @@ test.describe('Partner Attendance Dashboard @gate', () => {
     });
 
     // Force EN so LanguageSync doesn't flip to the partner user's backend German preference.
-    await page.route('**/api/v1/users/me*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'test-partner',
-          email: 'partner@example.com',
-          companyName: 'GoogleZH',
-          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
-          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
-          roles: ['partner'],
-          currentRole: 'partner',
-          termsAcceptedAt: '2020-01-01T00:00:00Z',
-          preferences: { language: 'en' },
-        }),
-      });
-    });
+    await forceEnglishUserProfile(page);
 
     // Mock the analytics dashboard API so the spec is deterministic and independent of
     // whatever events the partner's real company has historically attended on staging.

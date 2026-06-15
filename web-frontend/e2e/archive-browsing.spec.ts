@@ -2,8 +2,8 @@
  * E2E: Archive Browsing (hardened — docs/plans/playwright-staging-hardening.md, slice 7 / PR 8)
  *
  * Public, read-only — no auth, no mutations, no cleanup owed. data-testid locators only.
- * Tagged @gate: joins the nightly full suite (archive shell smoke is covered per-deploy by
- * e2e/smoke.spec.ts).
+ * Tagged @gate + @smoke: the public archive is the core visitor-facing surface, so its
+ * render/browse path is a high-value, zero-flake-risk per-deploy gate (promoted 2026-06-14).
  *
  * Rewritten against the REAL ArchivePage implementation. Removed dead test (logged in PR):
  *  - "should handle empty archive state": unreachable on a populated prod archive — there is
@@ -14,7 +14,7 @@
 
 import { test, expect } from '@playwright/test';
 
-test.describe('Archive Browsing', { tag: '@gate' }, () => {
+test.describe('Archive Browsing', { tag: ['@gate', '@smoke'] }, () => {
   test('renders the archive shell with event cards', async ({ page }) => {
     await page.goto('/archive');
 
