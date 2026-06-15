@@ -43,7 +43,9 @@ export interface SpeakerIdentity {
  */
 export function readSpeakerIdentity(): SpeakerIdentity | undefined {
   const testEnv = process.env.TEST_ENV || 'development';
-  const tokenFile = path.join(os.homedir(), '.batbern', `${testEnv}-speaker.json`);
+  // Beta canary runs on the PRODUCTION backend → speaker token lives in the staging file.
+  const tokenEnv = testEnv === 'beta' ? 'staging' : testEnv;
+  const tokenFile = path.join(os.homedir(), '.batbern', `${tokenEnv}-speaker.json`);
   if (!fs.existsSync(tokenFile)) return undefined;
   const token = (JSON.parse(fs.readFileSync(tokenFile, 'utf8')).idToken as string) || '';
   if (!token) return undefined;

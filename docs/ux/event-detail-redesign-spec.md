@@ -10,6 +10,17 @@
 > These prototypes are the visual source of truth for this spec. Every behavior below is
 > demonstrated there. This document is the written hand-off to architecture & development.
 
+> **⚠️ Workflow reconciled to 8 states (updated 2026-06-13).** This spec was originally drafted
+> against a **9-state** workflow that included `AGENDA_FINALIZED`. The shipped system has **8
+> states** — `AGENDA_FINALIZED` was removed in migration **V82** (`AGENDA_PUBLISHED` now
+> transitions directly to `EVENT_LIVE`). The spec and both prototypes have been updated to the
+> 8-state model: the lifecycle spine is **8 steps**, and the work previously parked under
+> `AGENDA_FINALIZED` (final newsletter, request the catering offer, day-of rehearsal controls)
+> now surfaces **by due date within `AGENDA_PUBLISHED`**. Event-day controls appear from
+> `AGENDA_PUBLISHED` onward. The canonical 8 states are: `CREATED → TOPIC_SELECTION →
+> SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED →
+> ARCHIVED`. See the PRD's "Grounding decisions" (`docs/prd/epic-14-event-detail-redesign.md`).
+
 ---
 
 ## 1. Problem & goals
@@ -20,7 +31,7 @@ all visual peers, with the Speakers tab silently carrying four tools (kanban, se
 *separate* slot-assignment route, a detail drawer). Two compounding issues:
 
 1. **The navigation ignores time, but the work is entirely about time.** The PRD models a
-   9-state event workflow and a task table where every task is pinned to a moment ("Venue
+   8-state event workflow and a task table where every task is pinned to a moment ("Venue
    booking 90 days before", "Speaker newsletter 30 days before", "Catering 30 days before",
    "Final newsletter 14 days"). The organizer's real question is never "which of 10 tabs?" —
    it's *"what's due now, and what's next?"* Flat tabs can't answer that.
@@ -74,8 +85,8 @@ in the page header on every tab**, so identity is never lost despite living in D
 
 ## 3. Lifecycle-awareness model
 
-The page adapts to `event.workflowState` (9 states: `CREATED → TOPIC_SELECTION →
-SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE →
+The page adapts to `event.workflowState` (8 states: `CREATED → TOPIC_SELECTION →
+SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE →
 EVENT_COMPLETED → ARCHIVED`).
 
 - **Tab dimming:** tabs not yet relevant for the current state render dimmed + 🔒 and are
@@ -96,8 +107,7 @@ EVENT_COMPLETED → ARCHIVED`).
 | **TOPIC_SELECTION** | Confirm the topic; assign a moderator; start the pool | Details, Speakers·Pool | Registrations, Publishing | Wrap-up |
 | **SPEAKER_IDENTIFICATION** | Fill the pool; review submissions & start slotting | Speakers·Pool | Registrations | Wrap-up |
 | **SLOT_ASSIGNMENT** | Finish slotting & reviews; publish the agenda | Speakers·Slots | Registrations | Wrap-up |
-| **AGENDA_PUBLISHED** | Collect outstanding presentations; watch registrations | Registrations, Speakers·Agenda | — | Wrap-up |
-| **AGENDA_FINALIZED** | Final newsletter; request the catering offer; print agenda | Communications, Publishing | — | Wrap-up |
+| **AGENDA_PUBLISHED** | Collect outstanding presentations; watch registrations; and (by due date) final newsletter, request the catering offer, print agenda | Registrations, Speakers·Agenda, Communications, Publishing | — | Wrap-up |
 | **EVENT_LIVE** | 🔴 Run the event — present / live control | Cockpit (event-day cards), Registrations (check-in) | — | — *(Wrap-up unlocks)* |
 | **EVENT_COMPLETED** | "Slides online"; photos; thank-yous; **book the venue ahead** | Wrap-up, Communications | Speakers | — |
 | **ARCHIVED** | Archived — read-only | — | most | — |
@@ -115,9 +125,9 @@ draft task table):**
   nothing left to surface there.
 - **Assign the moderator** appears from **Topic** onward (PRD trigger = `TOPIC_SELECTION`), and
   persists into Speakers / Slot Assignment until done.
-- **Catering** is two distinct touchpoints: at **Agenda Finalized** the task is **"request the
-  catering offer"** (send mail). (Headcount confirmation, if modelled, also belongs at Finalized —
-  never earlier.)
+- **Catering** is two distinct touchpoints: within **Agenda Published** (by its due date, ~30 days
+  before) the task is **"request the catering offer"** (send mail). (Headcount confirmation, if
+  modelled, also belongs in this late-Agenda-Published window — never earlier.)
 - **Venue booking** is **annual** (booked once a year for the upcoming ~2 years), so it is **not**
   a per-event speaker-phase task — it surfaces at **Event Completed** as forward planning.
 
@@ -128,8 +138,8 @@ draft task table):**
 The home/landing tab. Three stacked regions, top to bottom:
 
 ### 4.1 Lifecycle spine
-Horizontal stepper of the 9 states; completed = green check, current = highlighted with step
-number ("Step 4 of 9"). Uses existing `WorkflowProgressBar` / `getWorkflowProgress`.
+Horizontal stepper of the 8 states; completed = green check, current = highlighted with step
+number ("Step 4 of 8"). Uses existing `WorkflowProgressBar` / `getWorkflowProgress`.
 
 ### 4.2 "Needs your attention" (task cards)
 - Driven by the **event task list** (`taskService`, `GET /events/{code}/tasks` and/or
@@ -149,8 +159,9 @@ number ("Step 4 of 9"). Uses existing `WorkflowProgressBar` / `getWorkflowProgre
 page header (they're irrelevant 99% of the time). On the event day they appear as **two
 attention cards** at the top of this list ("🔴 Start the presentation", "📡 Open Live Control",
 due "Now · event is live"). The prototype has a "▶ Preview event-day" toggle to demonstrate.
-Implementation: emit these as (virtual) tasks from `workflowState === AGENDA_FINALIZED` onward
-(confirmed 2026-06-13 — allows rehearsal/opening before doors), styled urgent.
+Implementation: emit these as (virtual) tasks from `workflowState === AGENDA_PUBLISHED` onward
+(confirmed 2026-06-13 — allows rehearsal/opening before doors; 8-state equivalent of the original
+`AGENDA_FINALIZED`-onward intent), styled urgent.
 
 ### 4.3 "At a glance" (metric tiles — clickable)
 Four tiles, each a **deep-link**:
@@ -359,7 +370,7 @@ Seven+ destinations don't fit a phone tab bar, so the IA **changes shape**, it d
    **Publishing, Wrap-up, Details, Settings** — live behind **⋯ More** (a bottom sheet). Matches
    the real app's existing `BottomNavigation` and platform norms. Wrap-up shows 🔒 in the sheet
    until `EVENT_LIVE`.
-2. **Cockpit matters more on mobile** (checked on the go): lifecycle collapses to a `Step 4/9`
+2. **Cockpit matters more on mobile** (checked on the go): lifecycle collapses to a `Step 4/8`
    bar, tasks stack full-width, metrics go 2-up (and are tappable deep-links).
 3. **Drag → tap-to-assign** for Slots: tap an unassigned session, empty slots light up, tap one
    to place it. Drag-drop is hostile on touch.
@@ -400,7 +411,7 @@ card type and is *not* always a task status:
 | **Task-backed** | moderator, partner meeting, newsletters, catering offer | a row in the task system with `status` → hide when `status === 'completed'`. Straightforward. |
 | **Data-derived** (no task row) | "N sessions need a slot", "Review speaker submissions", "Collect outstanding presentations", "Fill the pool 3/12" | a **computed predicate** — e.g. hide "needs a slot" when `sessions.filter(s => !s.startTime).length === 0`; hide "review submissions" when no session is `CONTENT_SUBMITTED`-awaiting-review; hide "outstanding presentations" when `sessionsWithMaterialsCount === totalSessionsCount`; hide "fill the pool" when `acceptedCount >= minSlots`. Each predicate must be defined. |
 | **Workflow-action** | "Confirm the topic", "Finalize & publish the agenda" | done when the underlying field/state changes (e.g. `topicCode` set; `workflowState` advanced). Define the trigger. |
-| **Event-day action** | "Start presentation", "Live Control" | not "completable" — live actions; show while `EVENT_LIVE` (+ `AGENDA_FINALIZED` rehearsal), no done-state. |
+| **Event-day action** | "Start presentation", "Live Control" | not "completable" — live actions; show from `AGENDA_PUBLISHED` onward (rehearsal) through `EVENT_LIVE`, no done-state. |
 | **No signal yet — needs a decision** | **venue booking** ("book for the next 2 years") | there is no data source today that says "booked". Decide: (a) make it a real task the organizer ticks off, or (b) add/derive a venue-booking record to check. |
 
 **Deliverable:** a per-card table — *card → completion predicate → data source* — covering every
@@ -418,9 +429,9 @@ All previously-open questions are resolved:
    Pick → pin → brainstorm in one gesture, lands back on the event with no page change.
 2. **Tab count → keep 8** (6 work + Details + Settings). Identity and operational config are
    genuinely different jobs; both stay visible, grouped at the end.
-3. **Event-day controls → from `AGENDA_FINALIZED` onward** (not `EVENT_LIVE` only) — so
-   organizers can rehearse / open the presentation before doors, and the cards are already
-   present on the day.
+3. **Event-day controls → from `AGENDA_PUBLISHED` onward** (not `EVENT_LIVE` only; 8-state
+   equivalent of the original `AGENDA_FINALIZED`-onward intent) — so organizers can rehearse /
+   open the presentation before doors, and the cards are already present on the day.
 4. **Slot assignment → in-tab 2-column** (no `100vh`, no separate route, no overlay) — the
    2-column redesign removed the height constraint that justified the old separate route.
 
@@ -449,4 +460,4 @@ All previously-open questions are resolved:
   event day**.
 - ✅ Mobile: **bottom nav + More sheet**, tap-to-assign slots, tables→cards, lifecycle dimming.
 - ✅ Topic flow = **focused overlay** (not a route); **8 tabs kept** (Details + Settings both
-  visible); **event-day controls show from `AGENDA_FINALIZED`**; **slots fully in-tab** (no `100vh`).
+  visible); **event-day controls show from `AGENDA_PUBLISHED`**; **slots fully in-tab** (no `100vh`).

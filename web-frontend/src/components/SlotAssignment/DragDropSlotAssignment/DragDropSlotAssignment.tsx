@@ -44,6 +44,12 @@ import type { Session } from '@/types/event.types';
 
 export interface DragDropSlotAssignmentProps {
   eventCode: string;
+  /**
+   * 14.C.5: optional speaker (username) to focus on arrival. When set, the
+   * matching unassigned session in the tray is highlighted and scrolled into
+   * view. Best-effort — silently ignored when no unassigned session matches.
+   */
+  focusSpeakerId?: string;
 }
 
 // Story 5.7: Single conference room (Main Hall)
@@ -88,7 +94,10 @@ const timetableTypeToStructural = (type: TimetableSlot['type']): StructuralType 
   return null;
 };
 
-export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ eventCode }) => {
+export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
+  eventCode,
+  focusSpeakerId,
+}) => {
   const { t } = useTranslation('events');
   const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
@@ -120,6 +129,8 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
   const [structuralAlreadyExist, setStructuralAlreadyExist] = useState(false);
   const [draggedSession, setDraggedSession] = useState<Session | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<{ time: string; room: string } | null>(null);
+  // 14.G.3 (mobile tap-to-assign): the tray session "picked up" by a tap.
+  const [selectedSessionSlug, setSelectedSessionSlug] = useState<string | null>(null);
   const [speakerFilter, setSpeakerFilter] = useState<'all' | 'assigned' | 'unassigned'>(
     'unassigned'
   );
@@ -154,6 +165,16 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         return unassignedSessions;
     }
   }, [speakerFilter, event?.sessions, assignedSessions, unassignedSessions]);
+
+  // 14.C.5: resolve the focus speaker (username) to a session in the current
+  // tray so the list can highlight + scroll it. Best-effort: null when no match.
+  const focusSessionSlug = useMemo(() => {
+    if (!focusSpeakerId) return null;
+    const match = filteredSessions.find((s) =>
+      s.speakers?.some((sp) => sp.username === focusSpeakerId)
+    );
+    return match?.sessionSlug ?? null;
+  }, [focusSpeakerId, filteredSessions]);
 
   // TIME_SLOTS and structural slot lookup are now derived from the backend timetable.
   // This guarantees the grid displays exactly the same positions as the backend algorithm.
@@ -244,37 +265,18 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     setHoveredSlot(null);
   };
 
-  const handleDrop = (time: string, room: string) => async (e: React.DragEvent) => {
-    e.preventDefault();
-    setHoveredSlot(null);
-
-    if (!draggedSession) {
-      console.warn('No dragged session');
-      return;
-    }
-
+  // Shared assignment path for BOTH drag-drop (desktop) and tap-to-assign (mobile,
+  // 14.G.3). Resolves the slot's exact start/end from the backend timetable and
+  // commits via the same `assignTiming` contract — no behaviour divergence.
+  const assignSessionToSlot = async (session: Session, time: string, room: string) => {
     if (!event) {
       console.error('Event not loaded - cannot assign timing');
       return;
     }
-
     if (!timetable) {
       console.error('Timetable not loaded - cannot assign timing');
       return;
     }
-
-    const isReassignment = !!(draggedSession.startTime && draggedSession.endTime);
-    console.log('Dropping session:', {
-      sessionSlug: draggedSession.sessionSlug,
-      title: draggedSession.title,
-      time,
-      room,
-      event: event.eventCode,
-      eventType: event.eventType,
-      rawDate: event.date,
-      isReassignment,
-      currentTime: draggedSession.startTime,
-    });
 
     // Use actual event date and slot duration from event type config
     // Extract just the date part (YYYY-MM-DD) in case event.date is a full ISO datetime
@@ -310,22 +312,15 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       endTime = new Date(startDate.getTime() + slotDurationMs).toISOString();
     }
 
-    console.log('Assigning timing:', { startTime, endTime, room });
-
     try {
-      await assignTiming(draggedSession.sessionSlug, {
+      await assignTiming(session.sessionSlug, {
         startTime,
         endTime,
         room,
         changeReason: 'drag_drop_reassignment',
       });
-      console.log('✓ Successfully assigned timing');
-
-      await queryClient.invalidateQueries({
-        queryKey: ['event', eventCode, ['sessions']],
-      });
+      await queryClient.invalidateQueries({ queryKey: ['event', eventCode, ['sessions']] });
       await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
-
       await queryClient.refetchQueries({
         queryKey: ['event', eventCode, ['sessions']],
         exact: true,
@@ -333,8 +328,35 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     } catch (err) {
       console.error('✗ Failed to assign timing:', err);
     }
+  };
 
+  const handleDrop = (time: string, room: string) => async (e: React.DragEvent) => {
+    e.preventDefault();
+    setHoveredSlot(null);
+    if (!draggedSession) {
+      console.warn('No dragged session');
+      return;
+    }
+    await assignSessionToSlot(draggedSession, time, room);
     setDraggedSession(null);
+  };
+
+  // Mobile tap-to-assign (14.G.3): tap a tray session to "pick it up", then tap a
+  // highlighted empty slot to place it.
+  const handleTraySelect = (session: Session) => {
+    setSelectedSessionSlug((prev) => (prev === session.sessionSlug ? null : session.sessionSlug));
+  };
+
+  const handleSlotTap = (time: string, room: string) => async () => {
+    if (!selectedSessionSlug) {
+      return;
+    }
+    const session = filteredSessions.find((s) => s.sessionSlug === selectedSessionSlug);
+    if (!session) {
+      return;
+    }
+    await assignSessionToSlot(session, time, room);
+    setSelectedSessionSlug(null);
   };
 
   // Get session assigned to a specific time slot and room
@@ -368,7 +390,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
   return (
     <Box
       sx={{
-        height: { md: '100vh' },
         display: 'flex',
         flexDirection: 'column',
         p: { xs: 1, md: 3 },
@@ -382,16 +403,96 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         </Box>
       )}
 
-      {/* Main Layout */}
+      {/* Top Action Bar — summary + bulk actions (14.C.5) */}
       {!isLoading && (
-        <Grid
-          container
-          spacing={3}
-          sx={{ flex: { md: 1 }, overflow: { xs: 'visible', md: 'hidden' } }}
+        <Paper
+          data-testid="slot-action-bar"
+          role="toolbar"
+          aria-label={t('slotAssignment.actionBar.label')}
+          sx={{
+            p: 2,
+            mb: 3,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'stretch', md: 'center' },
+            gap: 2,
+            flexWrap: 'wrap',
+          }}
         >
-          {/* Left Sidebar: Unassigned Speakers */}
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Paper sx={{ height: { md: '100%' }, overflow: { md: 'hidden' } }}>
+          {/* Session Summary */}
+          <Box
+            sx={{
+              display: 'flex',
+              gap: { xs: 1, md: 3 },
+              flexWrap: 'wrap',
+              flexGrow: 1,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {t('slotAssignment.quickActions.total', { count: totalSessions })}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('slotAssignment.quickActions.assigned', { count: assignedCount })}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('slotAssignment.quickActions.pending', { count: unassignedSessions.length })}
+            </Typography>
+          </Box>
+
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              startIcon={<CalendarMonth />}
+              onClick={() => {
+                setGenerateStructuralError(null);
+                setStructuralAlreadyExist(false);
+                setGenerateStructuralOpen(true);
+              }}
+              data-testid="generate-structural-button"
+            >
+              {t('slotAssignment.actions.generateStructure')}
+            </Button>
+
+            <Button
+              variant="contained"
+              startIcon={<AutoAwesome />}
+              onClick={() => setAutoAssignModalOpen(true)}
+              data-testid="auto-assign-button"
+            >
+              {t('slotAssignment.actions.autoAssign')}
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={<ClearAll />}
+              onClick={() => setClearAllModalOpen(true)}
+              data-testid="clear-all-button"
+            >
+              {t('slotAssignment.actions.clearAll')}
+            </Button>
+          </Box>
+        </Paper>
+      )}
+
+      {/* Success Banner (above the two columns) */}
+      {!isLoading && allSessionsAssigned && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          <Typography variant="body2" gutterBottom>
+            {t('slotAssignment.quickActions.allAssigned')}
+          </Typography>
+          <Link href="#" underline="hover">
+            {t('slotAssignment.quickActions.goToPublishing')}
+          </Link>
+        </Alert>
+      )}
+
+      {/* Main Layout — 2 columns: tray (left) + timeline (right) */}
+      {!isLoading && (
+        <Grid container spacing={3} sx={{ overflow: 'visible' }}>
+          {/* Left: Unassigned Speakers tray */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper>
               <UnassignedSpeakersList
                 sessions={filteredSessions}
                 totalSessions={totalSessions}
@@ -400,16 +501,29 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 activeFilter={speakerFilter}
                 onFilterChange={setSpeakerFilter}
                 isLoading={isLoading}
+                focusSessionSlug={focusSessionSlug}
+                onSessionTap={isMobile ? handleTraySelect : undefined}
+                selectedSessionSlug={selectedSessionSlug}
               />
+              {isMobile && selectedSessionSlug && (
+                <Typography
+                  variant="caption"
+                  color="primary"
+                  sx={{ display: 'block', px: 2, pb: 1 }}
+                  data-testid="tap-assign-hint"
+                >
+                  {t(
+                    'slotAssignment.tapToAssign.placeHint',
+                    '↓ Now tap a highlighted slot to place it'
+                  )}
+                </Typography>
+              )}
             </Paper>
           </Grid>
 
-          {/* Center: Session Timeline Grid */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper
-              data-testid="session-timeline-grid"
-              sx={{ height: { md: '100%' }, overflow: 'auto', p: 2 }}
-            >
+          {/* Right: Session Timeline Grid (drop targets) */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Paper data-testid="session-timeline-grid" sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>
                 {t('slotAssignment.timeline.title')}
               </Typography>
@@ -488,6 +602,9 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                             const matchClass = isHovered ? getPreferenceMatchClass(time) : '';
                             const matchPercent = isHovered ? getPreferenceMatchPercentage(time) : 0;
                             const assignedSession = getSessionForSlot(time, room);
+                            // 14.G.3: an empty cell is "armed" (a tap target) while a
+                            // tray session is tap-selected on mobile.
+                            const armed = isMobile && !assignedSession && !!selectedSessionSlug;
 
                             return (
                               <Grid size={10 / ROOMS.length} key={room}>
@@ -495,10 +612,12 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                                   data-testid={slotId}
                                   data-slot-time={time}
                                   data-slot-room={room}
+                                  data-armed={armed ? 'true' : undefined}
                                   draggable={!!assignedSession}
                                   onDragStart={
                                     assignedSession ? handleDragStart(assignedSession) : undefined
                                   }
+                                  onClick={armed ? handleSlotTap(time, room) : undefined}
                                   className={`${isHovered ? 'drop-zone-active' : ''} ${matchClass}`}
                                   onDragOver={handleDragOver(time, room)}
                                   onDragLeave={handleDragLeave}
@@ -507,17 +626,21 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                                     p: 1,
                                     minHeight: 60,
                                     border: 2,
-                                    borderColor: isHovered
-                                      ? 'primary.main'
-                                      : assignedSession
-                                        ? 'success.main'
-                                        : 'divider',
-                                    borderStyle: isHovered ? 'dashed' : 'solid',
-                                    bgcolor: isHovered
-                                      ? 'action.hover'
-                                      : assignedSession
-                                        ? 'success.light'
-                                        : 'background.default',
+                                    borderColor: armed
+                                      ? 'secondary.main'
+                                      : isHovered
+                                        ? 'primary.main'
+                                        : assignedSession
+                                          ? 'success.main'
+                                          : 'divider',
+                                    borderStyle: isHovered || armed ? 'dashed' : 'solid',
+                                    bgcolor: armed
+                                      ? 'action.selected'
+                                      : isHovered
+                                        ? 'action.hover'
+                                        : assignedSession
+                                          ? 'success.light'
+                                          : 'background.default',
                                     cursor: assignedSession ? 'grab' : 'pointer',
                                     transition: 'all 0.2s',
                                     '&:hover': {
@@ -565,76 +688,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                   })}
                 </Box>
               </Box>
-            </Paper>
-          </Grid>
-
-          {/* Right Sidebar: Quick Actions */}
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Paper data-testid="quick-actions-panel" sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                {t('slotAssignment.quickActions.title')}
-              </Typography>
-
-              {/* Session Summary */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('slotAssignment.quickActions.total', { count: totalSessions })}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('slotAssignment.quickActions.assigned', { count: assignedCount })}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('slotAssignment.quickActions.pending', { count: unassignedSessions.length })}
-                </Typography>
-              </Box>
-
-              {/* Action Buttons */}
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<CalendarMonth />}
-                onClick={() => {
-                  setGenerateStructuralError(null);
-                  setStructuralAlreadyExist(false);
-                  setGenerateStructuralOpen(true);
-                }}
-                sx={{ mb: 2 }}
-                data-testid="generate-structural-button"
-              >
-                {t('slotAssignment.actions.generateStructure')}
-              </Button>
-
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AutoAwesome />}
-                onClick={() => setAutoAssignModalOpen(true)}
-                sx={{ mb: 2 }}
-                data-testid="auto-assign-button"
-              >
-                {t('slotAssignment.actions.autoAssign')}
-              </Button>
-
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<ClearAll />}
-                onClick={() => setClearAllModalOpen(true)}
-              >
-                {t('slotAssignment.actions.clearAll')}
-              </Button>
-
-              {/* Success Banner */}
-              {allSessionsAssigned && (
-                <Alert severity="success" sx={{ mt: 3 }}>
-                  <Typography variant="body2" gutterBottom>
-                    {t('slotAssignment.quickActions.allAssigned')}
-                  </Typography>
-                  <Link href="#" underline="hover">
-                    {t('slotAssignment.quickActions.goToPublishing')}
-                  </Link>
-                </Alert>
-              )}
             </Paper>
           </Grid>
         </Grid>

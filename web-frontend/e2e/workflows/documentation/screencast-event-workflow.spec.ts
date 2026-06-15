@@ -598,7 +598,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.getByTestId('event-tab-speakers').click();
       await page.waitForTimeout(500);
 
-      await page.getByTestId('sessions-view-toggle').click();
+      await page.getByTestId('agenda-view-toggle').click();
       await page.waitForTimeout(1000);
       console.log('    ✓ Sessions view loaded');
 

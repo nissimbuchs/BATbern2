@@ -40,10 +40,21 @@ const envConfig = {
     baseURL: 'https://batbern.ch',
     apiURL: 'https://api.batbern.ch',
   },
-}[testEnv as 'development' | 'staging' | 'production'];
+  // Beta is a frontend-only CANARY: the new SPA build on its own CloudFront/S3
+  // (beta.batbern.ch) served against the SAME production API / Cognito / DB as www.
+  // Used to exercise frontend-only changes (e.g. the Epic 14 redesign) on real infra
+  // before promoting to prod. Tokens are the PRODUCTION (staging-account) role tokens —
+  // run-playwright-tests.sh maps the `beta` env to the staging token files.
+  beta: {
+    baseURL: 'https://beta.batbern.ch',
+    apiURL: 'https://api.batbern.ch',
+  },
+}[testEnv as 'development' | 'staging' | 'production' | 'beta'];
 
 if (!envConfig) {
-  throw new Error(`Invalid TEST_ENV: ${testEnv}. Must be one of: development, staging, production`);
+  throw new Error(
+    `Invalid TEST_ENV: ${testEnv}. Must be one of: development, staging, production, beta`
+  );
 }
 
 console.log(`Running Playwright tests against: ${testEnv} (${envConfig.baseURL})`);
@@ -68,19 +79,29 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry on CI only — overridable via PW_RETRIES (run-playwright-tests.sh sets it for the
+   * local full-gate run, which is contention-prone against a single cold local backend). */
+  retries: process.env.PW_RETRIES ? Number(process.env.PW_RETRIES) : process.env.CI ? 2 : 0,
 
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Opt out of parallel tests on CI; overridable via PW_WORKERS. A high local worker count
+   * hammers the single local JVM backend and is a primary local-flake source for the full
+   * gate, so the run script caps it for big local runs. */
+  workers: process.env.PW_WORKERS ? Number(process.env.PW_WORKERS) : process.env.CI ? 1 : undefined,
 
-  /* Assertion timeout. On CI the @smoke gate runs against a freshly-deployed staging
-   * backend whose ECS tasks are "stable" but not yet JVM-warm, so the first requests
-   * (especially multi-service mutating flows) can take several seconds. Playwright's
-   * 5s default is too tight there and produced a spurious gate failure → rollback
-   * (PR #703, registration flow). 15s on CI absorbs cold-start latency without
-   * masking real regressions; local dev keeps the fast 5s default for tight feedback. */
-  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
+  /* Assertion timeout. On CI the gate runs against a freshly-deployed staging backend whose
+   * ECS tasks are "stable" but not yet JVM-warm, so first requests (especially multi-service
+   * mutating flows) can take several seconds — Playwright's 5s default is too tight there
+   * (spurious gate failure → rollback, PR #703). 15s on CI absorbs cold-start latency without
+   * masking real regressions; local dev keeps the fast 5s default for tight feedback, but the
+   * run script raises it (PW_EXPECT_TIMEOUT) for the local full-gate run, where the cold local
+   * backend under load otherwise produces the same spurious timeouts. */
+  expect: {
+    timeout: process.env.PW_EXPECT_TIMEOUT
+      ? Number(process.env.PW_EXPECT_TIMEOUT)
+      : process.env.CI
+        ? 15_000
+        : 5_000,
+  },
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html'], ['junit', { outputFile: 'test-results/junit.xml' }], ['list']],

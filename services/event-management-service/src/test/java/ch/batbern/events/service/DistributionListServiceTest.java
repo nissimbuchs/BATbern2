@@ -2,11 +2,13 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.dto.generated.users.AdditionalEmail;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +43,9 @@ class DistributionListServiceTest {
 
     @Mock
     private SessionUserRepository sessionUserRepository;
+
+    @Mock
+    private RegistrationRepository registrationRepository;
 
     @Mock
     private UserApiClient userApiClient;
@@ -123,6 +128,27 @@ class DistributionListServiceTest {
     }
 
     @Test
+    @DisplayName("speakers: a generic CUMS failure (5xx/timeout) is swallowed, not propagated")
+    void should_skipUser_when_userApiClientThrowsGenericException() {
+        // PR #788 review item 5: collectUserEmails also catches generic Exception
+        // (UserServiceException / timeout / network) — the resolver must never propagate, or the
+        // inbound-email forwarder's HTTP call 5xxs and SES re-delivers indefinitely.
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
+        SessionUser ok = sessionUserOf("speaker.bob");
+        SessionUser flaky = sessionUserOf("speaker.flaky");
+        when(sessionUserRepository.findScheduledSpeakersByEventId(EVENT_ID))
+                .thenReturn(List.of(ok, flaky));
+        when(userApiClient.getUserByUsername("speaker.bob")).thenReturn(
+                userWithAdditional("speaker.bob", "bob@example.com", List.of()));
+        when(userApiClient.getUserByUsername("speaker.flaky"))
+                .thenThrow(new RuntimeException("CUMS 503 / connection timed out"));
+
+        Set<String> emails = service.resolveSpeakers(EVENT_CODE);
+
+        assertThat(emails).containsExactly("bob@example.com");
+    }
+
+    @Test
     @DisplayName("speakers: empty list when event has no scheduled primary speakers")
     void should_returnEmpty_when_noScheduledPrimarySpeakers() {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
@@ -177,7 +203,64 @@ class DistributionListServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    @Test
+    @DisplayName("participants: returns active registrants' attendeeEmail, lowercased & deduped")
+    void should_returnActiveRegistrantEmails_when_participantsKindRequested() {
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
+        when(registrationRepository.findByEventIdAndStatusIn(EVENT_ID, Registration.CONFIRMED_STATUSES))
+                .thenReturn(List.of(
+                        registrationOf("Anna@Example.com", "anna.attendee"),
+                        registrationOf("ben@example.com", "ben.attendee"),
+                        registrationOf("anna@EXAMPLE.com", "anna.dup"))); // same person, deduped
+
+        Set<String> emails = service.resolveParticipants(EVENT_CODE);
+
+        assertThat(emails).containsExactly("anna@example.com", "ben@example.com");
+    }
+
+    @Test
+    @DisplayName("participants: falls back to CUMS lookup when attendeeEmail is blank")
+    void should_lookupUserEmail_when_attendeeEmailBlank() {
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
+        when(registrationRepository.findByEventIdAndStatusIn(EVENT_ID, Registration.CONFIRMED_STATUSES))
+                .thenReturn(List.of(registrationOf(null, "user.noemail")));
+        when(userApiClient.getUserByUsername("user.noemail")).thenReturn(
+                userWithAdditional("user.noemail", "resolved@example.com", List.of()));
+
+        Set<String> emails = service.resolveParticipants(EVENT_CODE);
+
+        assertThat(emails).containsExactly("resolved@example.com");
+    }
+
+    @Test
+    @DisplayName("participants: empty list when event has no active registrants")
+    void should_returnEmpty_when_noActiveRegistrants() {
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
+        when(registrationRepository.findByEventIdAndStatusIn(EVENT_ID, Registration.CONFIRMED_STATUSES))
+                .thenReturn(List.of());
+
+        Set<String> emails = service.resolveParticipants(EVENT_CODE);
+
+        assertThat(emails).isEmpty();
+    }
+
+    @Test
+    @DisplayName("participants: unknown event throws NotFoundException")
+    void should_throwNotFound_when_eventCodeUnknownOnParticipants() {
+        when(eventRepository.findByEventCode("BATbern999")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resolveParticipants("BATbern999"))
+                .isInstanceOf(NotFoundException.class);
+    }
+
     // ---- helpers ----
+
+    private Registration registrationOf(String attendeeEmail, String attendeeUsername) {
+        return Registration.builder()
+                .attendeeEmail(attendeeEmail)
+                .attendeeUsername(attendeeUsername)
+                .build();
+    }
 
     private SessionUser sessionUserOf(String username) {
         return sessionUserOf(username, SessionUser.SpeakerRole.PRIMARY_SPEAKER);

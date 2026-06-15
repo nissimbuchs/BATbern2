@@ -226,50 +226,52 @@ describe('T7 — Address resolution', () => {
     expect(result).toEqual(['org@test.ch']);
   });
 
-  test('should_resolveEventRegistrants_when_batbern58Address', async () => {
-    mockFetch({
-      'events/BATbern58/registrations': {
-        status: 200,
-        body: {
-          data: [{ attendeeEmail: 'att1@test.ch' }, { attendeeEmail: 'att2@test.ch' }],
-          pagination: { totalPages: 1, page: 0 },
-        },
-      },
-    });
-    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
-    const result = await resolveRecipients('batbern58@batbern.ch');
-    expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
-  });
+  // PR #788: the deprecated bare batbern{N}@ alias now forwards to the SAME participants
+  // distribution-list as batbern{N}-participants@ (consolidated; logs a deprecation warning).
+  test('should_resolveParticipants_when_deprecatedBatbern58Address', async () => {
+    const calledUrls: string[] = [];
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      global.fetch = jest.fn(async (url: string | URL | Request) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        calledUrls.push(urlStr);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            eventCode: 'BATbern58',
+            kind: 'participants',
+            emails: ['att1@test.ch', 'att2@test.ch'],
+          }),
+        } as Response;
+      }) as jest.Mock;
 
-  test('should_paginateRegistrants_when_multiplePages', async () => {
-    mockFetch({
-      'page=0': {
-        status: 200,
-        body: {
-          data: [{ attendeeEmail: 'att1@test.ch' }],
-          pagination: { totalPages: 2, page: 0 },
-        },
-      },
-      'page=1': {
-        status: 200,
-        body: {
-          data: [{ attendeeEmail: 'att2@test.ch' }],
-          pagination: { totalPages: 2, page: 1 },
-        },
-      },
-    });
-    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
-    const result = await resolveRecipients('batbern58@batbern.ch');
-    expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
+      const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+      const result = await resolveRecipients('batbern58@batbern.ch');
+
+      expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
+      // Routes through the participants distribution-list, NOT the old /registrations endpoint.
+      expect(calledUrls).toHaveLength(1);
+      expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern58\/distribution-list\/participants$/);
+      // Emits a deprecation warning so we can track residual use before retiring it.
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Deprecated alias batbern58@'));
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('should_returnEmpty_when_eventNotFound', async () => {
-    mockFetch({
-      'events/BATbern999/registrations': { status: 404, body: {} },
-    });
-    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
-    const result = await resolveRecipients('batbern999@batbern.ch');
-    expect(result).toEqual([]);
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      mockFetch({
+        'events/BATbern999/distribution-list/participants': { status: 404, body: {} },
+      });
+      const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+      const result = await resolveRecipients('batbern999@batbern.ch');
+      expect(result).toEqual([]);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('should_returnEmpty_when_unknownAddress', async () => {
@@ -424,6 +426,30 @@ describe('T7 — Address resolution', () => {
     expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/moderator$/);
   });
 
+  test('should_callParticipantsDistributionList_when_batbernNParticipantsAddress', async () => {
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          eventCode: 'BATbern99',
+          kind: 'participants',
+          emails: ['attendee1@example.com', 'attendee2@example.com'],
+        }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-participants@batbern.ch');
+
+    expect(result).toEqual(['attendee1@example.com', 'attendee2@example.com']);
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/participants$/);
+  });
+
   test('should_returnEmpty_when_distributionListEventUnknown_logsWarn', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     try {
@@ -573,6 +599,22 @@ describe('T8 — Sender authorization', () => {
     resetCache();
     const result = await isAuthorizedSender('batbern58@batbern.ch', 'random@test.ch');
     expect(result).toBe(false);
+  });
+
+  test('should_rejectNonOrganizer_when_sendingToParticipantsAlias', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern59-participants@batbern.ch', 'random@test.ch');
+    expect(result).toBe(false);
+  });
+
+  test('should_allowOrganizer_when_sendingToParticipantsAlias', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern59-participants@batbern.ch', 'org@test.ch');
+    expect(result).toBe(true);
   });
 
   test('should_allowAnyone_when_sendingToInfo', async () => {

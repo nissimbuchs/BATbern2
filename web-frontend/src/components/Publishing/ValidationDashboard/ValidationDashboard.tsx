@@ -88,7 +88,9 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
   }, [overallValid, t]);
 
   const handleAssignTimingsClick = () => {
-    navigate(`/organizer/events/${eventCode}/slot-assignment`);
+    // 14.C.5: slot assignment is in-tab now — land on Speakers · Slots, not the
+    // retired dedicated route.
+    navigate(`/organizer/events/${eventCode}?tab=speakers&view=slots`);
   };
 
   const handleToggleExpand = () => {
@@ -112,7 +114,7 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
   };
 
   return (
-    <Paper sx={{ p: 2 }}>
+    <Paper sx={{ p: 2, flexGrow: 1 }}>
       {/* Screen reader announcement */}
       <div role="status" aria-live="polite" style={{ position: 'absolute', left: '-10000px' }}>
         {statusAnnouncement}

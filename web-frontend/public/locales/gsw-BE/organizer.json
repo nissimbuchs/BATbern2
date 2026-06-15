@@ -111,7 +111,10 @@
       "filterClearedAnnouncement": "Spalte-Filter ufghoben",
       "filterAppliedAnnouncement": "Spalte {{state}} gfilteret, {{count}} Charte sichtbar"
     },
-    "selfNominated": "Sälber vorgschla"
+    "selfNominated": "Sälber vorgschla",
+    "needsASlot": "⚠ Brucht e Slot →",
+    "slotAssigned": "Slot zuegwise",
+    "slotAssignedAt": "✓ {{time}}"
   },
   "speakerContent": {
     "bioLabel": "Short CV / bio (optional)",
@@ -136,7 +139,8 @@
     "declineDialog": {
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
-    }
+    },
+    "invalidColumnTooltip": "Kei gültige Vorwärtsschritt i die Spalte."
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -160,5 +164,23 @@
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "Überarbeitig vom Abstract aagfrogt vo {{actor}}"
     }
+  },
+  "speakerStatus": {
+    "IDENTIFIED": "Identifiziert",
+    "CONTACTED": "Kontaktiert",
+    "READY": "Parat",
+    "INVITED": "Iglade",
+    "ACCEPTED": "Zuegseit",
+    "CONTENT_SUBMITTED": "Inhalt iigreicht",
+    "QUALITY_REVIEWED": "Quali-Check",
+    "DECLINED": "Abgseit",
+    "phaseColumns": {
+      "sourcing": "Sueche",
+      "inviting": "Iiladig",
+      "content": "Inhalt",
+      "confirmed": "Bestätigt"
+    },
+    "declinedStrip": "▸ Abgseit ({{count}})",
+    "waitingOnSpeakerDivider": "Wart uf Referänt"
   }
 }

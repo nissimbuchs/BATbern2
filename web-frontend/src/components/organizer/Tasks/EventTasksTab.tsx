@@ -42,6 +42,7 @@ import { useQuery } from '@tanstack/react-query';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { CustomTaskModal } from './CustomTaskModal';
 import { OrganizerSelect, useOrganizers } from '@/components/shared/OrganizerSelect';
+import { OrganizerChip } from '@/components/shared/OrganizerChip';
 
 interface EventTasksTabProps {
   eventId: string | null; // Null for new event creation
@@ -107,12 +108,6 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
 
   return (
     <Box data-testid="event-tasks-tab-content">
-      <Typography variant="body2" color="text.secondary" gutterBottom>
-        {t('tasks.eventTasksDescription')}
-      </Typography>
-
-      <Divider sx={{ my: 3 }} />
-
       {/* Default Templates Section */}
       <Stack spacing={2}>
         <Typography variant="h6">{t('tasks.defaultTemplates')}</Typography>
@@ -178,7 +173,11 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                         title={
                           <Stack spacing={0.5}>
                             <Typography variant="caption">
-                              <strong>{t('tasks.triggerState')}:</strong> {template.triggerState}
+                              <strong>{t('tasks.triggerState')}:</strong>{' '}
+                              {t(
+                                `tasks.workflowStates.${template.triggerState}`,
+                                template.triggerState
+                              )}
                             </Typography>
                             <Typography variant="caption">
                               <strong>{t('tasks.dueDate')}:</strong>{' '}
@@ -284,7 +283,10 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                               <Stack spacing={0.5}>
                                 <Typography variant="caption">
                                   <strong>{t('tasks.triggerState')}:</strong>{' '}
-                                  {template.triggerState}
+                                  {t(
+                                    `tasks.workflowStates.${template.triggerState}`,
+                                    template.triggerState
+                                  )}
                                 </Typography>
                                 <Typography variant="caption">
                                   <strong>{t('tasks.dueDate')}:</strong>{' '}
@@ -376,12 +378,20 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                     secondary={
                       <Stack spacing={0.5} mt={0.5}>
                         <Typography variant="caption">
-                          {t('tasks.trigger')}: {task.triggerState}
+                          {t('tasks.trigger')}:{' '}
+                          {t(`tasks.workflowStates.${task.triggerState}`, task.triggerState)}
                         </Typography>
-                        <Typography variant="caption">
-                          {t('tasks.assignedTo')}:{' '}
-                          {task.assignedOrganizerUsername || t('tasks.unassigned')}
-                        </Typography>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Typography variant="caption">{t('tasks.assignedTo')}:</Typography>
+                          {task.assignedOrganizerUsername ? (
+                            <OrganizerChip
+                              username={task.assignedOrganizerUsername}
+                              organizers={organizers}
+                            />
+                          ) : (
+                            <Typography variant="caption">{t('tasks.unassigned')}</Typography>
+                          )}
+                        </Stack>
                         {task.notes && (
                           <Typography variant="caption" sx={{ fontStyle: 'italic' }}>
                             {task.notes}

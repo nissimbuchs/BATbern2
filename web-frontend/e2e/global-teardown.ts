@@ -27,10 +27,12 @@ async function globalTeardown(): Promise<void> {
   const os = await import('os');
   const path = await import('path');
 
+  // Beta shares the PRODUCTION Cognito → its tokens live in the staging token files.
+  const tokenEnv = testEnv === 'beta' ? 'staging' : testEnv;
   const batbernDir = path.join(os.homedir(), '.batbern');
   const candidates = [
-    path.join(batbernDir, `${testEnv}-organizer.json`),
-    path.join(batbernDir, `${testEnv}.json`), // legacy organizer file
+    path.join(batbernDir, `${tokenEnv}-organizer.json`),
+    path.join(batbernDir, `${tokenEnv}.json`), // legacy organizer file
   ];
 
   const tokenFile = candidates.find((f) => fs.existsSync(f));

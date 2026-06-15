@@ -119,15 +119,15 @@ describe('EventParticipantFilters', () => {
     });
   });
 
-  describe('Status Filter', () => {
-    it('should call setFilters when status changes', () => {
+  describe('Status Filter (segmented control — Epic 14 FR26)', () => {
+    it('should call setFilters when a status is selected', () => {
       render(<EventParticipantFilters />);
 
-      const confirmedRadio = screen.getByRole('radio', {
+      const confirmedToggle = screen.getByRole('button', {
         name: 'eventPage.participantFilters.status.confirmed',
       });
 
-      fireEvent.click(confirmedRadio);
+      fireEvent.click(confirmedToggle);
 
       expect(mockSetFilters).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -136,16 +136,20 @@ describe('EventParticipantFilters', () => {
       );
     });
 
-    it('should show "All" as default when no status filter is set', () => {
+    it('should send the canonical WAITLIST status (not WAITLISTED) for the Waitlisted segment — FR28', () => {
       render(<EventParticipantFilters />);
 
-      const allRadio = screen.getByRole('radio', {
-        name: 'eventPage.participantFilters.status.all',
-      });
-      expect(allRadio).toBeChecked();
+      const waitlistToggle = screen.getByTestId('participant-status-WAITLIST');
+      fireEvent.click(waitlistToggle);
+
+      expect(mockSetFilters).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: ['WAITLIST'],
+        })
+      );
     });
 
-    it('should show selected status from store', () => {
+    it('should clear the status filter when "All" is selected', () => {
       (useEventParticipantStore as ReturnType<typeof vi.fn>).mockReturnValue({
         filters: { status: ['CONFIRMED'] },
         searchQuery: '',
@@ -156,10 +160,37 @@ describe('EventParticipantFilters', () => {
 
       render(<EventParticipantFilters />);
 
-      const confirmedRadio = screen.getByRole('radio', {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'eventPage.participantFilters.status.all' })
+      );
+
+      expect(mockSetFilters).toHaveBeenCalledWith(expect.objectContaining({ status: undefined }));
+    });
+
+    it('should show "All" as pressed when no status filter is set', () => {
+      render(<EventParticipantFilters />);
+
+      const allToggle = screen.getByRole('button', {
+        name: 'eventPage.participantFilters.status.all',
+      });
+      expect(allToggle).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('should reflect the selected status from the store as pressed', () => {
+      (useEventParticipantStore as ReturnType<typeof vi.fn>).mockReturnValue({
+        filters: { status: ['CONFIRMED'] },
+        searchQuery: '',
+        setFilters: mockSetFilters,
+        setSearchQuery: mockSetSearchQuery,
+        resetFilters: mockResetFilters,
+      });
+
+      render(<EventParticipantFilters />);
+
+      const confirmedToggle = screen.getByRole('button', {
         name: 'eventPage.participantFilters.status.confirmed',
       });
-      expect(confirmedRadio).toBeChecked();
+      expect(confirmedToggle).toHaveAttribute('aria-pressed', 'true');
     });
   });
 

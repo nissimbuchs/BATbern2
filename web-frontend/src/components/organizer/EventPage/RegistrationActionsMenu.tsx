@@ -19,11 +19,16 @@ import {
   Button,
   Snackbar,
   Alert,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Cancel as CancelIcon,
   Delete as DeleteIcon,
   Email as EmailIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -37,15 +42,26 @@ import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 interface RegistrationActionsMenuProps {
   participant: EventParticipant;
+  /**
+   * 'inline' (default, desktop table): a row of action icon buttons.
+   * 'overflow' (mobile cards, Story 14.G.4): a single ⋯ button → a Menu of the
+   * same actions (FR47).
+   */
+  variant?: 'inline' | 'overflow';
 }
 
-const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ participant }) => {
+const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({
+  participant,
+  variant = 'inline',
+}) => {
   const { t } = useTranslation('events');
   const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const closeMenu = () => setMenuAnchor(null);
 
   // Cancel registration mutation
   const cancelMutation = useMutation({
@@ -99,46 +115,111 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ parti
 
   return (
     <>
-      <Box sx={{ display: 'flex', gap: 0.5 }}>
-        {showResendButton && (
-          <Tooltip title={t('eventPage.participantTable.actions.resendConfirmation')}>
+      {variant === 'overflow' ? (
+        <>
+          <Tooltip title={t('eventPage.participantTable.actions.menu', 'Actions')}>
             <IconButton
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                resendMutation.mutate();
+                setMenuAnchor(e.currentTarget);
               }}
-              disabled={resendMutation.isPending}
-              sx={{ color: 'info.main' }}
+              data-testid="registration-actions-overflow"
+              aria-label={t('eventPage.participantTable.actions.menu', 'Actions')}
             >
-              <EmailIcon fontSize="small" />
+              <MoreVertIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-        )}
-        {showCancelButton && (
-          <Tooltip title={t('eventPage.participantTable.actions.cancel')}>
+          <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={closeMenu}>
+            {showResendButton && (
+              <MenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeMenu();
+                  resendMutation.mutate();
+                }}
+                disabled={resendMutation.isPending}
+              >
+                <ListItemIcon>
+                  <EmailIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>
+                  {t('eventPage.participantTable.actions.resendConfirmation')}
+                </ListItemText>
+              </MenuItem>
+            )}
+            {showCancelButton && (
+              <MenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeMenu();
+                  cancelMutation.mutate();
+                }}
+                disabled={cancelMutation.isPending}
+              >
+                <ListItemIcon>
+                  <CancelIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>{t('eventPage.participantTable.actions.cancel')}</ListItemText>
+              </MenuItem>
+            )}
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                closeMenu();
+                setDeleteDialogOpen(true);
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              <ListItemIcon>
+                <DeleteIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>{t('eventPage.participantTable.actions.delete')}</ListItemText>
+            </MenuItem>
+          </Menu>
+        </>
+      ) : (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          {showResendButton && (
+            <Tooltip title={t('eventPage.participantTable.actions.resendConfirmation')}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resendMutation.mutate();
+                }}
+                disabled={resendMutation.isPending}
+                sx={{ color: 'info.main' }}
+              >
+                <EmailIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {showCancelButton && (
+            <Tooltip title={t('eventPage.participantTable.actions.cancel')}>
+              <IconButton
+                size="small"
+                onClick={handleCancelClick}
+                disabled={cancelMutation.isPending}
+                sx={{ color: 'warning.main' }}
+              >
+                <CancelIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          <Tooltip title={t('eventPage.participantTable.actions.delete')}>
             <IconButton
               size="small"
-              onClick={handleCancelClick}
-              disabled={cancelMutation.isPending}
-              sx={{ color: 'warning.main' }}
+              onClick={handleDeleteClick}
+              disabled={deleteMutation.isPending}
+              sx={{ color: 'error.main' }}
             >
-              <CancelIcon fontSize="small" />
+              <DeleteIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-        )}
-
-        <Tooltip title={t('eventPage.participantTable.actions.delete')}>
-          <IconButton
-            size="small"
-            onClick={handleDeleteClick}
-            disabled={deleteMutation.isPending}
-            sx={{ color: 'error.main' }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Box>
+        </Box>
+      )}
 
       {/* Resend success/error feedback */}
       <Snackbar

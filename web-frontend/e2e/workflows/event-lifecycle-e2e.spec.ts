@@ -18,7 +18,7 @@
  *       – depended on the speaker workflow + content flows that belong to slice 8 (speaker pool),
  *         and on automatic/cron transitions a UI walk can't drive deterministically.
  *
- * Reality (verified in EventWorkflowController / EventWorkflowStateMachine / EventOverviewTab):
+ * Reality (verified in EventWorkflowController / EventWorkflowStateMachine / CockpitTab):
  *   • The 8-state lifecycle is CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION →
  *     SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED. Most
  *     transitions are AUTOMATIC (event listeners + cron at 00:01/23:59 Bern), so a pure-UI walk
@@ -81,10 +81,13 @@ test.describe('Event Lifecycle workflow walk (Story 5.1a)', { tag: '@gate' }, ()
     }
   });
 
-  /** Navigate to the event overview tab (default) and return the workflow badge locator. */
+  /** Navigate to the event landing tab (Cockpit) and return the lifecycle-spine locator.
+   *  Epic 14 (14.B.1/14.F.5): the old overview `workflow-status-badge` was removed with the
+   *  interim Overview; the Cockpit `LifecycleSpine` is the landing surface and carries the raw
+   *  state on `data-workflow-state` for locale-independent assertions. */
   async function openOverview(page: Page) {
     await page.goto(`/organizer/events/${fixtureEvent.eventCode}`);
-    const badge = page.getByTestId('workflow-status-badge');
+    const badge = page.getByTestId('cockpit-lifecycle-spine');
     await expect(badge).toBeVisible();
     return badge;
   }

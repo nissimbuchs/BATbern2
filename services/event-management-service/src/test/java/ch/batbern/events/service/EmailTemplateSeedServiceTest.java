@@ -90,6 +90,21 @@ class EmailTemplateSeedServiceTest {
     }
 
     @Test
+    @DisplayName("should return REGISTRANT_NOTICE category for slides-online key")
+    void should_deriveCategory_forSlidesOnlineKey() {
+        String category = emailTemplateSeedService.deriveCategory("slides-online");
+        assertThat(category).isEqualTo("REGISTRANT_NOTICE");
+    }
+
+    @Test
+    @DisplayName("should return REGISTRANT_NOTICE category for registrant-notice-* keys")
+    void should_deriveCategory_forRegistrantNoticeKey() {
+        String category =
+                emailTemplateSeedService.deriveCategory("registrant-notice-deregistration-call");
+        assertThat(category).isEqualTo("REGISTRANT_NOTICE");
+    }
+
+    @Test
     @DisplayName("should parse filename: layout-batbern-default-de.html → key=batbern-default, locale=de, isLayout=true")
     void should_parseLayoutFilename() {
         EmailTemplateSeedService.ParsedFilename parsed =

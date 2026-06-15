@@ -1,0 +1,48 @@
+meta {
+  name: Posttest cleanup — final sweep of Test Custom Template task templates
+  type: http
+  seq: 99.7
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "task_templates",
+    "prefix": "Test Custom Template"
+  }
+}
+
+tests {
+  test("posttest task-template cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, task_templates deletion count is reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.task_templates).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Final sweep removing the "Test Custom Template" task template that
+  02-create-task-template.bru creates this run (saveAsTemplate=true). Pairs with the
+  pretest hook 00c-pretest-cleanup-task-templates.bru so each run leaves no leftover
+  custom template behind on the shared (= production) DB.
+}

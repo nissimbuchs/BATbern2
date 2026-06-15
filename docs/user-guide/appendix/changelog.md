@@ -43,10 +43,17 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Improvements — Organizer Communications (Epic 14, 2026-06-15)**:
+- ✅ Two "deregistration call" registrant-notice templates (DE + EN) — ask registrants of a fully-booked event to free their seat; selectable in Communications → Event registrants:
+  - `registrant-notice-deregistration-call` — one-click cancel via a per-recipient `{{deregistrationUrl}}` (requires the send-side injection below; available once the backend deploys)
+  - `registrant-notice-deregistration-call-selfservice` — points to the already-live self-service ("Cancel my registration" on the event page → enter email → confirm link); works with no deploy
+- ✅ Registrant-notice sends now inject a per-recipient one-click `{{deregistrationUrl}}` (self-service cancel link, no login) — "Way 1"
+- ✅ New `batbern{N}-participants@batbern.ch` mailing alias fans out to every active registrant — "Way 2" (same audience as Way 1)
+- ✅ Consolidated the older bare `batbern{N}@batbern.ch` alias: now **deprecated** and forwards to the same participants resolution as `batbern{N}-participants@` (clearer name, matches `-speaker@`/`-moderator@`); logs a deprecation warning, sender auth unchanged (organizers only)
+
 > **Note**: The former "v1.3.0 — Speaker Authentication Unification (Epic 9)" plan has shipped in a
 > different form. Epic 9's JWT magic-link approach was **superseded** by Epic 11 (unified Cognito
 > speaker workflow) and Epic 12 (Google SSO), both released in v1.3.0 below.
-
 ---
 
 ## v1.3.x - Current Release

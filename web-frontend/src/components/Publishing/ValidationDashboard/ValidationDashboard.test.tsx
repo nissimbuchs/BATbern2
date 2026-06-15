@@ -111,7 +111,8 @@ describe('ValidationDashboard', () => {
       expect(screen.getByRole('button', { name: /assign timings/i })).toBeInTheDocument();
     });
 
-    it('should navigate to slot assignment page when [Assign Timings] clicked', async () => {
+    it('should navigate to in-tab Slots sub-view when [Assign Timings] clicked', async () => {
+      // 14.C.5: slot assignment is now in-tab — repoint to ?tab=speakers&view=slots.
       const validation = {
         topic: { isValid: true, errors: [] },
         speakers: { isValid: true, errors: [] },
@@ -129,7 +130,9 @@ describe('ValidationDashboard', () => {
       fireEvent.click(assignButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/organizer/events/BATbern142/slot-assignment');
+        expect(mockNavigate).toHaveBeenCalledWith(
+          '/organizer/events/BATbern142?tab=speakers&view=slots'
+        );
       });
     });
 

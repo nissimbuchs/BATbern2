@@ -61,6 +61,7 @@ public class ParticipantsController {
         Set<String> emails = switch (kind) {
             case "speakers" -> distributionListService.resolveSpeakers(eventCode);
             case "moderator" -> distributionListService.resolveModerator(eventCode);
+            case "participants" -> distributionListService.resolveParticipants(eventCode);
             default -> throw new ch.batbern.shared.exception.NotFoundException(
                     "Unknown distribution-list kind: " + kind);
         };

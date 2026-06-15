@@ -6,6 +6,60 @@
     "blobSelector": "Sélecteur de blob"
   },
   "eventPage": {
+    "cockpit": {
+      "spine": {
+        "stepOf": "Step {{current}} of {{total}}"
+      },
+      "emphasis": {
+        "created": "Define the event — fill in the details and pick a topic.",
+        "topic": "Confirm the topic, assign a moderator, and start the speaker pool.",
+        "speakers": "Fill the speaker pool; review submissions and start slotting as speakers confirm.",
+        "slots": "Assign speakers to time slots and finish reviews, then publish the agenda.",
+        "finalize": "Agenda is live — collect outstanding presentations, watch registrations, and send the final newsletter and catering request by their due dates. Day-of controls are available for rehearsal.",
+        "live": "Run the event — present the deck or open Live Control.",
+        "wrapup": "Send \"slides are online\", upload photos, and curate thank-you notes.",
+        "archived": "Event archived — read-only."
+      },
+      "attention": {
+        "title": "Needs your attention",
+        "addTask": "Add task",
+        "open": "Open {{tab}} →",
+        "go": "Open →",
+        "retry": "Retry",
+        "loadError": "Couldn't load your tasks.",
+        "allCaught": "You're all caught up — nothing needs your attention right now."
+      },
+      "due": {
+        "overdue": "Overdue · {{days}} days",
+        "dueSoon": "Due in {{days}} days",
+        "upcoming": "Upcoming",
+        "live": "Now · event is live",
+        "eventDay": "Jour de l’événement · {{date}}"
+      },
+      "cards": {
+        "addDetailsPickTopic": "Add event details & pick a topic",
+        "confirmTopic": "Confirm the topic",
+        "publishAgenda": "Finalize & publish the agenda",
+        "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
+        "needsSlot": "{{count}} sessions still need a slot",
+        "reviewSubmissions": "Review speaker submissions",
+        "outstandingPresentations": "Collect outstanding presentations",
+        "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
+        "startPresentation": "🔴 Start the presentation",
+        "openLiveControl": "📡 Open Live Control"
+      },
+      "tiles": {
+        "registrations": "Registrations",
+        "speakers": "Speakers",
+        "materials": "Materials",
+        "agenda": "Agenda",
+        "filled": "{{percent}}% filled",
+        "waitlist": "{{count}} on waitlist"
+      },
+      "atAGlance": {
+        "title": "At a glance"
+      }
+    },
     "tabs": {
       "venue": "Lieu",
       "participants": "Participants",
@@ -14,7 +68,13 @@
       "settings": "Paramètres",
       "photos": "Photos",
       "registrantNotices": "Infos participants",
-      "appreciation": "Remerciements"
+      "appreciation": "Remerciements",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Intervenants & Programme",
+      "registrations": "Inscriptions",
+      "communications": "Communications",
+      "wrapup": "Bilan",
+      "details": "Détails"
     },
     "tabsAriaLabel": "Navigation de la page événement",
     "overview": {
@@ -52,7 +112,9 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Promouvoir depuis la liste d'attente ?",
+      "promoteConfirmMessage": "Promouvoir {{name}} depuis la liste d'attente ? La personne sera confirmée et recevra un e-mail de confirmation."
     },
     "participantTable": {
       "headers": {
@@ -64,7 +126,8 @@
         "delete": "Supprimer l'inscription",
         "resendConfirmation": "Renvoyer l'e-mail de confirmation",
         "resendSuccess": "E-mail de confirmation renvoyé avec succès",
-        "resendError": "Échec de l'envoi de l'e-mail de confirmation"
+        "resendError": "Échec de l'envoi de l'e-mail de confirmation",
+        "menu": "Actions"
       },
       "deleteDialog": {
         "title": "Supprimer l'inscription",
@@ -96,7 +159,9 @@
       },
       "actions": {
         "retry": "Réessayer"
-      }
+      },
+      "showing": "Affichage de {{from}}–{{to}} sur {{total}}",
+      "showingEmpty": "Affichage de 0 sur 0"
     },
     "settings": {
       "moderator": "Modérateur de l'événement",
@@ -162,7 +227,17 @@
       "addSpeakers": "Ajouter des intervenants",
       "addToPool": "Ajouter des intervenants au pool",
       "kanbanView": "Vue Kanban",
-      "sessionsView": "Vue sessions"
+      "sessionsView": "Vue sessions",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Créneaux",
+      "poolView": "Vue du pool d’intervenants",
+      "agendaView": "Vue agenda",
+      "slotsView": "Vue des créneaux",
+      "needsSlotSummary": "{{count}} sur {{total}} sessions ont besoin d’un créneau",
+      "allSlotted": "Toutes les sessions sont planifiées",
+      "arrangeSlots": "Organiser les créneaux",
+      "noSessionsYet": "Aucune session pour l’instant"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -233,6 +308,74 @@
       "sendResultSkipped": "{{count}} sans adresse e-mail enregistrée (ignorés).",
       "sendResultFailed": "{{count}} en échec.",
       "alreadySent": "Cette information a déjà été envoyée (ou un envoi est en cours) pour cet événement."
+    },
+    "lockedTabSuffix": "{{tab}} (verrouillé jusqu'au début de l'événement)",
+    "details": {
+      "heading": "Détails de l'événement",
+      "intro": "Identité, thème et calendrier de l'événement. À définir tôt — ils changent rarement.",
+      "editButton": "Modifier les détails",
+      "noTopic": "Aucun thème sélectionné",
+      "subtabs": {
+        "info": "Infos",
+        "tasks": "Tâches",
+        "settings": "Paramètres"
+      },
+      "whenWhere": "Quand & où",
+      "changeTopic": "Changer le sujet",
+      "aiAssist": "✨ Générer par IA",
+      "save": "Enregistrer",
+      "saved": "Modifications enregistrées",
+      "aiGenerateImage": "✨ Générer (IA)",
+      "aiGenerateDescription": "✨ Générer la description par IA",
+      "uploadImage": "Cliquez pour téléverser une image",
+      "uploadingImage": "Téléversement…",
+      "replaceImage": "Remplacer l'image"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Abonnés à la newsletter",
+        "registrants": "Participants à l'événement",
+        "speakers": "Intervenants",
+        "venue": "Lieu et traiteur"
+      }
+    },
+    "speakerComms": {
+      "title": "Rappels aux intervenants",
+      "description": "Envoyez un rappel d'échéance aux intervenants qui doivent encore une réponse ou leur contenu. Chaque intervenant reçoit un e-mail individuel — les invitations et relances ponctuelles restent sur la fiche de l'intervenant.",
+      "reminderType": "Type de rappel",
+      "typeResponse": "Échéance de réponse (intervenants invités)",
+      "typeContent": "Échéance de contenu (intervenants ayant accepté)",
+      "recipientCount": "{{count}} intervenant(s) seront relancés",
+      "empty": "Aucun intervenant n'attend actuellement ce rappel.",
+      "send": "Envoyer les rappels",
+      "confirmTitle": "Envoyer les rappels aux intervenants ?",
+      "confirmBody": "Envoyer un rappel « {{type}} » à {{count}} intervenant(s) de «{{eventTitle}}» ? Chacun reçoit un e-mail individuel.",
+      "sending": "Envoi des rappels…",
+      "result": "{{sent}} envoyés, {{failed}} en échec.",
+      "retryFailed": "Réessayer les {{count}} en échec",
+      "loadError": "Impossible de charger le pool d'intervenants.",
+      "retry": "Réessayer",
+      "noPreview": "Les rappels sont envoyés avec les modèles standards dans la langue de chaque intervenant·e — aucun aperçu à afficher."
+    },
+    "topicOverlay": {
+      "title": "Sujet & intervenants",
+      "pickHeading": "Choisir un sujet",
+      "searchPlaceholder": "Rechercher des sujets",
+      "emptyHint": "Aucun sujet ne correspond — ajustez les filtres ou la recherche.",
+      "similarityWarning": "Sujet similaire détecté",
+      "selectAnyway": "Sélectionner quand même…",
+      "banner": {
+        "selected": "Sujet sélectionné",
+        "change": "Changer de sujet"
+      },
+      "footer": {
+        "skip": "Plus tard",
+        "continue": "Continuer vers la prise de contact →"
+      }
+    },
+    "mobile": {
+      "more": "Plus",
+      "moreSheetTitle": "Plus"
     }
   },
   "dashboard": {
@@ -345,7 +488,9 @@
     "criticalTasksWidget": "Tâches critiques",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Supprimer cette tâche ?",
+    "deleteConfirmBody": "Supprimer « {{name}} » ? Action irréversible."
   },
   "form": {
     "createEvent": "Créer un nouvel événement",
@@ -581,6 +726,11 @@
       "speakers": "Conférenciers",
       "agenda": "Programme",
       "updates": "Mises à jour"
+    },
+    "sections": {
+      "validation": "Validation",
+      "phases": "Phase de publication",
+      "publishNext": "Publier la phase suivante"
     }
   },
   "notifications": {
@@ -810,6 +960,12 @@
         "projector": "Projecteur",
         "recording": "Enregistrement"
       }
+    },
+    "actionBar": {
+      "label": "Actions d'attribution des créneaux"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Touchez maintenant un créneau en surbrillance pour la placer"
     }
   },
   "newsletter": {

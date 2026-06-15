@@ -22,8 +22,13 @@ const PUBLIC_ADDRESSES = new Set(['info', 'events', 'support']);
  * Check if the sender is authorized to use the given forwarding address.
  *
  * Authorization rules:
- *   ok@, partner@, batbern{N}@, batbern{N}-speaker@ → organizers only
+ *   ok@, partner@, batbern{N}@, batbern{N}-speaker@, batbern{N}-participants@ → organizers only
  *   info@, events@, support@, batbern{N}-moderator@ → anyone
+ *
+ * The model is fail-closed: any address that is neither a PUBLIC_ADDRESS nor the
+ * moderator contact alias falls through to the organizer-only check. So a mass-mail
+ * alias like batbern{N}-participants@ is organizer-restricted WITHOUT needing its own
+ * branch — never add such an alias to PUBLIC_ADDRESSES.
  */
 export async function isAuthorizedSender(
   toAddress: string,
@@ -47,8 +52,10 @@ export async function isAuthorizedSender(
     return true;
   }
 
-  // batbern{N}-speaker@ → mass-mail to event speakers, organizers only
-  // (falls through to the shared organizer check below).
+  // batbern{N}-speaker@ → mass-mail to event speakers, organizers only.
+  // batbern{N}-participants@ → mass-mail to all event registrants, organizers only.
+  // Both intentionally fall through to the shared organizer check below — a non-organizer
+  // must never be able to blast every speaker or participant.
 
   // Restricted addresses: organizers only
   const organizerEmails = await getOrganizerEmails();

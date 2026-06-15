@@ -29,7 +29,9 @@ public class TestFixtureCleanupRequest {
     @Schema(
             description = "Which EMS-owned entity table to clean. Each entity has its own bound regex.",
             example = "events",
-            allowableValues = {"events", "sessions", "topics", "events_by_number", "notifications"},
+            allowableValues = {
+                "events", "sessions", "topics", "events_by_number", "notifications", "task_templates"
+            },
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String entityType;

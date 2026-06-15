@@ -46,7 +46,7 @@ test.describe(
       return ev.eventCode;
     }
 
-    test('should not render CONTACTED sub-line when no cards are stale (negative-case regression)', async ({
+    test('should place a CONTACTED card in the Sourcing column with its exact-state chip', async ({
       page,
     }) => {
       const eventCode = await freshEvent();
@@ -54,12 +54,18 @@ test.describe(
       await setSpeakerStatus(token, eventCode, speakerId, 'CONTACTED');
 
       await page.goto(`/organizer/events/${eventCode}?tab=speakers&view=kanban`);
-      await expect(page.getByTestId(`speaker-card-${speakerId}`)).toBeVisible();
 
-      // The CONTACTED sub-line only appears when at least one card is "stale" (>14 days since
-      // state entry). Freshly-seeded data → sub-line absent; the lane heading still renders.
-      await expect(page.getByTestId('status-lane-subline-contacted')).toHaveCount(0);
-      await expect(page.getByTestId('status-lane-heading-contacted')).toBeVisible();
+      // Epic 14 (14.C.2): the kanban is 4 PHASE columns, not per-state lanes. CONTACTED lives
+      // in the "Sourcing" column (IDENTIFIED + CONTACTED) and the card carries its exact state
+      // on a `state-chip-{id}` chip. The stale-data sub-line the per-state lanes used to render
+      // was removed with the lane redesign — it is now covered deterministically by the Vitest
+      // suite SpeakerStatusLanes.test.tsx (see file header).
+      await expect(page.getByTestId('phase-column-heading-sourcing')).toBeVisible();
+      await expect(page.getByTestId(`speaker-card-${speakerId}`)).toBeVisible();
+      await expect(page.getByTestId(`state-chip-${speakerId}`)).toHaveAttribute(
+        'data-state',
+        'CONTACTED'
+      );
     });
 
     test('should render time-in-state chip with data-severity attribute (Story 11.D.3 wire-up)', async ({

@@ -106,6 +106,10 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         // notifications carry no FK to events (ADR-003 soft string ref), so they are NOT
         // reached by eventRepository.deleteAll() — clear them explicitly.
         notificationRepository.deleteAll();
+        // Clear non-default task templates so the task-template cleanup tests start from a
+        // deterministic slate (only the migration-seeded defaults remain). event_tasks were
+        // already cascade-cleared by eventRepository.deleteAll() above, so no FK blocks this.
+        jdbcTemplate.update("DELETE FROM task_templates WHERE is_default = false");
     }
 
     // ---------- Authorization ----------
@@ -593,6 +597,117 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
                     .andExpect(jsonPath("$.deletionCounts.notifications").value(0));
 
             assertThat(notificationRepository.count()).isEqualTo(1);
+        }
+    }
+
+    // ---------- Task template cleanup ----------
+
+    @Nested
+    @DisplayName("Task template cleanup")
+    class TaskTemplateCleanup {
+
+        private void insertTemplate(UUID id, String name, boolean isDefault) {
+            jdbcTemplate.update(
+                    "INSERT INTO task_templates "
+                            + "(id, name, trigger_state, due_date_type, due_date_offset_days, is_default) "
+                            + "VALUES (?, ?, 'topic_selection', 'relative_to_event', -14, ?)",
+                    id, name, isDefault);
+        }
+
+        private Integer countTemplatesNamed(String name) {
+            return jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM task_templates WHERE name = ?", Integer.class, name);
+        }
+
+        @Test
+        @DisplayName("returns 403 when caller is SPEAKER (not ORGANIZER) for task_templates")
+        @WithMockUser(roles = {"SPEAKER"})
+        void returns403_whenSpeakerForTaskTemplates() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("task_templates")
+                    .prefix("Test Custom Template")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("returns 400 when task_templates prefix is not the bound name (e.g. 'Test')")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenPrefixNotBoundName() throws Exception {
+            // "Test" doesn't match the anchored ^Test Custom Template$ — request bodies cannot
+            // supply an arbitrary name that might match real custom templates.
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("task_templates")
+                    .prefix("Test")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("deletes non-default 'Test Custom Template' rows; preserves default + real-named templates")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesTestTemplates_preservesDefaultAndReal() throws Exception {
+            insertTemplate(UUID.randomUUID(), "Test Custom Template", false);
+            insertTemplate(UUID.randomUUID(), "Test Custom Template", false);
+            // A non-default custom template with a NON-seeded name (avoid colliding with the
+            // migration-seeded "Venue Booking" default) — must survive the name-bound sweep.
+            insertTemplate(UUID.randomUUID(), "Keep This Custom Template", false);
+            insertTemplate(UUID.randomUUID(), "Test Custom Template", true);     // default — guard preserves it
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("task_templates")
+                    .prefix("Test Custom Template")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.task_templates").value(2))
+                    .andExpect(jsonPath("$.entityType").value("task_templates"))
+                    .andExpect(jsonPath("$.prefix").value("Test Custom Template"));
+
+            // The one default "Test Custom Template" survives (is_default guard); the non-seeded
+            // custom template is untouched (name doesn't match the bound sweep name).
+            assertThat(countTemplatesNamed("Test Custom Template")).isEqualTo(1);
+            assertThat(countTemplatesNamed("Keep This Custom Template")).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("never deletes a template still referenced by an event_tasks FK (no sweep FK-fail)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void preservesTemplateReferencedByEventTask() throws Exception {
+            // saveAndFlush so the event row is visible to the raw-JDBC event_tasks insert below
+            // (a plain save() buffers in the persistence context and would FK-fail).
+            Event ev = eventRepository.saveAndFlush(buildEvent("BATbern-tt-ref"));
+            UUID referenced = UUID.randomUUID();
+            insertTemplate(referenced, "Test Custom Template", false);
+            jdbcTemplate.update(
+                    "INSERT INTO event_tasks (id, event_id, template_id, task_name, trigger_state, status) "
+                            + "VALUES (?, ?, ?, 'Referenced task', 'topic_selection', 'todo')",
+                    UUID.randomUUID(), ev.getId(), referenced);
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("task_templates")
+                    .prefix("Test Custom Template")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.task_templates").value(0));
+
+            // The referenced template survived (the NOT-IN guard skipped it — no FK violation).
+            assertThat(countTemplatesNamed("Test Custom Template")).isEqualTo(1);
         }
     }
 

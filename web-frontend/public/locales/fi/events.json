@@ -6,6 +6,60 @@
     "blobSelector": "Blob-valitsin"
   },
   "eventPage": {
+    "cockpit": {
+      "spine": {
+        "stepOf": "Step {{current}} of {{total}}"
+      },
+      "emphasis": {
+        "created": "Define the event — fill in the details and pick a topic.",
+        "topic": "Confirm the topic, assign a moderator, and start the speaker pool.",
+        "speakers": "Fill the speaker pool; review submissions and start slotting as speakers confirm.",
+        "slots": "Assign speakers to time slots and finish reviews, then publish the agenda.",
+        "finalize": "Agenda is live — collect outstanding presentations, watch registrations, and send the final newsletter and catering request by their due dates. Day-of controls are available for rehearsal.",
+        "live": "Run the event — present the deck or open Live Control.",
+        "wrapup": "Send \"slides are online\", upload photos, and curate thank-you notes.",
+        "archived": "Event archived — read-only."
+      },
+      "attention": {
+        "title": "Needs your attention",
+        "addTask": "Add task",
+        "open": "Open {{tab}} →",
+        "go": "Open →",
+        "retry": "Retry",
+        "loadError": "Couldn't load your tasks.",
+        "allCaught": "You're all caught up — nothing needs your attention right now."
+      },
+      "due": {
+        "overdue": "Overdue · {{days}} days",
+        "dueSoon": "Due in {{days}} days",
+        "upcoming": "Upcoming",
+        "live": "Now · event is live",
+        "eventDay": "Tapahtumapäivä · {{date}}"
+      },
+      "cards": {
+        "addDetailsPickTopic": "Add event details & pick a topic",
+        "confirmTopic": "Confirm the topic",
+        "publishAgenda": "Finalize & publish the agenda",
+        "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
+        "needsSlot": "{{count}} sessions still need a slot",
+        "reviewSubmissions": "Review speaker submissions",
+        "outstandingPresentations": "Collect outstanding presentations",
+        "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
+        "startPresentation": "🔴 Start the presentation",
+        "openLiveControl": "📡 Open Live Control"
+      },
+      "tiles": {
+        "registrations": "Registrations",
+        "speakers": "Speakers",
+        "materials": "Materials",
+        "agenda": "Agenda",
+        "filled": "{{percent}}% filled",
+        "waitlist": "{{count}} on waitlist"
+      },
+      "atAGlance": {
+        "title": "At a glance"
+      }
+    },
     "tabs": {
       "venue": "Paikka",
       "participants": "Osallistujat",
@@ -14,7 +68,13 @@
       "settings": "Asetukset",
       "photos": "Valokuvat",
       "registrantNotices": "Ilmoittautuneiden tiedotteet",
-      "appreciation": "Kiitokset"
+      "appreciation": "Kiitokset",
+      "cockpit": "Ohjaamo",
+      "speakersAgenda": "Puhujat & Ohjelma",
+      "registrations": "Ilmoittautumiset",
+      "communications": "Viestintä",
+      "wrapup": "Jälkityöt",
+      "details": "Tiedot"
     },
     "tabsAriaLabel": "Tapahtumassivun navigointi",
     "overview": {
@@ -52,7 +112,9 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Siirretäänkö jonosta?",
+      "promoteConfirmMessage": "Siirretäänkö {{name}} jonosta? Hänet vahvistetaan ja hänelle lähetetään vahvistussähköposti."
     },
     "participantTable": {
       "headers": {
@@ -64,7 +126,8 @@
         "delete": "Poista rekisteröinti",
         "resendConfirmation": "Lähetä vahvistussähköposti uudelleen",
         "resendSuccess": "Vahvistussähköposti lähetetty uudelleen",
-        "resendError": "Vahvistussähköpostin lähetys epäonnistui"
+        "resendError": "Vahvistussähköpostin lähetys epäonnistui",
+        "menu": "Toiminnot"
       },
       "deleteDialog": {
         "title": "Poista rekisteröinti",
@@ -96,7 +159,9 @@
       },
       "actions": {
         "retry": "Yritä uudelleen"
-      }
+      },
+      "showing": "Näytetään {{from}}–{{to}} / {{total}}",
+      "showingEmpty": "Näytetään 0 / 0"
     },
     "settings": {
       "moderator": "Tapahtuman moderaattori",
@@ -162,7 +227,17 @@
       "addSpeakers": "Lisää puhujia",
       "addToPool": "Lisää puhujia pooliin",
       "kanbanView": "Kanban-näkymä",
-      "sessionsView": "Istuntonäkymä"
+      "sessionsView": "Istuntonäkymä",
+      "pool": "Pool",
+      "agenda": "Ohjelma",
+      "slots": "Aikavälit",
+      "poolView": "Puhujapoolin näkymä",
+      "agendaView": "Ohjelmanäkymä",
+      "slotsView": "Aikavälinäkymä",
+      "needsSlotSummary": "{{count}}/{{total}} istuntoa tarvitsee aikavälin",
+      "allSlotted": "Kaikki istunnot on aikataulutettu",
+      "arrangeSlots": "Järjestä aikavälit",
+      "noSessionsYet": "Ei vielä istuntoja"
     },
     "newsletter": {
       "title": "Uutiskirje",
@@ -233,6 +308,74 @@
       "sendResultSkipped": "{{count}} ilman sähköpostiosoitetta (ohitettu).",
       "sendResultFailed": "{{count}} epäonnistui.",
       "alreadySent": "Tämä tiedote on jo lähetetty (tai lähetys on käynnissä) tälle tapahtumalle."
+    },
+    "lockedTabSuffix": "{{tab}} (lukittu kunnes tapahtuma on käynnissä)",
+    "details": {
+      "heading": "Tapahtuman tiedot",
+      "intro": "Tapahtuman identiteetti, aihe ja aikataulu. Aseta nämä ajoissa — ne muuttuvat harvoin.",
+      "editButton": "Muokkaa tietoja",
+      "noTopic": "Aihetta ei ole vielä valittu",
+      "subtabs": {
+        "info": "Tiedot",
+        "tasks": "Tehtävät",
+        "settings": "Asetukset"
+      },
+      "whenWhere": "Milloin & missä",
+      "changeTopic": "Vaihda aihe",
+      "aiAssist": "✨ Luo tekoälyllä",
+      "save": "Tallenna muutokset",
+      "saved": "Muutokset tallennettu",
+      "aiGenerateImage": "✨ Luo (tekoäly)",
+      "aiGenerateDescription": "✨ Luo kuvaus tekoälyllä",
+      "uploadImage": "Lataa teemakuva napsauttamalla",
+      "uploadingImage": "Ladataan…",
+      "replaceImage": "Vaihda kuva"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Uutiskirjeen tilaajat",
+        "registrants": "Tapahtuman osallistujat",
+        "speakers": "Puhujat",
+        "venue": "Tila ja pitopalvelu"
+      }
+    },
+    "speakerComms": {
+      "title": "Muistutukset puhujille",
+      "description": "Lähetä määräaikamuistutus puhujille, joilta puuttuu vielä vastaus tai sisältö. Jokaiselle puhujalle lähetetään oma sähköposti – kutsut ja yksittäiset muistutukset pysyvät puhujakortilla.",
+      "reminderType": "Muistutuksen tyyppi",
+      "typeResponse": "Vastauksen määräaika (kutsutut puhujat)",
+      "typeContent": "Sisällön määräaika (suostuneet puhujat)",
+      "recipientCount": "{{count}} puhujalle lähetetään muistutus",
+      "empty": "Tällä hetkellä yksikään puhuja ei odota tätä muistutusta.",
+      "send": "Lähetä muistutukset",
+      "confirmTitle": "Lähetetäänkö muistutukset puhujille?",
+      "confirmBody": "Lähetetäänkö ”{{type}}”-muistutus {{count}} puhujalle tapahtumasta «{{eventTitle}}»? Jokainen saa oman sähköpostin.",
+      "sending": "Lähetetään muistutuksia…",
+      "result": "{{sent}} lähetetty, {{failed}} epäonnistui.",
+      "retryFailed": "Yritä {{count}} epäonnistunutta uudelleen",
+      "loadError": "Puhujapoolia ei voitu ladata.",
+      "retry": "Yritä uudelleen",
+      "noPreview": "Muistutukset lähetetään vakiopohjilla kunkin puhujan kielellä — ei esikatselua näytettäväksi."
+    },
+    "topicOverlay": {
+      "title": "Aihe ja puhujat",
+      "pickHeading": "Valitse aihe",
+      "searchPlaceholder": "Hae aiheita",
+      "emptyHint": "Yksikään aihe ei vastaa — säädä suodattimia tai hakua.",
+      "similarityWarning": "Samankaltainen aihe havaittu",
+      "selectAnyway": "Valitse silti…",
+      "banner": {
+        "selected": "Aihe valittu",
+        "change": "Vaihda aihe"
+      },
+      "footer": {
+        "skip": "Myöhemmin",
+        "continue": "Jatka yhteydenottoon →"
+      }
+    },
+    "mobile": {
+      "more": "Lisää",
+      "moreSheetTitle": "Lisää"
     }
   },
   "dashboard": {
@@ -345,7 +488,9 @@
     "criticalTasksWidget": "Kriittiset tehtävät",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Poistetaanko tämä tehtävä?",
+    "deleteConfirmBody": "Poistetaanko \"{{name}}\"? Tätä ei voi kumota."
   },
   "form": {
     "createEvent": "Luo uusi tapahtuma",
@@ -581,6 +726,11 @@
       "speakers": "Puhujat",
       "agenda": "Ohjelma",
       "updates": "Päivitykset"
+    },
+    "sections": {
+      "validation": "Validointi",
+      "phases": "Julkaisuvaihe",
+      "publishNext": "Julkaise seuraava vaihe"
     }
   },
   "notifications": {
@@ -810,6 +960,12 @@
         "projector": "Projektori",
         "recording": "Nauhoitus"
       }
+    },
+    "actionBar": {
+      "label": "Aikavälien määritystoiminnot"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Napauta nyt korostettua aikaväliä sijoittaaksesi sen"
     }
   },
   "newsletter": {

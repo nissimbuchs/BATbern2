@@ -11,12 +11,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import EventParticipantsTab from './EventParticipantsTab';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eventApiClient } from '@/services/eventApiClient';
+import { enrollStakeholders } from '@/services/api/eventRegistrationService';
 
 // Mock EventParticipantList component
 vi.mock('./EventParticipantList', () => ({
   default: ({ eventCode }: { eventCode: string }) => (
     <div data-testid="participant-list">List for {eventCode}</div>
   ),
+}));
+
+// Enrol organizers & partners moved here from the Overview (Epic 14 FR25).
+vi.mock('@/services/api/eventRegistrationService', () => ({
+  enrollStakeholders: vi.fn().mockResolvedValue({ enrolled: 3, skipped: 1 }),
 }));
 
 // Mock translation
@@ -158,6 +164,38 @@ describe('EventParticipantsTab Component', () => {
       renderWithProviders(<EventParticipantsTab event={customEvent} />);
 
       expect(screen.getByText('List for CUSTOM-2024')).toBeInTheDocument();
+    });
+  });
+
+  describe('Enrol & waitlist relocation (Epic 14 FR25 / FR28)', () => {
+    it('renders the Enrol organizers & partners action in the header', () => {
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+      expect(screen.getByTestId('enroll-stakeholders-button')).toBeInTheDocument();
+    });
+
+    it('calls enrollStakeholders with the event code when clicked', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+
+      await user.click(screen.getByTestId('enroll-stakeholders-button'));
+      await waitFor(() => expect(enrollStakeholders).toHaveBeenCalledWith('BAT-2024-01'));
+    });
+
+    it('no longer renders the separate waitlist accordion (folded into the list filter)', () => {
+      const eventWithCapacity = {
+        ...mockEvent,
+        registrationCapacity: 180,
+        confirmedCount: 128,
+        waitlistCount: 12,
+      };
+      renderWithProviders(<EventParticipantsTab event={eventWithCapacity} />);
+
+      // The old WaitlistSection accordion header is gone; the list (which now owns
+      // the Waitlisted filter) is still rendered.
+      expect(
+        screen.queryByText('eventPage.participantsTab.waitlistSection')
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('participant-list')).toBeInTheDocument();
     });
   });
 

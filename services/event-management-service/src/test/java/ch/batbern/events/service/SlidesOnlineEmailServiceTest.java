@@ -192,6 +192,58 @@ class SlidesOnlineEmailServiceTest {
         assertThat(send.getFailedCount()).isZero();
     }
 
+    @Test
+    @DisplayName("processSend: injects per-registrant {{deregistrationUrl}} from the registrant's token")
+    void processSend_injectsPerRegistrantDeregistrationUrl() {
+        UUID token = UUID.fromString("11111111-2222-3333-4444-555555555555");
+        Registration r = registration("a.one", "a.one@x.ch", "registered");
+        r.setDeregistrationToken(token);
+
+        when(registrationRepository.findByEventIdAndStatusIn(eq(event.getId()), any()))
+                .thenReturn(List.of(r));
+        stubRenderingAndSend();
+        when(subscriberRepository.findByEmailIgnoreCase(anyString())).thenReturn(Optional.empty());
+        when(userApiClient.getPreferredLanguage(anyString())).thenReturn("de");
+        when(sendRepository.findById(sendId)).thenReturn(Optional.of(pendingSend()));
+
+        service.processSend(sendId, event, "slides-online");
+
+        // The per-recipient pass must run replaceVariables with a map carrying the one-click
+        // cancel link built from THIS registrant's token.
+        org.mockito.ArgumentCaptor<java.util.Map<String, String>> varsCaptor =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(emailService, org.mockito.Mockito.atLeastOnce())
+                .replaceVariables(anyString(), varsCaptor.capture());
+        assertThat(varsCaptor.getAllValues())
+                .anySatisfy(vars -> assertThat(vars)
+                        .containsEntry("deregistrationUrl",
+                                "https://batbern.ch/deregister?token=" + token));
+    }
+
+    @Test
+    @DisplayName("processSend: falls back to /events when a registrant has no deregistration token")
+    void processSend_fallsBackWhenNoToken() {
+        Registration r = registration("a.one", "a.one@x.ch", "registered");
+        r.setDeregistrationToken(null);
+
+        when(registrationRepository.findByEventIdAndStatusIn(eq(event.getId()), any()))
+                .thenReturn(List.of(r));
+        stubRenderingAndSend();
+        when(subscriberRepository.findByEmailIgnoreCase(anyString())).thenReturn(Optional.empty());
+        when(userApiClient.getPreferredLanguage(anyString())).thenReturn("de");
+        when(sendRepository.findById(sendId)).thenReturn(Optional.of(pendingSend()));
+
+        service.processSend(sendId, event, "slides-online");
+
+        org.mockito.ArgumentCaptor<java.util.Map<String, String>> varsCaptor =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(emailService, org.mockito.Mockito.atLeastOnce())
+                .replaceVariables(anyString(), varsCaptor.capture());
+        assertThat(varsCaptor.getAllValues())
+                .anySatisfy(vars -> assertThat(vars)
+                        .containsEntry("deregistrationUrl", "https://batbern.ch/events"));
+    }
+
     // NOTE: per-recipient failure isolation (AC6) is covered end-to-end in
     // SlidesOnlineIntegrationTest against real PostgreSQL with a mocked EmailService — the
     // authoritative test for AC7. A pure-Mockito duplicate here hits a strict-stubs /
