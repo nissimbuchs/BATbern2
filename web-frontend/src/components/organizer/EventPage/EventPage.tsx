@@ -45,8 +45,6 @@ import {
   Publish as PublishIcon,
   CardGiftcard as WrapupIcon,
   Description as DetailsIcon,
-  Slideshow as SlideshowIcon,
-  LiveTv as LiveTvIcon,
   Lock as LockIcon,
   MoreHoriz as MoreIcon,
 } from '@mui/icons-material';
@@ -375,7 +373,9 @@ export const EventPage: React.FC = () => {
         {/* Breadcrumbs */}
         <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
 
-        {/* Header — event title persists on every tab (FR2) */}
+        {/* Header — event title persists on every tab (FR2). The event-day live
+            controls (Start Presentation / Live Control) are NOT here (14.B.4): they
+            surface as urgent Cockpit attention cards from AGENDA_PUBLISHED onward. */}
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           justifyContent="space-between"
@@ -388,29 +388,6 @@ export const EventPage: React.FC = () => {
               {event.title}
             </Typography>
           </Box>
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
-          >
-            <Button
-              variant="outlined"
-              startIcon={<SlideshowIcon />}
-              href={`/present/${eventCode}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t('eventPage.overview.startPresentation', 'Start Presentation')}
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<LiveTvIcon />}
-              onClick={() => navigate(`/organizer/events/${eventCode}/live-control`)}
-            >
-              {t('eventPage.overview.liveControl', 'Live Control')}
-            </Button>
-          </Stack>
         </Stack>
 
         {/* Desktop Tabs */}

@@ -177,6 +177,12 @@ describe('EventPage — 8-tab lifecycle shell (Epic 14 Phase A)', () => {
       expect(screen.getByTestId('breadcrumbs')).toBeInTheDocument();
       expect(screen.getByText(/Events/i)).toBeInTheDocument();
     });
+
+    it('does NOT show Start Presentation / Live Control in the header (14.B.4 — they are Cockpit cards)', () => {
+      renderWithProviders();
+      expect(screen.queryByRole('link', { name: /start presentation/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /live control/i })).not.toBeInTheDocument();
+    });
   });
 
   describe('7-tab IA (FR1/FR3 — config cluster merged into Details)', () => {

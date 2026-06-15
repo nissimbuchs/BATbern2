@@ -385,6 +385,7 @@ describe('workflowState utilities', () => {
 });
 
 describe('workflow tab-relevance map (Epic 14)', () => {
+  // 7-tab IA (Settings folded into Details as a sub-tab in 14.F.2 — no standalone 'settings').
   const ALL_TABS: EventTabId[] = [
     'cockpit',
     'speakers',
@@ -393,7 +394,6 @@ describe('workflow tab-relevance map (Epic 14)', () => {
     'publishing',
     'wrapup',
     'details',
-    'settings',
   ];
 
   describe('WORKFLOW_RELEVANCE table shape', () => {
@@ -409,7 +409,7 @@ describe('workflow tab-relevance map (Epic 14)', () => {
       expect(Object.keys(WORKFLOW_RELEVANCE)).not.toContain('AGENDA_FINALIZED');
     });
 
-    it('never lists an always-active tab (cockpit/details/settings) as dimmed or locked', () => {
+    it('never lists an always-active tab (cockpit/details) as dimmed or locked', () => {
       Object.values(WORKFLOW_RELEVANCE).forEach((row) => {
         ALWAYS_ACTIVE_TABS.forEach((tab) => {
           expect(row.dimmedTabs).not.toContain(tab);
@@ -439,7 +439,7 @@ describe('workflow tab-relevance map (Epic 14)', () => {
   });
 
   describe('getTabRelevance — always-active tabs', () => {
-    it('returns "active" for cockpit/details/settings in every state', () => {
+    it('returns "active" for cockpit/details in every state', () => {
       WORKFLOW_STATE_ORDER.forEach((state) => {
         ALWAYS_ACTIVE_TABS.forEach((tab) => {
           expect(getTabRelevance(state, tab)).toBe('active');
