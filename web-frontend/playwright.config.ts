@@ -40,10 +40,21 @@ const envConfig = {
     baseURL: 'https://batbern.ch',
     apiURL: 'https://api.batbern.ch',
   },
-}[testEnv as 'development' | 'staging' | 'production'];
+  // Beta is a frontend-only CANARY: the new SPA build on its own CloudFront/S3
+  // (beta.batbern.ch) served against the SAME production API / Cognito / DB as www.
+  // Used to exercise frontend-only changes (e.g. the Epic 14 redesign) on real infra
+  // before promoting to prod. Tokens are the PRODUCTION (staging-account) role tokens —
+  // run-playwright-tests.sh maps the `beta` env to the staging token files.
+  beta: {
+    baseURL: 'https://beta.batbern.ch',
+    apiURL: 'https://api.batbern.ch',
+  },
+}[testEnv as 'development' | 'staging' | 'production' | 'beta'];
 
 if (!envConfig) {
-  throw new Error(`Invalid TEST_ENV: ${testEnv}. Must be one of: development, staging, production`);
+  throw new Error(
+    `Invalid TEST_ENV: ${testEnv}. Must be one of: development, staging, production, beta`
+  );
 }
 
 console.log(`Running Playwright tests against: ${testEnv} (${envConfig.baseURL})`);

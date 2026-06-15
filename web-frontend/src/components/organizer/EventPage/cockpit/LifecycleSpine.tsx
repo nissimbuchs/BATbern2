@@ -39,7 +39,11 @@ export const LifecycleSpine: React.FC<LifecycleSpineProps> = ({
 
   if (compact) {
     return (
-      <Box data-testid="cockpit-lifecycle-spine" aria-label={stepOfLabel}>
+      <Box
+        data-testid="cockpit-lifecycle-spine"
+        data-workflow-state={workflowState}
+        aria-label={stepOfLabel}
+      >
         <Typography variant="subtitle2" gutterBottom>
           {stepOfLabel}
         </Typography>
@@ -53,7 +57,7 @@ export const LifecycleSpine: React.FC<LifecycleSpineProps> = ({
   }
 
   return (
-    <Box data-testid="cockpit-lifecycle-spine">
+    <Box data-testid="cockpit-lifecycle-spine" data-workflow-state={workflowState}>
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
         {stepOfLabel}
       </Typography>

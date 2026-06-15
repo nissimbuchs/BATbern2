@@ -5,6 +5,14 @@
 # Usage:
 #   run-playwright-tests.sh <environment> [options]
 #
+# Environments:
+#   development  localhost:8100 (local stack)        — local dev tokens
+#   staging      www.batbern.ch / api.batbern.ch     — production (staging-account) tokens
+#   production   www.batbern.ch / api.batbern.ch     — production tokens
+#   beta         beta.batbern.ch / api.batbern.ch    — frontend-only canary on the PRODUCTION
+#                backend; reuses the staging role tokens. ⚠ shares PRODUCTION data — run only
+#                frontend-safe specs against it.
+#
 # Options:
 #   --project NAME       chromium | speaker | partner. Default: every project whose role
 #                        token is available (chromium always; speaker/partner when present).
@@ -54,6 +62,11 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# Token environment: beta is a frontend-only canary on the PRODUCTION backend/Cognito, so its
+# auth tokens are the production (staging-account) role tokens — reuse the `staging` token files.
+TOKEN_ENV="$ENVIRONMENT"
+[ "$ENVIRONMENT" = "beta" ] && TOKEN_ENV="staging"
+
 # Color output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -72,13 +85,13 @@ echo "Scope:       $SCOPE"
 [ "$CLEANUP_ONLY" = "1" ] && echo "Mode:        cleanup-only"
 echo ""
 
-# Auto-refresh token if expired
+# Auto-refresh token if expired (uses TOKEN_ENV → staging tokens for the beta canary)
 if [ -f "./scripts/auth/refresh-token.sh" ]; then
-    ./scripts/auth/refresh-token.sh "$ENVIRONMENT" || true
+    ./scripts/auth/refresh-token.sh "$TOKEN_ENV" || true
 fi
 
 # Load legacy organizer token (also exported as AUTH_TOKEN for API-integration specs)
-local_config=~/.batbern/${ENVIRONMENT}.json
+local_config=~/.batbern/${TOKEN_ENV}.json
 if [ -f "$local_config" ]; then
     echo -e "${BLUE}Loading auth token from: $local_config${NC}"
     AUTH_TOKEN=$(jq -r '.idToken' "$local_config" 2>/dev/null)
@@ -96,9 +109,9 @@ fi
 # Load per-role tokens (Epic 8+ multi-role testing)
 load_role_token() {
     local role="$1"
-    local role_config=~/.batbern/${ENVIRONMENT}-${role}.json
+    local role_config=~/.batbern/${TOKEN_ENV}-${role}.json
     if [ -f "$role_config" ]; then
-        ./scripts/auth/refresh-token.sh "$ENVIRONMENT" "$role" 2>/dev/null || true
+        ./scripts/auth/refresh-token.sh "$TOKEN_ENV" "$role" 2>/dev/null || true
         local token
         token=$(jq -r '.idToken' "$role_config" 2>/dev/null)
         if [ "$token" != "null" ] && [ -n "$token" ]; then
@@ -127,6 +140,15 @@ echo ""
 if [ "$ENVIRONMENT" = "staging" ]; then
     export TEST_ENV="staging"
     export E2E_BASE_URL="https://www.batbern.ch"
+    export E2E_API_URL="https://api.batbern.ch"
+    export E2E_AWS_REGION="eu-central-1"
+elif [ "$ENVIRONMENT" = "beta" ]; then
+    # Beta = the frontend-only canary SPA on beta.batbern.ch served against the SAME
+    # production API / Cognito / DB as www. Use it to exercise frontend-only changes on
+    # real infra before promoting to prod. Tokens are the production (staging) role tokens
+    # (TOKEN_ENV=staging above). ⚠ Beta shares PRODUCTION data — only frontend-safe specs.
+    export TEST_ENV="beta"
+    export E2E_BASE_URL="https://beta.batbern.ch"
     export E2E_API_URL="https://api.batbern.ch"
     export E2E_AWS_REGION="eu-central-1"
 elif [ "$ENVIRONMENT" = "production" ]; then

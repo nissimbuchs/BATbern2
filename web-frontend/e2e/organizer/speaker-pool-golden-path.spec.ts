@@ -112,7 +112,11 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
   /** Open the kanban view for the fixture event. */
   async function openKanban(page: Page) {
     await page.goto(KANBAN(fixtureEvent.eventCode));
-    await expect(page.getByTestId('status-lane-identified')).toBeVisible();
+    // Epic 14 (14.C.2): 4 PHASE columns (Sourcing/Inviting/Content/Confirmed), not per-state
+    // lanes — IDENTIFIED lives in the "Sourcing" column. Generous timeout: the kanban renders
+    // the summary bar + lanes + per-card drawer machinery, which on a cold local backend with
+    // several pool cards can exceed the tight 5s local default.
+    await expect(page.getByTestId('phase-column-sourcing')).toBeVisible({ timeout: 15_000 });
   }
 
   /** Drive an IDENTIFIED card → CONTACTED via the primary action + MarkContactedModal. */
@@ -354,8 +358,9 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
   test('phase 10 — auto-assign all sessions to slots via the slot-assignment UI', async ({
     page,
   }) => {
-    await page.goto(`/organizer/events/${fixtureEvent.eventCode}/slot-assignment`);
-    await expect(page.getByTestId('quick-actions-panel')).toBeVisible();
+    // Epic 14 (14.C.5): slots are an in-tab sub-view (top action bar), not a separate route.
+    await page.goto(`/organizer/events/${fixtureEvent.eventCode}?tab=speakers&view=slots`);
+    await expect(page.getByTestId('slot-action-bar')).toBeVisible({ timeout: 15_000 });
     // Each promoted speaker owns a placeholder (unassigned) session.
     const before = await getUnassignedSessionCount(token, fixtureEvent.eventCode);
     expect(before).toBeGreaterThan(0);
@@ -388,8 +393,10 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
     // The lifecycle tail is driven via the override transition API (slice 10's mechanism):
     // AGENDA_PUBLISHED's automatic advance is gated on "all sessions timed", which the DECLINED
     // speaker's orphan placeholder session holds open, and EVENT_LIVE/EVENT_COMPLETED are
-    // cron-only (daily 00:01 / 23:59 Bern) with no UI control. Assert the overview badge reflects
-    // each state — proving the lifecycle reaches ARCHIVED with the speaker pool fully worked.
+    // cron-only (daily 00:01 / 23:59 Bern) with no UI control. Assert the Cockpit lifecycle
+    // spine reflects each state — proving the lifecycle reaches ARCHIVED with the speaker pool
+    // fully worked. Epic 14 (14.B.1/14.F.5): the old overview `workflow-status-badge` is gone;
+    // the Cockpit `LifecycleSpine` (default landing tab) carries `data-workflow-state`.
     for (const state of [
       'AGENDA_PUBLISHED',
       'EVENT_LIVE',
@@ -398,7 +405,7 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
     ] as const) {
       await transitionWorkflow(token, fixtureEvent.eventCode, state);
       await page.goto(`/organizer/events/${fixtureEvent.eventCode}`);
-      await expect(page.getByTestId('workflow-status-badge')).toHaveAttribute(
+      await expect(page.getByTestId('cockpit-lifecycle-spine')).toHaveAttribute(
         'data-workflow-state',
         state
       );
