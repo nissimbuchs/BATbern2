@@ -172,6 +172,12 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("slides-online")) {
             return "REGISTRANT_NOTICE";
         }
+        // Generic registrant-notice prefix for further one-shot mails to an event's active
+        // registrants (e.g. "registrant-notice-deregistration-call" — asks registrants of a
+        // fully-booked event to free their seat). Same category/tab as slides-online.
+        if (templateKey.startsWith("registrant-notice")) {
+            return "REGISTRANT_NOTICE";
+        }
         // Story (venue-coordination): outbound mails to the event venue + caterer.
         // Both share one category so the Event Detail Venue tab dropdown can list them
         // together; the key prefix still distinguishes which recipient the template targets.

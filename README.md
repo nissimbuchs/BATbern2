@@ -422,7 +422,7 @@ Each deploy is visible on the [/deployments](../../deployments) and [/releases](
 - **Administration Page** - Event types, data import/export, task templates, email-template management (TinyMCE/Monaco)
 - **Newsletter System** - Subscription, template selection, sending, subscriber management, SES bounce + list hygiene
 - **Registration Lifecycle** - Status indicator, venue-capacity enforcement + waitlist, self-service deregistration
-- **Inbound Email Handling** - Reply-based unsubscribe/deregistration, SES forwarding / distribution lists
+- **Inbound Email Handling** - Reply-based unsubscribe/deregistration, SES forwarding / distribution lists (`batbern{N}-speaker@` / `-moderator@` / `-participants@`)
 - **Media & Content** - Event photo gallery, teaser images, moderator presentation page, AI-assisted content
 - **Security & Data** - Turnstile bot protection, additional user emails, legacy BAT-format export/import
 

@@ -98,6 +98,14 @@ export async function resolveRecipients(toAddress: string): Promise<string[]> {
     return fetchEventDistributionList(`BATbern${moderatorMatch[1]}`, 'moderator');
   }
 
+  // batbern{N}-participants@ → all active registrants of the event ("Way 2": email every
+  // participant directly). Must precede the bare batbern{N}@ branch so the longer alias is not
+  // shadowed. Resolves the same audience as Communications → Event registrants ("Way 1").
+  const participantsMatch = localPart.match(/^batbern(\d+)-participants$/);
+  if (participantsMatch) {
+    return fetchEventDistributionList(`BATbern${participantsMatch[1]}`, 'participants');
+  }
+
   // batbern{N}@ → event registrants
   const eventMatch = localPart.match(/^batbern(\d+)$/);
   if (eventMatch) {
@@ -187,14 +195,15 @@ async function fetchSupportContacts(): Promise<string[]> {
 }
 
 /**
- * Fetch the per-event distribution list (`speakers` = scheduled PRIMARY_SPEAKERs,
- * `moderator` = event organizer) via the event-management-service endpoint.
- * Used by the `batbern{N}-speaker@` and `batbern{N}-moderator@` aliases.
+ * Fetch the per-event distribution list via the event-management-service endpoint:
+ * `speakers` = scheduled PRIMARY_SPEAKERs, `moderator` = event organizer,
+ * `participants` = all active registrants. Used by the `batbern{N}-speaker@`,
+ * `batbern{N}-moderator@` and `batbern{N}-participants@` aliases.
  * On 404 logs a WARN and returns []; on any other non-OK status logs ERROR and returns [].
  */
 async function fetchEventDistributionList(
   eventCode: string,
-  kind: 'speakers' | 'moderator',
+  kind: 'speakers' | 'moderator' | 'participants',
 ): Promise<string[]> {
   const url = `${API_GATEWAY_URL}/api/v1/events/${eventCode}/distribution-list/${kind}`;
   const response = await fetch(url);

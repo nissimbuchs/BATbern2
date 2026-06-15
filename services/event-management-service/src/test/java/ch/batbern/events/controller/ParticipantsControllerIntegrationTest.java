@@ -247,6 +247,26 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("Anonymous GET /distribution-list/participants → 200 with active registrants, excludes cancelled/waitlist")
+    void should_return200_when_lambdaCallsParticipantsList() throws Exception {
+        seedRegistrationWithEmail("anna.active", "anna@example.com", "registered");
+        seedRegistrationWithEmail("ben.active", "ben@example.com", "confirmed");
+        seedRegistrationWithEmail("carl.cancelled", "carl@example.com", "cancelled");
+        seedRegistrationWithEmail("wanda.wait", "wanda@example.com", "waitlist");
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
+                        EVENT_CODE, "participants"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.kind").value("participants"))
+                .andExpect(jsonPath("$.emails", org.hamcrest.Matchers.hasItem("anna@example.com")))
+                .andExpect(jsonPath("$.emails", org.hamcrest.Matchers.hasItem("ben@example.com")))
+                .andExpect(jsonPath("$.emails",
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("carl@example.com"))))
+                .andExpect(jsonPath("$.emails",
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("wanda@example.com"))));
+    }
+
+    @Test
     @DisplayName("Anonymous GET /distribution-list with unknown event → 404")
     void should_return404_when_unknownEventOnDistributionList() throws Exception {
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
@@ -309,6 +329,21 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                 .attendeeUsername(username)
                 .attendeeFirstName(username.substring(0, username.indexOf(".")))
                 .attendeeLastName(username.substring(username.indexOf(".") + 1))
+                .attendeeCompanyId("acme")
+                .status(status)
+                .registrationDate(Instant.now())
+                .build();
+        registrationRepository.save(r);
+    }
+
+    private void seedRegistrationWithEmail(String username, String email, String status) {
+        Registration r = Registration.builder()
+                .registrationCode(EVENT_CODE + "-reg-" + System.nanoTime() % 1_000_000L)
+                .eventId(event.getId())
+                .attendeeUsername(username)
+                .attendeeFirstName(username.substring(0, username.indexOf(".")))
+                .attendeeLastName(username.substring(username.indexOf(".") + 1))
+                .attendeeEmail(email)
                 .attendeeCompanyId("acme")
                 .status(status)
                 .registrationDate(Instant.now())

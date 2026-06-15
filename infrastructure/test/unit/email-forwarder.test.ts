@@ -424,6 +424,30 @@ describe('T7 — Address resolution', () => {
     expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/moderator$/);
   });
 
+  test('should_callParticipantsDistributionList_when_batbernNParticipantsAddress', async () => {
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          eventCode: 'BATbern99',
+          kind: 'participants',
+          emails: ['attendee1@example.com', 'attendee2@example.com'],
+        }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-participants@batbern.ch');
+
+    expect(result).toEqual(['attendee1@example.com', 'attendee2@example.com']);
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/participants$/);
+  });
+
   test('should_returnEmpty_when_distributionListEventUnknown_logsWarn', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     try {
