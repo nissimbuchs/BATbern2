@@ -63,6 +63,11 @@ test.describe('Partner Directory @gate -User Journey', () => {
           email: 'test@example.com',
           firstName: 'Test',
           lastName: 'User',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: {
             language: 'en', // Force English for E2E tests
           },
@@ -133,6 +138,11 @@ test.describe('Partner Directory @gate -Search Functionality', () => {
         body: JSON.stringify({
           id: 'test-user-id',
           email: 'test@example.com',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });
@@ -207,6 +217,11 @@ test.describe('Partner Directory @gate -Filter Functionality', () => {
         body: JSON.stringify({
           id: 'test-user-id',
           email: 'test@example.com',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });
@@ -289,6 +304,11 @@ test.describe('Partner Directory @gate -View Mode Toggle', () => {
         body: JSON.stringify({
           id: 'test-user-id',
           email: 'test@example.com',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });
@@ -334,6 +354,11 @@ test.describe('Partner Directory @gate -Sorting', () => {
         body: JSON.stringify({
           id: 'test-user-id',
           email: 'test@example.com',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });
@@ -382,6 +407,11 @@ test.describe('Partner Directory @gate -Pagination', () => {
         body: JSON.stringify({
           id: 'test-user-id',
           email: 'test@example.com',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });
@@ -435,6 +465,11 @@ test.describe('Partner Directory @gate -Error Handling', () => {
         body: JSON.stringify({
           id: 'test-user-id',
           email: 'test@example.com',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });
@@ -462,6 +497,11 @@ test.describe('Partner Directory @gate -Error Handling', () => {
         body: JSON.stringify({
           id: 'test-user-id',
           email: 'test@example.com',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });

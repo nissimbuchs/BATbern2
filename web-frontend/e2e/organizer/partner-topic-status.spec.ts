@@ -40,6 +40,11 @@ test.describe('Organizer Partner-Topic Status Panel @gate', () => {
         body: JSON.stringify({
           id: 'org',
           email: 'org@example.com',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['organizer'],
+          currentRole: 'organizer',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });

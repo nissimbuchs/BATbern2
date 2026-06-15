@@ -165,10 +165,23 @@ else
     export E2E_AWS_REGION="eu-central-1"
 fi
 
+# Robust profile for LOCAL invocations (CI sets its own via the CI=true config branch:
+# workers=1, 15s expect timeout, 2 retries). A bare local run otherwise uses the fast-feedback
+# default (5s, 0 retries, full parallelism) which floods the single cold local backend and
+# produces spurious timeouts across the full gate. Cap workers + raise the expect timeout +
+# allow one retry so the local gate matches CI's robustness. Only applied when NOT in CI so it
+# never overrides the CI profile. Override any of these by exporting them before the run.
+if [ -z "${CI:-}" ]; then
+    export PW_EXPECT_TIMEOUT="${PW_EXPECT_TIMEOUT:-15000}"
+    export PW_WORKERS="${PW_WORKERS:-4}"
+    export PW_RETRIES="${PW_RETRIES:-1}"
+fi
+
 echo -e "${BLUE}Test Configuration:${NC}"
 echo "  Environment: $TEST_ENV"
 echo "  Base URL:    $E2E_BASE_URL"
 echo "  API URL:     $E2E_API_URL"
+[ -n "${PW_WORKERS:-}" ] && echo "  Workers:     $PW_WORKERS (local robust profile; expect ${PW_EXPECT_TIMEOUT}ms, retries ${PW_RETRIES})"
 echo ""
 
 # Check we're in the project root

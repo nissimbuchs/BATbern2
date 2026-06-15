@@ -72,6 +72,11 @@ test.describe('Partner Attendance Dashboard @gate', () => {
           id: 'test-partner',
           email: 'partner@example.com',
           companyName: 'GoogleZH',
+          // Roles for local-dev Pattern 3b (JWT may carry no custom:role → AuthContext
+          // hydrates roles from /users/me); without these the role is stripped → onboarding redirect.
+          roles: ['partner'],
+          currentRole: 'partner',
+          termsAcceptedAt: '2020-01-01T00:00:00Z',
           preferences: { language: 'en' },
         }),
       });
