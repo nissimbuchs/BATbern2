@@ -145,6 +145,83 @@ public class RegistrationEmailService {
     }
 
     /**
+     * Send the "added by the organizing team" confirmation for an organizer-added participant
+     * (the "Add participant" feature). Unlike {@link #sendRegistrationConfirmation}, the place is
+     * ALREADY confirmed: no confirm-your-registration CTA, no waitlist narrative, no registration
+     * code — just a "you're registered, your place is confirmed" notice with the event details, a
+     * calendar invite, and the self-service deregistration link.
+     *
+     * @param registration the (confirmed) registration that was just created
+     * @param userProfile  the added user's profile
+     * @param event        the event
+     * @param locale       the user's locale (DE → German, anything else → English fallback)
+     */
+    @Async
+    public void sendOrganizerAddedConfirmation(
+            Registration registration,
+            UserResponse userProfile,
+            Event event,
+            Locale locale
+    ) {
+        try {
+            log.info("Sending organizer-added confirmation email to: {} for event: {}",
+                    LoggingUtils.maskEmail(userProfile.getEmail()), event.getEventCode());
+
+            Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
+            String localeStr = emailLocale.getLanguage().equals("de") ? "de" : "en";
+            ZonedDateTime eventDateTime = resolveEventDateTime(event);
+
+            String template = loadHtmlContent("registration-organizer-added", localeStr,
+                    "email-templates/registration-organizer-added-" + localeStr + ".html");
+
+            String deregistrationUrl = registration.getDeregistrationToken() != null
+                    ? baseUrl + "/deregister?token=" + registration.getDeregistrationToken()
+                    : baseUrl + "/events";
+
+            Map<String, String> variables = Map.ofEntries(
+                    Map.entry("attendeeFirstName",
+                            userProfile.getFirstName() != null ? userProfile.getFirstName() : ""),
+                    Map.entry("attendeeLastName",
+                            userProfile.getLastName() != null ? userProfile.getLastName() : ""),
+                    Map.entry("eventCode", event.getEventCode()),
+                    Map.entry("eventTitle", event.getTitle()),
+                    Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
+                    Map.entry("eventTime",
+                            eventDateTime.format(TIME_FORMATTER) + (localeStr.equals("de") ? " Uhr" : "")),
+                    Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
+                    Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
+                    Map.entry("deregistrationUrl", deregistrationUrl),
+                    Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
+                    Map.entry("supportUrl", baseUrl + "/support"),
+                    Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
+                    Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.png")
+            );
+
+            String html = emailService.replaceVariables(template, variables);
+            String subject = emailTemplateService.resolveSubject("registration-organizer-added", localeStr)
+                    .map(s -> emailService.replaceVariables(s, variables))
+                    .orElseGet(() -> localeStr.equals("de")
+                            ? "Anmeldebestätigung – " + event.getTitle()
+                            : "Registration confirmed – " + event.getTitle());
+
+            byte[] icsFile = generateCalendarFile(event, eventDateTime);
+            EmailService.EmailAttachment calendarAttachment = new EmailService.EmailAttachment(
+                    "event.ics", icsFile, "text/calendar; charset=utf-8; method=REQUEST", true);
+
+            List<String> cc = additionalEmailsFor(userProfile);
+            emailService.sendHtmlEmailWithAttachments(
+                    userProfile.getEmail(), cc, subject, html, List.of(calendarAttachment));
+
+            log.info("Organizer-added confirmation email sent successfully to: {}",
+                    LoggingUtils.maskEmail(userProfile.getEmail()));
+        } catch (Exception e) {
+            log.error("Failed to send organizer-added confirmation email to: {}",
+                    LoggingUtils.maskEmail(userProfile.getEmail()), e);
+            // Don't re-throw — email failure must not block the add.
+        }
+    }
+
+    /**
      * Story 10.32 — collect additional emails from the (Story 10.32-aware)
      * UserResponse DTO. Returns an empty list for anonymous registrants and
      * for users whose CUMS response predates the additional-emails field.

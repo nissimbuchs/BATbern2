@@ -1,0 +1,46 @@
+<!-- subject: Registration confirmed – {{eventTitle}} -->
+<!-- registration-organizer-added-en.html — "Added by the organizing team" confirmation (English) -->
+<!--
+  Sent to a person an organizer MANUALLY added as a confirmed participant ("Add participant").
+  NO confirm-your-registration call-to-action (the place is already confirmed), NO waitlist
+  narrative, NO registration code. Content fragment for the batbern-default layout.
+  Variables: {{attendeeFirstName}} {{attendeeLastName}} {{eventTitle}} {{eventDate}}
+             {{eventTime}} {{venueName}} {{venueAddress}} {{eventUrl}} {{deregistrationUrl}}
+-->
+<h2>🎟️ You're registered</h2>
+
+<p>Hello {{attendeeFirstName}} {{attendeeLastName}},</p>
+
+<p>the BATbern organizing team has registered you for the following event.
+   <strong>Your place is confirmed</strong> — there's nothing more you need to do.</p>
+
+<div class="event-details">
+    <h2>{{eventTitle}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Date:</span>
+        <span class="detail-value">{{eventDate}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Time:</span>
+        <span class="detail-value">{{eventTime}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Venue:</span>
+        <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
+    </div>
+</div>
+
+<div style="text-align: center;">
+    <a href="{{eventUrl}}" class="cta-button">View the event page</a>
+</div>
+
+<p>A calendar entry (.ics file) is attached to this email.</p>
+
+<p>We look forward to seeing you at the event!</p>
+
+<p style="font-size: 12px; color: #666; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
+    Can't make it after all? <a href="{{deregistrationUrl}}" style="color: #666;">Cancel your registration here</a>
+</p>
+
+<p>Kind regards,<br>
+<strong>The BATbern Team</strong></p>

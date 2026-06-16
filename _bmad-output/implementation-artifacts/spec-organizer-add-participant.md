@@ -34,7 +34,13 @@
 - **Capacity:** `activeCount = countByEventIdAndStatusIn(eventId, CAPACITY_STATUSES)`; if `capacity != null && activeCount >= capacity && !force` → throw a capacity-exceeded exception → `409` (message names the count/capacity). When `force=true`, create anyway (organizer override).
 - Build `Registration` with `status="confirmed"`, real attendee fields from the user, `registrationDate=now()`. **Audit metadata** `addedByOrganizer=<currentUsername>` — but **NOT** `Registration.AUTO_REGISTERED_FROM_KEY` (that key excludes a row from `realAttendeeCount`; a manually-added participant IS a real attendee and should count for capacity + the delete-guard).
 - `deregistrationToken` auto-generates via the existing `@PrePersist`.
-- If `notify`, send the standard registration-confirmation email (reuse `RegistrationEmailService` confirmed-path) so the attendee gets their cancel/deregistration link.
+- If `notify`, send a **dedicated** "added by the organizing team" confirmation via
+  `RegistrationEmailService.sendOrganizerAddedConfirmation` (template `registration-organizer-added-{de,en}`).
+  This is NOT the double-opt-in registration-confirmation email and NOT the waitlist-promotion
+  email: the place is already confirmed, so there is no "please confirm" CTA, no waitlist
+  narrative, and no registration code — just a "you're registered, your place is confirmed"
+  notice with the event details, a calendar (.ics) invite, and the self-service deregistration
+  link. (Corrected 2026-06-16 after the first cut wrongly reused the waitlist-promotion email.)
 
 ### FR3 — OpenAPI + types
 - Add the operation + `AddParticipantRequest` schema to `docs/api/events-api.openapi.yml`.

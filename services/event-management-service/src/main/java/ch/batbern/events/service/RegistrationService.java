@@ -28,6 +28,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -636,11 +637,14 @@ public class RegistrationService {
         log.info("Organizer {} added {} as confirmed participant for event {} (force={})",
                 addedBy, username, event.getEventCode(), force);
 
-        // Notify reuses the waitlist-promotion "you now have a confirmed spot" email (DE+EN
-        // templates exist; correct "you're in" semantic — unlike the double-opt-in registration-
-        // confirmation email). A dedicated "added-by-organizer" template is a future polish.
+        // Notify with a dedicated "added by the organizing team" confirmation: the place is
+        // already confirmed, so this is NOT the double-opt-in registration-confirmation email and
+        // NOT the waitlist-promotion email (no "confirm please", no waitlist story, no reg code).
         if (notify) {
-            waitlistPromotionEmailService.sendPromotionEmail(saved);
+            String pref = userApiClient.getPreferredLanguage(username);
+            Locale locale = (pref != null && pref.toLowerCase(Locale.ROOT).startsWith("de"))
+                    ? Locale.GERMAN : Locale.ENGLISH;
+            registrationEmailService.sendOrganizerAddedConfirmation(saved, user, event, locale);
         }
 
         return saved;

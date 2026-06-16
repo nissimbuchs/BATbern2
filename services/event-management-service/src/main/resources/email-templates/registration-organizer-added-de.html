@@ -1,0 +1,46 @@
+<!-- subject: Anmeldebestätigung – {{eventTitle}} -->
+<!-- registration-organizer-added-de.html — "Vom Organisationsteam angemeldet"-Bestätigung (Deutsch) -->
+<!--
+  Geht an eine Person, die ein Organisator MANUELL als bestätigten Teilnehmer hinzugefügt hat
+  ("Teilnehmer hinzufügen"). KEINE Bestätigungsaufforderung (der Platz ist bereits bestätigt),
+  KEIN Wartelisten-Bezug, KEIN Anmeldecode. Content-Fragment für das batbern-default Layout.
+  Variablen: {{attendeeFirstName}} {{attendeeLastName}} {{eventTitle}} {{eventDate}}
+             {{eventTime}} {{venueName}} {{venueAddress}} {{eventUrl}} {{deregistrationUrl}}
+-->
+<h2>🎟️ Sie sind angemeldet</h2>
+
+<p>Hallo {{attendeeFirstName}} {{attendeeLastName}},</p>
+
+<p>das BATbern-Organisationsteam hat Sie für die folgende Veranstaltung angemeldet.
+   <strong>Ihr Platz ist bestätigt</strong> – Sie müssen nichts weiter tun.</p>
+
+<div class="event-details">
+    <h2>{{eventTitle}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Datum:</span>
+        <span class="detail-value">{{eventDate}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Uhrzeit:</span>
+        <span class="detail-value">{{eventTime}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Veranstaltungsort:</span>
+        <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
+    </div>
+</div>
+
+<div style="text-align: center;">
+    <a href="{{eventUrl}}" class="cta-button">Zur Event-Seite</a>
+</div>
+
+<p>Ein Kalendereintrag (.ics Datei) ist dieser E-Mail als Anhang beigefügt.</p>
+
+<p>Wir freuen uns darauf, Sie am Event zu sehen!</p>
+
+<p style="font-size: 12px; color: #666; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
+    Sie können leider doch nicht teilnehmen? <a href="{{deregistrationUrl}}" style="color: #666;">Hier abmelden</a>
+</p>
+
+<p>Mit freundlichen Grüssen,<br>
+<strong>Das BATbern Team</strong></p>
