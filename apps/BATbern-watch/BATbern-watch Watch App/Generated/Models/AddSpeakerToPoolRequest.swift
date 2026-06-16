@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Request to add a potential speaker to the event speaker pool during brainstorming phase. Story 5.2 - AC9-12: Speaker Pool Management  */
+/** Request to add a potential speaker to the event speaker pool during brainstorming phase. Story 5.2 - AC9-12: Speaker Pool Management. Story 11.D.1 (AR23): &#x60;additionalProperties: false&#x60; — any client-supplied &#x60;email&#x60; (or other unknown field) is rejected with HTTP 400. Use &#x60;POST /speakers/{speakerId}/promote&#x60; to attach an email when promoting a CONTACTED speaker to READY.  */
 public struct AddSpeakerToPoolRequest: Codable, JSONEncodable, Hashable {
 
     public static let speakerNameRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)

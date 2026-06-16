@@ -14,6 +14,7 @@ public struct UpdateEventRequest: Codable, JSONEncodable, Hashable {
 
     public static let titleRule = StringRule(minLength: nil, maxLength: 200, pattern: nil)
     public static let venueNameRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
+    public static let registrationCapacityRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public static let organizerUsernameRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[a-z]+\\.[a-z]+(\\.[0-9]+)?$/")
     public static let descriptionRule = StringRule(minLength: nil, maxLength: 5000, pattern: nil)
     public static let themeImageUploadIdRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
@@ -24,6 +25,8 @@ public struct UpdateEventRequest: Codable, JSONEncodable, Hashable {
     public var venueName: String
     public var venueAddress: String
     public var venueCapacity: Int
+    /** Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
+    public var registrationCapacity: Int?
     public var workflowState: EventWorkflowState?
     /** Username of the event organizer in format \"firstname.lastname\" or \"firstname.lastname.2\" for collisions. Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.  */
     public var organizerUsername: String
@@ -35,7 +38,7 @@ public struct UpdateEventRequest: Codable, JSONEncodable, Hashable {
     /** Upload ID from /logos/presigned-url for event theme image */
     public var themeImageUploadId: String?
 
-    public init(title: String, eventNumber: Int, date: Date, registrationDeadline: Date, venueName: String, venueAddress: String, venueCapacity: Int, workflowState: EventWorkflowState? = nil, organizerUsername: String, currentAttendeeCount: Int? = nil, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, eventType: EventType, themeImageUploadId: String? = nil) {
+    public init(title: String, eventNumber: Int, date: Date, registrationDeadline: Date, venueName: String, venueAddress: String, venueCapacity: Int, registrationCapacity: Int? = nil, workflowState: EventWorkflowState? = nil, organizerUsername: String, currentAttendeeCount: Int? = nil, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, eventType: EventType, themeImageUploadId: String? = nil) {
         self.title = title
         self.eventNumber = eventNumber
         self.date = date
@@ -43,6 +46,7 @@ public struct UpdateEventRequest: Codable, JSONEncodable, Hashable {
         self.venueName = venueName
         self.venueAddress = venueAddress
         self.venueCapacity = venueCapacity
+        self.registrationCapacity = registrationCapacity
         self.workflowState = workflowState
         self.organizerUsername = organizerUsername
         self.currentAttendeeCount = currentAttendeeCount
@@ -61,6 +65,7 @@ public struct UpdateEventRequest: Codable, JSONEncodable, Hashable {
         case venueName
         case venueAddress
         case venueCapacity
+        case registrationCapacity
         case workflowState
         case organizerUsername
         case currentAttendeeCount
@@ -82,6 +87,7 @@ public struct UpdateEventRequest: Codable, JSONEncodable, Hashable {
         try container.encode(venueName, forKey: .venueName)
         try container.encode(venueAddress, forKey: .venueAddress)
         try container.encode(venueCapacity, forKey: .venueCapacity)
+        try container.encodeIfPresent(registrationCapacity, forKey: .registrationCapacity)
         try container.encodeIfPresent(workflowState, forKey: .workflowState)
         try container.encode(organizerUsername, forKey: .organizerUsername)
         try container.encodeIfPresent(currentAttendeeCount, forKey: .currentAttendeeCount)

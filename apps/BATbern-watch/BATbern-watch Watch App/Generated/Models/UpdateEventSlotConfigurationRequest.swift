@@ -19,6 +19,10 @@ public struct UpdateEventSlotConfigurationRequest: Codable, JSONEncodable, Hasha
     public static let breakSlotsRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public static let lunchSlotsRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public static let defaultCapacityRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
+    public static let moderationStartDurationRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
+    public static let moderationEndDurationRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
+    public static let breakDurationRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
+    public static let lunchDurationRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     /** Minimum number of session slots */
     public var minSlots: Int
     /** Maximum number of session slots (must be >= minSlots) */
@@ -37,8 +41,16 @@ public struct UpdateEventSlotConfigurationRequest: Codable, JSONEncodable, Hasha
     public var typicalStartTime: String?
     /** Typical end time for this event type */
     public var typicalEndTime: String?
+    /** Duration of moderation session at event start, in minutes */
+    public var moderationStartDuration: Int?
+    /** Duration of moderation session at event end, in minutes */
+    public var moderationEndDuration: Int?
+    /** Duration of each break session, in minutes */
+    public var breakDuration: Int?
+    /** Duration of the lunch session, in minutes */
+    public var lunchDuration: Int?
 
-    public init(minSlots: Int, maxSlots: Int, slotDuration: Int, theoreticalSlotsAM: Bool, breakSlots: Int, lunchSlots: Int, defaultCapacity: Int, typicalStartTime: String? = nil, typicalEndTime: String? = nil) {
+    public init(minSlots: Int, maxSlots: Int, slotDuration: Int, theoreticalSlotsAM: Bool, breakSlots: Int, lunchSlots: Int, defaultCapacity: Int, typicalStartTime: String? = nil, typicalEndTime: String? = nil, moderationStartDuration: Int? = nil, moderationEndDuration: Int? = nil, breakDuration: Int? = nil, lunchDuration: Int? = nil) {
         self.minSlots = minSlots
         self.maxSlots = maxSlots
         self.slotDuration = slotDuration
@@ -48,6 +60,10 @@ public struct UpdateEventSlotConfigurationRequest: Codable, JSONEncodable, Hasha
         self.defaultCapacity = defaultCapacity
         self.typicalStartTime = typicalStartTime
         self.typicalEndTime = typicalEndTime
+        self.moderationStartDuration = moderationStartDuration
+        self.moderationEndDuration = moderationEndDuration
+        self.breakDuration = breakDuration
+        self.lunchDuration = lunchDuration
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -60,6 +76,10 @@ public struct UpdateEventSlotConfigurationRequest: Codable, JSONEncodable, Hasha
         case defaultCapacity
         case typicalStartTime
         case typicalEndTime
+        case moderationStartDuration
+        case moderationEndDuration
+        case breakDuration
+        case lunchDuration
     }
 
     // Encodable protocol methods
@@ -75,6 +95,10 @@ public struct UpdateEventSlotConfigurationRequest: Codable, JSONEncodable, Hasha
         try container.encode(defaultCapacity, forKey: .defaultCapacity)
         try container.encodeIfPresent(typicalStartTime, forKey: .typicalStartTime)
         try container.encodeIfPresent(typicalEndTime, forKey: .typicalEndTime)
+        try container.encodeIfPresent(moderationStartDuration, forKey: .moderationStartDuration)
+        try container.encodeIfPresent(moderationEndDuration, forKey: .moderationEndDuration)
+        try container.encodeIfPresent(breakDuration, forKey: .breakDuration)
+        try container.encodeIfPresent(lunchDuration, forKey: .lunchDuration)
     }
 }
 

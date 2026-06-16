@@ -26,14 +26,20 @@ public struct SpeakerPoolResponse: Codable, JSONEncodable, Hashable {
         case withdrew = "withdrew"
         case overflow = "overflow"
     }
+    public enum Source: String, Codable, CaseIterable {
+        case organizerAdded = "organizer_added"
+        case selfNomination = "self_nomination"
+    }
     /** Unique identifier for the speaker pool entry */
     public var id: UUID
     /** UUID of the event this speaker is associated with */
     public var eventId: UUID
     /** Name of the potential speaker */
     public var speakerName: String
-    /** Company or organization of the speaker */
+    /** Company identifier/slug of the speaker (from User.companyId). Stable key — NOT for display. */
     public var company: String?
+    /** Human-readable company name (companies.display_name, falling back to companies.name, then the slug). Prefer this over `company` for display.  */
+    public var companyDisplayName: String?
     /** Areas of expertise */
     public var expertise: String?
     /** Username of organizer assigned for outreach */
@@ -42,20 +48,33 @@ public struct SpeakerPoolResponse: Codable, JSONEncodable, Hashable {
     public var status: Status
     /** Free-text notes about the speaker */
     public var notes: String?
+    /** Story 7.2 — provenance of the pool row. `organizer_added` for organizer-sourced candidates (the default), `self_nomination` for attendee \"I Could Speak on That\" entries. Lets the organizer pool/brainstorming UI flag self-nominations.  */
+    public var source: Source?
+    /** Story 7.2 — username of the self-nominating attendee (null for organizer-added rows). */
+    public var proposedByUsername: String?
+    /** Story 7.2 — the talk title the attendee proposed (null for organizer-added rows). */
+    public var proposedSessionTitle: String?
+    /** Story 7.2 — the talk abstract the attendee proposed, stored raw (null for organizer-added rows). */
+    public var proposedAbstract: String?
     /** Timestamp when speaker was added to pool */
     public var createdAt: Date
     /** Timestamp of last update */
     public var updatedAt: Date
 
-    public init(id: UUID, eventId: UUID, speakerName: String, company: String? = nil, expertise: String? = nil, assignedOrganizerId: String? = nil, status: Status, notes: String? = nil, createdAt: Date, updatedAt: Date) {
+    public init(id: UUID, eventId: UUID, speakerName: String, company: String? = nil, companyDisplayName: String? = nil, expertise: String? = nil, assignedOrganizerId: String? = nil, status: Status, notes: String? = nil, source: Source? = nil, proposedByUsername: String? = nil, proposedSessionTitle: String? = nil, proposedAbstract: String? = nil, createdAt: Date, updatedAt: Date) {
         self.id = id
         self.eventId = eventId
         self.speakerName = speakerName
         self.company = company
+        self.companyDisplayName = companyDisplayName
         self.expertise = expertise
         self.assignedOrganizerId = assignedOrganizerId
         self.status = status
         self.notes = notes
+        self.source = source
+        self.proposedByUsername = proposedByUsername
+        self.proposedSessionTitle = proposedSessionTitle
+        self.proposedAbstract = proposedAbstract
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -65,10 +84,15 @@ public struct SpeakerPoolResponse: Codable, JSONEncodable, Hashable {
         case eventId
         case speakerName
         case company
+        case companyDisplayName
         case expertise
         case assignedOrganizerId
         case status
         case notes
+        case source
+        case proposedByUsername
+        case proposedSessionTitle
+        case proposedAbstract
         case createdAt
         case updatedAt
     }
@@ -81,10 +105,15 @@ public struct SpeakerPoolResponse: Codable, JSONEncodable, Hashable {
         try container.encode(eventId, forKey: .eventId)
         try container.encode(speakerName, forKey: .speakerName)
         try container.encodeIfPresent(company, forKey: .company)
+        try container.encodeIfPresent(companyDisplayName, forKey: .companyDisplayName)
         try container.encodeIfPresent(expertise, forKey: .expertise)
         try container.encodeIfPresent(assignedOrganizerId, forKey: .assignedOrganizerId)
         try container.encode(status, forKey: .status)
         try container.encodeIfPresent(notes, forKey: .notes)
+        try container.encodeIfPresent(source, forKey: .source)
+        try container.encodeIfPresent(proposedByUsername, forKey: .proposedByUsername)
+        try container.encodeIfPresent(proposedSessionTitle, forKey: .proposedSessionTitle)
+        try container.encodeIfPresent(proposedAbstract, forKey: .proposedAbstract)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
     }

@@ -14,9 +14,16 @@ BATbern Watch is a standalone watchOS companion app for real-time event orchestr
 ## Build & Development Commands
 
 ### Prerequisites
-- Xcode 16+
-- watchOS 11+ SDK
+- Xcode 26+ (last verified on Xcode 26.5 / build 17F42)
+- watchOS 26+ SDK (project deployment target is watchOS 26.0)
 - Apple Watch Simulator or physical device
+
+**Simulator destination gotcha:** several simulators share the same name across
+watchOS versions (e.g. `Apple Watch Series 11 (46mm)` exists for watchOS 26.2,
+26.4, and 26.5), so a bare `name:` destination fails with *"multiple devices
+matched"*. Disambiguate by appending the OS (`name=Apple Watch Series 11 (46mm),OS=26.5`)
+or, most robustly, pin the simulator UDID (`-destination 'id=<UDID>'`). List
+available devices with `xcrun simctl list devices available`.
 
 ### Essential Commands
 
@@ -26,20 +33,20 @@ open BATbern-watch.xcodeproj
 
 # Build for Watch Simulator
 xcodebuild -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)'
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)'
 
 # Run all tests
 xcodebuild test -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)'
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)'
 
 # Run specific test class
 xcodebuild test -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
   -only-testing:BATbern-watch_Watch_AppTests/SessionViewModelTests
 
 # Run single test method
 xcodebuild test -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
   -only-testing:BATbern-watch_Watch_AppTests/SessionViewModelTests/testCountdownTimerAccuracy
 
 # Build for physical device (requires code signing)
@@ -331,26 +338,26 @@ let haptics = MockHapticService()
 ```bash
 # All tests
 xcodebuild test -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)'
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)'
 
 # Unit tests only
 xcodebuild test -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
   -only-testing:BATbern-watch_Watch_AppTests
 
 # UI tests only
 xcodebuild test -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
   -only-testing:BATbern-watch_Watch_AppUITests
 
 # Specific test suite
 xcodebuild test -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
   -only-testing:BATbern-watch_Watch_AppTests/SessionTimerEngineTests
 
 # Generate coverage report
 xcodebuild test -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
   -enableCodeCoverage YES
 ```
 
@@ -403,19 +410,33 @@ All design and architecture documentation lives in `../../docs/watch-app/`:
 
 ### Workflow
 
-Types are automatically generated from the BATbern OpenAPI specification:
+Model types are refreshed from the BATbern OpenAPI specification:
 
 ```bash
-# Regenerate types after API spec changes
+# Refresh types after API spec changes
 ./scripts/generate-types.sh
 
 # Source: ../../docs/api/events-api.openapi.yml
 # Output: BATbern-watch Watch App/Generated/Models/*.swift
 ```
 
-**After regeneration:**
+**Curated subset, not full generation.** The watch consumes only a slice of the
+events API, so `Generated/Models/` holds a *curated* set — not every schema the
+spec defines. The script therefore **refreshes only the models already present**
+and then **prints the new models the spec now offers** (e.g. `WatchSessionDetail`,
+newsletter/Q&A DTOs) without adding them. It generates into an isolated temp dir
+and never deletes the `Generated/` root, so the hand-maintained
+`Generated/OpenAPIUtilities.swift` is preserved.
+
+**After refresh:**
 1. Run `./scripts/generate-types.sh`
 2. Build to verify: `Cmd+B` (Xcode picks up new `.swift` files automatically — no manual "Add Files" step needed)
+3. **If the build flags a missing referenced type**, a refreshed model started
+   referencing a new schema. Copy that model file from the generator output
+   (the script lists the available new models) into `Generated/Models/` and
+   rebuild. Example: the `teaserImages` field added `TeaserImageItem` +
+   `TeaserImagePresentationPosition`, which had to be opted in this way.
+4. Run tests (`Cmd+U`) to confirm decoding against the refreshed contract.
 
 ### Generated vs Manual Models
 
@@ -530,11 +551,11 @@ Watch apps ship via App Store Connect (separate from backend deployments):
 xcrun simctl erase all
 
 # Boot specific Watch simulator
-xcrun simctl boot "Apple Watch Series 9 (45mm)"
+xcrun simctl boot "Apple Watch Series 11 (46mm)"
 
 # Install app manually
 xcodebuild install -scheme "BATbern-watch Watch App" \
-  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)'
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)'
 ```
 
 ### WebSocket Connection Failures
