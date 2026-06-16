@@ -38,8 +38,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -71,6 +74,12 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private UserApiClient userApiClient;
+
+    @MockitoBean
+    private ch.batbern.events.service.RegistrationEmailService registrationEmailService;
+
+    @MockitoBean
+    private ch.batbern.events.service.WaitlistPromotionEmailService waitlistPromotionEmailService;
 
     private static final String EVENT_CODE = "BATbern1999";
     private static final String ORGANIZER_USERNAME = "organizer.alice";
@@ -357,6 +366,20 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"username\":\"jane.doe\",\"force\":true,\"notify\":false}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("confirmed"));
+    }
+
+    @Test
+    @DisplayName("notify=true sends the organizer-added confirmation, NOT the waitlist-promotion email")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_sendOrganizerAddedConfirmation_not_waitlist_when_notify() throws Exception {
+        // notify omitted → defaults true.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\"}"))
+                .andExpect(status().isCreated());
+
+        verify(registrationEmailService).sendOrganizerAddedConfirmation(any(), any(), any(), any());
+        verify(waitlistPromotionEmailService, never()).sendPromotionEmail(any());
     }
 
     @Test
