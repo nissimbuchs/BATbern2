@@ -51,6 +51,11 @@ Each release includes:
 - ✅ New `batbern{N}-participants@batbern.ch` mailing alias fans out to every active registrant — "Way 2" (same audience as Way 1)
 - ✅ Consolidated the older bare `batbern{N}@batbern.ch` alias: now **deprecated** and forwards to the same participants resolution as `batbern{N}-participants@` (clearer name, matches `-speaker@`/`-moderator@`); logs a deprecation warning, sender auth unchanged (organizers only)
 
+**New Feature — Organizer "Add participant" (2026-06-16)**:
+- ✅ Organizers can manually add an existing user to an event **directly as a confirmed participant** from the Registrations tab (4th action button) — for VIPs, late phone/email requests, or colleagues — skipping the self-registration + email-confirmation step.
+- ✅ Existing-users-only picker (the shared `UserAutocomplete`); capacity respected with an explicit "add anyway" override; counts as a real attendee.
+- ✅ The added participant receives a dedicated **"you're registered — your place is confirmed"** email (event details + calendar invite + self-service cancel link) — not a "please confirm" or waitlist message.
+
 > **Note**: The former "v1.3.0 — Speaker Authentication Unification (Epic 9)" plan has shipped in a
 > different form. Epic 9's JWT magic-link approach was **superseded** by Epic 11 (unified Cognito
 > speaker workflow) and Epic 12 (Google SSO), both released in v1.3.0 below.
