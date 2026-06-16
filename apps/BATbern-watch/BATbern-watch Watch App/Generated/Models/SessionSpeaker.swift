@@ -23,7 +23,8 @@ public struct SessionSpeaker: Codable, JSONEncodable, Hashable {
     public static let firstNameRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
     public static let lastNameRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
     public static let companyRule = StringRule(minLength: nil, maxLength: 12, pattern: nil)
-    public static let bioRule = StringRule(minLength: nil, maxLength: 2000, pattern: nil)
+    public static let companyDisplayNameRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
+    public static let bioRule = StringRule(minLength: nil, maxLength: 5000, pattern: nil)
     public static let presentationTitleRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
     /** User's username (public identifier from User entity) */
     public var username: String
@@ -31,10 +32,14 @@ public struct SessionSpeaker: Codable, JSONEncodable, Hashable {
     public var firstName: String
     /** Speaker's last name (from User entity) */
     public var lastName: String
-    /** Speaker's company name (from User.companyId) */
+    /** Speaker's company identifier/slug (from User.companyId). Stable key used for logo lookup — NOT for display. */
     public var company: String?
+    /** Human-readable company name (companies.display_name, falling back to companies.name, then the company slug). Prefer this over `company` for display. Null when the speaker has no associated company.  */
+    public var companyDisplayName: String?
     /** Speaker's profile picture URL (from User entity) */
     public var profilePictureUrl: String?
+    /** Company logo CloudFront URL (cross-service DB join: logos table). Populated on archive list responses to avoid a separate useCompany API call.  */
+    public var companyLogoUrl: String?
     /** Speaker's biography (from User entity) */
     public var bio: String?
     /** Speaker's role in the session: - PRIMARY_SPEAKER: Main presenter - CO_SPEAKER: Co-presenter - MODERATOR: Panel moderator - PANELIST: Panel participant  */
@@ -44,12 +49,14 @@ public struct SessionSpeaker: Codable, JSONEncodable, Hashable {
     /** Whether speaker has confirmed participation */
     public var isConfirmed: Bool
 
-    public init(username: String, firstName: String, lastName: String, company: String? = nil, profilePictureUrl: String? = nil, bio: String? = nil, speakerRole: SpeakerRole, presentationTitle: String? = nil, isConfirmed: Bool) {
+    public init(username: String, firstName: String, lastName: String, company: String? = nil, companyDisplayName: String? = nil, profilePictureUrl: String? = nil, companyLogoUrl: String? = nil, bio: String? = nil, speakerRole: SpeakerRole, presentationTitle: String? = nil, isConfirmed: Bool) {
         self.username = username
         self.firstName = firstName
         self.lastName = lastName
         self.company = company
+        self.companyDisplayName = companyDisplayName
         self.profilePictureUrl = profilePictureUrl
+        self.companyLogoUrl = companyLogoUrl
         self.bio = bio
         self.speakerRole = speakerRole
         self.presentationTitle = presentationTitle
@@ -61,7 +68,9 @@ public struct SessionSpeaker: Codable, JSONEncodable, Hashable {
         case firstName
         case lastName
         case company
+        case companyDisplayName
         case profilePictureUrl
+        case companyLogoUrl
         case bio
         case speakerRole
         case presentationTitle
@@ -76,7 +85,9 @@ public struct SessionSpeaker: Codable, JSONEncodable, Hashable {
         try container.encode(firstName, forKey: .firstName)
         try container.encode(lastName, forKey: .lastName)
         try container.encodeIfPresent(company, forKey: .company)
+        try container.encodeIfPresent(companyDisplayName, forKey: .companyDisplayName)
         try container.encodeIfPresent(profilePictureUrl, forKey: .profilePictureUrl)
+        try container.encodeIfPresent(companyLogoUrl, forKey: .companyLogoUrl)
         try container.encodeIfPresent(bio, forKey: .bio)
         try container.encode(speakerRole, forKey: .speakerRole)
         try container.encodeIfPresent(presentationTitle, forKey: .presentationTitle)

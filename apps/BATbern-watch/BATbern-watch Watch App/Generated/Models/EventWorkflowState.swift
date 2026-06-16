@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed). Defines the current state of an event in the organizer workflow.  */
+/** Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed). Defines the current state of an event in the organizer workflow. The scheduler transitions AGENDA_PUBLISHED directly to EVENT_LIVE on event day.  */
 public enum EventWorkflowState: String, Codable, CaseIterable {
     case created = "CREATED"
     case topicSelection = "TOPIC_SELECTION"

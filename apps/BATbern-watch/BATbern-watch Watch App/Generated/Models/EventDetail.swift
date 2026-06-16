@@ -12,6 +12,10 @@ import AnyCodable
 
 public struct EventDetail: Codable, JSONEncodable, Hashable {
 
+    public enum QnaOpenTrigger: String, Codable, CaseIterable {
+        case eventCompleted = "EVENT_COMPLETED"
+        case speakersPublished = "SPEAKERS_PUBLISHED"
+    }
     public enum CurrentPublishedPhase: String, Codable, CaseIterable {
         case topic = "TOPIC"
         case speakers = "SPEAKERS"
@@ -35,6 +39,22 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
     public var venueName: String
     public var venueAddress: String
     public var venueCapacity: Int
+    /** Story 10.11: Organizer-configured registration limit (≤ venueCapacity). NULL = unlimited. Distinct from venueCapacity (fire-code limit). Null means no cap is enforced.  */
+    public var registrationCapacity: Int?
+    /** Story 7.5 rework: master on/off for this event's per-session Q&A. */
+    public var qnaEnabled: Bool?
+    /** Story 7.5 rework: WHEN the Q&A windows open. EVENT_COMPLETED (default, \"digital afterglow\") or SPEAKERS_PUBLISHED (opt-in: open once the speakers phase publishes).  */
+    public var qnaOpenTrigger: QnaOpenTrigger?
+    /** Story 7.5 rework: window length; windows close at (event date + this many days). */
+    public var qnaWindowDays: Int?
+    /** Story 10.11 — Count of registrations with status registered or confirmed. */
+    public var confirmedCount: Int?
+    /** Story 10.11 — Count of registrations with status waitlist. */
+    public var waitlistCount: Int?
+    /** Story 10.11 — registrationCapacity - confirmedCount. Null when registrationCapacity is null (unlimited). */
+    public var spotsRemaining: Int?
+    /** Count of *real* (self-registered) attendees in an active status — i.e. registrations WITHOUT an `autoRegisteredFrom` metadata marker. Excludes programmatic enrollments (organizers/partners auto-enrolled at event creation, and auto-registered speakers). An event is deletable only when this is 0 (deleteEvent returns 409 otherwise); the organizer UI uses it to enable/disable the Delete button.  */
+    public var realAttendeeCount: Int?
     /** Username of the event organizer in format \"firstname.lastname\" or \"firstname.lastname.2\" for collisions. Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.  */
     public var organizerUsername: String
     public var currentAttendeeCount: Int? = 0
@@ -48,6 +68,8 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
     public var themeImageUrl: String?
     /** Upload ID from three-phase upload pattern (internal reference). Story 2.5.3a: Event Theme Image Upload This is returned so the frontend can track what was uploaded.  */
     public var themeImageUploadId: String?
+    /** Ordered list of teaser images shown as individual slides on the moderator presentation page (between topic-reveal and agenda-preview). Story 10.22: Event Teaser Images.  */
+    public var teaserImages: [TeaserImageItem]?
     /** Topic code (slug-format identifier) of the selected topic. Story 5.2: Topic Selection & Speaker Brainstorming ADR-003: Meaningful Identifiers - use topicCode instead of UUID  */
     public var topicCode: String?
     public var eventType: EventType?
@@ -62,7 +84,7 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
     /** Progressive publishing phase for watch app (Story W1.2) - TOPIC: Event topic selected, speakers TBA - SPEAKERS: Speaker list published - AGENDA: Full session details published  */
     public var currentPublishedPhase: CurrentPublishedPhase?
 
-    public init(eventCode: String, title: String, eventNumber: Int, date: Date, registrationDeadline: Date, venueName: String, venueAddress: String, venueCapacity: Int, organizerUsername: String, currentAttendeeCount: Int? = 0, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, createdAt: Date? = nil, updatedAt: Date? = nil, themeImageUrl: String? = nil, themeImageUploadId: String? = nil, topicCode: String? = nil, eventType: EventType? = nil, typicalStartTime: String? = nil, typicalEndTime: String? = nil, workflowState: EventWorkflowState? = nil, topic: EventTopic? = nil, venue: Venue? = nil, sessions: [Session]? = nil, currentPublishedPhase: CurrentPublishedPhase? = nil) {
+    public init(eventCode: String, title: String, eventNumber: Int, date: Date, registrationDeadline: Date, venueName: String, venueAddress: String, venueCapacity: Int, registrationCapacity: Int? = nil, qnaEnabled: Bool? = nil, qnaOpenTrigger: QnaOpenTrigger? = nil, qnaWindowDays: Int? = nil, confirmedCount: Int? = nil, waitlistCount: Int? = nil, spotsRemaining: Int? = nil, realAttendeeCount: Int? = nil, organizerUsername: String, currentAttendeeCount: Int? = 0, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, createdAt: Date? = nil, updatedAt: Date? = nil, themeImageUrl: String? = nil, themeImageUploadId: String? = nil, teaserImages: [TeaserImageItem]? = nil, topicCode: String? = nil, eventType: EventType? = nil, typicalStartTime: String? = nil, typicalEndTime: String? = nil, workflowState: EventWorkflowState? = nil, topic: EventTopic? = nil, venue: Venue? = nil, sessions: [Session]? = nil, currentPublishedPhase: CurrentPublishedPhase? = nil) {
         self.eventCode = eventCode
         self.title = title
         self.eventNumber = eventNumber
@@ -71,6 +93,14 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         self.venueName = venueName
         self.venueAddress = venueAddress
         self.venueCapacity = venueCapacity
+        self.registrationCapacity = registrationCapacity
+        self.qnaEnabled = qnaEnabled
+        self.qnaOpenTrigger = qnaOpenTrigger
+        self.qnaWindowDays = qnaWindowDays
+        self.confirmedCount = confirmedCount
+        self.waitlistCount = waitlistCount
+        self.spotsRemaining = spotsRemaining
+        self.realAttendeeCount = realAttendeeCount
         self.organizerUsername = organizerUsername
         self.currentAttendeeCount = currentAttendeeCount
         self.publishedAt = publishedAt
@@ -80,6 +110,7 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         self.updatedAt = updatedAt
         self.themeImageUrl = themeImageUrl
         self.themeImageUploadId = themeImageUploadId
+        self.teaserImages = teaserImages
         self.topicCode = topicCode
         self.eventType = eventType
         self.typicalStartTime = typicalStartTime
@@ -100,6 +131,14 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         case venueName
         case venueAddress
         case venueCapacity
+        case registrationCapacity
+        case qnaEnabled
+        case qnaOpenTrigger
+        case qnaWindowDays
+        case confirmedCount
+        case waitlistCount
+        case spotsRemaining
+        case realAttendeeCount
         case organizerUsername
         case currentAttendeeCount
         case publishedAt
@@ -109,6 +148,7 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         case updatedAt
         case themeImageUrl
         case themeImageUploadId
+        case teaserImages
         case topicCode
         case eventType
         case typicalStartTime
@@ -132,6 +172,14 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         try container.encode(venueName, forKey: .venueName)
         try container.encode(venueAddress, forKey: .venueAddress)
         try container.encode(venueCapacity, forKey: .venueCapacity)
+        try container.encodeIfPresent(registrationCapacity, forKey: .registrationCapacity)
+        try container.encodeIfPresent(qnaEnabled, forKey: .qnaEnabled)
+        try container.encodeIfPresent(qnaOpenTrigger, forKey: .qnaOpenTrigger)
+        try container.encodeIfPresent(qnaWindowDays, forKey: .qnaWindowDays)
+        try container.encodeIfPresent(confirmedCount, forKey: .confirmedCount)
+        try container.encodeIfPresent(waitlistCount, forKey: .waitlistCount)
+        try container.encodeIfPresent(spotsRemaining, forKey: .spotsRemaining)
+        try container.encodeIfPresent(realAttendeeCount, forKey: .realAttendeeCount)
         try container.encode(organizerUsername, forKey: .organizerUsername)
         try container.encodeIfPresent(currentAttendeeCount, forKey: .currentAttendeeCount)
         try container.encodeIfPresent(publishedAt, forKey: .publishedAt)
@@ -141,6 +189,7 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(updatedAt, forKey: .updatedAt)
         try container.encodeIfPresent(themeImageUrl, forKey: .themeImageUrl)
         try container.encodeIfPresent(themeImageUploadId, forKey: .themeImageUploadId)
+        try container.encodeIfPresent(teaserImages, forKey: .teaserImages)
         try container.encodeIfPresent(topicCode, forKey: .topicCode)
         try container.encodeIfPresent(eventType, forKey: .eventType)
         try container.encodeIfPresent(typicalStartTime, forKey: .typicalStartTime)

@@ -12,11 +12,17 @@ import AnyCodable
 
 public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
 
+    public enum QnaOpenTrigger: String, Codable, CaseIterable {
+        case eventCompleted = "EVENT_COMPLETED"
+        case speakersPublished = "SPEAKERS_PUBLISHED"
+    }
     public static let titleRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
     public static let venueNameRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
+    public static let registrationCapacityRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public static let organizerUsernameRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[a-z]+\\.[a-z]+(\\.[0-9]+)?$/")
     public static let descriptionRule = StringRule(minLength: nil, maxLength: 5000, pattern: nil)
     public static let themeImageUploadIdRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
+    public static let qnaWindowDaysRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: 365, exclusiveMaximum: false, multipleOf: nil)
     public var title: String?
     public var eventNumber: Int?
     public var date: Date?
@@ -24,6 +30,8 @@ public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
     public var venueName: String?
     public var venueAddress: String?
     public var venueCapacity: Int?
+    /** Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
+    public var registrationCapacity: Int?
     public var workflowState: EventWorkflowState?
     /** Username of the event organizer in format \"firstname.lastname\" or \"firstname.lastname.2\" for collisions. Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.  */
     public var organizerUsername: String?
@@ -33,8 +41,14 @@ public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
     public var description: String?
     /** Upload ID from /logos/presigned-url for event theme image */
     public var themeImageUploadId: String?
+    /** Story 7.5 rework: master on/off for this event's per-session Q&A. */
+    public var qnaEnabled: Bool?
+    /** Story 7.5 rework: when the Q&A windows open. */
+    public var qnaOpenTrigger: QnaOpenTrigger?
+    /** Story 7.5 rework: window length in days (close = event date + this). */
+    public var qnaWindowDays: Int?
 
-    public init(title: String? = nil, eventNumber: Int? = nil, date: Date? = nil, registrationDeadline: Date? = nil, venueName: String? = nil, venueAddress: String? = nil, venueCapacity: Int? = nil, workflowState: EventWorkflowState? = nil, organizerUsername: String? = nil, currentAttendeeCount: Int? = nil, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, themeImageUploadId: String? = nil) {
+    public init(title: String? = nil, eventNumber: Int? = nil, date: Date? = nil, registrationDeadline: Date? = nil, venueName: String? = nil, venueAddress: String? = nil, venueCapacity: Int? = nil, registrationCapacity: Int? = nil, workflowState: EventWorkflowState? = nil, organizerUsername: String? = nil, currentAttendeeCount: Int? = nil, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, themeImageUploadId: String? = nil, qnaEnabled: Bool? = nil, qnaOpenTrigger: QnaOpenTrigger? = nil, qnaWindowDays: Int? = nil) {
         self.title = title
         self.eventNumber = eventNumber
         self.date = date
@@ -42,6 +56,7 @@ public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
         self.venueName = venueName
         self.venueAddress = venueAddress
         self.venueCapacity = venueCapacity
+        self.registrationCapacity = registrationCapacity
         self.workflowState = workflowState
         self.organizerUsername = organizerUsername
         self.currentAttendeeCount = currentAttendeeCount
@@ -49,6 +64,9 @@ public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
         self.metadata = metadata
         self.description = description
         self.themeImageUploadId = themeImageUploadId
+        self.qnaEnabled = qnaEnabled
+        self.qnaOpenTrigger = qnaOpenTrigger
+        self.qnaWindowDays = qnaWindowDays
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -59,6 +77,7 @@ public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
         case venueName
         case venueAddress
         case venueCapacity
+        case registrationCapacity
         case workflowState
         case organizerUsername
         case currentAttendeeCount
@@ -66,6 +85,9 @@ public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
         case metadata
         case description
         case themeImageUploadId
+        case qnaEnabled
+        case qnaOpenTrigger
+        case qnaWindowDays
     }
 
     // Encodable protocol methods
@@ -79,6 +101,7 @@ public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(venueName, forKey: .venueName)
         try container.encodeIfPresent(venueAddress, forKey: .venueAddress)
         try container.encodeIfPresent(venueCapacity, forKey: .venueCapacity)
+        try container.encodeIfPresent(registrationCapacity, forKey: .registrationCapacity)
         try container.encodeIfPresent(workflowState, forKey: .workflowState)
         try container.encodeIfPresent(organizerUsername, forKey: .organizerUsername)
         try container.encodeIfPresent(currentAttendeeCount, forKey: .currentAttendeeCount)
@@ -86,6 +109,9 @@ public struct PatchEventRequest: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(metadata, forKey: .metadata)
         try container.encodeIfPresent(description, forKey: .description)
         try container.encodeIfPresent(themeImageUploadId, forKey: .themeImageUploadId)
+        try container.encodeIfPresent(qnaEnabled, forKey: .qnaEnabled)
+        try container.encodeIfPresent(qnaOpenTrigger, forKey: .qnaOpenTrigger)
+        try container.encodeIfPresent(qnaWindowDays, forKey: .qnaWindowDays)
     }
 }
 

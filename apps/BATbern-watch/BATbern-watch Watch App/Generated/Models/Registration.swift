@@ -15,7 +15,7 @@ public struct Registration: Codable, JSONEncodable, Hashable {
 
     public enum Status: String, Codable, CaseIterable {
         case registered = "REGISTERED"
-        case waitlisted = "WAITLISTED"
+        case waitlist = "WAITLIST"
         case confirmed = "CONFIRMED"
         case cancelled = "CANCELLED"
         case attended = "ATTENDED"
@@ -42,6 +42,8 @@ public struct Registration: Codable, JSONEncodable, Hashable {
     /** Company name from user_profiles.company_id (FK to companies table) */
     public var company: String?
     public var status: Status
+    /** Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST. */
+    public var waitlistPosition: Int?
     public var registrationDate: Date?
     /** Event-level registration - sessions are preferences only, not commitments */
     public var sessionPreferences: [String]?
@@ -51,7 +53,7 @@ public struct Registration: Codable, JSONEncodable, Hashable {
     public var createdAt: Date?
     public var updatedAt: Date?
 
-    public init(registrationCode: String, eventCode: String, eventTitle: String? = nil, eventDate: Date? = nil, attendeeUsername: String, firstName: String? = nil, lastName: String? = nil, email: String? = nil, company: String? = nil, status: Status, registrationDate: Date? = nil, sessionPreferences: [String]? = nil, specialRequests: String? = nil, communicationPreferences: RegistrationCommunicationPreferences? = nil, createdAt: Date? = nil, updatedAt: Date? = nil) {
+    public init(registrationCode: String, eventCode: String, eventTitle: String? = nil, eventDate: Date? = nil, attendeeUsername: String, firstName: String? = nil, lastName: String? = nil, email: String? = nil, company: String? = nil, status: Status, waitlistPosition: Int? = nil, registrationDate: Date? = nil, sessionPreferences: [String]? = nil, specialRequests: String? = nil, communicationPreferences: RegistrationCommunicationPreferences? = nil, createdAt: Date? = nil, updatedAt: Date? = nil) {
         self.registrationCode = registrationCode
         self.eventCode = eventCode
         self.eventTitle = eventTitle
@@ -62,6 +64,7 @@ public struct Registration: Codable, JSONEncodable, Hashable {
         self.email = email
         self.company = company
         self.status = status
+        self.waitlistPosition = waitlistPosition
         self.registrationDate = registrationDate
         self.sessionPreferences = sessionPreferences
         self.specialRequests = specialRequests
@@ -81,6 +84,7 @@ public struct Registration: Codable, JSONEncodable, Hashable {
         case email
         case company
         case status
+        case waitlistPosition
         case registrationDate
         case sessionPreferences
         case specialRequests
@@ -103,6 +107,7 @@ public struct Registration: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(email, forKey: .email)
         try container.encodeIfPresent(company, forKey: .company)
         try container.encode(status, forKey: .status)
+        try container.encodeIfPresent(waitlistPosition, forKey: .waitlistPosition)
         try container.encodeIfPresent(registrationDate, forKey: .registrationDate)
         try container.encodeIfPresent(sessionPreferences, forKey: .sessionPreferences)
         try container.encodeIfPresent(specialRequests, forKey: .specialRequests)

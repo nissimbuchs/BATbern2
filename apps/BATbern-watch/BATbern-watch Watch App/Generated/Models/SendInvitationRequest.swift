@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Request to send/resend an invitation email to a speaker. Story 6.1b - AC3: Invitation Email  The email includes: - Accept/decline magic links (single-use RESPOND token) - Dashboard access link (reusable VIEW token) - Event details, deadlines, and session info  */
+/** Request to send/resend an invitation email to a speaker. Story 6.1b - AC3 (updated by 11.E.2 / 11.F.1): Invitation Email  The email includes: - Cognito login URL + temporary password (FRESH_TEMP_PASSWORD)   OR existing-password reminder (USE_EXISTING_PASSWORD) - Event details, deadlines, and session info  */
 public struct SendInvitationRequest: Codable, JSONEncodable, Hashable {
 
     public enum Locale: String, Codable, CaseIterable {
