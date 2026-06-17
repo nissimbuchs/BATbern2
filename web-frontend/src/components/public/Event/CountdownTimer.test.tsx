@@ -1,151 +1,128 @@
 /**
  * CountdownTimer Component Tests
  * Story 4.1.3: Event Landing Page Hero Section
+ *
+ * These tests use REAL date-fns + fake timers (no module mock) so they exercise the
+ * actual day-difference math. The previous version mocked differenceInDays and fed it
+ * hand-picked integers, which masked a real off-by-one: differenceInDays counts whole
+ * 24h periods, so an event at 00:00 two calendar days out read as "Tomorrow!". The fix
+ * is differenceInCalendarDays; the regression test below pins it.
+ *
+ * Dates are built with the local-time constructor (new Date(y, mIdx, d, h)) so the
+ * calendar-day arithmetic is deterministic regardless of the test runner's timezone.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CountdownTimer } from './CountdownTimer';
 
-// Mock date-fns
-vi.mock('date-fns', () => ({
-  differenceInDays: vi.fn(),
-}));
-
-import { differenceInDays } from 'date-fns';
-
 describe('CountdownTimer', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
-  it('should render countdown when event is today', () => {
-    vi.mocked(differenceInDays).mockReturnValue(0);
-    const futureDate = new Date('2025-03-15');
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-    render(<CountdownTimer eventDate={futureDate} />);
+  it('should render "Today!" when the event is later the same calendar day', () => {
+    vi.setSystemTime(new Date(2026, 5, 19, 8, 0)); // 2026-06-19 08:00 local
+    render(<CountdownTimer eventDate={new Date(2026, 5, 19, 20, 0)} />); // same day, 20:00
 
     expect(screen.getByText('Next Event')).toBeInTheDocument();
     expect(screen.getByText('Today!')).toBeInTheDocument();
   });
 
-  it('should render countdown when event is tomorrow', () => {
-    vi.mocked(differenceInDays).mockReturnValue(1);
-    const futureDate = new Date('2025-03-16');
+  it('should render "Tomorrow!" when the event is the next calendar day', () => {
+    vi.setSystemTime(new Date(2026, 5, 18, 9, 0)); // 2026-06-18 09:00 local
+    render(<CountdownTimer eventDate={new Date(2026, 5, 19, 0, 0)} />); // next day, midnight
 
-    render(<CountdownTimer eventDate={futureDate} />);
-
-    expect(screen.getByText('Next Event')).toBeInTheDocument();
     expect(screen.getByText('Tomorrow!')).toBeInTheDocument();
   });
 
-  it('should render countdown for multiple days', () => {
-    vi.mocked(differenceInDays).mockReturnValue(15);
-    const futureDate = new Date('2025-03-30');
+  it('should say "2 days until event" — not "Tomorrow!" — for an event two calendar days out at midnight (regression: BATbern59 on 2026-06-19 shown from 2026-06-17)', () => {
+    vi.setSystemTime(new Date(2026, 5, 17, 9, 0)); // Wed 2026-06-17 09:00 local
+    render(<CountdownTimer eventDate={new Date(2026, 5, 19, 0, 0)} />); // Fri 2026-06-19 00:00
 
-    render(<CountdownTimer eventDate={futureDate} />);
+    expect(screen.getByText('2 days until event')).toBeInTheDocument();
+    expect(screen.queryByText('Tomorrow!')).not.toBeInTheDocument();
+  });
+
+  it('should render countdown for multiple days', () => {
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0));
+    render(<CountdownTimer eventDate={new Date(2026, 5, 16, 12, 0)} />); // +15 calendar days
 
     expect(screen.getByText('Next Event')).toBeInTheDocument();
     expect(screen.getByText('15 days until event')).toBeInTheDocument();
   });
 
-  it('should render countdown for 1 day with singular form', () => {
-    vi.mocked(differenceInDays).mockReturnValue(1);
-    const futureDate = new Date('2025-03-16');
-
-    render(<CountdownTimer eventDate={futureDate} />);
-
-    // Should say "Tomorrow!" for 1 day
-    expect(screen.getByText('Tomorrow!')).toBeInTheDocument();
-  });
-
   it('should not render when event is more than 30 days away', () => {
-    vi.mocked(differenceInDays).mockReturnValue(35);
-    const futureDate = new Date('2025-04-20');
-
-    const { container } = render(<CountdownTimer eventDate={futureDate} />);
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0));
+    const { container } = render(<CountdownTimer eventDate={new Date(2026, 6, 6, 12, 0)} />); // +35
 
     expect(container.firstChild).toBeNull();
   });
 
   it('should not render when event has passed', () => {
-    vi.mocked(differenceInDays).mockReturnValue(-1);
-    const pastDate = new Date('2025-01-01');
-
-    const { container } = render(<CountdownTimer eventDate={pastDate} />);
+    vi.setSystemTime(new Date(2026, 5, 17, 12, 0));
+    const { container } = render(<CountdownTimer eventDate={new Date(2026, 5, 16, 12, 0)} />); // -1
 
     expect(container.firstChild).toBeNull();
   });
 
   it('should render at exactly 30 days', () => {
-    vi.mocked(differenceInDays).mockReturnValue(30);
-    const futureDate = new Date('2025-04-14');
-
-    render(<CountdownTimer eventDate={futureDate} />);
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0));
+    render(<CountdownTimer eventDate={new Date(2026, 6, 1, 12, 0)} />); // June 1 → July 1 = 30
 
     expect(screen.getByText('Next Event')).toBeInTheDocument();
     expect(screen.getByText('30 days until event')).toBeInTheDocument();
   });
 
+  it('should not render at 31 days', () => {
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0));
+    const { container } = render(<CountdownTimer eventDate={new Date(2026, 6, 2, 12, 0)} />); // 31
+
+    expect(container.firstChild).toBeNull();
+  });
+
   it('should render pulsing animation elements', () => {
-    vi.mocked(differenceInDays).mockReturnValue(7);
-    const futureDate = new Date('2025-03-22');
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0));
+    const { container } = render(<CountdownTimer eventDate={new Date(2026, 5, 8, 12, 0)} />); // +7
 
-    const { container } = render(<CountdownTimer eventDate={futureDate} />);
-
-    // Check for pulsing dot container
     const pulsingContainer = container.querySelector('.relative');
     expect(pulsingContainer).toBeInTheDocument();
 
-    // Check for animated elements
     const animatedDots = container.querySelectorAll('.animate-pulse, .animate-ping');
     expect(animatedDots.length).toBeGreaterThan(0);
   });
 
   it('should have correct styling classes', () => {
-    vi.mocked(differenceInDays).mockReturnValue(10);
-    const futureDate = new Date('2025-03-25');
-
-    const { container } = render(<CountdownTimer eventDate={futureDate} />);
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0));
+    const { container } = render(<CountdownTimer eventDate={new Date(2026, 5, 11, 12, 0)} />); // +10
 
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper).toHaveClass('flex', 'items-center', 'gap-3');
   });
 
   it('should display "Next Event" text with primary color', () => {
-    vi.mocked(differenceInDays).mockReturnValue(5);
-    const futureDate = new Date('2025-03-20');
-
-    render(<CountdownTimer eventDate={futureDate} />);
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0));
+    render(<CountdownTimer eventDate={new Date(2026, 5, 6, 12, 0)} />); // +5
 
     const nextEventText = screen.getByText('Next Event');
     expect(nextEventText).toHaveClass('text-primary', 'font-medium');
   });
 
-  it('should handle edge case of 31 days (should not render)', () => {
-    vi.mocked(differenceInDays).mockReturnValue(31);
-    const futureDate = new Date('2025-04-15');
-
-    const { container } = render(<CountdownTimer eventDate={futureDate} />);
-
-    expect(container.firstChild).toBeNull();
-  });
-
   it('should display today with green color emphasis', () => {
-    vi.mocked(differenceInDays).mockReturnValue(0);
-    const futureDate = new Date('2025-03-15');
-
-    render(<CountdownTimer eventDate={futureDate} />);
+    vi.setSystemTime(new Date(2026, 5, 19, 8, 0));
+    render(<CountdownTimer eventDate={new Date(2026, 5, 19, 20, 0)} />);
 
     const todayText = screen.getByText('Today!');
     expect(todayText).toHaveClass('text-green-400', 'font-medium');
   });
 
   it('should display tomorrow with orange color emphasis', () => {
-    vi.mocked(differenceInDays).mockReturnValue(1);
-    const futureDate = new Date('2025-03-16');
-
-    render(<CountdownTimer eventDate={futureDate} />);
+    vi.setSystemTime(new Date(2026, 5, 18, 9, 0));
+    render(<CountdownTimer eventDate={new Date(2026, 5, 19, 0, 0)} />);
 
     const tomorrowText = screen.getByText('Tomorrow!');
     expect(tomorrowText).toHaveClass('text-orange-400', 'font-medium');
