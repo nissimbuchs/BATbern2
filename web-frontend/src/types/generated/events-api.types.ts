@@ -1535,7 +1535,8 @@ export interface paths {
     /**
      * Verify deregistration token (public)
      * @description Verifies a deregistration token and returns registration details for confirmation.
-     *     Returns 404 if token is unknown or registration is already cancelled.
+     *     Returns 404 if the token is unknown, already cancelled, or absent/malformed
+     *     (e.g. an email client truncated the link) — an invalid link is always a 404, never a 500.
      *
      *     **Story**: 10.12 — Self-Service Deregistration
      *     **Security**: Public endpoint — UUID token provides authentication

@@ -3,7 +3,7 @@
  * Displays countdown to upcoming event if within 30 days
  */
 
-import { differenceInDays } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 
 interface CountdownTimerProps {
@@ -12,7 +12,12 @@ interface CountdownTimerProps {
 
 export const CountdownTimer = ({ eventDate }: CountdownTimerProps) => {
   const { t } = useTranslation('common');
-  const daysUntil = differenceInDays(eventDate, new Date());
+  // differenceInCalendarDays (not differenceInDays): "today / tomorrow / N days" is a
+  // calendar-boundary question, not a 24h-period one. differenceInDays truncates whole
+  // 24h spans, so an event at 00:00 two calendar days out read as 1 → "Tomorrow!" (the
+  // BATbern59 2026-06-19 bug seen on 2026-06-17). Calendar-day diff is timezone-local,
+  // matching how a visitor reads the date on the page.
+  const daysUntil = differenceInCalendarDays(eventDate, new Date());
 
   // Only show if event is within 30 days and in the future
   if (daysUntil < 0 || daysUntil > 30) {

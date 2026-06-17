@@ -174,6 +174,35 @@ class DeregistrationControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ── Bugfix: malformed / missing token must be a clean 404, never a 500 ────
+    // Field report (2026-06-16 deregistration-call blast): an email client truncated the
+    // link at "?token=", so the frontend called verify with an empty/absent token. The
+    // missing @RequestParam raised MissingServletRequestParameterException → caught by the
+    // catch-all Exception handler → 500 CRITICAL. A bad link is a not-found link: 404.
+
+    @Test
+    @DisplayName("GET /deregister/verify with NO token param → 404 (not 500)")
+    void verifyToken_missingTokenParam_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/registrations/deregister/verify"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /deregister/verify with empty token param → 404 (not 400/500)")
+    void verifyToken_emptyTokenParam_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/registrations/deregister/verify")
+                        .param("token", ""))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /deregister/verify with malformed (non-UUID) token → 404 (not 400/500)")
+    void verifyToken_malformedToken_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/registrations/deregister/verify")
+                        .param("token", "not-a-uuid"))
+                .andExpect(status().isNotFound());
+    }
+
     // ── T5.2.3: POST /deregister → 200; status = cancelled ───────────────────
 
     @Test
