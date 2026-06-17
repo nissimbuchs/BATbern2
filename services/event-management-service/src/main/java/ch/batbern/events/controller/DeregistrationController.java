@@ -45,13 +45,23 @@ public class DeregistrationController {
      * Verify a deregistration token and return registration details.
      * Used by the frontend to show a confirmation page before the attendee confirms.
      *
+     * <p>The {@code token} param is optional and parsed defensively: a missing, blank, or
+     * malformed (non-UUID) value is treated as an invalid link → 404, the same outcome the
+     * frontend already handles for an unknown/expired token. Field report (2026-06-16
+     * deregistration-call blast): a recipient's mail client truncated the link at
+     * {@code ?token=}, so verify was called with no token; the missing {@code @RequestParam}
+     * raised {@code MissingServletRequestParameterException} which fell through to the
+     * catch-all handler and returned a 500. A bad link is a not-found link, never a 500.
+     *
      * @param token UUID deregistration token (from email link)
-     * @return 200 with registration summary, 404 if token invalid or already cancelled
+     * @return 200 with registration summary; 404 if the token is absent, malformed, unknown,
+     *         or already cancelled
      */
     @GetMapping("/verify")
-    public ResponseEntity<DeregistrationVerifyResponse> verifyToken(@RequestParam String token) {
+    public ResponseEntity<DeregistrationVerifyResponse> verifyToken(
+            @RequestParam(required = false) String token) {
         DeregistrationService.DeregistrationVerifyResult result =
-                deregistrationService.verifyToken(java.util.UUID.fromString(token));
+                deregistrationService.verifyToken(parseTokenOrNotFound(token));
 
         DeregistrationVerifyResponse response = new DeregistrationVerifyResponse(
                 result.registrationCode(),
@@ -96,5 +106,21 @@ public class DeregistrationController {
                 .message("If you have a registration for this event, you'll receive an email"
                         + " with a cancellation link shortly.");
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Parse a raw token string into a UUID, mapping any absent/blank/malformed value to a
+     * {@link java.util.NoSuchElementException} so {@link ch.batbern.events.exception.GlobalExceptionHandler}
+     * renders the same 404 "invalid_token" response as an unknown token (never a 400 or 500).
+     */
+    private java.util.UUID parseTokenOrNotFound(String token) {
+        if (token == null || token.isBlank()) {
+            throw new java.util.NoSuchElementException("invalid_token");
+        }
+        try {
+            return java.util.UUID.fromString(token.trim());
+        } catch (IllegalArgumentException ex) {
+            throw new java.util.NoSuchElementException("invalid_token");
+        }
     }
 }
