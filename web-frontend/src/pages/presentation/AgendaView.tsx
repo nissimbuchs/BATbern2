@@ -55,6 +55,11 @@ export function AgendaView({
 
   return (
     <div className={layout === 'center' ? styles.center : styles.sidebar}>
+      {/* Heading lives inside the center-layout view so it is laid out with the
+          list and centered as one group — always correctly spaced above the
+          sessions at any session count. Omitted in sidebar layout so it does
+          not appear during session slides (and stays out of the FLIP box). */}
+      {layout === 'center' && <h2 className={styles.agendaTitle}>Agenda</h2>}
       {visible.map((s) => {
         if (s.sessionType && BREAK_SESSION_TYPES.has(s.sessionType)) {
           return (
