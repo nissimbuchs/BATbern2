@@ -59,7 +59,7 @@ public class EventManagementClientImpl implements EventManagementClient {
                 companyName, fromYear);
 
         String url = UriComponentsBuilder
-                .fromHttpUrl(eventManagementBaseUrl + "/api/v1/events/attendance-summary")
+                .fromUriString(eventManagementBaseUrl + "/api/v1/events/attendance-summary")
                 .queryParam("companyName", companyName)
                 .queryParam("fromYear", fromYear)
                 .toUriString();

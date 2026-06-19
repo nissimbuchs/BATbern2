@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -100,7 +100,7 @@ public class TestAwsConfig {
         // Configure mock to return presigned URL
         PresignedPutObjectRequest mockPresignedRequest = Mockito.mock(PresignedPutObjectRequest.class);
         try {
-            when(mockPresignedRequest.url()).thenReturn(new URL("https://minio.local:8450/test-upload-url"));
+            when(mockPresignedRequest.url()).thenReturn(URI.create("https://minio.local:8450/test-upload-url").toURL());
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create test URL", e);
         }
@@ -111,7 +111,7 @@ public class TestAwsConfig {
         // Configure mock for presignGetObject (used by services that issue download-side presigned URLs)
         PresignedGetObjectRequest mockGetPresignedRequest = Mockito.mock(PresignedGetObjectRequest.class);
         try {
-            when(mockGetPresignedRequest.url()).thenReturn(new URL("https://presigned.s3.amazonaws.com/test-asset"));
+            when(mockGetPresignedRequest.url()).thenReturn(URI.create("https://presigned.s3.amazonaws.com/test-asset").toURL());
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create test presigned GET URL", e);
         }

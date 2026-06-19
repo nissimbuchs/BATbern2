@@ -81,6 +81,7 @@ public class SpeakerPool {
      *
      * Story 5.3 / 11.B.1: SpeakerWorkflowState enum with converter
      */
+    @Builder.Default
     @Column(name = "status", nullable = false, length = 50)
     @Convert(converter = SpeakerWorkflowStateConverter.class)
     private SpeakerWorkflowState status = SpeakerWorkflowState.IDENTIFIED;
@@ -150,6 +151,7 @@ public class SpeakerPool {
     private String preferenceComments;
 
     // Story 6.5: Automated Deadline Reminders
+    @Builder.Default
     @Column(name = "reminders_disabled")
     private Boolean remindersDisabled = false;
 

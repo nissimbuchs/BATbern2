@@ -202,7 +202,7 @@ public class ParticipantsDocxExportService {
             cursor.toEndToken();
             inserted = doc.insertNewTbl(cursor);
         } finally {
-            cursor.dispose();
+            cursor.close();
         }
 
         // Step 2 — overwrite the inserted CTTbl content with a deep copy of source.

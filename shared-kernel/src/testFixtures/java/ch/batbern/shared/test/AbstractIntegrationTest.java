@@ -1,8 +1,9 @@
 package ch.batbern.shared.test;
 
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -35,6 +36,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+// Epic 13 (SB4): re-apply springSecurity() to the auto-configured MockMvc — SB4 dropped the
+// auto-config that used to do this, which otherwise drops the @WithMockUser SecurityContext and
+// makes every @PreAuthorize request return 403. Inherited by all integration tests.
+@Import(MockMvcSecuritySetup.class)
 public abstract class AbstractIntegrationTest {
 
     /**

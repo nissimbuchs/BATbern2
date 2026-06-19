@@ -7,9 +7,10 @@ buildscript {
         gradlePluginPortal()
     }
     dependencies {
-        // Spring Boot Gradle Plugin
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.5.7'
-        classpath 'io.spring.gradle:dependency-management-plugin:1.1.7'
+        // Spring Boot + dependency-management are NOT pinned here. They are resolved
+        // once from settings.gradle pluginManagement and applied per-module via the
+        // version-less plugins {} DSL (Epic 13 — single version source, no per-module
+        // pins, so a chore/Dependabot bump of the one coordinate moves the whole estate).
 
         // Flyway
         classpath 'org.flywaydb:flyway-gradle-plugin:11.18.0'
@@ -29,6 +30,19 @@ allprojects {
     repositories {
         mavenCentral()
     }
+
+    // Epic 13 (Spring Boot 4 migration) — Story 13-1 zero-deprecation baseline.
+    // SB4 removes ~88% of 2.x/3.x deprecations; surface every Java deprecation
+    // warning across ALL modules (shared-kernel, api-gateway, services) so we can
+    // drive the count to zero BEFORE switching the framework version. Pass
+    // -PfailOnDeprecation to enforce zero (the final 13-1 gate); without it the
+    // warnings are visible but non-fatal so the baseline can be measured.
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << '-Xlint:deprecation'
+        if (project.hasProperty('failOnDeprecation')) {
+            options.compilerArgs << '-Werror'
+        }
+    }
 }
 
 // Checkstyle — single source of truth for EVERY module that applies the plugin
@@ -44,13 +58,27 @@ subprojects {
             maxWarnings = 0
         }
     }
+
+    // Epic 13 (SB4): Testcontainers 2.0. SB4's spring-boot-dependencies imports testcontainers-bom
+    // with <scope>import</scope>, but io.spring.dependency-management (1.1.7) does not recurse into
+    // that nested import, so version-less org.testcontainers:* modules resolve to empty. Import the
+    // testcontainers-bom directly via the plugin's own idiom (Gradle's platform() is overridden by
+    // io.spring.dependency-management and has no effect here). Single source for the TC version.
+    pluginManager.withPlugin('io.spring.dependency-management') {
+        dependencyManagement {
+            imports {
+                mavenBom 'org.testcontainers:testcontainers-bom:2.0.5'
+            }
+        }
+    }
 }
 
 // Configuration for all service subprojects ONLY
 configure(subprojects.findAll { it.path.startsWith(':services:') }) {
         apply plugin: 'java'
-        apply plugin: 'org.springframework.boot'
-        apply plugin: 'io.spring.dependency-management'
+        // org.springframework.boot + io.spring.dependency-management are applied per-module
+        // via the version-less plugins {} DSL (resolved from settings.gradle pluginManagement),
+        // not here — single version source, no per-module pins (Epic 13).
         apply plugin: 'jacoco'
         apply plugin: 'checkstyle'
         apply plugin: 'org.flywaydb.flyway'
@@ -72,35 +100,59 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             
             // Spring Boot Core
             implementation 'org.springframework.boot:spring-boot-starter-web'
+            // Epic 13 (SB4): RestTemplate/RestTemplateBuilder support is its own module now
+            // (org.springframework.boot.restclient) — no longer transitive from starter-web.
+            implementation 'org.springframework.boot:spring-boot-starter-restclient'
             implementation 'org.springframework.boot:spring-boot-starter-actuator'
             implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
             implementation 'org.springframework.boot:spring-boot-starter-validation'
             implementation 'org.springframework.boot:spring-boot-starter-security'
             implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-            
+
+            // Epic 13 (SB4): keep Jackson 2 (com.fasterxml) defaults during the migration so
+            // API payloads stay byte-identical; the Bruno suite is the payload-diff gate. The
+            // final story flips to native Jackson 3 (tools.jackson). BOM-managed version.
+            implementation 'org.springframework.boot:spring-boot-jackson2'
+
             // Database - PostgreSQL + Flyway
             runtimeOnly 'org.postgresql:postgresql:42.7.7'
             implementation 'org.flywaydb:flyway-core'
             implementation 'org.flywaydb:flyway-database-postgresql'
+            // Epic 13 (SB4): Flyway auto-configuration moved OUT of spring-boot-autoconfigure
+            // into its own module (org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration).
+            // Without it, migrations never run at boot → Hibernate ddl-auto=validate hits an empty
+            // schema → "Schema validation: missing table [...]" and every @SpringBootTest fails to
+            // load its context. Required by the DB services (CUMS/EMS/partner); attendee has no
+            // datasource and excludes it explicitly in its @SpringBootApplication. BOM-managed version.
+            implementation 'org.springframework.boot:spring-boot-flyway'
             
             // OpenAPI/Swagger
-            implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
+            implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
             implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
             implementation 'jakarta.validation:jakarta.validation-api'
             implementation 'jakarta.annotation:jakarta.annotation-api'
             
-            // Lombok - reduce boilerplate
-            compileOnly 'org.projectlombok:lombok:1.18.36'
-            annotationProcessor 'org.projectlombok:lombok:1.18.36'
-            testCompileOnly 'org.projectlombok:lombok:1.18.36'
-            testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
+            // Lombok - reduce boilerplate. Version BOM-managed (Epic 13): the SB4 BOM pins a
+            // Lombok that supports the current JDK/Gradle annotation processing. The old hard
+            // pin 1.18.36 silently failed to run under SB4 → @Slf4j/@Builder/@Data members
+            // vanished and cascaded into ~200 "cannot find symbol" errors.
+            compileOnly 'org.projectlombok:lombok'
+            annotationProcessor 'org.projectlombok:lombok'
+            testCompileOnly 'org.projectlombok:lombok'
+            testAnnotationProcessor 'org.projectlombok:lombok'
             
             // Testing
             testImplementation 'org.springframework.boot:spring-boot-starter-test'
             testImplementation 'org.springframework.security:spring-security-test'
-            testImplementation 'org.testcontainers:testcontainers:1.21.3'
-            testImplementation 'org.testcontainers:postgresql:1.21.3'
-            testImplementation 'org.testcontainers:junit-jupiter:1.21.3'
+            // Epic 13 (SB4): MockMvc test slice moved out of spring-boot-test-autoconfigure
+            // into its own module.
+            testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+            // Epic 13 (SB4): Testcontainers 2.0 versions come from the testcontainers-bom
+            // imported in the root subprojects dependencyManagement block (io.spring.dependency-
+            // management doesn't recurse into SB4's nested testcontainers-bom import).
+            testImplementation 'org.testcontainers:testcontainers'
+            testImplementation 'org.testcontainers:testcontainers-postgresql'
+            testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
         }
         
         // Test configuration
@@ -197,9 +249,13 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
         // Apply Trivy security scanning
         apply from: "${rootProject.projectDir}/gradle/trivy-security.gradle"
         
-        // Spring Boot Actuator build info
-        springBoot {
-            buildInfo()
+        // Spring Boot Actuator build info. The SB plugin is now applied per-module via
+        // the version-less plugins {} DSL (resolved from settings.gradle), which runs after
+        // this configure block — so defer the springBoot {} config until the plugin lands.
+        pluginManager.withPlugin('org.springframework.boot') {
+            springBoot {
+                buildInfo()
+            }
         }
 
         // Note: Git properties plugin configured in individual service build.gradle files

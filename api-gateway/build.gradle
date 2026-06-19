@@ -27,6 +27,8 @@ repositories {
 dependencies {
     // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    // Epic 13 (SB4): RestTemplateBuilder moved to the spring-boot-restclient module.
+    implementation 'org.springframework.boot:spring-boot-starter-restclient'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -43,6 +45,8 @@ dependencies {
     implementation 'com.auth0:jwks-rsa:0.23.1'
 
     // Jackson for JSON processing (version managed by Spring Boot)
+    // Epic 13 (SB4): keep Jackson 2 (com.fasterxml) defaults during migration — payload parity.
+    implementation 'org.springframework.boot:spring-boot-jackson2'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     // Caffeine — application-level cache (project standard, no Redis). Used by the
@@ -51,7 +55,7 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
 
     // OpenAPI Support
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 
     // Monitoring & Logging
     implementation 'io.micrometer:micrometer-registry-prometheus'
@@ -74,12 +78,16 @@ dependencies {
     // Testing Dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    // Epic 13 (SB4): MockMvc + TestRestTemplate test support moved into dedicated modules.
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-resttestclient'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.3'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.23.0'
     testImplementation 'org.assertj:assertj-core:3.27.7'
-    testImplementation 'org.testcontainers:testcontainers:1.21.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.21.3'
-    testImplementation 'org.testcontainers:localstack:1.21.3'
+    // Epic 13 (SB4): testcontainers versions from the root testcontainers-bom import.
+    testImplementation 'org.testcontainers:testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-localstack'
     testImplementation 'io.rest-assured:rest-assured:6.0.0'
 }
 

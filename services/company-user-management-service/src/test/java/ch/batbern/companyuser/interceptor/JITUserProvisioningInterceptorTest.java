@@ -55,7 +55,7 @@ class JITUserProvisioningInterceptorTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock(lenient = true)
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private UserAdditionalEmailRepository userAdditionalEmailRepository;
 
     @Mock
