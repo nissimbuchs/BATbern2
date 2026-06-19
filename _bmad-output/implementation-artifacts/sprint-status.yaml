@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-06-13
+last_updated: 2026-06-19
 project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -247,6 +247,7 @@ development_status:
   13-2-shared-kernel-pilot-service-sb4: in-progress      # collapsed into unified migration (feature/epic-13-spring-boot-4)
   13-3-remaining-domain-services-sb4: in-progress         # collapsed into unified migration (feature/epic-13-spring-boot-4)
   13-4-api-gateway-closeout-jackson3-flag-flip: in-progress  # collapsed into unified migration (feature/epic-13-spring-boot-4)
+  13-5-unpin-bom-managed-dependency-versions: ready-for-dev  # follow-up (2026-06-19): delegate SB-BOM-managed pins (postgresql override 42.7.7 → BOM 42.7.11) + codify pin policy; NO floating versions
   epic-13-retrospective: optional
 
   # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
