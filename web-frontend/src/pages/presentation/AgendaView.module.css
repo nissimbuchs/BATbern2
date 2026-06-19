@@ -21,6 +21,14 @@
   opacity: 0.85;
 }
 
+.agendaTitle {
+  margin: 0 0 2.5vw; /* gap above the first session, scales with viewport */
+  font-size: 2.5vw;
+  font-weight: 700;
+  color: #4f9cf9; /* BATbern blue accent */
+  text-align: center;
+}
+
 .sessionRow {
   display: flex;
   align-items: baseline;

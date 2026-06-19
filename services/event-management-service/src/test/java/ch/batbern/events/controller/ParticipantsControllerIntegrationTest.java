@@ -24,6 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -37,9 +38,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -68,6 +74,12 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private UserApiClient userApiClient;
+
+    @MockitoBean
+    private ch.batbern.events.service.RegistrationEmailService registrationEmailService;
+
+    @MockitoBean
+    private ch.batbern.events.service.WaitlistPromotionEmailService waitlistPromotionEmailService;
 
     private static final String EVENT_CODE = "BATbern1999";
     private static final String ORGANIZER_USERNAME = "organizer.alice";
@@ -247,6 +259,26 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("Anonymous GET /distribution-list/participants → 200 with active registrants, excludes cancelled/waitlist")
+    void should_return200_when_lambdaCallsParticipantsList() throws Exception {
+        seedRegistrationWithEmail("anna.active", "anna@example.com", "registered");
+        seedRegistrationWithEmail("ben.active", "ben@example.com", "confirmed");
+        seedRegistrationWithEmail("carl.cancelled", "carl@example.com", "cancelled");
+        seedRegistrationWithEmail("wanda.wait", "wanda@example.com", "waitlist");
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
+                        EVENT_CODE, "participants"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.kind").value("participants"))
+                .andExpect(jsonPath("$.emails", org.hamcrest.Matchers.hasItem("anna@example.com")))
+                .andExpect(jsonPath("$.emails", org.hamcrest.Matchers.hasItem("ben@example.com")))
+                .andExpect(jsonPath("$.emails",
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("carl@example.com"))))
+                .andExpect(jsonPath("$.emails",
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("wanda@example.com"))));
+    }
+
+    @Test
     @DisplayName("Anonymous GET /distribution-list with unknown event → 404")
     void should_return404_when_unknownEventOnDistributionList() throws Exception {
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
@@ -259,6 +291,126 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     void should_return404_when_unknownKind() throws Exception {
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
                         EVENT_CODE, "foo"))
+                .andExpect(status().isNotFound());
+    }
+
+    // ---- Add participant (organizer) ----
+
+    @Test
+    @DisplayName("Organizer POST /participants → 201 confirmed, real attendee (no programmatic marker)")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_add_confirmed_realAttendee_when_organizerAddsParticipant() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\",\"notify\":false}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("confirmed"))
+                .andExpect(jsonPath("$.attendeeUsername").value("jane.doe"));
+
+        Registration reg = registrationRepository
+                .findByEventIdAndAttendeeUsername(event.getId(), "jane.doe").orElseThrow();
+        assertThat(reg.getStatus()).isEqualTo("confirmed");
+        assertThat(reg.isProgrammatic()).isFalse(); // real attendee — counts for capacity + delete-guard
+    }
+
+    @Test
+    @DisplayName("Organizer POST /participants for an already-active registrant → 409")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return409_when_userAlreadyRegistered() throws Exception {
+        seedRegistration("jane.doe", "registered");
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\",\"notify\":false}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("Organizer POST /participants replaces a cancelled registration → 201 confirmed")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_replaceCancelled_when_organizerAddsParticipant() throws Exception {
+        seedRegistration("jane.doe", "cancelled");
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\",\"notify\":false}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("confirmed"));
+    }
+
+    @Test
+    @DisplayName("Organizer POST /participants on a full event → 409 capacity_exceeded; force=true → 201")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_respectCapacity_unlessForced() throws Exception {
+        Event full = eventRepository.save(Event.builder()
+                .eventCode("BATbern1998").eventNumber(1998).title("Full Event")
+                .eventType(EventType.EVENING).date(Instant.now().plus(30, ChronoUnit.DAYS))
+                .registrationDeadline(Instant.now().plus(20, ChronoUnit.DAYS))
+                .venueName("V").venueAddress("Bern").venueCapacity(1).registrationCapacity(1)
+                .organizerUsername(ORGANIZER_USERNAME)
+                .workflowState(EventWorkflowState.SPEAKER_IDENTIFICATION).build());
+        // Fill the single seat.
+        registrationRepository.save(Registration.builder()
+                .registrationCode("BATbern1998-seed").eventId(full.getId())
+                .attendeeUsername("first.attendee").attendeeFirstName("First").attendeeLastName("Attendee")
+                .attendeeEmail("first@batbern.ch").status("confirmed").registrationDate(Instant.now()).build());
+
+        // Without force → 409 with details.code = capacity_exceeded.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", "BATbern1998")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\",\"notify\":false}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code").value("capacity_exceeded"));
+
+        // With force → 201 over capacity.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", "BATbern1998")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\",\"force\":true,\"notify\":false}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("confirmed"));
+    }
+
+    @Test
+    @DisplayName("notify=true sends the organizer-added confirmation, NOT the waitlist-promotion email")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_sendOrganizerAddedConfirmation_not_waitlist_when_notify() throws Exception {
+        // notify omitted → defaults true.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\"}"))
+                .andExpect(status().isCreated());
+
+        verify(registrationEmailService).sendOrganizerAddedConfirmation(any(), any(), any(), any());
+        verify(waitlistPromotionEmailService, never()).sendPromotionEmail(any());
+    }
+
+    @Test
+    @DisplayName("Non-organizer POST /participants → 403")
+    @WithMockUser(username = "joe.user", roles = {"ATTENDEE"})
+    void should_return403_when_nonOrganizerAddsParticipant() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Organizer POST /participants for unknown event → 404")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return404_when_unknownEventOnAddParticipant() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", "BATbern99999")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Organizer POST /participants for unknown user → 404")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return404_when_unknownUserOnAddParticipant() throws Exception {
+        when(userApiClient.getUserByUsername(eq("ghost.user")))
+                .thenThrow(new ch.batbern.events.exception.UserNotFoundException("ghost.user"));
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"ghost.user\"}"))
                 .andExpect(status().isNotFound());
     }
 
@@ -309,6 +461,21 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                 .attendeeUsername(username)
                 .attendeeFirstName(username.substring(0, username.indexOf(".")))
                 .attendeeLastName(username.substring(username.indexOf(".") + 1))
+                .attendeeCompanyId("acme")
+                .status(status)
+                .registrationDate(Instant.now())
+                .build();
+        registrationRepository.save(r);
+    }
+
+    private void seedRegistrationWithEmail(String username, String email, String status) {
+        Registration r = Registration.builder()
+                .registrationCode(EVENT_CODE + "-reg-" + System.nanoTime() % 1_000_000L)
+                .eventId(event.getId())
+                .attendeeUsername(username)
+                .attendeeFirstName(username.substring(0, username.indexOf(".")))
+                .attendeeLastName(username.substring(username.indexOf(".") + 1))
+                .attendeeEmail(email)
                 .attendeeCompanyId("acme")
                 .status(status)
                 .registrationDate(Instant.now())

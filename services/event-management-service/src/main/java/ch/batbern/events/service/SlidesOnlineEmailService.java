@@ -150,6 +150,13 @@ public class SlidesOnlineEmailService {
         requireRegistrantNoticeTemplate(templateKey);
         UUID eventId = event.getId();
 
+        // NOTE (PR #788 review item 3): the two guards below are read-then-act without an
+        // enclosing transaction, so two near-simultaneous requests could both pass before either
+        // writes the audit row (double-send). This is pre-existing behaviour inherited from
+        // sendSlidesOnline; the practical risk is low (a single organizer clicking a UI button).
+        // The robust fix is a partial unique index on (event_id, template_key) WHERE status IN
+        // (PENDING, IN_PROGRESS, COMPLETED, PARTIAL) — tracked as a hardening backlog item, not
+        // done here to avoid a Flyway migration in this frontend-focused PR.
         // AC5: in-progress guard, scoped to (event, templateKey).
         sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(eventId, templateKey, STATUS_IN_PROGRESS)
                 .ifPresent(active -> {
@@ -195,11 +202,21 @@ public class SlidesOnlineEmailService {
         requireRegistrantNoticeTemplate(templateKey);
         String loc = "en".equalsIgnoreCase(locale) ? "en" : "de";
         RenderedMail mail = renderMail(event, templateKey, loc);
-        int recipientCount = registrationRepository
-                .findByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES).size();
+        // The real send personalises {{deregistrationUrl}} / {{recipientName}} per registrant
+        // (see processSend). For the organizer preview, fill those with a representative sample so
+        // the preview doesn't show literal {{deregistrationUrl}} placeholders.
+        Map<String, String> sampleVars = Map.of(
+                "deregistrationUrl", baseUrl + "/deregister?token=00000000-0000-0000-0000-000000000000",
+                "recipientName", "en".equals(loc) ? "Jane Doe" : "Erika Muster",
+                "attendeeFirstName", "en".equals(loc) ? "Jane" : "Erika");
+        String htmlPreview = emailService.replaceVariables(mail.html(), sampleVars);
+        String subjectPreview = emailService.replaceVariables(mail.subject(), sampleVars);
+        // Count-only query — don't hydrate the full Registration list just to size it.
+        int recipientCount = (int) registrationRepository
+                .countByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES);
         return RegistrantNoticePreviewResponse.builder()
-                .subject(mail.subject())
-                .htmlPreview(mail.html())
+                .subject(subjectPreview)
+                .htmlPreview(htmlPreview)
                 .recipientCount(recipientCount)
                 .build();
     }
@@ -274,9 +291,20 @@ public class SlidesOnlineEmailService {
                 RenderedMail mail =
                         renderedByLocale.computeIfAbsent(locale, l -> renderMail(event, templateKey, l));
 
+                // Per-registrant personalisation (Way-1 "deregistration call"): inject the one-click
+                // self-service cancel link + recipient name. These vars are intentionally NOT in
+                // buildVariables() — that map is event-level and feeds the per-locale render cache, so
+                // baking a per-recipient token there would leak one registrant's link to everyone. We
+                // therefore substitute them on the cached html/subject per recipient. replaceVariables
+                // leaves any unmatched {{var}} untouched, so templates that don't use these
+                // placeholders (e.g. slides-online) are unaffected.
+                Map<String, String> perRecipientVars = buildPerRecipientVariables(registration);
+                String personalisedHtml = emailService.replaceVariables(mail.html(), perRecipientVars);
+                String personalisedSubject = emailService.replaceVariables(mail.subject(), perRecipientVars);
+
                 String deliveryStatus = "sent";
                 try {
-                    emailService.sendHtmlEmailSync(email, mail.subject(), mail.html(), configurationSetName);
+                    emailService.sendHtmlEmailSync(email, personalisedSubject, personalisedHtml, configurationSetName);
                     sentCount++;
                 } catch (Exception e) {
                     // AC6: isolate a transient SES failure for one recipient.
@@ -381,6 +409,29 @@ public class SlidesOnlineEmailService {
         vars.put("eventUrl", baseUrl + "/events/" + event.getEventCode());
         vars.put("dashboardLink", baseUrl);
         vars.put("supportUrl", baseUrl);
+        return vars;
+    }
+
+    /**
+     * Per-recipient placeholders layered on top of the per-locale render (see processSend).
+     * <ul>
+     *   <li>{@code deregistrationUrl} — the registrant's one-click self-service cancel link
+     *       ({@code {baseUrl}/deregister?token={token}}, Story 10.12). Lets a "way-1" deregistration
+     *       call ask each registrant to free their seat with a single click. Falls back to the public
+     *       events page if a legacy row somehow has no token.</li>
+     *   <li>{@code recipientName} / {@code attendeeFirstName} — personal greeting tokens.</li>
+     * </ul>
+     */
+    private Map<String, String> buildPerRecipientVariables(Registration registration) {
+        Map<String, String> vars = new HashMap<>();
+        UUID token = registration.getDeregistrationToken();
+        vars.put("deregistrationUrl", token != null
+                ? baseUrl + "/deregister?token=" + token
+                : baseUrl + "/events");
+        String fullName = (nullToEmpty(registration.getAttendeeFirstName()) + " "
+                + nullToEmpty(registration.getAttendeeLastName())).trim();
+        vars.put("recipientName", fullName);
+        vars.put("attendeeFirstName", nullToEmpty(registration.getAttendeeFirstName()));
         return vars;
     }
 

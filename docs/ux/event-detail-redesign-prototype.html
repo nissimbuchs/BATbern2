@@ -244,7 +244,7 @@
 
 <div class="proto">
   <b>PROTOTYPE · DESKTOP</b>
-  <span class="pill">state = SLOT_ASSIGNMENT · step 4/9</span>
+  <span class="pill">state = SLOT_ASSIGNMENT · step 4/8</span>
   <span>Speakers&amp;Agenda now has 3 sub-views (Pool · Agenda · Slots). Communications has 3 audiences.</span>
   <a href="event-detail-redesign-mobile.html">→ open mobile prototype</a>
 </div>
@@ -256,7 +256,7 @@
     <div>
       <h1>BATbern 76 — Cloud Native Architecture</h1>
       <div class="meta">
-        <span class="state-chip"><span class="dot"></span> Slot Assignment · Step 4 of 9</span>
+        <span class="state-chip"><span class="dot"></span> Slot Assignment · Step 4 of 8</span>
         <span>📅 Thu, 18 Sep 2026 · 17:30</span>
         <span>📍 Welle 7, Bern</span>
         <span>⏳ in 34 days</span>
@@ -789,12 +789,10 @@
             {n:'Send the “Speaker line-up” newsletter',d:'soon',o:'SK',go:'comms'},
             {n:'Finalize & publish the agenda',d:'soon',o:'NB',go:'publishing'}],
      dim:['registrations'],lock:['wrapup'],bs:'2',dot:false},
-    {label:'Agenda Published',now:'Agenda is live — collect any outstanding presentations and watch registrations fill.',
+    {label:'Agenda Published',now:'Agenda is live — collect outstanding presentations, watch registrations, and (by due date) send the final newsletter & request the catering offer. Day-of controls are available for rehearsal.',
      tasks:[{n:'Registrations 128 / 180 — watch capacity & waitlist',d:'ok',o:'SK',go:'registrations'},
-            {n:'Collect any outstanding presentations',d:'soon',o:'NB',go:'agenda'}],
-     dim:[],lock:['wrapup'],bs:'',dot:false},
-    {label:'Agenda Finalized',now:'Final newsletter, request the catering offer, print the agenda. Day-of controls are now available for rehearsal.',
-     tasks:[{n:'Send the final newsletter (14 days before)',d:'over',o:'SK',go:'comms'},
+            {n:'Collect any outstanding presentations',d:'soon',o:'NB',go:'agenda'},
+            {n:'Send the final newsletter (14 days before)',d:'soon',o:'SK',go:'comms'},
             {n:'Send mail to request the catering offer',d:'soon',o:'SK',go:'comms'},
             {n:'▶ Open presentation (rehearsal)',d:'ok',o:'NB',go:'present'},
             {n:'📡 Live Control (test run)',d:'ok',o:'NB',go:'live'}],

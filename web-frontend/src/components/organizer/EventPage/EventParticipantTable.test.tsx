@@ -380,4 +380,84 @@ describe('EventParticipantTable Component', () => {
       expect(screen.queryByTestId('participant-cards')).not.toBeInTheDocument();
     });
   });
+
+  describe('Waitlist mode (Epic 14 FR28)', () => {
+    const waitlisted: EventParticipant[] = [
+      {
+        registrationCode: 'WL-2',
+        eventCode: 'BAT-2024-01',
+        attendeeUsername: 'second',
+        firstName: 'Second',
+        lastName: 'Person',
+        email: 'second@example.com',
+        status: 'WAITLIST',
+        registrationDate: '2024-02-02T10:00:00Z',
+        waitlistPosition: 2,
+      },
+      {
+        registrationCode: 'WL-1',
+        eventCode: 'BAT-2024-01',
+        attendeeUsername: 'first',
+        firstName: 'First',
+        lastName: 'Person',
+        email: 'first@example.com',
+        status: 'WAITLIST',
+        registrationDate: '2024-02-01T10:00:00Z',
+        waitlistPosition: 1,
+      },
+    ];
+
+    it('orders rows by waitlist position and shows the position cell', () => {
+      renderWithProviders(
+        <EventParticipantTable participants={waitlisted} isLoading={false} waitlistMode />
+      );
+
+      expect(screen.getByTestId('waitlist-position-WL-1')).toHaveTextContent('#1');
+      expect(screen.getByTestId('waitlist-position-WL-2')).toHaveTextContent('#2');
+
+      // Position #1 (WL-1) must render before #2 (WL-2) despite array order.
+      const rows = screen.getAllByRole('row').slice(1); // drop header
+      expect(within(rows[0]).getByText('First Person')).toBeInTheDocument();
+    });
+
+    it('falls back to page-offset numbering when waitlistPosition is absent', () => {
+      const noPos = waitlisted.map(({ waitlistPosition, ...p }) => p);
+      renderWithProviders(
+        <EventParticipantTable
+          participants={noPos}
+          isLoading={false}
+          waitlistMode
+          pageOffset={25}
+        />
+      );
+      // No positions → queue order falls back to registration date asc, then
+      // page-offset numbering: WL-1 (earlier date) = #26, WL-2 = #27.
+      expect(screen.getByTestId('waitlist-position-WL-1')).toHaveTextContent('#26');
+      expect(screen.getByTestId('waitlist-position-WL-2')).toHaveTextContent('#27');
+    });
+
+    it('invokes onPromote (not an auto-commit) when the inline Promote button is clicked', async () => {
+      const onPromote = vi.fn();
+      const user = userEvent.setup();
+      renderWithProviders(
+        <EventParticipantTable
+          participants={waitlisted}
+          isLoading={false}
+          waitlistMode
+          onPromote={onPromote}
+        />
+      );
+
+      await user.click(screen.getByTestId('waitlist-promote-WL-1'));
+      expect(onPromote).toHaveBeenCalledWith(expect.objectContaining({ registrationCode: 'WL-1' }));
+    });
+
+    it('does not show position cells or Promote buttons outside waitlist mode', () => {
+      renderWithProviders(
+        <EventParticipantTable participants={mockParticipants} isLoading={false} />
+      );
+      expect(screen.queryByTestId('waitlist-position-REG-001')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('waitlist-promote-REG-001')).not.toBeInTheDocument();
+    });
+  });
 });

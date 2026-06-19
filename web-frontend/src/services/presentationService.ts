@@ -53,8 +53,14 @@ export const getPublicOrganizers = async (): Promise<User[]> => {
 /**
  * Fetches the next 3 upcoming events for the Upcoming Events slide.
  * Public endpoint — no auth required.
+ *
+ * @param excludeEventCode — the event currently being presented; excluded from
+ *   the result so the slide shows only genuinely *future* events, not the
+ *   current one (whose date is still in the future).
  */
-export const getUpcomingEvents = async (): Promise<components['schemas']['Event'][]> => {
+export const getUpcomingEvents = async (
+  excludeEventCode?: string
+): Promise<components['schemas']['Event'][]> => {
   const response = await apiClient.get<{ data: components['schemas']['Event'][] }>('/events', {
     params: {
       status: 'AGENDA_PUBLISHED,TOPIC_SELECTION_DONE,TOPIC_SELECTION,CREATED',
@@ -67,10 +73,10 @@ export const getUpcomingEvents = async (): Promise<components['schemas']['Event'
   const events =
     response.data.data ?? (response.data as unknown as components['schemas']['Event'][]);
   // Filter to strictly future events (same pattern as public UpcomingEventsSection),
-  // then sort by date ascending and take the first 3.
+  // excluding the event currently on screen, then sort by date ascending and take the first 3.
   const now = new Date();
   return events
-    .filter((e) => new Date(e.date) > now)
+    .filter((e) => new Date(e.date) > now && e.eventCode !== excludeEventCode)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 3);
 };

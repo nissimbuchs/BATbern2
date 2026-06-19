@@ -65,9 +65,15 @@ test.describe('Speaker pool — log outreach (Story 11.D)', { tag: '@gate' }, ()
       await page.getByTestId('contact-method-option-email').click();
       await page.getByTestId('save-button').click();
 
-      // Modal closes on success → the card has moved to the CONTACTED lane.
+      // Modal closes on success → the card's exact-state chip flips to CONTACTED.
+      // Epic 14 (14.C.2): the kanban is 4 PHASE columns (Sourcing/Inviting/Content/Confirmed),
+      // not per-state lanes — IDENTIFIED and CONTACTED both live in "Sourcing", and each card
+      // carries its exact state on a `state-chip-{id}` chip (data-state). Assert that, not a lane.
       await expect(page.getByTestId('mark-contacted-modal')).toBeHidden({ timeout: 15_000 });
-      await expect(page.getByTestId('status-lane-contacted')).toBeVisible();
+      await expect(page.getByTestId(`state-chip-${speakerId}`)).toHaveAttribute(
+        'data-state',
+        'CONTACTED'
+      );
 
       // Authoritative verification: the server recorded the transition.
       await expect

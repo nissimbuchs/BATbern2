@@ -7,7 +7,7 @@
  * AC7: View preferences button per speaker
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -32,6 +32,18 @@ export interface UnassignedSpeakersListProps {
   activeFilter?: 'all' | 'assigned' | 'unassigned';
   onFilterChange?: (filter: 'all' | 'assigned' | 'unassigned') => void;
   isLoading?: boolean;
+  /**
+   * 14.C.5: when set, the matching session card is visually highlighted and
+   * scrolled into view (best-effort — no-op if no session matches).
+   */
+  focusSessionSlug?: string | null;
+  /**
+   * 14.G.3 (mobile tap-to-assign): when provided, tapping a card selects it
+   * (drag-drop is hostile on touch). The selected card is highlighted via
+   * `selectedSessionSlug`.
+   */
+  onSessionTap?: (session: Session) => void;
+  selectedSessionSlug?: string | null;
 }
 
 export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
@@ -42,7 +54,19 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   activeFilter = 'unassigned',
   onFilterChange,
   isLoading = false,
+  focusSessionSlug = null,
+  onSessionTap,
+  selectedSessionSlug = null,
 }) => {
+  const focusedCardRef = useRef<HTMLDivElement | null>(null);
+
+  // Best-effort scroll the focused card into view when it (or the target) changes.
+  useEffect(() => {
+    if (focusSessionSlug && focusedCardRef.current) {
+      focusedCardRef.current.scrollIntoView({ block: 'nearest' });
+    }
+  }, [focusSessionSlug, sessions]);
+
   const { t } = useTranslation('events');
   const assignedCount = totalSessions - sessions.length;
   const progressPercent = totalSessions > 0 ? Math.round((assignedCount / totalSessions) * 100) : 0;
@@ -157,16 +181,40 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
                 ? `${speaker.firstName} ${speaker.lastName}`
                 : 'Unknown Speaker';
 
+              const isFocused = !!focusSessionSlug && session.sessionSlug === focusSessionSlug;
+              const isSelected =
+                !!selectedSessionSlug && session.sessionSlug === selectedSessionSlug;
+
               return (
                 <Card
                   key={session.sessionSlug}
+                  ref={isFocused ? focusedCardRef : undefined}
+                  data-testid={
+                    isFocused
+                      ? `focused-session-${session.sessionSlug}`
+                      : `tray-session-${session.sessionSlug}`
+                  }
                   draggable
                   onDragStart={onDragStart?.(session)}
+                  onClick={onSessionTap ? () => onSessionTap(session) : undefined}
+                  aria-pressed={onSessionTap ? isSelected : undefined}
                   role="article"
                   aria-label={`${t('common:role.speaker')}: ${displayName}`}
                   tabIndex={0}
                   sx={{
-                    cursor: 'grab',
+                    cursor: onSessionTap ? 'pointer' : 'grab',
+                    ...(isSelected && {
+                      borderLeft: 4,
+                      borderColor: 'secondary.main',
+                      boxShadow: 6,
+                      bgcolor: 'action.selected',
+                    }),
+                    ...(isFocused &&
+                      !isSelected && {
+                        borderLeft: 4,
+                        borderColor: 'primary.main',
+                        boxShadow: 4,
+                      }),
                     '&:hover': {
                       boxShadow: 3,
                       '& .drag-handle': {

@@ -5,7 +5,6 @@
  */
 
 export { EventPage } from './EventPage';
-export { EventOverviewTab } from './EventOverviewTab';
 export { EventSpeakersTab } from './EventSpeakersTab';
 export { EventVenueTab } from './EventVenueTab';
 export { EventPublishingTab } from './EventPublishingTab';

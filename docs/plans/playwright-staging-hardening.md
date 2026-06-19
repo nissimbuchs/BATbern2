@@ -1079,6 +1079,26 @@ the empty-guard covers the one-deploy window before that. Full frontend-rollback
 from the first frontend-changing deploy onward. This PR's own deploy carries no `web-frontend/`
 change, so its `@smoke` is a backend/UI-contract check, not a frontend-regression risk.
 
+**INCIDENT + FIX (2026-06-15) — the restore `s3 sync` silently no-op'd and left prod down.**
+PR #788's `@smoke` caught a real frontend regression and `rollback-on-test-failure` fired, but
+the site stayed **broken** ("Failed to load module script … MIME type text/html"). Root cause: the
+restore used `aws s3 sync stable → live --delete`, and **`s3 sync` skips a destination object that
+is the same SIZE and not-older than the source.** A Vite build's entry shell is
+`/assets/js/index-<hash>.js`; the failed build's `index.html` (`index-LLIrlQsn.js`) is
+**byte-for-byte the same LENGTH** as the stable one (`index-BzobMR9d.js` — only the 8-char content
+hash differs) and has a **newer mtime** (just deployed). So `sync` judged it "up to date" and never
+overwrote it; `--delete` only removes files *absent* from source, and `index.html` is present, so it
+survived. The live `index.html` kept pointing at a `/assets/js` bundle that no longer existed →
+CloudFront's SPA 404→`/index.html` fallback returned **HTML for a `.js` request** → the browser
+refused it. The prerendered shells (`/home/`, `/about/`, `/privacy/`, `/support/`, routed by the
+`staging-spa-router` CloudFront function) were stale for the same reason. **`--exact-timestamps`
+does NOT fix this** — it only affects S3→local downloads, not S3→S3. **Fix:** the restore now
+force-overwrites every object with `aws s3 cp stable → live --recursive` (unconditional; S3→S3 copy
+preserves Content-Type/Content-Encoding) **then** runs `aws s3 sync … --delete` purely to prune the
+failed build's orphan assets. Manual recovery on the day: same `cp --recursive` of the prerendered
+HTMLs + a `/*` invalidation. The snapshot direction (live→stable) is unaffected — live is always the
+newer side there, so `sync` copies it correctly.
+
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 
 First PR-691 CI run: `bruno-tests` failed `users-api` → auto-rollback fired. Root cause was

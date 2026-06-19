@@ -997,9 +997,9 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
         fullPage: false,
       });
 
-      // Click "Sessions view" toggle button
-      console.log('  → Switching to Sessions view');
-      await page.getByTestId('sessions-view-toggle').click();
+      // Click "Agenda view" toggle button (Epic 14 Phase C — was "Sessions")
+      console.log('  → Switching to Agenda view');
+      await page.getByTestId('agenda-view-toggle').click();
       await page.waitForTimeout(1000);
 
       await capturer(page, 'sessions-view-loaded', {

@@ -111,8 +111,8 @@ export function usePresentationData(eventCode: string): UsePresentationDataResul
   });
 
   const upcomingQuery = useQuery({
-    queryKey: ['presentation-upcoming-events'],
-    queryFn: getUpcomingEvents,
+    queryKey: ['presentation-upcoming-events', eventCode],
+    queryFn: () => getUpcomingEvents(eventCode),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });

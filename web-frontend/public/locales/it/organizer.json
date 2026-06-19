@@ -271,7 +271,15 @@
     "confirmChangeMessage": "Cambiare lo stato di {{speaker}} da {{from}} a {{to}}?",
     "reasonHelperText": "Opzionale (max {{max}} caratteri)",
     "reasonPlaceholder": "es. Relatore confermato via e-mail",
-    "reasonTooLong": "Il motivo è troppo lungo ({{current}}/{{max}} caratteri)"
+    "reasonTooLong": "Il motivo è troppo lungo ({{current}}/{{max}} caratteri)",
+    "phaseColumns": {
+      "sourcing": "Ricerca",
+      "inviting": "Invito",
+      "content": "Contenuto",
+      "confirmed": "Confermato"
+    },
+    "declinedStrip": "▸ Rifiutati ({{count}})",
+    "waitingOnSpeakerDivider": "In attesa del relatore"
   },
   "speakerContent": {
     "submitContent": "Invia contenuto relatore",
@@ -556,7 +564,10 @@
       "filterClearedAnnouncement": "Filtro colonna rimosso",
       "filterAppliedAnnouncement": "Colonna {{state}} filtrata, {{count}} carte visibili"
     },
-    "selfNominated": "Auto-candidatura"
+    "selfNominated": "Auto-candidatura",
+    "needsASlot": "⚠ Serve uno slot →",
+    "slotAssigned": "Slot assegnato",
+    "slotAssignedAt": "✓ {{time}}"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
@@ -571,7 +582,8 @@
     "declineDialog": {
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
-    }
+    },
+    "invalidColumnTooltip": "Nessun passaggio in avanti valido verso questa colonna."
   },
   "speakerDrawer": {
     "secondaryActions": {

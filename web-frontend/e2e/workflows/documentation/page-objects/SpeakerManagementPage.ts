@@ -73,8 +73,9 @@ export class SpeakerManagementPage {
 
     // Speaker Status (language-independent testIds)
     this.changeStatusButton = page.getByTestId('status-change-confirm');
-    this.kanbanViewButton = page.getByTestId('kanban-view-toggle');
-    this.sessionsViewButton = page.getByTestId('sessions-view-toggle');
+    // Epic 14 Phase C — sub-views relabelled Pool/Agenda/Slots (was Kanban/Sessions).
+    this.kanbanViewButton = page.getByTestId('pool-view-toggle');
+    this.sessionsViewButton = page.getByTestId('agenda-view-toggle');
 
     // Content Submission (language-independent testIds)
     this.speakerSearchField = page.getByTestId('speaker-search-field');

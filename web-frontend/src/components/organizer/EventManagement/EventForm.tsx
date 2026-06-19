@@ -18,7 +18,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogTitle,
@@ -53,7 +52,7 @@ import { useAiGenerateDescription } from '@/hooks/useAiAssist';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
-import type { Event, EventUI, CreateEventRequest, PatchEventRequest } from '@/types/event.types';
+import type { Event, EventUI, CreateEventRequest } from '@/types/event.types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
@@ -63,91 +62,21 @@ import { useQueryClient } from '@tanstack/react-query';
 import { EventTasksTab } from '../Tasks/EventTasksTab';
 import type { EventTaskResponse } from '@/services/taskService';
 import { taskService } from '@/services/taskService';
+import {
+  createEventSchema,
+  normalizeEventType,
+  transformDatesForApi,
+  getChangedFields as diffEventFields,
+  type EventFormData,
+  type PartialEventFormData,
+} from './eventFormSchema';
 
 // mapWorkflowStateToStatus function removed - no longer needed
 // Backend now uses workflowState directly (Phase 1-2 migration complete)
-
-/**
- * Converts legacy lowercase snake_case event types to UPPER_CASE enum values
- * Handles migration from old format (full_day) to new format (FULL_DAY)
- */
-function normalizeEventType(eventType: string | undefined): components['schemas']['EventType'] {
-  if (!eventType) return 'FULL_DAY';
-
-  const typeMap: Record<string, components['schemas']['EventType']> = {
-    full_day: 'FULL_DAY',
-    afternoon: 'AFTERNOON',
-    evening: 'EVENING',
-    FULL_DAY: 'FULL_DAY',
-    AFTERNOON: 'AFTERNOON',
-    EVENING: 'EVENING',
-  };
-
-  return typeMap[eventType] || 'FULL_DAY';
-}
-
-// Validation schema factory function (needs t function for translations)
-const createEventSchema = (t: (key: string) => string) =>
-  z
-    .object({
-      eventNumber: z.coerce
-        .number({ message: t('validation.eventNumberRequired') })
-        .positive(t('validation.eventNumberPositive')),
-      title: z
-        .string()
-        .min(1, t('validation.titleRequired'))
-        .min(10, t('validation.titleMinLength')),
-      description: z.string().min(1, t('validation.descriptionRequired')),
-      date: z.string().min(1, t('validation.eventDateRequired')),
-      registrationDeadline: z.string().optional().or(z.literal('')),
-      venueName: z.string().min(1, t('validation.venueNameRequired')),
-      venueAddress: z.string().min(1, t('validation.venueAddressRequired')),
-      venueCapacity: z.coerce
-        .number({ message: t('validation.capacityRequired') })
-        .positive(t('validation.capacityPositive')),
-      workflowState: z.enum([
-        'CREATED',
-        'TOPIC_SELECTION',
-        'SPEAKER_IDENTIFICATION',
-        'SLOT_ASSIGNMENT',
-        'AGENDA_PUBLISHED',
-        'EVENT_LIVE',
-        'EVENT_COMPLETED',
-        'ARCHIVED',
-      ]),
-      eventType: z.enum(['FULL_DAY', 'AFTERNOON', 'EVENING']).optional(),
-    })
-    .refine(
-      (data) => {
-        if (!data.registrationDeadline) return true;
-        const eventDate = new Date(data.date);
-        const deadline = new Date(data.registrationDeadline);
-        return deadline <= eventDate;
-      },
-      {
-        message: t('validation.registrationDeadline'),
-        path: ['registrationDeadline'],
-      }
-    );
-
-// Explicit type for form data (needed because z.infer doesn't handle complex transforms correctly)
-interface EventFormData {
-  eventNumber: number;
-  title: string;
-  description: string;
-  date: string;
-  venueName: string;
-  venueAddress: string;
-  venueCapacity: number;
-  registrationDeadline?: string;
-  workflowState?: components['schemas']['EventWorkflowState'];
-  eventType?: components['schemas']['EventType'];
-}
-
-// Type for partial updates (all fields optional)
-type PartialEventFormData = {
-  [K in keyof EventFormData]?: EventFormData[K];
-};
+//
+// normalizeEventType, createEventSchema, EventFormData, PartialEventFormData,
+// transformDatesForApi and getChangedFields now live in ./eventFormSchema
+// (shared with the Details · Info in-tab editor — Story 14.F.2).
 
 interface EventFormProps {
   open: boolean;
@@ -357,37 +286,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     }
   }, [event]);
 
-  // Get changed fields for partial update (PATCH)
+  // Get changed fields for partial update (PATCH) — pure diff lives in ./eventFormSchema.
   const getChangedFields = useCallback(
-    (currentData: PartialEventFormData): PartialEventFormData => {
-      const changedFields: Record<string, unknown> = {};
-      (Object.keys(currentData) as Array<keyof EventFormData>).forEach((key) => {
-        if (currentData[key] !== initialFormData[key]) {
-          changedFields[key] = currentData[key];
-        }
-      });
-      return changedFields as PartialEventFormData;
-    },
+    (currentData: PartialEventFormData): PartialEventFormData =>
+      diffEventFields(currentData, initialFormData),
     [initialFormData]
   );
-
-  // Transform date fields from date-only format (YYYY-MM-DD) to ISO 8601 (YYYY-MM-DDTHH:mm:ssZ)
-  // Required for PATCH requests per OpenAPI spec (format: date-time)
-  const transformDatesForApi = (data: PartialEventFormData): PatchEventRequest => {
-    const transformed = { ...data } as Record<string, unknown>;
-
-    // Convert date field if present
-    if (transformed.date && typeof transformed.date === 'string') {
-      transformed.date = new Date(transformed.date).toISOString();
-    }
-
-    // Convert registrationDeadline field if present
-    if (transformed.registrationDeadline && typeof transformed.registrationDeadline === 'string') {
-      transformed.registrationDeadline = new Date(transformed.registrationDeadline).toISOString();
-    }
-
-    return transformed as PatchEventRequest;
-  };
 
   // Auto-save functionality (5-second debounce, always enabled)
   const formValues = watch();

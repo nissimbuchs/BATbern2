@@ -231,6 +231,26 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
+    @DisplayName("preview_rendersRealLogoUrl_notPlaceholder")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void preview_rendersRealLogoUrl_notPlaceholder() throws Exception {
+        Map<String, Object> body = Map.of(
+                "templateKey", "venue-timetable",
+                "recipients", java.util.List.of("VENUE"),
+                "locale", "de"
+        );
+
+        mockMvc.perform(post("/api/v1/events/{code}/venue-coordination/preview", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                // The batbern-default layout footer logo must resolve to the real asset URL …
+                .andExpect(content().string(containsString("BATbern_white_logo.png")))
+                // … and the raw {{logoUrl}} placeholder must NOT leak into the sent email.
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("{{logoUrl}}"))));
+    }
+
+    @Test
     @DisplayName("preview_whenConfigMissing_returns412")
     @WithMockUser(username = "organizer", roles = "ORGANIZER")
     void preview_whenConfigMissing_returns412() throws Exception {

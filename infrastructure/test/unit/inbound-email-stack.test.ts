@@ -224,6 +224,67 @@ describe('InboundEmailStack', () => {
     });
   });
 
+  // Delivery tracking (Option A): dedicated forwarder SES configuration set
+  test('should_createDedicatedForwarderConfigurationSet_when_stackDeployed', () => {
+    template.hasResourceProperties('AWS::SES::ConfigurationSet', {
+      Name: 'batbern-staging-forwarder',
+    });
+  });
+
+  test('should_routeForwarderEventsToCloudWatch_when_configSetCreated', () => {
+    template.hasResourceProperties('AWS::SES::ConfigurationSetEventDestination', {
+      EventDestination: Match.objectLike({
+        Enabled: true,
+        MatchingEventTypes: Match.arrayWith(['delivery', 'bounce', 'complaint', 'reject']),
+        CloudWatchDestination: Match.anyValue(),
+      }),
+    });
+  });
+
+  test('should_passConfigurationSetNameToForwarderLambda_when_created', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      FunctionName: 'batbern-email-forwarder-staging',
+      Environment: Match.objectLike({
+        Variables: Match.objectLike({
+          SES_CONFIGURATION_SET: 'batbern-staging-forwarder',
+        }),
+      }),
+    });
+  });
+
+  // Per-recipient delivery tracking: SES → SNS → logger Lambda → CloudWatch Logs
+  test('should_createForwarderEventsSnsTopic_when_stackDeployed', () => {
+    template.hasResourceProperties('AWS::SNS::Topic', {
+      TopicName: 'batbern-staging-ses-forwarder-events',
+    });
+  });
+
+  test('should_routeForwarderEventsToSns_when_configSetCreated', () => {
+    template.hasResourceProperties('AWS::SES::ConfigurationSetEventDestination', {
+      EventDestination: Match.objectLike({
+        Enabled: true,
+        MatchingEventTypes: Match.arrayWith(['delivery', 'bounce', 'complaint', 'reject']),
+        SnsDestination: Match.anyValue(),
+      }),
+    });
+  });
+
+  test('should_createSesEventLoggerLambda_with_ownLogGroup', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      FunctionName: 'batbern-staging-ses-event-logger',
+      Runtime: 'nodejs20.x',
+    });
+    template.hasResourceProperties('AWS::Logs::LogGroup', {
+      LogGroupName: '/aws/lambda/batbern-staging-ses-event-logger',
+    });
+  });
+
+  test('should_subscribeLoggerLambdaToEventsTopic_when_stackDeployed', () => {
+    template.hasResourceProperties('AWS::SNS::Subscription', {
+      Protocol: 'lambda',
+    });
+  });
+
   // T12 — Story 10.26: MX record for SES inbound SMTP when hosted zone provided
   test('should_createMxRecord_when_hostedZoneProvided', () => {
     const mxApp = new App();

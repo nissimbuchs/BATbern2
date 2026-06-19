@@ -265,7 +265,15 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   };
 
   return (
-    <Stack spacing={3}>
+    // Two-column card layout (per prototype #p-settings): each section is a Paper
+    // card; CSS multi-column flows them into two balanced columns on desktop.
+    <Box
+      sx={{
+        columnCount: { xs: 1, md: 2 },
+        columnGap: 3,
+        '& > .MuiPaper-root': { breakInside: 'avoid', mb: 3, display: 'block' },
+      }}
+    >
       {/* Event Moderator */}
       <Paper sx={{ p: 3 }}>
         <Stack direction="row" spacing={1} alignItems="center" mb={2}>
@@ -765,7 +773,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           </Button>
         </DialogActions>
       </Dialog>
-    </Stack>
+    </Box>
   );
 };
 

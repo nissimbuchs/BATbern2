@@ -54,6 +54,7 @@ import { format } from 'date-fns';
 import { de, enUS, type Locale } from 'date-fns/locale';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { CustomTaskModal } from './CustomTaskModal';
+import { OrganizerChip } from '@/components/shared/OrganizerChip';
 
 interface TaskBoardModalProps {
   open: boolean;
@@ -401,13 +402,16 @@ const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComple
                   </Typography>
                 )}
                 {task.assignedOrganizerUsername && (
-                  <Typography variant="caption" color="text.secondary">
-                    {t('tasks.assignedTo', 'Assigned to')}: {task.assignedOrganizerUsername}
-                  </Typography>
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <Typography variant="caption" color="text.secondary">
+                      {t('tasks.assignedTo', 'Assigned to')}:
+                    </Typography>
+                    <OrganizerChip username={task.assignedOrganizerUsername} />
+                  </Stack>
                 )}
                 {task.triggerState && (
                   <Chip
-                    label={task.triggerState}
+                    label={t(`tasks.workflowStates.${task.triggerState}`, task.triggerState)}
                     size="small"
                     variant="outlined"
                     sx={{ fontSize: '0.65rem', height: 20, mt: 0.5 }}

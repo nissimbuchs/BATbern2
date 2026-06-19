@@ -3164,12 +3164,16 @@ paths:
       summary: Resolve the email distribution list for an event (internal Lambda route)
       description: |
         Returns the email addresses to fan out for the per-event mailing aliases
-        `batbern{N}-speaker@batbern.ch` and `batbern{N}-moderator@batbern.ch`.
+        `batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and
+        `batbern{N}-participants@batbern.ch`.
 
         - `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)
           of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.
         - `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their
           verified `additionalEmails`.
+        - `participants`: every active registrant (`registered`/`confirmed`/`attended`;
+          excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the
+          same audience as the Communications → Event registrants send. Lowercase-deduped.
 
         **Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:
           - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is
@@ -3192,7 +3196,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [speakers, moderator]
+            enum: [speakers, moderator, participants]
       responses:
         '200':
           description: Distribution list resolved
@@ -3202,6 +3206,73 @@ paths:
                 $ref: '#/components/schemas/DistributionListResponse'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/participants:
+    post:
+      tags:
+        - Registrations
+      summary: Add an existing user as a confirmed participant (organizer)
+      description: |
+        Organizer-only. Adds an EXISTING BATbern user (chosen via the user autocomplete) onto
+        the event directly as a `confirmed` participant — skipping the self-registration +
+        email-confirmation step. The created row is a REAL attendee (counts toward capacity and
+        the event delete-guard), audited with `metadata.addedByOrganizer`.
+
+        - Capacity: respected by default; if the event is full, returns `409` with
+          `details.code = "capacity_exceeded"`. Pass `force: true` to add over capacity.
+        - Duplicate: an already-active registration returns `409` (generic). A `cancelled`
+          prior registration is replaced.
+        - `notify` (default true) sends the attendee a "you have a confirmed spot" email.
+
+        **Spec:** `_bmad-output/implementation-artifacts/spec-organizer-add-participant.md`.
+      operationId: addParticipant
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddParticipantRequest'
+      responses:
+        '201':
+          description: Participant added as confirmed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registrationCode:
+                    type: string
+                    example: BATbern57-A1B2C3
+                  status:
+                    type: string
+                    example: confirmed
+                  attendeeUsername:
+                    type: string
+                    example: jane.doe
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Conflict — either the user is already registered (generic) or the event is full
+            (`details.code = "capacity_exceeded"`; retry with `force: true`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -3787,7 +3858,8 @@ paths:
       summary: Verify deregistration token (public)
       description: |
         Verifies a deregistration token and returns registration details for confirmation.
-        Returns 404 if token is unknown or registration is already cancelled.
+        Returns 404 if the token is unknown, already cancelled, or absent/malformed
+        (e.g. an email client truncated the link) — an invalid link is always a 404, never a 500.
 
         **Story**: 10.12 — Self-Service Deregistration
         **Security**: Public endpoint — UUID token provides authentication
@@ -6472,6 +6544,26 @@ paths:
 
 components:
   schemas:
+
+    # ── Add Participant (organizer) ───────────────────────────────────────────
+
+    AddParticipantRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: The chosen existing user's username (= UserResponse.id).
+          example: jane.doe
+        force:
+          type: boolean
+          default: false
+          description: When the event is full, true adds over capacity; false returns 409.
+        notify:
+          type: boolean
+          default: true
+          description: Send the attendee a "you have a confirmed spot" email.
 
     # ── Event Photo Schemas (Story 10.21) ────────────────────────────────────
 

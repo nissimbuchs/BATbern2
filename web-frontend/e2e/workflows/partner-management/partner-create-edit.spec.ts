@@ -195,8 +195,9 @@ test.describe('Partner Create/Edit Modal', () => {
       await expect(option).toBeVisible();
       await option.click();
 
-      // The input shows the technical name once selected
-      await expect(input).toHaveValue(company.name);
+      // CompanyAutocomplete's getOptionLabel renders `displayName || name`, so once selected
+      // the input shows the display name (the option is still keyed by the technical name).
+      await expect(input).toHaveValue(company.displayName);
     } finally {
       await cleanupById(token, 'companies', company.name);
     }

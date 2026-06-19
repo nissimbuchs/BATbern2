@@ -29,6 +29,8 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { type Locale } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { OrganizerChip } from '@/components/shared/OrganizerChip';
 import { type EventTaskResponse } from '@/services/taskService';
 import { type SxProps, type Theme } from '@mui/material/styles';
 import type { TFunction } from 'i18next';
@@ -72,6 +74,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   draggableListeners,
   draggableAttributes,
 }) => {
+  // The workflow-state labels (`tasks.workflowStates.*`) live in the `events`
+  // namespace. The `t` passed in is bound to the caller's namespace (e.g.
+  // `organizer` on the /organizer/tasks board), which lacks those keys — so
+  // resolve the state chip from `events` directly, regardless of the caller.
+  const { t: tWorkflowState } = useTranslation('events');
+
   const formattedDueDate = task.dueDate
     ? format(new Date(task.dueDate), 'dd MMM yyyy HH:mm', { locale })
     : null;
@@ -174,18 +182,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     {t('tasks.due', 'Due')}: {formattedDueDate}
                   </Typography>
                 )}
-                {task.assignedOrganizerUsername && (
-                  <Typography variant="caption" color="text.secondary">
-                    {task.assignedOrganizerUsername}
-                  </Typography>
-                )}
+                <OrganizerChip
+                  username={task.assignedOrganizerUsername}
+                  data-testid={`task-assignee-${task.id}`}
+                />
               </Stack>
             )}
 
             {/* Trigger State */}
             {showTriggerState && task.triggerState && (
               <Chip
-                label={task.triggerState}
+                label={tWorkflowState(
+                  `tasks.workflowStates.${task.triggerState}`,
+                  task.triggerState
+                )}
                 size="small"
                 variant="outlined"
                 sx={{ fontSize: '0.65rem', height: 20, mt: 0.5, width: 'fit-content' }}

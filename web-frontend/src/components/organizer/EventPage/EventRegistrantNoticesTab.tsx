@@ -25,6 +25,7 @@ import {
   InputLabel,
   Link,
   MenuItem,
+  Paper,
   Select,
   Stack,
   Typography,
@@ -215,103 +216,118 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
           );
         })()}
 
-      <Box>
-        <Stack spacing={2} maxWidth={400}>
-          {/* Preview language */}
-          <FormControl size="small">
-            <InputLabel>{t('eventPage.registrantNotices.locale', 'Preview language')}</InputLabel>
-            <Select
-              value={locale}
-              label={t('eventPage.registrantNotices.locale', 'Preview language')}
-              onChange={(e) => {
-                setLocale(e.target.value as 'de' | 'en');
-                setPreviewHtml(null);
-              }}
-              SelectDisplayProps={
-                { 'data-testid': 'rn-locale-select' } as React.HTMLAttributes<HTMLDivElement>
-              }
-            >
-              <MenuItem value="de">Deutsch</MenuItem>
-              <MenuItem value="en">English</MenuItem>
-            </Select>
-          </FormControl>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'minmax(300px, 34%) 1fr' },
+          gap: 3,
+          alignItems: 'start',
+        }}
+      >
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          {/* LEFT: the form controls */}
+          <Stack spacing={2}>
+            {/* Preview language */}
+            <FormControl size="small">
+              <InputLabel>{t('eventPage.registrantNotices.locale', 'Preview language')}</InputLabel>
+              <Select
+                value={locale}
+                label={t('eventPage.registrantNotices.locale', 'Preview language')}
+                onChange={(e) => {
+                  setLocale(e.target.value as 'de' | 'en');
+                  setPreviewHtml(null);
+                }}
+                SelectDisplayProps={
+                  { 'data-testid': 'rn-locale-select' } as React.HTMLAttributes<HTMLDivElement>
+                }
+              >
+                <MenuItem value="de">Deutsch</MenuItem>
+                <MenuItem value="en">English</MenuItem>
+              </Select>
+            </FormControl>
 
-          {/* Template selector — REGISTRANT_NOTICE category only */}
-          <FormControl size="small">
-            <InputLabel>{t('eventPage.registrantNotices.templateSelect', 'Template')}</InputLabel>
-            <Select
-              value={selectedTemplateKey}
-              label={t('eventPage.registrantNotices.templateSelect', 'Template')}
-              onChange={(e) => {
-                setSelectedTemplateKey(e.target.value);
-                setPreviewHtml(null);
-              }}
-              disabled={templatesQuery.isLoading || noTemplates}
-              SelectDisplayProps={
-                { 'data-testid': 'rn-template-select' } as React.HTMLAttributes<HTMLDivElement>
-              }
-            >
-              {filteredTemplates.map((tpl) => (
-                <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
-                  {tpl.templateKey}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+            {/* Template selector — REGISTRANT_NOTICE category only */}
+            <FormControl size="small">
+              <InputLabel>{t('eventPage.registrantNotices.templateSelect', 'Template')}</InputLabel>
+              <Select
+                value={selectedTemplateKey}
+                label={t('eventPage.registrantNotices.templateSelect', 'Template')}
+                onChange={(e) => {
+                  setSelectedTemplateKey(e.target.value);
+                  setPreviewHtml(null);
+                }}
+                disabled={templatesQuery.isLoading || noTemplates}
+                SelectDisplayProps={
+                  { 'data-testid': 'rn-template-select' } as React.HTMLAttributes<HTMLDivElement>
+                }
+              >
+                {filteredTemplates.map((tpl) => (
+                  <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
+                    {tpl.templateKey}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-          {noTemplates && (
-            <Alert severity="info" data-testid="rn-no-templates">
-              {t(
-                'eventPage.registrantNotices.noTemplates',
-                'No registrant-notice templates for this language yet.'
-              )}{' '}
-              <Link href="/organizer/admin?tab=email-templates" underline="hover">
-                {t('organizer:newsletter.templateSelect.createNew', 'Create one')} ↗
-              </Link>
-            </Alert>
-          )}
+            {noTemplates && (
+              <Alert severity="info" data-testid="rn-no-templates">
+                {t(
+                  'eventPage.registrantNotices.noTemplates',
+                  'No registrant-notice templates for this language yet.'
+                )}{' '}
+                <Link href="/organizer/admin?tab=email-templates" underline="hover">
+                  {t('organizer:newsletter.templateSelect.createNew', 'Create one')} ↗
+                </Link>
+              </Alert>
+            )}
 
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            <Button
-              variant="outlined"
-              startIcon={previewMutation.isPending ? <CircularProgress size={16} /> : <EmailIcon />}
-              onClick={handlePreview}
-              disabled={previewMutation.isPending || !selectedTemplateKey}
-              data-testid="rn-preview-button"
-            >
-              {t('eventPage.registrantNotices.preview', 'Preview')}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleOpenConfirm}
-              disabled={sendMutation.isPending || previewMutation.isPending || !selectedTemplateKey}
-              data-testid="rn-send-button"
-            >
-              {t('eventPage.registrantNotices.send', 'Send to registrants')}
-            </Button>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap">
+              <Button
+                variant="outlined"
+                startIcon={
+                  previewMutation.isPending ? <CircularProgress size={16} /> : <EmailIcon />
+                }
+                onClick={handlePreview}
+                disabled={previewMutation.isPending || !selectedTemplateKey}
+                data-testid="rn-preview-button"
+              >
+                {t('eventPage.registrantNotices.preview', 'Preview')}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleOpenConfirm}
+                disabled={
+                  sendMutation.isPending || previewMutation.isPending || !selectedTemplateKey
+                }
+                data-testid="rn-send-button"
+              >
+                {t('eventPage.registrantNotices.send', 'Send to registrants')}
+              </Button>
+            </Stack>
+
+            {recipientCount !== null && (
+              <Typography variant="caption" color="text.secondary" data-testid="rn-recipient-count">
+                {t('eventPage.registrantNotices.recipientCount', {
+                  count: recipientCount,
+                  defaultValue: `${recipientCount} active registrants`,
+                })}
+              </Typography>
+            )}
+
+            {apiError && (
+              <Alert severity={apiError.severity} data-testid="rn-error">
+                {apiError.message}
+              </Alert>
+            )}
           </Stack>
+        </Paper>
 
-          {recipientCount !== null && (
-            <Typography variant="caption" color="text.secondary" data-testid="rn-recipient-count">
-              {t('eventPage.registrantNotices.recipientCount', {
-                count: recipientCount,
-                defaultValue: `${recipientCount} active registrants`,
-              })}
-            </Typography>
-          )}
-
-          {apiError && (
-            <Alert severity={apiError.severity} data-testid="rn-error">
-              {apiError.message}
-            </Alert>
-          )}
-        </Stack>
-
-        {previewHtml && (
-          <Box mt={3}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {t('eventPage.registrantNotices.previewTitle', 'Email Preview')}
-            </Typography>
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          {/* RIGHT: preview */}
+          <Typography variant="body2" color="text.secondary" gutterBottom data-testid="sec-label">
+            {t('eventPage.registrantNotices.previewTitle', 'Email Preview')}
+          </Typography>
+          {previewHtml ? (
             <Box
               component="iframe"
               srcDoc={previewHtml}
@@ -326,8 +342,12 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
               sandbox="allow-same-origin"
               data-testid="rn-preview-iframe"
             />
-          </Box>
-        )}
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Preview will appear here
+            </Typography>
+          )}
+        </Paper>
       </Box>
 
       {/* Confirmation dialog */}

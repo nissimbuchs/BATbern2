@@ -24,6 +24,12 @@ test.describe('Archive Filtering', { tag: '@gate' }, () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/archive');
     await expect(page.getByTestId('filter-sidebar')).toBeVisible();
+    // The sidebar shell renders before its topic data loads; interacting (topic click,
+    // sort change) before the topic list + URL-sync handlers are wired drops the update
+    // and the URL never gains the param (flaky `toHaveURL`/`toBeChecked`). Wait for the
+    // first topic checkbox — its presence proves the topic data loaded and the controls
+    // are interactive.
+    await expect(page.getByTestId('filter-sidebar').locator(TOPIC_CHECKBOX).first()).toBeVisible();
   });
 
   test('shows all filter controls in the desktop sidebar', async ({ page }) => {
@@ -66,10 +72,14 @@ test.describe('Archive Filtering', { tag: '@gate' }, () => {
     const firstTopic = sidebar.locator(TOPIC_CHECKBOX).first();
     await firstTopic.click();
     await expect(firstTopic).toBeChecked();
-    await sidebar.getByTestId('search-input').fill('Architecture');
-
+    // Wait for the topic param to land in the URL BEFORE filling search — the two filter
+    // updates each do an async URL round-trip and can clobber each other if interleaved.
     await expect(page).toHaveURL(/[?&]topics=/);
+
+    await sidebar.getByTestId('search-input').fill('Architecture');
     await expect(page).toHaveURL(/[?&]q=Architecture/);
+    // Both params must be present together before the reload restores them.
+    await expect(page).toHaveURL(/[?&]topics=/);
 
     await page.reload();
 

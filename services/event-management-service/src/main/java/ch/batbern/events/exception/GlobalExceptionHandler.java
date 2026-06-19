@@ -567,6 +567,36 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle RegistrationCapacityExceededException — organizer added a participant to a full
+     * event without force. Returns HTTP 409 with {@code details.code = "capacity_exceeded"} so
+     * the Add-participant dialog can offer "add anyway" (vs the generic duplicate 409).
+     */
+    @ExceptionHandler(RegistrationCapacityExceededException.class)
+    public ResponseEntity<ErrorResponse> handleRegistrationCapacityExceededException(
+            RegistrationCapacityExceededException ex,
+            HttpServletRequest request) {
+        log.info("Add-participant refused — event at capacity: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "capacity_exceeded");
+        details.put("activeCount", ex.getActiveCount());
+        details.put("capacity", ex.getCapacity());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle IllegalStateException (business logic constraint violations)
      * Returns HTTP 409 Conflict
      * QA Fix (VALID-001): Handle duplicate registration attempts

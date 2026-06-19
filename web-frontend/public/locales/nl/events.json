@@ -6,6 +6,60 @@
     "blobSelector": "Blob-selector"
   },
   "eventPage": {
+    "cockpit": {
+      "spine": {
+        "stepOf": "Step {{current}} of {{total}}"
+      },
+      "emphasis": {
+        "created": "Define the event — fill in the details and pick a topic.",
+        "topic": "Confirm the topic, assign a moderator, and start the speaker pool.",
+        "speakers": "Fill the speaker pool; review submissions and start slotting as speakers confirm.",
+        "slots": "Assign speakers to time slots and finish reviews, then publish the agenda.",
+        "finalize": "Agenda is live — collect outstanding presentations, watch registrations, and send the final newsletter and catering request by their due dates. Day-of controls are available for rehearsal.",
+        "live": "Run the event — present the deck or open Live Control.",
+        "wrapup": "Send \"slides are online\", upload photos, and curate thank-you notes.",
+        "archived": "Event archived — read-only."
+      },
+      "attention": {
+        "title": "Needs your attention",
+        "addTask": "Add task",
+        "open": "Open {{tab}} →",
+        "go": "Open →",
+        "retry": "Retry",
+        "loadError": "Couldn't load your tasks.",
+        "allCaught": "You're all caught up — nothing needs your attention right now."
+      },
+      "due": {
+        "overdue": "Overdue · {{days}} days",
+        "dueSoon": "Due in {{days}} days",
+        "upcoming": "Upcoming",
+        "live": "Now · event is live",
+        "eventDay": "Evenementdag · {{date}}"
+      },
+      "cards": {
+        "addDetailsPickTopic": "Add event details & pick a topic",
+        "confirmTopic": "Confirm the topic",
+        "publishAgenda": "Finalize & publish the agenda",
+        "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
+        "needsSlot": "{{count}} sessions still need a slot",
+        "reviewSubmissions": "Review speaker submissions",
+        "outstandingPresentations": "Collect outstanding presentations",
+        "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
+        "startPresentation": "🔴 Start the presentation",
+        "openLiveControl": "📡 Open Live Control"
+      },
+      "tiles": {
+        "registrations": "Registrations",
+        "speakers": "Speakers",
+        "materials": "Materials",
+        "agenda": "Agenda",
+        "filled": "{{percent}}% filled",
+        "waitlist": "{{count}} on waitlist"
+      },
+      "atAGlance": {
+        "title": "At a glance"
+      }
+    },
     "tabs": {
       "venue": "Locatie",
       "participants": "Deelnemers",
@@ -14,7 +68,13 @@
       "settings": "Instellingen",
       "photos": "Foto's",
       "registrantNotices": "Deelnemersberichten",
-      "appreciation": "Waardering"
+      "appreciation": "Waardering",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Sprekers & Agenda",
+      "registrations": "Inschrijvingen",
+      "communications": "Communicatie",
+      "wrapup": "Afronding",
+      "details": "Details"
     },
     "tabsAriaLabel": "Navigatie evenementenpagina",
     "overview": {
@@ -52,7 +112,18 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Promoveren vanaf wachtlijst?",
+      "promoteConfirmMessage": "{{name}} promoveren vanaf de wachtlijst? De persoon wordt bevestigd en ontvangt een bevestigingsmail.",
+      "addParticipant": "Deelnemer toevoegen",
+      "addParticipantTitle": "Deelnemer toevoegen",
+      "addParticipantUserLabel": "Gebruiker",
+      "addParticipantNotify": "Deelnemer per e-mail op de hoogte stellen",
+      "addParticipantForce": "Toch toevoegen",
+      "addParticipantFull": "Dit evenement is vol. Deze deelnemer toch boven de capaciteit toevoegen?",
+      "addParticipantDuplicate": "Deze gebruiker is al ingeschreven voor dit evenement.",
+      "addParticipantError": "Kon deze deelnemer niet toevoegen.",
+      "addParticipantSuccess": "{{name}} toegevoegd als bevestigde deelnemer"
     },
     "participantTable": {
       "headers": {
@@ -64,7 +135,8 @@
         "delete": "Registratie verwijderen",
         "resendConfirmation": "Bevestigingsmail opnieuw verzenden",
         "resendSuccess": "Bevestigingsmail succesvol opnieuw verzonden",
-        "resendError": "Fout bij het opnieuw verzenden van de bevestigingsmail"
+        "resendError": "Fout bij het opnieuw verzenden van de bevestigingsmail",
+        "menu": "Acties"
       },
       "deleteDialog": {
         "title": "Registratie verwijderen",
@@ -96,7 +168,9 @@
       },
       "actions": {
         "retry": "Opnieuw proberen"
-      }
+      },
+      "showing": "{{from}}–{{to}} van {{total}} weergegeven",
+      "showingEmpty": "0 van 0 weergegeven"
     },
     "settings": {
       "moderator": "Evenementmoderator",
@@ -162,7 +236,17 @@
       "addSpeakers": "Sprekers toevoegen",
       "addToPool": "Sprekers aan pool toevoegen",
       "kanbanView": "Kanban-weergave",
-      "sessionsView": "Sessieweergave"
+      "sessionsView": "Sessieweergave",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Tijdvakken",
+      "poolView": "Sprekerspoolweergave",
+      "agendaView": "Agendaweergave",
+      "slotsView": "Tijdvakweergave",
+      "needsSlotSummary": "{{count}} van {{total}} sessies hebben een tijdvak nodig",
+      "allSlotted": "Alle sessies zijn ingepland",
+      "arrangeSlots": "Tijdvakken indelen",
+      "noSessionsYet": "Nog geen sessies"
     },
     "newsletter": {
       "title": "Nieuwsbrief",
@@ -233,6 +317,74 @@
       "sendResultSkipped": "{{count}} zonder e-mailadres in het bestand (overgeslagen).",
       "sendResultFailed": "{{count}} mislukt.",
       "alreadySent": "Dit bericht is al verstuurd (of een verzending is bezig) voor dit evenement."
+    },
+    "lockedTabSuffix": "{{tab}} (vergrendeld tot het evenement live is)",
+    "details": {
+      "heading": "Evenementdetails",
+      "intro": "Identiteit, thema en planning van het evenement. Stel deze vroeg in — ze veranderen zelden.",
+      "editButton": "Details bewerken",
+      "noTopic": "Nog geen thema gekozen",
+      "subtabs": {
+        "info": "Info",
+        "tasks": "Taken",
+        "settings": "Instellingen"
+      },
+      "whenWhere": "Wanneer & waar",
+      "changeTopic": "Onderwerp wijzigen",
+      "aiAssist": "✨ AI-genereren",
+      "save": "Wijzigingen opslaan",
+      "saved": "Wijzigingen opgeslagen",
+      "aiGenerateImage": "✨ Genereren (AI)",
+      "aiGenerateDescription": "✨ Beschrijving genereren met AI",
+      "uploadImage": "Klik om een thema-afbeelding te uploaden",
+      "uploadingImage": "Uploaden…",
+      "replaceImage": "Afbeelding vervangen"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Nieuwsbriefabonnees",
+        "registrants": "Deelnemers aan het evenement",
+        "speakers": "Sprekers",
+        "venue": "Locatie & catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Herinneringen aan sprekers",
+      "description": "Stuur een deadlineherinnering naar de sprekers die nog een reactie of hun content verschuldigd zijn. Elke spreker krijgt een individuele e-mail — uitnodigingen en losse aansporingen blijven op de sprekerkaart.",
+      "reminderType": "Type herinnering",
+      "typeResponse": "Reactiedeadline (uitgenodigde sprekers)",
+      "typeContent": "Contentdeadline (sprekers die hebben toegezegd)",
+      "recipientCount": "{{count}} spreker(s) worden herinnerd",
+      "empty": "Er wachten momenteel geen sprekers op deze herinnering.",
+      "send": "Herinneringen versturen",
+      "confirmTitle": "Herinneringen naar sprekers sturen?",
+      "confirmBody": "Een “{{type}}”-herinnering sturen naar {{count}} spreker(s) van «{{eventTitle}}»? Iedereen krijgt een individuele e-mail.",
+      "sending": "Herinneringen worden verstuurd…",
+      "result": "{{sent}} verstuurd, {{failed}} mislukt.",
+      "retryFailed": "Probeer de {{count}} mislukte opnieuw",
+      "loadError": "Kan de sprekerspool niet laden.",
+      "retry": "Opnieuw proberen",
+      "noPreview": "Herinneringen worden verzonden met de standaardsjablonen in de taal van elke spreker — geen voorbeeld om te tonen."
+    },
+    "topicOverlay": {
+      "title": "Onderwerp & sprekers",
+      "pickHeading": "Kies een onderwerp",
+      "searchPlaceholder": "Onderwerpen zoeken",
+      "emptyHint": "Geen onderwerpen gevonden — pas filters of zoekopdracht aan.",
+      "similarityWarning": "Vergelijkbaar onderwerp gevonden",
+      "selectAnyway": "Toch selecteren…",
+      "banner": {
+        "selected": "Onderwerp geselecteerd",
+        "change": "Onderwerp wijzigen"
+      },
+      "footer": {
+        "skip": "Later",
+        "continue": "Doorgaan naar contact →"
+      }
+    },
+    "mobile": {
+      "more": "Meer",
+      "moreSheetTitle": "Meer"
     }
   },
   "dashboard": {
@@ -345,7 +497,9 @@
     "criticalTasksWidget": "Kritieke taken",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Deze taak verwijderen?",
+    "deleteConfirmBody": "\"{{name}}\" verwijderen? Dit kan niet ongedaan worden gemaakt."
   },
   "form": {
     "createEvent": "Nieuw evenement aanmaken",
@@ -581,6 +735,11 @@
       "speakers": "Sprekers",
       "agenda": "Agenda",
       "updates": "Updates"
+    },
+    "sections": {
+      "validation": "Validatie",
+      "phases": "Publicatiefase",
+      "publishNext": "Volgende fase publiceren"
     }
   },
   "notifications": {
@@ -810,6 +969,12 @@
         "projector": "Projector",
         "recording": "Opname"
       }
+    },
+    "actionBar": {
+      "label": "Acties voor tijdvaktoewijzing"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Tik nu op een gemarkeerd tijdvak om het te plaatsen"
     }
   },
   "newsletter": {

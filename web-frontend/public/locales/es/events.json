@@ -6,6 +6,60 @@
     "blobSelector": "Selector de blob"
   },
   "eventPage": {
+    "cockpit": {
+      "spine": {
+        "stepOf": "Step {{current}} of {{total}}"
+      },
+      "emphasis": {
+        "created": "Define the event — fill in the details and pick a topic.",
+        "topic": "Confirm the topic, assign a moderator, and start the speaker pool.",
+        "speakers": "Fill the speaker pool; review submissions and start slotting as speakers confirm.",
+        "slots": "Assign speakers to time slots and finish reviews, then publish the agenda.",
+        "finalize": "Agenda is live — collect outstanding presentations, watch registrations, and send the final newsletter and catering request by their due dates. Day-of controls are available for rehearsal.",
+        "live": "Run the event — present the deck or open Live Control.",
+        "wrapup": "Send \"slides are online\", upload photos, and curate thank-you notes.",
+        "archived": "Event archived — read-only."
+      },
+      "attention": {
+        "title": "Needs your attention",
+        "addTask": "Add task",
+        "open": "Open {{tab}} →",
+        "go": "Open →",
+        "retry": "Retry",
+        "loadError": "Couldn't load your tasks.",
+        "allCaught": "You're all caught up — nothing needs your attention right now."
+      },
+      "due": {
+        "overdue": "Overdue · {{days}} days",
+        "dueSoon": "Due in {{days}} days",
+        "upcoming": "Upcoming",
+        "live": "Now · event is live",
+        "eventDay": "Día del evento · {{date}}"
+      },
+      "cards": {
+        "addDetailsPickTopic": "Add event details & pick a topic",
+        "confirmTopic": "Confirm the topic",
+        "publishAgenda": "Finalize & publish the agenda",
+        "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
+        "needsSlot": "{{count}} sessions still need a slot",
+        "reviewSubmissions": "Review speaker submissions",
+        "outstandingPresentations": "Collect outstanding presentations",
+        "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
+        "startPresentation": "🔴 Start the presentation",
+        "openLiveControl": "📡 Open Live Control"
+      },
+      "tiles": {
+        "registrations": "Registrations",
+        "speakers": "Speakers",
+        "materials": "Materials",
+        "agenda": "Agenda",
+        "filled": "{{percent}}% filled",
+        "waitlist": "{{count}} on waitlist"
+      },
+      "atAGlance": {
+        "title": "At a glance"
+      }
+    },
     "tabs": {
       "venue": "Sede",
       "participants": "Participantes",
@@ -14,7 +68,13 @@
       "settings": "Configuración",
       "photos": "Fotos",
       "registrantNotices": "Avisos a inscritos",
-      "appreciation": "Agradecimientos"
+      "appreciation": "Agradecimientos",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Ponentes y Agenda",
+      "registrations": "Inscripciones",
+      "communications": "Comunicaciones",
+      "wrapup": "Cierre",
+      "details": "Detalles"
     },
     "tabsAriaLabel": "Navegación de la página de evento",
     "overview": {
@@ -52,7 +112,18 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "¿Promover desde la lista de espera?",
+      "promoteConfirmMessage": "¿Promover a {{name}} desde la lista de espera? Se confirmará y recibirá un correo de confirmación.",
+      "addParticipant": "Añadir participante",
+      "addParticipantTitle": "Añadir participante",
+      "addParticipantUserLabel": "Usuario",
+      "addParticipantNotify": "Notificar al participante por correo electrónico",
+      "addParticipantForce": "Añadir de todos modos",
+      "addParticipantFull": "Este evento está completo. ¿Añadir este participante por encima del aforo de todos modos?",
+      "addParticipantDuplicate": "Este usuario ya está inscrito en este evento.",
+      "addParticipantError": "No se pudo añadir este participante.",
+      "addParticipantSuccess": "{{name}} añadido como participante confirmado"
     },
     "participantTable": {
       "headers": {
@@ -64,7 +135,8 @@
         "delete": "Eliminar registro",
         "resendConfirmation": "Reenviar email de confirmación",
         "resendSuccess": "Email de confirmación reenviado con éxito",
-        "resendError": "Error al reenviar el email de confirmación"
+        "resendError": "Error al reenviar el email de confirmación",
+        "menu": "Acciones"
       },
       "deleteDialog": {
         "title": "Eliminar registro",
@@ -96,7 +168,9 @@
       },
       "actions": {
         "retry": "Reintentar"
-      }
+      },
+      "showing": "Mostrando {{from}}–{{to}} de {{total}}",
+      "showingEmpty": "Mostrando 0 de 0"
     },
     "settings": {
       "moderator": "Moderador del evento",
@@ -162,7 +236,17 @@
       "addSpeakers": "Añadir ponentes",
       "addToPool": "Añadir ponentes al grupo",
       "kanbanView": "Vista Kanban",
-      "sessionsView": "Vista de sesiones"
+      "sessionsView": "Vista de sesiones",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Franjas",
+      "poolView": "Vista del grupo de ponentes",
+      "agendaView": "Vista de agenda",
+      "slotsView": "Vista de franjas",
+      "needsSlotSummary": "{{count}} de {{total}} sesiones necesitan una franja",
+      "allSlotted": "Todas las sesiones están planificadas",
+      "arrangeSlots": "Organizar franjas",
+      "noSessionsYet": "Aún no hay sesiones"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -233,6 +317,74 @@
       "sendResultSkipped": "{{count}} sin dirección de correo registrada (omitidos).",
       "sendResultFailed": "{{count}} con error.",
       "alreadySent": "Este aviso ya se ha enviado (o hay un envío en curso) para este evento."
+    },
+    "lockedTabSuffix": "{{tab}} (bloqueado hasta que el evento esté en directo)",
+    "details": {
+      "heading": "Detalles del evento",
+      "intro": "Identidad, tema y calendario del evento. Defínelos pronto — rara vez cambian.",
+      "editButton": "Editar detalles",
+      "noTopic": "Aún no hay tema seleccionado",
+      "subtabs": {
+        "info": "Info",
+        "tasks": "Tareas",
+        "settings": "Ajustes"
+      },
+      "whenWhere": "Cuándo y dónde",
+      "changeTopic": "Cambiar tema",
+      "aiAssist": "✨ Generar con IA",
+      "save": "Guardar cambios",
+      "saved": "Cambios guardados",
+      "aiGenerateImage": "✨ Generar (IA)",
+      "aiGenerateDescription": "✨ Generar descripción con IA",
+      "uploadImage": "Haz clic para subir una imagen",
+      "uploadingImage": "Subiendo…",
+      "replaceImage": "Reemplazar imagen"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Suscriptores del boletín",
+        "registrants": "Asistentes al evento",
+        "speakers": "Ponentes",
+        "venue": "Lugar y catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Recordatorios a ponentes",
+      "description": "Envía un recordatorio de plazo a los ponentes que aún deben una respuesta o su contenido. Cada ponente recibe un correo individual; las invitaciones y avisos puntuales permanecen en la ficha del ponente.",
+      "reminderType": "Tipo de recordatorio",
+      "typeResponse": "Plazo de respuesta (ponentes invitados)",
+      "typeContent": "Plazo de contenido (ponentes que han aceptado)",
+      "recipientCount": "Se recordará a {{count}} ponente(s)",
+      "empty": "Actualmente ningún ponente espera este recordatorio.",
+      "send": "Enviar recordatorios",
+      "confirmTitle": "¿Enviar recordatorios a los ponentes?",
+      "confirmBody": "¿Enviar un recordatorio «{{type}}» a {{count}} ponente(s) de «{{eventTitle}}»? Cada uno recibe un correo individual.",
+      "sending": "Enviando recordatorios…",
+      "result": "{{sent}} enviados, {{failed}} fallidos.",
+      "retryFailed": "Reintentar los {{count}} fallidos",
+      "loadError": "No se pudo cargar el grupo de ponentes.",
+      "retry": "Reintentar",
+      "noPreview": "Los recordatorios se envían con las plantillas estándar en el idioma de cada ponente — no hay vista previa que mostrar."
+    },
+    "topicOverlay": {
+      "title": "Tema y ponentes",
+      "pickHeading": "Elegir un tema",
+      "searchPlaceholder": "Buscar temas",
+      "emptyHint": "Ningún tema coincide — ajusta los filtros o la búsqueda.",
+      "similarityWarning": "Tema similar detectado",
+      "selectAnyway": "Seleccionar igualmente…",
+      "banner": {
+        "selected": "Tema seleccionado",
+        "change": "Cambiar tema"
+      },
+      "footer": {
+        "skip": "Más tarde",
+        "continue": "Continuar con el contacto →"
+      }
+    },
+    "mobile": {
+      "more": "Más",
+      "moreSheetTitle": "Más"
     }
   },
   "dashboard": {
@@ -345,7 +497,9 @@
     "criticalTasksWidget": "Tareas críticas",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "¿Eliminar esta tarea?",
+    "deleteConfirmBody": "¿Eliminar «{{name}}»? No se puede deshacer."
   },
   "form": {
     "createEvent": "Crear nuevo evento",
@@ -581,6 +735,11 @@
       "speakers": "Ponentes",
       "agenda": "Programa",
       "updates": "Actualizaciones"
+    },
+    "sections": {
+      "validation": "Validación",
+      "phases": "Fase de publicación",
+      "publishNext": "Publicar la siguiente fase"
     }
   },
   "notifications": {
@@ -810,6 +969,12 @@
         "projector": "Proyector",
         "recording": "Grabación"
       }
+    },
+    "actionBar": {
+      "label": "Acciones de asignación de franjas"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Ahora toca una franja resaltada para colocarla"
     }
   },
   "newsletter": {

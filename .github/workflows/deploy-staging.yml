@@ -1529,6 +1529,18 @@ jobs:
             exit 0
           fi
           echo "🔁 Restoring known-good frontend: $STABLE → $LIVE ($OBJ_COUNT objects)"
+          # CRITICAL: do NOT use `aws s3 sync` here. sync skips a destination object when it is
+          # the same SIZE and not-older than the source — and a failed frontend build's
+          # index.html (e.g. index-LLIrlQsn.js) is byte-for-byte the SAME LENGTH as the stable
+          # one (only the 8-char content hash differs) AND has a NEWER mtime (just deployed).
+          # So `sync` would leave the broken index.html in place and the rollback would silently
+          # do nothing — exactly the outage on 2026-06-15 (broken index.html → references a
+          # /assets/js bundle that 404s → CloudFront serves the HTML fallback → "Failed to load
+          # module script, MIME text/html"). `--exact-timestamps` does NOT fix this (it only
+          # affects S3→local downloads, not S3→S3). Force-overwrite EVERY object unconditionally
+          # with `cp --recursive` (S3→S3 copy preserves Content-Type / Content-Encoding metadata),
+          # then a follow-up `sync --delete` prunes orphans left by the failed build.
+          aws s3 cp "$STABLE/" "$LIVE/" --recursive --only-show-errors
           aws s3 sync "$STABLE/" "$LIVE/" --delete --only-show-errors
           DIST_ID=$(aws cloudformation list-exports \
             --query "Exports[?Name=='staging-FrontendDistributionId'].Value" --output text)

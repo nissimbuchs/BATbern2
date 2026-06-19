@@ -11,9 +11,8 @@ import {
   TextField,
   FormControl,
   FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
+  ToggleButton,
+  ToggleButtonGroup,
   Button,
   Paper,
 } from '@mui/material';
@@ -41,18 +40,24 @@ const EventParticipantFilters: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchValue, searchQuery, setSearchQuery]);
 
-  // Status options
+  // Status options. `WAITLIST` (not `WAITLISTED`) is the canonical enum value the
+  // API and the rest of the app use (Epic 14 FR28 — fixes the previously-dead
+  // Waitlisted filter that sent an invalid status and returned nothing).
   const statusOptions = [
     { value: 'all', label: t('eventPage.participantFilters.status.all') },
     { value: 'CONFIRMED', label: t('eventPage.participantFilters.status.confirmed') },
     { value: 'REGISTERED', label: t('eventPage.participantFilters.status.registered') },
     { value: 'ATTENDED', label: t('eventPage.participantFilters.status.attended') },
     { value: 'CANCELLED', label: t('eventPage.participantFilters.status.cancelled') },
-    { value: 'WAITLISTED', label: t('eventPage.participantFilters.status.waitlisted') },
+    { value: 'WAITLIST', label: t('eventPage.participantFilters.status.waitlisted') },
   ];
 
-  const handleStatusChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const status = event.target.value;
+  const handleStatusChange = (_event: React.MouseEvent<HTMLElement>, status: string | null) => {
+    // Exclusive ToggleButtonGroup yields null when the active button is re-clicked;
+    // keep a selection rather than clearing it (clicking "All" is the way to reset).
+    if (status === null) {
+      return;
+    }
     if (status === 'all') {
       setFilters({
         ...filters,
@@ -87,19 +92,30 @@ const EventParticipantFilters: React.FC = () => {
           placeholder={t('eventPage.participantFilters.search.placeholder')}
         />
 
-        {/* Status Filter */}
+        {/* Status Filter — segmented control (Epic 14 FR26 / UX-DR9) */}
         <FormControl component="fieldset">
-          <FormLabel component="legend">{t('eventPage.participantFilters.status.label')}</FormLabel>
-          <RadioGroup row value={selectedStatus} onChange={handleStatusChange}>
+          <FormLabel component="legend" id="participant-status-filter-label">
+            {t('eventPage.participantFilters.status.label')}
+          </FormLabel>
+          <ToggleButtonGroup
+            exclusive
+            value={selectedStatus}
+            onChange={handleStatusChange}
+            size="small"
+            aria-labelledby="participant-status-filter-label"
+            sx={{ flexWrap: 'wrap', mt: 1 }}
+            data-testid="participant-status-filter"
+          >
             {statusOptions.map((option) => (
-              <FormControlLabel
+              <ToggleButton
                 key={option.value}
                 value={option.value}
-                control={<Radio />}
-                label={option.label}
-              />
+                data-testid={`participant-status-${option.value}`}
+              >
+                {option.label}
+              </ToggleButton>
             ))}
-          </RadioGroup>
+          </ToggleButtonGroup>
         </FormControl>
 
         {/* Clear Filters Button */}

@@ -157,6 +157,19 @@ Semantics:
 - **"Event moderator" interpretation**: BATbern has one lead organizer per event (`Event.organizerUsername`). The codebase's `SessionUser.MODERATOR` is a per-session concept (panel moderators), which is **not** what the user wants. Documenting this choice explicitly — if requirement is "the session moderator", swap `fetchEventOrganizer` for `fetchSessionModeratorByEvent` (1-line change).
 - Sender authorization: **anyone** (it's a contact alias for the event — same model as `info@`, `events@`, `support@`).
 
+#### `batbernXX-participants@batbern.ch` — organizer → all active registrants of event XX  *(added 2026-06-15)*
+
+Semantics:
+- Local-part regex: `^batbern(\d+)-participants$` — matched **before** the bare `batbern{N}@` branch so the longer alias is not shadowed.
+- Maps to event `BATbern{N}`.
+- Recipients = `attendeeEmail` of every active `Registration` (`registered`/`confirmed`/`attended`; excludes `waitlist` and `cancelled`), lowercased + deduped. Falls back to a CUMS lookup by username only when `attendeeEmail` is blank. Resolved by `DistributionListService.resolveParticipants` via `distribution-list/participants`.
+- This is **"Way 2"** of emailing every participant — it reaches the **same audience** as the organizer-facing **"Way 1"** (Communications → Event registrants, which sends a `REGISTRANT_NOTICE` template in each registrant's own language). Way 2 is a plain mailing alias for an ad-hoc reply-to-all; Way 1 is the templated, per-recipient-personalised broadcast (and the only one that injects the per-registrant one-click `{{deregistrationUrl}}`).
+- Sender authorization: **organizers only** (same as `ok@`, `partner@`, `batbern{N}@`, `batbern{N}-speaker@`). Enforced fail-closed in `sender-auth.ts`: the alias is neither a `PUBLIC_ADDRESS` nor the moderator contact, so it falls through to the organizer-email check — a non-organizer can never blast all participants.
+
+#### `batbernXX@batbern.ch` — DEPRECATED, forwards to `-participants@`  *(consolidated 2026-06-15)*
+
+The bare `batbernXX@` alias predates the `-speaker@`/`-moderator@`/`-participants@` family and already broadcast to event registrants (via the old `fetchEventRegistrants` → `/registrations` path, `registered`+`confirmed`, `attendeeEmail` only). It is now **deprecated** in favour of the clearer, self-documenting `batbernXX-participants@`. To guarantee the two never diverge, `batbernXX@` was consolidated to resolve via the **same** `distribution-list/participants` endpoint (so it now also includes `attended` registrants and fans out to verified `additionalEmails`). `fetchEventRegistrants` and its DTOs were deleted as dead code. The resolver logs a deprecation `console.warn` on each use so residual traffic can be tracked before the alias is eventually retired. Sender auth is unchanged (organizers only).
+
 #### Implementation steps
 
 **Backend (event-management-service)** — new endpoint surfaced via OpenAPI:

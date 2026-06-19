@@ -11,12 +11,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import EventParticipantsTab from './EventParticipantsTab';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eventApiClient } from '@/services/eventApiClient';
+import { enrollStakeholders } from '@/services/api/eventRegistrationService';
 
 // Mock EventParticipantList component
 vi.mock('./EventParticipantList', () => ({
   default: ({ eventCode }: { eventCode: string }) => (
     <div data-testid="participant-list">List for {eventCode}</div>
   ),
+}));
+
+// Enrol organizers & partners moved here from the Overview (Epic 14 FR25).
+vi.mock('@/services/api/eventRegistrationService', () => ({
+  enrollStakeholders: vi.fn().mockResolvedValue({ enrolled: 3, skipped: 1 }),
 }));
 
 // Mock translation
@@ -95,25 +101,23 @@ describe('EventParticipantsTab Component', () => {
       expect(screen.getByText('42')).toBeInTheDocument();
     });
 
-    it('should_stackHeaderColumn_atXs_andRow_atMd', () => {
-      // The header Stack is direction={{ xs: 'column', md: 'row' }} so the count
-      // block and export buttons stack vertically on phones. MUI compiles this to
-      // @media (min-width:0px) { flex-direction:column } and
-      // @media (min-width:900px) { flex-direction:row }; jsdom never evaluates the
-      // media queries, so inspect the injected emotion stylesheet directly.
+    it('should_stackActionButtonsColumn_atXs_andRow_atSm', () => {
+      // Epic 14 follow-up: the action buttons moved to their OWN line below the title
+      // (the header is now a column). The button group is
+      // direction={{ xs: 'column', sm: 'row' }} so the four buttons stack on phones and
+      // sit in a row on desktop. MUI compiles this to @media (min-width:0px) {
+      // flex-direction:column } and @media (min-width:600px) { flex-direction:row };
+      // jsdom never evaluates the media queries, so inspect the emotion stylesheet directly.
       renderWithProviders(<EventParticipantsTab event={mockEvent} />);
 
-      // Walk up from the title to the outermost MuiStack ancestor (the header row).
-      const title = screen.getByText('eventPage.participantsTab.title');
-      const stacks: HTMLElement[] = [];
-      let node = title.parentElement;
-      while (node) {
-        if (node.classList.contains('MuiStack-root')) stacks.push(node);
-        node = node.parentElement;
+      // Walk up from an action button to its nearest MuiStack ancestor (the button group).
+      const btn = screen.getByTestId('add-participant-button');
+      let buttonGroup: HTMLElement | null = btn.parentElement;
+      while (buttonGroup && !buttonGroup.classList.contains('MuiStack-root')) {
+        buttonGroup = buttonGroup.parentElement;
       }
-      const headerStack = stacks[stacks.length - 1];
-      expect(headerStack).toBeTruthy();
-      const cssClass = Array.from(headerStack.classList).find((c) => c.startsWith('css-'));
+      expect(buttonGroup).toBeTruthy();
+      const cssClass = Array.from(buttonGroup!.classList).find((c) => c.startsWith('css-'));
       expect(cssClass).toBeTruthy();
 
       let css = '';
@@ -128,10 +132,10 @@ describe('EventParticipantsTab Component', () => {
           `@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*flex-direction:\\s*column[^}]*\\}`
         ).test(css)
       ).toBe(true);
-      // md+ (min-width:900px) -> flex-direction:row
+      // sm+ (min-width:600px) -> flex-direction:row
       expect(
         new RegExp(
-          `@media\\s*\\(min-width:\\s*900px\\)\\s*\\{[^}]*flex-direction:\\s*row[^}]*\\}`
+          `@media\\s*\\(min-width:\\s*600px\\)\\s*\\{[^}]*flex-direction:\\s*row[^}]*\\}`
         ).test(css)
       ).toBe(true);
     });
@@ -158,6 +162,38 @@ describe('EventParticipantsTab Component', () => {
       renderWithProviders(<EventParticipantsTab event={customEvent} />);
 
       expect(screen.getByText('List for CUSTOM-2024')).toBeInTheDocument();
+    });
+  });
+
+  describe('Enrol & waitlist relocation (Epic 14 FR25 / FR28)', () => {
+    it('renders the Enrol organizers & partners action in the header', () => {
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+      expect(screen.getByTestId('enroll-stakeholders-button')).toBeInTheDocument();
+    });
+
+    it('calls enrollStakeholders with the event code when clicked', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+
+      await user.click(screen.getByTestId('enroll-stakeholders-button'));
+      await waitFor(() => expect(enrollStakeholders).toHaveBeenCalledWith('BAT-2024-01'));
+    });
+
+    it('no longer renders the separate waitlist accordion (folded into the list filter)', () => {
+      const eventWithCapacity = {
+        ...mockEvent,
+        registrationCapacity: 180,
+        confirmedCount: 128,
+        waitlistCount: 12,
+      };
+      renderWithProviders(<EventParticipantsTab event={eventWithCapacity} />);
+
+      // The old WaitlistSection accordion header is gone; the list (which now owns
+      // the Waitlisted filter) is still rendered.
+      expect(
+        screen.queryByText('eventPage.participantsTab.waitlistSection')
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('participant-list')).toBeInTheDocument();
     });
   });
 

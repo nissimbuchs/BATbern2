@@ -76,48 +76,78 @@ test.describe('Event Tasks (Story 5.5)', { tag: '@gate' }, () => {
     }
   });
 
-  /** Open the fixture event's edit modal and switch to the (loaded) Tasks tab. */
+  /**
+   * Open the (live) Tasks sub-tab of the Details tab.
+   * Epic 14 (14.F.2): the form-coupled Tasks tab inside the event-edit MODAL was lifted into
+   * a LIVE `EventTasksLiveTab` under Details ▸ Tasks — there is no more `edit-event-button`
+   * modal and no form Save: toggling a template creates/deletes its task instance immediately
+   * and the assignee persists on change. The catalog still renders via the reused
+   * `EventTasksTab` (`task-template-<id>` rows + `task-assignee-<id>` selects).
+   */
   async function openTasksTab(page: import('@playwright/test').Page) {
-    await page.goto(`/organizer/events/${fixtureEvent.eventCode}`);
-    await page.getByTestId('edit-event-button').click();
-    await page.getByTestId('tasks-tab').click();
-    await expect(page.getByTestId('event-tasks-tab-content')).toBeVisible();
+    await page.goto(`/organizer/events/${fixtureEvent.eventCode}?tab=details`);
+    await page.getByTestId('details-subtab-tasks').click();
+    await expect(page.getByTestId('event-tasks-live-tab')).toBeVisible();
   }
 
   test('should_listTaskTemplates_when_tasksTabOpened', async ({ page }) => {
     await openTasksTab(page);
 
-    // The default-template rows render (pre-selected) with per-row assignee selects.
+    // The default-template rows render with per-row assignee selects.
     await expect(page.locator('[data-testid^="task-template-"]').first()).toBeVisible();
     await expect(page.locator('[data-testid^="task-assignee-"]').first()).toBeVisible();
   });
 
   test(
-    'should_createAndAssignTasks_when_savedWithAssignee',
+    'should_createAndAssignTasks_when_templateEnabledWithAssignee',
     { tag: ['@smoke', '@gate'] },
     async ({ page, request }) => {
       await openTasksTab(page);
 
-      // Assign the first (pre-selected, enabled) default template to the current organizer.
-      // The select is the OrganizerSelect combobox; options render in a portal and carry
-      // `organizer-option-<username>` testids.
+      // Enable the first default template → createTasksFromTemplates fires LIVE (no Save).
+      // Use click (not check): the checkbox reflects `isSelected`, which only flips true AFTER
+      // the create + query refetch — check() would fail asserting an immediate state change.
       const firstRow = page.locator('[data-testid^="task-template-"]').first();
-      await firstRow.locator('[data-testid^="task-assignee-"]').click();
-      await page.getByTestId(`organizer-option-${username}`).click();
+      const checkbox = firstRow.getByRole('checkbox');
+      await checkbox.click();
 
-      // Save with only the task assignment changed → createTasksFromTemplates fires, then the
-      // dialog closes (success signal; a failed save keeps the modal open).
-      await page.getByTestId('save-event-button').click();
-      await expect(page.getByRole('dialog')).toBeHidden({ timeout: 15_000 });
+      // SETTLE on the UI, not just the API: the assignee select only enables once the create's
+      // query-refetch lands and flips the row to selected. Asserting the *checkbox* is checked
+      // waits for that browser-side refetch to complete — an API-only poll returns while the
+      // refetch is still in flight, and that in-flight re-render tears down a just-opened menu
+      // (the original @smoke flake that took prod down on rollback).
+      await expect(checkbox).toBeChecked({ timeout: 15_000 });
 
-      // Verify the feature did what it claims: template tasks were instantiated for the event
-      // and at least one carries our assignee. This is the real AC (task creation from
-      // templates WITH assignees), stronger than dialog-close alone.
-      const res = await request.get(`${API_URL}/api/v1/events/${fixtureEvent.eventCode}/tasks`);
-      expect(res.status()).toBe(200);
-      const tasks = (await res.json()) as EventTask[];
-      expect(tasks.length).toBeGreaterThan(0);
-      expect(tasks.some((t) => t.assignedOrganizerUsername === username)).toBe(true);
+      const assignee = firstRow.locator('[data-testid^="task-assignee-"]');
+      await expect(assignee).toBeEnabled();
+
+      // Assign the task to the current organizer. OrganizerSelect options are keyed by the
+      // organizer's meaningful id (= username); selecting one fires updateTask LIVE. Wrap the
+      // open in a retry: if a late refetch closes the MUI menu before the option is actionable,
+      // re-open and try again (Playwright-recommended pattern for flaky open/close races).
+      const option = page.getByTestId(`organizer-option-${username}`);
+      await expect(async () => {
+        await assignee.click();
+        await expect(option).toBeVisible({ timeout: 2_000 });
+      }).toPass({ timeout: 20_000 });
+      await option.click();
+
+      // Verify the feature did what it claims: a template task was instantiated for the event
+      // and carries our assignee. Poll — the toggle + assignee writes persist asynchronously
+      // (live, no dialog-close signal).
+      await expect
+        .poll(
+          async () => {
+            const res = await request.get(
+              `${API_URL}/api/v1/events/${fixtureEvent.eventCode}/tasks`
+            );
+            if (res.status() !== 200) return false;
+            const tasks = (await res.json()) as EventTask[];
+            return tasks.some((t) => t.assignedOrganizerUsername === username);
+          },
+          { timeout: 15_000 }
+        )
+        .toBe(true);
     }
   );
 });

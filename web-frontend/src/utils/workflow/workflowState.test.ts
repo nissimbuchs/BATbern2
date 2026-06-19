@@ -18,6 +18,10 @@ import {
   isEarlyStage,
   isLateStage,
   isValidWorkflowState,
+  WORKFLOW_RELEVANCE,
+  ALWAYS_ACTIVE_TABS,
+  getTabRelevance,
+  type EventTabId,
 } from './workflowState';
 
 describe('workflowState utilities', () => {
@@ -376,6 +380,115 @@ describe('workflowState utilities', () => {
 
       expect(i18nKey).toBe('workflow.states.speaker_identification');
       expect(stepNumber).toBe(3); // Step 3/8
+    });
+  });
+});
+
+describe('workflow tab-relevance map (Epic 14)', () => {
+  // 7-tab IA (Settings folded into Details as a sub-tab in 14.F.2 — no standalone 'settings').
+  const ALL_TABS: EventTabId[] = [
+    'cockpit',
+    'speakers',
+    'registrations',
+    'communications',
+    'publishing',
+    'wrapup',
+    'details',
+  ];
+
+  describe('WORKFLOW_RELEVANCE table shape', () => {
+    it('has exactly 8 rows — one per workflow state', () => {
+      expect(Object.keys(WORKFLOW_RELEVANCE)).toHaveLength(8);
+    });
+
+    it('has a row for every WORKFLOW_STATE_ORDER state and no extras', () => {
+      expect(Object.keys(WORKFLOW_RELEVANCE).sort()).toEqual([...WORKFLOW_STATE_ORDER].sort());
+    });
+
+    it('does NOT contain AGENDA_FINALIZED (removed in V82, AR1)', () => {
+      expect(Object.keys(WORKFLOW_RELEVANCE)).not.toContain('AGENDA_FINALIZED');
+    });
+
+    it('never lists an always-active tab (cockpit/details) as dimmed or locked', () => {
+      Object.values(WORKFLOW_RELEVANCE).forEach((row) => {
+        ALWAYS_ACTIVE_TABS.forEach((tab) => {
+          expect(row.dimmedTabs).not.toContain(tab);
+          expect(row.lockedTabs).not.toContain(tab);
+        });
+      });
+    });
+
+    it('never lists the same tab as both dimmed and locked in one state', () => {
+      Object.values(WORKFLOW_RELEVANCE).forEach((row) => {
+        const overlap = row.dimmedTabs.filter((t) => row.lockedTabs.includes(t));
+        expect(overlap).toEqual([]);
+      });
+    });
+
+    it('only references known tab ids', () => {
+      Object.values(WORKFLOW_RELEVANCE).forEach((row) => {
+        [...row.focusTabs, ...row.dimmedTabs, ...row.lockedTabs].forEach((tab) => {
+          expect(ALL_TABS).toContain(tab);
+        });
+      });
+    });
+
+    it('attributes the "finalize" cockpit emphasis to AGENDA_PUBLISHED (8-state reconciliation), not a separate state', () => {
+      expect(WORKFLOW_RELEVANCE.AGENDA_PUBLISHED.cockpitEmphasis).toBe('finalize');
+    });
+  });
+
+  describe('getTabRelevance — always-active tabs', () => {
+    it('returns "active" for cockpit/details in every state', () => {
+      WORKFLOW_STATE_ORDER.forEach((state) => {
+        ALWAYS_ACTIVE_TABS.forEach((tab) => {
+          expect(getTabRelevance(state, tab)).toBe('active');
+        });
+      });
+    });
+  });
+
+  describe('getTabRelevance — Wrap-up lock boundary (FR5)', () => {
+    const lockedStates = [
+      'CREATED',
+      'TOPIC_SELECTION',
+      'SPEAKER_IDENTIFICATION',
+      'SLOT_ASSIGNMENT',
+      'AGENDA_PUBLISHED',
+    ];
+    const unlockedStates = ['EVENT_LIVE', 'EVENT_COMPLETED', 'ARCHIVED'];
+
+    it.each(lockedStates)('locks Wrap-up in %s', (state) => {
+      expect(getTabRelevance(state, 'wrapup')).toBe('locked');
+    });
+
+    it.each(unlockedStates)('activates Wrap-up in %s', (state) => {
+      expect(getTabRelevance(state, 'wrapup')).toBe('active');
+    });
+  });
+
+  describe('getTabRelevance — exhaustive state×tab coverage', () => {
+    it('every state→tab pairing returns a defined relevance matching the map', () => {
+      WORKFLOW_STATE_ORDER.forEach((state) => {
+        const row = WORKFLOW_RELEVANCE[state];
+        ALL_TABS.forEach((tab) => {
+          const expected = ALWAYS_ACTIVE_TABS.includes(tab)
+            ? 'active'
+            : row.lockedTabs.includes(tab)
+              ? 'locked'
+              : row.dimmedTabs.includes(tab)
+                ? 'dimmed'
+                : 'active';
+          expect(getTabRelevance(state, tab)).toBe(expected);
+        });
+      });
+    });
+  });
+
+  describe('getTabRelevance — unknown/invalid state', () => {
+    it('defaults to "active" (never hides a tab) for an unknown state', () => {
+      expect(getTabRelevance('BOGUS_STATE', 'wrapup')).toBe('active');
+      expect(getTabRelevance('', 'speakers')).toBe('active');
     });
   });
 });

@@ -6,6 +6,60 @@
     "blobSelector": "ブロブセレクター"
   },
   "eventPage": {
+    "cockpit": {
+      "spine": {
+        "stepOf": "Step {{current}} of {{total}}"
+      },
+      "emphasis": {
+        "created": "Define the event — fill in the details and pick a topic.",
+        "topic": "Confirm the topic, assign a moderator, and start the speaker pool.",
+        "speakers": "Fill the speaker pool; review submissions and start slotting as speakers confirm.",
+        "slots": "Assign speakers to time slots and finish reviews, then publish the agenda.",
+        "finalize": "Agenda is live — collect outstanding presentations, watch registrations, and send the final newsletter and catering request by their due dates. Day-of controls are available for rehearsal.",
+        "live": "Run the event — present the deck or open Live Control.",
+        "wrapup": "Send \"slides are online\", upload photos, and curate thank-you notes.",
+        "archived": "Event archived — read-only."
+      },
+      "attention": {
+        "title": "Needs your attention",
+        "addTask": "Add task",
+        "open": "Open {{tab}} →",
+        "go": "Open →",
+        "retry": "Retry",
+        "loadError": "Couldn't load your tasks.",
+        "allCaught": "You're all caught up — nothing needs your attention right now."
+      },
+      "due": {
+        "overdue": "Overdue · {{days}} days",
+        "dueSoon": "Due in {{days}} days",
+        "upcoming": "Upcoming",
+        "live": "Now · event is live",
+        "eventDay": "イベント当日 · {{date}}"
+      },
+      "cards": {
+        "addDetailsPickTopic": "Add event details & pick a topic",
+        "confirmTopic": "Confirm the topic",
+        "publishAgenda": "Finalize & publish the agenda",
+        "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
+        "needsSlot": "{{count}} sessions still need a slot",
+        "reviewSubmissions": "Review speaker submissions",
+        "outstandingPresentations": "Collect outstanding presentations",
+        "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
+        "startPresentation": "🔴 Start the presentation",
+        "openLiveControl": "📡 Open Live Control"
+      },
+      "tiles": {
+        "registrations": "Registrations",
+        "speakers": "Speakers",
+        "materials": "Materials",
+        "agenda": "Agenda",
+        "filled": "{{percent}}% filled",
+        "waitlist": "{{count}} on waitlist"
+      },
+      "atAGlance": {
+        "title": "At a glance"
+      }
+    },
     "tabs": {
       "venue": "会場",
       "participants": "参加者",
@@ -14,7 +68,13 @@
       "settings": "設定",
       "photos": "写真",
       "registrantNotices": "参加者へのお知らせ",
-      "appreciation": "感謝"
+      "appreciation": "感謝",
+      "cockpit": "コックピット",
+      "speakersAgenda": "講演者と議題",
+      "registrations": "登録",
+      "communications": "コミュニケーション",
+      "wrapup": "まとめ",
+      "details": "詳細"
     },
     "tabsAriaLabel": "イベントページのナビゲーション",
     "overview": {
@@ -52,7 +112,18 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "キャンセル待ちから繰り上げますか？",
+      "promoteConfirmMessage": "{{name}} をキャンセル待ちから繰り上げますか？確定済みに変更され、確認メールが送信されます。",
+      "addParticipant": "参加者を追加",
+      "addParticipantTitle": "参加者を追加",
+      "addParticipantUserLabel": "ユーザー",
+      "addParticipantNotify": "参加者にメールで通知する",
+      "addParticipantForce": "それでも追加",
+      "addParticipantFull": "このイベントは満員です。定員を超えてこの参加者を追加しますか？",
+      "addParticipantDuplicate": "このユーザーはすでにこのイベントに登録されています。",
+      "addParticipantError": "この参加者を追加できませんでした。",
+      "addParticipantSuccess": "{{name}} を確定参加者として追加しました"
     },
     "participantTable": {
       "headers": {
@@ -64,7 +135,8 @@
         "delete": "登録を削除",
         "resendConfirmation": "確認メールを再送",
         "resendSuccess": "確認メールを再送しました",
-        "resendError": "確認メールの再送に失敗しました"
+        "resendError": "確認メールの再送に失敗しました",
+        "menu": "操作"
       },
       "deleteDialog": {
         "title": "登録を削除",
@@ -96,7 +168,9 @@
       },
       "actions": {
         "retry": "再試行"
-      }
+      },
+      "showing": "{{total}}件中 {{from}}–{{to}}件を表示",
+      "showingEmpty": "0件中 0件を表示"
     },
     "settings": {
       "moderator": "イベントモデレーター",
@@ -162,7 +236,17 @@
       "addSpeakers": "スピーカーを追加",
       "addToPool": "プールにスピーカーを追加",
       "kanbanView": "カンバンビュー",
-      "sessionsView": "セッションビュー"
+      "sessionsView": "セッションビュー",
+      "pool": "プール",
+      "agenda": "アジェンダ",
+      "slots": "スロット",
+      "poolView": "スピーカープール表示",
+      "agendaView": "アジェンダ表示",
+      "slotsView": "スロット表示",
+      "needsSlotSummary": "{{total}}件中{{count}}件のセッションにスロットが必要です",
+      "allSlotted": "すべてのセッションが割り当て済みです",
+      "arrangeSlots": "スロットを割り当てる",
+      "noSessionsYet": "セッションはまだありません"
     },
     "newsletter": {
       "title": "ニュースレター",
@@ -233,6 +317,74 @@
       "sendResultSkipped": "{{count}} 名はメールアドレス未登録のためスキップしました。",
       "sendResultFailed": "{{count}} 名が失敗しました。",
       "alreadySent": "このお知らせはこのイベントに対して既に送信済みです（または送信中です）。"
+    },
+    "lockedTabSuffix": "{{tab}}（イベント開催までロック）",
+    "details": {
+      "heading": "イベント詳細",
+      "intro": "イベントのアイデンティティ、テーマ、スケジュール。早めに一度設定すれば、変更はほとんどありません。",
+      "editButton": "詳細を編集",
+      "noTopic": "テーマ未選択",
+      "subtabs": {
+        "info": "情報",
+        "tasks": "タスク",
+        "settings": "設定"
+      },
+      "whenWhere": "日時と場所",
+      "changeTopic": "トピックを変更",
+      "aiAssist": "✨ AI生成",
+      "save": "変更を保存",
+      "saved": "変更を保存しました",
+      "aiGenerateImage": "✨ 生成（AI）",
+      "aiGenerateDescription": "✨ AIで説明を生成",
+      "uploadImage": "クリックしてテーマ画像をアップロード",
+      "uploadingImage": "アップロード中…",
+      "replaceImage": "画像を置き換える"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "ニュースレター購読者",
+        "registrants": "イベント参加者",
+        "speakers": "登壇者",
+        "venue": "会場・ケータリング"
+      }
+    },
+    "speakerComms": {
+      "title": "登壇者へのリマインダー",
+      "description": "回答または資料がまだ未提出の登壇者に締め切りリマインダーを送信します。各登壇者には個別にメールが送られます。招待や個別の催促は登壇者カードに残ります。",
+      "reminderType": "リマインダーの種類",
+      "typeResponse": "回答期限（招待済みの登壇者）",
+      "typeContent": "資料の期限（承諾済みの登壇者）",
+      "recipientCount": "{{count}} 名の登壇者にリマインダーを送信します",
+      "empty": "現在、このリマインダーを待っている登壇者はいません。",
+      "send": "リマインダーを送信",
+      "confirmTitle": "登壇者にリマインダーを送信しますか？",
+      "confirmBody": "「{{eventTitle}}」の登壇者 {{count}} 名に「{{type}}」リマインダーを送信しますか？各自に個別にメールが送られます。",
+      "sending": "リマインダーを送信中…",
+      "result": "{{sent}} 件送信、{{failed}} 件失敗。",
+      "retryFailed": "失敗した {{count}} 件を再試行",
+      "loadError": "登壇者プールを読み込めませんでした。",
+      "retry": "再試行",
+      "noPreview": "リマインダーは各登壇者の言語の標準テンプレートで送信されます — プレビューはありません。"
+    },
+    "topicOverlay": {
+      "title": "トピックと登壇者",
+      "pickHeading": "トピックを選択",
+      "searchPlaceholder": "トピックを検索",
+      "emptyHint": "一致するトピックがありません — フィルターまたは検索を調整してください。",
+      "similarityWarning": "類似トピックを検出",
+      "selectAnyway": "それでも選択…",
+      "banner": {
+        "selected": "トピックを選択しました",
+        "change": "トピックを変更"
+      },
+      "footer": {
+        "skip": "後で",
+        "continue": "アウトリーチに進む →"
+      }
+    },
+    "mobile": {
+      "more": "その他",
+      "moreSheetTitle": "その他"
     }
   },
   "dashboard": {
@@ -345,7 +497,9 @@
     "criticalTasksWidget": "重要タスク",
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "このタスクを削除しますか？",
+    "deleteConfirmBody": "「{{name}}」を削除しますか？元に戻せません。"
   },
   "form": {
     "createEvent": "新規イベントを作成",
@@ -581,6 +735,11 @@
       "speakers": "登壇者",
       "agenda": "プログラム",
       "updates": "更新情報"
+    },
+    "sections": {
+      "validation": "検証",
+      "phases": "公開フェーズ",
+      "publishNext": "次のフェーズを公開"
     }
   },
   "notifications": {
@@ -810,6 +969,12 @@
         "projector": "プロジェクター",
         "recording": "録音"
       }
+    },
+    "actionBar": {
+      "label": "スロット割り当てのアクション"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ ハイライトされたスロットをタップして配置します"
     }
   },
   "newsletter": {

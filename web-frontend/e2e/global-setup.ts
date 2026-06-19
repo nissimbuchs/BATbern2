@@ -30,11 +30,19 @@ async function globalSetup() {
       baseURL: 'https://batbern.ch',
       apiURL: 'https://api.batbern.ch',
     },
-  }[testEnv as 'development' | 'staging' | 'production'];
+    // Beta = frontend-only canary on the PRODUCTION backend (see playwright.config.ts).
+    beta: {
+      baseURL: 'https://beta.batbern.ch',
+      apiURL: 'https://api.batbern.ch',
+    },
+  }[testEnv as 'development' | 'staging' | 'production' | 'beta'];
 
   if (!envConfig) {
     throw new Error(`Invalid TEST_ENV: ${testEnv}`);
   }
+
+  // Beta shares the PRODUCTION Cognito, so its auth tokens live in the staging token files.
+  const tokenEnv = testEnv === 'beta' ? 'staging' : testEnv;
 
   console.log(`[Global Setup] Environment: ${testEnv}`);
   console.log(`[Global Setup] Base URL: ${envConfig.baseURL}`);
@@ -173,9 +181,9 @@ async function globalSetup() {
   // Write to legacy .playwright-auth-state.json for backward compat with chromium project
   const organizerIdToken = await setupRoleAuth(
     'organizer',
-    path.join(batbernDir, `${testEnv}-organizer.json`),
+    path.join(batbernDir, `${tokenEnv}-organizer.json`),
     '.playwright-auth-state.json',
-    path.join(batbernDir, `${testEnv}.json`) // fallback to legacy file
+    path.join(batbernDir, `${tokenEnv}.json`) // fallback to legacy file
   );
 
   if (!organizerIdToken) {
@@ -192,14 +200,14 @@ async function globalSetup() {
   // ── SPEAKER (optional) ────────────────────────────────────────────────────
   await setupRoleAuth(
     'speaker',
-    path.join(batbernDir, `${testEnv}-speaker.json`),
+    path.join(batbernDir, `${tokenEnv}-speaker.json`),
     '.playwright-auth-speaker.json'
   );
 
   // ── PARTNER (optional) ────────────────────────────────────────────────────
   await setupRoleAuth(
     'partner',
-    path.join(batbernDir, `${testEnv}-partner.json`),
+    path.join(batbernDir, `${tokenEnv}-partner.json`),
     '.playwright-auth-partner.json'
   );
 }

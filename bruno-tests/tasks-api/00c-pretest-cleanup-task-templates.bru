@@ -1,0 +1,54 @@
+meta {
+  name: Pretest cleanup — sweep leftover Test Custom Template task templates
+  type: http
+  seq: 0.07
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "task_templates",
+    "prefix": "Test Custom Template"
+  }
+}
+
+tests {
+  test("pretest task-template cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, task_templates deletion count is reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.task_templates).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Sweeps leftover custom task templates named "Test Custom Template" that
+  02-create-task-template.bru persists with saveAsTemplate=true. Before this hook
+  existed those rows had no per-run teardown and accumulated on the shared (= prod)
+  DB, polluting the organizer "Custom Templates" list.
+
+  Runs at the start so prior runs' leftovers are swept; the run's own freshly-created
+  template is removed by 99e-posttest-cleanup-task-templates.bru. The admin endpoint
+  deletes only non-default, FK-unreferenced rows matching the bound name (see
+  TestFixtureCleanupService.TASK_TEMPLATES) — it can never touch a real default
+  template or one in use by an event task.
+}

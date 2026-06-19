@@ -271,7 +271,15 @@
     "confirmChangeMessage": "Midar status da {{speaker}} da {{from}} a {{to}}?",
     "reasonHelperText": "Facultativ (max {{max}} caracters)",
     "reasonPlaceholder": "p.ex. Referent confirmà via e-mail",
-    "reasonTooLong": "Il motiv è memia lung ({{current}}/{{max}} caracters)"
+    "reasonTooLong": "Il motiv è memia lung ({{current}}/{{max}} caracters)",
+    "phaseColumns": {
+      "sourcing": "Tschertga",
+      "inviting": "Invit",
+      "content": "Cuntegn",
+      "confirmed": "Confermà"
+    },
+    "declinedStrip": "▸ Refusads ({{count}})",
+    "waitingOnSpeakerDivider": "En spetga dal referent"
   },
   "speakerContent": {
     "submitContent": "Trametter cuntegn da referent",
@@ -544,7 +552,10 @@
       "filterClearedAnnouncement": "Filter da colonna stizzà",
       "filterAppliedAnnouncement": "Colonna {{state}} filtrada, {{count}} cartas visiblas"
     },
-    "selfNominated": "Sez proponì"
+    "selfNominated": "Sez proponì",
+    "needsASlot": "⚠ Basegn d'in slot →",
+    "slotAssigned": "Slot attribuì",
+    "slotAssignedAt": "✓ {{time}}"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
@@ -559,7 +570,8 @@
     "declineDialog": {
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
-    }
+    },
+    "invalidColumnTooltip": "Nagin pass valid enavant en questa colonna."
   },
   "speakerDrawer": {
     "secondaryActions": {

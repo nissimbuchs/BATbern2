@@ -271,7 +271,15 @@
     "confirmChangeMessage": "{{speaker}}のステータスを{{from}}から{{to}}に変更しますか？",
     "reasonHelperText": "任意（最大{{max}}文字）",
     "reasonPlaceholder": "例：メールで登壇者が確認",
-    "reasonTooLong": "理由が長すぎます（{{current}}/{{max}}文字）"
+    "reasonTooLong": "理由が長すぎます（{{current}}/{{max}}文字）",
+    "phaseColumns": {
+      "sourcing": "発掘",
+      "inviting": "招待",
+      "content": "コンテンツ",
+      "confirmed": "確定"
+    },
+    "declinedStrip": "▸ 辞退 ({{count}})",
+    "waitingOnSpeakerDivider": "登壇者待ち"
   },
   "speakerContent": {
     "submitContent": "登壇者コンテンツを提出",
@@ -544,7 +552,10 @@
       "filterClearedAnnouncement": "列のフィルターを解除しました",
       "filterAppliedAnnouncement": "{{state}}列をフィルター、{{count}}件のカードを表示中"
     },
-    "selfNominated": "自薦"
+    "selfNominated": "自薦",
+    "needsASlot": "⚠ 枠が必要 →",
+    "slotAssigned": "枠を割り当て済み",
+    "slotAssignedAt": "✓ {{time}}"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
@@ -559,7 +570,8 @@
     "declineDialog": {
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
-    }
+    },
+    "invalidColumnTooltip": "この列への有効な前進ステップではありません。"
   },
   "speakerDrawer": {
     "secondaryActions": {

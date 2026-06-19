@@ -1234,12 +1234,16 @@ export interface paths {
     /**
      * Resolve the email distribution list for an event (internal Lambda route)
      * @description Returns the email addresses to fan out for the per-event mailing aliases
-     *     `batbern{N}-speaker@batbern.ch` and `batbern{N}-moderator@batbern.ch`.
+     *     `batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and
+     *     `batbern{N}-participants@batbern.ch`.
      *
      *     - `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)
      *       of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.
      *     - `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their
      *       verified `additionalEmails`.
+     *     - `participants`: every active registrant (`registered`/`confirmed`/`attended`;
+     *       excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the
+     *       same audience as the Communications → Event registrants send. Lowercase-deduped.
      *
      *     **Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:
      *       - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is
@@ -1251,6 +1255,37 @@ export interface paths {
     get: operations['getEventDistributionList'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/participants': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add an existing user as a confirmed participant (organizer)
+     * @description Organizer-only. Adds an EXISTING BATbern user (chosen via the user autocomplete) onto
+     *     the event directly as a `confirmed` participant — skipping the self-registration +
+     *     email-confirmation step. The created row is a REAL attendee (counts toward capacity and
+     *     the event delete-guard), audited with `metadata.addedByOrganizer`.
+     *
+     *     - Capacity: respected by default; if the event is full, returns `409` with
+     *       `details.code = "capacity_exceeded"`. Pass `force: true` to add over capacity.
+     *     - Duplicate: an already-active registration returns `409` (generic). A `cancelled`
+     *       prior registration is replaced.
+     *     - `notify` (default true) sends the attendee a "you have a confirmed spot" email.
+     *
+     *     **Spec:** `_bmad-output/implementation-artifacts/spec-organizer-add-participant.md`.
+     */
+    post: operations['addParticipant'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1500,7 +1535,8 @@ export interface paths {
     /**
      * Verify deregistration token (public)
      * @description Verifies a deregistration token and returns registration details for confirmation.
-     *     Returns 404 if token is unknown or registration is already cancelled.
+     *     Returns 404 if the token is unknown, already cancelled, or absent/malformed
+     *     (e.g. an email client truncated the link) — an invalid link is always a 404, never a 500.
      *
      *     **Story**: 10.12 — Self-Service Deregistration
      *     **Security**: Public endpoint — UUID token provides authentication
@@ -2851,6 +2887,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AddParticipantRequest: {
+      /**
+       * @description The chosen existing user's username (= UserResponse.id).
+       * @example jane.doe
+       */
+      username: string;
+      /**
+       * @description When the event is full, true adds over capacity; false returns 409.
+       * @default false
+       */
+      force: boolean;
+      /**
+       * @description Send the attendee a "you have a confirmed spot" email.
+       * @default true
+       */
+      notify: boolean;
+    };
     EventPhotoResponse: {
       /** Format: uuid */
       id: string;
@@ -8083,7 +8136,7 @@ export interface operations {
       header?: never;
       path: {
         eventCode: string;
-        kind: 'speakers' | 'moderator';
+        kind: 'speakers' | 'moderator' | 'participants';
       };
       cookie?: never;
     };
@@ -8099,6 +8152,55 @@ export interface operations {
         };
       };
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  addParticipant: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddParticipantRequest'];
+      };
+    };
+    responses: {
+      /** @description Participant added as confirmed */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example BATbern57-A1B2C3 */
+            registrationCode?: string;
+            /** @example confirmed */
+            status?: string;
+            /** @example jane.doe */
+            attendeeUsername?: string;
+          };
+        };
+      };
+      400: components['responses']['BadRequest'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /**
+       * @description Conflict — either the user is already registered (generic) or the event is full
+       *     (`details.code = "capacity_exceeded"`; retry with `force: true`).
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

@@ -29,6 +29,12 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   eventBus?: events.IEventBus;
   alarmTopic?: sns.ITopic;
   watchJwtSecret?: secretsmanager.ISecret;
+  /**
+   * Transactional SES Configuration Set name — shared EmailService default so the
+   * additional-email verification mails are delivery-tracked (no suppression).
+   * See spec-transactional-ses-config-set.md.
+   */
+  sesTransactionalConfigurationSetName?: string;
 }
 
 /**
@@ -74,6 +80,10 @@ export class CompanyManagementStack extends cdk.Stack {
       // EventBridge for domain events
       ...(props.eventBus && {
         EVENT_BUS_NAME: props.eventBus.eventBusName,
+      }),
+      // Transactional SES config set → shared EmailService default (delivery tracking)
+      ...(props.sesTransactionalConfigurationSetName && {
+        BATBERN_SES_CONFIGURATION_SET_NAME: props.sesTransactionalConfigurationSetName,
       }),
       // Additional-email verification (v2): public base URL used to build the
       // {{baseUrl}}/verify-email?token= link in verification emails. Must match
@@ -184,6 +194,8 @@ export class CompanyManagementStack extends cdk.Stack {
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/${sesFromDomain}`,
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@${sesFromDomain}`,
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
+          // Configuration set — required when configurationSetName is attached to SendRawEmail
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/batbern-${envName}-*`,
         ],
       }),
     );

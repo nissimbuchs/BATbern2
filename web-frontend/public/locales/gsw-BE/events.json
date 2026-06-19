@@ -6,6 +6,60 @@
     "blobSelector": "Blob-Uswau"
   },
   "eventPage": {
+    "cockpit": {
+      "spine": {
+        "stepOf": "Step {{current}} of {{total}}"
+      },
+      "emphasis": {
+        "created": "Define the event — fill in the details and pick a topic.",
+        "topic": "Confirm the topic, assign a moderator, and start the speaker pool.",
+        "speakers": "Fill the speaker pool; review submissions and start slotting as speakers confirm.",
+        "slots": "Assign speakers to time slots and finish reviews, then publish the agenda.",
+        "finalize": "Agenda is live — collect outstanding presentations, watch registrations, and send the final newsletter and catering request by their due dates. Day-of controls are available for rehearsal.",
+        "live": "Run the event — present the deck or open Live Control.",
+        "wrapup": "Send \"slides are online\", upload photos, and curate thank-you notes.",
+        "archived": "Event archived — read-only."
+      },
+      "attention": {
+        "title": "Needs your attention",
+        "addTask": "Add task",
+        "open": "Open {{tab}} →",
+        "go": "Open →",
+        "retry": "Retry",
+        "loadError": "Couldn't load your tasks.",
+        "allCaught": "You're all caught up — nothing needs your attention right now."
+      },
+      "due": {
+        "overdue": "Overdue · {{days}} days",
+        "dueSoon": "Due in {{days}} days",
+        "upcoming": "Upcoming",
+        "live": "Now · event is live",
+        "eventDay": "Aalass-Tag · {{date}}"
+      },
+      "cards": {
+        "addDetailsPickTopic": "Add event details & pick a topic",
+        "confirmTopic": "Confirm the topic",
+        "publishAgenda": "Finalize & publish the agenda",
+        "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
+        "needsSlot": "{{count}} sessions still need a slot",
+        "reviewSubmissions": "Review speaker submissions",
+        "outstandingPresentations": "Collect outstanding presentations",
+        "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
+        "startPresentation": "🔴 Start the presentation",
+        "openLiveControl": "📡 Open Live Control"
+      },
+      "tiles": {
+        "registrations": "Registrations",
+        "speakers": "Speakers",
+        "materials": "Materials",
+        "agenda": "Agenda",
+        "filled": "{{percent}}% filled",
+        "waitlist": "{{count}} on waitlist"
+      },
+      "atAGlance": {
+        "title": "At a glance"
+      }
+    },
     "tabs": {
       "venue": "Veranstautigsort",
       "participants": "Teilnähmer",
@@ -14,7 +68,13 @@
       "settings": "Istellige",
       "photos": "Fotos",
       "registrantNotices": "Teilnähmer-Infos",
-      "appreciation": "Wertschätzig"
+      "appreciation": "Wertschätzig",
+      "cockpit": "Cockpit",
+      "speakersAgenda": "Referänte & Agenda",
+      "registrations": "Aamäldige",
+      "communications": "Kommunikation",
+      "wrapup": "Nachbereitig",
+      "details": "Details"
     },
     "tabsAriaLabel": "Veranstautigsnavigation",
     "overview": {
@@ -52,7 +112,18 @@
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
       "waitlistTableActions": "[MISSING] Actions",
-      "statusCancelled": "[MISSING] Cancelled"
+      "statusCancelled": "[MISSING] Cancelled",
+      "promoteConfirmTitle": "Vo dr Wartlischte nahrucke?",
+      "promoteConfirmMessage": "{{name}} vo dr Wartlischte nahrucke la? D Persoon wird bestätigt u überchunnt e Bestätigungs-E-Mail.",
+      "addParticipant": "Teilnähmer hinzuefüege",
+      "addParticipantTitle": "Teilnähmer hinzuefüege",
+      "addParticipantUserLabel": "Benutzer",
+      "addParticipantNotify": "Teilnähmer per E-Mail benachrichtige",
+      "addParticipantForce": "Trotzdäm hinzuefüege",
+      "addParticipantFull": "Die Veranstaltig isch usgbuecht. Teilnähmer trotzdäm über d Kapazität hinus hinzuefüege?",
+      "addParticipantDuplicate": "Dä Benutzer isch scho für die Veranstaltig aagmäldet.",
+      "addParticipantError": "Teilnähmer het nid chönne hinzuegfüegt wärde.",
+      "addParticipantSuccess": "{{name}} als bestätigte Teilnähmer hinzuegfüegt"
     },
     "participantTable": {
       "headers": {
@@ -69,7 +140,8 @@
         "delete": "Amäldig lösche",
         "resendConfirmation": "Bestätigungsmail nochimol schicke",
         "resendSuccess": "Bestätigungsmail isch erfolgrig verschickt worde",
-        "resendError": "Fehler bim Versende vo dr Bestätigungsmail"
+        "resendError": "Fehler bim Versende vo dr Bestätigungsmail",
+        "menu": "Aktione"
       },
       "deleteDialog": {
         "title": "Amäldig lösche",
@@ -101,7 +173,9 @@
       },
       "actions": {
         "retry": "Nomol versuche"
-      }
+      },
+      "showing": "Zeigt {{from}}–{{to}} vo {{total}}",
+      "showingEmpty": "Zeigt 0 vo 0"
     },
     "settings": {
       "moderator": "Veranstautigsmoderator",
@@ -168,7 +242,17 @@
       "addSpeakers": "Redneri hinzuefüege",
       "addToPool": "Redneri zum Pool hinzuefüege",
       "kanbanView": "Kanban-Ansicht",
-      "sessionsView": "Sessione-Ansicht"
+      "sessionsView": "Sessione-Ansicht",
+      "pool": "Pool",
+      "agenda": "Agenda",
+      "slots": "Zytfänschter",
+      "poolView": "Referänte-Pool-Asicht",
+      "agendaView": "Agenda-Asicht",
+      "slotsView": "Zytfänschter-Asicht",
+      "needsSlotSummary": "{{count}} vo {{total}} Sessione bruuche es Zytfänschter",
+      "allSlotted": "Alli Sessione si iplant",
+      "arrangeSlots": "Zytfänschter zueteile",
+      "noSessionsYet": "No kener Sessione"
     },
     "newsletter": {
       "title": "Newsletter",
@@ -239,6 +323,74 @@
       "sendResultSkipped": "{{count}} ohni E-Mail-Adrässe (übersprunge).",
       "sendResultFailed": "{{count}} fehlgschlage.",
       "alreadySent": "Die Mitteilig isch für dää Event scho gschickt worde (oder e Versand louft grad)."
+    },
+    "lockedTabSuffix": "{{tab}} (gsperrt bis d Veraastaltig live isch)",
+    "details": {
+      "heading": "Eckdate",
+      "intro": "Identität, Thema u Termin vor Veraastaltig. Eimal früeh festlege – ändered sech sälte.",
+      "editButton": "Eckdate bearbeite",
+      "noTopic": "No kes Thema gwählt",
+      "subtabs": {
+        "info": "Info",
+        "tasks": "Ufgabe",
+        "settings": "Iistellige"
+      },
+      "whenWhere": "Wänn & wo",
+      "changeTopic": "Thema ändere",
+      "aiAssist": "✨ KI-generiere",
+      "save": "Ändrige speichere",
+      "saved": "Ändrige gspeicheret",
+      "aiGenerateImage": "✨ Generiere (KI)",
+      "aiGenerateDescription": "✨ Beschribig mit KI generiere",
+      "uploadImage": "Klicke zum es Themebild uelade",
+      "uploadingImage": "Wird ueglade…",
+      "replaceImage": "Bild ersetze"
+    },
+    "communications": {
+      "audiences": {
+        "newsletter": "Newsletter-Abonnänte",
+        "registrants": "Event-Teilnähmer",
+        "speakers": "Referänte",
+        "venue": "Lokal & Catering"
+      }
+    },
+    "speakerComms": {
+      "title": "Erinnerige a d'Referänte",
+      "description": "Schick e Termin-Erinnerig a d'Referänte, wo no e Antwort oder ihre Inhalt schulde. Jede überchunnt einzeln es Mail – Iiladige u einzelni Nachfroge blybe uf der Referänte-Charte.",
+      "reminderType": "Erinnerigs-Typ",
+      "typeResponse": "Antwort-Termin (iiglademi Referänte)",
+      "typeContent": "Inhalt-Termin (zuegseiti Referänte)",
+      "recipientCount": "{{count}} Referänt(e) wärde erinneret",
+      "empty": "Im Moment wartet kä Referänt uf die Erinnerig.",
+      "send": "Erinnerige schicke",
+      "confirmTitle": "Erinnerige a d'Referänte schicke?",
+      "confirmBody": "E «{{type}}»-Erinnerig a {{count}} Referänt(e) vo «{{eventTitle}}» schicke? Jede überchunnt einzeln es Mail.",
+      "sending": "D'Erinnerige wärde gschickt…",
+      "result": "{{sent}} gschickt, {{failed}} fählgschlage.",
+      "retryFailed": "Di {{count}} Fählgschlagene nomal probiere",
+      "loadError": "Dr Referänte-Pool het nid chönne glade wärde.",
+      "retry": "Nomal probiere",
+      "noPreview": "D Erinnerige wärde mit de Standard-Vorlage i dr Sprach vo jedem Referänt gschickt — kei Vorschau zum zeige."
+    },
+    "topicOverlay": {
+      "title": "Thema & Referänte",
+      "pickHeading": "Thema uswähle",
+      "searchPlaceholder": "Themene sueche",
+      "emptyHint": "Kei Themene gfunde – Filter oder Sueche aapasse.",
+      "similarityWarning": "Ähnlechs Thema gfunde",
+      "selectAnyway": "Trotzdäm wähle…",
+      "banner": {
+        "selected": "Thema usgwählt",
+        "change": "Thema ändere"
+      },
+      "footer": {
+        "skip": "Spöter",
+        "continue": "Wyter zur Kontaktufnahm →"
+      }
+    },
+    "mobile": {
+      "more": "Meh",
+      "moreSheetTitle": "Meh"
     }
   },
   "dashboard": {
@@ -350,7 +502,9 @@
     },
     "task": "task",
     "tasks": "tasks",
-    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+    "activeAriaLabel": "{{count}} active {{taskLabel}}",
+    "deleteConfirmTitle": "Die Ufgab lösche?",
+    "deleteConfirmBody": "«{{name}}» lösche? Das cha nid rückgängig gmacht wärde."
   },
   "form": {
     "createEvent": "Neui Veranstatig erstelle",
@@ -586,6 +740,11 @@
       "speakers": "Referente",
       "agenda": "Agenda",
       "updates": "Aktualisieriige"
+    },
+    "sections": {
+      "validation": "Validierig",
+      "phases": "Veröffentlechigsphase",
+      "publishNext": "Nächschti Phase veröffentleche"
     }
   },
   "notifications": {
@@ -812,6 +971,12 @@
         "projector": "Beamer",
         "recording": "Ufnahm"
       }
+    },
+    "actionBar": {
+      "label": "Zytfänschter-Aktione"
+    },
+    "tapToAssign": {
+      "placeHint": "↓ Jetz uf e markierte Slot tippe zum platziere"
     }
   },
   "newsletter": {

@@ -16,6 +16,7 @@
 
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { waitForAppShell } from '../helpers/app-shell';
 
 test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () => {
   // `/dashboard` redirects organizers to `/organizer/events`; `networkidle` lets the redirect +
@@ -23,9 +24,15 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () 
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
+    // Vite dev can hit `networkidle` during the "Loading" Suspense fallback, before the shell
+    // (aria-live regions, icon buttons, nav links) exists. Wait for BaseLayout to render.
+    await waitForAppShell(page);
   });
 
   test('should have proper ARIA live regions for dynamic content', async ({ page }) => {
+    // Web-first wait: the authenticated shell (and its aria-live notification badge) hydrates
+    // after the /dashboard redirect; `.all()` snapshots immediately and would otherwise count 0.
+    await expect(page.locator('[aria-live]').first()).toBeAttached({ timeout: 15_000 });
     const liveRegions = await page.locator('[aria-live]').all();
     expect(liveRegions.length).toBeGreaterThan(0);
 
@@ -51,6 +58,8 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () 
   });
 
   test('should have visually hidden screen reader text for icons', async ({ page }) => {
+    // Wait for the authenticated header (icon-only buttons) to render before snapshotting.
+    await expect(page.locator('button:has(svg)').first()).toBeVisible({ timeout: 15_000 });
     const allButtons = await page.locator('button:has(svg)').all();
 
     const iconButtons = [];
@@ -105,6 +114,8 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () 
     const initialUrl = page.url();
 
     const nav = page.getByRole('navigation').first();
+    // Wait for the nav to render its links before snapshotting (post-redirect hydration).
+    await expect(nav.getByRole('link').first()).toBeVisible({ timeout: 15_000 });
     const links = await nav.getByRole('link').all();
     expect(links.length).toBeGreaterThan(0);
     // Click the last nav link (avoids re-clicking the current page's own link).

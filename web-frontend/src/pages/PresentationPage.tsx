@@ -247,49 +247,9 @@ export function PresentationPage(): JSX.Element {
       <TopicBackground imageUrl={data.event?.themeImageUrl ?? undefined} />
 
       {/* ----------------------------------------------------------------
-          Agenda heading — separate from the FLIP element so its height
-          doesn't affect the FLIP rect measurement. Lives in its own
-          AnimatePresence so it can slide in/out with the section direction
-          while the FLIP list animates independently. (ACs #1-4, #11, #14)
-          ---------------------------------------------------------------- */}
-      <AnimatePresence custom={direction}>
-        {isAgendaCenter && (
-          <motion.div
-            key="agenda-heading"
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={slideTransition}
-            style={{
-              position: 'fixed',
-              zIndex: 3,
-              top: 'calc(50vh - 10.833vw)',
-              left: 0,
-              right: 0,
-              display: 'flex',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: '2.5vw',
-                fontWeight: 700,
-                color: '#4f9cf9',
-              }}
-            >
-              Agenda
-            </h2>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ----------------------------------------------------------------
           FLIP agenda — center-stage (agenda-preview / agenda-recap)
-          Simple centering wrapper — heading is a separate element above.
+          The "Agenda" heading is rendered inside AgendaView (center layout)
+          so it is laid out with the list and centered as one group. (ACs #1-4, #11, #14)
           ---------------------------------------------------------------- */}
       {isAgendaCenter && (
         <div

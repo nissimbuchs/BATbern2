@@ -194,127 +194,157 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
         </Alert>
       )}
 
-      <Stack spacing={2}>
-        {/* Locale + template */}
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="flex-start">
-          <ToggleButtonGroup
-            value={locale}
-            exclusive
-            onChange={(_, v) => v && setLocale(v)}
-            size="small"
-            sx={{ height: 'fit-content' }}
-          >
-            <ToggleButton value="de">DE</ToggleButton>
-            <ToggleButton value="en">EN</ToggleButton>
-          </ToggleButtonGroup>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'minmax(300px, 34%) 1fr' },
+          gap: 3,
+          alignItems: 'start',
+        }}
+      >
+        {/* LEFT: compose form */}
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Stack spacing={2}>
+            {/* Locale + template */}
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="flex-start">
+              <ToggleButtonGroup
+                value={locale}
+                exclusive
+                onChange={(_, v) => v && setLocale(v)}
+                size="small"
+                sx={{ height: 'fit-content' }}
+              >
+                <ToggleButton value="de">DE</ToggleButton>
+                <ToggleButton value="en">EN</ToggleButton>
+              </ToggleButtonGroup>
 
-          <FormControl fullWidth size="small" disabled={!fullyConfigured}>
-            <InputLabel id="venue-coord-template-label">
-              {t('eventPage.venueCoordination.templateLabel', 'Template')}
-            </InputLabel>
-            <Select
-              labelId="venue-coord-template-label"
-              value={templateKey}
-              label={t('eventPage.venueCoordination.templateLabel', 'Template')}
-              onChange={(e) => setTemplateKey(e.target.value)}
-              data-testid="venue-coord-template-select"
-            >
-              {localeTemplates.map((tpl) => (
-                <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
-                  {tpl.templateKey}
-                </MenuItem>
-              ))}
-              {localeTemplates.length === 0 && (
-                <MenuItem value="" disabled>
-                  {t('eventPage.venueCoordination.noTemplates', 'No templates available')}
-                </MenuItem>
+              <FormControl fullWidth size="small" disabled={!fullyConfigured}>
+                <InputLabel id="venue-coord-template-label">
+                  {t('eventPage.venueCoordination.templateLabel', 'Template')}
+                </InputLabel>
+                <Select
+                  labelId="venue-coord-template-label"
+                  value={templateKey}
+                  label={t('eventPage.venueCoordination.templateLabel', 'Template')}
+                  onChange={(e) => setTemplateKey(e.target.value)}
+                  data-testid="venue-coord-template-select"
+                >
+                  {localeTemplates.map((tpl) => (
+                    <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
+                      {tpl.templateKey}
+                    </MenuItem>
+                  ))}
+                  {localeTemplates.length === 0 && (
+                    <MenuItem value="" disabled>
+                      {t('eventPage.venueCoordination.noTemplates', 'No templates available')}
+                    </MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+            </Stack>
+
+            {/* Recipient checkboxes */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                {t('eventPage.venueCoordination.recipients', 'Recipients')}
+              </Typography>
+              <Stack direction="column" spacing={1}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={sendToVenue}
+                      onChange={(e) => setSendToVenue(e.target.checked)}
+                      disabled={!venueConfigured}
+                      data-testid="venue-coord-send-venue"
+                    />
+                  }
+                  label={
+                    venueConfigured && config
+                      ? `${t('eventPage.venueCoordination.venueRole', 'Venue')} — ${config.venue.name} <${config.venue.email}>`
+                      : t('eventPage.venueCoordination.venueRole', 'Venue')
+                  }
+                  sx={{ '& .MuiFormControlLabel-label': { wordBreak: 'break-word' } }}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={sendToCatering}
+                      onChange={(e) => setSendToCatering(e.target.checked)}
+                      disabled={!cateringConfigured}
+                      data-testid="venue-coord-send-catering"
+                    />
+                  }
+                  label={
+                    cateringConfigured && config
+                      ? `${t('eventPage.venueCoordination.cateringRole', 'Catering')} — ${config.catering.name} <${config.catering.email}>`
+                      : t('eventPage.venueCoordination.cateringRole', 'Catering')
+                  }
+                  sx={{ '& .MuiFormControlLabel-label': { wordBreak: 'break-word' } }}
+                />
+              </Stack>
+            </Box>
+
+            {/* Notes */}
+            <TextField
+              label={t('eventPage.venueCoordination.notesLabel', 'Notes (optional)')}
+              placeholder={t(
+                'eventPage.venueCoordination.notesPlaceholder',
+                'e.g. Reserve a lunch table for 8 at 12:30 in the back room.'
               )}
-            </Select>
-          </FormControl>
-        </Stack>
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              multiline
+              minRows={3}
+              fullWidth
+            />
 
-        {/* Recipient checkboxes */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            {t('eventPage.venueCoordination.recipients', 'Recipients')}
-          </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={sendToVenue}
-                  onChange={(e) => setSendToVenue(e.target.checked)}
-                  disabled={!venueConfigured}
-                  data-testid="venue-coord-send-venue"
-                />
-              }
-              label={
-                venueConfigured && config
-                  ? `${t('eventPage.venueCoordination.venueRole', 'Venue')} — ${config.venue.name} <${config.venue.email}>`
-                  : t('eventPage.venueCoordination.venueRole', 'Venue')
-              }
-              sx={{ '& .MuiFormControlLabel-label': { wordBreak: 'break-word' } }}
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={sendToCatering}
-                  onChange={(e) => setSendToCatering(e.target.checked)}
-                  disabled={!cateringConfigured}
-                  data-testid="venue-coord-send-catering"
-                />
-              }
-              label={
-                cateringConfigured && config
-                  ? `${t('eventPage.venueCoordination.cateringRole', 'Catering')} — ${config.catering.name} <${config.catering.email}>`
-                  : t('eventPage.venueCoordination.cateringRole', 'Catering')
-              }
-              sx={{ '& .MuiFormControlLabel-label': { wordBreak: 'break-word' } }}
-            />
+            {/* Preview button */}
+            <Box>
+              <Button
+                variant="outlined"
+                startIcon={<PreviewIcon />}
+                onClick={() => previewMutation.mutate()}
+                disabled={!canPreview || previewMutation.isPending}
+              >
+                {previewMutation.isPending ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  t('eventPage.venueCoordination.previewButton', 'Preview')
+                )}
+              </Button>
+            </Box>
+
+            {/* Send button + confirm dialog */}
+            <Box>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<SendIcon />}
+                onClick={() => setConfirmOpen(true)}
+                disabled={!canSend || sendMutation.isPending}
+                data-testid="venue-coord-send-button"
+              >
+                {sendMutation.isPending ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  t('eventPage.venueCoordination.sendButton', 'Send')
+                )}
+              </Button>
+            </Box>
           </Stack>
-        </Box>
+        </Paper>
 
-        {/* Notes */}
-        <TextField
-          label={t('eventPage.venueCoordination.notesLabel', 'Notes (optional)')}
-          placeholder={t(
-            'eventPage.venueCoordination.notesPlaceholder',
-            'e.g. Reserve a lunch table for 8 at 12:30 in the back room.'
+        {/* RIGHT: preview */}
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          {previewMutation.isError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {t('eventPage.venueCoordination.previewFailed', 'Preview failed:')}{' '}
+              {previewMutation.error instanceof Error
+                ? previewMutation.error.message
+                : String(previewMutation.error)}
+            </Alert>
           )}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          multiline
-          minRows={3}
-          fullWidth
-        />
-
-        {/* Preview button */}
-        <Box>
-          <Button
-            variant="outlined"
-            startIcon={<PreviewIcon />}
-            onClick={() => previewMutation.mutate()}
-            disabled={!canPreview || previewMutation.isPending}
-          >
-            {previewMutation.isPending ? (
-              <CircularProgress size={16} />
-            ) : (
-              t('eventPage.venueCoordination.previewButton', 'Preview')
-            )}
-          </Button>
-        </Box>
-
-        {/* Preview pane */}
-        {previewMutation.isError && (
-          <Alert severity="error">
-            {t('eventPage.venueCoordination.previewFailed', 'Preview failed:')}{' '}
-            {previewMutation.error instanceof Error
-              ? previewMutation.error.message
-              : String(previewMutation.error)}
-          </Alert>
-        )}
-        {previewMutation.data && (
-          <Paper variant="outlined" sx={{ p: 2 }}>
+          {previewMutation.data ? (
             <Stack spacing={1}>
               <Typography variant="caption" color="text.secondary">
                 {t('eventPage.venueCoordination.to', 'To')}: {previewMutation.data.toEmail}
@@ -352,27 +382,15 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
                 />
               </Box>
             </Stack>
-          </Paper>
-        )}
-
-        {/* Send button + confirm dialog */}
-        <Box>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<SendIcon />}
-            onClick={() => setConfirmOpen(true)}
-            disabled={!canSend || sendMutation.isPending}
-            data-testid="venue-coord-send-button"
-          >
-            {sendMutation.isPending ? (
-              <CircularProgress size={16} color="inherit" />
-            ) : (
-              t('eventPage.venueCoordination.sendButton', 'Send')
-            )}
-          </Button>
-        </Box>
-      </Stack>
+          ) : (
+            !previewMutation.isError && (
+              <Typography variant="body2" color="text.secondary">
+                {t('eventPage.venueCoordination.previewPlaceholder', 'Preview will appear here')}
+              </Typography>
+            )
+          )}
+        </Paper>
+      </Box>
 
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} fullScreen={isMobile}>
         <DialogTitle>{t('eventPage.venueCoordination.confirmTitle', 'Send email?')}</DialogTitle>

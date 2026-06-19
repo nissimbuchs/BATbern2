@@ -226,50 +226,52 @@ describe('T7 — Address resolution', () => {
     expect(result).toEqual(['org@test.ch']);
   });
 
-  test('should_resolveEventRegistrants_when_batbern58Address', async () => {
-    mockFetch({
-      'events/BATbern58/registrations': {
-        status: 200,
-        body: {
-          data: [{ attendeeEmail: 'att1@test.ch' }, { attendeeEmail: 'att2@test.ch' }],
-          pagination: { totalPages: 1, page: 0 },
-        },
-      },
-    });
-    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
-    const result = await resolveRecipients('batbern58@batbern.ch');
-    expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
-  });
+  // PR #788: the deprecated bare batbern{N}@ alias now forwards to the SAME participants
+  // distribution-list as batbern{N}-participants@ (consolidated; logs a deprecation warning).
+  test('should_resolveParticipants_when_deprecatedBatbern58Address', async () => {
+    const calledUrls: string[] = [];
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      global.fetch = jest.fn(async (url: string | URL | Request) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        calledUrls.push(urlStr);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            eventCode: 'BATbern58',
+            kind: 'participants',
+            emails: ['att1@test.ch', 'att2@test.ch'],
+          }),
+        } as Response;
+      }) as jest.Mock;
 
-  test('should_paginateRegistrants_when_multiplePages', async () => {
-    mockFetch({
-      'page=0': {
-        status: 200,
-        body: {
-          data: [{ attendeeEmail: 'att1@test.ch' }],
-          pagination: { totalPages: 2, page: 0 },
-        },
-      },
-      'page=1': {
-        status: 200,
-        body: {
-          data: [{ attendeeEmail: 'att2@test.ch' }],
-          pagination: { totalPages: 2, page: 1 },
-        },
-      },
-    });
-    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
-    const result = await resolveRecipients('batbern58@batbern.ch');
-    expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
+      const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+      const result = await resolveRecipients('batbern58@batbern.ch');
+
+      expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
+      // Routes through the participants distribution-list, NOT the old /registrations endpoint.
+      expect(calledUrls).toHaveLength(1);
+      expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern58\/distribution-list\/participants$/);
+      // Emits a deprecation warning so we can track residual use before retiring it.
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Deprecated alias batbern58@'));
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('should_returnEmpty_when_eventNotFound', async () => {
-    mockFetch({
-      'events/BATbern999/registrations': { status: 404, body: {} },
-    });
-    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
-    const result = await resolveRecipients('batbern999@batbern.ch');
-    expect(result).toEqual([]);
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      mockFetch({
+        'events/BATbern999/distribution-list/participants': { status: 404, body: {} },
+      });
+      const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+      const result = await resolveRecipients('batbern999@batbern.ch');
+      expect(result).toEqual([]);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('should_returnEmpty_when_unknownAddress', async () => {
@@ -424,6 +426,30 @@ describe('T7 — Address resolution', () => {
     expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/moderator$/);
   });
 
+  test('should_callParticipantsDistributionList_when_batbernNParticipantsAddress', async () => {
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          eventCode: 'BATbern99',
+          kind: 'participants',
+          emails: ['attendee1@example.com', 'attendee2@example.com'],
+        }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-participants@batbern.ch');
+
+    expect(result).toEqual(['attendee1@example.com', 'attendee2@example.com']);
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/participants$/);
+  });
+
   test('should_returnEmpty_when_distributionListEventUnknown_logsWarn', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     try {
@@ -573,6 +599,22 @@ describe('T8 — Sender authorization', () => {
     resetCache();
     const result = await isAuthorizedSender('batbern58@batbern.ch', 'random@test.ch');
     expect(result).toBe(false);
+  });
+
+  test('should_rejectNonOrganizer_when_sendingToParticipantsAlias', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern59-participants@batbern.ch', 'random@test.ch');
+    expect(result).toBe(false);
+  });
+
+  test('should_allowOrganizer_when_sendingToParticipantsAlias', async () => {
+    mockOrganizerFetch(['org@test.ch']);
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern59-participants@batbern.ch', 'org@test.ch');
+    expect(result).toBe(true);
   });
 
   test('should_allowAnyone_when_sendingToInfo', async () => {
@@ -786,6 +828,58 @@ describe('T9 — Email rewriting and forwarding', () => {
     const result = rewriteEmail(emailWithDkim, rewriteOptions);
     expect(result).not.toContain('DKIM-Signature:');
   });
+
+  // ----- Single-mail speaker mode: override visible To + add moderator Cc -----
+
+  test('should_overrideToHeader_when_toRecipientsProvided', () => {
+    const result = rewriteEmail(sampleEmail, {
+      ...rewriteOptions,
+      toRecipients: ['alice@example.com', 'bob@example.com'],
+    });
+    // The original alias To is replaced with the visible speaker list
+    expect(result).toContain('To: alice@example.com, bob@example.com');
+    expect(result).not.toContain('To: ok@batbern.ch');
+  });
+
+  test('should_addCcHeader_when_ccRecipientsProvided', () => {
+    const result = rewriteEmail(sampleEmail, {
+      ...rewriteOptions,
+      toRecipients: ['alice@example.com'],
+      ccRecipients: ['moderator@batbern.ch'],
+    });
+    expect(result).toContain('Cc: moderator@batbern.ch');
+  });
+
+  test('should_replaceExistingCc_when_ccRecipientsProvided', () => {
+    const emailWithCc = sampleEmail.replace(
+      'Subject: Test forwarding',
+      'Cc: someone@example.com\r\nSubject: Test forwarding',
+    );
+    const result = rewriteEmail(emailWithCc, {
+      ...rewriteOptions,
+      ccRecipients: ['moderator@batbern.ch'],
+    });
+    expect(result).toContain('Cc: moderator@batbern.ch');
+    expect(result).not.toContain('Cc: someone@example.com');
+  });
+
+  test('should_leaveToUnchanged_when_noRecipientsProvided', () => {
+    const result = rewriteEmail(sampleEmail, rewriteOptions);
+    expect(result).toContain('To: ok@batbern.ch');
+  });
+
+  test('should_injectConfigurationSetHeader_when_configurationSetProvided', () => {
+    const result = rewriteEmail(sampleEmail, {
+      ...rewriteOptions,
+      configurationSet: 'batbern-staging-forwarder',
+    });
+    expect(result).toContain('X-SES-CONFIGURATION-SET: batbern-staging-forwarder');
+  });
+
+  test('should_notInjectConfigurationSetHeader_when_notProvided', () => {
+    const result = rewriteEmail(sampleEmail, rewriteOptions);
+    expect(result).not.toContain('X-SES-CONFIGURATION-SET');
+  });
 });
 
 // ========================
@@ -943,5 +1037,149 @@ describe('T11 — isCalendarReply suppresses iMIP acceptance fan-out', () => {
       'No method=REPLY here.',
     ].join('\r\n');
     expect(isCalendarReply(raw)).toBe(false);
+  });
+});
+
+// ========================
+// T12: handler() — single mail to all speakers with moderator in Cc
+// ========================
+
+import { mockClient } from 'aws-sdk-client-mock';
+import { SESClient, SendRawEmailCommand } from '@aws-sdk/client-ses';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+import { handler as forwarderHandler } from '../../lambda/email-forwarder/index';
+import { resetCache as resetAuthCache } from '../../lambda/email-forwarder/sender-auth';
+
+// Module-scope mocks patched once at load, against the SAME SDK module the
+// statically-imported handler uses (no jest.resetModules here, which would
+// create a divergent unmocked client).
+const sesMock = mockClient(SESClient);
+const s3Mock = mockClient(S3Client);
+const cwMock = mockClient(CloudWatchClient);
+
+describe('T12 — handler sends one visible mail to speakers, moderator in Cc', () => {
+  const originalFetch = global.fetch;
+  const env = process.env;
+
+  beforeEach(() => {
+    sesMock.reset();
+    s3Mock.reset();
+    cwMock.reset();
+    resetAuthCache();
+    cwMock.on(PutMetricDataCommand).resolves({});
+    sesMock.on(SendRawEmailCommand).resolves({ MessageId: 'mid-1' });
+    process.env = {
+      ...env,
+      SES_SENDER_ADDRESS: 'noreply@batbern.ch',
+      FORWARDING_DOMAIN: 'batbern.ch',
+      API_GATEWAY_URL: 'https://api.batbern.ch',
+      SES_CONFIGURATION_SET: 'batbern-staging-forwarder',
+    };
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    process.env = env;
+  });
+
+  function mockS3(rawEmail: string): void {
+    s3Mock.on(GetObjectCommand).resolves({
+      Body: { transformToString: async () => rawEmail },
+    } as never);
+  }
+
+  function s3Event(): unknown {
+    return {
+      Records: [
+        { s3: { bucket: { name: 'inbound-bucket' }, object: { key: 'forwarding/abc' } } },
+      ],
+    };
+  }
+
+  function mockFetch(): void {
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const u = url.toString();
+      const json = (body: unknown) =>
+        ({ ok: true, status: 200, json: async () => body }) as Response;
+      if (u.includes('role=ORGANIZER')) {
+        return json({ data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } });
+      }
+      if (u.includes('/distribution-list/speakers')) {
+        return json({ emails: ['alice@example.com', 'bob@example.com'] });
+      }
+      if (u.includes('/distribution-list/moderator')) {
+        return json({ emails: ['mod@batbern.ch'] });
+      }
+      return { ok: false, status: 404, json: async () => ({}) } as Response;
+    }) as jest.Mock;
+  }
+
+  test('should_sendSingleMail_withSpeakersInToAndModeratorInCc_when_speakerAlias', async () => {
+    mockFetch();
+    mockS3(
+      [
+        'From: Org <org@test.ch>',
+        'To: batbern59-speaker@batbern.ch',
+        'Subject: Info for speakers',
+        'Content-Type: text/plain',
+        '',
+        'Hello speakers',
+      ].join('\r\n'),
+    );
+
+    await forwarderHandler(s3Event() as never);
+
+    // Exactly ONE send (not one-per-recipient)
+    const calls = sesMock.commandCalls(SendRawEmailCommand);
+    expect(calls).toHaveLength(1);
+
+    const input = calls[0].args[0].input;
+    // Both speakers AND the moderator are actual SES destinations
+    expect(input.Destinations).toEqual(
+      expect.arrayContaining(['alice@example.com', 'bob@example.com', 'mod@batbern.ch']),
+    );
+    expect(input.Destinations).toHaveLength(3);
+
+    const raw = (input.RawMessage!.Data as Buffer).toString('utf-8');
+    // Visible To lists the speakers; moderator is visibly Cc'd
+    expect(raw).toContain('To: alice@example.com, bob@example.com');
+    expect(raw).toContain('Cc: mod@batbern.ch');
+    // Delivery tracking config set attached
+    expect(raw).toContain('X-SES-CONFIGURATION-SET: batbern-staging-forwarder');
+  });
+
+  test('should_keepIndividualSends_when_nonSpeakerAlias', async () => {
+    mockFetch();
+    mockS3(
+      [
+        'From: Org <org@test.ch>',
+        'To: ok@batbern.ch',
+        'Subject: Hi organizers',
+        'Content-Type: text/plain',
+        '',
+        'Hello',
+      ].join('\r\n'),
+    );
+    // ok@ resolves to organizers (one in this mock) → existing individual-send path
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const u = url.toString();
+      if (u.includes('role=ORGANIZER')) {
+        return {
+          ok: true, status: 200,
+          json: async () => ({ data: [{ email: 'org@test.ch' }, { email: 'org2@test.ch' }], pagination: { totalPages: 1, page: 0 } }),
+        } as Response;
+      }
+      return { ok: false, status: 404, json: async () => ({}) } as Response;
+    }) as jest.Mock;
+
+    await forwarderHandler(s3Event() as never);
+
+    // Individual sends preserved: one per organizer, each isolated (no Cc)
+    const calls = sesMock.commandCalls(SendRawEmailCommand);
+    expect(calls).toHaveLength(2);
+    for (const c of calls) {
+      expect(c.args[0].input.Destinations).toHaveLength(1);
+    }
   });
 });

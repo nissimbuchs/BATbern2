@@ -200,6 +200,76 @@ Everything else: test-hardening, kanban/modal UX papercuts, sprint-status YAML h
 - **`resolveCallerCompanyNameOrNull()` fail-open on resolution error** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:227`] — swallows all exceptions and returns null, so a partner whose company resolution transiently fails (User Service hiccup) is treated as a null-company organizer and bypasses the ownership guard in `updateTopic`/`deleteTopic` (`callerCompanyName != null && ...` short-circuits). Pre-existing — this commit only flipped the `.equals()` operand order to be null-safe for community topics (correct). Consider distinguishing "organizer (no company)" from "partner whose company could not be resolved." [Edge]
 - **`getCurrentUsername()` empty-string trap → blank `suggestedBy`** [`services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java:108`] — `suggestCommunityTopic` persists `suggestedBy` with no null/blank guard; per the project's documented Pattern 3b twin, the JWT username claim can be empty in some auth paths, yielding an un-attributable community topic. Dormant in staging (JWT always carries username); a local-dev/edge risk. [Blind]
 
+## Deferred from: quick-dev scoping of Epic 14 (2026-06-13)
+
+`/bmad-quick-dev` was pointed at `docs/prd/epic-14-event-detail-redesign.md` (the full epic = 24
+stories, FR1–FR47, 7 ordered phases A–G). Per quick-dev's single-goal scope rule, **Phase A (the
+8-tab lifecycle-aware shell — Stories 14.A.1 + 14.A.2 + 14.A.3)** was carved off as the active goal
+(spec `spec-14-a-event-detail-shell.md`). The remaining phases are deferred — each is a natural
+follow-up quick-dev pass (or per-story `/bmad-create-story` → `/bmad-dev-story`), and all assume the
+Phase A shell + the `workflowState → relevance` map already exist:
+
+- **Phase B — Cockpit** (14.B.1–14.B.5): 8-step lifecycle spine, "Needs your attention" task cards,
+  the §12.1 per-card completion-signal model (done cards disappear), event-day virtual cards
+  (@ AGENDA_PUBLISHED onward), 4 clickable metric tiles, ＋Add task. _(FR7–FR13 · AR3,AR4)_
+- **Phase C — Speakers & Agenda** (14.C.1–14.C.5): Pool/Agenda/Slots sub-view toggle, 4-phase
+  kanban + workflow-safe drag grammar + collapsible Declined, Agenda session table, **2-column
+  in-tab Slots** (rework `DragDropSlotAssignment`, retire the `/slot-assignment` route + `100vh`
+  lock + repoint every in-app navigator). _(FR14–FR23 · AR5,AR6)_
+- **Phase D — Registrations** (14.D.1–14.D.4): header (count, capacity bar, badge exports, Enrol),
+  search + status filters, row actions, **waitlist-as-filter**, pagination/virtualization. _(FR24–FR28 · NFR3)_
+- **Phase E — Communications** (14.E.1–14.E.3): 4-audience compose switch, **wire the existing
+  `useSendReminder` hook** for speaker bulk comms, Venue & Caterer audience moved from Settings. _(FR29–FR34)_
+- **Phase F — Config cluster + remaining tabs** (14.F.1–14.F.5): Publishing & Settings finalization,
+  Wrap-up (photos + thank-you notes), Details (identity + topic), the **Topic focused overlay**
+  (pick → pin → brainstorm), and removing the interim Overview. _(FR35–FR43 · AR7)_
+- **Phase G — Mobile** (14.G.1–14.G.4): bottom nav + ⋯ More sheet, tap-to-assign Slots,
+  tables→cards, mobile Cockpit. _(FR44–FR47 · NFR4)_
+
+Cross-cutting constraint on **every** deferred phase: NFR9/AR9 beta-first dual-serve — frontend-only,
+additive-and-backward-compatible backend only, recompose-don't-rewrite. (Full detail in the epic.)
+
 ## Deferred from: code review of story-7.2 (2026-06-10)
 
 - **`@PreAuthorize("hasRole('ATTENDEE')")` runtime-assumption (verify-in-prod)** [`services/event-management-service/src/main/java/ch/batbern/events/controller/SelfNominationController.java:50`] — the entire self-nomination feature depends on logged-in attendees carrying an explicit `ROLE_ATTENDEE` claim/assignment. `JwtRolesConverter` maps `ROLE_ATTENDEE` from `custom:role` / `role_assignments`; JIT provisioning defaults ATTENDEE and Pattern 3b provides a DB-fallback, so it should hold — but the integration tests use `@WithMockUser(roles={"ATTENDEE"})` and cannot detect a missing real-world claim. If absent, every nomination returns 403 and the feature is dead-on-arrival. Confirm a real registered/federated attendee's token carries ATTENDEE before sign-off. [Auditor]
+
+## Deferred from: code review of spec-14-b-cockpit (Epic 14 Phase B, 2026-06-13)
+
+- **`CustomTaskModal` invalidates the generic `['tasks']` key, not event-scoped keys** [`web-frontend/src/components/organizer/Tasks/CustomTaskModal.tsx:159`] — its create/update mutations invalidate `['tasks']`, which does NOT match `useEventTasks`' `['eventTasks', code]` or `useMyTasks`' `['myTasks']` keys. The Cockpit's `AttentionList` works around this by invalidating the event-task queries itself on modal close, so the Phase B "+Add task" flow is correct — but any OTHER caller of `CustomTaskModal` relies on the 3-min staleTime to refresh. Pre-existing (predates Epic 14); root fix is to make `CustomTaskModal` invalidate event-specific keys. [Edge-case hunter]
+
+## Deferred from: quick-dev scope-split on Epic 14 (2026-06-14) — Phase C selected, D–G deferred
+
+Epic 14 (`docs/prd/epic-14-event-detail-redesign.md`) was scoped into quick-dev as **Phase C — Speakers & Agenda** (stories 14.C.1–C.5). The following later phases are independently-shippable goals deferred to their own runs:
+
+- **Phase D — Registrations** [FR24–28 · NFR3 · UX-DR9] — header (count chip, capacity bar, badge exports, Enrol organizers & partners), search + status segmented control, participant table + row actions, **waitlist-as-filter** (queue-ordered + inline Promote), and **pagination/virtualization** (~200 rows not virtualized today).
+- **Phase E — Communications** [FR29–34 · UX-DR8] — one compose surface with a **4-audience switch** (Newsletter · Registrants · Speakers · Venue & Caterer), **wiring the existing-but-unwired `useSendReminder`** for speaker bulk comms, and the Venue & Caterer audience moved here from Settings.
+- **Phase F — Config cluster + Topic overlay** [FR35–43 · AR7 · UX-DR10–13] — Publishing, Wrap-up (photos + thank-you notes), Details (identity + topic + when/where), the **Topic focused overlay** (pick → pin → brainstorm reusing `TopicBacklogManager` + `SpeakerBrainstormingPanel`), and Settings (logistics removed).
+- **Phase G — Mobile** [FR44–47 · NFR4 · UX-DR14,15] — bottom nav + ⋯ More sheet, tap-to-assign Slots, tables→cards, mobile Cockpit.
+
+All four inherit the epic's cross-cutting DoD (NFR1/5/7/8/9) and the beta-first dual-serve constraint.
+
+## Deferred from: code review of spec-14-c-speakers-agenda (Epic 14 Phase C, 2026-06-14)
+
+- **`hasAssignedSlot` semantics are loose: `isSlotAssigned === true || sessionId != null`** [`web-frontend/src/components/organizer/SpeakerStatus/getPrimaryAction.ts:160`, mirrored at `SpeakerStatusLanes.tsx:907`] — a QUALITY_REVIEWED speaker whose session exists (`sessionId` set) but is **not yet time-slotted** (`session.startTime == null`) renders "✓ Slot assigned" in the Confirmed column, while the new Agenda "N of M need a slot" count (`!s.startTime`) counts that same session as needing a slot. The two surfaces disagree. This is the **pre-existing Epic 11 `hasAssignedSlot` definition** that Phase C was required to reuse unchanged — fixing only the kanban display would diverge it from the primary-action button. Reconcile the kanban / Agenda / `getPrimaryAction` notion of "slotted" (gate all three on `startTime`) in a focused follow-up. [Edge + Blind]
+- **Pool sub-view renders blank when the speaker-pool query errors (no empty/error state)** [`web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx` Pool branch `currentView === 'pool' && speakers &&`] — once loading settles, an `undefined` `speakers` (fetch error) yields a blank Pool with no message. Pre-existing guard (was `view === 'kanban' && speakers` before Phase C); not introduced by this story. Add an empty/error state. [Edge]
+- **Speaker-status summary fetch failure shows fabricated zeros + disables the slot-capacity gate** [`EventSpeakersTab.tsx` summary `useQuery`] — no `isError` handling; on failure the summary bar shows a confident "0/12 · Need more speakers · 0%" and `maxSlots` is `undefined` so `computeSlotCapacity(..., undefined)` silently stops enforcing the kanban invite gate. Pre-existing. Surface an error/stale indicator. [Edge]
+- **`focusSpeakerId` highlight is best-effort and often no-ops** [`DragDropSlotAssignment` focus match on `session.speakers[].username`; `EventSpeakersTab.handleAssignSessionSlotForSpeaker` forwards `speaker.username ?? speaker.id`] — a null-username speaker (forwards pool `id`, never matches a session username), a stale-bookmark `speakerId`, or an already-slotted speaker (excluded from the unassigned tray) all land on Slots with no visible highlight. Documented best-effort per the spec; improve by matching on a stable session identifier or auto-switching the tray filter. [Edge + Blind]
+- **Drag halo marks slot-capacity-blocked columns as valid** [`SpeakerStatusLanes.tsx` drag-start `validTargets` uses `classifyDrop(...).kind !== 'illegal'`] — a READY card at slot capacity yields `legal-blocked-slot` (not `illegal`), so the forward column lights the green "valid" halo, yet the drop only produces a capacity-rejection toast. Misleading affordance; low severity. [Blind]
+- **QUALITY_REVIEWED cards are draggable but have no valid forward target** [`SpeakerStatusLanes.tsx:818` `disabled: status === 'DECLINED'`] — dragging a Confirmed card dims every other column (no legal target) then snaps back. Making QR non-draggable is the UX fix but would remove the currently-tested backward-snap-back path; revisit alongside the FR20 backward-drag decision. [Edge]
+
+## Epic 14 Phase D (Registrations) — review 2026-06-14
+- **Muted Registrations tab-count contrast (NFR7, LOW):** the count renders in `text.secondary` small text on the tab rail (`EventPage.tsx` muted variant). Verify ≥4.5:1 WCAG 2.1 AA contrast during the beta visual-QA pass; bump emphasis if it falls short. Not caused by this change beyond introducing the count; no functional impact.
+
+## Deferred from: spec-14-e-communications-tab (Epic 14 Phase E, 2026-06-14)
+- **Speakers audience: consistent template + language + preview + bulk-send surface (backend-inclusive follow-up).** The shipped Speakers audience (`SpeakerBulkComms`) is **deliberately NOT** the template→language→preview→send pattern the other three audiences use. It surfaces only the existing 1:1 `useSendReminder` endpoint (`POST /events/{code}/speaker-pool/{id}/send-reminder`, `reminderType: RESPONSE|CONTENT`), which **auto-selects** a fixed template by convention (`speaker-reminder-{response|content}-tier{1,2,3}`, per-speaker language, auto tier) — so the organizer's only knob is RESPONSE vs CONTENT. There is **no** speaker analog of `registrantNoticeService.preview()`/`.send(templateKey)` (no bulk-send-by-template, no speaker preview endpoint). Reviewed live by Nissim (2026-06-14): **decision = keep the reminder surface for now** (functional + frontend-only), accept the divergence. To make Speakers consistent with Newsletter/Registrant/Venue, build the **additive** backend in `event-management-service` (mirror registrant-notice): (1) a speaker-notice **preview** endpoint (render a chosen `SPEAKER`-category template in a chosen language), (2) a **bulk speaker-send** endpoint (send a chosen template to a recipient set). Then rebuild `SpeakerBulkComms` as template+language+preview+send. This is additive/backward-compatible (AR9-safe), but **not frontend-only** → deploys to prod before any beta preview. **This story subsumes the FR32 "logistics & arrival" + "thank-you" speaker comms** (they become just more SPEAKER templates the organizer can pick). [Phase E scope decision — Nissim, 2026-06-14]
+- **`tabBadges` `COMMS_TASK_PATTERN` → first-class category (epic post-impl follow-up M3):** the Communications overdue-dot still derives from the name-heuristic regex in `web-frontend/src/components/organizer/EventPage/tabBadges.ts`, so an overdue `Venue Booking`/`Catering Coordination` task does not raise the dot even though Venue & Caterer is now a Communications audience. Re-derive the dot from a first-class task category and drop the regex. Listed in the epic's "Post-Implementation Follow-ups"; explicitly out of scope for this spec to keep it contained.
+
+## Deferred from: code review of spec-14-e-communications-tab (Epic 14 Phase E, 2026-06-14)
+- **Retry-failed re-sends a stale `result.failed` snapshot** [`web-frontend/src/components/organizer/EventPage/SpeakerBulkComms.tsx` retry button → `runSend(result.failed)`] — the failed `SpeakerPoolEntry` snapshots are captured at the original send; a speaker who changed status since (e.g. an INVITED speaker who has now accepted) is still re-sent the original reminder type on retry, because `result.failed` is not re-filtered against the live pool / current `reminderType`. Mitigated (not eliminated) by clearing `result` on type-change. Re-filter `result.failed` against the current pool before retrying. [Edge — MED]
+- **Per-recipient send failures bucket opaquely** [`SpeakerBulkComms.tsx` `runSend` catch] — a speaker with no resolvable email (backend `sendReminder` throws) or a bad `id` lands in `failed` with no per-recipient reason surfaced; the organizer sees only an aggregate "failed N". Surface per-recipient failure reasons (mirrors the registrant-notice "N had no email on file (skipped)" treatment). [Edge — LOW]
+
+## Deferred from: spec-14-f-1-wrapup-tab (Epic 14 Story 14.F.1, 2026-06-14)
+- **Dead i18n keys after the sub-tab removal (LOW):** `eventPage.tabs.photos` and `eventPage.tabs.appreciation` (×10 locales) were the Wrap-up sub-tab labels; the stacked layout no longer uses them. Left in place (the children's own `photos.title`/`appreciation.title` headers are unaffected). Sweep with the Story 10.9 unused-key analyzer (`web-frontend/scripts/i18n/analyze-unused.py`) rather than a bespoke 10-locale edit.
+
+## Deferred from: spec-14-f-4-publishing-settings (Epic 14 Story 14.F.4, 2026-06-14)
+- **Settings "Cancel event" is a `console.log` stub** [`web-frontend/src/components/organizer/EventPage/EventSettingsTab.tsx` `handleCancelEvent`] — FR43 specifies "Cancel event (notifies registrants)", but the handler only logs. Pre-existing (not touched by 14.F.4, which was Publishing-layout-only). Wire it to the real cancel-event flow + registrant notification in a focused follow-up. [verify]

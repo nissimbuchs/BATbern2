@@ -85,6 +85,23 @@ describe('presentationService', () => {
       expect(result.map((e) => e.eventCode)).toEqual(['EVT2', 'EVT1', 'EVT3']);
     });
 
+    it('should exclude the currently-presented event', async () => {
+      const now = new Date();
+      const future1 = new Date(now.getTime() + 5 * 86400_000).toISOString(); // +5 days
+      const future2 = new Date(now.getTime() + 10 * 86400_000).toISOString(); // +10 days
+
+      const mockEvents = [
+        { eventCode: 'CURRENT', date: future1 },
+        { eventCode: 'NEXT', date: future2 },
+      ];
+      mockApiClient.get.mockResolvedValue({ data: { data: mockEvents } });
+
+      const result = await getUpcomingEvents('CURRENT');
+
+      // CURRENT is in the future but is the event on screen → excluded
+      expect(result.map((e) => e.eventCode)).toEqual(['NEXT']);
+    });
+
     it('should handle API returning flat array (no pagination wrapper)', async () => {
       const now = new Date();
       const future = new Date(now.getTime() + 86400_000).toISOString();

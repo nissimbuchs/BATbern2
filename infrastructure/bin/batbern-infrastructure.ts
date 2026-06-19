@@ -283,6 +283,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     // Story 10.29: SES Configuration Set name — required for SES BOUNCE/COMPLAINT events
     // to reach SNS → SQS → BounceProcessingService.
     sesConfigurationSetName: sesStack.configurationSetName,
+    // Transactional config set — becomes the shared EmailService default for all
+    // non-newsletter sends (delivery tracking, no suppression).
+    sesTransactionalConfigurationSetName: sesStack.transactionalConfigurationSetName,
     // Story 10.17: Inbound email SQS queue URL, S3 bucket name, and env-specific reply address
     inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
     inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,
@@ -348,6 +351,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPoolClient: cognitoStack.userPoolClient,
     eventBus: eventBusStack.eventBus,
     alarmTopic: monitoringStack.alarmTopic,
+    sesTransactionalConfigurationSetName: sesStack.transactionalConfigurationSetName,
     env,
     description: `BATbern Partner Coordination Service - ${config.envName}`,
     tags: config.tags,
@@ -358,6 +362,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   partnerCoordinationStack.addDependency(cognitoStack);
   partnerCoordinationStack.addDependency(eventBusStack);
   partnerCoordinationStack.addDependency(monitoringStack);
+  partnerCoordinationStack.addDependency(sesStack);
 
   // 10d. Attendee Experience Service
   attendeeExperienceStack = new AttendeeExperienceStack(app, `${stackPrefix}-AttendeeExperience`, {
@@ -397,6 +402,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     eventBus: eventBusStack.eventBus,
     alarmTopic: monitoringStack.alarmTopic,
     watchJwtSecret: secretsStack.watchJwtSecret,
+    sesTransactionalConfigurationSetName: sesStack.transactionalConfigurationSetName,
     env,
     description: `BATbern Company & User Management Service (Consolidated) - ${config.envName}`,
     tags: config.tags,
@@ -407,6 +413,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   companyManagementStack.addDependency(cognitoStack);
   companyManagementStack.addDependency(storageStack);
   companyManagementStack.addDependency(eventBusStack);
+  companyManagementStack.addDependency(sesStack);
   companyManagementStack.addDependency(monitoringStack);
   companyManagementStack.addDependency(secretsStack);
 

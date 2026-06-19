@@ -314,6 +314,36 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrder(username1, username3);
     }
 
+    @Test
+    void should_findScheduledSpeakers_includingCoSpeakers_excludingModeratorPanelistAndUnscheduled() {
+        // Given: scheduled sessions with mixed roles, plus an unscheduled session
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username2, SpeakerRole.CO_SPEAKER);
+        createSessionUser(testSession1, username3, SpeakerRole.MODERATOR);
+        createSessionUser(testSession2, "panel.pat", SpeakerRole.PANELIST);
+
+        // Unscheduled session (start_time IS NULL) — its PRIMARY_SPEAKER must be excluded
+        Session unscheduled = sessionRepository.save(Session.builder()
+                .sessionSlug("session-pool")
+                .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
+                .title("Pool Session")
+                .sessionType("presentation")
+                .startTime(null)
+                .build());
+        createSessionUser(unscheduled, "pool.speaker", SpeakerRole.PRIMARY_SPEAKER);
+
+        // When
+        List<SessionUser> result =
+                sessionUserRepository.findScheduledSpeakersByEventId(testEvent.getId());
+
+        // Then: only PRIMARY + CO on scheduled sessions; MODERATOR, PANELIST, unscheduled excluded
+        assertThat(result).extracting(SessionUser::getUsername)
+                .containsExactlyInAnyOrder(username1, username2);
+        assertThat(result).extracting(SessionUser::getSpeakerRole)
+                .containsExactlyInAnyOrder(SpeakerRole.PRIMARY_SPEAKER, SpeakerRole.CO_SPEAKER);
+    }
+
     // Helper method
     private SessionUser createSessionUser(Session session, String username, SpeakerRole role) {
         SessionUser sessionUser = SessionUser.builder()

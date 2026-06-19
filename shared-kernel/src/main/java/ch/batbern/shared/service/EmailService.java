@@ -70,10 +70,14 @@ public class EmailService {
     private String replyToEmail;
 
     /**
-     * Default SES Configuration Set applied to every send so BOUNCE/COMPLAINT events
-     * route to SNS → SQS → BounceProcessingService for ALL email kinds (transactional
-     * and newsletter). Null in local/test or when not configured. Explicit overrides
-     * via the *Sync(... configurationSetName) overloads still work.
+     * Default SES Configuration Set applied to every send. This is the TRANSACTIONAL set
+     * (delivery/bounce/complaint/reject → CloudWatch metrics + a per-recipient SNS logger,
+     * with NO auto-suppression) — it is wired in each service stack via
+     * {@code BATBERN_SES_CONFIGURATION_SET_NAME}. Newsletter blasts deliberately override
+     * this with the newsletter set (which routes bounces to SQS → BounceProcessingService
+     * for suppression) — see {@code NewsletterEmailService}. Null in local/test or when not
+     * configured. Explicit overrides via the {@code *Sync(... configurationSetName)}
+     * overloads still work. See {@code spec-transactional-ses-config-set.md}.
      */
     @Value("${batbern.ses.configuration-set-name:#{null}}")
     private String configurationSetName;

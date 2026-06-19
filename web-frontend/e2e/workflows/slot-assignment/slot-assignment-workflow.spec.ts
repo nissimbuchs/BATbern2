@@ -79,22 +79,29 @@ test.describe('Slot Assignment (Story 5.7)', { tag: '@gate' }, () => {
     }
   });
 
-  /** Navigate to the slot-assignment page and wait for the three-column layout to render. */
+  /**
+   * Open the in-tab Slots sub-view and wait for its layout to render.
+   * Epic 14 (14.C.5): the separate `/slot-assignment` route was retired in favour of the
+   * Speakers & Agenda ▸ Slots sub-view (2-column tray + timeline with a top action bar);
+   * the old 3-column `quick-actions-panel` is gone — bulk actions live in `slot-action-bar`.
+   */
   async function openSlotAssignment(page: Page) {
-    await page.goto(`/organizer/events/${fixtureEvent.eventCode}/slot-assignment`);
-    await expect(page.getByTestId('quick-actions-panel')).toBeVisible();
+    await page.goto(`/organizer/events/${fixtureEvent.eventCode}?tab=speakers&view=slots`);
+    // The in-tab Slots sub-view loads event + sessions + timetable before the action bar shows
+    // (`slot-action-bar` renders only when !isLoading) — allow for a cold local backend.
+    await expect(page.getByTestId('slot-action-bar')).toBeVisible({ timeout: 15_000 });
   }
 
   test('should_renderSlotAssignmentLayout_when_pageOpened', async ({ page }) => {
     await openSlotAssignment(page);
 
-    // Three-column layout.
+    // 2-column in-tab layout (tray + timeline) under the top action bar.
     await expect(page.getByTestId('speaker-pool-sidebar')).toBeVisible();
     await expect(page.getByTestId('session-timeline-grid')).toBeVisible();
     await expect(page.getByTestId('timeline-grid')).toBeVisible();
-    await expect(page.getByTestId('quick-actions-panel')).toBeVisible();
+    await expect(page.getByTestId('slot-action-bar')).toBeVisible();
 
-    // Quick actions present.
+    // Bulk actions present (moved from the retired quick-actions column into the top bar).
     await expect(page.getByTestId('generate-structural-button')).toBeVisible();
     await expect(page.getByTestId('auto-assign-button')).toBeVisible();
 
