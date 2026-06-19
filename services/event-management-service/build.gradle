@@ -59,8 +59,11 @@ dependencies {
     // Service-specific: WebSocket for real-time push notifications (BAT-7)
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
-    // Service-specific: Hypersistence Utils for JSONB support (BAT-7)
-    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.0'
+    // Service-specific: Hypersistence Utils for JSONB support (BAT-7).
+    // Epic 13 (SB4): the artifact is Hibernate-version-specific; SB 4.0.7 manages Hibernate
+    // 7.2, so -hibernate-63 (Hibernate 6.3) is replaced by -hibernate-71 (Hibernate 7.1+).
+    // The 6.x JsonBinaryType referenced the moved org.hibernate...BindableType -> "cannot access".
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-71:3.15.3'
 
     // Service-specific: JWT for email confirmation tokens
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
@@ -72,8 +75,10 @@ dependencies {
     implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.10.0'
 
     // Story 10.17: Spring Cloud AWS SQS for inbound email @SqsListener
-    // Version 3.3.0 is compatible with Spring Boot 3.3.x / 3.5.x
-    implementation platform('io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0')
+    // Epic 13 (SB4): 3.3.0 targets Spring Boot 3.x and crashes on SB4 — its SqsAutoConfiguration
+    // calls the removed PropertyMapper.alwaysApplyingWhenNonNull() (NoSuchMethodError at context
+    // load). The 4.0.x line is the Spring Boot 4 / Spring Framework 7 aligned release.
+    implementation platform('io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2')
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs'
 
     // Story 10.17: jakarta.mail-api for MIME parsing of inbound emails

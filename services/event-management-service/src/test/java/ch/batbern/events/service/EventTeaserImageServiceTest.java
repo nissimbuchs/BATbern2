@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -88,7 +88,7 @@ class EventTeaserImageServiceTest {
         void shouldReturnPresignedUrl() throws MalformedURLException {
             // Given
             PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-            when(mockPresigned.url()).thenReturn(new URL("https://s3.amazonaws.com/test-bucket/key?sig=x"));
+            when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test-bucket/key?sig=x").toURL());
             when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
 
             // When
@@ -107,7 +107,7 @@ class EventTeaserImageServiceTest {
         void s3KeyShouldFollowPattern() throws MalformedURLException {
             // Given
             PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-            when(mockPresigned.url()).thenReturn(new URL("https://s3.amazonaws.com/test/key"));
+            when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test/key").toURL());
             when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
 
             // When
@@ -122,7 +122,7 @@ class EventTeaserImageServiceTest {
         void s3KeyShouldUseSvgExtension() throws MalformedURLException {
             // Given
             PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-            when(mockPresigned.url()).thenReturn(new URL("https://s3.amazonaws.com/test/key"));
+            when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test/key").toURL());
             when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
 
             // When

@@ -39,10 +39,17 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    // Epic 13 (SB4): spring-boot-starter-aop was removed in SB4. Spring AOP proxy infra comes
+    // transitively via spring-boot-starter (spring-context); AuditLoggingAspect's @Aspect/@Around
+    // annotations need aspectjweaver directly (BOM-managed version).
+    implementation 'org.aspectj:aspectjweaver'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    // Epic 13 (SB4): keep Jackson 2 (com.fasterxml) for shared-kernel's ObjectMapper/JsonNode
+    // usage so its compiled bytecode stays binary-compatible during the migration. BOM-managed.
+    implementation 'org.springframework.boot:spring-boot-jackson2'
 
     // AWS SDK for EventBridge, CloudWatch, Cognito, and SES
     implementation platform('software.amazon.awssdk:bom:2.43.2')
@@ -53,7 +60,8 @@ dependencies {
     implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
 
     // Resilience4j for circuit breaker, bulkhead, and retry patterns
-    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.4.0'
+    // Epic 13 (SB4): the Spring Boot integration module is renamed -spring-boot3 -> -spring-boot4.
+    implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-bulkhead:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
@@ -93,16 +101,27 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
+    // Epic 13 (SB4): testcontainers versions from the testcontainers-bom imported in the root
+    // subprojects dependencyManagement block.
     testImplementation 'org.testcontainers:testcontainers'
-    testImplementation 'org.testcontainers:localstack'
-    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-localstack'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 
     // Test Fixtures dependencies (exposed to consuming projects)
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Epic 13 (SB4): AbstractIntegrationTest uses @AutoConfigureMockMvc + @AutoConfigureTestDatabase,
+    // which moved out of spring-boot-test-autoconfigure into per-technology test modules.
+    testFixturesImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testFixturesImplementation 'org.springframework.boot:spring-boot-jdbc-test'
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-web'
+    // Epic 13 (SB4): SB4 dropped the auto-wiring of springSecurity() into the auto-configured
+    // MockMvc (the old MockMvcSecurityConfiguration is gone from spring-boot-webmvc-test). The
+    // shared MockMvcSecuritySetup re-applies it via a MockMvcBuilderCustomizer, which needs
+    // SecurityMockMvcConfigurers from spring-security-test on the testFixtures classpath.
+    testFixturesImplementation 'org.springframework.security:spring-security-test'
     testFixturesImplementation 'org.testcontainers:testcontainers'
-    testFixturesImplementation 'org.testcontainers:postgresql'
-    testFixturesImplementation 'org.testcontainers:junit-jupiter'
+    testFixturesImplementation 'org.testcontainers:testcontainers-postgresql'
+    testFixturesImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 }
 
 // Apply Trivy security scanning

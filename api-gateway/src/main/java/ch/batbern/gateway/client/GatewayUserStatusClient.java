@@ -58,7 +58,7 @@ public class GatewayUserStatusClient {
      */
     public Optional<Boolean> getActiveStatus(String username, String bearerToken) {
         String url = UriComponentsBuilder
-                .fromHttpUrl(companyUserManagementUrl + "/api/v1/users/{username}")
+                .fromUriString(companyUserManagementUrl + "/api/v1/users/{username}")
                 .buildAndExpand(username)
                 .toUriString();
 

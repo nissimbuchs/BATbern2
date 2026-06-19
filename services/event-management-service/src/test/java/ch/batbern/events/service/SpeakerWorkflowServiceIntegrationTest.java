@@ -32,8 +32,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,13 +79,13 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private UserApiClient userApiClient;
 
-    @MockBean
+    @MockitoBean
     private SpeakerInvitationEmailService invitationEmailService;
-    @MockBean
+    @MockitoBean
     private SpeakerAcceptanceEmailService acceptanceEmailService;
-    @MockBean
+    @MockitoBean
     private OrganizerNotificationService organizerNotificationService;
-    @SpyBean
+    @MockitoSpyBean
     private SpeakerProvisioningHook speakerProvisioningHook;
 
     private Event testEvent;

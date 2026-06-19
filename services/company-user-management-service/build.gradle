@@ -3,6 +3,9 @@
 // This file contains only service-specific dependencies and configuration
 
 plugins {
+    // Version-less: resolved from settings.gradle pluginManagement (single source, Epic 13)
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
     id 'com.gorylenko.gradle-git-properties' version '2.5.7'
 }
 

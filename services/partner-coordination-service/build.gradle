@@ -3,6 +3,9 @@
 // This file contains only service-specific dependencies and configuration
 
 plugins {
+    // Version-less: resolved from settings.gradle pluginManagement (single source, Epic 13)
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
     id 'com.gorylenko.gradle-git-properties' version '2.5.7'
 }
 
@@ -21,8 +24,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     // Service-specific: Resilience4j for circuit breaker
-    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.3.0'
+    // Epic 13 (SB4): -spring-boot3 was renamed to -spring-boot4 (per the 13-1 compat matrix; shared-kernel
+    // already moved). Keeping -spring-boot3 here put BOTH the springboot3 and the (transitive, from
+    // shared-kernel) springboot4 auto-configs on the classpath → duplicate bulkheadRegistryEventConsumer
+    // bean → BeanDefinitionOverrideException → context fails. Align to -spring-boot4:2.4.0.
+    implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
 
     // Service-specific: AWS SDK
     implementation platform('software.amazon.awssdk:bom:2.39.0')
@@ -36,6 +43,8 @@ dependencies {
     // Service-specific: Testing libraries
     testImplementation 'io.rest-assured:rest-assured:5.5.6'
     testImplementation 'org.awaitility:awaitility:4.2.0'
+    // Epic 13 (SB4): @RestClientTest moved to the spring-boot-restclient-test module.
+    testImplementation 'org.springframework.boot:spring-boot-restclient-test'
 
     // Service-specific: OpenAPI nullable (if needed for this service)
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'

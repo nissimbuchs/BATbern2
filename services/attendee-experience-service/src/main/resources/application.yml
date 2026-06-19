@@ -7,6 +7,13 @@ spring:
   application:
     name: attendee-experience-service
 
+  # Epic 13 (SB4): keep the HTTP layer on the Jackson 2 (com.fasterxml) converter during the
+  # migration (SB4 defaults to Jackson 3). This is the "Jackson-2-compat flag" from the plan —
+  # byte-identical payloads + Jackson-2 semantics; the final closeout removes it to flip to Jackson 3.
+  http:
+    converters:
+      preferred-json-mapper: jackson2
+
 management:
   endpoints:
     web:

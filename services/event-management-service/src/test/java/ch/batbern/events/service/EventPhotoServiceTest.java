@@ -29,7 +29,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -109,7 +109,7 @@ class EventPhotoServiceTest {
                     .thenReturn(Optional.of(new Event()));
 
             PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-            when(mockPresigned.url()).thenReturn(new URL("https://s3.amazonaws.com/test-bucket/key?sig=x"));
+            when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test-bucket/key?sig=x").toURL());
             when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
 
             // When
@@ -137,7 +137,7 @@ class EventPhotoServiceTest {
                     .thenReturn(Optional.of(new Event()));
 
             PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-            when(mockPresigned.url()).thenReturn(new URL("https://s3.amazonaws.com/test/key"));
+            when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test/key").toURL());
             when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
 
             // When

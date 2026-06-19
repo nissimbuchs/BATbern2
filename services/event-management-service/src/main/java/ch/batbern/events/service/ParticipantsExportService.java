@@ -71,7 +71,8 @@ public class ParticipantsExportService {
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             workbook.write(out);
-            workbook.dispose();
+            // try-with-resources close() disposes the SXSSF temp files (POI 5.x);
+            // the deprecated explicit dispose() is redundant.
             return out.toByteArray();
         } catch (IOException e) {
             log.error("Failed to generate name-badge XLSX for event {}", eventCode, e);

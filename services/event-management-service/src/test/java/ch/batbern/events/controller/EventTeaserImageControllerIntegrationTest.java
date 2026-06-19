@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.net.URL;
+import java.net.URI;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -97,7 +97,7 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
     @WithMockUser(roles = "ORGANIZER")
     void generateUploadUrl_asOrganizer_returns200() throws Exception {
         PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-        when(mockPresigned.url()).thenReturn(new URL("https://s3.amazonaws.com/test-bucket/key?sig=x"));
+        when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test-bucket/key?sig=x").toURL());
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
 
         mockMvc.perform(post("/api/v1/events/{code}/teaser-images/upload-url", EVENT_CODE)

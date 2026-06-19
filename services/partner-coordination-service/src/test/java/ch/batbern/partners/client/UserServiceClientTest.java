@@ -5,7 +5,7 @@ import ch.batbern.partners.exception.UserNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpHeaders;
@@ -232,7 +232,7 @@ class UserServiceClientTest {
         mockServer.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.GET))
                 // No JWT header expected — this is a VPC-internal service-to-service call
-                .andExpect(request -> assertThat(request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION))
+                .andExpect(request -> assertThat(request.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION))
                         .as("getUsersByCompanyAndRole must NOT forward a JWT")
                         .isFalse())
                 .andRespond(withSuccess()

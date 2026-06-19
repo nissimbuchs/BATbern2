@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
@@ -53,8 +54,14 @@ public class VpcInternalAuthorizationManager implements AuthorizationManager<Req
         log.info("VPC Internal Authorization Manager initialized for CIDR: {}", vpcCidr);
     }
 
+    /**
+     * Spring Security 7 entry point. {@code authorize} is the single abstract method
+     * (the deprecated {@code check} was removed in SS7); note the {@code ? extends}
+     * wildcard on the authentication supplier added in SS7.
+     */
     @Override
-    public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+    public AuthorizationResult authorize(Supplier<? extends Authentication> authentication,
+            RequestAuthorizationContext context) {
         HttpServletRequest request = context.getRequest();
         String remoteAddr = getClientIpAddress(request);
 

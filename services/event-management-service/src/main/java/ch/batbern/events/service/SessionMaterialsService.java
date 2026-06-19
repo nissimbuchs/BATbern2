@@ -248,6 +248,10 @@ public class SessionMaterialsService {
      * @return Created material response
      * @throws SessionNotFoundException if session not found
      */
+    // new URL(String) is deprecated (not for removal — stays in Java 21 / SB4) but is
+    // used here deliberately: it parses URLs with spaces/special chars that the strict
+    // URI(String) constructor rejects, so we can re-encode them component-by-component.
+    @SuppressWarnings("deprecation")
     public SessionMaterialResponse uploadMaterialFromUrl(
             String sessionSlug,
             String url,

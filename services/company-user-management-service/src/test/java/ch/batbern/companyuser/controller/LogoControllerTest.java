@@ -14,7 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
@@ -48,7 +48,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests all REST endpoints with security, validation, and error handling
  */
 @WebMvcTest(controllers = LogoController.class)
-@Import(ch.batbern.companyuser.config.SecurityConfig.class)
+// Epic 13 (SB4): @WebMvcTest no longer auto-applies springSecurity() to MockMvc, so @WithMockUser
+// is dropped and secured endpoints return 401. MockMvcSecuritySetup re-applies it (the @SpringBootTest
+// path gets it via AbstractIntegrationTest; slice tests must import it explicitly).
+@Import({ch.batbern.companyuser.config.SecurityConfig.class, ch.batbern.shared.test.MockMvcSecuritySetup.class})
 class LogoControllerTest {
 
     @Autowired
