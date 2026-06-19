@@ -1,5 +1,5 @@
 # Build stage
-FROM gradle:8.5-jdk21 AS build
+FROM gradle:8.14.5-jdk21 AS build
 WORKDIR /workspace
 
 # Copy root build configuration for multi-project build
