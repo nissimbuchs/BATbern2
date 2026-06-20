@@ -4,8 +4,14 @@ import { cn } from '@/lib/utils';
 import type { components } from '@/types/generated/events-api.types';
 import { ExtendSessionSheet } from './ExtendSessionSheet';
 import { DelaySessionSheet } from './DelaySessionSheet';
+import { LogoBadge } from '@/components/shared/LogoBadge/LogoBadge';
 
 type WatchSessionDetail = components['schemas']['WatchSessionDetail'];
+type WatchSpeaker = WatchSessionDetail['speakers'][number];
+
+function speakerName(s: WatchSpeaker): string {
+  return [s.firstName, s.lastName].filter(Boolean).join(' ') || s.username || '';
+}
 
 interface ActiveSessionCardProps {
   activeSession: WatchSessionDetail | null;
@@ -83,7 +89,7 @@ export const ActiveSessionCard: React.FC<ActiveSessionCardProps> = ({
       : elapsedSeconds + remainingSeconds;
   const progress = totalSeconds > 0 ? Math.min((elapsedSeconds / totalSeconds) * 100, 100) : 0;
   const isOvertime = remainingSeconds === 0 && elapsedSeconds > 0;
-  const speakers = speakerNames(activeSession);
+  const activeSpeakers = activeSession.speakers ?? [];
 
   // Urgency levels mirroring Watch app SessionTimerEngine exactly:
   // normal (>300s): primary blue | caution (120–300s): primary blue
@@ -164,8 +170,29 @@ export const ActiveSessionCard: React.FC<ActiveSessionCardProps> = ({
             {activeSession.title}
           </h2>
 
-          {/* Speaker */}
-          {speakers && <p className="text-lg text-muted-foreground mb-4">{speakers}</p>}
+          {/* Speakers — each with their company logo on a white chip (Story 15.5, feedback #5).
+              Transparent logos stay legible on the dark card via LogoBadge; no logo → name only. */}
+          {activeSpeakers.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
+              {activeSpeakers.map((s, i) => (
+                <span
+                  key={s.username ?? i}
+                  className="inline-flex items-center gap-2 text-lg text-muted-foreground"
+                  data-testid="active-speaker"
+                >
+                  {s.companyLogoUrl && (
+                    <LogoBadge
+                      src={s.companyLogoUrl}
+                      alt={s.company ?? ''}
+                      imgStyle={{ height: 20, maxWidth: 80 }}
+                      style={{ padding: '2px 5px', borderRadius: 4 }}
+                    />
+                  )}
+                  {speakerName(s)}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Countdown */}
           <div className="text-center py-4">

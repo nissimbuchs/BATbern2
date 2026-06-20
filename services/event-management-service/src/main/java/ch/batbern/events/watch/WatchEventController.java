@@ -9,6 +9,8 @@ import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
+import ch.batbern.events.repository.UserPortraitProjection;
 
 import ch.batbern.events.watch.dto.ActiveEventDetail;
 import ch.batbern.events.watch.dto.ActiveEventsResponse;
@@ -76,6 +78,7 @@ public class WatchEventController {
 
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
+    private final SessionUserRepository sessionUserRepository;
     private final UserApiClient userApiClient;
     private final WatchSpeakerArrivalService arrivalService;
 
@@ -135,8 +138,19 @@ public class WatchEventController {
             }
         }
 
+        // Story 15.5: company name + logo for each speaker, via the read-only cross-service join
+        // (same path the presenter's single-event endpoint uses — EventController#findUserPortraits).
+        // ADR-004: read-time enrichment, nothing duplicated on session_users.
+        Map<String, UserPortraitProjection> portraitMap = new HashMap<>();
+        if (!speakerUsernames.isEmpty()) {
+            for (UserPortraitProjection p
+                    : sessionUserRepository.findUserPortraitsByUsernames(speakerUsernames)) {
+                portraitMap.put(p.getUsername(), p);
+            }
+        }
+
         List<SessionDetail> sessionDetails = sessions.stream()
-                .map(session -> mapToSessionDetail(session, userMap))
+                .map(session -> mapToSessionDetail(session, userMap, portraitMap))
                 .collect(Collectors.toList());
 
         // Derive typical start/end time from sessions (HH:mm in Europe/Zurich)
@@ -169,9 +183,10 @@ public class WatchEventController {
         );
     }
 
-    private SessionDetail mapToSessionDetail(Session session, Map<String, UserResponse> userMap) {
+    private SessionDetail mapToSessionDetail(Session session, Map<String, UserResponse> userMap,
+                                             Map<String, UserPortraitProjection> portraitMap) {
         List<SpeakerDetail> speakerDetails = session.getSessionUsers().stream()
-                .map(su -> mapToSpeakerDetail(su, userMap))
+                .map(su -> mapToSpeakerDetail(su, userMap, portraitMap))
                 .collect(Collectors.toList());
 
         String scheduledStart = session.getStartTime() != null
@@ -211,7 +226,8 @@ public class WatchEventController {
         );
     }
 
-    private SpeakerDetail mapToSpeakerDetail(SessionUser sessionUser, Map<String, UserResponse> userMap) {
+    private SpeakerDetail mapToSpeakerDetail(SessionUser sessionUser, Map<String, UserResponse> userMap,
+                                             Map<String, UserPortraitProjection> portraitMap) {
         UserResponse user = userMap.get(sessionUser.getUsername());
 
         String firstName = user != null ? user.getFirstName() : sessionUser.getSpeakerFirstName();
@@ -220,12 +236,17 @@ public class WatchEventController {
         String profilePictureUrl = user != null && user.getProfilePictureUrl() != null
                 ? user.getProfilePictureUrl().toString() : null;
 
+        // Story 15.5: company display name + logo from the read-only join (both nullable → AC3).
+        UserPortraitProjection portrait = portraitMap.get(sessionUser.getUsername());
+        String company = portrait != null ? portrait.getCompanyDisplayName() : null;
+        String companyLogoUrl = portrait != null ? portrait.getCompanyLogoUrl() : null;
+
         return new SpeakerDetail(
                 sessionUser.getUsername(),
                 firstName,
                 lastName,
-                null,           // company — not in UserResponse, cross-service call deferred
-                null,           // companyLogoUrl — cross-service call deferred
+                company,
+                companyLogoUrl,
                 profilePictureUrl,
                 bio,
                 sessionUser.getSpeakerRole() != null

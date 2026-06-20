@@ -3670,9 +3670,15 @@ export interface components {
       firstName?: string | null;
       /** @example Doe */
       lastName?: string | null;
-      /** @description Cross-service lookup deferred. Always null in W2.3. */
+      /**
+       * @description Speaker's company display name (Story 15.5). Resolved at read time from the speaker's user profile; null when the speaker has no company.
+       * @example ACME Corp
+       */
       company?: string | null;
-      /** @description Cross-service lookup deferred. Always null in W2.3. */
+      /**
+       * @description CloudFront URL of the speaker's company logo (Story 15.5), shown on the presenter + live-control surfaces. Null when the company has no logo.
+       * @example https://cdn.batbern.ch/logos/acme.png
+       */
       companyLogoUrl?: string | null;
       /** @example https://cdn.example.com/portrait/john.doe.jpg */
       profilePictureUrl?: string | null;

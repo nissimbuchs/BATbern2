@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -68,6 +71,9 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
 
     @Autowired
     private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private int eventNumberCounter = 9000;
 
@@ -181,6 +187,64 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeEvents").isArray())
                 .andExpect(jsonPath("$.activeEvents", hasSize(2)));
+    }
+
+    // ============================================================================
+    // Story 15.5: speaker company logo enrichment
+    // ============================================================================
+
+    @Test
+    @DisplayName("shouldEnrichSpeakerCompanyLogo_whenCompanyHasLogo (Story 15.5)")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void shouldEnrichSpeakerCompanyLogo_whenCompanyHasLogo() throws Exception {
+        Event event = createEvent(ORGANIZER_USERNAME, Instant.now(), EventWorkflowState.AGENDA_PUBLISHED);
+        Session session = createSession(event, "logo-talk", "Logo Talk", "presentation",
+                Instant.now().plus(1, ChronoUnit.HOURS), Instant.now().plus(2, ChronoUnit.HOURS));
+        createSessionUser(session, "logo.speaker", SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        seedCompanyAndProfile("logo.speaker", "acme", "ACME Corp",
+                "https://cdn.batbern.ch/logos/acme.png");
+
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get(ENDPOINT).contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeEvents[0].sessions[0].speakers[0].username").value("logo.speaker"))
+                .andExpect(jsonPath("$.activeEvents[0].sessions[0].speakers[0].companyLogoUrl")
+                        .value(is("https://cdn.batbern.ch/logos/acme.png")))
+                .andExpect(jsonPath("$.activeEvents[0].sessions[0].speakers[0].company")
+                        .value(is("ACME Corp")));
+    }
+
+    @Test
+    @DisplayName("shouldLeaveCompanyLogoNull_whenSpeakerHasNoCompanyLogo (Story 15.5 AC3)")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void shouldLeaveCompanyLogoNull_whenSpeakerHasNoCompanyLogo() throws Exception {
+        Event event = createEvent(ORGANIZER_USERNAME, Instant.now(), EventWorkflowState.AGENDA_PUBLISHED);
+        Session session = createSession(event, "plain-talk", "Plain Talk", "presentation",
+                Instant.now().plus(1, ChronoUnit.HOURS), Instant.now().plus(2, ChronoUnit.HOURS));
+        createSessionUser(session, "plain.speaker", SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        // No company / profile seeded → graceful null.
+
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get(ENDPOINT).contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeEvents[0].sessions[0].speakers[0].username").value("plain.speaker"))
+                .andExpect(jsonPath("$.activeEvents[0].sessions[0].speakers[0].companyLogoUrl")
+                        .value(nullValue()));
+    }
+
+    /** Seeds a company (with logo) + a user_profiles row linking the speaker to it (CUMS side). */
+    private void seedCompanyAndProfile(String username, String companyKey, String displayName,
+                                       String logoUrl) {
+        jdbcTemplate.update("INSERT INTO companies (name, display_name, logo_url) VALUES (?, ?, ?)",
+                companyKey, displayName, logoUrl);
+        jdbcTemplate.update(
+                "INSERT INTO user_profiles (username, company_id, first_name, last_name) "
+                        + "VALUES (?, ?, ?, ?)",
+                username, companyKey, "Logo", "Speaker");
     }
 
     // ============================================================================
