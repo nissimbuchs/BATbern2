@@ -56,6 +56,9 @@ class LiveTimingControllerIntegrationTest extends AbstractIntegrationTest {
     private SessionRepository sessionRepository;
 
     @Autowired
+    private ch.batbern.events.repository.LiveTimingPresenceRepository presenceRepository;
+
+    @Autowired
     private EntityManager entityManager;
 
     @MockitoBean
@@ -65,6 +68,7 @@ class LiveTimingControllerIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         sessionRepository.deleteAll();
         eventRepository.deleteAll();
+        presenceRepository.deleteAll();
     }
 
     private Event saveLiveEvent(String eventCode, int eventNumber) {
@@ -189,7 +193,31 @@ class LiveTimingControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.version").value(1));
     }
 
-    // MARK: - AC3: organizer poll sets presence
+    // MARK: - Validation + not-found
+
+    @Test
+    @DisplayName("should_return400_when_extendActionMissingMinutes")
+    @WithMockUser(username = "marco.organizer", roles = {"ORGANIZER"})
+    void should_return400_when_extendActionMissingMinutes() throws Exception {
+        Event event = saveLiveEvent("BATbern87", 9087);
+        saveActiveSession(event.getId(), "BATbern87", "talk-a");
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(post("/api/v1/events/BATbern87/live-timing/actions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"EXTEND_SESSION\",\"sessionSlug\":\"talk-a\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("should_return404_when_unknownEvent")
+    void should_return404_when_unknownEvent() throws Exception {
+        mockMvc.perform(get("/api/v1/events/BATbern-nope/live-timing"))
+                .andExpect(status().isNotFound());
+    }
+
+  // MARK: - AC3: organizer poll sets presence
 
     @Test
     @DisplayName("should_reportOrganizerPresent_when_organizerPolls")

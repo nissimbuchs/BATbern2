@@ -142,6 +142,15 @@ so that **session end/extend/delay always reconcile correctly across multiple Fa
 
 _All open questions resolved 2026-06-20 (Nissim) — see the last four entries under Resolved Decisions._
 
+## Review Findings (adversarial code review, 2026-06-20)
+
+5 findings; 4 fixed, 1 documented-as-pre-existing.
+- **F1 (MED) — ETag/`version` covers only timing state, not `organizerPresent`/`arrivedSpeakerCount`/clock-derived `status`.** Resolved by **contract**: the version is deliberately timing-action-only (gating presenter refresh on presence/clock churn would force needless full-event refetches; the two web consumers read only timing via the conditional poll). Documented in the OpenAPI `version` description + `LiveTimingService.getLiveTiming` Javadoc. A future presence/arrival consumer (P2 watch) must not rely on `If-None-Match` for those advisory fields.
+- **F2 (MED) — `useLiveSessionControl.deriveStatus` classifies an over-running, not-yet-ended session (`actualStartTime` set, past scheduled end) as COMPLETED, hiding Extend/Delay.** **NOT changed** — this is pre-existing, intentional "schedule-based view" behavior copied verbatim from the old hook; altering status-derivation semantics under a transport-only story risks a watch/web interaction regression. Tracked as a separate follow-up if the product wants overtime-active on web.
+- **F3 (LOW) — `minutes` null for EXTEND/DELAY silently became a 0-min no-op that still bumped the version.** **Fixed:** `LiveTimingService.applyAction` now rejects null `minutes` for EXTEND/DELAY → 400 (`IllegalArgumentException`). Test `should_return400_when_extendActionMissingMinutes`.
+- **F4 (LOW) — presence upsert ran before the event-existence check (junk rows for a bogus eventCode).** **Fixed:** `LiveTimingController.getLiveTiming` now calls `getVersion` (404 if missing) before `recordOrganizerPoll`. Test `should_return404_when_unknownEvent`.
+- **F5 (LOW) — presence-row test hygiene.** **Fixed:** `LiveTimingControllerIntegrationTest.setUp` now also `presenceRepository.deleteAll()`.
+
 ## Dev Agent Record
 
 ### Agent Model Used

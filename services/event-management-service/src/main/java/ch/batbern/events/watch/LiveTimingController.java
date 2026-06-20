@@ -48,11 +48,14 @@ public class LiveTimingController {
             @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch,
             Authentication authentication) {
 
+        // Validate the event exists (404) BEFORE writing presence, so a poll for a bogus
+        // eventCode can't insert a junk presence row (review finding 15.1-4).
+        long version = liveTimingService.getVersion(eventCode);
+
         if (isOrganizer(authentication)) {
             liveTimingService.recordOrganizerPoll(eventCode, authentication.getName());
         }
 
-        long version = liveTimingService.getVersion(eventCode);
         String etag = etagFor(eventCode, version);
 
         if (ifNoneMatch != null && etagMatches(ifNoneMatch, etag)) {

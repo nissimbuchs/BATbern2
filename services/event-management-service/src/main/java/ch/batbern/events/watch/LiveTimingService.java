@@ -67,6 +67,15 @@ public class LiveTimingService {
     /**
      * Builds the current live-timing snapshot for an event.
      *
+     * <p><b>ETag/version contract:</b> the monotonic {@code version} (and the ETag derived
+     * from it) reflects only <i>timing-action</i> state — END/EXTEND/DELAY and the session
+     * times they cascade. The advisory fields {@code organizerPresent} (30 s TTL),
+     * {@code arrivedSpeakerCount} (authoritative source is the arrivals endpoint), and the
+     * clock-derived {@code currentSessionSlug}/session {@code status} are NOT covered by the
+     * version, so a consumer relying on {@code If-None-Match} may see them lag behind a 304.
+     * This is deliberate: the web consumers gate refresh on timing changes only, and gating
+     * presenter refresh on presence/clock churn would cause needless full-event refetches.
+     *
      * @param eventCode the event
      * @return the snapshot (version, presence, arrival summary, sessions with timing)
      * @throws EventNotFoundException if no event with the given code exists
@@ -137,6 +146,14 @@ public class LiveTimingService {
     @Transactional
     public LiveTimingResponse applyAction(
             String eventCode, LiveTimingActionRequest request, String username) {
+        // minutes is mandatory for EXTEND/DELAY (negative allowed for EXTEND = reduce);
+        // ignored for END. Reject a null rather than silently applying a 0-minute no-op
+        // that would still bump the version (review finding 15.1-3).
+        if ((request.type() == LiveTimingActionRequest.LiveTimingActionType.EXTEND_SESSION
+                || request.type() == LiveTimingActionRequest.LiveTimingActionType.DELAY_TO_PREVIOUS)
+                && request.minutes() == null) {
+            throw new IllegalArgumentException("minutes is required for action " + request.type());
+        }
         int minutes = request.minutes() != null ? request.minutes() : 0;
         switch (request.type()) {
             case END_SESSION ->

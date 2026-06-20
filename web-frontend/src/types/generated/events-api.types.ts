@@ -3769,7 +3769,7 @@ export interface components {
       eventCode: string;
       /**
        * Format: int64
-       * @description Monotonic per-event version, bumped on every timing action. Drives the ETag. A higher value means newer state.
+       * @description Monotonic per-event version, bumped on every timing action (END/EXTEND/DELAY). Drives the ETag; a higher value means newer timing state. NOTE: the version reflects timing-action state only — the advisory fields `organizerPresent` (TTL-based), `arrivedSpeakerCount` (authoritative source: the arrivals endpoint), and the clock-derived `currentSessionSlug`/session `status` are NOT covered, so a consumer using `If-None-Match` may see those lag behind a 304.
        * @example 42
        */
       version: number;
