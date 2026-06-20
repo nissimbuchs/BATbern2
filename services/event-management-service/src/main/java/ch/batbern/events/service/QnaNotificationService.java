@@ -4,7 +4,6 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.QnaWindowStatus;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionQnaNotification;
-import ch.batbern.events.domain.SessionQnaNotificationId;
 import ch.batbern.events.domain.SessionQnaPost;
 import ch.batbern.events.domain.SessionQnaWindow;
 import ch.batbern.events.domain.SessionUser;
@@ -22,7 +21,6 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -82,6 +80,7 @@ public class QnaNotificationService {
     private final UserApiClient userApiClient;
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
+    private final QnaNotificationStateWriter stateWriter;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -95,10 +94,15 @@ public class QnaNotificationService {
     /**
      * Scan OPEN Q&A windows and send pending digests. Runs every 5 min; ShedLock ensures a single
      * instance runs it across the cluster.
+     *
+     * <p><b>Deliberately not {@code @Transactional}.</b> Each recipient's email is sent and its
+     * throttle/water-mark row is then committed in its own transaction (via
+     * {@link QnaNotificationStateWriter}). Wrapping the whole scan in one transaction would let a
+     * later failure roll back an already-sent recipient's water mark and re-send the digest on the
+     * next flush. Reads here run in Spring Data's default per-call transactions.
      */
     @Scheduled(cron = "${qna.scheduled.notify.cron:0 */5 * * * *}")
     @SchedulerLock(name = "qnaDigestFlush", lockAtMostFor = "15m", lockAtLeastFor = "30s")
-    @Transactional
     public void flushPending() {
         List<SessionQnaWindow> openWindows = windowRepository.findByStatus(QnaWindowStatus.OPEN);
         if (openWindows.isEmpty()) {
@@ -192,14 +196,9 @@ public class QnaNotificationService {
         RenderedMail mail = renderMail(window, session, event, recipient, count, locale);
         emailService.sendHtmlEmailSync(email, mail.subject(), mail.html());
 
-        if (state == null) {
-            state = SessionQnaNotification.builder()
-                    .id(new SessionQnaNotificationId(window.getId(), recipient))
-                    .build();
-        }
-        state.setLastNotifiedAt(now);
-        state.setNotifiedThrough(newWatermark);
-        notificationRepository.save(state);
+        // Commit the throttle/water-mark in its own transaction, immediately after the send, so a
+        // later recipient's failure can't roll it back and trigger a duplicate digest next flush.
+        stateWriter.recordSent(window.getId(), recipient, now, newWatermark);
 
         log.info("qnaDigestFlush: notified {} of {} new question(s) on session {} (event {})",
                 recipient, count, session.getSessionSlug(), window.getEventCode());

@@ -273,3 +273,7 @@ All four inherit the epic's cross-cutting DoD (NFR1/5/7/8/9) and the beta-first 
 
 ## Deferred from: spec-14-f-4-publishing-settings (Epic 14 Story 14.F.4, 2026-06-14)
 - **Settings "Cancel event" is a `console.log` stub** [`web-frontend/src/components/organizer/EventPage/EventSettingsTab.tsx` `handleCancelEvent`] — FR43 specifies "Cancel event (notifies registrants)", but the handler only logs. Pre-existing (not touched by 14.F.4, which was Publishing-layout-only). Wire it to the real cancel-event flow + registrant notification in a focused follow-up. [verify]
+
+## Deferred from: code review of story 15-7 (2026-06-20)
+
+- Q&A digest water-mark uses strict `createdAt > :since`; two top-level questions persisted at the identical microsecond could drop one. Negligible for human-posted questions at TIMESTAMPTZ microsecond precision. If ever a concern, switch to a (createdAt, id) tie-breaker or `>=` + notified-id dedup. [services/event-management-service/.../repository/SessionQnaPostRepository.java + QnaNotificationService.notifyRecipient]

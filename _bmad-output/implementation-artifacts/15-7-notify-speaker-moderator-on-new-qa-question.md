@@ -1,6 +1,6 @@
 # Story 15.7: Notify speaker + moderator on new Q&A question (with per-user frequency preference)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -106,6 +106,15 @@ so that **I can follow and respond to audience questions without keeping the Q&A
 - [x] **Task B7 — Bruno / staging safety** (AC: 12)
   - [x] Prefer NOT adding a Bruno test that could trigger a real digest. If added: post to a session whose recipients are reserved-domain/test users (so `EmailService.assertSendable` blocks) OR a session with no assigned speaker/moderator (no recipients), + cleanup. Grep Bruno output for `Skipping invalid file`; prose in `docs {}` only.
 - [x] **Task B8 — Doc-drift** — consult `.github/doc-drift-mappings.yml` for docs tied to scheduler/preferences paths; update in the same commit or add `[no-doc]`.
+
+### Review Findings (code review 2026-06-20)
+
+- [x] [Review][Patch] Flush is one big `@Transactional` wrapping synchronous SES sends — a poisoned tx or Fargate Spot kill rolls back the throttle/water-mark rows *after* emails were sent → duplicate digests. **FIXED:** `flushPending` is no longer `@Transactional`; each recipient's row is committed via a new `QnaNotificationStateWriter.recordSent` (`REQUIRES_NEW`) immediately after the send, so blast radius is one recipient. [QnaNotificationService.java + QnaNotificationStateWriter.java]
+- [x] [Review][Patch] `V117` timestamps were `TIMESTAMP` (no tz) but `session_qna_post.created_at` is `TIMESTAMPTZ` (V112) → water-mark comparison could shift by the server tz offset. **FIXED:** V117 columns are now `TIMESTAMPTZ`. [V117__create_qna_notification_state.sql]
+- [x] [Review][Patch] `qna.notify.*` + `qna.scheduled.notify.cron` existed only as `@Value` defaults. **FIXED:** added a `qna:` block (freeze + notify crons + live/daily window props) to `application.yml`. [application.yml]
+- [x] [Review][Defer] Water-mark uses strict `createdAt > :since`; two top-level questions persisted at the identical microsecond could drop one. Negligible for human-posted questions at `TIMESTAMPTZ` microsecond precision — deferred. [services/event-management-service/.../repository/SessionQnaPostRepository.java]
+
+**Dismissed as noise (8):** 15-min cache lag on an `off` opt-out (by-design — all prefs are cached 15 min); `assertSendable`-before-null no-op nuance + "no staging code-guard on send" (by design — it's a prod feature; no Bruno/E2E posts Q&A, so nothing test-driven triggers it); `daily` first email fires immediately (≤1/24h is still satisfied — first-notify-then-throttle is correct); counted-then-moderator-removed post inflates one digest's count (self-corrects, watermark already advanced); `resolveFirstName` extra `getUserByUsername` call (it IS `@Cacheable`); `mapQnaNotificationFrequency` doesn't validate the enum (only writer is the UI, value is enum-constrained server-side); PUT full-replace resets a stale client's field to `live` (documented + accepted); Acceptance-Auditor spec-drift cosmetics (B5 checkbox vs documented deviation, `dashboardLink`/`supportUrl` layout vars, extra `isSingle` flag, deep-link uses event page per the spec's own blessed fallback).
 
 ## Dev Notes
 
@@ -268,3 +277,4 @@ PUT `/users/me/preferences` is full-replace (not PATCH): an omitted `qnaNotifica
 | 2026-06-20 | Scope expanded to per-user `qnaNotificationFrequency` preference (live/daily/off, default live); freeze-wins; recipients = speaker+co-speakers+moderator. Resolved Decisions recorded. |
 | 2026-06-20 | **Part A implemented** (CUMS preference + OpenAPI + frontend selector + 10-locale i18n). Fixed YAML-`off`-as-boolean enum-gen bug (quoted values) and NOT-NULL-vs-null-embeddable migration bug (nullable column). All CUMS + frontend tests green. Committed `1d82829f`. |
 | 2026-06-20 | **Part B implemented** (EMS digest engine: V117 state table, `QnaNotificationService` 5-min ShedLock flush with per-recipient cadence throttle, DE/EN templates, `UserApiClient.getQnaNotificationFrequency`). 11 new integration tests (AC4–AC10); full EMS suite green (0 failures). Flush cron disabled in `test` profile. Doc-drift: `06d-notification-system.md` updated. Story → review. |
+| 2026-06-20 | **Code review** (3-layer adversarial): 3 patches applied — (1) removed shared-tx mass-resend risk via non-transactional flush + `REQUIRES_NEW` `QnaNotificationStateWriter`; (2) V117 timestamps → `TIMESTAMPTZ` to match Q&A posts; (3) `qna.*` config block added to `application.yml`. Integration test made non-transactional (commits setup, `deleteAllInBatch` cleanup) to exercise the `REQUIRES_NEW` path. 1 deferred (microsecond-tie water mark). Full EMS suite green. Story → done. |

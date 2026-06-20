@@ -19,6 +19,7 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.core.SimpleLock;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -55,8 +55,12 @@ import static org.mockito.Mockito.when;
  * substituted into the body), but the actual SES send is the test-profile no-op; we verify the
  * send call + capture its arguments. {@link UserApiClient} is a {@code @MockitoBean} stubbed
  * per-recipient (cadence preference, email, locale).
+ *
+ * <p><b>Not {@code @Transactional}.</b> The service under test is intentionally non-transactional
+ * and persists each recipient's throttle row via a {@code REQUIRES_NEW} writer — so setup data must
+ * be committed (a rolled-back test tx would be invisible to the flush's own read transactions and
+ * its FK target would not exist). Cleanup is explicit in {@code @BeforeEach}/{@code @AfterEach}.
  */
-@Transactional
 class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -95,13 +99,10 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // Committed cleanup (this test class is not @Transactional — see class javadoc).
+        cleanDb();
+
         when(lockProvider.lock(any())).thenReturn(Optional.of(mock(SimpleLock.class)));
-        notificationRepository.deleteAll();
-        postRepository.deleteAll();
-        windowRepository.deleteAll();
-        sessionUserRepository.deleteAll();
-        sessionRepository.deleteAll();
-        eventRepository.deleteAll();
 
         // Default stubs (lenient — not every test reads every recipient).
         lenient().when(userApiClient.getQnaNotificationFrequency(anyString())).thenReturn("live");
@@ -110,6 +111,25 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         lenient().when(userApiClient.getEmailByUsername(CO_SPEAKER)).thenReturn("co.speaker@batbern.ch");
         lenient().when(userApiClient.getEmailByUsername(MODERATOR)).thenReturn("the.moderator@batbern.ch");
         lenient().when(userApiClient.getEmailByUsername(PANELIST)).thenReturn("the.panelist@batbern.ch");
+    }
+
+    @AfterEach
+    void tearDown() {
+        // The REQUIRES_NEW writer commits notification rows that would otherwise leak to other
+        // tests / test classes (this class is not @Transactional). Clean them up.
+        cleanDb();
+    }
+
+    private void cleanDb() {
+        // deleteAllInBatch (bulk DELETE) — not deleteAll() — to avoid StaleObjectStateException
+        // from per-entity removal of rows that this non-transactional class committed in a prior
+        // test. FK-safe child→parent order.
+        notificationRepository.deleteAllInBatch();
+        postRepository.deleteAllInBatch();
+        sessionUserRepository.deleteAllInBatch();
+        windowRepository.deleteAllInBatch();
+        sessionRepository.deleteAllInBatch();
+        eventRepository.deleteAllInBatch();
     }
 
     // ==================== AC4: speaker + co-speaker + moderator all notified ====================

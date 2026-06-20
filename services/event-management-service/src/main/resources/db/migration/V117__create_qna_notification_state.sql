@@ -11,13 +11,16 @@
 -- Additive, prod-safe (staging IS production). window_id is a same-service UUID FK (ADR-003 OK);
 -- recipient_username is a cross-service meaningful id (ADR-003 — NO FK, NO UUID).
 
+-- All timestamps are TIMESTAMPTZ to match session_qna_post.created_at (V112) and the JPA Instant
+-- mapping. A without-tz column would shift the water mark by the server's tz offset and break the
+-- `created_at > notified_through` comparison.
 CREATE TABLE session_qna_notification (
-    window_id          UUID        NOT NULL,
+    window_id          UUID         NOT NULL,
     recipient_username VARCHAR(100) NOT NULL,
-    last_notified_at   TIMESTAMP,
-    notified_through   TIMESTAMP,
-    created_at         TIMESTAMP   NOT NULL DEFAULT now(),
-    updated_at         TIMESTAMP   NOT NULL DEFAULT now(),
+    last_notified_at   TIMESTAMPTZ,
+    notified_through   TIMESTAMPTZ,
+    created_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT pk_session_qna_notification PRIMARY KEY (window_id, recipient_username),
     CONSTRAINT fk_session_qna_notification_window
         FOREIGN KEY (window_id) REFERENCES session_qna_window (id) ON DELETE CASCADE
