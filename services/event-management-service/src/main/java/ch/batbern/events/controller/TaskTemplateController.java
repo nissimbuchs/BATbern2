@@ -4,6 +4,7 @@ import ch.batbern.events.domain.TaskTemplate;
 import ch.batbern.events.dto.CreateTaskTemplateRequest;
 import ch.batbern.events.dto.TaskTemplateResponse;
 import ch.batbern.events.dto.UpdateTaskTemplateRequest;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.TaskTemplateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,6 +44,7 @@ import java.util.stream.Collectors;
 public class TaskTemplateController {
 
     private final TaskTemplateService taskTemplateService;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * List all task templates (default + custom).
@@ -155,10 +155,13 @@ public class TaskTemplateController {
     // === Helper Methods ===
 
     /**
-     * Get current authenticated username from security context.
+     * Current authenticated CANONICAL username (ADR-003), or {@code "system"} when
+     * unauthenticated. Uses {@link SecurityContextHelper#getCurrentUsernameOrNull()}
+     * (custom:username claim + Pattern 3b twin DB fallback) instead of
+     * {@code authentication.getName()}, which returns the Cognito {@code sub} (a UUID).
      */
     private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null ? authentication.getName() : "system";
+        String username = securityContextHelper.getCurrentUsernameOrNull();
+        return username != null ? username : "system";
     }
 }

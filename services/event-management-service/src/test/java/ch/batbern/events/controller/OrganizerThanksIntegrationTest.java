@@ -20,6 +20,7 @@ import java.time.temporal.ChronoUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -169,6 +170,34 @@ class OrganizerThanksIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"note\": \"" + longNote + "\" }"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // ============ Bug fix: capture canonical username, NOT the Cognito sub ============
+
+    @Test
+    @DisplayName("Logged-in submit stores the canonical username (custom:username), not the Cognito sub")
+    void should_storeCanonicalUsername_when_jwtPrincipalNameIsCognitoSub() throws Exception {
+        Event event = saveEvent("BATbern946", EventWorkflowState.EVENT_COMPLETED);
+        // Reproduces the prod incident: the JWT principal name is the Cognito sub (a UUID), but
+        // the meaningful identity lives in the custom:username claim. authentication.getName()
+        // returned the sub and stored it as thanked_by_username, which then failed name enrichment.
+        String cognitoSub = "c334a852-10c1-70d2-f403-136e0a60acf7";
+        String canonicalUsername = "nissim.buchs";
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/thanks", "BATbern946")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"note\": \"Super Event!\" }")
+                        .with(jwt().jwt(j -> j.subject(cognitoSub)
+                                .claim("custom:username", canonicalUsername))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count", is(1)));
+
+        assertThat(thanksRepository.findByEventIdAndThankedByUsername(event.getId(), canonicalUsername))
+                .as("thank-you must be stored against the canonical username")
+                .isPresent();
+        assertThat(thanksRepository.findByEventIdAndThankedByUsername(event.getId(), cognitoSub))
+                .as("thank-you must NOT be stored against the raw Cognito sub")
+                .isEmpty();
     }
 
     // ==================== AC6: count public, notes organizer-only ====================

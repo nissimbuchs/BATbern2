@@ -54,7 +54,12 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
-import { getHomepagePhase, getSectionVisibility, showSessionQna } from './homePagePhase';
+import {
+  getHomepagePhase,
+  getSectionVisibility,
+  isRegistrationClosed,
+  showSessionQna,
+} from './homePagePhase';
 
 const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
@@ -185,6 +190,11 @@ const HomePage = () => {
   const vis = getSectionVisibility(phase);
   const qnaVisible = showSessionQna(phase, event);
 
+  // Feedback #1: registration + waitlist close on the deadline. Hide the register CTA once the
+  // deadline passes even if the phase would otherwise allow it (backend enforces with 409).
+  const registrationClosed = isRegistrationClosed(event);
+  const showRegisterCta = vis.registrationEnabled && !registrationClosed;
+
   // Story 7.4: surface the "Thank the organizers" nav button only on a live/completed event.
   const thankableEventCode =
     event.eventCode &&
@@ -236,11 +246,24 @@ const HomePage = () => {
         location={eventLocation}
         ctaLink={registerLink}
         eventCode={event.eventCode}
-        hideRegisterCta={!vis.registrationEnabled}
+        hideRegisterCta={!showRegisterCta}
         themeImageUrl={event.themeImageUrl || undefined}
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
         spotsRemaining={event.spotsRemaining}
       />
+
+      {/* Feedback #1: registration deadline passed — the CTA is hidden; tell the visitor why. Only
+          when the phase would otherwise offer registration (not COMING_SOON / POST_EVENT / ARCHIVE). */}
+      {registrationClosed && vis.registrationEnabled && (
+        <div className="container mx-auto px-4 mt-6">
+          <div
+            className="max-w-md mx-auto rounded-md border border-border bg-muted px-4 py-3 text-center text-sm text-muted-foreground"
+            data-testid="registration-closed-banner"
+          >
+            {t('public.registrationClosed')}
+          </div>
+        </div>
+      )}
 
       {/* Story 7.2: self-nominate on the current event (topic set + published + upcoming).
           The panel renders nothing for anonymous visitors, so this stays invisible until login. */}

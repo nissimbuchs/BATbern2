@@ -129,10 +129,10 @@ const AboutPage = () => {
               <p className="text-zinc-300 leading-relaxed">{t('contact.description')}</p>
               <div className="pt-4">
                 <a
-                  href="mailto:info@berner-architekten-treffen.ch"
+                  href="mailto:info@batbern.ch"
                   className="text-blue-400 hover:text-blue-300 transition-colors text-lg"
                 >
-                  info@berner-architekten-treffen.ch
+                  info@batbern.ch
                 </a>
               </div>
             </CardContent>

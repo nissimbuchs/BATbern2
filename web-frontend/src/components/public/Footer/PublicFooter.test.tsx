@@ -30,9 +30,9 @@ describe('PublicFooter', () => {
   it('should render contact email link', () => {
     renderFooter();
 
-    const emailLink = screen.getByText('info@berner-architekten-treffen.ch');
+    const emailLink = screen.getByText('info@batbern.ch');
     expect(emailLink).toBeInTheDocument();
-    expect(emailLink).toHaveAttribute('href', 'mailto:info@berner-architekten-treffen.ch');
+    expect(emailLink).toHaveAttribute('href', 'mailto:info@batbern.ch');
   });
 
   it('should render quick links section', () => {

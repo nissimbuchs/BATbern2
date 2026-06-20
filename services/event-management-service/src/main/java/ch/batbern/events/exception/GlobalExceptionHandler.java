@@ -1096,6 +1096,38 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle RegistrationClosedException (feedback #1): a public self-registration or waitlist
+     * join was attempted after the registration deadline. Returns HTTP 409 Conflict with
+     * {@code details.code = "REGISTRATION_CLOSED"} and {@code details.deadline} so the public page
+     * can show a "registration closed on {date}" state.
+     */
+    @ExceptionHandler(RegistrationClosedException.class)
+    public ResponseEntity<ErrorResponse> handleRegistrationClosedException(
+            RegistrationClosedException ex,
+            HttpServletRequest request) {
+        log.info("Registration closed: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "REGISTRATION_CLOSED");
+        if (ex.getDeadline() != null) {
+            details.put("deadline", ex.getDeadline().toString());
+        }
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle ThanksNotAllowedException (Story 7.4): a thank-you was submitted for an event that
      * is not yet live/completed. Returns HTTP 409 Conflict with
      * {@code details.code = THANKS_NOT_ALLOWED}; no row is created (AC7).

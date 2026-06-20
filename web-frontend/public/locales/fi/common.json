@@ -46,7 +46,8 @@
       "errors": {
         "alreadyRegistered": "Olet jo ilmoittautunut tähän tapahtumaan."
       }
-    }
+    },
+    "registrationClosed": "Ilmoittautuminen tähän tapahtumaan on suljettu."
   },
   "attendee": {
     "welcome": {

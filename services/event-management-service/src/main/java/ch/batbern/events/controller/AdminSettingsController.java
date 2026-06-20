@@ -1,10 +1,10 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.AdminSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,6 +21,7 @@ import java.util.Map;
 public class AdminSettingsController {
 
     private final AdminSettingsService adminSettingsService;
+    private final SecurityContextHelper securityContextHelper;
 
     @GetMapping("/{key}")
     // No @PreAuthorize: GET is open for VPC-internal callers (Lambda forwarder, Story 10.26).
@@ -34,10 +35,10 @@ public class AdminSettingsController {
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Map<String, String>> setSetting(
             @PathVariable String key,
-            @RequestBody Map<String, String> body,
-            Authentication authentication) {
+            @RequestBody Map<String, String> body) {
         String value = body.get("value");
-        String updatedBy = authentication != null ? authentication.getName() : "system";
+        String resolved = securityContextHelper.getCurrentUsernameOrNull();
+        String updatedBy = resolved != null ? resolved : "system";
         adminSettingsService.setSetting(key, value, updatedBy);
         return ResponseEntity.ok(buildResponse(key, value));
     }

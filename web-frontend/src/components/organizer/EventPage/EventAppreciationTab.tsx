@@ -20,6 +20,7 @@ import {
 import { Favorite as FavoriteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEventThanks, useSetThanksFeatured } from '@/hooks/useThanks/useThanks';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 
 interface EventAppreciationTabProps {
   eventCode: string;
@@ -44,14 +45,6 @@ export const EventAppreciationTab = ({ eventCode }: EventAppreciationTabProps) =
 
   const notes = data?.notes ?? [];
   const count = data?.count ?? 0;
-
-  const authorName = (n: (typeof notes)[number]): string => {
-    const full = [n.thankedByFirstName, n.thankedByLastName].filter(Boolean).join(' ').trim();
-    if (full) {
-      return n.thankedByCompanyName ? `${full} · ${n.thankedByCompanyName}` : full;
-    }
-    return n.thankedByUsername || t('appreciation.anonymous');
-  };
 
   return (
     <Box>
@@ -89,11 +82,20 @@ export const EventAppreciationTab = ({ eventCode }: EventAppreciationTabProps) =
                       </Typography>
                     )}
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {authorName(n)}
-                      </Typography>
-                      {anonymous && (
+                      {anonymous ? (
                         <Chip size="small" label={t('appreciation.anonymous')} variant="outlined" />
+                      ) : (
+                        <UserAvatar
+                          firstName={n.thankedByFirstName ?? undefined}
+                          lastName={n.thankedByLastName ?? undefined}
+                          name={
+                            !n.thankedByFirstName && !n.thankedByLastName
+                              ? (n.thankedByUsername ?? undefined)
+                              : undefined
+                          }
+                          company={n.thankedByCompanyName ?? undefined}
+                          size={24}
+                        />
                       )}
                       {n.featured && (
                         <Chip

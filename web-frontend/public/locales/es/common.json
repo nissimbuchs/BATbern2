@@ -46,7 +46,8 @@
       "errors": {
         "alreadyRegistered": "Ya estás inscrito en este evento."
       }
-    }
+    },
+    "registrationClosed": "La inscripción para este evento está cerrada."
   },
   "attendee": {
     "welcome": {

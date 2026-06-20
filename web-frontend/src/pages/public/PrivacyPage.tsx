@@ -271,11 +271,8 @@ const PrivacyPage = () => {
               <p className="font-medium">Verein Berner Architekten Treffen</p>
               <p className="mt-2">
                 Email:{' '}
-                <a
-                  href="mailto:info@berner-architekten-treffen.ch"
-                  className="text-blue-400 hover:text-blue-300"
-                >
-                  info@berner-architekten-treffen.ch
+                <a href="mailto:info@batbern.ch" className="text-blue-400 hover:text-blue-300">
+                  info@batbern.ch
                 </a>
               </p>
               <p className="mt-1">

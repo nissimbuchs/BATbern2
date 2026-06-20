@@ -980,7 +980,7 @@ paths:
           schema:
             type: string
             format: email
-          example: info@berner-architekten-treffen.ch
+          example: info@batbern.ch
       responses:
         '204':
           description: Additional email removed
@@ -1018,7 +1018,7 @@ paths:
           schema:
             type: string
             format: email
-          example: info@berner-architekten-treffen.ch
+          example: info@batbern.ch
       responses:
         '204':
           description: A fresh verification email was dispatched.
@@ -2180,7 +2180,7 @@ components:
         email:
           type: string
           format: email
-          example: info@berner-architekten-treffen.ch
+          example: info@batbern.ch
         label:
           type: string
           nullable: true
@@ -2211,7 +2211,7 @@ components:
           # bean validation and crashes at INSERT into VARCHAR(255) → 500.
           # Review 2026-05-22 finding P1-3.
           maxLength: 254
-          example: info@berner-architekten-treffen.ch
+          example: info@batbern.ch
         label:
           type: string
           nullable: true
@@ -2232,7 +2232,7 @@ components:
           description: |
             Masked form of the additional email (e.g. `in***@example.com`). The
             full address is never returned on the public verify path.
-          example: in***@berner-architekten-treffen.ch
+          example: in***@batbern.ch
         verified:
           type: boolean
           description: True if the row's verified_at is already set.
@@ -2259,7 +2259,7 @@ components:
         email:
           type: string
           description: Masked form of the additional email.
-          example: in***@berner-architekten-treffen.ch
+          example: in***@batbern.ch
         verified:
           type: boolean
           description: Always true after a successful confirm.

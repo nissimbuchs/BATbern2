@@ -596,5 +596,5 @@ Copyright © 2025 Berner Architekten Treffen (BATbern). All rights reserved.
 ## Support
 
 - **Technical Issues:** GitHub Issues
-- **Security Issues:** security@berner-architekten-treffen.ch
-- **General Inquiries:** info@berner-architekten-treffen.ch
+- **Security Issues:** security@batbern.ch
+- **General Inquiries:** info@batbern.ch

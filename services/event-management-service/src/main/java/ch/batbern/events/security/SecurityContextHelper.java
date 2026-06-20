@@ -3,6 +3,7 @@ package ch.batbern.events.security;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -118,6 +119,26 @@ public class SecurityContextHelper {
             log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
             throw new SecurityException("Unsupported authentication principal type");
         }
+    }
+
+    /**
+     * Anonymous-safe variant of {@link #getCurrentUsername()} for PUBLIC endpoints where
+     * authentication is OPTIONAL (e.g. "Thank the Organizers", photo upload attribution).
+     *
+     * <p>Returns the canonical username (resolving the {@code custom:username} claim and the
+     * Pattern 3b twin DB fallback) for an authenticated caller, or {@code null} for an
+     * unauthenticated / anonymous one — never throws. Use this instead of
+     * {@code authentication.getName()}, which returns the Cognito {@code sub} (a UUID), not the
+     * meaningful username (ADR-003).
+     */
+    public String getCurrentUsernameOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return getCurrentUsername();
     }
 
     /**

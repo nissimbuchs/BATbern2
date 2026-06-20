@@ -47,7 +47,8 @@
       "errors": {
         "alreadyRegistered": "You are already registered for this event."
       }
-    }
+    },
+    "registrationClosed": "Registration is closed for this event."
   },
   "attendee": {
     "welcome": {

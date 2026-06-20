@@ -185,7 +185,7 @@ export class CompanyManagementStack extends cdk.Stack {
     // addresses. Mirrors the partner-coordination-stack SES grant (same
     // isProdTraffic domain selection + scoped identity ARNs).
     const isProdTraffic = props.config.isProduction ?? (envName === 'production');
-    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'berner-architekten-treffen.ch';
+    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'batbern.ch';
     this.service.taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,

@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) NOT NULL UNIQUE,
     company_id VARCHAR(12),
+    -- Cognito subject (UUID). In prod this is set by CUMS; used by
+    -- SecurityContextHelper's Pattern-3b twin lookup and by V116's thank-you
+    -- username repair (UPDATE organizer_thanks ... FROM user_profiles ON cognito_user_id).
+    cognito_user_id VARCHAR(255),
     -- Columns required by SessionUserRepository.findUserPortraitsByUsernames:
     first_name VARCHAR(100) DEFAULT '',
     last_name VARCHAR(100) DEFAULT '',

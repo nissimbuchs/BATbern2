@@ -22,10 +22,13 @@ import type { SessionSpeaker } from '@/types/event.types';
 
 /**
  * Map a Q&A post's enriched poster fields onto the {@link SessionSpeaker} shape so the same
- * portrait + name + company-logo component used on the public speaker cards renders the author.
- * The portrait image is omitted on purpose — SpeakerDisplay lazy-loads it from the public-user
- * endpoint (usePublicUser) by username. Name + company come from the server-side read enrichment,
- * exactly as the speaker cards source them. Falls back to the username when the name is unknown.
+ * name + company-logo component used on the public speaker cards renders the author. Name + company
+ * come from the server-side read enrichment, exactly as the speaker cards source them. Falls back
+ * to the username when the name is unknown.
+ *
+ * Q&A authors are usually attendees, and the public-user portrait endpoint is SPEAKER-scoped (it
+ * 404s for everyone else), so SpeakerDisplay is rendered with {@code lazyLoadPortrait={false}} —
+ * the author shows an initials avatar and no pointless 404 fires (feedback #16).
  */
 function postToSpeaker(post: QnaPostResponse): SessionSpeaker {
   const firstName = post.postedByFirstName?.trim() || post.postedByUsername || '';
@@ -105,7 +108,7 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
         className={`rounded bg-zinc-800/40 p-3 ${isAnswer ? 'ml-6 mt-2' : ''}`}
         data-testid="qna-post"
       >
-        <SpeakerDisplay speaker={postToSpeaker(post)} size="small" />
+        <SpeakerDisplay speaker={postToSpeaker(post)} size="small" lazyLoadPortrait={false} />
         <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-200">{post.body}</p>
         {isOrganizer && (
           <button

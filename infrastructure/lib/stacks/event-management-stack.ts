@@ -68,9 +68,9 @@ export class EventManagementStack extends cdk.Stack {
     const envName = props.config.envName;
     const serviceName = 'event-management';
 
-    // Use batbern.ch when serving production traffic, berner-architekten-treffen.ch otherwise.
+    // Use batbern.ch when serving production traffic, batbern.ch otherwise (old domain retired).
     const isProdTraffic = props.config.isProduction ?? (envName === 'production');
-    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'berner-architekten-treffen.ch';
+    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'batbern.ch';
 
     // AI / OpenAI secret (Story 10.16): look up from Secrets Manager when AI is enabled
     let openAiSecret: secretsmanager.ISecret | undefined;

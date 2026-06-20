@@ -4,6 +4,7 @@ import ch.batbern.events.dto.EventPhotoConfirmRequestDto;
 import ch.batbern.events.dto.EventPhotoResponseDto;
 import ch.batbern.events.dto.EventPhotoUploadRequestDto;
 import ch.batbern.events.dto.EventPhotoUploadResponseDto;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventPhotoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,7 @@ import java.util.UUID;
 public class EventPhotoController {
 
     private final EventPhotoService photoService;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * Public: recent photos from last N events (homepage marquee).
@@ -74,7 +76,7 @@ public class EventPhotoController {
             @PathVariable String eventCode,
             @Valid @RequestBody EventPhotoUploadRequestDto request,
             Authentication authentication) {
-        String username = authentication != null ? authentication.getName() : "system";
+        String username = resolveUsername();
         return ResponseEntity.ok(photoService.requestUploadUrl(eventCode, request, username));
     }
 
@@ -88,7 +90,7 @@ public class EventPhotoController {
             @PathVariable String eventCode,
             @Valid @RequestBody EventPhotoConfirmRequestDto request,
             Authentication authentication) {
-        String username = authentication != null ? authentication.getName() : "system";
+        String username = resolveUsername();
         return ResponseEntity.ok(photoService.confirmUpload(eventCode, request, username));
     }
 
@@ -103,5 +105,16 @@ public class EventPhotoController {
             @PathVariable UUID photoId) {
         photoService.deletePhoto(eventCode, photoId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * The uploader's CANONICAL username (ADR-003), or {@code "system"} when unauthenticated.
+     * Uses {@link SecurityContextHelper#getCurrentUsernameOrNull()} (custom:username claim +
+     * Pattern 3b twin DB fallback) rather than {@code authentication.getName()}, which returns
+     * the Cognito {@code sub} (a UUID) and would mis-attribute uploaded photos.
+     */
+    private String resolveUsername() {
+        String username = securityContextHelper.getCurrentUsernameOrNull();
+        return username != null ? username : "system";
     }
 }

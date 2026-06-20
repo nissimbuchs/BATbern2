@@ -1043,7 +1043,7 @@ export interface components {
     AdditionalEmail: {
       /**
        * Format: email
-       * @example info@berner-architekten-treffen.ch
+       * @example info@batbern.ch
        */
       email: string;
       /**
@@ -1066,7 +1066,7 @@ export interface components {
     AddAdditionalEmailRequest: {
       /**
        * Format: email
-       * @example info@berner-architekten-treffen.ch
+       * @example info@batbern.ch
        */
       email: string;
       /** @example Hostpoint shared */
@@ -1080,7 +1080,7 @@ export interface components {
       /**
        * @description Masked form of the additional email (e.g. `in***@example.com`). The
        *     full address is never returned on the public verify path.
-       * @example in***@berner-architekten-treffen.ch
+       * @example in***@batbern.ch
        */
       email: string;
       /**
@@ -1097,7 +1097,7 @@ export interface components {
     AdditionalEmailVerificationConfirmResponse: {
       /**
        * @description Masked form of the additional email.
-       * @example in***@berner-architekten-treffen.ch
+       * @example in***@batbern.ch
        */
       email: string;
       /**
@@ -2237,7 +2237,7 @@ export interface operations {
         /**
          * @description URL-encoded email address. Case-insensitive match against the caller's
          *     additional emails.
-         * @example info@berner-architekten-treffen.ch
+         * @example info@batbern.ch
          */
         email: string;
       };
@@ -2273,7 +2273,7 @@ export interface operations {
         /**
          * @description URL-encoded email address. Case-insensitive match against the caller's
          *     additional emails.
-         * @example info@berner-architekten-treffen.ch
+         * @example info@batbern.ch
          */
         email: string;
       };

@@ -16,6 +16,13 @@ interface SpeakerDisplayProps {
   size?: 'small' | 'medium' | 'large';
   showProfilePicture?: boolean;
   className?: string;
+  /**
+   * Lazy-fetch the portrait from the public-user endpoint when no URL was supplied. Default true.
+   * Set false for non-speaker subjects (e.g. Q&A authors, who are attendees): the public-user
+   * endpoint is SPEAKER-scoped and 404s for them, so the fetch is pointless noise — they render
+   * with an initials avatar instead (feedback #16).
+   */
+  lazyLoadPortrait?: boolean;
 }
 
 /**
@@ -34,15 +41,17 @@ export const SpeakerDisplay = ({
   size = 'medium',
   showProfilePicture = true,
   className = '',
+  lazyLoadPortrait = true,
 }: SpeakerDisplayProps) => {
   // Trigger lazy portrait fetch once the component enters (or nears) the viewport.
   // rootMargin '300px' pre-loads portraits just before they scroll into view.
   const { ref, inView } = useInView({ triggerOnce: true, rootMargin: '300px' });
 
-  // Only lazy-fetch when the server didn't already supply the URL (archive list path).
+  // Only lazy-fetch when the server didn't already supply the URL (archive list path) AND the
+  // subject is a speaker (lazyLoadPortrait): the public-user endpoint is speaker-scoped (#16).
   const { data: lazyPortraitUrl } = useUserPortrait(
     speaker.username,
-    showProfilePicture && inView && !speaker.profilePictureUrl
+    showProfilePicture && inView && !speaker.profilePictureUrl && lazyLoadPortrait
   );
 
   const effectivePortraitUrl = speaker.profilePictureUrl ?? lazyPortraitUrl ?? null;

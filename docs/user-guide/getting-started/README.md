@@ -127,4 +127,4 @@ Organizations that collaborate with BATbern:
 
 - 📚 Search this documentation (search box in sidebar)
 - 🐛 Report issues: [GitHub Issues](https://github.com/nissimbuchs/BATbern2/issues)
-- 📧 Contact support: info@berner-architekten-treffen.ch
+- 📧 Contact support: info@batbern.ch

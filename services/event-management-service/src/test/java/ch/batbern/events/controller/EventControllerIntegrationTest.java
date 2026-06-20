@@ -1190,7 +1190,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_createRegistration_when_validData")
     void should_createRegistration_when_validData() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        // Feedback #1: register against a FUTURE-dated event so the registration-deadline guard
+        // allows it (the shared @BeforeEach events are intentionally past-dated for list/filter tests).
+        Event savedEvent = createTestEvent("BATbern RegCreate", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
 
         String newRegistration = """
                 {
@@ -1234,7 +1236,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_returnAnalytics_when_metricsRequested")
     void should_returnAnalytics_when_metricsRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        // Feedback #1: future-dated event so the registrations below pass the deadline guard.
+        Event savedEvent = createTestEvent("BATbern RegAnalytics", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
 
         // Create some test data for analytics
         // Add registrations (Story 2.2a format)
@@ -1280,7 +1283,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_filterByTimeframe_when_timeframeProvided")
     void should_filterByTimeframe_when_timeframeProvided() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        // Feedback #1: future-dated event so the registrations below pass the deadline guard.
+        Event savedEvent = createTestEvent("BATbern RegTimeframe", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
 
         // Create registrations with different dates (Story 2.2a format)
         String earlyRegistration = """
@@ -1536,7 +1540,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_respondUnder500ms_when_fullIncludesRequested")
     void should_respondUnder500ms_when_fullIncludesRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        // Feedback #1: future-dated event so the 20 registrations below pass the deadline guard.
+        Event savedEvent = createTestEvent("BATbern RegPerf", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
 
         // Create test data for performance test
         // Add multiple sessions and registrations
@@ -1546,8 +1551,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     {
                         "title": "Session %d",
                         "description": "Performance test session %d",
-                        "startTime": "2025-05-15T%02d:00:00Z",
-                        "endTime": "2025-05-15T%02d:00:00Z",
+                        "startTime": "2027-06-15T%02d:00:00Z",
+                        "endTime": "2027-06-15T%02d:00:00Z",
                         "sessionType": "workshop"
                     }
                     """.formatted(i, i, hour, hour + 1);
