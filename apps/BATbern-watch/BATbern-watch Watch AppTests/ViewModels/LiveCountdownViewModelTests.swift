@@ -870,6 +870,50 @@ struct LiveCountdownViewModelTests {
         }
     }
 
+    @Test("complicationContext is .noEvent when the next event is beyond the 2-week lead window")
+    func complicationContext_farBeyondLeadWindow_noEvent() {
+        let (vm, clock, _, state) = makeVM()
+        // Next session 20 days out — past the 14-day lead window. Nothing should show until it
+        // draws within ~2 weeks (feedback 2026-06-20: no countdown to the far-future edition).
+        let distant = makeSession(
+            slug: "november-talk",
+            title: "November Edition",
+            start: clock.now.addingTimeInterval(20 * 24 * 3600),
+            end: clock.now.addingTimeInterval(20 * 24 * 3600 + 2700)
+        )
+        state.currentEvent = makeEvent(sessions: [distant])
+
+        vm.refreshState()
+
+        #expect(vm.complicationContext == .noEvent)
+    }
+
+    @Test("complicationContext does NOT show overtime for a long-completed (afterglow) event")
+    func complicationContext_afterglowEvent_noHugeOvertime() {
+        let (vm, clock, _, state) = makeVM()
+        // A completed event still returned as `current` during its afterglow window: its last
+        // session ended ~10 days ago. It must NOT be treated as a running/overtime session —
+        // that previously produced the huge overtime count-up on the complication.
+        let oldSession = makeSession(
+            start: clock.now.addingTimeInterval(-10 * 24 * 3600 - 2700),
+            end: clock.now.addingTimeInterval(-10 * 24 * 3600)
+        )
+        state.currentEvent = makeEvent(sessions: [oldSession])
+
+        vm.refreshState()
+
+        if case .sessionRunning = vm.complicationContext {
+            Issue.record("Afterglow event must not be .sessionRunning, got: \(vm.complicationContext)")
+        }
+        // Renders as the neutral fallback (no countdown number).
+        switch vm.complicationContext {
+        case .eventComplete, .noEvent:
+            break
+        default:
+            Issue.record("Expected .eventComplete/.noEvent for afterglow, got: \(vm.complicationContext)")
+        }
+    }
+
     @Test("reloadTimeline fires on context change but not on repeated identical context")
     func complicationReload_onlyOnContextChange() {
         let (vm, clock, _, state) = makeVM()

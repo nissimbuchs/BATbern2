@@ -31,6 +31,7 @@
 | 15 | Show "BATbern <n>" above title everywhere | enh | Frontend | S | low |
 | 16 | Q&A author portrait fetch 404s for attendees (public endpoint is speaker-scoped) | bug | Frontend | S | low |
 | 17 | Featured thank-you note missing from partner marquee | bug | (data) | XS | low |
+| 18 | Watch complication shows huge/wrong countdown (afterglow + far-future) | bug | Watch | S | low |
 
 ---
 
@@ -280,7 +281,7 @@
 
 > **Status: ✅ Implemented** (scope expanded by Nissim from "footer" to "retire the old domain everywhere").
 > **Swapped** (live/functional): `PublicFooter`, `AboutPage`, `PrivacyPage`, `SupportPage` (+ tests); SES sender in `cognito-stack` + `event/company/partner-management-stack` from-domain (now `batbern.ch`); `users-api.openapi.yml` examples + committed `user-api.types.ts`; `User.java` doc + `UserAdditionalEmailsIntegrationTest` + `RegistrationEmailServiceTest` sample data; `api-gateway` test config; current docs (`README`, `shared-kernel/README`, `docs/user-guide/**`).
-> **⚠️ SES sender deviation:** Nissim asked for `no-reply@batbern.ch`; I used **`noreply@batbern.ch`** to match the already-verified prod sender (a wrong/unverified sender bounces ALL mail). Confirm before merge — and confirm `batbern.ch` is a verified SES **domain** identity so the non-prod from-domain also sends. Needs a **CDK deploy** (infra change, not frontend-only).
+> **✅ SES sender confirmed** (Nissim 2026-06-20): `noreply@batbern.ch` is correct (verified prod sender). Still needs a **CDK deploy** to take effect (infra change, not frontend-only).
 > **Intentionally preserved** (history, not rewritten): `_bmad-output/*` incident artifacts, `docs/plans/user-identity-collision-fix-plan.md`, the 2026-05-20 `email-forwarder.test.ts` regression literal + `sender-auth.ts` comment, decommissioned `apps/BATspa-old/*`, archived wireframes/stories.
 > **Doc follow-up:** `docs/architecture/02,06` + `docs/guides/aws-ses-configuration.md`, `aws-setup-guide.md` still describe the old SES domain — update in a doc pass (they document historical setup steps).
 
@@ -324,7 +325,21 @@
 
 **Root cause.** Same as #12. The public marquee (`TestimonialSection` → `useFeaturedThanks` → `GET /thanks/featured` → `OrganizerThanksRepository.findFeaturedRandom`) does `INNER JOIN user_profiles up ON up.username = ot.thanked_by_username`. Nissim's featured note stored the Cognito **sub** in `thanked_by_username` (the #12 capture bug), which has no matching `user_profiles.username`, so the INNER JOIN drops it → it never reaches the marquee.
 
-**Fix.** `V116__fix_organizer_thanks_username_from_cognito_sub.sql` remaps the stored sub → canonical username; the join then matches and the note appears. The frontend marquee is already correctly wired (verified). **Takes effect once V116 runs in prod.**
+**Fix.** `V116__fix_organizer_thanks_username_from_cognito_sub.sql` remaps the stored sub → canonical username; the join then matches and the note appears. The frontend marquee is already correctly wired (verified). **Takes effect once V116 runs in prod — confirmed OK to apply by Nissim 2026-06-20.**
+
+## 18 — Watch complication shows a huge / wrong next-event countdown
+
+> **Status: ✅ Implemented** (separate App Store release train — NOT part of PR #799). Reported by Nissim 2026-06-20: the Apple Watch complication shows a strange huge number — it treated the last/just-completed event as current (negative/overtime count-up) or counted down to the far-future (November) event.
+
+**Root cause.** `LiveCountdownViewModel.computeComplicationContext` had two gaps: (1) it treated **any** session with `startTime <= now` as `.sessionRunning` — so when the backend returned a just-/long-completed event as `current` (afterglow window), `findActiveSession`'s overtime fallback returned a session that ended long ago, and the complication rendered a weeks-long overtime count-up (the "huge number"); (2) no lead window — a far-future next session surfaced as `.eventFar`/pre-session.
+
+**Fix** (`apps/BATbern-watch/.../ViewModels/LiveCountdownViewModel.swift`):
+- **Overtime grace (30 min):** `.sessionRunning` only when `now <= session.endTime + 30min`. A session that ended long ago is no longer "live" → no afterglow, no huge count-up.
+- **Lead window (14 days):** the upcoming-event countdown shows only when the next session is within 2 weeks; beyond that → `.noEvent` (nothing). No afterglow once the event is over (no upcoming → `.eventComplete`, which renders as the neutral fallback).
+- Snapshot `isLive` + session timing now derive from the computed context, so the extension can't build a live timeline off a stale past `endTime`.
+- Tests: kept `overtime`/`eventComplete`/`eventFar` green; added `farBeyondLeadWindow_noEvent` and `afterglowEvent_noHugeOvertime` regressions.
+
+**Rule encoded:** nothing until ~1–2 weeks before the real next event; no afterglow; never a negative/huge number.
 
 ## Suggested grouping into epics
 
