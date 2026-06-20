@@ -1134,6 +1134,15 @@ export interface components {
        * @enum {string}
        */
       notificationFrequency: 'immediate' | 'daily_digest' | 'weekly_digest';
+      /**
+       * @description How often this user is emailed about new questions in the Q&A of sessions
+       *     where they are speaker / co-speaker / moderator (Story 15.7).
+       *     `live` = bundled digest during the session (~15 min window),
+       *     `daily` = at most once per 24h, `off` = never. Defaults to `live`.
+       * @default live
+       * @enum {string}
+       */
+      qnaNotificationFrequency: 'live' | 'daily' | 'off';
       /** @example 22:00 */
       quietHoursStart?: string;
       /** @example 07:00 */

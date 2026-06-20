@@ -229,6 +229,94 @@ class UserPreferencesControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.notificationFrequency").value("weekly_digest"));
     }
 
+    // Story 15.7 AC1: qnaNotificationFrequency preference (live | daily | off, default live)
+
+    @Test
+    @WithMockUser(username = "anna.mueller")
+    @DisplayName("should_returnQnaNotificationFrequency_when_present")
+    void should_returnQnaNotificationFrequency_when_present() throws Exception {
+        testUser.getPreferences().setQnaNotificationFrequency("daily");
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/v1/users/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("daily"));
+    }
+
+    @Test
+    @WithMockUser(username = "anna.mueller")
+    @DisplayName("should_defaultQnaNotificationFrequencyToLive_when_preferencesNull")
+    void should_defaultQnaNotificationFrequencyToLive_when_preferencesNull() throws Exception {
+        testUser.setPreferences(null);
+        userRepository.save(testUser);
+
+        mockMvc.perform(get("/api/v1/users/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("live"));
+    }
+
+    @Test
+    @WithMockUser(username = "anna.mueller")
+    @DisplayName("should_updateQnaNotificationFrequency_when_validValueProvided")
+    void should_updateQnaNotificationFrequency_when_validValueProvided() throws Exception {
+        String requestBody = """
+                {
+                    "theme": "light",
+                    "language": "de",
+                    "emailNotifications": true,
+                    "inAppNotifications": true,
+                    "pushNotifications": false,
+                    "notificationFrequency": "immediate",
+                    "qnaNotificationFrequency": "off",
+                    "quietHoursStart": "22:00",
+                    "quietHoursEnd": "07:00"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("off"));
+
+        // Persisted across a fresh fetch
+        mockMvc.perform(get("/api/v1/users/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("off"));
+    }
+
+    @Test
+    @WithMockUser(username = "anna.mueller")
+    @DisplayName("should_defaultQnaNotificationFrequencyToLive_when_omittedFromFullReplaceUpdate")
+    void should_defaultQnaNotificationFrequencyToLive_when_omittedFromFullReplaceUpdate() throws Exception {
+        // PUT is full-replace (not PATCH): an omitted field deserializes to its DTO default.
+        // For qnaNotificationFrequency that default is "live" (same contract as every sibling field).
+        testUser.getPreferences().setQnaNotificationFrequency("daily");
+        userRepository.save(testUser);
+
+        String requestBodyWithoutQna = """
+                {
+                    "theme": "dark",
+                    "language": "de",
+                    "emailNotifications": true,
+                    "inAppNotifications": true,
+                    "pushNotifications": false,
+                    "notificationFrequency": "immediate",
+                    "quietHoursStart": "22:00",
+                    "quietHoursEnd": "07:00"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBodyWithoutQna))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("live"));
+    }
+
     @Test
     @DisplayName("should_return401_when_notAuthenticated")
     void should_return401_when_notAuthenticated() throws Exception {

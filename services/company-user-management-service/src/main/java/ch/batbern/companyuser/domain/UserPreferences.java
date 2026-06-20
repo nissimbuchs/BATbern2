@@ -47,6 +47,14 @@ public class UserPreferences {
     @Builder.Default
     private String notificationFrequency = "immediate";
 
+    /**
+     * Q&A notification cadence (Story 15.7): live | daily | off. Controls how often the user is
+     * emailed about new questions in sessions where they are speaker / co-speaker / moderator.
+     */
+    @Column(name = "pref_qna_notification_frequency", length = 10)
+    @Builder.Default
+    private String qnaNotificationFrequency = "live";
+
     @Column(name = "pref_quiet_hours_start")
     private LocalTime quietHoursStart;
 

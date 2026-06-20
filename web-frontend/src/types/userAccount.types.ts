@@ -56,6 +56,12 @@ export interface UserPreferences {
     push: boolean;
   };
   notificationFrequency: 'IMMEDIATE' | 'DAILY_DIGEST' | 'WEEKLY_DIGEST';
+  /**
+   * Story 15.7 — how often the user is emailed about new questions in the Q&A of sessions where
+   * they are speaker / co-speaker / moderator. LIVE = bundled digest during the session,
+   * DAILY = at most once per 24h, OFF = never.
+   */
+  qnaNotificationFrequency: 'LIVE' | 'DAILY' | 'OFF';
 }
 
 export interface UserSettings {

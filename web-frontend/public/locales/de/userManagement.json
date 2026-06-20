@@ -249,6 +249,11 @@
       "frequencyImmediate": "Sofort",
       "frequencyDaily": "Tägliche Zusammenfassung",
       "frequencyWeekly": "Wöchentliche Zusammenfassung",
+      "qnaFrequency": "Q&A-Benachrichtigungen",
+      "qnaFrequencyHelp": "Wie oft Sie über neue Fragen in der Q&A Ihrer Sessions (als Referent:in, Co-Referent:in oder Moderator:in) per E-Mail informiert werden.",
+      "qnaFrequencyLive": "Live – gebündelt während der Session",
+      "qnaFrequencyDaily": "Höchstens einmal pro Tag",
+      "qnaFrequencyOff": "Aus – keine Benachrichtigungen",
       "save": "Benachrichtigungseinstellungen speichern"
     },
     "newsletter": {

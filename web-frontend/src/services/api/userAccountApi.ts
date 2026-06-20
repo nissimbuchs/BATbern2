@@ -62,6 +62,9 @@ export const getUserProfile = async (
             push: preferences.pushNotifications ?? false,
           },
           notificationFrequency: mapNotificationFrequency(preferences.notificationFrequency),
+          qnaNotificationFrequency: mapQnaNotificationFrequency(
+            preferences.qnaNotificationFrequency
+          ),
         }
       : undefined,
     settings: settings
@@ -94,6 +97,12 @@ const mapProfileVisibility = (visibility?: string): 'PUBLIC' | 'MEMBERS_ONLY' | 
   if (!visibility) return 'MEMBERS_ONLY';
   const mapped = visibility.toUpperCase().replace('_', '_');
   return mapped as 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
+};
+
+// Story 15.7 — Q&A notification cadence (defaults to LIVE when absent, matching the backend default)
+const mapQnaNotificationFrequency = (freq?: string): 'LIVE' | 'DAILY' | 'OFF' => {
+  if (!freq) return 'LIVE';
+  return freq.toUpperCase() as 'LIVE' | 'DAILY' | 'OFF';
 };
 
 /**
@@ -157,6 +166,7 @@ export const updateUserPreferences = async (
     inAppNotifications: preferences.notificationChannels?.inApp,
     pushNotifications: preferences.notificationChannels?.push,
     notificationFrequency: preferences.notificationFrequency?.toLowerCase().replace('_', '_'),
+    qnaNotificationFrequency: preferences.qnaNotificationFrequency?.toLowerCase(),
   };
 
   const response = await apiClient.put(`${USER_API_PATH}/me/preferences`, backendPreferences);
@@ -171,6 +181,7 @@ export const updateUserPreferences = async (
       push: response.data.pushNotifications ?? false,
     },
     notificationFrequency: mapNotificationFrequency(response.data.notificationFrequency),
+    qnaNotificationFrequency: mapQnaNotificationFrequency(response.data.qnaNotificationFrequency),
   };
 };
 

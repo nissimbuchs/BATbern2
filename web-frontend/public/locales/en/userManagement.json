@@ -223,6 +223,11 @@
       "frequencyImmediate": "Immediate",
       "frequencyDaily": "Daily Digest",
       "frequencyWeekly": "Weekly Digest",
+      "qnaFrequency": "Q&A notifications",
+      "qnaFrequencyHelp": "How often you're emailed about new questions in the Q&A of your sessions (as speaker, co-speaker, or moderator).",
+      "qnaFrequencyLive": "Live – bundled during the session",
+      "qnaFrequencyDaily": "At most once a day",
+      "qnaFrequencyOff": "Off – no notifications",
       "save": "Save Notification Settings"
     },
     "newsletter": {

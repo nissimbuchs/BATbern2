@@ -249,6 +249,11 @@
       "frequencyImmediate": "Onmiddellijk",
       "frequencyDaily": "Dagelijkse samenvatting",
       "frequencyWeekly": "Wekelijkse samenvatting",
+      "qnaFrequency": "Q&A-meldingen",
+      "qnaFrequencyHelp": "Hoe vaak je een e-mail ontvangt over nieuwe vragen in de Q&A van je sessies (als spreker, co-spreker of moderator).",
+      "qnaFrequencyLive": "Live – gebundeld tijdens de sessie",
+      "qnaFrequencyDaily": "Maximaal eenmaal per dag",
+      "qnaFrequencyOff": "Uit – geen meldingen",
       "save": "Meldingsinstellingen opslaan"
     },
     "newsletter": {

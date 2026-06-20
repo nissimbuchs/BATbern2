@@ -454,6 +454,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
       timezone: 'Europe/Zurich',
       notificationChannels: { email: true, inApp: true, push: false },
       notificationFrequency: 'IMMEDIATE' as const,
+      qnaNotificationFrequency: 'LIVE' as const,
     }
   );
   const [settingsForm, setSettingsForm] = useState(
@@ -691,6 +692,40 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
               value="WEEKLY_DIGEST"
               control={<Radio data-testid="frequency-weekly" />}
               label={t('settings.notifications.frequencyWeekly')}
+            />
+          </RadioGroup>
+
+          {/* Story 15.7 — Q&A notification cadence for speakers / co-speakers / moderators */}
+          <Typography variant="subtitle1" sx={{ mt: 2 }} gutterBottom>
+            {t('settings.notifications.qnaFrequency')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            {t('settings.notifications.qnaFrequencyHelp')}
+          </Typography>
+          <RadioGroup
+            value={preferencesForm.qnaNotificationFrequency}
+            onChange={(e) =>
+              setPreferencesForm({
+                ...preferencesForm,
+                qnaNotificationFrequency: e.target
+                  .value as UserPreferences['qnaNotificationFrequency'],
+              })
+            }
+          >
+            <FormControlLabel
+              value="LIVE"
+              control={<Radio data-testid="qna-frequency-live" />}
+              label={t('settings.notifications.qnaFrequencyLive')}
+            />
+            <FormControlLabel
+              value="DAILY"
+              control={<Radio data-testid="qna-frequency-daily" />}
+              label={t('settings.notifications.qnaFrequencyDaily')}
+            />
+            <FormControlLabel
+              value="OFF"
+              control={<Radio data-testid="qna-frequency-off" />}
+              label={t('settings.notifications.qnaFrequencyOff')}
             />
           </RadioGroup>
 

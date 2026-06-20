@@ -50,6 +50,13 @@
       "additionalEmailResendAlreadyVerified": "Die E-Mail-Adrässe isch scho bestätigt.",
       "additionalEmailResendAriaLabel": "Bestätigungs-E-Mail no einisch a {{email}} schicke",
       "additionalEmailVerifiedAriaLabel": "{{email}} isch bestätigt"
+    },
+    "notifications": {
+      "qnaFrequency": "Q&A-Mäldige",
+      "qnaFrequencyHelp": "Wie oft du es Mail überchunsch, wenn i de Q&A vo dine Sessione (als Referänt, Co-Referänt oder Moderator) neui Fräge chöme.",
+      "qnaFrequencyLive": "Live – während dr Session zämegfasst",
+      "qnaFrequencyDaily": "Höchschtens einisch pro Tag",
+      "qnaFrequencyOff": "Us – kei Mäldige"
     }
   },
   "actions": {
