@@ -25,4 +25,10 @@ public interface SessionQnaWindowRepository extends JpaRepository<SessionQnaWind
 
     /** Freeze-job scan: open windows whose close time has passed. */
     List<SessionQnaWindow> findByStatusAndClosesAtBefore(QnaWindowStatus status, Instant cutoff);
+
+    /**
+     * Story 15.7 — the Q&A notification flush scans only OPEN windows (freeze-wins: a FROZEN
+     * window never generates a digest). OPEN windows are bounded by active/recent events.
+     */
+    List<SessionQnaWindow> findByStatus(QnaWindowStatus status);
 }

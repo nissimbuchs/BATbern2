@@ -249,6 +249,11 @@
       "frequencyImmediate": "Immediato",
       "frequencyDaily": "Riepilogo giornaliero",
       "frequencyWeekly": "Riepilogo settimanale",
+      "qnaFrequency": "Notifiche Q&A",
+      "qnaFrequencyHelp": "Con quale frequenza ricevi un'e-mail sulle nuove domande nelle Q&A delle tue sessioni (come relatore, co-relatore o moderatore).",
+      "qnaFrequencyLive": "Live – raggruppate durante la sessione",
+      "qnaFrequencyDaily": "Al massimo una volta al giorno",
+      "qnaFrequencyOff": "Disattivato – nessuna notifica",
       "save": "Salva impostazioni notifiche"
     },
     "newsletter": {

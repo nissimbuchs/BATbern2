@@ -249,6 +249,11 @@
       "frequencyImmediate": "即時",
       "frequencyDaily": "日次ダイジェスト",
       "frequencyWeekly": "週次ダイジェスト",
+      "qnaFrequency": "Q&A通知",
+      "qnaFrequencyHelp": "登壇者・共同登壇者・モデレーターを務めるセッションのQ&Aに新しい質問が投稿された際のメール通知の頻度。",
+      "qnaFrequencyLive": "ライブ — セッション中にまとめて通知",
+      "qnaFrequencyDaily": "1日に最大1回",
+      "qnaFrequencyOff": "オフ — 通知しない",
       "save": "通知設定を保存"
     },
     "newsletter": {

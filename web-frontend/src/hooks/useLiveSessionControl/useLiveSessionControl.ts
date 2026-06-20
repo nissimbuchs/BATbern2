@@ -1,52 +1,34 @@
 /**
  * useLiveSessionControl Hook
  *
- * Real-time session control for live events via WebSocket STOMP.
+ * Real-time session control for live events via REST polling (Story 15.1).
  * Mirrors the Watch app's session control functionality (W4.3) for the web.
  *
- * - Fetches initial session state via REST (GET /watch/organizers/me/active-events)
- * - Connects to event-management-service WebSocket for real-time updates
- * - Exposes extend/delay actions identical to Watch app (EXTEND_SESSION, DELAY_TO_PREVIOUS)
- * - Button visibility logic mirrors Watch: extend in last 10 min, delay in first 10 min
+ * - Polls GET /events/{eventCode}/live-timing adaptively (3–5 s while a session is
+ *   active, backing off when idle or the tab is hidden), sending If-None-Match so an
+ *   unchanged snapshot costs a 304.
+ * - Exposes extend/delay actions identical to the Watch app (EXTEND_SESSION,
+ *   DELAY_TO_PREVIOUS) via POST .../live-timing/actions.
+ * - Button visibility logic mirrors Watch: extend while active, delay in first 10 min.
  *
- * Auth: Cognito organizer JWT (different from Watch pairing JWT)
- * WebSocket: Direct connection to event-management-service (bypasses API Gateway)
+ * Auth: Cognito organizer JWT (apiClient adds it). The authenticated poll also refreshes
+ * server-side organizer presence. Replaces the previous STOMP/WebSocket implementation —
+ * no per-task in-memory state, so polls landing on different Fargate tasks are consistent.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import { fetchAuthSession } from 'aws-amplify/auth';
-import { ensureAmplifyConfigured } from '@/config/amplify';
-import apiClient from '@/services/api/apiClient';
-import { useConfig } from '@/contexts/useConfig';
+import { liveTimingService } from '@/services/liveTimingService';
 import type { components } from '@/types/generated/events-api.types';
 
 type WatchSessionDetail = components['schemas']['WatchSessionDetail'];
-type ActiveEventsResponse = components['schemas']['ActiveEventsResponse'];
+type LiveTimingActionRequest = components['schemas']['LiveTimingActionRequest'];
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline';
 
-/** Session object as it arrives in a cascade STATE_UPDATE (DELAY/EXTEND). */
-interface CascadeSession extends Partial<WatchSessionDetail> {
-  sessionSlug: string;
-  /** Replaces scheduledEndTime after an extend or delay cascade. */
-  newScheduledEndTime?: string | null;
-  /** Replaces scheduledStartTime after a delay cascade. */
-  newScheduledStartTime?: string | null;
-}
-
-interface WatchStateUpdate {
-  type: string;
-  trigger?: string;
-  sessions?: CascadeSession[];
-}
-
-interface WatchActionPayload {
-  type: 'EXTEND_SESSION' | 'DELAY_TO_PREVIOUS';
-  sessionSlug: string;
-  minutes: number;
-}
+/** Adaptive poll cadence (ms). */
+const POLL_INTERVAL_ACTIVE = 4000;
+const POLL_INTERVAL_IDLE = 15000;
+const POLL_INTERVAL_HIDDEN = 30000;
 
 export interface LiveSessionControlState {
   sessions: WatchSessionDetail[];
@@ -64,32 +46,15 @@ export interface LiveSessionControlState {
 }
 
 /**
- * Derive the WebSocket base URL from the runtime apiBaseUrl.
- * Mirrors BATbernAPIConfig.webSocketBaseURL in the Watch app.
- *
- * localhost:  port+2 to bypass API Gateway (cannot proxy WS upgrades)
- * staging/production: same origin as REST API — ALB handles WS upgrade natively
- */
-function deriveWebSocketBaseUrl(apiBaseUrl: string): string {
-  const url = new URL(apiBaseUrl);
-  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-    const apiPort = parseInt(url.port || '8000', 10);
-    return `http://localhost:${apiPort + 2}`;
-  }
-  return `${url.protocol}//${url.host}`;
-}
-
-/**
  * Derive session status from scheduled times for the web view.
  *
- * The Watch app uses an explicit state machine: sessions only become ACTIVE when
- * the organizer manually advances them (END_SESSION action). STATE_UPDATE broadcasts
- * therefore carry status:'SCHEDULED' for sessions that are live by the clock.
- *
- * The web live-control page uses a schedule-based view instead:
+ * The Watch app uses an explicit state machine: sessions only become ACTIVE when the
+ * organizer manually advances them, so the snapshot can carry status:'SCHEDULED' for
+ * sessions that are live by the clock. The web live-control page uses a schedule-based
+ * view instead:
  * - COMPLETED is respected from the server (explicit organizer end / actualEndTime)
- * - ACTIVE / SCHEDULED are always derived from the current time vs scheduled times
- *   so the page correctly reflects what is happening right now regardless of watch state
+ * - ACTIVE / SCHEDULED are derived from the current time vs scheduled times so the page
+ *   reflects what is happening right now regardless of watch state.
  */
 function deriveStatus(
   session: WatchSessionDetail,
@@ -117,203 +82,110 @@ function sortSessions(sessions: WatchSessionDetail[]): WatchSessionDetail[] {
   );
 }
 
-/**
- * Merge an incoming STATE_UPDATE sessions array into the existing list.
- *
- * Cascade updates (DELAY/EXTEND) carry only the affected sessions and use
- * newScheduledEndTime / newScheduledStartTime instead of the standard fields.
- * Full snapshots (ORGANIZER_JOINED) carry all sessions with standard fields.
- *
- * Strategy: update existing sessions by slug, add any new ones, keep the rest.
- */
-function mergeSessions(
-  prev: WatchSessionDetail[],
-  incoming: CascadeSession[]
-): WatchSessionDetail[] {
-  const updateMap = new Map(incoming.map((s) => [s.sessionSlug, s]));
-
-  const merged = prev.map((existing): WatchSessionDetail => {
-    const delta = updateMap.get(existing.sessionSlug);
-    if (!delta) return existing;
-    return {
-      ...existing,
-      ...delta,
-      // Cascade deltas carry new* fields; apply them to the canonical fields
-      scheduledEndTime:
-        delta.newScheduledEndTime ?? delta.scheduledEndTime ?? existing.scheduledEndTime,
-      scheduledStartTime:
-        delta.newScheduledStartTime ?? delta.scheduledStartTime ?? existing.scheduledStartTime,
-      actualEndTime: delta.actualEndTime ?? existing.actualEndTime,
-      actualStartTime: delta.actualStartTime ?? existing.actualStartTime,
-    } as WatchSessionDetail;
-  });
-
-  // Add sessions from the update not yet in our list (full-snapshot case)
-  const existingSlugs = new Set(prev.map((s) => s.sessionSlug));
-  const added = incoming.filter(
-    (s): s is WatchSessionDetail =>
-      !existingSlugs.has(s.sessionSlug) && s.scheduledStartTime != null
-  );
-
-  return sortSessions([...merged, ...added].filter((s) => s.scheduledStartTime != null));
-}
-
 export function useLiveSessionControl(eventCode: string | undefined): LiveSessionControlState {
-  const { apiBaseUrl } = useConfig();
-  const wsBaseUrl = deriveWebSocketBaseUrl(apiBaseUrl);
   const [sessions, setSessions] = useState<WatchSessionDetail[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [isActionInFlight, setIsActionInFlight] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const clientRef = useRef<Client | null>(null);
-  const eventCodeRef = useRef(eventCode);
-  eventCodeRef.current = eventCode;
-  // Action queued while disconnected — flushed on next onConnect
-  const pendingActionRef = useRef<WatchActionPayload | null>(null);
 
-  // 1-second ticker to drive countdown and re-derive statuses
+  const etagRef = useRef<string | null>(null);
+  // Latest sessions, readable inside the polling loop without re-subscribing.
+  const sessionsRef = useRef<WatchSessionDetail[]>([]);
+  // Action queued while a POST failed (offline) — retried on the next successful poll.
+  const pendingActionRef = useRef<LiveTimingActionRequest | null>(null);
+  // Latest dispatch function, so the polling loop can flush a queued action.
+  const dispatchActionRef = useRef<
+    ((payload: LiveTimingActionRequest) => Promise<void>) | undefined
+  >(undefined);
+
+  const applySnapshot = useCallback(
+    (next: WatchSessionDetail[] | undefined, etag: string | null) => {
+      etagRef.current = etag;
+      const sorted = sortSessions((next ?? []).filter((s) => s.scheduledStartTime != null));
+      sessionsRef.current = sorted;
+      setSessions(sorted);
+    },
+    []
+  );
+
+  // 1-second ticker to drive countdown and re-derive statuses.
   useEffect(() => {
     const id = setInterval(() => setCurrentTime(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Fetch initial session data via REST (fallback before WebSocket delivers state)
+  // Dispatch a timing action over REST; queue + flag reconnecting if it fails.
+  const dispatchAction = useCallback(
+    async (payload: LiveTimingActionRequest) => {
+      if (!eventCode) return;
+      try {
+        const result = await liveTimingService.postLiveTimingAction(eventCode, payload);
+        applySnapshot(result.data.sessions, result.etag);
+        setConnectionStatus('connected');
+        setIsActionInFlight(false);
+      } catch {
+        // Offline / transient — queue for the next successful poll to retry.
+        pendingActionRef.current = payload;
+        setConnectionStatus('reconnecting');
+      }
+    },
+    [eventCode, applySnapshot]
+  );
+  dispatchActionRef.current = dispatchAction;
+
+  // Adaptive REST polling loop (replaces the STOMP subscription).
   useEffect(() => {
     if (!eventCode) return;
 
     let cancelled = false;
-    setIsLoadingInitial(true);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    apiClient
-      .get<ActiveEventsResponse>('/watch/organizers/me/active-events')
-      .then((res) => {
+    const computeInterval = (): number => {
+      if (typeof document !== 'undefined' && document.hidden) return POLL_INTERVAL_HIDDEN;
+      const now = Date.now();
+      const hasActive = sessionsRef.current.some((s) => deriveStatus(s, now) === 'ACTIVE');
+      return hasActive ? POLL_INTERVAL_ACTIVE : POLL_INTERVAL_IDLE;
+    };
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const result = await liveTimingService.getLiveTiming(eventCode, etagRef.current);
         if (cancelled) return;
-        const event = res.data.activeEvents.find((e) => e.eventCode === eventCode);
-        if (event?.sessions?.length) {
-          setSessions(sortSessions(event.sessions.filter((s) => s.scheduledStartTime != null))); // raw — enrichSessions applied at render time
+        if (result.status === 200 && result.data) {
+          applySnapshot(result.data.sessions, result.etag);
+        } else {
+          // 304 — unchanged; keep the etag for the next conditional poll.
+          etagRef.current = result.etag;
         }
-      })
-      .catch(() => {
-        // REST fetch failed — WebSocket state update will provide session data
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingInitial(false);
-      });
+        setConnectionStatus('connected');
+
+        // Flush a queued action now that connectivity is back.
+        if (pendingActionRef.current) {
+          const queued = pendingActionRef.current;
+          pendingActionRef.current = null;
+          await dispatchActionRef.current?.(queued);
+        }
+      } catch {
+        if (!cancelled) setConnectionStatus('reconnecting');
+      } finally {
+        if (!cancelled) {
+          setIsLoadingInitial(false);
+          timeoutId = setTimeout(poll, computeInterval());
+        }
+      }
+    };
+
+    void poll();
 
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [eventCode]);
+  }, [eventCode, applySnapshot]);
 
-  // WebSocket connection lifecycle
-  useEffect(() => {
-    if (!eventCode) return;
-
-    let isMounted = true;
-
-    const setupConnection = async () => {
-      let token: string | null = null;
-      try {
-        // Amplify is configured lazily (perf/public-homepage-followup #2) — ensure before use.
-        await ensureAmplifyConfigured();
-        const session = await fetchAuthSession();
-        token = session.tokens?.idToken?.toString() ?? null;
-      } catch {
-        // Proceed without token — server will reject unauthenticated actions
-      }
-
-      if (!isMounted) return;
-
-      const client = new Client({
-        webSocketFactory: () => new SockJS(`${wsBaseUrl}/ws`) as WebSocket,
-        connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-        debug: () => {},
-        reconnectDelay: 3000,
-        heartbeatIncoming: 10000,
-        heartbeatOutgoing: 10000,
-
-        onConnect: () => {
-          if (!isMounted) return;
-          setConnectionStatus('connected');
-
-          // Register organizer presence in the event
-          client.publish({
-            destination: `/app/watch/events/${eventCode}/join`,
-          });
-
-          // Subscribe to real-time state broadcasts
-          client.subscribe(`/topic/events/${eventCode}/state`, (message) => {
-            if (!isMounted) return;
-            try {
-              const update: WatchStateUpdate = JSON.parse(message.body);
-              if (update.sessions && update.sessions.length > 0) {
-                setSessions((prev) => mergeSessions(prev, update.sessions!));
-              }
-              setIsActionInFlight(false);
-            } catch {
-              // Ignore malformed messages
-            }
-          });
-
-          // Flush any action that was queued while the connection was down
-          const pending = pendingActionRef.current;
-          if (pending) {
-            pendingActionRef.current = null;
-            client.publish({
-              destination: `/app/watch/events/${eventCode}/action`,
-              body: JSON.stringify(pending),
-            });
-          }
-        },
-
-        onStompError: () => {
-          if (!isMounted) return;
-          // STOMP-level error (auth / protocol) — reconnect won't help
-          setConnectionStatus('offline');
-        },
-
-        onWebSocketClose: () => {
-          if (!isMounted) return;
-          // Transient drop — client will auto-reconnect via reconnectDelay
-          setConnectionStatus((prev) => (prev === 'connected' ? 'reconnecting' : prev));
-        },
-
-        onWebSocketError: () => {
-          if (!isMounted) return;
-          // Network error — client will auto-reconnect
-          setConnectionStatus('reconnecting');
-        },
-
-        onDisconnect: () => {
-          if (!isMounted) return;
-          // Server-initiated disconnect — client will auto-reconnect
-          setConnectionStatus('reconnecting');
-        },
-      });
-
-      clientRef.current = client;
-      client.activate();
-    };
-
-    void setupConnection();
-
-    return () => {
-      isMounted = false;
-      if (clientRef.current) {
-        if (clientRef.current.connected && eventCode) {
-          clientRef.current.publish({
-            destination: `/app/watch/events/${eventCode}/leave`,
-          });
-        }
-        void clientRef.current.deactivate();
-        clientRef.current = null;
-      }
-    };
-  }, [eventCode, wsBaseUrl]);
-
-  // Derived timing state — recomputed every second via currentTime
-  // Enrich sessions with client-side derived status (REST returns null status)
+  // Derived timing state — recomputed every second via currentTime.
   const enriched = enrichSessions(sessions, currentTime);
   const activeSession = enriched.find((s) => s.status === 'ACTIVE') ?? null;
   const nextSession =
@@ -338,54 +210,37 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
     }
   }
 
-  // Extend/reduce button: always visible when a session is active
+  // Extend/reduce button: always visible when a session is active.
   const shouldShowExtend = activeSession !== null;
-  // Delay button: first 10 minutes of session (mirrors Watch W4.3)
+  // Delay button: first 10 minutes of session (mirrors Watch W4.3).
   const shouldShowDelay = activeSession !== null && elapsedSeconds < 600;
-
-  /**
-   * Publish a STOMP action, or queue it for the next reconnect if currently disconnected.
-   * Calls client.activate() to ensure reconnection is in progress.
-   */
-  const publishOrQueue = useCallback((payload: WatchActionPayload) => {
-    const client = clientRef.current;
-    if (!client) return;
-    if (client.connected) {
-      client.publish({
-        destination: `/app/watch/events/${eventCodeRef.current}/action`,
-        body: JSON.stringify(payload),
-      });
-    } else {
-      // Queue — will be flushed in onConnect after the next successful reconnect
-      pendingActionRef.current = payload;
-      // Ensure reconnect is in progress (activate() is idempotent)
-      client.activate();
-      setConnectionStatus('reconnecting');
-    }
-  }, []);
 
   const sendExtend = useCallback(
     (minutes: number) => {
       if (!activeSession) return;
-      // No isActionInFlight for extend/reduce — user can adjust repeatedly
-      publishOrQueue({ type: 'EXTEND_SESSION', sessionSlug: activeSession.sessionSlug, minutes });
+      // No isActionInFlight for extend/reduce — user can adjust repeatedly.
+      void dispatchAction({
+        type: 'EXTEND_SESSION',
+        sessionSlug: activeSession.sessionSlug,
+        minutes,
+      });
     },
-    [activeSession, publishOrQueue]
+    [activeSession, dispatchAction]
   );
 
   const sendDelay = useCallback(
     (minutes: number) => {
       if (!activeSession) return;
       setIsActionInFlight(true);
-      // Safety reset: re-enable if no STATE_UPDATE arrives within 5 s
+      // Safety reset: re-enable if the action does not resolve within 5 s.
       setTimeout(() => setIsActionInFlight(false), 5000);
-      publishOrQueue({
+      void dispatchAction({
         type: 'DELAY_TO_PREVIOUS',
         sessionSlug: activeSession.sessionSlug,
         minutes,
       });
     },
-    [activeSession, publishOrQueue]
+    [activeSession, dispatchAction]
   );
 
   return {

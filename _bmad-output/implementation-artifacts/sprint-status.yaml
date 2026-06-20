@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-06-19
+last_updated: 2026-06-20
 project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -249,6 +249,22 @@ development_status:
   13-4-api-gateway-closeout-jackson3-flag-flip: in-progress  # collapsed into unified migration (feature/epic-13-spring-boot-4)
   13-5-unpin-bom-managed-dependency-versions: ready-for-dev  # follow-up (2026-06-19): delegate SB-BOM-managed pins (postgresql override 42.7.7 → BOM 42.7.11) + codify pin policy; NO floating versions
   epic-13-retrospective: optional
+
+  # Epic 15: Post-Event #2 Hardening — IN PROGRESS (docs/prd/epic-15-post-event-2-hardening.md)
+  # Architectural/multi-layer follow-ups from the 2nd live event. Quick-wins (#1,#8b,#12-17) shipped
+  # on feature/event-2-feedback-quick-wins (merged #799). 15.6/#790 already fixed (commit 80195136).
+  # Each story independently prod-deployable (staging IS prod). Sequencing: 15.5→15.7→15.1→15.2→15.3→15.4→15.8+15.9.
+  epic-15: in-progress
+  15-1-websockets-to-rest-polling-live-agenda: in-progress
+  15-2-per-event-editable-event-type-config: backlog
+  15-3-stable-slot-assignment-insert-swap-mobile-tap: backlog
+  15-4-company-email-domain-mismatch-warning: backlog
+  15-5-speaker-company-logo-presenter-live-control: review
+  15-6-present-mode-agenda-title-overlap: done
+  15-7-notify-speaker-moderator-on-new-qa-question: done
+  15-8-linkedin-post-drafts: backlog
+  15-9-owasp-llm-agentic-security-checklist: backlog
+  epic-15-retrospective: optional
 
   # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
   # not yet scheduled. Cluster A is a REQUIRED precondition for 12-10 (Apple/generic OIDC).

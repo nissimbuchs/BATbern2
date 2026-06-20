@@ -2092,6 +2092,82 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/events/{eventCode}/live-timing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Poll the live agenda timing snapshot for an event
+     * @description Returns the current live-timing snapshot for an event: every session's
+     *     scheduled-vs-actual times, the currently-active session, an organizer-presence
+     *     flag, a speaker-arrival summary, and a monotonic `version`.
+     *
+     *     **Story 15.1**: Replaces the STOMP `/topic/events/{eventCode}/state` broadcast
+     *     with REST polling. Consumers (presenter, organizer live-control, watch app) poll
+     *     this endpoint adaptively (~3–5 s while a session is active, backing off when
+     *     hidden/idle) and send `If-None-Match` so unchanged polls cost a `304`.
+     *
+     *     The snapshot is assembled entirely from persistent storage (the `sessions` table +
+     *     `events.live_timing_version` + `live_timing_presence`), so successive polls that
+     *     land on different Fargate tasks return byte-identical results (no per-task
+     *     in-memory state).
+     *
+     *     **ETag**: derived from the monotonic `version` (`"evt-<eventCode>-<version>"`).
+     *     Send it back as `If-None-Match` to get a `304 Not Modified` when nothing changed.
+     *
+     *     **Authorization**: anonymous-readable (the presenter screen is public), mirroring
+     *     the previous anonymous visibility of the `/topic/events/{eventCode}/state` topic.
+     */
+    get: operations['getLiveTiming'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/events/{eventCode}/live-timing/actions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply a live agenda timing action (end / extend / delay)
+     * @description Applies a session-control action during a LIVE event and returns the new
+     *     live-timing snapshot with a bumped `version`.
+     *
+     *     **Story 15.1**: the REST replacement for the STOMP
+     *     `/app/watch/events/{eventCode}/action` publish. Runs the same cascade as the
+     *     previous WebSocket path (recompute downstream scheduled offsets, set actual
+     *     times, detect event completion) — `END_SESSION`, `EXTEND_SESSION`,
+     *     `DELAY_TO_PREVIOUS` — then atomically increments `events.live_timing_version`.
+     *
+     *     - `END_SESSION` — `minutes` ignored; marks the session done and auto-starts the next.
+     *     - `EXTEND_SESSION` — `minutes` adds (or, if negative, reduces) the current session
+     *       end time; downstream sessions cascade by the same delta.
+     *     - `DELAY_TO_PREVIOUS` — re-activates the previous session by `minutes` and shifts
+     *       the current session + downstream forward.
+     *
+     *     Idempotent per the underlying cascade service (a repeat on an already-completed
+     *     session re-returns state without a second write).
+     *
+     *     **Authorization**: requires an authenticated organizer (`ROLE_ORGANIZER`).
+     */
+    post: operations['applyLiveTimingAction'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/email-templates': {
     parameters: {
       query?: never;
@@ -3670,9 +3746,15 @@ export interface components {
       firstName?: string | null;
       /** @example Doe */
       lastName?: string | null;
-      /** @description Cross-service lookup deferred. Always null in W2.3. */
+      /**
+       * @description Speaker's company display name (Story 15.5). Resolved at read time from the speaker's user profile; null when the speaker has no company.
+       * @example ACME Corp
+       */
       company?: string | null;
-      /** @description Cross-service lookup deferred. Always null in W2.3. */
+      /**
+       * @description CloudFront URL of the speaker's company logo (Story 15.5), shown on the presenter + live-control surfaces. Null when the company has no logo.
+       * @example https://cdn.batbern.ch/logos/acme.png
+       */
       companyLogoUrl?: string | null;
       /** @example https://cdn.example.com/portrait/john.doe.jpg */
       profilePictureUrl?: string | null;
@@ -3680,6 +3762,58 @@ export interface components {
       bio?: string | null;
       /** @example panelist */
       speakerRole?: string | null;
+    };
+    /** @description Live agenda timing snapshot for an event (Story 15.1). Assembled from persistent storage only, so it is identical across Fargate tasks. Polled over REST in place of the retired STOMP `/topic/events/{eventCode}/state` broadcast. */
+    LiveTimingResponse: {
+      /** @example BATbern56 */
+      eventCode: string;
+      /**
+       * Format: int64
+       * @description Monotonic per-event version, bumped on every timing action (END/EXTEND/DELAY). Drives the ETag; a higher value means newer timing state. NOTE: the version reflects timing-action state only — the advisory fields `organizerPresent` (TTL-based), `arrivedSpeakerCount` (authoritative source: the arrivals endpoint), and the clock-derived `currentSessionSlug`/session `status` are NOT covered, so a consumer using `If-None-Match` may see those lag behind a 304.
+       * @example 42
+       */
+      version: number;
+      /**
+       * @description True when at least one authenticated organizer has polled within the presence TTL (~30 s). Anonymous presenter polls do not count.
+       * @example true
+       */
+      organizerPresent: boolean;
+      /**
+       * @description Slug of the session currently active (now within scheduled start/end), or null.
+       * @example cloud-keynote
+       */
+      currentSessionSlug?: string | null;
+      /**
+       * @description Number of distinct speakers confirmed arrived.
+       * @example 3
+       */
+      arrivedSpeakerCount: number;
+      /**
+       * @description Total distinct speakers expected across the event's sessions.
+       * @example 8
+       */
+      totalSpeakerCount: number;
+      /** @description Every session with scheduled-vs-actual timing (same shape the Watch sync uses). */
+      sessions: components['schemas']['WatchSessionDetail'][];
+    };
+    /** @description A live agenda timing action applied by an organizer during a LIVE event (Story 15.1). */
+    LiveTimingActionRequest: {
+      /**
+       * @description The action to apply.
+       * @example EXTEND_SESSION
+       * @enum {string}
+       */
+      type: 'END_SESSION' | 'EXTEND_SESSION' | 'DELAY_TO_PREVIOUS';
+      /**
+       * @description Slug of the session the action targets (the current session for EXTEND/DELAY).
+       * @example cloud-keynote
+       */
+      sessionSlug: string;
+      /**
+       * @description Minutes to add. Required for EXTEND_SESSION (negative reduces) and DELAY_TO_PREVIOUS; ignored for END_SESSION.
+       * @example 10
+       */
+      minutes?: number | null;
     };
     Event: {
       /**
@@ -9439,6 +9573,78 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+    };
+  };
+  getLiveTiming: {
+    parameters: {
+      query?: never;
+      header?: {
+        /**
+         * @description ETag from a previous poll; returns 304 when the version is unchanged.
+         * @example "evt-BATbern56-42"
+         */
+        'If-None-Match'?: string;
+      };
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current live-timing snapshot. */
+      200: {
+        headers: {
+          /** @description Version-derived entity tag; echo back as If-None-Match. */
+          ETag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LiveTimingResponse'];
+        };
+      };
+      /** @description Not modified — the version is unchanged since the supplied ETag. */
+      304: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: components['responses']['NotFound'];
+    };
+  };
+  applyLiveTimingAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LiveTimingActionRequest'];
+      };
+    };
+    responses: {
+      /** @description Action applied — post-cascade snapshot with the bumped version. */
+      200: {
+        headers: {
+          /** @description New version-derived entity tag. */
+          ETag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LiveTimingResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
     };
   };
   listEmailTemplates: {

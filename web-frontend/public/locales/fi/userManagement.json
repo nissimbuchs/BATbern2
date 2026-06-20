@@ -249,6 +249,11 @@
       "frequencyImmediate": "Välitön",
       "frequencyDaily": "Päivittäinen kooste",
       "frequencyWeekly": "Viikoittainen kooste",
+      "qnaFrequency": "Q&A-ilmoitukset",
+      "qnaFrequencyHelp": "Kuinka usein saat sähköpostia uusista kysymyksistä istuntojesi Q&A:ssa (puhujana, avustavana puhujana tai moderaattorina).",
+      "qnaFrequencyLive": "Live – koottuna istunnon aikana",
+      "qnaFrequencyDaily": "Enintään kerran päivässä",
+      "qnaFrequencyOff": "Pois – ei ilmoituksia",
       "save": "Tallenna ilmoitusasetukset"
     },
     "newsletter": {

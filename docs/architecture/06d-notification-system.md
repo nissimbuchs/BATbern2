@@ -319,6 +319,9 @@ public class EscalationNotification {
 - `inAppNotifications` (boolean)
 - `pushNotifications` (boolean)
 - `notificationFrequency` (string: "realtime", "daily_digest", "weekly_digest")
+- `qnaNotificationFrequency` (string: "live" | "daily" | "off", default "live") — Story 15.7;
+  per-user cadence for the Q&A new-questions digest (see Scheduled Notification Jobs). Stored as
+  `user_profiles.pref_qna_notification_frequency`.
 - `quietHoursStart` (string: "22:00")
 - `quietHoursEnd` (string: "07:00")
 
@@ -633,6 +636,23 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 ```
 
 ## Scheduled Notification Jobs
+
+### Q&A New-Questions Digest Job (Story 15.7)
+
+`QnaNotificationService.flushPending()` (Event Management Service) runs every 5 minutes
+(`@Scheduled` + `@SchedulerLock(name = "qnaDigestFlush")`) and emails a session's **primary
+speaker, co-speakers, and moderator** when new **top-level** questions arrive in their session
+Q&A. Per-recipient behaviour:
+
+- **Cadence** comes from each recipient's `qnaNotificationFrequency` preference: `live` → at most
+  one digest per **15 min** per window; `daily` → at most one per **24 h**; `off` → never.
+- **Freeze wins**: only `OPEN` Q&A windows are scanned — a `FROZEN` window never produces a digest.
+- **Exclusions**: replies (non-top-level) and a recipient's own posts never notify that recipient;
+  `PANELIST`s are not recipients.
+- State is kept per `(window, recipient)` in `session_qna_notification` (`last_notified_at` throttle
+  anchor + `notified_through` high-water mark, so each email counts only genuinely new questions).
+- Recipient email + locale + cadence are resolved at send time via the cached `UserApiClient`
+  (ADR-004). Email is **DE + EN only** (`qna-new-questions-{de,en}.html`); non-DE/EN → EN.
 
 ### Deadline Reminder Job
 

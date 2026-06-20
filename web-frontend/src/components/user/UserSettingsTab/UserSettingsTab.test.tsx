@@ -27,9 +27,10 @@ vi.mock('react-i18next', () => ({
 const mockAddMutate = vi.fn();
 const mockDeleteMutate = vi.fn();
 const mockResendMutate = vi.fn();
+const mockUpdatePrefs = vi.fn();
 
 vi.mock('@/hooks/useUserAccount/useUserAccount', () => ({
-  useUpdateUserPreferences: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateUserPreferences: () => ({ mutateAsync: mockUpdatePrefs, isPending: false }),
   useUpdateUserSettings: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useAddAdditionalEmail: () => ({
     mutateAsync: mockAddMutate,
@@ -193,6 +194,44 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
 
     expect(screen.getByTestId('additional-emails-at-limit')).toBeInTheDocument();
     expect(screen.queryByTestId('additional-email-add-button')).not.toBeInTheDocument();
+  });
+});
+
+describe('UserSettingsTab — Story 15.7 Q&A notification frequency', () => {
+  beforeEach(() => {
+    mockUpdatePrefs.mockReset();
+  });
+
+  function gotoNotifications() {
+    fireEvent.click(screen.getByRole('tab', { name: 'settings.tabs.notifications' }));
+  }
+
+  test('should render the three Q&A frequency options defaulting to live', () => {
+    renderWithProviders([]);
+    gotoNotifications();
+
+    expect(screen.getByText('settings.notifications.qnaFrequency')).toBeInTheDocument();
+    expect(screen.getByTestId('qna-frequency-live')).toBeInTheDocument();
+    expect(screen.getByTestId('qna-frequency-daily')).toBeInTheDocument();
+    expect(screen.getByTestId('qna-frequency-off')).toBeInTheDocument();
+
+    // Default LIVE is selected.
+    expect(screen.getByTestId('qna-frequency-live').querySelector('input')).toBeChecked();
+  });
+
+  test('should save the chosen Q&A frequency through updateUserPreferences', async () => {
+    mockUpdatePrefs.mockResolvedValueOnce(undefined);
+    renderWithProviders([]);
+    gotoNotifications();
+
+    fireEvent.click(screen.getByTestId('qna-frequency-off').querySelector('input')!);
+    fireEvent.click(screen.getByTestId('save-notification-settings-button'));
+
+    await waitFor(() => {
+      expect(mockUpdatePrefs).toHaveBeenCalledWith(
+        expect.objectContaining({ qnaNotificationFrequency: 'OFF' })
+      );
+    });
   });
 });
 

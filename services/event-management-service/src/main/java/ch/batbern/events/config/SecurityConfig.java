@@ -87,6 +87,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
 
+                // Story 15.1: live-timing poll is anonymous-readable (public presenter screen),
+                // mirroring the old anonymous /topic/events/{eventCode}/state visibility.
+                // POST .../live-timing/actions falls through to authenticated + @PreAuthorize(ORGANIZER).
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/live-timing").permitAll()
+
                 // Story 10.21: Public event photo endpoints (AC4, AC5)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/photos").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/recent-photos").permitAll()

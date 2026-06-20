@@ -18,35 +18,28 @@ vi.mock('@/services/presentationService', () => ({
   getGlobalTeaserImages: vi.fn().mockResolvedValue([]),
 }));
 
-let mockApiBaseUrl = 'http://localhost:8000';
-vi.mock('@/contexts/useConfig', () => ({
-  useConfig: () => ({ apiBaseUrl: mockApiBaseUrl }),
+// Story 15.1: presenter now polls live-timing over REST instead of subscribing to STOMP.
+vi.mock('@/services/liveTimingService', () => ({
+  liveTimingService: { getLiveTiming: vi.fn() },
 }));
 
-// Capture callbacks so tests can trigger WebSocket interactions
-let capturedOnConnect: (() => void) | undefined;
-let capturedSubscribeCallback: ((msg: unknown) => void) | undefined;
-let capturedWebSocketFactory: (() => WebSocket) | undefined;
+import { liveTimingService } from '@/services/liveTimingService';
 
-vi.mock('@stomp/stompjs', () => ({
-  Client: class {
-    activate = vi.fn();
-    deactivate = vi.fn(() => Promise.resolve());
-    subscribe = vi.fn((_dest: string, cb: (msg: unknown) => void) => {
-      capturedSubscribeCallback = cb;
-    });
-    constructor(opts: { onConnect?: () => void; webSocketFactory?: () => WebSocket }) {
-      if (opts?.onConnect) {
-        capturedOnConnect = opts.onConnect;
-      }
-      if (opts?.webSocketFactory) {
-        capturedWebSocketFactory = opts.webSocketFactory;
-      }
-    }
+const mockGetLiveTiming = vi.mocked(liveTimingService.getLiveTiming);
+
+const makeLiveTiming = (version: number) => ({
+  status: 200 as const,
+  etag: `"evt-BATbern142-${version}"`,
+  data: {
+    eventCode: 'BATbern142',
+    version,
+    organizerPresent: false,
+    currentSessionSlug: null,
+    arrivedSpeakerCount: 0,
+    totalSpeakerCount: 0,
+    sessions: [],
   },
-}));
-
-vi.mock('sockjs-client', () => ({ default: vi.fn() }));
+});
 
 import {
   getPresentationData,
@@ -88,10 +81,8 @@ describe('usePresentationData', () => {
   beforeEach(() => {
     qc = createQC();
     vi.clearAllMocks();
-    capturedOnConnect = undefined;
-    capturedSubscribeCallback = undefined;
-    capturedWebSocketFactory = undefined;
-    mockApiBaseUrl = 'http://localhost:8000';
+    // Default: live-timing poll returns an unchanging version 0 snapshot.
+    mockGetLiveTiming.mockResolvedValue(makeLiveTiming(0) as never);
   });
 
   it('should return loading state initially', () => {
@@ -333,7 +324,7 @@ describe('usePresentationData', () => {
     expect(result.current.isInitialLoadError).toBe(true);
   });
 
-  it('should invalidate event query when WebSocket state message arrives', async () => {
+  it('should poll the live-timing endpoint anonymously (skipAuth)', async () => {
     mockGetPresentationData.mockResolvedValue(
       MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
     );
@@ -342,6 +333,31 @@ describe('usePresentationData', () => {
     mockGetPresentationSettings.mockResolvedValue(
       MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
     );
+
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(mockGetLiveTiming).toHaveBeenCalled());
+    // eventCode, etag(null on first poll), skipAuth=true
+    expect(mockGetLiveTiming).toHaveBeenCalledWith('BATbern142', null, true);
+    expect(result.current).toBeDefined();
+  });
+
+  it('should invalidate the event query when the live-timing version changes', async () => {
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+
+    // First poll establishes version 0; the second reports a bumped version 1.
+    mockGetLiveTiming
+      .mockResolvedValueOnce(makeLiveTiming(0) as never)
+      .mockResolvedValue(makeLiveTiming(1) as never);
 
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
@@ -351,57 +367,40 @@ describe('usePresentationData', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    // Trigger onConnect to subscribe, then simulate a state message
-    if (capturedOnConnect) {
-      act(() => {
-        capturedOnConnect!();
-      });
-    }
+    await waitFor(
+      () =>
+        expect(invalidateSpy).toHaveBeenCalledWith({
+          queryKey: ['presentation-event', 'BATbern142'],
+        }),
+      { timeout: 8000 }
+    );
+  });
 
-    if (capturedSubscribeCallback) {
-      act(() => {
-        capturedSubscribeCallback!({ body: '{}' });
-      });
-    }
+  it('should not invalidate the event query while the version is unchanged', async () => {
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+    mockGetLiveTiming.mockResolvedValue(makeLiveTiming(0) as never);
 
-    expect(invalidateSpy).toHaveBeenCalledWith({
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+    await waitFor(() => expect(mockGetLiveTiming).toHaveBeenCalled());
+
+    expect(invalidateSpy).not.toHaveBeenCalledWith({
       queryKey: ['presentation-event', 'BATbern142'],
     });
   });
 
-  it('should use non-localhost WebSocket URL for production-like apiBaseUrl', async () => {
-    mockApiBaseUrl = 'https://api.batbern.ch';
-
-    mockGetPresentationData.mockResolvedValue(
-      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
-    );
-    mockGetPublicOrganizers.mockResolvedValue([]);
-    mockGetUpcomingEvents.mockResolvedValue([]);
-    mockGetPresentationSettings.mockResolvedValue(
-      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
-    );
-
-    const SockJS = (await import('sockjs-client')).default;
-    const mockSockJS = vi.mocked(SockJS);
-    mockSockJS.mockClear();
-
-    const { result, unmount } = renderHook(() => usePresentationData('BATbern142'), {
-      wrapper: createWrapper(qc),
-    });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    // Invoke the captured webSocketFactory to trigger SockJS call
-    expect(capturedWebSocketFactory).toBeDefined();
-    capturedWebSocketFactory!();
-
-    // SockJS constructor should have been called with production-style URL (protocol://host/ws)
-    expect(mockSockJS).toHaveBeenCalledWith('https://api.batbern.ch/ws');
-
-    unmount();
-  });
-
-  it('should clean up WebSocket client on unmount', async () => {
+  it('should stop polling live-timing after unmount', async () => {
     mockGetPresentationData.mockResolvedValue(
       MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
     );
@@ -416,56 +415,13 @@ describe('usePresentationData', () => {
     });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    // Unmounting should deactivate the client
-    unmount();
-
-    // After unmount, the WS callback should not invalidate queries
-    if (capturedOnConnect) {
-      act(() => {
-        capturedOnConnect!();
-      });
-    }
-    if (capturedSubscribeCallback) {
-      const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-      act(() => {
-        capturedSubscribeCallback!({ body: '{}' });
-      });
-      // The isMounted guard should prevent invalidation
-      expect(invalidateSpy).not.toHaveBeenCalled();
-    }
-  });
-
-  it('should use localhost WebSocket URL with port offset for local dev', async () => {
-    mockApiBaseUrl = 'http://localhost:8000';
-
-    mockGetPresentationData.mockResolvedValue(
-      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
-    );
-    mockGetPublicOrganizers.mockResolvedValue([]);
-    mockGetUpcomingEvents.mockResolvedValue([]);
-    mockGetPresentationSettings.mockResolvedValue(
-      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
-    );
-
-    const SockJS = (await import('sockjs-client')).default;
-    const mockSockJS = vi.mocked(SockJS);
-    mockSockJS.mockClear();
-
-    const { result, unmount } = renderHook(() => usePresentationData('BATbern142'), {
-      wrapper: createWrapper(qc),
-    });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    // Invoke the captured webSocketFactory to trigger SockJS call
-    expect(capturedWebSocketFactory).toBeDefined();
-    capturedWebSocketFactory!();
-
-    // For localhost, port should be apiBaseUrl port + 2 (8000 + 2 = 8002)
-    expect(mockSockJS).toHaveBeenCalledWith('http://localhost:8002/ws');
+    await waitFor(() => expect(mockGetLiveTiming).toHaveBeenCalled());
 
     unmount();
+    const callsAfterMount = mockGetLiveTiming.mock.calls.length;
+    // No further polls should be scheduled after unmount.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockGetLiveTiming.mock.calls.length).toBe(callsAfterMount);
   });
 
   it('should return empty globalTeaserImages when query returns data', async () => {

@@ -143,6 +143,21 @@ workflow:
       # Transitions EVENT_LIVE → EVENT_COMPLETED when event date has passed
       cron: "0 59 23 * * *"
 
+# Q&A windows + new-questions digest (Stories 7.5 + 15.7)
+qna:
+  scheduled:
+    # Hourly: freeze OPEN windows whose closesAt has passed (Story 7.5).
+    freeze:
+      cron: "0 5 * * * *"
+    # Every 5 min: email speakers/co-speakers/moderators about new Q&A questions (Story 15.7).
+    notify:
+      cron: "0 */5 * * * *"
+  # Per-recipient digest throttle windows (Story 15.7); the actual cadence per recipient is
+  # chosen via their qnaNotificationFrequency preference (live → live-window, daily → daily-window).
+  notify:
+    live-window-minutes: 15
+    daily-window-hours: 24
+
 # Speaker Deadline Reminders Configuration (Story 6.5)
 batbern:
   ai:

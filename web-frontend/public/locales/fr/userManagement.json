@@ -249,6 +249,11 @@
       "frequencyImmediate": "Immédiat",
       "frequencyDaily": "Résumé quotidien",
       "frequencyWeekly": "Résumé hebdomadaire",
+      "qnaFrequency": "Notifications Q&R",
+      "qnaFrequencyHelp": "Fréquence des e-mails concernant les nouvelles questions dans les Q&R de vos sessions (en tant qu'intervenant·e, co-intervenant·e ou modérateur·rice).",
+      "qnaFrequencyLive": "En direct – regroupées pendant la session",
+      "qnaFrequencyDaily": "Au maximum une fois par jour",
+      "qnaFrequencyOff": "Désactivé – aucune notification",
       "save": "Enregistrer les paramètres de notification"
     },
     "newsletter": {

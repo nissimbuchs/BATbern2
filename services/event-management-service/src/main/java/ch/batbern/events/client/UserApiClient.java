@@ -104,6 +104,24 @@ public interface UserApiClient {
     String getPreferredLanguage(String username);
 
     /**
+     * Get the user's Q&A notification cadence preference (Story 15.7).
+     *
+     * <p>Hits {@code GET /api/v1/users/{username}?include=preferences} (the same proven path as
+     * {@link #getPreferredLanguage}) and returns the lowercase value of
+     * {@code preferences.qnaNotificationFrequency} — {@code "live"}, {@code "daily"}, or
+     * {@code "off"}.
+     *
+     * <p><b>Lenient by design:</b> returns {@code null} — never throws — when the username is
+     * blank, the user/preferences are absent, or CUMS is degraded. The Q&A digest flush treats
+     * {@code null} as the default {@code "live"}, so a single recipient's lookup failure can never
+     * abort the rest of the flush.
+     *
+     * @param username User's username (public identifier)
+     * @return lowercase {@code live|daily|off}, or {@code null} when unavailable
+     */
+    String getQnaNotificationFrequency(String username);
+
+    /**
      * Get user's last login timestamp.
      * Used for in-app notification queries.
      *

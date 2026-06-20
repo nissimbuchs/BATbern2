@@ -1246,6 +1246,9 @@ public class UserService {
         prefs.setInAppNotifications(preferencesDTO.getInAppNotifications());
         prefs.setPushNotifications(preferencesDTO.getPushNotifications());
         prefs.setNotificationFrequency(preferencesDTO.getNotificationFrequency().getValue());
+        // Story 15.7 — PUT is full-replace (like every sibling field above); the generated DTO
+        // defaults this to "live" when omitted, so it is never null here.
+        prefs.setQnaNotificationFrequency(preferencesDTO.getQnaNotificationFrequency().getValue());
 
         // Convert String to LocalTime for quiet hours
         if (preferencesDTO.getQuietHoursStart() != null) {
@@ -1338,6 +1341,10 @@ public class UserService {
                 .notificationFrequency(ch.batbern.companyuser.dto.generated
                     .UserPreferences.NotificationFrequencyEnum.valueOf(
                         domain.getNotificationFrequency().toUpperCase()))
+                .qnaNotificationFrequency(ch.batbern.companyuser.dto.generated
+                    .UserPreferences.QnaNotificationFrequencyEnum.valueOf(
+                        (domain.getQnaNotificationFrequency() != null
+                            ? domain.getQnaNotificationFrequency() : "live").toUpperCase()))
                 .quietHoursStart(domain.getQuietHoursStart() != null
                     ? domain.getQuietHoursStart().toString() : null)
                 .quietHoursEnd(domain.getQuietHoursEnd() != null

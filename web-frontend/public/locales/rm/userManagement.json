@@ -249,6 +249,11 @@
       "frequencyImmediate": "Immediat",
       "frequencyDaily": "Resumaziun giornaliera",
       "frequencyWeekly": "Resumaziun settimanalas",
+      "qnaFrequency": "Communicaziuns Q&A",
+      "qnaFrequencyHelp": "Quant savens ti retschaivas in e-mail davart novas dumondas en las Q&A da tias sesidas (sco relatur, co-relatur u moderatur).",
+      "qnaFrequencyLive": "Live – rimnadas durant la sesida",
+      "qnaFrequencyDaily": "Maximalmain ina giada al di",
+      "qnaFrequencyOff": "Deschattà – naginas communicaziuns",
       "save": "Memorisar las preferenzas da notificaziun"
     },
     "newsletter": {

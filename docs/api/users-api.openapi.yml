@@ -2295,6 +2295,15 @@ components:
           type: string
           enum: [immediate, daily_digest, weekly_digest]
           default: immediate
+        qnaNotificationFrequency:
+          type: string
+          description: |
+            How often this user is emailed about new questions in the Q&A of sessions
+            where they are speaker / co-speaker / moderator (Story 15.7).
+            `live` = bundled digest during the session (~15 min window),
+            `daily` = at most once per 24h, `off` = never. Defaults to `live`.
+          enum: ["live", "daily", "off"]
+          default: "live"
         quietHoursStart:
           type: string
           pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'

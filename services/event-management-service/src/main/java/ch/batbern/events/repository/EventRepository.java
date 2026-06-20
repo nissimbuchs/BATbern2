@@ -3,6 +3,7 @@ package ch.batbern.events.repository;
 import ch.batbern.events.domain.Event;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -32,6 +33,32 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      * @return Optional containing the event if found
      */
     Optional<Event> findByEventCode(String eventCode);
+
+    /**
+     * Story 15.1: atomically increment the monotonic live-timing version for an event.
+     *
+     * Done as a single SQL UPDATE (not a read-modify-write on the entity) so concurrent
+     * actions on different Fargate tasks never lose an increment (AC3). flush before /
+     * clear after so any pending session/event changes in the same transaction are
+     * persisted first and the (now-stale) persistence context is detached.
+     *
+     * @param eventCode the event whose version to bump
+     * @return number of rows updated (1 if the event exists, 0 otherwise)
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Event e SET e.liveTimingVersion = e.liveTimingVersion + 1 "
+            + "WHERE e.eventCode = :eventCode")
+    int incrementLiveTimingVersion(@Param("eventCode") String eventCode);
+
+    /**
+     * Story 15.1: read just the monotonic live-timing version (cheap projection for the
+     * ETag / 304 path, avoids loading the whole Event).
+     *
+     * @param eventCode the event
+     * @return the current live-timing version, or empty if the event does not exist
+     */
+    @Query("SELECT e.liveTimingVersion FROM Event e WHERE e.eventCode = :eventCode")
+    Optional<Long> findLiveTimingVersionByEventCode(@Param("eventCode") String eventCode);
 
     /**
      * Check if an event with the given code exists
