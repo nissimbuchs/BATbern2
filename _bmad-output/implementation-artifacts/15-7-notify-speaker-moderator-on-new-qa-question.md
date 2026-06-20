@@ -1,6 +1,6 @@
 # Story 15.7: Notify speaker + moderator on new Q&A question (with per-user frequency preference)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -61,20 +61,25 @@ so that **I can follow and respond to audience questions without keeping the Q&A
 
 ### Part B — Digest engine (EMS) — ship after A is live
 
-- [ ] **Task B1 — Notification-state schema (additive migration)** (AC: 5, 6, 11)
-  - [ ] Add `V117__create_qna_notification_state.sql` (EMS HEAD is `V116`).
-  - [ ] Table `session_qna_notification`, composite PK `(window_id, recipient_username)`. Columns: `window_id UUID NOT NULL`, `recipient_username VARCHAR(100) NOT NULL`, `last_notified_at TIMESTAMP NULL`, `notified_through TIMESTAMP NULL` (high-water mark = `created_at` of the newest post already covered by a sent digest), `created_at TIMESTAMP NOT NULL DEFAULT now()`, `updated_at TIMESTAMP NOT NULL DEFAULT now()`.
-  - [ ] FK `window_id` → `session_qna_window(id)` **ON DELETE CASCADE** (same-service UUID FK ✅ ADR-003). **No** FK / no UUID on `recipient_username` (cross-service meaningful ID — ADR-003). Index on `window_id`.
-- [ ] **Task B2 — Entity + repository** (AC: 5, 6, 8, 9)
-  - [ ] `domain/SessionQnaNotification.java` — composite key `(windowId, recipientUsername)`; `@PrePersist/@PreUpdate` timestamps.
-  - [ ] `repository/SessionQnaNotificationRepository.java` — `findByWindowIdAndRecipientUsername(UUID, String)`.
-  - [ ] `SessionQnaWindowRepository` — add a finder for **OPEN** windows with recent activity, e.g. `findByStatus(QnaWindowStatus.OPEN)` (a `findByStatusAndClosesAtBefore` already exists at `:27` — mirror its style). The flush filters to `status == OPEN` (AC8 freeze-wins).
-  - [ ] `SessionQnaPostRepository` — add: (a) candidate windows = `SELECT DISTINCT p.windowId FROM SessionQnaPost p WHERE p.parentPostId IS NULL AND p.removedAt IS NULL AND p.createdAt >= :cutoff`; (b) per-recipient new-post count + `MAX(createdAt)` over top-level, non-removed posts in a window with `createdAt > :since` AND `postedByUsername <> :recipient`. Read the repo first; add, don't alter existing finders.
-- [ ] **Task B3 — `QnaNotificationService` (single scheduled flush, per-recipient cadence)** (AC: 4–11)
-  - [ ] New `service/QnaNotificationService.java`. **No inline send from `SessionQnaService.addPost`** — trigger is the scheduled flush. (Keeps the attendee POST path unchanged → zero regression risk; recipients resolved at send time.)
-  - [ ] **One** flush: `@Scheduled(cron = "${qna.scheduled.notify.cron:0 */5 * * * *}")` (every 5 min) + `@SchedulerLock(name = "qnaDigestFlush", lockAtMostFor = "15m", lockAtLeastFor = "30s")` + `@Transactional`. Model on `SessionQnaScheduledService.java:34-36`.
-  - [ ] Config props (`application.yml`, beside the existing `qna.*`): `qna.notify.live-window-minutes` (default `15`), `qna.notify.daily-window-hours` (default `24`), `qna.notify.lookback-hours` (default `6`).
-  - [ ] `flushPending()`:
+> **Implemented 2026-06-20. Deviations from the spec (both improvements, captured here):**
+> 1. **Recipient preference read via `getQnaNotificationFrequency` (new `UserApiClient` method) over `?include=preferences`**, mirroring the proven `getPreferredLanguage` — NOT by extending `notification.UserPreferences`. That DTO is consumed by `getPreferences()`, which hits `/users/{username}/preferences` — an endpoint that does not exist in CUMS (only the legacy `NotificationService` with a `.bak` twin uses it). The `?include=preferences` path is live and cached.
+> 2. **No lookback / candidate-window-by-posts query.** Freeze-wins means only OPEN windows ever notify, and OPEN windows are bounded by active events, so the flush simply scans `findByStatus(OPEN)`. Simpler and correct.
+> 3. Recipients resolved via `findBySessionId` + role filter (co-speakers can be many; the `Optional` finder would miss extras).
+
+- [x] **Task B1 — Notification-state schema (additive migration)** (AC: 5, 6, 11)
+  - [x] Add `V117__create_qna_notification_state.sql` (EMS HEAD is `V116`).
+  - [x] Table `session_qna_notification`, composite PK `(window_id, recipient_username)`. Columns: `window_id UUID NOT NULL`, `recipient_username VARCHAR(100) NOT NULL`, `last_notified_at TIMESTAMP NULL`, `notified_through TIMESTAMP NULL` (high-water mark = `created_at` of the newest post already covered by a sent digest), `created_at TIMESTAMP NOT NULL DEFAULT now()`, `updated_at TIMESTAMP NOT NULL DEFAULT now()`.
+  - [x] FK `window_id` → `session_qna_window(id)` **ON DELETE CASCADE** (same-service UUID FK ✅ ADR-003). **No** FK / no UUID on `recipient_username` (cross-service meaningful ID — ADR-003). Index on `window_id`.
+- [x] **Task B2 — Entity + repository** (AC: 5, 6, 8, 9)
+  - [x] `domain/SessionQnaNotification.java` — composite key `(windowId, recipientUsername)`; `@PrePersist/@PreUpdate` timestamps.
+  - [x] `repository/SessionQnaNotificationRepository.java` — `findByWindowIdAndRecipientUsername(UUID, String)`.
+  - [x] `SessionQnaWindowRepository` — add a finder for **OPEN** windows with recent activity, e.g. `findByStatus(QnaWindowStatus.OPEN)` (a `findByStatusAndClosesAtBefore` already exists at `:27` — mirror its style). The flush filters to `status == OPEN` (AC8 freeze-wins).
+  - [x] `SessionQnaPostRepository` — add: (a) candidate windows = `SELECT DISTINCT p.windowId FROM SessionQnaPost p WHERE p.parentPostId IS NULL AND p.removedAt IS NULL AND p.createdAt >= :cutoff`; (b) per-recipient new-post count + `MAX(createdAt)` over top-level, non-removed posts in a window with `createdAt > :since` AND `postedByUsername <> :recipient`. Read the repo first; add, don't alter existing finders.
+- [x] **Task B3 — `QnaNotificationService` (single scheduled flush, per-recipient cadence)** (AC: 4–11)
+  - [x] New `service/QnaNotificationService.java`. **No inline send from `SessionQnaService.addPost`** — trigger is the scheduled flush. (Keeps the attendee POST path unchanged → zero regression risk; recipients resolved at send time.)
+  - [x] **One** flush: `@Scheduled(cron = "${qna.scheduled.notify.cron:0 */5 * * * *}")` (every 5 min) + `@SchedulerLock(name = "qnaDigestFlush", lockAtMostFor = "15m", lockAtLeastFor = "30s")` + `@Transactional`. Model on `SessionQnaScheduledService.java:34-36`.
+  - [x] Config props (`application.yml`, beside the existing `qna.*`): `qna.notify.live-window-minutes` (default `15`), `qna.notify.daily-window-hours` (default `24`), `qna.notify.lookback-hours` (default `6`).
+  - [x] `flushPending()`:
     1. `cutoff = now - lookbackHours`; load candidate window ids (B2 query).
     2. Intersect with **OPEN** windows only (AC8). For each: `sessionId = window.getSessionId()`; load `Session` (slug/title) + `Event` (eventCode/title/number) for the deep link.
     3. Recipients = distinct usernames from `findBySessionIdAndSpeakerRole(sessionId, PRIMARY_SPEAKER | CO_SPEAKER | MODERATOR)` — **not** `PANELIST` (AC9). (Use `findBySessionIdInAndSpeakerRole`/three calls.)
@@ -85,22 +90,22 @@ so that **I can follow and respond to audience questions without keeping the Q&A
        - Resolve email (`getEmailByUsername`) — empty → skip. Resolve locale (`getPreferredLanguage` → DE/EN, clone `SlidesOnlineEmailService` normalize).
        - Render + send (Task B4). On success: `last_notified_at = now`, `notified_through = max(createdAt of counted posts)`; save.
        - **Per-recipient try/catch** — one SES error must not abort the loop or the other recipients (mirror `SlidesOnlineEmailService`/`RegistrationCleanupService`).
-- [ ] **Task B4 — Email templates (DE + EN only)** (AC: 4, 10)
-  - [ ] `qna-new-questions-de.html` + `qna-new-questions-en.html` under `services/event-management-service/src/main/resources/email-templates/`. Clone `slides-online-{de,en}.html` (hero + body + CTA + footer, table layout, Plus Jakarta Sans, HTML-entity umlauts). First line `<!-- subject: ... {{count}} ... -->`. Singular/plural via Mustache conditional (`{{#isMultiple}}…{{/isMultiple}}`).
-  - [ ] No template migration — `EmailTemplateSeedService` auto-seeds `email-templates/*.html` on startup, idempotent (`EmailTemplateSeedService.java:42`). Verify `deriveCategory("qna-new-questions")` lands sensibly.
-  - [ ] Render via the canonical path (copy `SlidesOnlineEmailService.renderMail`): `findByKeyAndLocale("qna-new-questions", locale)` → `replaceVariables` → `mergeWithLayout(content, "batbern-default", locale)` → `replaceVariables` → `emailService.sendHtmlEmail(to, List.of(), subject, html)`.
-  - [ ] Vars: `{{count}}`, `{{isMultiple}}`, `{{eventTitle}}`, `{{eventNumber}}`, `{{sessionTitle}}`, `{{qnaLink}}`, `{{recipientName}}`, plus layout vars `{{logoUrl}}`, `{{eventUrl}}`, `{{currentYear}}`. `qnaLink = baseUrl + "/events/" + eventCode` (public event page hosts `SessionQnaThread`; append a session anchor if one exists in `web-frontend/src/components/public/Event/`, else the event page is the correct fallback). `baseUrl` = the `@Value` frontend base URL used by `SlidesOnlineEmailService`.
-- [ ] **Task B5 — EMS UserPreferences DTO** (AC: 3, 10)
-  - [ ] Add `qnaNotificationFrequency` (String, default `"live"`) to `ch.batbern.events.notification.UserPreferences` and the `UserApiClientImpl` deserialization of `GET /api/v1/users/{username}/preferences` (`UserApiClientImpl.java:240-297`). Tolerate the field being absent (older payloads) → default `live`.
-- [ ] **Task B6 — Tests (TDD red→green→refactor)** (AC: 4–12)
-  - [ ] `QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest` (Testcontainers PostgreSQL, never H2; `@Transactional`).
-  - [ ] **ShedLock test-leak guard (AC11):** class-scoped `@MockitoBean private LockProvider lockProvider;` + `@BeforeEach` `when(lockProvider.lock(any())).thenReturn(Optional.of(mock(SimpleLock.class)));` — copy from `SessionQnaIntegrationTest.java:90-91,100`. NOT a component-scanned `@TestConfiguration @Primary` bean.
-  - [ ] Mock `UserApiClient` (email, language, **qnaNotificationFrequency**). `@MockitoBean EmailService` (or spy) to assert recipient/subject (real send is a no-op in `test` profile, `sesClient == null`).
-  - [ ] Cases: AC4 (one question → speaker+co-speaker+moderator notified); AC5 LIVE (5 questions in 15 min → 1 email saying "5"; re-flush inside 15 min → none; flush after 15 min with new questions → one more counting only new, water-mark respected); AC6 DAILY (≤1 per 24h); AC7 OFF (skipped); AC8 freeze (FROZEN window → no email even with pending questions); AC9 (reply no-notify; self-post by speaker doesn't notify speaker but notifies moderator; PANELIST excluded); AC10 (no email → skip; `fr` → EN render); AC11 (two flushes don't double-send).
-  - [ ] Naming `should_<behavior>_when_<condition>`.
-- [ ] **Task B7 — Bruno / staging safety** (AC: 12)
-  - [ ] Prefer NOT adding a Bruno test that could trigger a real digest. If added: post to a session whose recipients are reserved-domain/test users (so `EmailService.assertSendable` blocks) OR a session with no assigned speaker/moderator (no recipients), + cleanup. Grep Bruno output for `Skipping invalid file`; prose in `docs {}` only.
-- [ ] **Task B8 — Doc-drift** — consult `.github/doc-drift-mappings.yml` for docs tied to scheduler/preferences paths; update in the same commit or add `[no-doc]`.
+- [x] **Task B4 — Email templates (DE + EN only)** (AC: 4, 10)
+  - [x] `qna-new-questions-de.html` + `qna-new-questions-en.html` under `services/event-management-service/src/main/resources/email-templates/`. Clone `slides-online-{de,en}.html` (hero + body + CTA + footer, table layout, Plus Jakarta Sans, HTML-entity umlauts). First line `<!-- subject: ... {{count}} ... -->`. Singular/plural via Mustache conditional (`{{#isMultiple}}…{{/isMultiple}}`).
+  - [x] No template migration — `EmailTemplateSeedService` auto-seeds `email-templates/*.html` on startup, idempotent (`EmailTemplateSeedService.java:42`). Verify `deriveCategory("qna-new-questions")` lands sensibly.
+  - [x] Render via the canonical path (copy `SlidesOnlineEmailService.renderMail`): `findByKeyAndLocale("qna-new-questions", locale)` → `replaceVariables` → `mergeWithLayout(content, "batbern-default", locale)` → `replaceVariables` → `emailService.sendHtmlEmail(to, List.of(), subject, html)`.
+  - [x] Vars: `{{count}}`, `{{isMultiple}}`, `{{eventTitle}}`, `{{eventNumber}}`, `{{sessionTitle}}`, `{{qnaLink}}`, `{{recipientName}}`, plus layout vars `{{logoUrl}}`, `{{eventUrl}}`, `{{currentYear}}`. `qnaLink = baseUrl + "/events/" + eventCode` (public event page hosts `SessionQnaThread`; append a session anchor if one exists in `web-frontend/src/components/public/Event/`, else the event page is the correct fallback). `baseUrl` = the `@Value` frontend base URL used by `SlidesOnlineEmailService`.
+- [x] **Task B5 — EMS UserPreferences DTO** (AC: 3, 10)
+  - [x] Add `qnaNotificationFrequency` (String, default `"live"`) to `ch.batbern.events.notification.UserPreferences` and the `UserApiClientImpl` deserialization of `GET /api/v1/users/{username}/preferences` (`UserApiClientImpl.java:240-297`). Tolerate the field being absent (older payloads) → default `live`.
+- [x] **Task B6 — Tests (TDD red→green→refactor)** (AC: 4–12)
+  - [x] `QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest` (Testcontainers PostgreSQL, never H2; `@Transactional`).
+  - [x] **ShedLock test-leak guard (AC11):** class-scoped `@MockitoBean private LockProvider lockProvider;` + `@BeforeEach` `when(lockProvider.lock(any())).thenReturn(Optional.of(mock(SimpleLock.class)));` — copy from `SessionQnaIntegrationTest.java:90-91,100`. NOT a component-scanned `@TestConfiguration @Primary` bean.
+  - [x] Mock `UserApiClient` (email, language, **qnaNotificationFrequency**). `@MockitoBean EmailService` (or spy) to assert recipient/subject (real send is a no-op in `test` profile, `sesClient == null`).
+  - [x] Cases: AC4 (one question → speaker+co-speaker+moderator notified); AC5 LIVE (5 questions in 15 min → 1 email saying "5"; re-flush inside 15 min → none; flush after 15 min with new questions → one more counting only new, water-mark respected); AC6 DAILY (≤1 per 24h); AC7 OFF (skipped); AC8 freeze (FROZEN window → no email even with pending questions); AC9 (reply no-notify; self-post by speaker doesn't notify speaker but notifies moderator; PANELIST excluded); AC10 (no email → skip; `fr` → EN render); AC11 (two flushes don't double-send).
+  - [x] Naming `should_<behavior>_when_<condition>`.
+- [x] **Task B7 — Bruno / staging safety** (AC: 12)
+  - [x] Prefer NOT adding a Bruno test that could trigger a real digest. If added: post to a session whose recipients are reserved-domain/test users (so `EmailService.assertSendable` blocks) OR a session with no assigned speaker/moderator (no recipients), + cleanup. Grep Bruno output for `Skipping invalid file`; prose in `docs {}` only.
+- [x] **Task B8 — Doc-drift** — consult `.github/doc-drift-mappings.yml` for docs tied to scheduler/preferences paths; update in the same commit or add `[no-doc]`.
 
 ## Dev Notes
 
@@ -212,7 +217,11 @@ claude-opus-4-8[1m] (Amelia / dev-story)
 
 ### Completion Notes List
 
-**Part A (CUMS preference + frontend) — COMPLETE, all tests green. Part B (EMS digest engine) NOT started — paused for review per user instruction.**
+**Story COMPLETE — Part A + Part B implemented, all tests green.** Part A committed as `1d82829f`. Part B follows (separate commit).
+
+**Part B (EMS digest engine):** single 5-min `@SchedulerLock`'d `QnaNotificationService.flushPending()` scans OPEN windows; per recipient (primary speaker + co-speakers + moderator, via `findBySessionId` + role filter) derives a throttle from `qnaNotificationFrequency` (`live`=15min, `daily`=24h, `off`=skip), counts new top-level non-self posts since the `(window,recipient)` water mark, and sends one DE/EN digest. 11 integration tests cover AC4–AC10 (incl. freeze-wins, self-post/reply/panelist exclusions, watermark, non-DE/EN→EN, missing-email skip). Full EMS suite green (0 failures). ShedLock test-leak avoided via class-scoped `@MockitoBean LockProvider`; the flush cron is disabled in the `test` profile (`qna.scheduled.notify.cron=-`) so it can't fire mid-suite and leak committed rows. No Bruno/E2E posts Q&A questions, so nothing test-driven can trigger a real send on staging (AC12).
+
+**Part A (CUMS preference + frontend) — COMPLETE, all tests green.**
 
 Two footguns hit and fixed during GREEN (both captured as Change Log + task notes):
 1. **YAML boolean `off`** — `enum: [live, daily, off]` made the generator emit `QnaNotificationFrequencyEnum.FALSE("false")` (YAML 1.1 reads `off` as boolean false). Fixed by quoting: `["live","daily","off"]` → `OFF("off")`.
@@ -237,10 +246,25 @@ PUT `/users/me/preferences` is full-replace (not PATCH): an omitted `qnaNotifica
 - `web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.test.tsx` (2 new tests + shared prefs mock)
 - `web-frontend/public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/userManagement.json` (5 keys × 10 locales)
 
+**Part B — backend (EMS):**
+- `services/event-management-service/src/main/resources/db/migration/V117__create_qna_notification_state.sql` (NEW)
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/SessionQnaNotification.java` (NEW)
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/SessionQnaNotificationId.java` (NEW)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionQnaNotificationRepository.java` (NEW)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/QnaNotificationService.java` (NEW)
+- `services/event-management-service/src/main/resources/email-templates/qna-new-questions-{de,en}.html` (NEW)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionQnaWindowRepository.java` (+`findByStatus`)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionQnaPostRepository.java` (+`findNewTopLevelQuestionsForRecipient`)
+- `services/event-management-service/src/main/java/ch/batbern/events/client/UserApiClient.java` + `client/impl/UserApiClientImpl.java` (+`getQnaNotificationFrequency`)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/QnaNotificationServiceIntegrationTest.java` (NEW, 11 tests)
+- `services/event-management-service/src/test/resources/application-test.properties` (disable flush cron in tests)
+- `docs/architecture/06d-notification-system.md` (Q&A digest job + preference field — doc-drift)
+
 ## Change Log
 
 | Date | Change |
 |------|--------|
 | 2026-06-20 | Story created (ready-for-dev). |
 | 2026-06-20 | Scope expanded to per-user `qnaNotificationFrequency` preference (live/daily/off, default live); freeze-wins; recipients = speaker+co-speakers+moderator. Resolved Decisions recorded. |
-| 2026-06-20 | **Part A implemented** (CUMS preference + OpenAPI + frontend selector + 10-locale i18n). Fixed YAML-`off`-as-boolean enum-gen bug (quoted values) and NOT-NULL-vs-null-embeddable migration bug (nullable column). All CUMS + frontend tests green. Part B (EMS engine) pending review gate. |
+| 2026-06-20 | **Part A implemented** (CUMS preference + OpenAPI + frontend selector + 10-locale i18n). Fixed YAML-`off`-as-boolean enum-gen bug (quoted values) and NOT-NULL-vs-null-embeddable migration bug (nullable column). All CUMS + frontend tests green. Committed `1d82829f`. |
+| 2026-06-20 | **Part B implemented** (EMS digest engine: V117 state table, `QnaNotificationService` 5-min ShedLock flush with per-recipient cadence throttle, DE/EN templates, `UserApiClient.getQnaNotificationFrequency`). 11 new integration tests (AC4–AC10); full EMS suite green (0 failures). Flush cron disabled in `test` profile. Doc-drift: `06d-notification-system.md` updated. Story → review. |

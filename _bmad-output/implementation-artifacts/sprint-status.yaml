@@ -261,7 +261,7 @@ development_status:
   15-4-company-email-domain-mismatch-warning: backlog
   15-5-speaker-company-logo-presenter-live-control: backlog
   15-6-present-mode-agenda-title-overlap: done
-  15-7-notify-speaker-moderator-on-new-qa-question: in-progress
+  15-7-notify-speaker-moderator-on-new-qa-question: review
   15-8-linkedin-post-drafts: backlog
   15-9-owasp-llm-agentic-security-checklist: backlog
   epic-15-retrospective: optional

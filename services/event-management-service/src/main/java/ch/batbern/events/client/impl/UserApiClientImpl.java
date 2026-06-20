@@ -402,6 +402,51 @@ public class UserApiClientImpl implements UserApiClient {
         }
     }
 
+    /**
+     * Story 15.7 — Q&A notification cadence preference. Same proven {@code ?include=preferences}
+     * path as {@link #getPreferredLanguage}; lenient (returns {@code null} on any failure/absence
+     * so the caller applies the {@code live} default). Cached 15&nbsp;min under a {@code qnaFreq:}
+     * key so it does not collide with the base user-cache entry.
+     */
+    @Override
+    @Cacheable(value = "userApiCache", key = "'qnaFreq:' + #username", unless = "#result == null")
+    public String getQnaNotificationFrequency(String username) {
+        if (username == null || username.isEmpty()) {
+            return null;
+        }
+        log.debug("Fetching Q&A notification frequency for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "?include=preferences";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<UserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    UserResponse.class
+            );
+
+            UserResponse user = response.getBody();
+            if (user == null || user.getPreferences() == null
+                    || user.getPreferences().getQnaNotificationFrequency() == null) {
+                log.debug("No Q&A notification preference available for username: {}", username);
+                return null;
+            }
+            String freq = user.getPreferences().getQnaNotificationFrequency().getValue();
+            return freq != null ? freq.toLowerCase(java.util.Locale.ROOT) : null;
+
+        } catch (Exception e) {
+            // Non-fatal: caller applies the 'live' default. A single recipient's missing/degraded
+            // preference must not break the whole flush.
+            log.warn("Could not resolve Q&A notification frequency for username {} (defaulting): {}",
+                    username, e.getMessage());
+            return null;
+        }
+    }
+
     @Override
     public java.time.Instant getLastLogin(String username) {
         log.debug("Fetching last login for username: {}", username);
