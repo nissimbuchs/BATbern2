@@ -198,13 +198,17 @@ final class LiveCountdownViewModel {
         // would otherwise show a countdown to a future session as if it were active.
         let newContext = computeComplicationContext(in: eventState)
         let newUrgencyLevel = engine.urgencyLevel
+        // Only attach session timing when the context is an actually-running session — prevents the
+        // complication extension from building a live timeline off a stale/past endTime (which is
+        // what produced the huge overtime number for an afterglow event).
+        let liveForComplication = isComplicationLive(for: newContext)
         ComplicationDataStore.write(ComplicationSnapshot(
-            sessionTitle: discovered?.title,
-            speakerNames: formattedSpeakerNames,
-            scheduledEndTime: discovered?.endTime,
-            sessionDuration: discovered?.duration,
-            scheduledStartTime: discovered?.startTime,
-            isLive: isComplicationLive(discovered),
+            sessionTitle: liveForComplication ? discovered?.title : nil,
+            speakerNames: liveForComplication ? formattedSpeakerNames : "",
+            scheduledEndTime: liveForComplication ? discovered?.endTime : nil,
+            sessionDuration: liveForComplication ? discovered?.duration : nil,
+            scheduledStartTime: liveForComplication ? discovered?.startTime : nil,
+            isLive: liveForComplication,
             urgencyLevel: newUrgencyLevel.rawValue,
             updatedAt: clock.now,
             complicationContext: newContext
@@ -251,22 +255,41 @@ final class LiveCountdownViewModel {
 
     // MARK: - Complication Context (W3.3 amendment)
 
+    /// Only surface the upcoming-event countdown once the next event is within this lead window.
+    /// Beyond it the complication shows nothing (feedback 2026-06-20: "nothing until one or two
+    /// weeks ahead of the real next event"). Prevents counting down to a far-future event (e.g. the
+    /// November edition) months out.
+    private static let complicationLeadWindow: TimeInterval = 14 * 24 * 3600  // 2 weeks
+
+    /// A just-ended session keeps showing on the complication (at 0:00 / brief overtime) for this
+    /// grace, covering realistic last-session overrun. Beyond it — with no upcoming session — the
+    /// event is over and the complication shows nothing. NO afterglow: a session that ended long
+    /// ago (e.g. a completed event still returned as `current` by the afterglow API) must never be
+    /// treated as live, which previously produced a huge overtime count-up.
+    private static let complicationOvertimeGrace: TimeInterval = 30 * 60  // 30 min
+
     /// Compute the context-aware display state for the complication.
     ///
-    /// Rules (per sprint-change-proposal-2026-02-19):
-    ///   - `.sessionRunning`      — `activeSession.startTime <= now` (in-progress or overtime)
-    ///   - `.eventDayPreSession`  — event today or within 24h, no session running
-    ///   - `.eventFar`            — next session > 1 day away
-    ///   - `.eventComplete`       — all sessions have ended
-    ///   - `.noEvent`             — no event loaded
+    /// Rules (per sprint-change-proposal-2026-02-19, amended 2026-06-20 for the next-event window):
+    ///   - `.sessionRunning`      — session started AND `now <= endTime + overtimeGrace`
+    ///   - `.eventDayPreSession`  — next session within 24h, none running
+    ///   - `.eventFar`            — next session 1 day … `leadWindow` away
+    ///   - `.noEvent`             — no event loaded, OR next session is beyond the lead window
+    ///                              (far future), OR a stale just-completed event (no afterglow)
+    ///   - `.eventComplete`       — all sessions ended (renders as the neutral fallback, no number)
     private func computeComplicationContext(in eventState: any EventStateManagerProtocol) -> ComplicationContext {
         guard let event = eventState.currentEvent else { return .noEvent }
         let now = clock.now
         let sessions = event.sessions.compactMap { $0.toWatchSession() }
         guard !sessions.isEmpty else { return .noEvent }
+        let sorted = sessions.sorted { $0.startTime < $1.startTime }
 
-        // Active/overtime session: session has started
-        if let session = activeSession, session.startTime <= now {
+        // Active/overtime session — but ONLY within the overtime grace. A session that ended long
+        // ago (afterglow / stale `current` event) is NOT live and must not produce an overtime
+        // count-up — fall through to the upcoming/complete handling below.
+        if let session = activeSession,
+           session.startTime <= now,
+           now <= session.endTime.addingTimeInterval(Self.complicationOvertimeGrace) {
             let remaining = session.endTime.timeIntervalSince(now)
             let minutesLeft = max(0, Int(remaining / 60))
             let fractionRemaining = session.duration > 0
@@ -275,20 +298,20 @@ final class LiveCountdownViewModel {
             return .sessionRunning(minutesLeft: minutesLeft, fractionRemaining: fractionRemaining)
         }
 
-        // All sessions ended
-        let sorted = sessions.sorted { $0.startTime < $1.startTime }
-        if let last = sorted.last, now > last.endTime {
-            return .eventComplete
-        }
-
-        // Next upcoming session
+        // Next upcoming session (if any). Drives the pre-event display within the lead window.
         guard let next = sorted.first(where: { $0.startTime > now }) else {
+            // Nothing upcoming → the event is over. No afterglow: show the neutral fallback.
             return .eventComplete
         }
 
         let timeUntilNext = next.startTime.timeIntervalSince(now)
 
-        // More than 1 day away
+        // Beyond the lead window (far-future event) → show nothing until it draws near.
+        if timeUntilNext > Self.complicationLeadWindow {
+            return .noEvent
+        }
+
+        // Within the lead window but more than a day away → show the date (dd.MM).
         if timeUntilNext > 24 * 3600 {
             let formatter = DateFormatter()
             formatter.dateFormat = "dd.MM"
@@ -312,12 +335,12 @@ final class LiveCountdownViewModel {
 
     // MARK: - Complication Live State (W3.3)
 
-    /// True when the session has actually started (startTime <= now), whether in-progress or overtime.
-    /// Returns false for upcoming sessions (startTime > now) — the complication must not show
-    /// a countdown to a future session as if it were live.
-    private func isComplicationLive(_ session: WatchSession?) -> Bool {
-        guard let session else { return false }
-        return session.startTime <= clock.now
+    /// True only when the complication context is an actually-running session — keeps the snapshot's
+    /// `isLive` flag consistent with `complicationContext` so a stale/just-completed session can
+    /// never be rendered as live (feedback 2026-06-20: no huge overtime number, no afterglow).
+    private func isComplicationLive(for context: ComplicationContext) -> Bool {
+        if case .sessionRunning = context { return true }
+        return false
     }
 
     // MARK: - Complication Speaker Names (W3.3)

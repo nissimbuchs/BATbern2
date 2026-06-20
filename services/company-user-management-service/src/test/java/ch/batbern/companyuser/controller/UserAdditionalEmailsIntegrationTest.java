@@ -102,12 +102,12 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
-                              "email": "info@berner-architekten-treffen.ch",
+                              "email": "info@batbern.ch",
                               "label": "Hostpoint shared"
                             }
                             """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("info@berner-architekten-treffen.ch"))
+                .andExpect(jsonPath("$.email").value("info@batbern.ch"))
                 .andExpect(jsonPath("$.label").value("Hostpoint shared"))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.verifiedAt").doesNotExist());
@@ -120,10 +120,10 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/users/me/additional-emails")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            { "email": "Info@Berner-Architekten-Treffen.CH" }
+                            { "email": "Info@Batbern.CH" }
                             """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("info@berner-architekten-treffen.ch"));
+                .andExpect(jsonPath("$.email").value("info@batbern.ch"));
     }
 
     @Test

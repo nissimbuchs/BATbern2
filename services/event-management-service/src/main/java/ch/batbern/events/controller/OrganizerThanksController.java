@@ -5,6 +5,7 @@ import ch.batbern.events.dto.SubmitThanksRequest;
 import ch.batbern.events.dto.ThanksCountResponse;
 import ch.batbern.events.dto.ThanksFeaturePatchRequest;
 import ch.batbern.events.dto.ThanksNoteResponse;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.OrganizerThanksService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -14,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,9 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
  * "Thank the Organizers" endpoints (Story 7.4).
  *
  * <p>Both endpoints are PUBLIC (no {@code @PreAuthorize}) — anonymous allowed. Authentication is
- * OPTIONAL and read via the injected {@link Authentication} (EventPhotoController null-check
- * pattern): a logged-in caller is deduped + may attach a note tied to their username; an
- * anonymous caller is a rate-limited, Turnstile-guarded clap.
+ * OPTIONAL and the caller's canonical username is resolved via
+ * {@link SecurityContextHelper#getCurrentUsernameOrNull()} (custom:username claim + Pattern 3b
+ * twin DB fallback, {@code null} for anonymous): a logged-in caller is deduped + may attach a note
+ * tied to their username; an anonymous caller is a rate-limited, Turnstile-guarded clap.
  *
  * <ul>
  *   <li>{@code POST /api/v1/events/{eventCode}/thanks} — submit; returns the new aggregate count.</li>
@@ -47,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrganizerThanksController {
 
     private final OrganizerThanksService thanksService;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * Submit a thank-you (public). Logged-in → deduped upsert by username; anonymous → clap row
@@ -56,9 +58,8 @@ public class OrganizerThanksController {
     public ResponseEntity<ThanksCountResponse> submitThanks(
             @PathVariable String eventCode,
             @Valid @RequestBody(required = false) SubmitThanksRequest request,
-            Authentication authentication,
             HttpServletRequest httpRequest) {
-        String username = resolveUsername(authentication);
+        String username = resolveUsername();
         String note = request != null ? request.getNote() : null;
         long count = thanksService.submitThanks(eventCode, username, note, getClientIp(httpRequest));
         return ResponseEntity.ok(ThanksCountResponse.ofCount(count));
@@ -100,17 +101,14 @@ public class OrganizerThanksController {
     }
 
     /**
-     * The logged-in username, or {@code null} for anonymous. On this permitAll endpoint an
-     * unauthenticated request arrives as either a {@code null} Authentication (this service in
-     * isolation) or an {@link AnonymousAuthenticationToken} (via the gateway) — both map to null.
+     * The logged-in caller's CANONICAL username (ADR-003 meaningful id), or {@code null} for
+     * anonymous. Resolved via {@link SecurityContextHelper#getCurrentUsernameOrNull()} — which
+     * reads the {@code custom:username} claim (+ Pattern 3b twin DB fallback) — NOT
+     * {@code authentication.getName()}, which returns the Cognito {@code sub} (a UUID) and
+     * previously caused thank-you notes to be stored against, and displayed as, the raw sub.
      */
-    private String resolveUsername(Authentication authentication) {
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return null;
-        }
-        return authentication.getName();
+    private String resolveUsername() {
+        return securityContextHelper.getCurrentUsernameOrNull();
     }
 
     private boolean hasRole(Authentication authentication, String role) {

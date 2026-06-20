@@ -20,14 +20,20 @@ script:pre-request {
 
   bru.setVar("testTimestamp", now);
   bru.setVar("eventNumber", eventNumber);
+
+  // Dynamic FUTURE date/deadline so 13-create-registration passes the registration-deadline
+  // guard (a past deadline → 409 REGISTRATION_CLOSED). Computed each run so it never rots.
+  const dayMs = 24 * 60 * 60 * 1000;
+  bru.setVar("fixtureEventDate", new Date(now + 60 * dayMs).toISOString());
+  bru.setVar("fixtureRegDeadline", new Date(now + 53 * dayMs).toISOString());
 }
 
 body:json {
   {
     "title": "Bruno Workflow Fixture Event {{testTimestamp}}",
     "eventNumber": {{eventNumber}},
-    "date": "2026-05-15T09:00:00Z",
-    "registrationDeadline": "2026-05-01T23:59:59Z",
+    "date": "{{fixtureEventDate}}",
+    "registrationDeadline": "{{fixtureRegDeadline}}",
     "venueName": "Workflow Test Venue",
     "venueAddress": "Test Address 5, 3000 Bern",
     "venueCapacity": 100,

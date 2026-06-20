@@ -164,7 +164,7 @@ public class User {
      * Story 10.32: additional email addresses registered on this profile.
      *
      * <p>Used by the SES email forwarder Lambda (Story 10.26) so legacy /
-     * shared mailboxes (e.g. {@code info@berner-architekten-treffen.ch}) can be
+     * shared mailboxes (e.g. {@code info@batbern.ch}) can be
      * declared once and then count as the user's own address for both
      * receiving forwarded copies and authorising as a sender.
      *

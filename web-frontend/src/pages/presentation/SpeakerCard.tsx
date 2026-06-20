@@ -10,6 +10,7 @@ import { type JSX } from 'react';
 
 import type { components } from '@/types/generated/events-api.types';
 import { useCompany } from '@/hooks/useCompany/useCompany';
+import { LogoBadge } from '@/components/shared/LogoBadge/LogoBadge';
 
 type SessionSpeaker = components['schemas']['SessionSpeaker'];
 
@@ -86,14 +87,13 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
           {fullName}
         </p>
         {logoUrl && (
-          <img
+          // White chip behind the logo so transparent logos stay legible on the dark slide
+          // background (Vanessa #791).
+          <LogoBadge
             src={logoUrl}
             alt={speaker.companyDisplayName ?? speaker.company ?? ''}
-            style={{
-              height: '2.5vw',
-              maxWidth: '9.375vw',
-              objectFit: 'contain',
-            }}
+            imgStyle={{ height: '2.5vw', maxWidth: '9.375vw' }}
+            style={{ padding: '0.4vw 0.6vw', borderRadius: '0.5vw' }}
           />
         )}
       </div>

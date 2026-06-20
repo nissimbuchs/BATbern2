@@ -19,11 +19,8 @@ export const PublicFooter = () => {
             <h3 className="text-lg font-light">{t('app.name')}</h3>
             <p className="mt-2 text-sm text-zinc-400">{t('footer.tagline')}</p>
             <p className="mt-4 text-sm text-zinc-400">
-              <a
-                href="mailto:info@berner-architekten-treffen.ch"
-                className="hover:text-blue-400 transition-colors"
-              >
-                info@berner-architekten-treffen.ch
+              <a href="mailto:info@batbern.ch" className="hover:text-blue-400 transition-colors">
+                info@batbern.ch
               </a>
             </p>
           </div>

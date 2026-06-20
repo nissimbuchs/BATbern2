@@ -562,7 +562,7 @@ class RegistrationEmailServiceTest {
 
         ch.batbern.events.dto.generated.users.AdditionalEmail hostpoint =
                 new ch.batbern.events.dto.generated.users.AdditionalEmail()
-                        .email("info@berner-architekten-treffen.ch")
+                        .email("info@batbern.ch")
                         .label("Hostpoint shared");
 
         UserResponse userProfile = new UserResponse()
@@ -605,7 +605,7 @@ class RegistrationEmailServiceTest {
                 anyString(),
                 anyList()
         );
-        assertThat(ccCaptor.getValue()).containsExactly("info@berner-architekten-treffen.ch");
+        assertThat(ccCaptor.getValue()).containsExactly("info@batbern.ch");
     }
 
     @Test

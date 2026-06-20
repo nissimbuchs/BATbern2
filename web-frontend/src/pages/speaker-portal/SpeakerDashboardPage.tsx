@@ -14,6 +14,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { EventEditionLabel } from '@/components/shared/EventEditionLabel/EventEditionLabel';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
 import {
@@ -87,6 +88,10 @@ function UpcomingEventCard({ event }: { event: DashboardUpcomingEvent }) {
         {/* Event header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
+            <EventEditionLabel
+              eventCode={event.eventCode}
+              className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            />
             <h3 className="text-lg font-semibold text-foreground">{event.eventTitle}</h3>
             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
               <span className="flex items-center gap-1">
@@ -265,6 +270,10 @@ function PastEventCard({ event }: { event: DashboardPastEvent }) {
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
+            <EventEditionLabel
+              eventCode={event.eventCode}
+              className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            />
             <h3 className="text-base font-medium text-foreground">{event.eventTitle}</h3>
             <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
               <span className="flex items-center gap-1">

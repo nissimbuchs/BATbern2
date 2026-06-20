@@ -46,7 +46,8 @@
       "errors": {
         "alreadyRegistered": "Du bisch scho für die Veranstautig amäldet."
       }
-    }
+    },
+    "registrationClosed": "D Aamäldig für dä Event isch zue."
   },
   "attendee": {
     "welcome": {

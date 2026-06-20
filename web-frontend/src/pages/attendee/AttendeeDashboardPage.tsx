@@ -10,6 +10,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { EventEditionLabel } from '@/components/shared/EventEditionLabel/EventEditionLabel';
 import { Calendar, MapPin } from 'lucide-react';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
@@ -37,6 +38,10 @@ function EventCard({ event, linkPrefix }: { event: AttendeeEventCard; linkPrefix
       <Card className="p-4 mb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
+            <EventEditionLabel
+              eventCode={event.eventCode}
+              className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            />
             <h3 className="text-base font-medium text-foreground">{event.eventTitle}</h3>
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-0.5">
               <span className="flex items-center gap-1">

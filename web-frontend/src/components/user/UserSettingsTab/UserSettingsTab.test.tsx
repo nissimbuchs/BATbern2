@@ -75,21 +75,15 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
   test('should render existing additional emails with delete buttons and unverified pill', () => {
     renderWithProviders([
       {
-        email: 'info@berner-architekten-treffen.ch',
+        email: 'info@batbern.ch',
         label: 'Hostpoint shared',
         createdAt: '2026-05-22T10:00:00Z',
         verifiedAt: null,
       },
     ]);
-    expect(
-      screen.getByTestId('additional-email-row-info@berner-architekten-treffen.ch')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId('additional-email-delete-info@berner-architekten-treffen.ch')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId('additional-email-unverified-info@berner-architekten-treffen.ch')
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('additional-email-row-info@batbern.ch')).toBeInTheDocument();
+    expect(screen.getByTestId('additional-email-delete-info@batbern.ch')).toBeInTheDocument();
+    expect(screen.getByTestId('additional-email-unverified-info@batbern.ch')).toBeInTheDocument();
   });
 
   test('should call addAdditionalEmail on form submit with valid email', async () => {

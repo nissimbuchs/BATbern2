@@ -18,6 +18,7 @@ const RegistrationWizard = lazy(() =>
 );
 import { AttendeeUnregisterPanel } from '@/components/public/Registration/AttendeeUnregisterPanel';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
+import { EventEditionLabel } from '@/components/shared/EventEditionLabel/EventEditionLabel';
 import { CheckCircle2, Mail } from 'lucide-react';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
@@ -212,6 +213,15 @@ export const HeroSection = ({
           <div className="container mx-auto px-4">
             <div className="max-w-4xl">
               <BATbernLoader size={288} speed="slow" className="mb-6" />
+
+              {/* Edition kicker above the title (feedback #15) */}
+              {eventCode && (
+                <EventEditionLabel
+                  eventCode={eventCode}
+                  className="block text-lg md:text-xl font-semibold uppercase tracking-wide text-foreground/70 mb-2"
+                  data-testid="event-hero-edition"
+                />
+              )}
 
               <h1
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight mb-6"

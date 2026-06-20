@@ -105,7 +105,7 @@ The platform provides serverless email forwarding for 6 inboxes: `ok@`, `info@`,
 - **Sender exclusion** — Original sender is excluded from forwarding to prevent bounce loops
 - **CC address forwarding** — CC recipients on inbound emails are recognised as mailing-list addresses and resolved through the same recipient-resolution pipeline; they are forwarded alongside the primary recipients
 - **All mailing list variants recognised** — All `batbernNN@batbern.ch` series addresses (e.g. `batbern44@batbern.ch`) are detected and handled correctly, not only the latest series
-- **Environment isolation** — Staging uses `replies@staging.batbern.ch` with `noreply@berner-architekten-treffen.ch`; production uses `replies@batbern.ch` with `noreply@batbern.ch`
+- **Environment isolation** — Staging uses `replies@staging.batbern.ch` with `noreply@batbern.ch`; production uses `replies@batbern.ch` with `noreply@batbern.ch`
 - **Admin configuration** — Organizers manage forwarding rules via Admin Settings UI
 - **Additional user emails** (Story 10.32) — A user can register additional email addresses on their profile. Those addresses then both **receive** fan-out mail destined for the user's primary email and are treated as **authorised senders** by the forwarder's sender-auth check (so mail sent from a legacy/shared/personal address is not silently dropped).
 

@@ -46,7 +46,8 @@
       "errors": {
         "alreadyRegistered": "このイベントにはすでに登録済みです。"
       }
-    }
+    },
+    "registrationClosed": "このイベントの登録は締め切られました。"
   },
   "attendee": {
     "welcome": {

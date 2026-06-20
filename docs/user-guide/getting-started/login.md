@@ -200,7 +200,7 @@ Return to the login page and sign in with your new password.
 **Email not received?**
 - Check your spam/junk folder
 - Verify you entered the correct email address
-- Contact support if issue persists: info@berner-architekten-treffen.ch
+- Contact support if issue persists: info@batbern.ch
 
 **Password requirements not met?**
 - Ensure your password includes all required character types

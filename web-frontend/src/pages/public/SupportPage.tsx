@@ -250,11 +250,8 @@ const SupportPage = () => {
                 <div className="p-4 bg-zinc-800/50 rounded-lg space-y-3">
                   <div className="flex items-center gap-3">
                     <Mail className="h-5 w-5 text-blue-400" />
-                    <a
-                      href="mailto:info@berner-architekten-treffen.ch"
-                      className="text-blue-400 hover:text-blue-300"
-                    >
-                      info@berner-architekten-treffen.ch
+                    <a href="mailto:info@batbern.ch" className="text-blue-400 hover:text-blue-300">
+                      info@batbern.ch
                     </a>
                   </div>
                   <div className="flex items-center gap-3">
@@ -282,11 +279,8 @@ const SupportPage = () => {
                 <p className="leading-relaxed">
                   Wir freuen uns über Ihr Feedback! Teilen Sie uns Ihre Ideen und
                   Verbesserungsvorschläge mit. Senden Sie eine E-Mail an{' '}
-                  <a
-                    href="mailto:info@berner-architekten-treffen.ch"
-                    className="text-blue-400 hover:text-blue-300"
-                  >
-                    info@berner-architekten-treffen.ch
+                  <a href="mailto:info@batbern.ch" className="text-blue-400 hover:text-blue-300">
+                    info@batbern.ch
                   </a>{' '}
                   mit dem Betreff „Feedback".
                 </p>

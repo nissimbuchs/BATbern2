@@ -254,6 +254,14 @@ export const PublicNavigation = ({
           >
             {t('navigation.pastEvents')}
           </Link>
+          {/* Thank the organizers — Story 7.4: only on a live/completed event page. Lives in the
+              primary mobile nav group (not the CTA strip below) so the hearts are reliably visible
+              inside the hamburger (post-event-#2 feedback #13). */}
+          {thankableEventCode && (
+            <div className="px-3 py-2" onClick={closeMobileMenu}>
+              <ThankOrganizersNavButton eventCode={thankableEventCode} />
+            </div>
+          )}
           {isAuthenticated && hasAdminRole && (
             <Link
               to="/dashboard"
@@ -286,12 +294,6 @@ export const PublicNavigation = ({
 
         {/* CTA buttons */}
         <div className="px-4 pb-4 flex flex-col gap-3">
-          {/* Thank the organizers — Story 7.4: only on a live/completed event page */}
-          {thankableEventCode && (
-            <div className="pb-1">
-              <ThankOrganizersNavButton eventCode={thankableEventCode} />
-            </div>
-          )}
           {isAuthenticated ? (
             <>
               {/* 2026-05-20 (Q#2b) — Portal/My Sessions moved up into the nav links block.

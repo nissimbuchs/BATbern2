@@ -188,8 +188,8 @@ Workflow documentation uses color-coded phases:
 ## Getting Help
 
 - **Technical Issues**: GitHub Issues at [BATbern2 Repository](https://github.com/nissimbuchs/BATbern2/issues)
-- **Security Concerns**: security@berner-architekten-treffen.ch
-- **General Questions**: info@berner-architekten-treffen.ch
+- **Security Concerns**: security@batbern.ch
+- **General Questions**: info@batbern.ch
 
 ## Credits — Swiss German speech synthesis & subtitles
 

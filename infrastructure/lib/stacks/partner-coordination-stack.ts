@@ -102,7 +102,7 @@ export class PartnerCoordinationStack extends cdk.Stack {
     // Grant SES permissions for sending emails (partner meeting invites with iCal attachments)
     // Uses SendRawEmail via shared-kernel EmailService.sendHtmlEmailWithAttachments()
     const isProdTraffic = props.config.isProduction ?? (envName === 'production');
-    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'berner-architekten-treffen.ch';
+    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'batbern.ch';
     this.service.taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,

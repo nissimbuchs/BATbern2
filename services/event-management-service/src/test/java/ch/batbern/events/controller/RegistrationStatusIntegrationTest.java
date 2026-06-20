@@ -73,7 +73,7 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
     private static final String EVENT_CODE = "BATbern999";
     private static final String USERNAME = "alice.test";
     private static final String OTHER_USERNAME = "bob.other";
-    private static final Instant EVENT_DATE = LocalDate.of(2026, 6, 15)
+    private static final Instant EVENT_DATE = LocalDate.of(2027, 6, 15)
             .atStartOfDay(ZoneId.of("UTC")).toInstant();
 
     private Event testEvent;

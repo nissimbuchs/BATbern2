@@ -46,7 +46,8 @@
       "errors": {
         "alreadyRegistered": "U bent al geregistreerd voor dit evenement."
       }
-    }
+    },
+    "registrationClosed": "De registratie voor dit evenement is gesloten."
   },
   "attendee": {
     "welcome": {

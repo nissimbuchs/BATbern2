@@ -46,7 +46,8 @@
       "errors": {
         "alreadyRegistered": "Vus essas gia inscrit per quest event."
       }
-    }
+    },
+    "registrationClosed": "L’annunzia per quest eveniment è serrada."
   },
   "attendee": {
     "welcome": {

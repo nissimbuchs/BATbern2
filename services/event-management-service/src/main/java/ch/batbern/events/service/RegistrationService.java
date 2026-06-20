@@ -15,6 +15,7 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
+import ch.batbern.events.exception.RegistrationClosedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
@@ -88,6 +89,9 @@ public class RegistrationService {
                 .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
 
         log.debug("Found event: {} (ID: {})", eventCode, event.getId());
+
+        // Feedback #1: close public registration AND waitlist once the deadline has passed.
+        assertRegistrationOpen(event);
 
         // 2. Get or create user via User Management Service API (ADR-005: anonymous user)
         GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
@@ -564,6 +568,24 @@ public class RegistrationService {
     }
 
     /**
+     * Closes PUBLIC self-registration AND waitlist once the registration deadline has passed
+     * (feedback #1). Falls back to the event start date when no explicit deadline is set, so a
+     * missing deadline never leaves registration open forever. Called before capacity branching,
+     * so a full event past its deadline returns REGISTRATION_CLOSED rather than a waitlist spot.
+     * The organizer {@link #addParticipant} path deliberately bypasses this.
+     *
+     * @throws RegistrationClosedException when {@code now} is after the (deadline ?: event date)
+     */
+    private void assertRegistrationOpen(Event event) {
+        Instant deadline = event.getRegistrationDeadline() != null
+                ? event.getRegistrationDeadline()
+                : event.getDate();
+        if (deadline != null && Instant.now().isAfter(deadline)) {
+            throw new RegistrationClosedException(event.getEventCode(), deadline);
+        }
+    }
+
+    /**
      * Organizer "Add participant": add an EXISTING user onto an event directly as a
      * {@code confirmed} participant — no self-registration / email-confirmation step.
      *
@@ -672,6 +694,9 @@ public class RegistrationService {
 
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+
+        // Feedback #1: close public registration AND waitlist once the deadline has passed.
+        assertRegistrationOpen(event);
 
         // User profile enriches the registration cache fields but may not exist for
         // ATTENDEEs who were created directly in Cognito. Fall back gracefully.

@@ -131,6 +131,27 @@ export function showSessionQna(
   }
 }
 
+/**
+ * Whether public registration (and the waitlist) is closed because the deadline has passed
+ * (feedback #1). Mirrors the backend guard (`RegistrationService.assertRegistrationOpen`): closes
+ * on `registrationDeadline`, falling back to the event start `date` when no explicit deadline is
+ * set so a missing deadline never leaves registration open forever. The backend is authoritative
+ * (409 `REGISTRATION_CLOSED`); this only hides the register CTA on the public page.
+ *
+ * Combine with {@link getSectionVisibility}: `registrationEnabled && !isRegistrationClosed(event)`.
+ */
+export function isRegistrationClosed(
+  event: Pick<EventDetail, 'registrationDeadline' | 'date'>,
+  now: number = Date.now()
+): boolean {
+  const deadline = event.registrationDeadline ?? event.date;
+  if (!deadline) {
+    return false;
+  }
+  const parsed = Date.parse(deadline);
+  return Number.isFinite(parsed) && now > parsed;
+}
+
 export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
   switch (phase.kind) {
     case 'COMING_SOON':

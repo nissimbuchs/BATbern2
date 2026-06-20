@@ -28,9 +28,11 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -222,6 +224,47 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
         assertThat(waitlisted).hasSize(1); // exactly 1 waitlist entry
     }
 
+    // ── Feedback #1: registration deadline closes registration AND waitlist ──────
+
+    @Test
+    @DisplayName("feedback #1: public register after the deadline → 409 REGISTRATION_CLOSED, no row")
+    void register_afterDeadline_returns409Closed() throws Exception {
+        Event closed = savePastDeadlineEvent("BATbern10kC", 9003, 2);
+
+        String body = objectMapper.writeValueAsString(Map.of(
+                "firstName", "Late", "lastName", "Comer", "email", "late@test.com",
+                "termsAccepted", true));
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", "BATbern10kC")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("REGISTRATION_CLOSED")));
+
+        assertThat(registrationRepository.findByEventId(closed.getId()))
+                .as("no registration row created after the deadline")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("feedback #1: waitlist join after the deadline → 409 REGISTRATION_CLOSED (not waitlisted)")
+    void register_afterDeadline_whenFull_closesWaitlistToo() throws Exception {
+        // Capacity 1, already filled (rows inserted directly — they pre-date the closed deadline).
+        Event closed = savePastDeadlineEvent("BATbern10kCF", 9004, 1);
+        createRegisteredRegistration(closed, "early.bird");
+
+        // A late arrival would normally be waitlisted (event full) — but the deadline closes it.
+        String body = objectMapper.writeValueAsString(Map.of(
+                "firstName", "Late", "lastName", "Waiter", "email", "latewl@test.com",
+                "termsAccepted", true));
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", "BATbern10kCF")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("REGISTRATION_CLOSED")));
+
+        assertThat(registrationRepository.findWaitlistByEventIdOrdered(closed.getId()))
+                .as("no waitlist row created after the deadline")
+                .isEmpty();
+    }
+
     // ── AC3 + T15: Promote endpoint ────────────────────────────────────────────
 
     @Test
@@ -293,6 +336,25 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
 
     private Event eventByCode(String code) {
         return eventRepository.findByEventCode(code).orElseThrow();
+    }
+
+    /** An event whose registration deadline is already in the past (feedback #1). */
+    private Event savePastDeadlineEvent(String eventCode, int eventNumber, int capacity) {
+        return eventRepository.save(Event.builder()
+                .eventCode(eventCode)
+                .title("Closed-Registration Event")
+                .eventNumber(eventNumber)
+                .date(Instant.parse("2026-01-15T18:00:00Z"))
+                .registrationDeadline(Instant.parse("2026-01-10T23:59:00Z")) // in the past
+                .venueName("Test Venue")
+                .venueAddress("Teststrasse 1, Bern")
+                .venueCapacity(200)
+                .registrationCapacity(capacity)
+                .organizerUsername("test.organizer")
+                .currentAttendeeCount(0)
+                .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
+                .build());
     }
 
     private Registration createWaitlistRegistration(Event event, String username, int position) {

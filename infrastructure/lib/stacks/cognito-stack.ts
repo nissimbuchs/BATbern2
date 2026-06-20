@@ -95,7 +95,7 @@ export class CognitoStack extends cdk.Stack {
     // FROM address must use a domain verified in SES for the environment
     const fromEmail = isProdTraffic
       ? 'BATbern <noreply@batbern.ch>'
-      : 'BATbern <noreply@berner-architekten-treffen.ch>';
+      : 'BATbern <noreply@batbern.ch>';
 
     const customEmailSenderLambda = new NodejsFunction(this, 'CustomEmailSenderTrigger', {
       functionName: `batbern-${envName}-custom-email-sender-trigger`,

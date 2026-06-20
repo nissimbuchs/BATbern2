@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   getHomepagePhase,
   getSectionVisibility,
+  isRegistrationClosed,
   showSessionQna,
   type HomePagePhase,
 } from './homePagePhase';
@@ -29,6 +30,36 @@ function makeEvent(
     ...overrides,
   } as EventDetail;
 }
+
+// ---------------------------------------------------------------------------
+// isRegistrationClosed (feedback #1)
+// ---------------------------------------------------------------------------
+
+describe('isRegistrationClosed', () => {
+  const event = (registrationDeadline?: string, date?: string) =>
+    ({ registrationDeadline, date }) as EventDetail;
+
+  it('is open before the deadline', () => {
+    expect(isRegistrationClosed(event('2026-05-28'), Date.parse('2026-05-20'))).toBe(false);
+  });
+
+  it('is closed after the deadline (registration AND waitlist)', () => {
+    expect(isRegistrationClosed(event('2026-05-28'), Date.parse('2026-05-29'))).toBe(true);
+  });
+
+  it('falls back to the event start date when no deadline is set', () => {
+    expect(isRegistrationClosed(event(undefined, '2026-06-01'), Date.parse('2026-06-02'))).toBe(
+      true
+    );
+    expect(isRegistrationClosed(event(undefined, '2026-06-01'), Date.parse('2026-05-31'))).toBe(
+      false
+    );
+  });
+
+  it('stays open when neither deadline nor date is known', () => {
+    expect(isRegistrationClosed(event(undefined, undefined), Date.parse('2030-01-01'))).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // getHomepagePhase
