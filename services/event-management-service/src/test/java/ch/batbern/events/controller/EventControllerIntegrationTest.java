@@ -2387,19 +2387,43 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should_preferUpcomingEvent_when_bothUpcomingAndRecentlyCompletedExist")
-    void should_preferUpcomingEvent_when_bothUpcomingAndRecentlyCompletedExist() throws Exception {
-        // Given: a recently completed event AND an upcoming published event
+    @DisplayName("should_preferRecentlyCompletedEvent_when_bothUpcomingAndRecentlyCompletedExist")
+    void should_preferRecentlyCompletedEvent_when_bothUpcomingAndRecentlyCompletedExist() throws Exception {
+        // Given: a recently completed event AND an upcoming published event.
+        // The afterglow (EVENT_COMPLETED, within the 14-day post-event window) takes precedence:
+        // while the event is in its post-event window, the homepage keeps showing it so attendees
+        // get the post-event experience — even though the next event is already published.
         eventRepository.deleteAll();
         String sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS).toString();
         String tomorrow = Instant.now().plus(1, ChronoUnit.DAYS).toString();
         createTestEvent("Recent Completed", sevenDaysAgo, "EVENT_COMPLETED");
         createTestEvent("Upcoming Event", tomorrow, "AGENDA_PUBLISHED", "agenda");
 
-        // When / Then: upcoming event is preferred
+        // When / Then: the recently completed afterglow event is preferred over the upcoming one
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Upcoming Event"));
+                .andExpect(jsonPath("$.title").value("Recent Completed"))
+                .andExpect(jsonPath("$.workflowState").value("EVENT_COMPLETED"));
+    }
+
+    @Test
+    @DisplayName("should_preferCompletedAfterglow_when_nextEventHasPublishedTopic")
+    void should_preferCompletedAfterglow_when_nextEventHasPublishedTopic() throws Exception {
+        // Regression test for the BATbern59/BATbern60 bug (2026-06-20): a just-completed event was
+        // dropped from the homepage because the NEXT event (months out) was already in
+        // SPEAKER_IDENTIFICATION with currentPublishedPhase=TOPIC, so the old "upcoming first"
+        // precedence returned the future event. The afterglow event must win during its window.
+        eventRepository.deleteAll();
+        String yesterday = Instant.now().minus(1, ChronoUnit.DAYS).toString();
+        String monthsOut = Instant.now().plus(140, ChronoUnit.DAYS).toString();
+        createTestEvent("Just Completed (afterglow)", yesterday, "EVENT_COMPLETED", "agenda");
+        createTestEvent("Next Event (topic published)", monthsOut, "SPEAKER_IDENTIFICATION", "topic");
+
+        // When / Then: the afterglow event wins despite the next event having a published topic
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Just Completed (afterglow)"))
+                .andExpect(jsonPath("$.workflowState").value("EVENT_COMPLETED"));
     }
 
     @Test

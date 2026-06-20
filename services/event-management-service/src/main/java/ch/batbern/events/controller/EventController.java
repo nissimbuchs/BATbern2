@@ -752,9 +752,9 @@ public class EventController {
      *
      * GET /api/v1/events/current?include=topics,venue,speakers,sessions
      *
-     * Returns the next upcoming event with status published, registration_open, or
-     * registration_closed. If multiple events match, returns the one nearest to the current
-     * date. This is a public endpoint (no authentication required) used by the public website.
+     * Afterglow takes precedence: if an event is still within its 14-day post-event window
+     * (EVENT_COMPLETED), it is returned so the homepage keeps featuring it. Otherwise the next
+     * upcoming published event (nearest by date) is returned. Public endpoint (no auth).
      *
      * @param include Comma-separated list of resources to expand
      * @return Current event or 404 if none exists
@@ -762,8 +762,9 @@ public class EventController {
     @GetMapping("/current")
     @Operation(
             summary = "Get Current Event",
-            description = "Retrieve the next upcoming event (published, registration_open, or "
-                + "registration_closed) for the public website. No authentication required."
+            description = "Retrieve the event the public homepage should feature: the recently "
+                + "completed event within its 14-day post-event window if one exists, otherwise "
+                + "the next upcoming published event. No authentication required."
     )
     public ResponseEntity<EventResponse> getCurrentEvent(
             @Parameter(description = "Comma-separated list of resources to include "
@@ -772,15 +773,20 @@ public class EventController {
     ) {
         log.debug("GET /api/v1/events/current - include: {}", include);
 
-        // Two-phase lookup for the public homepage current event:
-        // Phase 1: Prefer the next upcoming event that has been explicitly published
-        //          (currentPublishedPhase IS NOT NULL). Events in early internal states
-        //          (SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT) without a published phase must NOT
-        //          block the Phase 2 fallback — only events the organiser has actively published
-        //          (topics / speakers / agenda) are eligible for public display.
-        // Phase 2: Fallback — show the most recently completed event within the 14-day
-        //          post-event window, so the homepage is not blank right after an event.
-        // After 14 days the scheduler auto-archives the event and the page returns 404.
+        // Two-phase lookup for the public homepage current event (afterglow takes precedence):
+        // Phase 1: Prefer the most recently completed event still inside its 14-day post-event
+        //          window (EVENT_COMPLETED, date within the last 14 days). While an event is in
+        //          this afterglow window the homepage keeps showing it so attendees get the
+        //          post-event experience (Q&A, slides-online, thank-the-organisers, …) — even if
+        //          the NEXT event has already published its topic/speakers/agenda. The scheduler
+        //          auto-archives the event after 14 days, ending the afterglow.
+        // Phase 2: Fallback — the next upcoming event that has been explicitly published
+        //          (currentPublishedPhase IS NOT NULL). Events in early internal states without a
+        //          published phase are NOT eligible for public display. This also serves the
+        //          event-day case (EVENT_LIVE, date == today) which Phase 1 excludes (date < today).
+        // If neither matches the page returns 404.
+        // Precedence is afterglow-first (changed 2026-06-20): BATbern is quarterly, so a completed
+        // event ≤14 days old can never coexist with a live/upcoming event within 14 days.
         // 8-State Model (V82): AGENDA_FINALIZED removed, scheduler transitions AGENDA_PUBLISHED → EVENT_LIVE
         List<EventWorkflowState> activeWorkflowStates = List.of(
                 EventWorkflowState.SPEAKER_IDENTIFICATION,
@@ -791,26 +797,26 @@ public class EventController {
         ZoneId bernZone = ZoneId.of("Europe/Zurich");
         Instant startOfToday = LocalDate.now(bernZone).atStartOfDay(bernZone).toInstant();
 
-        // Phase 1: upcoming published event (today or future, currentPublishedPhase set)
+        // Phase 1: afterglow — most recently completed event within the 14-day post-event window
+        Instant twoWeeksAgo = startOfToday.minus(14, ChronoUnit.DAYS);
         Event currentEvent = eventRepository
-                .findFirstByWorkflowStateInAndDateGreaterThanEqualAndCurrentPublishedPhaseIsNotNullOrderByDateAsc(
-                        activeWorkflowStates, startOfToday)
+                .findFirstByWorkflowStateAndDateGreaterThanEqualAndDateBeforeOrderByDateDesc(
+                        EventWorkflowState.EVENT_COMPLETED,
+                        twoWeeksAgo,
+                        startOfToday
+                )
                 .orElse(null);
+        if (currentEvent != null) {
+            log.debug("Afterglow: showing recently completed event {} within 14-day window",
+                    currentEvent.getEventCode());
+        }
 
-        // Phase 2: fallback — recently completed event within 14-day post-event window
+        // Phase 2: fallback — next upcoming published event (today or future, currentPublishedPhase set)
         if (currentEvent == null) {
-            Instant twoWeeksAgo = startOfToday.minus(14, ChronoUnit.DAYS);
             currentEvent = eventRepository
-                    .findFirstByWorkflowStateAndDateGreaterThanEqualAndDateBeforeOrderByDateDesc(
-                            EventWorkflowState.EVENT_COMPLETED,
-                            twoWeeksAgo,
-                            startOfToday
-                    )
+                    .findFirstByWorkflowStateInAndDateGreaterThanEqualAndCurrentPublishedPhaseIsNotNullOrderByDateAsc(
+                            activeWorkflowStates, startOfToday)
                     .orElse(null);
-            if (currentEvent != null) {
-                log.debug("Fallback: showing recently completed event {} within 14-day window",
-                        currentEvent.getEventCode());
-            }
         }
 
         if (currentEvent == null) {

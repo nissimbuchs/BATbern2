@@ -99,14 +99,21 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get current published event
-     * @description Retrieve the next upcoming published event for the public website.
+     * Get current event for the public homepage
+     * @description Retrieve the event the public homepage should feature. No authentication required.
      *
      *     **Story**: 4.1.3 - Public event landing page hero section
      *     **Public Access**: No authentication required
      *
-     *     Returns the earliest published event by date (next upcoming event).
-     *     If no published events exist, returns 404.
+     *     Two-phase selection (afterglow takes precedence):
+     *     1. **Afterglow**: the most recently completed event still inside its 14-day post-event
+     *        window (EVENT_COMPLETED, date within the last 14 days). It keeps featuring on the
+     *        homepage so attendees get the post-event experience, even if the next event has
+     *        already published its topic/speakers/agenda. The scheduler auto-archives after 14 days.
+     *     2. **Upcoming**: otherwise, the earliest upcoming published event by date
+     *        (currentPublishedPhase != null).
+     *
+     *     If neither exists, returns 404.
      *
      *     **Performance**: <150ms (P95)
      */
