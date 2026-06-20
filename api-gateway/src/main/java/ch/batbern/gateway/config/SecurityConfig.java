@@ -213,6 +213,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
 
+                        // Story 15.1: live-timing poll anonymous-readable; POST .../actions requires ORGANIZER.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/live-timing").permitAll()
                         // Story 10.21: Public event photo endpoints (AC4, AC5)
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/photos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/recent-photos").permitAll()
@@ -229,8 +231,7 @@ public class SecurityConfig {
                         // Story 5.9: Public materials download endpoint for archived events
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 
-                        // Story 7.5: Public read of a session's Q&A thread (frozen archive is public).
-                        // POST/PATCH/DELETE fall through to authenticated + @PreAuthorize in EMS.
+                        // Story 7.5: Public read of a session's Q&A thread (writes auth'd in EMS).
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/qna").permitAll()
 
                         // Story 4.1.5: Public registration endpoints

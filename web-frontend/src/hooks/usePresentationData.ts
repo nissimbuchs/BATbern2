@@ -16,9 +16,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import { useConfig } from '@/contexts/useConfig';
+import { liveTimingService } from '@/services/liveTimingService';
 import {
   getPresentationData,
   getPublicOrganizers,
@@ -52,48 +50,62 @@ export interface UsePresentationDataResult {
 const DEFAULT_ABOUT_TEXT =
   'BATbern ist eine unabhängige Plattform, die Berner Architekten und Ingenieure vernetzt.';
 
-export function usePresentationData(eventCode: string): UsePresentationDataResult {
-  const { apiBaseUrl } = useConfig();
-  const queryClient = useQueryClient();
-  const clientRef = useRef<Client | null>(null);
+/** Adaptive live-timing poll cadence (ms). */
+const LIVE_TIMING_POLL_ACTIVE = 5000;
+const LIVE_TIMING_POLL_HIDDEN = 30000;
 
-  // WebSocket sync — invalidates the event cache on any STATE_UPDATE so session
-  // times (extend/delay) are reflected immediately without waiting for the 60s poll.
-  // Connects anonymously: JwtStompInterceptor passes through frames with no auth header.
+export function usePresentationData(eventCode: string): UsePresentationDataResult {
+  const queryClient = useQueryClient();
+  const etagRef = useRef<string | null>(null);
+  const lastVersionRef = useRef<number | null>(null);
+
+  // Story 15.1: REST polling replaces the STOMP STATE_UPDATE subscription. Poll the cheap
+  // live-timing endpoint anonymously with If-None-Match (304 when unchanged); when the
+  // monotonic version advances (an organizer ended/extended/delayed a session), invalidate
+  // the event query so the presenter reflects new session times — exactly what the WS
+  // cache-invalidation did, without per-task in-memory broker state.
   useEffect(() => {
     if (!eventCode) return;
 
-    const url = new URL(apiBaseUrl);
-    const wsBase =
-      url.hostname === 'localhost' || url.hostname === '127.0.0.1'
-        ? `http://localhost:${parseInt(url.port || '8000', 10) + 2}`
-        : `${url.protocol}//${url.host}`;
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    let isMounted = true;
-    const client = new Client({
-      webSocketFactory: () => new SockJS(`${wsBase}/ws`) as WebSocket,
-      debug: () => {},
-      reconnectDelay: 5000,
-      onConnect: () => {
-        client.subscribe(`/topic/events/${eventCode}/state`, () => {
-          if (!isMounted) return;
-          void queryClient.invalidateQueries({ queryKey: ['presentation-event', eventCode] });
-        });
-      },
-    });
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const result = await liveTimingService.getLiveTiming(eventCode, etagRef.current, true);
+        if (cancelled) return;
+        etagRef.current = result.etag;
+        if (result.status === 200 && result.data) {
+          const version = result.data.version;
+          if (lastVersionRef.current !== null && version !== lastVersionRef.current) {
+            void queryClient.invalidateQueries({ queryKey: ['presentation-event', eventCode] });
+          }
+          lastVersionRef.current = version;
+        }
+      } catch {
+        // Transient — next tick retries; the 60s event poll is the safety net.
+      } finally {
+        if (!cancelled) {
+          const interval =
+            typeof document !== 'undefined' && document.hidden
+              ? LIVE_TIMING_POLL_HIDDEN
+              : LIVE_TIMING_POLL_ACTIVE;
+          timeoutId = setTimeout(poll, interval);
+        }
+      }
+    };
 
-    clientRef.current = client;
-    client.activate();
+    void poll();
 
     return () => {
-      isMounted = false;
-      void client.deactivate();
-      clientRef.current = null;
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [eventCode, apiBaseUrl, queryClient]);
+  }, [eventCode, queryClient]);
 
   // Single event call — includes topics, venue, sessions and speakers.
-  // Polled every 60 s to pick up session updates (replaces separate sessions poll).
+  // Polled every 60 s as a safety net; the live-timing poll above drives prompt refresh.
   const eventQuery = useQuery({
     queryKey: ['presentation-event', eventCode],
     queryFn: () => getPresentationData(eventCode),

@@ -179,6 +179,16 @@ public class Event {
     @Column(name = "version")
     private Long version;
 
+    /**
+     * Story 15.1: monotonic per-event live-timing version. Bumped atomically on every
+     * timing action (END/EXTEND/DELAY) via {@code EventRepository.incrementLiveTimingVersion}
+     * — drives the live-timing ETag / 304 path. Distinct from {@link #version} (JPA
+     * optimistic lock), which does not move when extend/delay mutate only session rows.
+     */
+    @Builder.Default
+    @Column(name = "live_timing_version", nullable = false)
+    private Long liveTimingVersion = 0L;
+
     @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();
@@ -199,6 +209,11 @@ public class Event {
         }
         if (qnaWindowDays == null) {
             qnaWindowDays = 14;
+        }
+        // Story 15.1: live_timing_version is NOT NULL; @Builder.Default covers builder paths,
+        // but `new Event()` leaves it null — coalesce so every construction path persists 0.
+        if (liveTimingVersion == null) {
+            liveTimingVersion = 0L;
         }
     }
 
