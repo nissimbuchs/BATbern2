@@ -246,6 +246,21 @@ task openApiGenerateUsersClient(type: org.openapitools.generator.gradle.plugin.t
     ]
 }
 
+// Story 15.9 — advisory OWASP-LLM security test subset.
+// Runs ONLY @Tag("ai-security") tests (BatbernAiSecurityTest, AiAssistControllerSecurityTest).
+// The root `test` task has no tag filter, so these also run there and gate normally; this task
+// exists so the advisory `ai-security` CI workflow can run the focused subset on its own.
+tasks.register('aiSecurityTest', Test) {
+    description = 'Runs the @Tag("ai-security") OWASP-LLM test subset (Story 15.9).'
+    group = 'verification'
+    useJUnitPlatform {
+        includeTags 'ai-security'
+    }
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+}
+
 // Make compileJava depend on all OpenAPI generation tasks
 compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics
 

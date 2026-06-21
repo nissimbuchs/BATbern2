@@ -114,7 +114,9 @@ public class AiAssistController {
     public ResponseEntity<Void> applyThemeImage(
             @PathVariable String eventCode,
             @RequestBody ApplyThemeImageRequest request) {
-        if (request.imageUrl() == null || !request.imageUrl().startsWith(cloudFrontDomain)) {
+        // Story 15.9 (LLM08): require the path-separator so a look-alike host
+        // (e.g. https://cdn.batbern.ch.evil.com/x.png) cannot satisfy a bare startsWith.
+        if (request.imageUrl() == null || !request.imageUrl().startsWith(cloudFrontDomain + "/")) {
             return ResponseEntity.badRequest().build();
         }
         Event event = eventRepository.findByEventCode(eventCode)

@@ -1,0 +1,107 @@
+name: AI Security (OWASP LLM)
+
+# Story 15.9 — Advisory OWASP-LLM + Agentic security checks for BATbern's AI surface.
+#
+# What it runs:
+#   - aiSecurityTest: the @Tag("ai-security") JUnit subset in event-management-service
+#       (BatbernAiSecurityTest, AiAssistControllerSecurityTest) — prompt-injection containment,
+#       untrusted-output handling, no-secret-in-prompt. These ALSO run in the normal build/test
+#       pipeline, so they gate merges today.
+#   - ai-prompt-secret-scan.sh: static tripwire that fails if prompt-construction code
+#       interpolates a secret/PII source.
+#
+# Advisory (non-blocking), ZAP-style: `continue-on-error: true` so findings are reported but never
+# block the pipeline.
+#
+# Triggers:
+#   - PR / push: only when the AI surface, this workflow, or the scan script changes
+#   - Weekly: Mondays 03:12 UTC (off the top of the hour; de-collided from ZAP @ 02:42 and nightly-e2e)
+#   - Manual: workflow_dispatch
+#
+# FLIP-TO-BLOCKING follow-up: once this job is green for ≥1 cycle, remove `continue-on-error` so the
+# static scan + any future live-probe portion gate merges. See docs/security/owasp-llm-agentic-checklist.md.
+#
+# Note: uses SENTINEL secret values inside the tests — no real OPENAI_API_KEY is needed (and must NOT
+# be added: no test may make a live OpenAI call — staging is production).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - 'services/event-management-service/**'
+      - 'docs/security/**'
+      - 'scripts/ci/ai-prompt-secret-scan.sh'
+      - '.github/workflows/ai-security.yml'
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'services/event-management-service/**'
+      - 'docs/security/**'
+      - 'scripts/ci/ai-prompt-secret-scan.sh'
+      - '.github/workflows/ai-security.yml'
+  schedule:
+    - cron: '12 3 * * 1'
+
+jobs:
+  ai-security:
+    name: AI Security (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true   # advisory — findings reported, never block the pipeline
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Static secret/PII-in-prompt scan (LLM06)
+        run: |
+          chmod +x scripts/ci/ai-prompt-secret-scan.sh
+          scripts/ci/ai-prompt-secret-scan.sh
+
+      - name: Publish shared kernel
+        run: |
+          chmod +x gradlew
+          ./gradlew :shared-kernel:publishToMavenLocal --no-daemon
+
+      - name: Run @Tag("ai-security") OWASP-LLM test subset
+        run: ./gradlew :services:event-management-service:aiSecurityTest --no-daemon
+
+      - name: Guard — the tagged subset must be non-empty
+        run: |
+          DIR=services/event-management-service/build/test-results/aiSecurityTest
+          COUNT=$(grep -rhoE 'tests="[0-9]+"' "$DIR" 2>/dev/null | grep -oE '[0-9]+' | awk '{s+=$1} END{print s+0}')
+          echo "ai-security tagged tests executed: ${COUNT}"
+          if [ "${COUNT}" -eq 0 ]; then
+            echo "::error::No @Tag(\"ai-security\") tests ran — the tag was likely dropped/renamed. The advisory subset is empty."
+            exit 1
+          fi
+
+      - name: Upload AI-security test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ai-security-test-report
+          path: |
+            services/event-management-service/build/test-results/aiSecurityTest/
+            services/event-management-service/build/reports/tests/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## AI Security (OWASP-LLM) — advisory" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Static secret/PII prompt scan: \`scripts/ci/ai-prompt-secret-scan.sh\`" >> $GITHUB_STEP_SUMMARY
+          echo "- JUnit subset: \`aiSecurityTest\` (@Tag ai-security) in event-management-service" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Checklist: \`docs/security/owasp-llm-agentic-checklist.md\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Advisory job — remove \`continue-on-error\` to flip to blocking once green._" >> $GITHUB_STEP_SUMMARY

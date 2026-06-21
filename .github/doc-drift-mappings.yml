@@ -16,6 +16,13 @@ mappings:
       - "docs/user-guide/entity-management/events.md"
       - "docs/user-guide/appendix/changelog.md"
 
+  # ── AI / LLM surface (Story 15.9) ───────────────────────────────────────────
+  # AI prompt-construction & content-generation services map to the OWASP-LLM checklist.
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/service/BatbernAiService.java"
+    docs:
+      - "docs/security/owasp-llm-agentic-checklist.md"
+      - "docs/architecture/08-operations-security.md"
+
   # ── Speaker Coordination Service ────────────────────────────────────────────
   - source_pattern: "services/speaker-coordination-service/"
     docs:
