@@ -885,7 +885,8 @@
       "matchPercent": "{{percent}}% de coincidencia",
       "headerTime": "Hora",
       "insertHint": "↓ Insertar — las charlas posteriores se desplazan",
-      "swapHint": "⇅ Intercambiar con esta sesión"
+      "swapHint": "⇅ Intercambiar con esta sesión",
+      "removeFromSlot": "Quitar del espacio"
     },
     "structuralSessions": {
       "moderation": "Moderación",

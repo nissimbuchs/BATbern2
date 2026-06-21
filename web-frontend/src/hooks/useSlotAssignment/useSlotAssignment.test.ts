@@ -25,6 +25,7 @@ vi.mock('@/services/slotAssignmentService/slotAssignmentService', () => ({
     getUnassignedSessions: vi.fn(),
     assignSessionTiming: vi.fn(),
     assignSessionToSlot: vi.fn(),
+    unassignSessionTiming: vi.fn(),
     bulkAssignTiming: vi.fn(),
     detectConflicts: vi.fn(),
     clearAllTimings: vi.fn(),
@@ -184,6 +185,35 @@ describe('useSlotAssignment Hook (Story 5.7 - Task 4a RED Phase)', () => {
       // Then: Optimistic update is rolled back
       expect(result.current.unassignedSessions).toHaveLength(initialLength);
       expect(result.current.error).toBeDefined();
+    });
+
+    it('should_unassignAndRefreshPool_when_unassignTimingCalled (Story 15.3)', async () => {
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.unassignSessionTiming
+      ).mockResolvedValue(mockUnassignedSessions[0]);
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      const fetchCallsBefore = vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mock.calls.length;
+
+      await act(async () => {
+        await result.current.unassignTiming('occupant-session');
+      });
+
+      // Calls the DELETE endpoint and refreshes the unassigned pool.
+      expect(
+        slotAssignmentServiceModule.slotAssignmentService.unassignSessionTiming
+      ).toHaveBeenCalledWith(mockEventCode, 'occupant-session');
+      expect(
+        vi.mocked(slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions).mock
+          .calls.length
+      ).toBeGreaterThan(fetchCallsBefore);
     });
 
     it('should_rollbackAndSetConflict_when_assignToSlotReturns409 (Story 15.3)', async () => {

@@ -23,12 +23,15 @@ import {
   Alert,
   Skeleton,
   Link,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { AutoAwesome, ClearAll, CalendarMonth, Tune } from '@mui/icons-material';
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import MicIcon from '@mui/icons-material/Mic';
 import LocalBarIcon from '@mui/icons-material/LocalBar';
+import CloseIcon from '@mui/icons-material/Close';
 import { AxiosError } from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -122,6 +125,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     assignedCount,
     totalSessions,
     assignToSlot,
+    unassignTiming,
     clearConflict,
     clearAllTimings,
     autoAssignTimings,
@@ -384,6 +388,21 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     } catch (err) {
       // 409 (agenda-full / conflict) is surfaced via the hook's `conflict` modal.
       console.error('✗ Failed to assign slot:', err);
+    }
+  };
+
+  // Story 15.3: remove an assigned session from its slot → back to the unassigned pool.
+  const handleUnassign = async (sessionSlug: string) => {
+    try {
+      await unassignTiming(sessionSlug);
+      await queryClient.invalidateQueries({ queryKey: ['event', eventCode, ['sessions']] });
+      await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
+      await queryClient.refetchQueries({
+        queryKey: ['event', eventCode, ['sessions']],
+        exact: true,
+      });
+    } catch (err) {
+      console.error('✗ Failed to remove slot assignment:', err);
     }
   };
 
@@ -776,6 +795,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                                   sx={{
                                     p: 1,
                                     minHeight: 60,
+                                    position: 'relative',
                                     border: 2,
                                     // Hovered target = primary; cascaded preview-moved cells =
                                     // secondary (dashed) so the reflow is visually distinct.
@@ -812,8 +832,35 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                                     },
                                   }}
                                 >
+                                  {/* 15.3: remove an assigned session from its slot (back to
+                                      pool). Hidden during a drag-preview to avoid clutter. */}
+                                  {actualAssignedSession && !previewActive && (
+                                    <Tooltip title={t('slotAssignment.timeline.removeFromSlot')}>
+                                      <IconButton
+                                        size="small"
+                                        data-testid={`remove-slot-${actualAssignedSession.sessionSlug}`}
+                                        aria-label={t('slotAssignment.timeline.removeFromSlot')}
+                                        draggable={false}
+                                        onDragStart={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleUnassign(actualAssignedSession.sessionSlug);
+                                        }}
+                                        sx={{
+                                          position: 'absolute',
+                                          top: 2,
+                                          right: 2,
+                                          p: 0.25,
+                                          color: 'text.secondary',
+                                          '&:hover': { color: 'error.main' },
+                                        }}
+                                      >
+                                        <CloseIcon sx={{ fontSize: 16 }} />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
                                   {displaySession ? (
-                                    <Box>
+                                    <Box sx={{ pr: actualAssignedSession ? 2.5 : 0 }}>
                                       <Typography
                                         variant="caption"
                                         fontWeight="bold"

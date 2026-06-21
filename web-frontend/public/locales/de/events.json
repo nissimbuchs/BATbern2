@@ -909,7 +909,8 @@
       "matchPercent": "{{percent}}% Übereinstimmung",
       "headerTime": "Zeit",
       "insertHint": "↓ Einfügen — spätere Vorträge rücken nach",
-      "swapHint": "⇅ Mit dieser Session tauschen"
+      "swapHint": "⇅ Mit dieser Session tauschen",
+      "removeFromSlot": "Aus Slot entfernen"
     },
     "structuralSessions": {
       "moderation": "Moderation",

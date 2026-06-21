@@ -37,6 +37,7 @@ export interface UseSlotAssignmentReturn {
   // Actions
   assignTiming: (sessionSlug: string, timing: SessionTimingRequest) => Promise<void>;
   assignToSlot: (sessionSlug: string, request: SlotAssignmentRequestBody) => Promise<void>;
+  unassignTiming: (sessionSlug: string) => Promise<void>;
   bulkAssignTiming: (request: BulkTimingRequest) => Promise<void>;
   detectConflicts: () => Promise<void>;
   clearConflict: () => void;
@@ -155,6 +156,25 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
       }
     },
     [eventCode]
+  );
+
+  /**
+   * Unassign a single session's slot — clears its timing and returns it to the pool (Story 15.3).
+   */
+  const unassignTiming = useCallback(
+    async (sessionSlug: string): Promise<void> => {
+      setError(null);
+      try {
+        await slotAssignmentService.unassignSessionTiming(eventCode, sessionSlug);
+        // Refresh so the freed session reappears in the unassigned tray.
+        await fetchUnassignedSessions();
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to remove slot';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [eventCode, fetchUnassignedSessions]
   );
 
   /**
@@ -280,6 +300,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
     // Actions
     assignTiming,
     assignToSlot,
+    unassignTiming,
     bulkAssignTiming,
     detectConflicts,
     clearConflict,

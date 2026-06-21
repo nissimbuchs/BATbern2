@@ -32,6 +32,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.oneOf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -557,6 +558,33 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
                         org.hamcrest.Matchers.hasItem("jane-smith-datainc")))
                 .andExpect(jsonPath("$.slots[?(@.slotKey == 'SPEAKER_SLOT-2')].assignedSessionSlug",
                         org.hamcrest.Matchers.hasItem("john-doe-techcorp")));
+    }
+
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_unassignSingleSession_when_deleteTimingBySlug() throws Exception {
+        // Arrange: assign john to a slot
+        assignToSlot("john-doe-techcorp", "SPEAKER_SLOT-1", "ASSIGN");
+
+        // Act: remove just that session's slot
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/sessions/{sessionSlug}/timing",
+                        eventCode, "john-doe-techcorp"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionSlug").value("john-doe-techcorp"));
+
+        // Assert: it is back in the unassigned pool, slot is free again
+        mockMvc.perform(get("/api/v1/events/{eventCode}/sessions/unassigned", eventCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].sessionSlug",
+                        org.hamcrest.Matchers.hasItem("john-doe-techcorp")));
+    }
+
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_return404_when_unassignNonexistentSession() throws Exception {
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/sessions/{sessionSlug}/timing",
+                        eventCode, "does-not-exist"))
+                .andExpect(status().isNotFound());
     }
 
     private void assignToSlot(String sessionSlug, String slotKey, String mode) throws Exception {

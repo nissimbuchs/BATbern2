@@ -885,7 +885,8 @@
       "matchPercent": "{{percent}}% corrispondenza",
       "headerTime": "Ora",
       "insertHint": "↓ Inserisci — le sessioni successive slittano",
-      "swapHint": "⇅ Scambia con questa sessione"
+      "swapHint": "⇅ Scambia con questa sessione",
+      "removeFromSlot": "Rimuovi dallo slot"
     },
     "structuralSessions": {
       "moderation": "Moderazione",

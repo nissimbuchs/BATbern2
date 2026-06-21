@@ -909,7 +909,8 @@
       "matchPercent": "{{percent}}% match",
       "headerTime": "Time",
       "insertHint": "↓ Insert — later talks shift down",
-      "swapHint": "⇅ Swap with this session"
+      "swapHint": "⇅ Swap with this session",
+      "removeFromSlot": "Remove from slot"
     },
     "structuralSessions": {
       "moderation": "Moderation",

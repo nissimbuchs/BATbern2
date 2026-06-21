@@ -135,6 +135,32 @@ class SlotAssignmentService {
   }
 
   /**
+   * Unassign a single session's slot — sends it back to the unassigned pool (Story 15.3).
+   *
+   * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}/timing
+   *
+   * @param eventCode   Event code (e.g., "BATbern142")
+   * @param sessionSlug Session slug to clear
+   * @returns The updated (now unassigned) session
+   */
+  async unassignSessionTiming(eventCode: string, sessionSlug: string): Promise<Session> {
+    try {
+      const response = await apiClient.delete<Session>(
+        `${SLOT_ASSIGNMENT_API_PATH}/${eventCode}/sessions/${sessionSlug}/timing`
+      );
+      return response.data;
+    } catch (error) {
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Bulk assign timing to multiple sessions
    *
    * POST /api/v1/events/{eventCode}/sessions/bulk-timing

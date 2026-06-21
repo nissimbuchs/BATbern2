@@ -885,7 +885,8 @@
       "matchPercent": "{{percent}}% match",
       "headerTime": "Tijd",
       "insertHint": "↓ Invoegen — latere sessies schuiven op",
-      "swapHint": "⇅ Wisselen met deze sessie"
+      "swapHint": "⇅ Wisselen met deze sessie",
+      "removeFromSlot": "Uit slot verwijderen"
     },
     "structuralSessions": {
       "moderation": "Moderatie",

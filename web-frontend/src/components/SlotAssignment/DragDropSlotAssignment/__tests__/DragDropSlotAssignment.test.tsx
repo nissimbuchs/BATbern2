@@ -137,6 +137,7 @@ describe('DragDropSlotAssignment Component', () => {
     totalSessions: 10,
     assignTiming: vi.fn().mockResolvedValue(undefined),
     assignToSlot: vi.fn().mockResolvedValue(undefined),
+    unassignTiming: vi.fn().mockResolvedValue(undefined),
     bulkAssignTiming: vi.fn().mockResolvedValue(undefined),
     detectConflicts: vi.fn().mockResolvedValue(undefined),
     clearConflict: vi.fn(),
@@ -551,6 +552,51 @@ describe('DragDropSlotAssignment Component', () => {
         // the target now previews the dragged session, and a cell is flagged as moved
         expect(targetSlot).toHaveTextContent('John Doe - Acme Corp');
         expect(document.querySelector('[data-preview-moved="true"]')).toBeTruthy();
+      });
+    });
+
+    it('should_unassign_when_removeButtonClickedOnAssignedSlot', async () => {
+      // 15.3: each assigned slot has a ✕ that returns the session to the pool
+      const { useEvent } = await import('@/hooks/useEvents');
+      const occupant: Session = {
+        sessionSlug: 'occupant-session',
+        eventCode: mockEventCode,
+        title: 'Occupant Talk',
+        startTime: '2025-12-15T09:00:00',
+        endTime: '2025-12-15T10:00:00',
+        room: 'Main Hall',
+        speakers: [],
+      };
+      vi.mocked(useEvent).mockReturnValue({
+        data: {
+          eventCode: mockEventCode,
+          date: '2025-12-15',
+          sessions: [...mockUnassignedSessions, occupant],
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
+      const tt = buildMockTimetable('2025-12-15');
+      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
+        'occupant-session';
+      vi.mocked(useTimetable).mockReturnValue({
+        data: tt,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      const removeBtn = screen.getByTestId('remove-slot-occupant-session');
+      fireEvent.click(removeBtn);
+
+      await waitFor(() => {
+        expect(mockUseSlotAssignment.unassignTiming).toHaveBeenCalledWith('occupant-session');
       });
     });
 

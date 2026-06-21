@@ -887,7 +887,8 @@
       "matchPercent": "{{percent}}% Übereinstimmig",
       "headerTime": "Zyt",
       "insertHint": "↓ Iefüege — spötri Vorträg rutsche nache",
-      "swapHint": "⇅ Mit dere Session tuusche"
+      "swapHint": "⇅ Mit dere Session tuusche",
+      "removeFromSlot": "Us em Slot neh"
     },
     "structuralSessions": {
       "moderation": "Moderierig",

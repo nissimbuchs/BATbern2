@@ -885,7 +885,8 @@
       "matchPercent": "{{percent}}% vastaavuus",
       "headerTime": "Aika",
       "insertHint": "↓ Lisää — myöhemmät esitykset siirtyvät",
-      "swapHint": "⇅ Vaihda tähän sessioon"
+      "swapHint": "⇅ Vaihda tähän sessioon",
+      "removeFromSlot": "Poista paikalta"
     },
     "structuralSessions": {
       "moderation": "Moderointi",

@@ -246,6 +246,30 @@ public class SlotAssignmentController {
     }
 
     /**
+     * Story 15.3: unassign a single session's slot (send it back to the unassigned pool).
+     * Clears the session's startTime/endTime/room; structural slots are unaffected.
+     */
+    @DeleteMapping("/{sessionSlug}/timing")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<?> unassignTiming(
+            @PathVariable String eventCode,
+            @PathVariable String sessionSlug) {
+
+        log.info("DELETE /api/v1/events/{}/sessions/{}/timing", eventCode, sessionSlug);
+
+        eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
+
+        sessionTimingService.validateSessionExists(eventCode, sessionSlug);
+
+        Session updatedSession = sessionTimingService.unassignTiming(sessionSlug, "organizer");
+        updatedSession.setEventCode(eventCode);
+
+        return ResponseEntity.ok(updatedSession);
+    }
+
+    /**
      * Bulk assign timing to multiple sessions
      * AC13: Bulk auto-assignment
      */

@@ -885,7 +885,8 @@
       "matchPercent": "{{percent}}%マッチ",
       "headerTime": "時間",
       "insertHint": "↓ 挿入 — 以降のセッションが繰り下がります",
-      "swapHint": "⇅ このセッションと入れ替え"
+      "swapHint": "⇅ このセッションと入れ替え",
+      "removeFromSlot": "スロットから削除"
     },
     "structuralSessions": {
       "moderation": "司会",
