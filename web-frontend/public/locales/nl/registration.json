@@ -154,7 +154,8 @@
     "checkSpam": "Controleer uw spammap",
     "checkEmail": "Controleer of het e-mailadres correct is",
     "waitMinutes": "Wacht een paar minuten en probeer opnieuw",
-    "close": "Sluiten"
+    "close": "Sluiten",
+    "companyUpdated": "We hebben het geregistreerde bedrijf voor je bijgewerkt naar {{company}}."
   },
   "confirmation": {
     "loading": {

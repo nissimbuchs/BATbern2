@@ -8248,6 +8248,11 @@ export interface operations {
              * @example john.doe@example.com
              */
             email: string;
+            /**
+             * @description True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
+             * @example false
+             */
+            companyUpdated?: boolean;
           };
         };
       };

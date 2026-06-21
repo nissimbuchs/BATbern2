@@ -154,7 +154,8 @@
     "checkSpam": "Controllar il dossier spam",
     "checkEmail": "Verificar l'adressa e-mail",
     "waitMinutes": "Spetgar nagins minutas e turnar a provar",
-    "close": "Serrar"
+    "close": "Serrar",
+    "companyUpdated": "Nus avain actualisà tia interpresa registrada a {{company}}."
   },
   "confirmation": {
     "loading": {

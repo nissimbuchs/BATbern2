@@ -144,6 +144,15 @@ public class Registration {
     private String eventCode; // Not persisted - populated from path parameter for API responses
 
     /**
+     * BATbern59 badge fix: true when this registration refreshed the attendee's
+     * stored company (they supplied a company differing from their profile).
+     * Not persisted — surfaced in the create-registration response so the UI can
+     * tell the attendee we updated their company on file.
+     */
+    @Transient
+    private Boolean companyUpdated;
+
+    /**
      * ADR-004: Cross-service reference to user_profiles.username
      * ADR-005: Links to anonymous or authenticated users
      * <p>

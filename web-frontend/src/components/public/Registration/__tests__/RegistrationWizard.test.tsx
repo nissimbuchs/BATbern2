@@ -75,6 +75,7 @@ vi.mock('react-i18next', () => ({
         'success.checkSpam': 'Check your spam folder',
         'success.checkEmail': 'Verify the email address is correct',
         'success.waitMinutes': 'Wait a few minutes and try again',
+        'success.companyUpdated': 'We updated the company on file for you.',
         'success.close': 'Close',
         // Wizard strings
         'wizard.steps.step1Progress': '1. Your Details',
@@ -467,6 +468,70 @@ describe('RegistrationWizard Component', () => {
           screen.getByText(/check your email to confirm your registration/i)
         ).toBeInTheDocument();
       });
+    });
+
+    // BATbern59 badge fix: show a company-updated notice when the backend flags it.
+    test('should_showCompanyUpdatedNotice_when_backendRefreshedCompany', async () => {
+      vi.mocked(eventApiClient.createRegistration).mockResolvedValue({
+        message: 'ok',
+        email: 'john@example.com',
+        companyUpdated: true,
+      });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      fireEvent.change(screen.getByPlaceholderText('John'), { target: { value: 'John' } });
+      fireEvent.change(screen.getByPlaceholderText('Smith'), { target: { value: 'Doe' } });
+      fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
+        target: { value: 'john@example.com' },
+      });
+      await selectCompany('Acme Inc');
+      fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
+        target: { value: 'Developer' },
+      });
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
+      await waitFor(() => {
+        fireEvent.click(screen.getByRole('checkbox', { name: /agree to the/i }));
+      });
+      await waitFor(() => {
+        fireEvent.click(screen.getByTestId('registration-wizard-submit-btn'));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('registration-company-updated')).toBeInTheDocument();
+      });
+    });
+
+    test('should_notShowCompanyUpdatedNotice_when_companyUnchanged', async () => {
+      vi.mocked(eventApiClient.createRegistration).mockResolvedValue({
+        message: 'ok',
+        email: 'john@example.com',
+        companyUpdated: false,
+      });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      fireEvent.change(screen.getByPlaceholderText('John'), { target: { value: 'John' } });
+      fireEvent.change(screen.getByPlaceholderText('Smith'), { target: { value: 'Doe' } });
+      fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
+        target: { value: 'john@example.com' },
+      });
+      await selectCompany('Acme Inc');
+      fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
+        target: { value: 'Developer' },
+      });
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
+      await waitFor(() => {
+        fireEvent.click(screen.getByRole('checkbox', { name: /agree to the/i }));
+      });
+      await waitFor(() => {
+        fireEvent.click(screen.getByTestId('registration-wizard-submit-btn'));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('registration-success')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('registration-company-updated')).not.toBeInTheDocument();
     });
 
     test('should_showError_when_submissionFails', async () => {

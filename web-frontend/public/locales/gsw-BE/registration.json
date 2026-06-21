@@ -74,5 +74,8 @@
   "companySearch": {
     "createOption": "Nöis Unternäme «{{value}}» erstelle",
     "clear": "Usgwählts Unternäme entfärne"
+  },
+  "success": {
+    "companyUpdated": "Mir hei dini hinterleiti Firma uf {{company}} aktualisiert."
   }
 }

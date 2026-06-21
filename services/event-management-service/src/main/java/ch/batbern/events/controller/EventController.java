@@ -1929,6 +1929,7 @@ public class EventController {
         CreateRegistrationResponse response = CreateRegistrationResponse.builder()
                 .message("Registration submitted successfully. Check your email to confirm.")
                 .email(request.getEmail())
+                .companyUpdated(registration.getCompanyUpdated()) // BATbern59 badge fix: drive UI notice
                 .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

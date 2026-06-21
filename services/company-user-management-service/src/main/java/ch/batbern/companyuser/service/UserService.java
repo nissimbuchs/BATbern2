@@ -578,16 +578,22 @@ public class UserService {
      * docs/plans/user-identity-collision-fix-plan.md.
      */
     public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
-        log.info("Get-or-create user for email: {}, name: {} {}",
-                request.getEmail(), request.getFirstName(), request.getLastName());
+        log.info("Get-or-create user for email: {}, name: {} {}, company: {}",
+                request.getEmail(), request.getFirstName(), request.getLastName(), request.getCompanyId());
 
         Optional<User> userByEmail = userRepository.findByEmail(request.getEmail());
         if (userByEmail.isPresent()) {
             User existingUser = userByEmail.get();
             log.debug("User found by email: {}", existingUser.getUsername());
+            // BATbern59 badge fix: a returning attendee may now work somewhere else.
+            // If they supply a company that resolves to a different slug than the one on
+            // file, refresh the profile so the next badge/export is correct, and flag it
+            // so the registration UI can let them know we updated their company.
+            boolean companyUpdated = refreshCompanyIfChanged(existingUser, request.getCompanyId());
             return new GetOrCreateUserResponse()
                     .username(existingUser.getUsername())
                     .created(false)
+                    .companyUpdated(companyUpdated)
                     .user(responseMapper.mapToResponse(existingUser));
         }
 
@@ -598,10 +604,46 @@ public class UserService {
             return new GetOrCreateUserResponse()
                     .username(newUser.getUsername())
                     .created(true)
+                    .companyUpdated(false)
                     .cognitoUserId(newUser.getCognitoUserId())
                     .user(responseMapper.mapToResponse(newUser));
         }
         throw new UserNotFoundException("User not found: " + request.getEmail());
+    }
+
+    /**
+     * Refresh an existing user's company from a value supplied during get-or-create
+     * (e.g. an event registration). Treats {@code suppliedCompany} as a display name,
+     * resolves it to a company slug (get-or-create), and only writes when that slug
+     * differs from the one already stored. A blank value is a no-op — registration
+     * must never wipe an existing company.
+     *
+     * @return {@code true} if the profile company was changed and persisted.
+     */
+    private boolean refreshCompanyIfChanged(User existingUser, String suppliedCompany) {
+        if (suppliedCompany == null || suppliedCompany.trim().isEmpty()) {
+            return false;
+        }
+        String newSlug = companyService.getOrCreateCompany(suppliedCompany).getName();
+        if (newSlug == null || newSlug.equals(existingUser.getCompanyId())) {
+            return false;
+        }
+        String previousSlug = existingUser.getCompanyId();
+        existingUser.setCompanyId(newSlug);
+        User saved = userRepository.save(existingUser);
+        searchService.invalidateCache();
+
+        java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
+        updatedFields.put("companyId", newSlug);
+        eventPublisher.publish(new UserUpdatedEvent(
+                saved.getUsername(),  // aggregateId = username
+                updatedFields,
+                null,                 // previousValues - not tracked here
+                saved.getUsername()   // userId = self-service registration update
+        ));
+        log.info("Refreshed company for returning user {}: {} -> {} (supplied: '{}')",
+                saved.getUsername(), previousSlug, newSlug, suppliedCompany);
+        return true;
     }
 
     /**

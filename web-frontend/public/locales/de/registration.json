@@ -154,7 +154,8 @@
     "checkSpam": "Spam-Ordner überprüfen",
     "checkEmail": "E-Mail-Adresse überprüfen",
     "waitMinutes": "Einige Minuten warten und erneut versuchen",
-    "close": "Schliessen"
+    "close": "Schliessen",
+    "companyUpdated": "Wir haben deine hinterlegte Firma auf {{company}} aktualisiert."
   },
   "confirmation": {
     "loading": {

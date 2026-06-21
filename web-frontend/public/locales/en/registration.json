@@ -154,7 +154,8 @@
     "checkSpam": "Check your spam folder",
     "checkEmail": "Verify the email address is correct",
     "waitMinutes": "Wait a few minutes and try again",
-    "close": "Close"
+    "close": "Close",
+    "companyUpdated": "We've updated the company on file for you to {{company}}."
   },
   "companySearch": {
     "error": "Error loading companies",
