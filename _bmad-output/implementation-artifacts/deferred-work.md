@@ -284,3 +284,7 @@ All four inherit the epic's cross-cutting DoD (NFR1/5/7/8/9) and the beta-first 
 - EditEventTypeDialog number fields: clearing a field yields NaN → confusing zod error instead of defaulting to min. Minor UX.
 - Doc-drift: only docs/architecture/03-data-architecture.md updated; 06-backend-architecture.md + user-guide/entity-management/events.md (mapped) not touched, no [no-doc]. May trip weekly auditor.
 - i18n: 7 locales (fr/it/rm/es/fi/nl/ja) hold English placeholders for slotAssignment.editEventType.* pending hand-translation (if Nissim accepts placeholders).
+
+## Deferred from: code review of 15-9-owasp-llm-agentic-security-checklist (2026-06-21)
+
+- Frontend `dangerouslySetInnerHTML` guard (`web-frontend/src/components/__tests__/aiOutputEscaping.test.ts`) is a hardcoded 5-file allowlist. A newly-added AI-output render site (e.g. the Story 15.8 LinkedIn-draft preview) or an indirect HTML path (`react-markdown` + `rehype-raw`, `innerHTML`) is not covered. Right fix: an ESLint rule or repo-wide lint that flags `dangerouslySetInnerHTML` in components consuming AI output, rather than a static file list.

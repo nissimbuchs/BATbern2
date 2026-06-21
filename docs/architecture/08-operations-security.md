@@ -35,6 +35,19 @@ This document consolidates security implementation, performance standards, acces
 - **Rate Limiting**: API rate limiting per user and endpoint
 - **CORS Policy**: Restrictive CORS configuration
 
+### AI / LLM Security (OWASP-LLM, Story 15.9)
+- The AI surface lives in `event-management-service` (event description, theme image, abstract
+  analysis, trending topics, organizer-editable prompts), is ORGANIZER-gated, AI-feature-flagged
+  (`AI_ENABLED`, default off), and **advisory** (output is reviewed before publish; it never drives
+  authorization or control flow).
+- Mitigations: a fixed non-editable **system guard** message on every chat call (LLM01/LLM08);
+  delimiter neutralization in interpolated values; AI output treated as untrusted data (returned as
+  string / parsed with safe defaults; React auto-escaping on render, never `dangerouslySetInnerHTML`);
+  OpenAI key only in the `Authorization` header; `ai_generation_log` is **hash-only**.
+- **Canonical mapping + status:** `docs/security/owasp-llm-agentic-checklist.md`.
+- **CI:** advisory `.github/workflows/ai-security.yml` (`aiSecurityTest` `@Tag` subset +
+  `scripts/ci/ai-prompt-secret-scan.sh`).
+
 ### Authentication Security
 - **Token Storage**: Secure JWT storage with automatic refresh
 - **Session Management**: Cognito-based session management

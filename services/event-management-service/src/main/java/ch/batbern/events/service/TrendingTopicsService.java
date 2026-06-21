@@ -96,10 +96,13 @@ public class TrendingTopicsService {
         }
 
         try {
+            // Story 15.9: route through the shared SYSTEM_GUARD so EVERY chat-completions call
+            // carries the privileged guard message — even though this prompt is currently static
+            // (no untrusted interpolation), this keeps the contract true and future-proofs the path.
             Map<String, Object> requestBody = Map.of(
                     "model", "gpt-4o-mini",
                     "temperature", 0.3,
-                    "messages", List.of(Map.of("role", "user", "content", PROMPT))
+                    "messages", BatbernAiService.buildMessages(PROMPT)
             );
 
             OpenAiChatResponse response = openAiClient.post()

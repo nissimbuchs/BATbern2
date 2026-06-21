@@ -263,7 +263,7 @@ development_status:
   15-6-present-mode-agenda-title-overlap: done
   15-7-notify-speaker-moderator-on-new-qa-question: done
   15-8-linkedin-post-drafts: backlog
-  15-9-owasp-llm-agentic-security-checklist: backlog
+  15-9-owasp-llm-agentic-security-checklist: review
   epic-15-retrospective: optional
 
   # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
