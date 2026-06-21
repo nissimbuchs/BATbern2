@@ -171,6 +171,10 @@ credentials.yml
 # must not swallow real source code).
 !**/PasswordGenerator.java
 !**/PasswordGeneratorTest.java
+# Story 15.9: the OWASP-LLM secret SCANNER (it detects secrets, contains none).
+# The basename matches the defensive `*secret*` rule above, so whitelist it explicitly —
+# otherwise `git add -A` silently drops it and the advisory ai-security CI job fails at chmod.
+!scripts/ci/ai-prompt-secret-scan.sh
 *.keystore
 *.jks
 *.truststore
