@@ -227,7 +227,9 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
-    const isStructural = ['moderation', 'break', 'lunch'].includes(session?.sessionType ?? '');
+    const isStructural = ['moderation', 'break', 'lunch', 'aperitif'].includes(
+      session?.sessionType ?? ''
+    );
     const minDuration = isStructural ? 1 : MIN_SESSION_DURATION;
 
     if (!title.trim()) {

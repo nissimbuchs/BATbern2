@@ -16,6 +16,7 @@ import {
   Coffee,
   UtensilsCrossed,
   Mic2,
+  Wine,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +24,7 @@ import { SpeakerDisplay } from './SpeakerDisplay';
 import { SessionQnaThread } from './SessionQnaThread';
 import { eventApiClient } from '@/services/eventApiClient';
 
-const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch', 'aperitif']);
 
 const isStructuralSession = (session: SessionUI) => STRUCTURAL_TYPES.has(session.sessionType ?? '');
 
@@ -33,6 +34,8 @@ const StructuralIcon = ({ sessionType }: { sessionType: string | null | undefine
       return <Coffee className="h-5 w-5 text-zinc-500" />;
     case 'lunch':
       return <UtensilsCrossed className="h-5 w-5 text-zinc-500" />;
+    case 'aperitif':
+      return <Wine className="h-5 w-5 text-zinc-500" />;
     default:
       return <Mic2 className="h-5 w-5 text-zinc-500" />;
   }

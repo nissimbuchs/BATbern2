@@ -58,7 +58,7 @@ export interface PresentationSection {
 const SPEAKER_SESSION_TYPES = new Set(['keynote', 'presentation', 'workshop', 'panel_discussion']);
 
 // Session types that are breaks/structural (break flow, not speaker slide)
-const BREAK_SESSION_TYPES = new Set(['break', 'lunch']);
+const BREAK_SESSION_TYPES = new Set(['break', 'lunch', 'aperitif']);
 
 export function usePresentationSections(
   event: PresentationEventDetail | null,

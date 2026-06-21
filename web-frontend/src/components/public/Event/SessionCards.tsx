@@ -29,7 +29,7 @@ import { SessionQnaThread } from '@/components/public/Event/SessionQnaThread';
 import { SpeakerDisplay } from './SpeakerDisplay';
 import { eventApiClient } from '@/services/eventApiClient';
 
-const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch', 'aperitif']);
 
 const isStructuralSession = (session: SessionUI) => STRUCTURAL_TYPES.has(session.sessionType ?? '');
 

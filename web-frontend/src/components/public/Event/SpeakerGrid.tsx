@@ -27,7 +27,7 @@ interface SpeakerGridProps {
   sessions: Session[];
 }
 
-const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch', 'aperitif']);
 
 export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
   const { t } = useTranslation('events');
