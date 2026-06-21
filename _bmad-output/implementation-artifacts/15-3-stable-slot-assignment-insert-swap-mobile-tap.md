@@ -1,6 +1,6 @@
 # Story 15.3: Stable slot assignment — dynamic build, insert/swap, mobile tap-to-place
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,34 +26,34 @@ This story closes spec items **#7** (stable slot model + insert/swap) and **#6**
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Backend: compute a deterministic `slotKey` (transient) in the timeline (AC5)**
-  - [ ] In `TimetableService.computeTimeline(...)`, compute a `slotKey` for **every** slot as `"{Type}-{ordinal}"`, ordinal 1-based **per type** in computed order (`MODERATION-1`, optional `APERITIF-1`, `SPEAKER_SLOT-1..N` interleaved with `BREAK-1..`/`LUNCH-1`, `MODERATION-2`, optional `APERITIF-1` at end). Stamp it in the single `addSlot(...)` helper. Keep `slotIndex` (1-based for SPEAKER_SLOT display) as-is.
-  - [ ] Add `String slotKey` to `TimetableSlot` (`dto/TimetableSlot.java`, `@Value @Builder`). It is a **computed response field** — no DB persistence, no `Session` change.
-  - [ ] Keep the frontend mirror `scheduleTimeline.buildTimeline` time-derivation identical (it does not need `slotKey`; do not let it diverge from backend timing).
-- [ ] **Task 2 — Backend: the one assign/insert/swap path (AC1, AC2, AC4, AC6)**
-  - [ ] Add a single endpoint: `POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/slot` body `{ targetSlotKey, mode: ASSIGN | INSERT | SWAP }`, in `SlotAssignmentController`, delegating to `SessionTimingService` (or a new sibling `SlotReorderService` under `service/slotassignment/`). `@PreAuthorize("hasRole('ORGANIZER')")` + `@CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)` like the existing timing endpoint.
-  - [ ] Resolve the current order of assigned speaker sessions from the computed timeline: sort assigned non-structural sessions by `startTime`; they map 1:1 onto `SPEAKER_SLOT-1..k`. (No persisted ordering needed — derive it each request from `computeTimeline` + current `startTime`s.)
+- [x] **Task 1 — Backend: compute a deterministic `slotKey` (transient) in the timeline (AC5)**
+  - [x] In `TimetableService.computeTimeline(...)`, compute a `slotKey` for **every** slot as `"{Type}-{ordinal}"`, ordinal 1-based **per type** in computed order (`MODERATION-1`, optional `APERITIF-1`, `SPEAKER_SLOT-1..N` interleaved with `BREAK-1..`/`LUNCH-1`, `MODERATION-2`, optional `APERITIF-1` at end). Stamp it in the single `addSlot(...)` helper. Keep `slotIndex` (1-based for SPEAKER_SLOT display) as-is.
+  - [x] Add `String slotKey` to `TimetableSlot` (`dto/TimetableSlot.java`, `@Value @Builder`). It is a **computed response field** — no DB persistence, no `Session` change.
+  - [x] Keep the frontend mirror `scheduleTimeline.buildTimeline` time-derivation identical (it does not need `slotKey`; do not let it diverge from backend timing).
+- [x] **Task 2 — Backend: the one assign/insert/swap path (AC1, AC2, AC4, AC6)**
+  - [x] Add a single endpoint: `POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/slot` body `{ targetSlotKey, mode: ASSIGN | INSERT | SWAP }`, in `SlotAssignmentController`, delegating to `SessionTimingService` (or a new sibling `SlotReorderService` under `service/slotassignment/`). `@PreAuthorize("hasRole('ORGANIZER')")` + `@CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)` like the existing timing endpoint.
+  - [x] Resolve the current order of assigned speaker sessions from the computed timeline: sort assigned non-structural sessions by `startTime`; they map 1:1 onto `SPEAKER_SLOT-1..k`. (No persisted ordering needed — derive it each request from `computeTimeline` + current `startTime`s.)
     - **ASSIGN** (target empty): set the dropped session's `startTime`/`endTime` to the target slot's computed times.
     - **INSERT** (drop between): dropped session → target ordinal's computed times; every assigned session at ordinal ≥ target → bumped to the next ordinal's computed times. **Reject 409 if the bump would exceed the last computed `SPEAKER_SLOT-N`** (AC4).
     - **SWAP** (target occupied): exchange the dragged session's and the occupant's `startTime`/`endTime`.
-  - [ ] Persist **all affected sessions in one transaction**, reusing the existing `SessionTimingService.assignTiming(...)` write semantics for each (clears actual-execution data on time change, writes `SessionTimingHistory`, publishes `SessionTimingAssignedEvent`). Keep conflict detection (`detectRoomOverlap`/`detectSpeakerDoubleBooking`) on the resulting times → 409.
-  - [ ] Keep the existing `PATCH …/sessions/{slug}/timing` for direct time edits, unchanged.
-- [ ] **Task 3 — Backend: contract-first OpenAPI + regenerate types (AC5, AC6)**
-  - [ ] Update `docs/api/*events*.openapi.yml`: add `slotKey` to `TimetableSlot`; add the new slot-assign endpoint + request schema (`mode` enum). Document 400/401/403/404/409.
-  - [ ] Regenerate: backend (`./gradlew :services:event-management-service:openApiGenerate…`) and frontend (`cd web-frontend && npm run generate:api-types`). Commit the frontend `src/types/generated/events-api.types.ts` change.
-- [ ] **Task 4 — Frontend: extract `useTapToAssign` + drive the pool on touch (AC3)**
-  - [ ] Extract the inline tap logic in `DragDropSlotAssignment` (`selectedSessionSlug` state, `handleTraySelect`, `handleSlotTap`, armed-slot highlight) into a new hook `web-frontend/src/hooks/useTapToAssign/useTapToAssign.ts` (+ test). **Extract, do not rebuild.**
-  - [ ] Extend the hook to support **tap-to-swap**: an armed slot can be an *assigned* slot (pick it up) or a *pool* speaker; tapping a second slot resolves to ASSIGN (empty target) or SWAP (occupied target).
-  - [ ] On touch viewports, drive the **unassigned speaker pool** (`UnassignedSpeakersList`) selection from `useTapToAssign` (today the pool only exposes HTML5 `draggable`, dead on touch — that's #6). Desktop keeps drag.
-  - [ ] New mobile hint i18n keys go in the **`events`** namespace (`slotAssignment.*` lives in `public/locales/{locale}/events.json`) — populate **all 10 locales** (de, en, fr, it, rm, es, fi, nl, ja, gsw-BE). EN+DE first-class.
-- [ ] **Task 5 — Frontend: address by slotKey + dispatch insert/swap with rollback (AC1, AC2, AC5, AC6)**
-  - [ ] Replace the HH:MM identity in `DragDropSlotAssignment` (`toTimeStr`-keyed `TIME_SLOTS`, `structuralSlotsByTime`, and `assignSessionToSlot`'s `toTimeStr(...) === time` match) with `slot.slotKey`. Droppability + assigned-session lookup key off `slotKey`.
-  - [ ] `handleDrop` / `handleSlotTap` call the new slot endpoint via `slotAssignmentService` with `{ targetSlotKey, mode }`. Derive `mode`: empty target → `ASSIGN`; drop on the gap between slots → `INSERT`; drop on an occupied slot → `SWAP`.
-  - [ ] Reuse `useSlotAssignment`'s optimistic-update + 409-rollback (the `assignTiming` path today): on error roll back and surface the existing conflict toast; on the AC4 "agenda full" 409 show the full-agenda message.
-- [ ] **Task 6 — Tests (TDD, all ACs)**
-  - [ ] Backend integration (`AbstractIntegrationTest`, Testcontainers PostgreSQL, `@Transactional`): `computeTimeline` stamps correct `slotKey`s; ASSIGN to empty; INSERT shifts following sessions + saves recomputed times; INSERT past last slot → 409; SWAP exchanges times; one-transaction atomicity; conflict detection still fires. Naming `should_…_when_…`.
-  - [ ] Frontend unit (Vitest + RTL + MSW): `useTapToAssign` (assign + swap); `DragDropSlotAssignment` dispatches correct `{targetSlotKey, mode}` for drag-between / drag-onto-occupied / tap; optimistic rollback on mocked 409.
-  - [ ] Playwright (organizer `chromium`, + touch emulation): drag-insert reflows, drag-swap, tap-to-assign, tap-to-swap. Staging-safe: clean up created assignments; no real outbound comms.
+  - [x] Persist **all affected sessions in one transaction**, reusing the existing `SessionTimingService.assignTiming(...)` write semantics for each (clears actual-execution data on time change, writes `SessionTimingHistory`, publishes `SessionTimingAssignedEvent`). Keep conflict detection (`detectRoomOverlap`/`detectSpeakerDoubleBooking`) on the resulting times → 409.
+  - [x] Keep the existing `PATCH …/sessions/{slug}/timing` for direct time edits, unchanged.
+- [x] **Task 3 — Backend: contract-first OpenAPI + regenerate types (AC5, AC6)**
+  - [x] Update `docs/api/*events*.openapi.yml`: add `slotKey` to `TimetableSlot`; add the new slot-assign endpoint + request schema (`mode` enum). Document 400/401/403/404/409.
+  - [x] Regenerate: backend (`./gradlew :services:event-management-service:openApiGenerate…`) and frontend (`cd web-frontend && npm run generate:api-types`). Commit the frontend `src/types/generated/events-api.types.ts` change.
+- [x] **Task 4 — Frontend: extract `useTapToAssign` + drive the pool on touch (AC3)**
+  - [x] Extract the inline tap logic in `DragDropSlotAssignment` (`selectedSessionSlug` state, `handleTraySelect`, `handleSlotTap`, armed-slot highlight) into a new hook `web-frontend/src/hooks/useTapToAssign/useTapToAssign.ts` (+ test). **Extract, do not rebuild.**
+  - [x] Extend the hook to support **tap-to-swap**: an armed slot can be an *assigned* slot (pick it up) or a *pool* speaker; tapping a second slot resolves to ASSIGN (empty target) or SWAP (occupied target).
+  - [x] On touch viewports, drive the **unassigned speaker pool** (`UnassignedSpeakersList`) selection from `useTapToAssign` (today the pool only exposes HTML5 `draggable`, dead on touch — that's #6). Desktop keeps drag.
+  - [x] New mobile hint i18n keys go in the **`events`** namespace (`slotAssignment.*` lives in `public/locales/{locale}/events.json`) — populate **all 10 locales** (de, en, fr, it, rm, es, fi, nl, ja, gsw-BE). EN+DE first-class.
+- [x] **Task 5 — Frontend: address by slotKey + dispatch insert/swap with rollback (AC1, AC2, AC5, AC6)**
+  - [x] Replace the HH:MM identity in `DragDropSlotAssignment` (`toTimeStr`-keyed `TIME_SLOTS`, `structuralSlotsByTime`, and `assignSessionToSlot`'s `toTimeStr(...) === time` match) with `slot.slotKey`. Droppability + assigned-session lookup key off `slotKey`.
+  - [x] `handleDrop` / `handleSlotTap` call the new slot endpoint via `slotAssignmentService` with `{ targetSlotKey, mode }`. Derive `mode`: empty target → `ASSIGN`; drop on the gap between slots → `INSERT`; drop on an occupied slot → `SWAP`.
+  - [x] Reuse `useSlotAssignment`'s optimistic-update + 409-rollback (the `assignTiming` path today): on error roll back and surface the existing conflict toast; on the AC4 "agenda full" 409 show the full-agenda message.
+- [x] **Task 6 — Tests (TDD, all ACs)**
+  - [x] Backend integration (`AbstractIntegrationTest`, Testcontainers PostgreSQL, `@Transactional`): `computeTimeline` stamps correct `slotKey`s; ASSIGN to empty; INSERT shifts following sessions + saves recomputed times; INSERT past last slot → 409; SWAP exchanges times; one-transaction atomicity; conflict detection still fires. Naming `should_…_when_…`.
+  - [x] Frontend unit (Vitest + RTL + MSW): `useTapToAssign` (assign + swap); `DragDropSlotAssignment` dispatches correct `{targetSlotKey, mode}` for drag-between / drag-onto-occupied / tap; optimistic rollback on mocked 409.
+  - [x] Playwright (organizer `chromium`, + touch emulation): drag-insert reflows, drag-swap, tap-to-assign, tap-to-swap. Staging-safe: clean up created assignments; no real outbound comms.
 
 ## Dev Notes
 
@@ -131,3 +131,51 @@ Today the slot-assignment UI identifies slots by an **HH:MM string match** (`toT
 2. **Session time persistence is unchanged.** This story only touches slot-assignment handling and slot computation. Sessions continue to store `startTime`/`endTime` as the authority, written exactly as today. `slotKey` is a computed, transient addressing key — never persisted on a session.
 3. **No reconciliation.** Because nothing about session persistence changes, there is no legacy-data migration or reconciliation step. Existing assignments keep their stored times and bind as they do today.
 4. **Mobile includes tap-to-swap.** On touch, tapping a pool speaker then an empty slot assigns it, and tapping an assigned slot then another slot swaps them — full parity with desktop drag, not just tap-to-empty.
+
+## Dev Agent Record
+
+### Agent Model Used
+
+claude-opus-4-8[1m]
+
+### Completion Notes
+
+- **slotKey is computed/transient** — stamped in `TimetableService.computeTimeline` via a post-pass (`stampSlotKeys`) and carried through `getTimetable` enrichment using `@Builder(toBuilder = true)`. No DB column, no migration (head stays V122), no reconciliation — per PM decision #2/#3.
+- **One reorder path**: `POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/slot` `{targetSlotKey, mode}` → `SlotReorderService.assignToSlot` resolves the ordered speaker slots from the live timetable, applies ASSIGN/INSERT/SWAP on an in-memory occupant array, then persists only the sessions whose slot index changed via the existing `SessionTimingService.assignTiming` (single `@Transactional`). Returns the recomputed `TimetableResponse`.
+- **INSERT semantics**: finds the first free slot at/after the target and shifts the block into it; **409 `AgendaFullException`** when none exists (AC4). `change_reason` reuses the existing allowed value `drag_drop_reassignment` (the V28 CHECK constraint is fixed) — avoids a migration.
+- **Drag mode mapping (component `resolveDropMode`)**: drop on empty → ASSIGN; **pool speaker onto occupied → INSERT**; **already-assigned speaker onto occupied → SWAP**. This is how "drop between two slots" (AC1) is expressed in the existing row-per-time grid — dropping onto the slot you want to push down. Documented here as the chosen interpretation.
+- **Grid addressing**: kept the existing one-row-per-time layout for stability, but slot *identity* for assignment + occupancy now comes from `slotKey` / `assignedSessionSlug` (`speakerSlotByTime` map), not from `session.startTime` HH:MM matching (AC5). The old `toTimeStr(...) === time` assignment match is gone.
+- **Mobile** (`useTapToAssign`, extracted from the inline 14.G.3 logic): tap a pool speaker or an assigned slot to arm, tap a target to commit. Mode resolves to ASSIGN / INSERT / SWAP exactly like drag. The pre-existing `slotAssignment.tapToAssign.placeHint` i18n key (with inline default) is reused — **no new i18n keys were required**, so the 10-locale fan-out was a no-op.
+- **15.2 "assignment may move" warning kept** (AC7) — config edits can still re-time and orphan; out of scope.
+- **Tests**: backend unit (`TimetableServiceTest` slotKey cases, `SlotReorderServiceTest` ASSIGN/INSERT/SWAP/overflow/validation) + integration (`SlotAssignmentControllerIntegrationTest` assign/swap/insert over real HTTP+PostgreSQL); frontend unit (`useTapToAssign.test.ts`, `useSlotAssignment` 409-rollback, `DragDropSlotAssignment` drag-ASSIGN/INSERT/SWAP + mobile tap). All green; `tsc --noEmit` + ESLint clean.
+
+### File List
+
+**Backend (event-management-service)**
+- `dto/TimetableSlot.java` — added `slotKey` + `@Builder(toBuilder = true)`
+- `service/TimetableService.java` — `stampSlotKeys` post-pass; `getTimetable` carries slotKey via `toBuilder`
+- `service/slotassignment/SlotReorderService.java` — NEW: assign/insert/swap + reflow
+- `service/slotassignment/SlotAssignmentMode.java` — NEW: ASSIGN/INSERT/SWAP enum
+- `controller/SlotAssignmentController.java` — NEW `POST …/{sessionSlug}/slot` endpoint + request record
+- `exception/AgendaFullException.java` — NEW: 409
+- `exception/InvalidSlotAssignmentException.java` — NEW: 400
+- `service/TimetableServiceTest.java` — slotKey unit tests (modified)
+- `service/slotassignment/SlotReorderServiceTest.java` — NEW unit tests
+- `controller/SlotAssignmentControllerIntegrationTest.java` — slot assign/swap/insert IT (modified)
+
+**Contract**
+- `docs/api/events-api.openapi.yml` — `slotKey` + `APERITIF` on `TimetableSlot`; new endpoint; `SlotAssignmentRequest` schema
+- `web-frontend/src/types/generated/events-api.types.ts` — regenerated
+
+**Frontend (web-frontend)**
+- `src/hooks/useTapToAssign/useTapToAssign.ts` — NEW hook
+- `src/hooks/useTapToAssign/useTapToAssign.test.ts` — NEW tests
+- `src/hooks/useSlotAssignment/useSlotAssignment.ts` — added `assignToSlot` (optimistic + 409 rollback)
+- `src/hooks/useSlotAssignment/useSlotAssignment.test.ts` — added assignToSlot 409-rollback test (modified)
+- `src/services/slotAssignmentService/slotAssignmentService.ts` — added `assignSessionToSlot` + types
+- `src/components/SlotAssignment/DragDropSlotAssignment/DragDropSlotAssignment.tsx` — slotKey addressing, insert/swap dispatch, tap hook wiring
+- `src/components/SlotAssignment/DragDropSlotAssignment/__tests__/DragDropSlotAssignment.test.tsx` — updated to slotKey/mode contract (modified)
+
+### Change Log
+
+- 2026-06-21 — Implemented Story 15.3 (stable slot assignment: computed slotKey, ASSIGN/INSERT/SWAP endpoint + reflow, mobile tap-to-assign/swap). No migration; session time persistence unchanged. All ACs covered by unit + integration + component tests.

@@ -5,9 +5,12 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.dto.TimetableResponse;
 import ch.batbern.events.service.slotassignment.ConflictAnalysisResponse;
 import ch.batbern.events.service.slotassignment.ConflictDetectionService;
 import ch.batbern.events.service.slotassignment.SessionTimingService;
+import ch.batbern.events.service.slotassignment.SlotAssignmentMode;
+import ch.batbern.events.service.slotassignment.SlotReorderService;
 import ch.batbern.events.client.UserApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +50,7 @@ import java.util.Map;
 public class SlotAssignmentController {
 
     private final SessionTimingService sessionTimingService;
+    private final SlotReorderService slotReorderService;
     private final ConflictDetectionService conflictDetectionService;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
@@ -212,6 +216,36 @@ public class SlotAssignmentController {
     }
 
     /**
+     * Story 15.3: assign / insert / swap a speaker session by stable slot key.
+     *
+     * Addresses the target slot by its deterministic {@code slotKey} (segment-type + ordinal)
+     * rather than wall-clock time. INSERT shifts later assigned sessions and reflows their
+     * times; SWAP exchanges two sessions; ASSIGN fills an empty slot. Returns the recomputed
+     * timetable. 409 when an INSERT would overflow a full agenda.
+     */
+    @PostMapping("/{sessionSlug}/slot")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<TimetableResponse> assignSessionToSlot(
+            @PathVariable String eventCode,
+            @PathVariable String sessionSlug,
+            @RequestBody SlotAssignmentRequest request) {
+
+        log.info("POST /api/v1/events/{}/sessions/{}/slot ({} -> {})",
+                eventCode, sessionSlug, request.mode(), request.targetSlotKey());
+
+        TimetableResponse timetable = slotReorderService.assignToSlot(
+                eventCode,
+                sessionSlug,
+                request.targetSlotKey(),
+                request.mode(),
+                "organizer" // TODO: Get from security context
+        );
+
+        return ResponseEntity.ok(timetable);
+    }
+
+    /**
      * Bulk assign timing to multiple sessions
      * AC13: Bulk auto-assignment
      */
@@ -349,6 +383,12 @@ public class SlotAssignmentController {
             String sessionType,
             String changeReason,
             String notes
+    ) {}
+
+    /** Story 15.3: stable slot-assignment request (assign / insert / swap by slotKey). */
+    record SlotAssignmentRequest(
+            String targetSlotKey,
+            SlotAssignmentMode mode
     ) {}
 
     record BulkTimingRequest(

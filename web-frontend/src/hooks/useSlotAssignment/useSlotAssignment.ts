@@ -12,7 +12,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AxiosError } from 'axios';
-import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
+import {
+  slotAssignmentService,
+  type SlotAssignmentRequestBody,
+} from '@/services/slotAssignmentService/slotAssignmentService';
 import type {
   Session,
   SessionTimingRequest,
@@ -33,6 +36,7 @@ export interface UseSlotAssignmentReturn {
 
   // Actions
   assignTiming: (sessionSlug: string, timing: SessionTimingRequest) => Promise<void>;
+  assignToSlot: (sessionSlug: string, request: SlotAssignmentRequestBody) => Promise<void>;
   bulkAssignTiming: (request: BulkTimingRequest) => Promise<void>;
   detectConflicts: () => Promise<void>;
   clearConflict: () => void;
@@ -110,6 +114,41 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
           setConflict(err.response.data as TimingConflictError);
         } else {
           const errorMessage = err instanceof Error ? err.message : 'Failed to assign timing';
+          setError(errorMessage);
+        }
+        throw err;
+      }
+    },
+    [eventCode]
+  );
+
+  /**
+   * Assign / insert / swap a session by stable slot key (Story 15.3).
+   * Optimistically removes the dragged session from the unassigned tray and rolls back on error.
+   * A 409 (agenda-full / conflict) is surfaced via `conflict`.
+   */
+  const assignToSlot = useCallback(
+    async (sessionSlug: string, request: SlotAssignmentRequestBody): Promise<void> => {
+      setConflict(null);
+      setError(null);
+
+      let rollbackSessions: Session[] = [];
+      setUnassignedSessions((prev) => {
+        rollbackSessions = [...prev];
+        return prev.filter((s) => s.sessionSlug !== sessionSlug);
+      });
+
+      try {
+        await slotAssignmentService.assignSessionToSlot(eventCode, sessionSlug, request);
+      } catch (err) {
+        setUnassignedSessions(rollbackSessions);
+        if (err instanceof AxiosError && err.response?.status === 409) {
+          const body = err.response.data as TimingConflictError | undefined;
+          setConflict(
+            body && body.message ? body : ({ message: 'Agenda is full' } as TimingConflictError)
+          );
+        } else {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to assign slot';
           setError(errorMessage);
         }
         throw err;
@@ -240,6 +279,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
 
     // Actions
     assignTiming,
+    assignToSlot,
     bulkAssignTiming,
     detectConflicts,
     clearConflict,

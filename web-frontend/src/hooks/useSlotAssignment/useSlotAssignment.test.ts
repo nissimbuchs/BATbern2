@@ -24,6 +24,7 @@ vi.mock('@/services/slotAssignmentService/slotAssignmentService', () => ({
   slotAssignmentService: {
     getUnassignedSessions: vi.fn(),
     assignSessionTiming: vi.fn(),
+    assignSessionToSlot: vi.fn(),
     bulkAssignTiming: vi.fn(),
     detectConflicts: vi.fn(),
     clearAllTimings: vi.fn(),
@@ -183,6 +184,39 @@ describe('useSlotAssignment Hook (Story 5.7 - Task 4a RED Phase)', () => {
       // Then: Optimistic update is rolled back
       expect(result.current.unassignedSessions).toHaveLength(initialLength);
       expect(result.current.error).toBeDefined();
+    });
+
+    it('should_rollbackAndSetConflict_when_assignToSlotReturns409 (Story 15.3)', async () => {
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      const conflict409 = new AxiosError('Conflict');
+      conflict409.response = {
+        status: 409,
+        data: { message: 'Agenda is full' },
+      } as never;
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.assignSessionToSlot
+      ).mockRejectedValue(conflict409);
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      const initialLength = result.current.unassignedSessions.length;
+
+      await act(async () => {
+        try {
+          await result.current.assignToSlot('session-1', {
+            targetSlotKey: 'SPEAKER_SLOT-1',
+            mode: 'INSERT',
+          });
+        } catch {
+          // expected
+        }
+      });
+
+      // Rolled back + conflict surfaced (no generic error)
+      expect(result.current.unassignedSessions).toHaveLength(initialLength);
+      expect(result.current.conflict).toEqual({ message: 'Agenda is full' });
     });
 
     it('should_showConflictWarning_when_409ConflictReturned', async () => {

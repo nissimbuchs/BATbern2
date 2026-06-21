@@ -2496,6 +2496,72 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /events/{eventCode}/sessions/{sessionSlug}/slot:
+    post:
+      tags:
+        - Sessions
+      summary: Assign / insert / swap a speaker session by stable slot key (Story 15.3)
+      description: |
+        Places a speaker session onto a `SPEAKER_SLOT` addressed by its deterministic
+        `slotKey` (see `TimetableSlot.slotKey`). One path covers three modes:
+
+        - `ASSIGN` — target slot is empty: the session takes that slot's computed times.
+        - `INSERT` — target slot is occupied: the session takes the target ordinal and
+          every already-assigned session at that ordinal or later shifts one slot later;
+          all affected sessions' times are recomputed and saved in a single transaction.
+          Rejected with **409** if the shift would exceed the last computed speaker slot
+          (agenda full).
+        - `SWAP` — target slot is occupied: the dragged (already-assigned) session and the
+          occupant exchange slots (and times).
+
+        Session time persistence is unchanged — `startTime`/`endTime` remain the stored
+        authority; this endpoint only recomputes and saves them for the affected sessions.
+
+        **Access**: ORGANIZER role required.
+      operationId: assignSessionToSlot
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: BATbern142
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+          example: speaker-xyz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SlotAssignmentRequest'
+      responses:
+        '200':
+          description: Assignment applied; returns the updated timetable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimetableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Agenda is full (no free slot to insert into) or a timing conflict was detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /events/{eventCode}/agenda-config:
     get:
       tags:
@@ -7627,6 +7693,27 @@ components:
 
     # ── Timetable Schemas ────────────────────────────────────────────────────
 
+    SlotAssignmentRequest:
+      type: object
+      description: |
+        Request to place a speaker session onto a slot addressed by its stable `slotKey`
+        (Story 15.3). `mode` selects assign / insert-and-reflow / swap behaviour.
+      required:
+        - targetSlotKey
+        - mode
+      properties:
+        targetSlotKey:
+          type: string
+          description: The `slotKey` of the target SPEAKER_SLOT (e.g. "SPEAKER_SLOT-3").
+          example: "SPEAKER_SLOT-3"
+        mode:
+          type: string
+          enum: [ASSIGN, INSERT, SWAP]
+          description: >
+            ASSIGN onto an empty slot, INSERT before an occupied slot (shifts later
+            sessions + reflows times), or SWAP with the occupant of an occupied slot.
+          example: INSERT
+
     TimetableSlot:
       type: object
       description: |
@@ -7640,9 +7727,18 @@ components:
       properties:
         type:
           type: string
-          enum: [MODERATION, BREAK, LUNCH, SPEAKER_SLOT]
+          enum: [MODERATION, BREAK, LUNCH, APERITIF, SPEAKER_SLOT]
           description: Slot type — determines rendering and whether the slot is droppable
           example: SPEAKER_SLOT
+        slotKey:
+          type: string
+          description: >
+            Deterministic, computed slot identity: segment type + 1-based ordinal among
+            that type, in computed order (e.g. "MODERATION-1", "APERITIF-1",
+            "SPEAKER_SLOT-3", "BREAK-2"). Stable across timing/config edits — the UI and
+            the slot-assign endpoint address slots by this key rather than by wall-clock
+            time. Computed/transient (Story 15.3); never persisted on a session.
+          example: "SPEAKER_SLOT-3"
         startTime:
           type: string
           format: date-time

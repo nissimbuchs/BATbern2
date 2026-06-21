@@ -500,4 +500,70 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
         mockMvc.perform(get("/api/v1/events/{eventCode}/sessions/unassigned", eventCode))
                 .andExpect(status().isForbidden());
     }
+
+    // ── Story 15.3: stable slot assignment by slotKey (assign / insert / swap) ──
+
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_assignSessionToSlotByKey_when_targetSlotEmpty() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/slot",
+                        eventCode, "john-doe-techcorp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetSlotKey\":\"SPEAKER_SLOT-1\",\"mode\":\"ASSIGN\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.slots[?(@.slotKey == 'SPEAKER_SLOT-1')].assignedSessionSlug",
+                        org.hamcrest.Matchers.hasItem("john-doe-techcorp")));
+
+        // No longer unassigned
+        mockMvc.perform(get("/api/v1/events/{eventCode}/sessions/unassigned", eventCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].sessionSlug",
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("john-doe-techcorp"))));
+    }
+
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_swapSessions_when_droppedOntoOccupiedSlot() throws Exception {
+        // Arrange: john → SPEAKER_SLOT-1, jane → SPEAKER_SLOT-2
+        assignToSlot("john-doe-techcorp", "SPEAKER_SLOT-1", "ASSIGN");
+        assignToSlot("jane-smith-datainc", "SPEAKER_SLOT-2", "ASSIGN");
+
+        // Act: swap john onto jane's slot
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/slot",
+                        eventCode, "john-doe-techcorp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetSlotKey\":\"SPEAKER_SLOT-2\",\"mode\":\"SWAP\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slots[?(@.slotKey == 'SPEAKER_SLOT-2')].assignedSessionSlug",
+                        org.hamcrest.Matchers.hasItem("john-doe-techcorp")))
+                .andExpect(jsonPath("$.slots[?(@.slotKey == 'SPEAKER_SLOT-1')].assignedSessionSlug",
+                        org.hamcrest.Matchers.hasItem("jane-smith-datainc")));
+    }
+
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_insertAndShift_when_droppedBetweenSlots() throws Exception {
+        // Arrange: john → SPEAKER_SLOT-1
+        assignToSlot("john-doe-techcorp", "SPEAKER_SLOT-1", "ASSIGN");
+
+        // Act: insert jane at SPEAKER_SLOT-1 → jane takes slot-1, john shifts to slot-2
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/slot",
+                        eventCode, "jane-smith-datainc")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetSlotKey\":\"SPEAKER_SLOT-1\",\"mode\":\"INSERT\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slots[?(@.slotKey == 'SPEAKER_SLOT-1')].assignedSessionSlug",
+                        org.hamcrest.Matchers.hasItem("jane-smith-datainc")))
+                .andExpect(jsonPath("$.slots[?(@.slotKey == 'SPEAKER_SLOT-2')].assignedSessionSlug",
+                        org.hamcrest.Matchers.hasItem("john-doe-techcorp")));
+    }
+
+    private void assignToSlot(String sessionSlug, String slotKey, String mode) throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/slot",
+                        eventCode, sessionSlug)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetSlotKey\":\"" + slotKey + "\",\"mode\":\"" + mode + "\"}"))
+                .andExpect(status().isOk());
+    }
 }

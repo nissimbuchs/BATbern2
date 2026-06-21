@@ -385,6 +385,82 @@ class TimetableServiceTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Story 15.3 — deterministic slotKey
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("slotKey: speaker slots get SPEAKER_SLOT-{1..N} in computed order")
+    void computeTimeline_speakerSlotKeysAreSequential() {
+        List<TimetableSlot> slots = timetableService.computeTimeline(fullDayConfig, EVENT_DATE);
+
+        List<String> speakerKeys = slots.stream()
+                .filter(s -> s.getType() == SPEAKER_SLOT)
+                .map(TimetableSlot::getSlotKey)
+                .toList();
+
+        assertThat(speakerKeys).containsExactly(
+                "SPEAKER_SLOT-1", "SPEAKER_SLOT-2", "SPEAKER_SLOT-3", "SPEAKER_SLOT-4",
+                "SPEAKER_SLOT-5", "SPEAKER_SLOT-6", "SPEAKER_SLOT-7", "SPEAKER_SLOT-8");
+    }
+
+    @Test
+    @DisplayName("slotKey: structural slots keyed per type — MODERATION-1, MODERATION-2, BREAK-1, BREAK-2, LUNCH-1")
+    void computeTimeline_structuralSlotKeysArePerType() {
+        List<TimetableSlot> slots = timetableService.computeTimeline(fullDayConfig, EVENT_DATE);
+
+        assertThat(slots.get(0).getSlotKey()).isEqualTo("MODERATION-1");
+        assertThat(slots.get(slots.size() - 1).getSlotKey()).isEqualTo("MODERATION-2");
+
+        List<String> breakKeys = slots.stream()
+                .filter(s -> s.getType() == BREAK)
+                .map(TimetableSlot::getSlotKey)
+                .toList();
+        assertThat(breakKeys).containsExactly("BREAK-1", "BREAK-2");
+
+        assertThat(slots.stream().filter(s -> s.getType() == LUNCH)
+                .map(TimetableSlot::getSlotKey).toList()).containsExactly("LUNCH-1");
+
+        // Every slot has a non-null slotKey
+        assertThat(slots).allSatisfy(s -> assertThat(s.getSlotKey()).isNotBlank());
+    }
+
+    @Test
+    @DisplayName("slotKey: apéro-at-end is APERITIF-1")
+    void computeTimeline_aperitifSlotKey() {
+        List<TimetableSlot> slots = timetableService.computeTimeline(
+                afternoonConfig(2, 1, "end"), EVENT_DATE);
+
+        assertThat(slots.get(slots.size() - 1).getSlotKey()).isEqualTo("APERITIF-1");
+    }
+
+    @Test
+    @DisplayName("getTimetable: slotKey is carried through enrichment onto assigned slots")
+    void getTimetable_carriesSlotKeyThroughEnrichment() {
+        Event event = buildEvent("BATbern142", "2025-06-15T07:00:00Z");
+        when(eventRepository.findByEventCode("BATbern142")).thenReturn(Optional.of(event));
+        when(agendaConfigResolver.resolve(event)).thenReturn(fullDayConfig);
+
+        Session speakerSession = Session.builder()
+                .id(UUID.randomUUID())
+                .eventId(event.getId())
+                .sessionSlug("speaker-xyz")
+                .sessionType("presentation")
+                .startTime(Instant.parse("2025-06-15T07:05:00Z"))
+                .endTime(Instant.parse("2025-06-15T07:50:00Z"))
+                .build();
+        when(sessionRepository.findByEventId(event.getId())).thenReturn(List.of(speakerSession));
+
+        TimetableResponse response = timetableService.getTimetable("BATbern142");
+
+        TimetableSlot matched = response.getSlots().stream()
+                .filter(s -> "speaker-xyz".equals(s.getAssignedSessionSlug()))
+                .findFirst().orElseThrow();
+        assertThat(matched.getSlotKey()).isEqualTo("SPEAKER_SLOT-1");
+        // Non-enriched slots also keep their slotKey
+        assertThat(response.getSlots()).allSatisfy(s -> assertThat(s.getSlotKey()).isNotBlank());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // getTimetable() — mocked repository tests
     // ─────────────────────────────────────────────────────────────────────────
 
