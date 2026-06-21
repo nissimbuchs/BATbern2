@@ -115,8 +115,9 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
     // Epic 14 (14.C.2): 4 PHASE columns (Sourcing/Inviting/Content/Confirmed), not per-state
     // lanes — IDENTIFIED lives in the "Sourcing" column. Generous timeout: the kanban renders
     // the summary bar + lanes + per-card drawer machinery, which on a cold local backend with
-    // several pool cards can exceed the tight 5s local default.
-    await expect(page.getByTestId('phase-column-sourcing')).toBeVisible({ timeout: 15_000 });
+    // several pool cards can exceed the tight 5s local default. 20s tolerates CI latency
+    // (the nightly runs this flow ~70% slower than local).
+    await expect(page.getByTestId('phase-column-sourcing')).toBeVisible({ timeout: 20_000 });
   }
 
   /** Drive an IDENTIFIED card → CONTACTED via the primary action + MarkContactedModal. */
@@ -169,11 +170,16 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
     id: string,
     action: 'accept-on-behalf' | 'decline'
   ) {
-    await page.getByTestId(`speaker-card-${id}`).click();
+    // Wait for the card to render before clicking (the kanban + drawer machinery can lag
+    // under CI load) — clicking a not-yet-rendered card was the nightly phase-6 timeout.
+    const card = page.getByTestId(`speaker-card-${id}`);
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    await card.click();
     const actionBtn = page.getByTestId(`drawer-action-${action}`);
-    await expect(actionBtn).toBeVisible();
+    // Drawer open + action button render: generous timeout for CI latency.
+    await expect(actionBtn).toBeVisible({ timeout: 15_000 });
     await actionBtn.click();
-    await expect(page.getByTestId('status-change-dialog')).toBeVisible();
+    await expect(page.getByTestId('status-change-dialog')).toBeVisible({ timeout: 15_000 });
     await page
       .getByTestId('status-change-reason')
       .locator('textarea')
