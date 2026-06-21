@@ -296,65 +296,6 @@ public class UserApiClientImpl implements UserApiClient {
         }
     }
 
-    @Override
-    public String getEmailByUsername(String username) {
-        log.debug("Fetching email for username: {}", username);
-
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/email";
-
-        try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    String.class
-            );
-
-            String email = response.getBody();
-            log.debug("Successfully fetched email for username: {}", username);
-            return email;
-
-        } catch (HttpClientErrorException.NotFound e) {
-            log.warn("User not found: {}", username);
-            throw new UserNotFoundException(username, e);
-
-        } catch (HttpClientErrorException e) {
-            log.error("Client error fetching email for {}: {} - {}", username, e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "Client error fetching email for user: " + username,
-                    e.getStatusCode().value(),
-                    e
-            );
-
-        } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for email {}: {} - {}",
-                    username, e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "User Management Service error for user: " + username,
-                    e.getStatusCode().value(),
-                    e
-            );
-
-        } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for email {}: {}",
-                    username, e.getMessage());
-            throw new UserServiceException(
-                    "Failed to connect to User Management Service for user: " + username,
-                    e
-            );
-
-        } catch (Exception e) {
-            log.error("Unexpected error fetching email for {}: {}", username, e.getMessage(), e);
-            throw new UserServiceException(
-                    "Unexpected error fetching email for user: " + username,
-                    e
-            );
-        }
-    }
-
     /**
      * Story 7.3: resolve a user's preferred language via {@code ?include=preferences}.
      *

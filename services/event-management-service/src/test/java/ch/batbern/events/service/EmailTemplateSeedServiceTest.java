@@ -61,6 +61,22 @@ class EmailTemplateSeedServiceTest {
     }
 
     @Test
+    @DisplayName("should derive SPEAKER category for qna-* template keys (Story 15.7)")
+    void should_deriveCategory_forQnaKey() {
+        String category = emailTemplateSeedService.deriveCategory("qna-new-questions");
+        assertThat(category).isEqualTo("SPEAKER");
+    }
+
+    @Test
+    @DisplayName("should derive REGISTRATION category for the inbound-confirmation templates")
+    void should_deriveCategory_forConfirmationKeys() {
+        assertThat(emailTemplateSeedService.deriveCategory("accept-confirmation")).isEqualTo("REGISTRATION");
+        assertThat(emailTemplateSeedService.deriveCategory("cancel-confirmation")).isEqualTo("REGISTRATION");
+        assertThat(emailTemplateSeedService.deriveCategory("unsubscribe-confirmation"))
+                .isEqualTo("REGISTRATION");
+    }
+
+    @Test
     @DisplayName("should derive REGISTRATION category for registration-* template keys")
     void should_deriveCategory_forRegistrationKey() {
         String category = emailTemplateSeedService.deriveCategory("registration-confirmation");

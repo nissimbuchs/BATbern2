@@ -334,7 +334,7 @@ public class SlidesOnlineEmailService {
             return registration.getAttendeeEmail();
         }
         try {
-            return userApiClient.getEmailByUsername(registration.getAttendeeUsername());
+            return userApiClient.getUserByUsername(registration.getAttendeeUsername()).getEmail();
         } catch (Exception e) {
             log.warn("Slides-online: could not resolve email for username {}: {}",
                     registration.getAttendeeUsername(), e.getMessage());
