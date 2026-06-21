@@ -155,8 +155,57 @@ _All open questions resolved 2026-06-20 (Nissim) — see the last four entries u
 
 ### Agent Model Used
 
+Amelia (claude-opus-4-8[1m]) — BMad dev-story.
+
 ### Debug Log References
+
+- EMS live-timing tests: 15/15 green (`LiveTimingServiceIntegrationTest` 8, `LiveTimingControllerIntegrationTest` 7).
+- Full EMS + api-gateway regression: BUILD SUCCESSFUL, 0 failures.
+- web-frontend hook tests: 37/37; consuming components 89/89.
+- Local-dev smoke (EMS booted, V118/V119 applied to populated DB): GET 200 + `ETag:"evt-BATbern55-0"`, matching `If-None-Match` → 304, gateway anonymous GET 200, unauthenticated POST 401.
 
 ### Completion Notes List
 
+- **P1 complete and merged-ready.** Backend endpoints are additive + inert (WS untouched); frontend consumers migrated off STOMP. Each layer independently deployable.
+- **Deviation (intentional):** hand-written controller/records (not a generated `*Api`) to match the existing hand-written watch subsystem; OpenAPI still authored for frontend type-gen.
+- **Adversarial review:** 4 findings fixed, F2 (pre-existing over-running-status display) deferred — see Review Findings.
+- **P2 (watch) + P3 (WS teardown)** remain deferred under this story key (per resolved decision to keep one long story); P3 is blocked until a watch build drops STOMP. Beta verification pending (manual, touches prod CloudFront).
+
 ### File List
+
+**Backend (event-management-service):**
+- `docs/api/events-api.openapi.yml` (M) — live-timing paths + `LiveTimingResponse`/`LiveTimingActionRequest` schemas
+- `src/main/resources/db/migration/V118__add_live_timing_version.sql` (A)
+- `src/main/resources/db/migration/V119__create_live_timing_presence.sql` (A)
+- `src/main/java/ch/batbern/events/domain/Event.java` (M) — `liveTimingVersion`
+- `src/main/java/ch/batbern/events/domain/LiveTimingPresence.java` (A)
+- `src/main/java/ch/batbern/events/repository/EventRepository.java` (M) — increment/read version
+- `src/main/java/ch/batbern/events/repository/LiveTimingPresenceRepository.java` (A)
+- `src/main/java/ch/batbern/events/watch/LiveTimingService.java` (A)
+- `src/main/java/ch/batbern/events/watch/LiveTimingController.java` (A)
+- `src/main/java/ch/batbern/events/watch/dto/LiveTimingResponse.java` (A)
+- `src/main/java/ch/batbern/events/watch/dto/LiveTimingActionRequest.java` (A)
+- `src/main/java/ch/batbern/events/config/SecurityConfig.java` (M) — GET permitAll
+- `src/test/java/ch/batbern/events/watch/LiveTimingServiceIntegrationTest.java` (A)
+- `src/test/java/ch/batbern/events/watch/LiveTimingControllerIntegrationTest.java` (A)
+
+**api-gateway:**
+- `src/main/java/ch/batbern/gateway/config/SecurityConfig.java` (M) — GET permitAll (+ comment condensing to stay under method-length cap)
+
+**web-frontend:**
+- `src/services/liveTimingService.ts` (A)
+- `src/hooks/useLiveSessionControl/useLiveSessionControl.ts` (M) — STOMP → polling
+- `src/hooks/useLiveSessionControl/useLiveSessionControl.test.ts` (M) — rewritten
+- `src/hooks/usePresentationData.ts` (M) — STOMP → polling
+- `src/hooks/usePresentationData.test.ts` (M) — rewritten
+- `src/types/generated/events-api.types.ts` (M) — regenerated
+
+**BMad artifacts:**
+- `_bmad-output/implementation-artifacts/15-1-websockets-to-rest-polling-live-agenda.md` (A)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (M)
+
+### Change Log
+
+- 2026-06-20 — Story created (ready-for-dev), open questions resolved.
+- 2026-06-20 — P1 implemented (backend endpoints + version/presence persistence + web migration off STOMP), 15 EMS IT + 37 hook tests green (commit `4781c4d9`).
+- 2026-06-20 — Addressed code-review findings (F1/F3/F4/F5; F2 deferred), commit `7b94f66c`. Pushed; PR #800 → develop. Status → review.
