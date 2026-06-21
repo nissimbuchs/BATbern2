@@ -915,7 +915,7 @@
       "cancel": "Annulla",
       "confirm": "Conferma",
       "generateStructure": "Genera struttura programma",
-      "editEventType": "Edit event type"
+      "editEventType": "Modifica tipo di evento"
     },
     "modals": {
       "generateStructure": {
@@ -979,30 +979,30 @@
       "placeHint": "↓ Ora tocca uno slot evidenziato per posizionarla"
     },
     "editEventType": {
-      "title": "Edit event type",
-      "loading": "Loading configuration…",
-      "save": "Save",
-      "saveError": "Could not save the configuration. Please try again.",
-      "assignmentWarning": "Some speakers are already assigned at fixed times. Changing the structure may move them — review the agenda after saving.",
-      "minSlots": "Min. slots",
-      "maxSlots": "Max. slots",
-      "slotDuration": "Slot duration (min)",
-      "breakSlots": "Number of breaks",
-      "breakDuration": "Break duration (min)",
-      "lunchSlots": "Lunch slots",
-      "lunchDuration": "Lunch duration (min)",
-      "moderationStartDuration": "Opening moderation (min)",
-      "moderationEndDuration": "Closing moderation (min)",
-      "aperitifSlots": "Apéro (0 = off, 1 = on)",
-      "aperitifSlotsHelp": "Set to 1 to add an apéro to this event.",
-      "aperitifDuration": "Apéro duration (min)",
-      "aperitifPosition": "Apéro position",
-      "positionStart": "After opening",
-      "positionEnd": "After closing",
-      "theoreticalSlotsAM": "Morning theory block (AM/PM split)",
-      "defaultCapacity": "Default capacity",
-      "typicalStartTime": "Start time (HH:mm)",
-      "typicalEndTime": "End time (HH:mm)"
+      "title": "Modifica tipo di evento",
+      "loading": "Caricamento della configurazione…",
+      "save": "Salva",
+      "saveError": "Impossibile salvare la configurazione. Riprova.",
+      "assignmentWarning": "Alcuni relatori sono già assegnati a orari fissi. Modificare la struttura potrebbe spostarli — controlla l'agenda dopo il salvataggio.",
+      "minSlots": "Slot min.",
+      "maxSlots": "Slot max.",
+      "slotDuration": "Durata slot (min)",
+      "breakSlots": "Numero di pause",
+      "breakDuration": "Durata pausa (min)",
+      "lunchSlots": "Slot pranzo",
+      "lunchDuration": "Durata pranzo (min)",
+      "moderationStartDuration": "Moderazione di apertura (min)",
+      "moderationEndDuration": "Moderazione di chiusura (min)",
+      "aperitifSlots": "Apéro (0 = no, 1 = sì)",
+      "aperitifSlotsHelp": "Imposta 1 per aggiungere un apéro a questo evento.",
+      "aperitifDuration": "Durata apéro (min)",
+      "aperitifPosition": "Posizione apéro",
+      "positionStart": "Dopo l'apertura",
+      "positionEnd": "Dopo la chiusura",
+      "theoreticalSlotsAM": "Blocco teorico al mattino (divisione mattino/pomeriggio)",
+      "defaultCapacity": "Capienza predefinita",
+      "typicalStartTime": "Ora di inizio (HH:mm)",
+      "typicalEndTime": "Ora di fine (HH:mm)"
     }
   },
   "newsletter": {

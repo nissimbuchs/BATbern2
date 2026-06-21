@@ -100,7 +100,8 @@ public class NewsletterEmailService {
     @Value("${newsletter.send.inter-page-delay-ms:0}")
     private long interPageDelayMs;
 
-    private static final Set<String> STRUCTURAL_SESSION_TYPES = Set.of("moderation", "break", "lunch");
+    private static final Set<String> STRUCTURAL_SESSION_TYPES =
+            Set.of("moderation", "break", "lunch", "aperitif");
     private static final Set<EventWorkflowState> SPEAKERS_VISIBLE_STATES = EnumSet.of(
             EventWorkflowState.AGENDA_PUBLISHED,
             EventWorkflowState.EVENT_LIVE,

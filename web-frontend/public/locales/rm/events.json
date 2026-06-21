@@ -915,7 +915,7 @@
       "cancel": "Annullar",
       "confirm": "Confermar",
       "generateStructure": "Generar structura dal program",
-      "editEventType": "Edit event type"
+      "editEventType": "Modifitgar il tip d'occurrenza"
     },
     "modals": {
       "generateStructure": {
@@ -979,30 +979,30 @@
       "placeHint": "↓ Tutgar ussa in slot marcà per la plazzar"
     },
     "editEventType": {
-      "title": "Edit event type",
-      "loading": "Loading configuration…",
-      "save": "Save",
-      "saveError": "Could not save the configuration. Please try again.",
-      "assignmentWarning": "Some speakers are already assigned at fixed times. Changing the structure may move them — review the agenda after saving.",
-      "minSlots": "Min. slots",
-      "maxSlots": "Max. slots",
-      "slotDuration": "Slot duration (min)",
-      "breakSlots": "Number of breaks",
-      "breakDuration": "Break duration (min)",
-      "lunchSlots": "Lunch slots",
-      "lunchDuration": "Lunch duration (min)",
-      "moderationStartDuration": "Opening moderation (min)",
-      "moderationEndDuration": "Closing moderation (min)",
-      "aperitifSlots": "Apéro (0 = off, 1 = on)",
-      "aperitifSlotsHelp": "Set to 1 to add an apéro to this event.",
-      "aperitifDuration": "Apéro duration (min)",
-      "aperitifPosition": "Apéro position",
-      "positionStart": "After opening",
-      "positionEnd": "After closing",
-      "theoreticalSlotsAM": "Morning theory block (AM/PM split)",
-      "defaultCapacity": "Default capacity",
-      "typicalStartTime": "Start time (HH:mm)",
-      "typicalEndTime": "End time (HH:mm)"
+      "title": "Modifitgar il tip d'occurrenza",
+      "loading": "Chargiar la configuraziun…",
+      "save": "Memorisar",
+      "saveError": "Impussibel da memorisar la configuraziun. Empruvai anc ina giada.",
+      "assignmentWarning": "Tscherts oraturs èn gia planisads ad uras fixas. Midar la structura als po spustar — controllai l'agenda suenter avair memorisà.",
+      "minSlots": "Plazzas min.",
+      "maxSlots": "Plazzas max.",
+      "slotDuration": "Durada da la plazza (min)",
+      "breakSlots": "Dumber da pausas",
+      "breakDuration": "Durada da la pausa (min)",
+      "lunchSlots": "Plazzas da gentar",
+      "lunchDuration": "Durada dal gentar (min)",
+      "moderationStartDuration": "Moderaziun d'avertura (min)",
+      "moderationEndDuration": "Moderaziun da serrada (min)",
+      "aperitifSlots": "Apéro (0 = na, 1 = gea)",
+      "aperitifSlotsHelp": "Mettai sin 1 per agiuntar in apéro a questa occurrenza.",
+      "aperitifDuration": "Durada da l'apéro (min)",
+      "aperitifPosition": "Posiziun da l'apéro",
+      "positionStart": "Suenter l'avertura",
+      "positionEnd": "Suenter la serrada",
+      "theoreticalSlotsAM": "Bloc teoretic la damaun (partiziun damaun/suentermezdi)",
+      "defaultCapacity": "Capacitad standard",
+      "typicalStartTime": "Ura da cumenzament (HH:mm)",
+      "typicalEndTime": "Ura da finiziun (HH:mm)"
     }
   },
   "newsletter": {

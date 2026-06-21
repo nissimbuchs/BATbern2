@@ -883,7 +883,7 @@
       "moderation": "司会",
       "break": "休憩",
       "lunch": "昼食",
-      "aperitif": "Apéro"
+      "aperitif": "アペロ"
     },
     "speakerPool": {
       "title": "スピーカープール",
@@ -915,7 +915,7 @@
       "cancel": "キャンセル",
       "confirm": "確認",
       "generateStructure": "スケジュール構造を生成",
-      "editEventType": "Edit event type"
+      "editEventType": "イベントタイプを編集"
     },
     "modals": {
       "generateStructure": {
@@ -979,30 +979,30 @@
       "placeHint": "↓ ハイライトされたスロットをタップして配置します"
     },
     "editEventType": {
-      "title": "Edit event type",
-      "loading": "Loading configuration…",
-      "save": "Save",
-      "saveError": "Could not save the configuration. Please try again.",
-      "assignmentWarning": "Some speakers are already assigned at fixed times. Changing the structure may move them — review the agenda after saving.",
-      "minSlots": "Min. slots",
-      "maxSlots": "Max. slots",
-      "slotDuration": "Slot duration (min)",
-      "breakSlots": "Number of breaks",
-      "breakDuration": "Break duration (min)",
-      "lunchSlots": "Lunch slots",
-      "lunchDuration": "Lunch duration (min)",
-      "moderationStartDuration": "Opening moderation (min)",
-      "moderationEndDuration": "Closing moderation (min)",
-      "aperitifSlots": "Apéro (0 = off, 1 = on)",
-      "aperitifSlotsHelp": "Set to 1 to add an apéro to this event.",
-      "aperitifDuration": "Apéro duration (min)",
-      "aperitifPosition": "Apéro position",
-      "positionStart": "After opening",
-      "positionEnd": "After closing",
-      "theoreticalSlotsAM": "Morning theory block (AM/PM split)",
-      "defaultCapacity": "Default capacity",
-      "typicalStartTime": "Start time (HH:mm)",
-      "typicalEndTime": "End time (HH:mm)"
+      "title": "イベントタイプを編集",
+      "loading": "設定を読み込み中…",
+      "save": "保存",
+      "saveError": "設定を保存できませんでした。もう一度お試しください。",
+      "assignmentWarning": "一部の登壇者はすでに固定の時間に割り当てられています。構成を変更すると移動する可能性があります。保存後にアジェンダを確認してください。",
+      "minSlots": "最小スロット数",
+      "maxSlots": "最大スロット数",
+      "slotDuration": "スロットの長さ（分）",
+      "breakSlots": "休憩の数",
+      "breakDuration": "休憩の長さ（分）",
+      "lunchSlots": "昼食スロット",
+      "lunchDuration": "昼食の長さ（分）",
+      "moderationStartDuration": "開会の進行（分）",
+      "moderationEndDuration": "閉会の進行（分）",
+      "aperitifSlots": "アペロ（0 = なし、1 = あり）",
+      "aperitifSlotsHelp": "このイベントにアペロを追加するには 1 に設定します。",
+      "aperitifDuration": "アペロの長さ（分）",
+      "aperitifPosition": "アペロの位置",
+      "positionStart": "開会の後",
+      "positionEnd": "閉会の後",
+      "theoreticalSlotsAM": "午前の理論ブロック（午前／午後の分割）",
+      "defaultCapacity": "デフォルト定員",
+      "typicalStartTime": "開始時刻（HH:mm）",
+      "typicalEndTime": "終了時刻（HH:mm）"
     }
   },
   "newsletter": {

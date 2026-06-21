@@ -915,7 +915,7 @@
       "cancel": "Peruuta",
       "confirm": "Vahvista",
       "generateStructure": "Luo aikataululrakenne",
-      "editEventType": "Edit event type"
+      "editEventType": "Muokkaa tapahtumatyyppiä"
     },
     "modals": {
       "generateStructure": {
@@ -979,30 +979,30 @@
       "placeHint": "↓ Napauta nyt korostettua aikaväliä sijoittaaksesi sen"
     },
     "editEventType": {
-      "title": "Edit event type",
-      "loading": "Loading configuration…",
-      "save": "Save",
-      "saveError": "Could not save the configuration. Please try again.",
-      "assignmentWarning": "Some speakers are already assigned at fixed times. Changing the structure may move them — review the agenda after saving.",
-      "minSlots": "Min. slots",
-      "maxSlots": "Max. slots",
-      "slotDuration": "Slot duration (min)",
-      "breakSlots": "Number of breaks",
-      "breakDuration": "Break duration (min)",
-      "lunchSlots": "Lunch slots",
-      "lunchDuration": "Lunch duration (min)",
-      "moderationStartDuration": "Opening moderation (min)",
-      "moderationEndDuration": "Closing moderation (min)",
-      "aperitifSlots": "Apéro (0 = off, 1 = on)",
-      "aperitifSlotsHelp": "Set to 1 to add an apéro to this event.",
-      "aperitifDuration": "Apéro duration (min)",
-      "aperitifPosition": "Apéro position",
-      "positionStart": "After opening",
-      "positionEnd": "After closing",
-      "theoreticalSlotsAM": "Morning theory block (AM/PM split)",
-      "defaultCapacity": "Default capacity",
-      "typicalStartTime": "Start time (HH:mm)",
-      "typicalEndTime": "End time (HH:mm)"
+      "title": "Muokkaa tapahtumatyyppiä",
+      "loading": "Ladataan asetuksia…",
+      "save": "Tallenna",
+      "saveError": "Asetusten tallentaminen epäonnistui. Yritä uudelleen.",
+      "assignmentWarning": "Joillekin puhujille on jo varattu kiinteät ajat. Rakenteen muuttaminen voi siirtää heitä — tarkista ohjelma tallennuksen jälkeen.",
+      "minSlots": "Paikat väh.",
+      "maxSlots": "Paikat enint.",
+      "slotDuration": "Paikan kesto (min)",
+      "breakSlots": "Taukojen määrä",
+      "breakDuration": "Tauon kesto (min)",
+      "lunchSlots": "Lounaspaikat",
+      "lunchDuration": "Lounaan kesto (min)",
+      "moderationStartDuration": "Aloitusjuonto (min)",
+      "moderationEndDuration": "Lopetusjuonto (min)",
+      "aperitifSlots": "Apéro (0 = pois, 1 = päällä)",
+      "aperitifSlotsHelp": "Aseta arvoksi 1 lisätäksesi apéron tähän tapahtumaan.",
+      "aperitifDuration": "Apéron kesto (min)",
+      "aperitifPosition": "Apéron sijainti",
+      "positionStart": "Aloituksen jälkeen",
+      "positionEnd": "Lopetuksen jälkeen",
+      "theoreticalSlotsAM": "Teoriaosuus aamulla (aamu/iltapäivä-jako)",
+      "defaultCapacity": "Oletuskapasiteetti",
+      "typicalStartTime": "Alkamisaika (HH:mm)",
+      "typicalEndTime": "Päättymisaika (HH:mm)"
     }
   },
   "newsletter": {

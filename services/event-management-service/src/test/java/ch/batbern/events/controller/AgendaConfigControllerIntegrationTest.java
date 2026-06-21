@@ -180,6 +180,29 @@ class AgendaConfigControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("should_return400_when_malformedTime")
+    @WithMockUser(username = "marco.organizer", roles = {"ORGANIZER"})
+    void should_return400_when_malformedTime() throws Exception {
+        saveEvent("BATbern98", 9098, EventType.AFTERNOON);
+        mockMvc.perform(put("/api/v1/events/BATbern98/agenda-config")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY.replace("\"13:00\"", "\"25:99\"")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("should_return400_when_maxSlotsLessThanMinSlots")
+    @WithMockUser(username = "marco.organizer", roles = {"ORGANIZER"})
+    void should_return400_when_maxSlotsLessThanMinSlots() throws Exception {
+        saveEvent("BATbern99", 9099, EventType.AFTERNOON);
+        // minSlots 6 > maxSlots 4 → cross-field rule must surface as 400, not 500
+        mockMvc.perform(put("/api/v1/events/BATbern99/agenda-config")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY.replace("\"maxSlots\":8", "\"maxSlots\":4")))
+                .andExpect(status().isBadRequest());
+    }
+
     // MARK: - AC4: config isolation
 
     @Test

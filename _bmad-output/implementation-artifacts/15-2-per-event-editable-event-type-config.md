@@ -1,6 +1,6 @@
 # Story 15.2: Per-event editable event-type config + dynamic agenda
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -165,6 +165,24 @@ Today, a session is "assigned to a slot" purely by its **`Session.startTime` Ins
 
 _All open questions resolved 2026-06-21 (Nissim) — see the last three entries under Resolved Decisions._
 
+## Review Findings (code review 2026-06-21, 3-layer adversarial)
+
+### Decision needed
+- [x] [Review][Decision] **i18n: 7 locales carried English placeholders** — RESOLVED 2026-06-21 (Nissim): **hand-translated all 7** (`fr/it/es/nl/fi/rm/ja`) — `slotAssignment.editEventType.*` + `actions.editEventType` + the `aperitif` slot label. All 10 locales now properly populated (de/en/gsw-BE were already first-class).
+
+### Patch (all fixed 2026-06-21)
+- [x] [Review][Patch] **`aperitif` added to auto-assign structural set** — `SessionTimingService.java:46`. (HIGH)
+- [x] [Review][Patch] **`aperitif` added to newsletter structural set** — `NewsletterEmailService.java:103`. (MED)
+- [x] [Review][Patch] **`aperitif` added to cockpit speaker-count filters** — `cockpit/MetricTiles.tsx:54` + `cockpit/useCockpitCards.ts:56`. (MED)
+- [x] [Review][Patch] **Malformed time now → 400** — `AgendaConfigService.parseTime` wraps `DateTimeParseException` → `IllegalArgumentException`; IT `should_return400_when_malformedTime`. (MED)
+- [x] [Review][Patch] **maxSlots<minSlots now → 400** — `AgendaConfigService.upsert` validates the cross-field rule → `IllegalArgumentException`; IT `should_return400_when_maxSlotsLessThanMinSlots`. (MED)
+
+### Deferred
+- [x] [Review][Defer] **Even-split silently emits fewer breaks than requested** when `breakSlots ≥ maxSlots` or positions collide [TimetableService] — acceptable-by-design (can't fit more breaks than gaps); realistic values (1–2) unaffected; parity preserved.
+- [x] [Review][Defer] **Admin template live-preview not apéro-aware** — `EventTypeConfigurationForm/SchedulePreview.tsx` + `scheduleTimeline.ts` mirror the old algorithm; the global-template editor preview won't show apéro/even-split. Authoritative backend timetable is correct; secondary surface.
+- [x] [Review][Defer] **Number field cleared → NaN** — clearing a knob in the dialog yields a confusing zod error instead of defaulting; minor UX.
+- [x] [Review][Defer] **Doc-drift** — only `03-data-architecture.md` updated; `06-backend-architecture.md` + `user-guide/entity-management/events.md` (mapped) not touched and no `[no-doc]`; may trip the weekly auditor.
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -182,7 +200,7 @@ Amelia (claude-opus-4-8[1m]) — BMad dev-story.
 
 - **P1 backend complete.** New per-event `event_agenda_config` table (V121, copy-on-edit) + apéro columns on the shared `event_types` template + `sessions_session_type_check` widened for `'aperitif'` (V122). `AgendaConfig` interface unifies template + override; `AgendaConfigResolver` fronts all three `computeTimeline` consumers (read, structural-session generation, auto-assign-via-getTimetable). `computeTimeline` generalized: apéro segment (position start/end) + count-driven even-split breaks. Hand-written `AgendaConfigController` + `AgendaConfigService` + DTO records (matches the `TimetableController`/watch precedent); OpenAPI authored for FE type-gen + docs.
 - **AC8 (intended behaviour change):** afternoon + evening templates now default apéro ON @ 90 min, position=end (full_day stays OFF). Because apéro is appended **after** moderation-end, no slot before it shifts — existing speaker assignments are unaffected.
-- **P2 frontend complete.** `timetableService` + `useAgendaConfig`/`useUpdateAgendaConfig` (invalidates the timetable query); `EditEventTypeDialog` (MUI + react-hook-form + zod) wired into the SlotAssignment toolbar with the non-blocking assignment-desync warning; APERITIF rendered as a structural slot type. i18n keys added to **all 10 locales** (EN+DE first-class; gsw-BE mirrors DE; fr/it/rm/es/fi/nl/ja seeded with English placeholders pending hand-translation — per the de/en-first-class convention).
+- **P2 frontend complete.** `timetableService` + `useAgendaConfig`/`useUpdateAgendaConfig` (invalidates the timetable query); `EditEventTypeDialog` (MUI + react-hook-form + zod) wired into the SlotAssignment toolbar with the non-blocking assignment-desync warning; APERITIF rendered as a structural slot type. i18n keys added to **all 10 locales** — EN+DE first-class, gsw-BE mirrors DE, and fr/it/es/nl/fi/rm/ja hand-translated during code review.
 - **Bruno: deliberately deferred** — a PUT would leave an un-cleanable override row on a prod event (no delete endpoint); GET/PUT fully covered by Testcontainers IT. **Beta verify: pending** (manual, touches prod CloudFront).
 - **Scope honoured:** no slotKey addressing / insert-swap / mobile-tap here — that is 15.3.
 
@@ -227,3 +245,4 @@ Amelia (claude-opus-4-8[1m]) — BMad dev-story.
 
 - 2026-06-21 — Story created (ready-for-dev); apéro/break/dialog decisions resolved.
 - 2026-06-21 — P1 backend (table + resolver + generalized computeTimeline + endpoints + apéro plumbing) and P2 frontend (dialog + hook + i18n) implemented. Parity preserved; full EMS suite + FE tests green. Status → review.
+- 2026-06-21 — Code review (3-layer adversarial): 5 patches applied (aperitif added to SessionTimingService/NewsletterEmailService/cockpit structural-type lists; malformed-time + maxSlots<minSlots now → 400 with ITs), and all 7 placeholder locales hand-translated. 4 items deferred (logged in deferred-work.md). Status → done.

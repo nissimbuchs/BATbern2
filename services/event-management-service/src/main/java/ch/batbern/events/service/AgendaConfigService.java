@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 
 /**
  * Read/upsert service for the per-event agenda config (Story 15.2).
@@ -58,6 +59,11 @@ public class AgendaConfigService {
      */
     @Transactional
     public EventAgendaConfigResponse upsert(String eventCode, UpdateEventAgendaConfigRequest request) {
+        // Cross-field rule surfaced as 400 (the entity @PrePersist throws IllegalStateException → 500).
+        if (request.maxSlots() < request.minSlots()) {
+            throw new IllegalArgumentException(String.format(
+                    "maxSlots (%d) must be >= minSlots (%d)", request.maxSlots(), request.minSlots()));
+        }
         Event event = loadEvent(eventCode);
         EventAgendaConfig entity = overrideRepository.findByEventId(event.getId())
                 .orElseGet(() -> EventAgendaConfig.builder().eventId(event.getId()).build());
@@ -115,7 +121,14 @@ public class AgendaConfigService {
     }
 
     private static LocalTime parseTime(String value) {
-        return (value == null || value.isBlank()) ? null : LocalTime.parse(value);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(value);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid time '" + value + "' (expected HH:mm)");
+        }
     }
 
     private static String formatTime(LocalTime value) {
