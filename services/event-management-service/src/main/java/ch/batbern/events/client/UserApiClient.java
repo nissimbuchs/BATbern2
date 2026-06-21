@@ -77,17 +77,6 @@ public interface UserApiClient {
     ch.batbern.events.notification.UserPreferences getPreferences(String username);
 
     /**
-     * Get user's email address by username.
-     * Used for sending email notifications.
-     *
-     * @param username User's username
-     * @return User's email address
-     * @throws UserNotFoundException if user not found (404)
-     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
-     */
-    String getEmailByUsername(String username);
-
-    /**
      * Get the user's preferred UI/web language (Story 7.3).
      *
      * <p>Hits {@code GET /api/v1/users/{username}?include=preferences} and returns the lowercase

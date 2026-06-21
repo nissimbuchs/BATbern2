@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.domain.QnaWindowStatus;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionQnaNotification;
@@ -107,10 +108,14 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         // Default stubs (lenient — not every test reads every recipient).
         lenient().when(userApiClient.getQnaNotificationFrequency(anyString())).thenReturn("live");
         lenient().when(userApiClient.getPreferredLanguage(anyString())).thenReturn("en");
-        lenient().when(userApiClient.getEmailByUsername(SPEAKER)).thenReturn("primary.speaker@batbern.ch");
-        lenient().when(userApiClient.getEmailByUsername(CO_SPEAKER)).thenReturn("co.speaker@batbern.ch");
-        lenient().when(userApiClient.getEmailByUsername(MODERATOR)).thenReturn("the.moderator@batbern.ch");
-        lenient().when(userApiClient.getEmailByUsername(PANELIST)).thenReturn("the.panelist@batbern.ch");
+        lenient().when(userApiClient.getUserByUsername(SPEAKER))
+                .thenReturn(new UserResponse().email("primary.speaker@batbern.ch"));
+        lenient().when(userApiClient.getUserByUsername(CO_SPEAKER))
+                .thenReturn(new UserResponse().email("co.speaker@batbern.ch"));
+        lenient().when(userApiClient.getUserByUsername(MODERATOR))
+                .thenReturn(new UserResponse().email("the.moderator@batbern.ch"));
+        lenient().when(userApiClient.getUserByUsername(PANELIST))
+                .thenReturn(new UserResponse().email("the.panelist@batbern.ch"));
     }
 
     @AfterEach
@@ -155,6 +160,38 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         verify(emailService, never()).sendHtmlEmailSync(eq("the.panelist@batbern.ch"), anyString(), anyString());
 
         assertThat(notificationRepository.count()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("Event moderator (on a different session) is notified of a content session's Q&A")
+    void should_notifyEventModerator_when_questionOnDifferentSession() {
+        // The Q&A lands on a content session whose only participants are speakers; the event
+        // moderator is assigned to a SEPARATE moderation session. The digest must still reach
+        // the event moderator (event-scoped), not just the content session's own speakers.
+        SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN);
+        Session content = sessionRepository.findById(window.getSessionId()).orElseThrow();
+        Event event = eventRepository.findByEventCode(EVENT_CODE).orElseThrow();
+        Session moderation = sessionRepository.save(Session.builder()
+                .eventId(event.getId())
+                .eventCode(EVENT_CODE)
+                .sessionSlug("moderation-start")
+                .title("Moderation")
+                .sessionType("moderation")
+                .startTime(Instant.now().minus(2, ChronoUnit.DAYS))
+                .endTime(Instant.now().minus(2, ChronoUnit.DAYS).plus(15, ChronoUnit.MINUTES))
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build());
+        saveSpeaker(content, SPEAKER, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        saveSpeaker(moderation, MODERATOR, SessionUser.SpeakerRole.MODERATOR);
+        savePost(window, ATTENDEE, "A question on the content session", null, Instant.now());
+
+        qnaNotificationService.flushPending();
+
+        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
+        verify(emailService, times(2)).sendHtmlEmailSync(to.capture(), anyString(), anyString());
+        assertThat(to.getAllValues()).containsExactlyInAnyOrder(
+                "primary.speaker@batbern.ch", "the.moderator@batbern.ch");
     }
 
     // ==================== AC5 (live): digest windowing ====================
@@ -333,7 +370,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("AC10: a recipient with no resolvable email is skipped")
     void should_skip_when_noEmail() {
-        when(userApiClient.getEmailByUsername(SPEAKER)).thenReturn(null);
+        when(userApiClient.getUserByUsername(SPEAKER)).thenReturn(new UserResponse().email(null));
         SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN);
         Session session = sessionRepository.findById(window.getSessionId()).orElseThrow();
         saveSpeaker(session, SPEAKER, SessionUser.SpeakerRole.PRIMARY_SPEAKER);

@@ -65,11 +65,14 @@ public class QnaNotificationService {
     static final String TEMPLATE_KEY = "qna-new-questions";
     private static final String LAYOUT_KEY = "batbern-default";
 
-    /** Recipients of the Q&A digest. PANELIST is intentionally excluded (AC9). */
-    private static final Set<SessionUser.SpeakerRole> RECIPIENT_ROLES = Set.of(
+    /**
+     * Session-scoped Q&A recipients: the session's own presenters. PANELIST is intentionally
+     * excluded (AC9). The event MODERATOR is added separately (event-scoped, not per-session) —
+     * see {@link #processWindow}.
+     */
+    private static final Set<SessionUser.SpeakerRole> SESSION_SPEAKER_ROLES = Set.of(
             SessionUser.SpeakerRole.PRIMARY_SPEAKER,
-            SessionUser.SpeakerRole.CO_SPEAKER,
-            SessionUser.SpeakerRole.MODERATOR);
+            SessionUser.SpeakerRole.CO_SPEAKER);
 
     private final SessionQnaWindowRepository windowRepository;
     private final SessionQnaPostRepository postRepository;
@@ -133,13 +136,15 @@ public class QnaNotificationService {
         }
         Event event = eventRepository.findByEventCode(window.getEventCode()).orElse(null);
 
-        // Distinct recipient usernames across PRIMARY_SPEAKER / CO_SPEAKER / MODERATOR.
+        // Recipients = this session's own presenters (PRIMARY_SPEAKER / CO_SPEAKER) +
+        // the moderator(s) of the WHOLE event (event-scoped, not the per-session moderator).
         Set<String> recipients = new LinkedHashSet<>();
         for (SessionUser su : sessionUserRepository.findBySessionId(sessionId)) {
-            if (su.getUsername() != null && RECIPIENT_ROLES.contains(su.getSpeakerRole())) {
+            if (su.getUsername() != null && SESSION_SPEAKER_ROLES.contains(su.getSpeakerRole())) {
                 recipients.add(su.getUsername());
             }
         }
+        recipients.addAll(sessionUserRepository.findModeratorUsernamesByEventCode(window.getEventCode()));
 
         int sent = 0;
         for (String recipient : recipients) {
@@ -207,7 +212,7 @@ public class QnaNotificationService {
 
     private String resolveEmail(String recipient) {
         try {
-            return userApiClient.getEmailByUsername(recipient);
+            return userApiClient.getUserByUsername(recipient).getEmail();
         } catch (Exception e) {
             log.warn("qnaDigestFlush: could not resolve email for {} ({})", recipient, e.getMessage());
             return null;

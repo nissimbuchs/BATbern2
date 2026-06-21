@@ -106,8 +106,9 @@ public class NotificationService {
 
         // Send via AWS SES using shared-kernel EmailService
         try {
-            // Fetch user email
-            String email = userApiClient.getEmailByUsername(request.getRecipientUsername());
+            // Fetch user email from the user entity (the dedicated /email endpoint never existed;
+            // the entity endpoint is the canonical, VPC-gated read — Story 15.7 follow-up).
+            String email = userApiClient.getUserByUsername(request.getRecipientUsername()).getEmail();
 
             // Build HTML content (simple for now, can add Thymeleaf templates later)
             String htmlBody = buildEmailContent(notification);

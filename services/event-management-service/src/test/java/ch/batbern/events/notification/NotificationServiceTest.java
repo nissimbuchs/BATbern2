@@ -1,6 +1,7 @@
 package ch.batbern.events.notification;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.service.EmailService;
@@ -99,7 +100,8 @@ class NotificationServiceTest {
         prefs.setEmailNotificationsEnabled(true);
 
         when(userApiClient.getPreferences(testUsername)).thenReturn(prefs);
-        when(userApiClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
+        when(userApiClient.getUserByUsername(testUsername))
+                .thenReturn(new UserResponse().email("john.doe@example.com"));
         when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
             Notification n = invocation.getArgument(0);
             n.setId(UUID.randomUUID());
@@ -160,7 +162,8 @@ class NotificationServiceTest {
         AtomicReference<Notification> savedNotification = new AtomicReference<>();
 
         when(userApiClient.getPreferences(testUsername)).thenReturn(prefs);
-        when(userApiClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
+        when(userApiClient.getUserByUsername(testUsername))
+                .thenReturn(new UserResponse().email("john.doe@example.com"));
         when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
             Notification n = invocation.getArgument(0);
             if (n.getId() == null) {
@@ -199,7 +202,8 @@ class NotificationServiceTest {
         AtomicReference<Notification> savedNotification = new AtomicReference<>();
 
         when(userApiClient.getPreferences(testUsername)).thenReturn(prefs);
-        when(userApiClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
+        when(userApiClient.getUserByUsername(testUsername))
+                .thenReturn(new UserResponse().email("john.doe@example.com"));
         when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
             Notification n = invocation.getArgument(0);
             if (n.getId() == null) {

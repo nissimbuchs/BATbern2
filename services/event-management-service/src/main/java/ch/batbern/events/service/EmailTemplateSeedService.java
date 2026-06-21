@@ -152,10 +152,23 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("speaker-")) {
             return "SPEAKER";
         }
+        // Story 15.7: the Q&A new-questions digest goes to a session's speakers + the event
+        // moderator, so it lives in the SPEAKER tab (admin-editable, DB-rendered).
+        if (templateKey.startsWith("qna-")) {
+            return "SPEAKER";
+        }
         if (templateKey.startsWith("registration-") || templateKey.startsWith("waitlist-")
                 || templateKey.startsWith("deregistration-")) {
             // Story 10.11: waitlist-* templates belong to REGISTRATION category
             // Story 10.12: deregistration-* templates belong to REGISTRATION category
+            return "REGISTRATION";
+        }
+        // Inbound-email confirmations (Story 10.17): transactional acks after a registrant
+        // accepts/cancels a deregistration or unsubscribes. REGISTRATION is an admin-EDIT-only
+        // category (NOT a blast send-picker like REGISTRANT_NOTICE / NEWSLETTER), so these
+        // transactional templates can be edited in admin without becoming mass-sendable.
+        if (templateKey.equals("accept-confirmation") || templateKey.equals("cancel-confirmation")
+                || templateKey.equals("unsubscribe-confirmation")) {
             return "REGISTRATION";
         }
         if (templateKey.startsWith("task-reminder")) {

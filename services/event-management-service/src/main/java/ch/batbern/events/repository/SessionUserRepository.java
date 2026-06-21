@@ -28,6 +28,22 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
     List<SessionUser> findBySessionId(UUID sessionId);
 
     /**
+     * Story 15.7: distinct usernames of the event's moderator(s) — the MODERATOR role across
+     * ALL of the event's sessions. The Q&A digest notifies the moderator of the whole event
+     * (typically assigned to the moderation bookend sessions), not the per-session moderator,
+     * so this is event-scoped rather than session-scoped.
+     *
+     * @param eventCode the event code
+     * @return distinct moderator usernames for the event (empty if none)
+     */
+    @Query("SELECT DISTINCT su.username FROM SessionUser su "
+        + "JOIN su.session s "
+        + "WHERE s.eventCode = :eventCode "
+        + "AND su.speakerRole = ch.batbern.events.domain.SessionUser.SpeakerRole.MODERATOR "
+        + "AND su.username IS NOT NULL")
+    List<String> findModeratorUsernamesByEventCode(@Param("eventCode") String eventCode);
+
+    /**
      * Find all confirmed speakers for a specific session
      *
      * @param sessionId the session UUID
