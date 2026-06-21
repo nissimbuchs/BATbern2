@@ -43,7 +43,8 @@ import java.util.UUID;
 @Transactional
 public class SessionTimingService {
 
-    private static final List<String> STRUCTURAL_TYPES = List.of("moderation", "break", "lunch");
+    private static final List<String> STRUCTURAL_TYPES =
+            List.of("moderation", "break", "lunch", "aperitif");
 
     private final SessionRepository sessionRepository;
     private final SessionTimingHistoryRepository sessionTimingHistoryRepository;

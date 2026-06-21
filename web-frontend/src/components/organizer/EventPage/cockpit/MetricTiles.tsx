@@ -51,7 +51,7 @@ export const MetricTiles: React.FC<MetricTilesProps> = ({ event, onNavigate }) =
   // so they must be excluded — counting them inflated the fraction (e.g. 8/8 for an
   // event with 5 talks slotted + 2 moderation + 1 break). The structural set mirrors
   // STRUCTURAL_TYPES in DragDropSlotAssignment (the timetable's non-SPEAKER_SLOT types).
-  const STRUCTURAL_SESSION_TYPES = ['moderation', 'break', 'lunch'];
+  const STRUCTURAL_SESSION_TYPES = ['moderation', 'break', 'lunch', 'aperitif'];
   const sessionsArr =
     (e.sessions as { startTime?: string | null; sessionType?: string | null }[] | undefined) ?? [];
   const speakerSessions = sessionsArr.filter(

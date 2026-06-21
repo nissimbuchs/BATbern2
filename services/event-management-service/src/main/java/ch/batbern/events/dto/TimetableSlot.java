@@ -19,6 +19,7 @@ public class TimetableSlot {
         MODERATION,
         BREAK,
         LUNCH,
+        APERITIF,
         SPEAKER_SLOT
     }
 

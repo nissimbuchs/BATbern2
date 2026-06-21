@@ -56,3 +56,49 @@ describe('computeScheduleEndTime', () => {
     expect(end).toMatch(/^\d{2}:\d{2}$/);
   });
 });
+
+describe('buildTimeline — Story 15.2 apéro + count-driven breaks', () => {
+  const afternoon: ScheduleConfig = {
+    typicalStartTime: '13:00',
+    slotDuration: 45,
+    maxSlots: 8,
+    breakSlots: 2,
+    lunchSlots: 0,
+    theoreticalSlotsAM: false,
+    moderationStartDuration: 5,
+    moderationEndDuration: 5,
+    breakDuration: 20,
+    lunchDuration: 60,
+    aperitifSlots: 1,
+    aperitifDuration: 90,
+    aperitifPosition: 'end',
+  };
+
+  it('should_appendAperitifAfterModerationEnd_when_positionEnd', () => {
+    const titles = buildTimeline(afternoon).map((e) => e.title);
+    const endeIdx = titles.lastIndexOf('Ende');
+    expect(titles[endeIdx - 1]).toBe('Apéro');
+    expect(titles[endeIdx - 2]).toBe('Moderation End');
+  });
+
+  it('should_markAperitifKind_andDuration', () => {
+    const apero = buildTimeline(afternoon).find((e) => e.kind === 'aperitif');
+    expect(apero?.duration).toBe(90);
+  });
+
+  it('should_distributeTwoBreaksEvenly_inLinearBlock', () => {
+    const breaks = buildTimeline(afternoon).filter((e) => e.kind === 'break');
+    expect(breaks).toHaveLength(2);
+  });
+
+  it('should_omitAperitif_when_aperitifSlotsZero', () => {
+    const entries = buildTimeline({ ...afternoon, aperitifSlots: 0 });
+    expect(entries.some((e) => e.kind === 'aperitif')).toBe(false);
+  });
+
+  it('should_placeAperitifAfterModerationStart_when_positionStart', () => {
+    const titles = buildTimeline({ ...afternoon, aperitifPosition: 'start' }).map((e) => e.title);
+    expect(titles[0]).toBe('Moderation Start');
+    expect(titles[1]).toBe('Apéro');
+  });
+});

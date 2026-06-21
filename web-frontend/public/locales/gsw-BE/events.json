@@ -548,7 +548,13 @@
       "organizerOnly": "Nur Organisatore chöne uf die Syte zuegriffe",
       "typicalStartTime": "Üblechi Startziit",
       "typicalEndTime": "Üblechi Ändziit",
-      "typicalEndTimeHint": "Automatisch usem Zytplan brächnet"
+      "typicalEndTimeHint": "Automatisch usem Zytplan brächnet",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Apéro hinzufügen",
+      "aperitifDuration": "Apéro-Dauer (Min.)",
+      "aperitifPosition": "Apéro-Position",
+      "aperitifPositionStart": "Nach der Eröffnung",
+      "aperitifPositionEnd": "Nach dem Abschluss"
     },
     "themeImage": "Veranstautigsthemenbild",
     "themeImageHelp": "Es Themenbild für die Veranstatig ufelade (PNG, JPEG oder SVG, max 5MB). Empfohleui Grösse: 1920x400px.",
@@ -884,7 +890,8 @@
     "structuralSessions": {
       "moderation": "Moderierig",
       "break": "Pause",
-      "lunch": "Mittagesse"
+      "lunch": "Mittagesse",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Rednerpool",
@@ -915,7 +922,8 @@
       "clearAll": "Alles lösche",
       "cancel": "Abbräche",
       "confirm": "Bestätige",
-      "generateStructure": "Zeitplanstruktur generiere"
+      "generateStructure": "Zeitplanstruktur generiere",
+      "editEventType": "Veranstaltungstyp bearbeiten"
     },
     "modals": {
       "generateStructure": {
@@ -977,6 +985,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Jetz uf e markierte Slot tippe zum platziere"
+    },
+    "editEventType": {
+      "assignmentWarning": "Einige Referent:innen sind bereits zu festen Zeiten eingeplant. Eine Änderung der Struktur kann sie verschieben — prüfe die Agenda nach dem Speichern."
     }
   },
   "newsletter": {

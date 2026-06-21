@@ -542,7 +542,13 @@
       "organizerOnly": "Mo ils organizaturs pon acceder a questa pagina",
       "typicalStartTime": "Temp da cumenzament usità",
       "typicalEndTime": "Temp da finiziun usità",
-      "typicalEndTimeHint": "Calculà automaticamain dal program"
+      "typicalEndTimeHint": "Calculà automaticamain dal program",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Agiuntar in apéro",
+      "aperitifDuration": "Durada da l'apéro (min)",
+      "aperitifPosition": "Posiziun da l'apéro",
+      "aperitifPositionStart": "Suenter l'avertura",
+      "aperitifPositionEnd": "Suenter la serrada"
     },
     "themeImage": "Maletg da tema dal eveniment",
     "themeImageHelp": "Chargiar in maletg da tema per quest eveniment (PNG, JPEG u SVG, max 5MB). Dimensiun recumandada: 1920x400px.",
@@ -882,7 +888,8 @@
     "structuralSessions": {
       "moderation": "Moderaziun",
       "break": "Pausa",
-      "lunch": "Miedi"
+      "lunch": "Miedi",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Pool da referents",
@@ -913,7 +920,8 @@
       "clearAll": "Stizzar tut",
       "cancel": "Annullar",
       "confirm": "Confermar",
-      "generateStructure": "Generar structura dal program"
+      "generateStructure": "Generar structura dal program",
+      "editEventType": "Modifitgar il tip d'occurrenza"
     },
     "modals": {
       "generateStructure": {
@@ -975,6 +983,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Tutgar ussa in slot marcà per la plazzar"
+    },
+    "editEventType": {
+      "assignmentWarning": "Tscherts oraturs èn gia planisads ad uras fixas. Midar la structura als po spustar — controllai l'agenda suenter avair memorisà."
     }
   },
   "newsletter": {

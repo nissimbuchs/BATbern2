@@ -542,7 +542,13 @@
       "organizerOnly": "Alleen organisatoren hebben toegang tot deze pagina",
       "typicalStartTime": "Gebruikelijke starttijd",
       "typicalEndTime": "Gebruikelijke eindtijd",
-      "typicalEndTimeHint": "Automatisch berekend op basis van het schema"
+      "typicalEndTimeHint": "Automatisch berekend op basis van het schema",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Apéro toevoegen",
+      "aperitifDuration": "Apéro-duur (min)",
+      "aperitifPosition": "Apéro-positie",
+      "aperitifPositionStart": "Na de opening",
+      "aperitifPositionEnd": "Na de afsluiting"
     },
     "themeImage": "Evenementthema-afbeelding",
     "themeImageHelp": "Upload een thema-afbeelding voor dit evenement (PNG, JPEG of SVG, max 5 MB). Aanbevolen formaat: 1920x400px.",
@@ -882,7 +888,8 @@
     "structuralSessions": {
       "moderation": "Moderatie",
       "break": "Pauze",
-      "lunch": "Lunch"
+      "lunch": "Lunch",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Sprekerspool",
@@ -913,7 +920,8 @@
       "clearAll": "Alles wissen",
       "cancel": "Annuleren",
       "confirm": "Bevestigen",
-      "generateStructure": "Schemastructuur genereren"
+      "generateStructure": "Schemastructuur genereren",
+      "editEventType": "Evenementstype bewerken"
     },
     "modals": {
       "generateStructure": {
@@ -975,6 +983,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Tik nu op een gemarkeerd tijdvak om het te plaatsen"
+    },
+    "editEventType": {
+      "assignmentWarning": "Sommige sprekers zijn al op vaste tijden ingepland. Het wijzigen van de structuur kan ze verplaatsen — controleer de agenda na het opslaan."
     }
   },
   "newsletter": {

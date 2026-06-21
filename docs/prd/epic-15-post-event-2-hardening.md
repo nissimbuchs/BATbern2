@@ -40,9 +40,18 @@ Close the remaining bugs and enhancements from the second live event that are to
 
 ---
 
-## Story 15.2 — Per-event editable event-type config + dynamic agenda
+## Story 15.2 — Per-event editable event-type config + dynamic agenda ✅ DONE (2026-06-21)
 
 **Item #3.** Decision: keep the **same knobs** as today's preset event types, but add an **"Edit event type"** action in slot assignment that edits a **per-event copy** (copy-on-edit) — never the shared template. Extend knobs to cover apéro-at-end and 2 afternoon breaks.
+
+**As-built (deviations + key facts for 15.3):**
+- Migrations **V121** (`event_agenda_config` + apéro columns on `event_types` template) + **V122** (`sessions_session_type_check` adds `'aperitif'`). Migration head is now **V122**.
+- `AgendaConfig` interface unifies the template (`EventTypeConfiguration`) and the per-event override (`EventAgendaConfig`); `AgendaConfigResolver.resolve(event)` is the single fallback point routed through by **all three** `computeTimeline` consumers (`getTimetable` read, `StructuralSessionService` persistence, `SessionTimingService` auto-assign).
+- Apéro is a NEW structural slot type (`TimetableSlot.Type.APERITIF`, `session_type='aperitif'`). **It was not enough to add it in one place** — every surface that enumerates structural session types needs it: backend `Session.STRUCTURAL_SESSION_TYPES` + `TimetableService`/`SessionTimingService`/`NewsletterEmailService`; frontend `DragDropSlotAssignment`, `SpeakersSessionsTable`, public `EventProgram`/`SessionCards`/`SpeakerGrid`/`EventCard`, `SessionEditModal`, live-control `AgendaList`, presenter `usePresentationSections`/`AgendaView`, and `scheduleTimeline`/`SchedulePreview`. (Adding a new structural type in 15.3 must touch the same set.)
+- Apéro on/off is a **checkbox** (stored as `aperitif_slots` 0/1). Template defaults: afternoon + evening apéro **ON @ 90 min / position `end`**, full_day OFF (intentional behaviour change). Apéro is the **final segment, after moderation-end**.
+- The "Edit event type" dialog **reuses** `EventTypeConfigurationForm` + live `SchedulePreview` (per-event mode via `eventCode` → `useAgendaConfig`); the admin template editor uses the same form (template mode). No bespoke dialog.
+- **Assignment is still by `Session.startTime` ↔ computed `SPEAKER_SLOT.startTime` (HH:MM/Instant match) — there is NO slotKey yet. That is 15.3's job.** The dialog warns (does not block) when editing config on an event that already has assigned speakers, because re-timing can orphan them — exactly the desync 15.3 removes.
+- Branch `feat/story-15-2-per-event-event-type-config` is pushed but **not yet merged**. 15.3 should branch after 15.2 merges (or off the 15.2 branch).
 
 **Scope:**
 - New `event_agenda_config` table (FK → event, one row/event) mirroring `EventTypeConfiguration` columns **plus** `aperitif_slots`, `aperitif_duration`, `aperitif_position` and count-driven break placement. Additive migration.
@@ -68,6 +77,13 @@ Close the remaining bugs and enhancements from the second live event that are to
 - Address slots by deterministic `slotKey` (segment-type + ordinal), not HH:MM string match; times derive from start + durations (15.2).
 - Drop **between** slots → insert a speaker slot + reflow following times; drop **onto occupied** → swap assignments. One `assignSessionToSlot`/`reorderSlots` path with optimistic update + rollback.
 - Extract the existing tap-to-select/tap-to-place interaction into a shared hook (`useTapToAssign`) and drive the **speaker pool** from it on touch viewports (today the pool uses HTML5 drag, dead on mobile — #6). Desktop keeps drag.
+
+**Hand-off from 15.2 (read before starting):**
+- Today the agenda grid (`DragDropSlotAssignment`) keys slots by `toTimeStr(startTime)` (HH:MM) and assignment is persisted as `Session.startTime`; `TimetableSlot` carries a 1-based `slotIndex` but no `slotKey`. 15.3 introduces the deterministic `slotKey` (segment-type + ordinal) and an `assignSessionToSlot`/`reorderSlots` path.
+- `computeTimeline` (in `TimetableService`) is the single timeline algorithm; the local frontend mirror is `scheduleTimeline.buildTimeline`. Keep them in sync (both already do apéro + count-driven even-split breaks). Reflow-on-duration-change (AC4) is a `computeTimeline` property already — slots derive from `event start + Σ preceding durations`.
+- Mobile tap-to-assign already exists partially in `DragDropSlotAssignment` (`handleTraySelect`/`handleSlotTap`, "armed slot", from 14.G.3); extract that into `useTapToAssign` rather than rebuilding.
+- Once slotKey lands, **remove the 15.2 "assignment may move" warning** in the Edit-event-type dialog (`DragDropSlotAssignment` passes it via the form's `warning` prop) — reflow makes it obsolete.
+- Migration head is **V122** → next is V123.
 
 **Acceptance criteria:**
 - AC1 — GIVEN a desktop organizer, WHEN they drop a speaker between two slots, THEN a slot is inserted and following slot times reflow.

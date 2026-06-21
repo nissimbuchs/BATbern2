@@ -542,7 +542,13 @@
       "organizerOnly": "このページにアクセスできるのはオーガナイザーのみです",
       "typicalStartTime": "通常の開始時刻",
       "typicalEndTime": "通常の終了時刻",
-      "typicalEndTimeHint": "スケジュールから自動計算されます"
+      "typicalEndTimeHint": "スケジュールから自動計算されます",
+      "aperitif": "アペロ",
+      "aperitifEnabled": "アペロを追加",
+      "aperitifDuration": "アペロの長さ（分）",
+      "aperitifPosition": "アペロの位置",
+      "aperitifPositionStart": "開会の後",
+      "aperitifPositionEnd": "閉会の後"
     },
     "themeImage": "イベントテーマ画像",
     "themeImageHelp": "このイベントのテーマ画像をアップロードしてください（PNG、JPEG、またはSVG、最大5MB）。推奨サイズ：1920x400px。",
@@ -882,7 +888,8 @@
     "structuralSessions": {
       "moderation": "司会",
       "break": "休憩",
-      "lunch": "昼食"
+      "lunch": "昼食",
+      "aperitif": "アペロ"
     },
     "speakerPool": {
       "title": "スピーカープール",
@@ -913,7 +920,8 @@
       "clearAll": "すべてクリア",
       "cancel": "キャンセル",
       "confirm": "確認",
-      "generateStructure": "スケジュール構造を生成"
+      "generateStructure": "スケジュール構造を生成",
+      "editEventType": "イベントタイプを編集"
     },
     "modals": {
       "generateStructure": {
@@ -975,6 +983,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ ハイライトされたスロットをタップして配置します"
+    },
+    "editEventType": {
+      "assignmentWarning": "一部の登壇者はすでに固定の時間に割り当てられています。構成を変更すると移動する可能性があります。保存後にアジェンダを確認してください。"
     }
   },
   "newsletter": {

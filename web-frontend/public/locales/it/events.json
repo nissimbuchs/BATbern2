@@ -542,7 +542,13 @@
       "organizerOnly": "Solo gli organizzatori possono accedere a questa pagina",
       "typicalStartTime": "Orario di inizio abituale",
       "typicalEndTime": "Orario di fine abituale",
-      "typicalEndTimeHint": "Calcolato automaticamente dal programma"
+      "typicalEndTimeHint": "Calcolato automaticamente dal programma",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Aggiungi un apéro",
+      "aperitifDuration": "Durata apéro (min)",
+      "aperitifPosition": "Posizione apéro",
+      "aperitifPositionStart": "Dopo l'apertura",
+      "aperitifPositionEnd": "Dopo la chiusura"
     },
     "themeImage": "Immagine tema evento",
     "themeImageHelp": "Carica un'immagine tema per questo evento (PNG, JPEG o SVG, max 5MB). Dimensione consigliata: 1920x400px.",
@@ -882,7 +888,8 @@
     "structuralSessions": {
       "moderation": "Moderazione",
       "break": "Pausa",
-      "lunch": "Pranzo"
+      "lunch": "Pranzo",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Pool relatori",
@@ -913,7 +920,8 @@
       "clearAll": "Cancella tutto",
       "cancel": "Annulla",
       "confirm": "Conferma",
-      "generateStructure": "Genera struttura programma"
+      "generateStructure": "Genera struttura programma",
+      "editEventType": "Modifica tipo di evento"
     },
     "modals": {
       "generateStructure": {
@@ -975,6 +983,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Ora tocca uno slot evidenziato per posizionarla"
+    },
+    "editEventType": {
+      "assignmentWarning": "Alcuni relatori sono già assegnati a orari fissi. Modificare la struttura potrebbe spostarli — controlla l'agenda dopo il salvataggio."
     }
   },
   "newsletter": {

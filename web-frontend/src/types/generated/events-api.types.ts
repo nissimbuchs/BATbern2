@@ -971,6 +971,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/agenda-config': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the resolved agenda config for an event (Story 15.2)
+     * @description Returns the effective agenda/slot configuration for the event: the per-event
+     *     copy-on-edit override (`event_agenda_config`) if one exists, otherwise the shared
+     *     event-type template (`event_types`). The `source` field indicates which was returned.
+     *
+     *     **Access**: ORGANIZER role required.
+     */
+    get: operations['getEventAgendaConfig'];
+    /**
+     * Upsert the per-event agenda config override (Story 15.2)
+     * @description Copy-on-edit: creates or updates the per-event `event_agenda_config` row from the
+     *     provided knobs. The shared event-type template is never modified. Returns the saved
+     *     per-event config (with `source = EVENT_OVERRIDE`).
+     *
+     *     **Access**: ORGANIZER role required.
+     */
+    put: operations['updateEventAgendaConfig'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/sessions/structural': {
     parameters: {
       query?: never;
@@ -4915,6 +4947,114 @@ export interface components {
      */
     EventType: 'FULL_DAY' | 'AFTERNOON' | 'EVENING';
     /**
+     * @description Whether the resolved config came from the shared template or a per-event override (Story 15.2).
+     * @example TEMPLATE
+     * @enum {string}
+     */
+    AgendaConfigSource: 'TEMPLATE' | 'EVENT_OVERRIDE';
+    /**
+     * @description Resolved agenda/slot config for an event (Story 15.2). Same knobs as the event-type
+     *     template plus the apéro knobs, with a `source` flag indicating template vs per-event override.
+     */
+    EventAgendaConfigResponse: {
+      source: components['schemas']['AgendaConfigSource'];
+      /** @example 6 */
+      minSlots: number;
+      /** @example 8 */
+      maxSlots: number;
+      /** @example 45 */
+      slotDuration: number;
+      /** @example false */
+      theoreticalSlotsAM: boolean;
+      /** @example 2 */
+      breakSlots: number;
+      /** @example 0 */
+      lunchSlots: number;
+      /** @example 200 */
+      defaultCapacity: number;
+      /** @example 5 */
+      moderationStartDuration: number;
+      /** @example 5 */
+      moderationEndDuration: number;
+      /** @example 20 */
+      breakDuration: number;
+      /** @example 60 */
+      lunchDuration: number;
+      /**
+       * @description Apéro on/off count (0 = off, ≥1 = on)
+       * @example 1
+       */
+      aperitifSlots: number;
+      /**
+       * @description Apéro duration in minutes
+       * @example 90
+       */
+      aperitifDuration: number;
+      /**
+       * @description Apéro placement relative to the moderation segments
+       * @example end
+       * @enum {string}
+       */
+      aperitifPosition: 'start' | 'end';
+      /**
+       * Format: time
+       * @example 13:00
+       */
+      typicalStartTime?: string | null;
+      /**
+       * Format: time
+       * @example 19:00
+       */
+      typicalEndTime?: string | null;
+    };
+    /**
+     * @description Copy-on-edit payload for the per-event agenda config (Story 15.2). Writes only the
+     *     per-event `event_agenda_config` row — never the shared template.
+     */
+    UpdateEventAgendaConfigRequest: {
+      /** @example 6 */
+      minSlots: number;
+      /** @example 8 */
+      maxSlots: number;
+      /** @example 45 */
+      slotDuration: number;
+      /** @example false */
+      theoreticalSlotsAM: boolean;
+      /** @example 2 */
+      breakSlots: number;
+      /** @example 0 */
+      lunchSlots: number;
+      /** @example 200 */
+      defaultCapacity: number;
+      /** @example 5 */
+      moderationStartDuration: number;
+      /** @example 5 */
+      moderationEndDuration: number;
+      /** @example 20 */
+      breakDuration: number;
+      /** @example 60 */
+      lunchDuration: number;
+      /** @example 1 */
+      aperitifSlots: number;
+      /** @example 90 */
+      aperitifDuration: number;
+      /**
+       * @example end
+       * @enum {string}
+       */
+      aperitifPosition: 'start' | 'end';
+      /**
+       * Format: time
+       * @example 13:00
+       */
+      typicalStartTime?: string | null;
+      /**
+       * Format: time
+       * @example 19:00
+       */
+      typicalEndTime?: string | null;
+    };
+    /**
      * @description Event slot configuration for an event type (Story 5.1).
      *     Defines slot requirements and scheduling parameters.
      */
@@ -4991,6 +5131,25 @@ export interface components {
        * @example 60
        */
       lunchDuration: number;
+      /**
+       * @description Apéro on/off count (0 = off, ≥1 = on) — Story 15.2
+       * @default 0
+       * @example 1
+       */
+      aperitifSlots: number;
+      /**
+       * @description Apéro duration in minutes
+       * @default 90
+       * @example 90
+       */
+      aperitifDuration: number;
+      /**
+       * @description Apéro placement relative to the moderation segments
+       * @default end
+       * @example end
+       * @enum {string}
+       */
+      aperitifPosition: 'start' | 'end';
     };
     /**
      * @description Request to update event slot configuration (Story 5.1).
@@ -5064,6 +5223,22 @@ export interface components {
        * @example 60
        */
       lunchDuration?: number | null;
+      /**
+       * @description Apéro on/off count (0 = off, ≥1 = on) — Story 15.2
+       * @example 1
+       */
+      aperitifSlots?: number | null;
+      /**
+       * @description Apéro duration in minutes
+       * @example 90
+       */
+      aperitifDuration?: number | null;
+      /**
+       * @description Apéro placement relative to the moderation segments
+       * @example end
+       * @enum {string|null}
+       */
+      aperitifPosition?: 'start' | 'end' | null;
     };
     /** @description Request to generate structural sessions (moderation, break, lunch) for an event. */
     GenerateStructuralSessionsRequest: {
@@ -7807,6 +7982,63 @@ export interface operations {
           'application/json': components['schemas']['TimetableResponse'];
         };
       };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  getEventAgendaConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Resolved agenda config */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventAgendaConfigResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  updateEventAgendaConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateEventAgendaConfigRequest'];
+      };
+    };
+    responses: {
+      /** @description Per-event agenda config saved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventAgendaConfigResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];

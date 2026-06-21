@@ -53,7 +53,7 @@ export function useCockpitCards(
     // Structural sessions (moderation/break/lunch) are not speaker slots — exclude them
     // so the "needs a slot" card counts only speaker sessions still missing a start time
     // (mirrors the Agenda metric tile + DragDropSlotAssignment's STRUCTURAL_TYPES).
-    const STRUCTURAL_SESSION_TYPES = ['moderation', 'break', 'lunch'];
+    const STRUCTURAL_SESSION_TYPES = ['moderation', 'break', 'lunch', 'aperitif'];
     const speakerSessions = sessions.filter(
       (s) => !STRUCTURAL_SESSION_TYPES.includes((s.sessionType ?? '').toLowerCase())
     );

@@ -8,7 +8,6 @@ import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +47,7 @@ class TimetableServiceTest {
     private EventRepository eventRepository;
 
     @Mock
-    private EventTypeRepository eventTypeRepository;
+    private AgendaConfigResolver agendaConfigResolver;
 
     @Mock
     private SessionRepository sessionRepository;
@@ -66,7 +65,7 @@ class TimetableServiceTest {
     @BeforeEach
     void setUp() {
         timetableService = new TimetableService(
-                eventRepository, eventTypeRepository, sessionRepository, sessionService);
+                eventRepository, agendaConfigResolver, sessionRepository, sessionService);
 
         // FULL_DAY: 8 slots, AM/PM split, 2 breaks, 1 lunch
         fullDayConfig = EventTypeConfiguration.builder()
@@ -295,6 +294,97 @@ class TimetableServiceTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Story 15.2 — apéro + count-driven breaks
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private EventTypeConfiguration afternoonConfig(int breakSlots, int aperitifSlots, String aperitifPos) {
+        return EventTypeConfiguration.builder()
+                .type(EventType.AFTERNOON)
+                .minSlots(6)
+                .maxSlots(8)
+                .slotDuration(45)
+                .theoreticalSlotsAM(false)
+                .breakSlots(breakSlots)
+                .lunchSlots(0)
+                .defaultCapacity(200)
+                .moderationStartDuration(5)
+                .moderationEndDuration(5)
+                .breakDuration(20)
+                .lunchDuration(60)
+                .aperitifSlots(aperitifSlots)
+                .aperitifDuration(90)
+                .aperitifPosition(aperitifPos)
+                .typicalStartTime(LocalTime.of(13, 0))
+                .build();
+    }
+
+    @Test
+    @DisplayName("Apéro at end (AC3/AC8): APERITIF is the final slot, after Moderation End, 90 min")
+    void computeTimeline_aperitifAtEnd_appendedAfterModerationEnd() {
+        List<TimetableSlot> slots = timetableService.computeTimeline(
+                afternoonConfig(2, 1, "end"), EVENT_DATE);
+
+        assertThat(countByType(slots, TimetableSlot.Type.APERITIF)).isEqualTo(1);
+
+        TimetableSlot last = slots.get(slots.size() - 1);
+        TimetableSlot modEnd = slots.get(slots.size() - 2);
+        assertThat(last.getType()).isEqualTo(TimetableSlot.Type.APERITIF);
+        assertThat(last.getTitle()).isEqualTo("Apéro");
+        assertThat(modEnd.getType()).isEqualTo(MODERATION);
+        assertThat(modEnd.getTitle()).isEqualTo("Moderation End");
+        // Apéro starts exactly when moderation-end finishes; lasts 90 min
+        assertThat(last.getStartTime()).isEqualTo(modEnd.getEndTime());
+        assertThat(java.time.temporal.ChronoUnit.MINUTES.between(
+                last.getStartTime(), last.getEndTime())).isEqualTo(90);
+    }
+
+    @Test
+    @DisplayName("Apéro at start: APERITIF directly after Moderation Start, before speaker slots")
+    void computeTimeline_aperitifAtStart_afterModerationStart() {
+        List<TimetableSlot> slots = timetableService.computeTimeline(
+                afternoonConfig(1, 1, "start"), EVENT_DATE);
+
+        assertThat(slots.get(0).getType()).isEqualTo(MODERATION);
+        assertThat(slots.get(0).getTitle()).isEqualTo("Moderation Start");
+        assertThat(slots.get(1).getType()).isEqualTo(TimetableSlot.Type.APERITIF);
+        assertThat(slots.get(1).getStartTime()).isEqualTo(slots.get(0).getEndTime());
+        assertThat(slots.get(2).getType()).isEqualTo(SPEAKER_SLOT);
+        // Exactly one APERITIF, and the last slot is Moderation End (not apéro)
+        assertThat(countByType(slots, TimetableSlot.Type.APERITIF)).isEqualTo(1);
+        assertThat(slots.get(slots.size() - 1).getTitle()).isEqualTo("Moderation End");
+    }
+
+    @Test
+    @DisplayName("Two breaks (count-driven even split): linear 8 slots → breaks after slot 3 and 6")
+    void computeTimeline_twoBreaks_evenSplitLinear() {
+        // breakSlots=2, no apéro — isolate the break-distribution behaviour
+        List<TimetableSlot> slots = timetableService.computeTimeline(
+                afternoonConfig(2, 0, "end"), EVENT_DATE);
+
+        assertThat(countByType(slots, BREAK)).isEqualTo(2);
+        assertThat(countByType(slots, SPEAKER_SLOT)).isEqualTo(8);
+
+        // Inner sequence between Moderation Start (idx 0) and Moderation End (last):
+        // S S S BREAK S S S BREAK S S
+        List<TimetableSlot.Type> inner = slots.subList(1, slots.size() - 1)
+                .stream().map(TimetableSlot::getType).toList();
+        assertThat(inner).containsExactly(
+                SPEAKER_SLOT, SPEAKER_SLOT, SPEAKER_SLOT, BREAK,
+                SPEAKER_SLOT, SPEAKER_SLOT, SPEAKER_SLOT, BREAK,
+                SPEAKER_SLOT, SPEAKER_SLOT);
+    }
+
+    @Test
+    @DisplayName("Apéro OFF (aperitifSlots=0) emits no APERITIF (parity guard)")
+    void computeTimeline_aperitifOff_noAperitifSlot() {
+        List<TimetableSlot> slots = timetableService.computeTimeline(
+                afternoonConfig(1, 0, "end"), EVENT_DATE);
+
+        assertThat(countByType(slots, TimetableSlot.Type.APERITIF)).isZero();
+        assertThat(slots.get(slots.size() - 1).getTitle()).isEqualTo("Moderation End");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // getTimetable() — mocked repository tests
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -303,7 +393,7 @@ class TimetableServiceTest {
     void getTimetable_noDbSessions_structuralSlugsNull() {
         Event event = buildEvent("BATbern142", "2025-06-15T07:00:00Z");
         when(eventRepository.findByEventCode("BATbern142")).thenReturn(Optional.of(event));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(fullDayConfig));
+        when(agendaConfigResolver.resolve(event)).thenReturn(fullDayConfig);
         when(sessionRepository.findByEventId(event.getId())).thenReturn(List.of());
 
         TimetableResponse response = timetableService.getTimetable("BATbern142");
@@ -320,7 +410,7 @@ class TimetableServiceTest {
     void getTimetable_withDbSessions_structuralSlugsPopulated() {
         Event event = buildEvent("BATbern142", "2025-06-15T07:00:00Z");
         when(eventRepository.findByEventCode("BATbern142")).thenReturn(Optional.of(event));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(fullDayConfig));
+        when(agendaConfigResolver.resolve(event)).thenReturn(fullDayConfig);
 
         // Create a moderation session at the expected start time (09:00 Zurich = 07:00 UTC)
         Session modSession = Session.builder()
@@ -346,7 +436,7 @@ class TimetableServiceTest {
     void getTimetable_assignedSpeakerSession_setsAssignedSessionSlug() {
         Event event = buildEvent("BATbern142", "2025-06-15T07:00:00Z");
         when(eventRepository.findByEventCode("BATbern142")).thenReturn(Optional.of(event));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(fullDayConfig));
+        when(agendaConfigResolver.resolve(event)).thenReturn(fullDayConfig);
 
         // First SPEAKER_SLOT starts at 09:05 Zurich = 07:05 UTC (after 5 min moderation start)
         Session speakerSession = Session.builder()
@@ -375,7 +465,7 @@ class TimetableServiceTest {
     void getTimetable_unassignedSessions_populatedInResponse() {
         Event event = buildEvent("BATbern142", "2025-06-15T07:00:00Z");
         when(eventRepository.findByEventCode("BATbern142")).thenReturn(Optional.of(event));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(fullDayConfig));
+        when(agendaConfigResolver.resolve(event)).thenReturn(fullDayConfig);
 
         Session unassigned = Session.builder()
                 .id(UUID.randomUUID())
@@ -416,6 +506,8 @@ class TimetableServiceTest {
         Event event = buildEvent("BATbern142", "2025-06-15T07:00:00Z");
         event.setEventType(null);
         when(eventRepository.findByEventCode("BATbern142")).thenReturn(Optional.of(event));
+        when(agendaConfigResolver.resolve(event))
+                .thenThrow(new NotFoundException("Event has no event type configured"));
 
         assertThatThrownBy(() -> timetableService.getTimetable("BATbern142"))
                 .isInstanceOf(NotFoundException.class);

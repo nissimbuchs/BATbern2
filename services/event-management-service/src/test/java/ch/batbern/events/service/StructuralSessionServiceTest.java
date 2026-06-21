@@ -5,11 +5,11 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.SessionResponse;
 
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.entity.AgendaConfig;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.StructuralSessionsAlreadyExistException;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.service.SlugGenerationService;
@@ -56,7 +56,7 @@ class StructuralSessionServiceTest {
     private EventRepository eventRepository;
 
     @Mock
-    private EventTypeRepository eventTypeRepository;
+    private AgendaConfigResolver agendaConfigResolver;
 
     @Mock
     private SessionRepository sessionRepository;
@@ -118,7 +118,7 @@ class StructuralSessionServiceTest {
         // generateStructuralSessions (e.g. EventNotFoundException, NotFoundException).
         TimetableService realTimetableService = new TimetableService(null, null, null, null);
         org.mockito.Mockito.lenient()
-                .when(timetableService.computeTimeline(any(EventTypeConfiguration.class), any(LocalDate.class)))
+                .when(timetableService.computeTimeline(any(AgendaConfig.class), any(LocalDate.class)))
                 .thenAnswer(inv -> realTimetableService.computeTimeline(
                         inv.getArgument(0), inv.getArgument(1)));
 
@@ -146,7 +146,7 @@ class StructuralSessionServiceTest {
     void should_generateStructuralSessions_when_fullDayEventRequested() {
         // Given
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(testEvent));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(fullDayConfig));
+        when(agendaConfigResolver.resolve(testEvent)).thenReturn(fullDayConfig);
         when(sessionRepository.findByEventIdAndSessionTypeIn(any(), anyList())).thenReturn(List.of());
         when(slugGenerationService.generateSessionSlug(anyString())).thenAnswer(
                 inv -> inv.getArgument(0, String.class).toLowerCase().replace(" ", "-"));
@@ -182,7 +182,7 @@ class StructuralSessionServiceTest {
     void should_throw409_when_structuralSessionsExistAndOverwriteFalse() {
         // Given
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(testEvent));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(fullDayConfig));
+        when(agendaConfigResolver.resolve(testEvent)).thenReturn(fullDayConfig);
         when(sessionRepository.findByEventIdAndSessionTypeIn(any(), anyList()))
                 .thenReturn(List.of(new Session())); // structural sessions exist
 
@@ -203,7 +203,7 @@ class StructuralSessionServiceTest {
         Session existingSession = new Session();
         existingSession.setSessionType("moderation");
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(testEvent));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(fullDayConfig));
+        when(agendaConfigResolver.resolve(testEvent)).thenReturn(fullDayConfig);
         when(sessionRepository.findByEventIdAndSessionTypeIn(any(), anyList()))
                 .thenReturn(List.of(existingSession));
         when(slugGenerationService.generateSessionSlug(anyString())).thenAnswer(
@@ -245,7 +245,8 @@ class StructuralSessionServiceTest {
     @DisplayName("Should throw NotFoundException when event type config missing")
     void should_throwNotFound_when_eventTypeConfigMissing() {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(testEvent));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.empty());
+        when(agendaConfigResolver.resolve(testEvent))
+                .thenThrow(new NotFoundException("Event type configuration not found"));
 
         assertThatThrownBy(() -> structuralSessionService.generateStructuralSessions(
                 EVENT_CODE, false))
@@ -257,7 +258,7 @@ class StructuralSessionServiceTest {
     void should_generateModerationSessionsStartingAtTypicalStartTime() {
         // Given: start at 09:00
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(testEvent));
-        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(fullDayConfig));
+        when(agendaConfigResolver.resolve(testEvent)).thenReturn(fullDayConfig);
         when(sessionRepository.findByEventIdAndSessionTypeIn(any(), anyList())).thenReturn(List.of());
 
         ArgumentCaptor<Session> sessionCaptor = ArgumentCaptor.forClass(Session.class);

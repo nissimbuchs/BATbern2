@@ -56,7 +56,7 @@ export function EventCard({
   // the button itself is additionally login-gated.
   const showSelfNominate = enableSelfNomination && canOfferSelfNomination(event);
 
-  const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+  const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch', 'aperitif']);
 
   // Get non-structural sessions only (moderation/break/lunch don't belong on a card)
   const sessions = (event.sessions || []).filter(

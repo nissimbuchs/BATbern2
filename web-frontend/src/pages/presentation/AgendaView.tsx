@@ -14,7 +14,7 @@ import type { PresentationSession } from '@/services/presentationService';
 import styles from './AgendaView.module.css';
 
 const SPEAKER_SESSION_TYPES = new Set(['keynote', 'presentation', 'workshop', 'panel_discussion']);
-const BREAK_SESSION_TYPES = new Set(['break', 'lunch']);
+const BREAK_SESSION_TYPES = new Set(['break', 'lunch', 'aperitif']);
 
 interface AgendaViewProps {
   sessions: PresentationSession[];

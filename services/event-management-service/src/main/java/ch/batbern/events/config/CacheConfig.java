@@ -4,8 +4,10 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +40,21 @@ public class CacheConfig {
     public static final String STATUS_SUMMARY_CACHE = "statusSummary";
     public static final String STATUS_HISTORY_CACHE = "statusHistory";
 
+    /**
+     * Local-dev only: disable application caching so direct DB edits are reflected
+     * immediately (no stale reads from the 15-min Caffeine cache). Strictly gated to the
+     * `local` profile — staging/prod run their own profiles and keep the Caffeine bean below.
+     * Cache eviction/correctness is covered by Testcontainers integration tests, so nothing
+     * is lost by not exercising the cache during local manual testing.
+     */
     @Bean
+    @Profile("local")
+    public CacheManager noOpCacheManager() {
+        return new NoOpCacheManager();
+    }
+
+    @Bean
+    @Profile("!local")
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
                 EVENT_CACHE,

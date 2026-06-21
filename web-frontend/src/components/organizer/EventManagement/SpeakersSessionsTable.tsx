@@ -51,6 +51,7 @@ import {
   Coffee as CoffeeIcon,
   Restaurant as RestaurantIcon,
   Mic as MicIcon,
+  LocalBar as LocalBarIcon,
 } from '@mui/icons-material';
 import Chip from '@mui/material/Chip';
 import { useTranslation } from 'react-i18next';
@@ -89,12 +90,16 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const [sessionToDelete, setSessionToDelete] = useState<SessionUI | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const STRUCTURAL_TYPES = ['moderation', 'break', 'lunch'] as const;
+  const STRUCTURAL_TYPES = ['moderation', 'break', 'lunch', 'aperitif'] as const;
   type StructuralType = (typeof STRUCTURAL_TYPES)[number];
 
   const STRUCTURAL_CHIP: Record<
     StructuralType,
-    { label: string; icon: React.ReactElement; color: 'default' | 'warning' | 'success' }
+    {
+      label: string;
+      icon: React.ReactElement;
+      color: 'default' | 'warning' | 'success' | 'secondary';
+    }
   > = {
     moderation: {
       label: t('slotAssignment.structuralSessions.moderation'),
@@ -110,6 +115,11 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
       label: t('slotAssignment.structuralSessions.lunch'),
       icon: <RestaurantIcon fontSize="small" />,
       color: 'success',
+    },
+    aperitif: {
+      label: t('slotAssignment.structuralSessions.aperitif'),
+      icon: <LocalBarIcon fontSize="small" />,
+      color: 'secondary',
     },
   };
 

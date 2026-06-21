@@ -542,7 +542,13 @@
       "organizerOnly": "Seuls les organisateurs peuvent accéder à cette page",
       "typicalStartTime": "Heure de début habituelle",
       "typicalEndTime": "Heure de fin habituelle",
-      "typicalEndTimeHint": "Calculé automatiquement à partir du programme"
+      "typicalEndTimeHint": "Calculé automatiquement à partir du programme",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Ajouter un apéro",
+      "aperitifDuration": "Durée de l'apéro (min)",
+      "aperitifPosition": "Position de l'apéro",
+      "aperitifPositionStart": "Après l'ouverture",
+      "aperitifPositionEnd": "Après la clôture"
     },
     "themeImage": "Image du thème de l'événement",
     "themeImageHelp": "Téléversez une image de thème pour cet événement (PNG, JPEG ou SVG, max 5 Mo). Taille recommandée : 1920x400px.",
@@ -882,7 +888,8 @@
     "structuralSessions": {
       "moderation": "Modération",
       "break": "Pause",
-      "lunch": "Déjeuner"
+      "lunch": "Déjeuner",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Pool d'intervenants",
@@ -913,7 +920,8 @@
       "clearAll": "Tout effacer",
       "cancel": "Annuler",
       "confirm": "Confirmer",
-      "generateStructure": "Générer la structure du programme"
+      "generateStructure": "Générer la structure du programme",
+      "editEventType": "Modifier le type d'événement"
     },
     "modals": {
       "generateStructure": {
@@ -975,6 +983,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Touchez maintenant un créneau en surbrillance pour la placer"
+    },
+    "editEventType": {
+      "assignmentWarning": "Certains intervenants sont déjà programmés à des heures fixes. Modifier la structure peut les déplacer — vérifiez l'agenda après l'enregistrement."
     }
   },
   "newsletter": {

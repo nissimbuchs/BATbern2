@@ -542,7 +542,13 @@
       "organizerOnly": "Vain järjestäjät voivat käyttää tätä sivua",
       "typicalStartTime": "Tavanomainen alkamisaika",
       "typicalEndTime": "Tavanomainen päättymisaika",
-      "typicalEndTimeHint": "Laskettu automaattisesti aikataulusta"
+      "typicalEndTimeHint": "Laskettu automaattisesti aikataulusta",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Lisää apéro",
+      "aperitifDuration": "Apéron kesto (min)",
+      "aperitifPosition": "Apéron sijainti",
+      "aperitifPositionStart": "Aloituksen jälkeen",
+      "aperitifPositionEnd": "Lopetuksen jälkeen"
     },
     "themeImage": "Tapahtuman teemakuva",
     "themeImageHelp": "Lataa teemakuva tälle tapahtumalle (PNG, JPEG tai SVG, enintään 5 Mt). Suositeltu koko: 1920x400px.",
@@ -882,7 +888,8 @@
     "structuralSessions": {
       "moderation": "Moderointi",
       "break": "Tauko",
-      "lunch": "Lounas"
+      "lunch": "Lounas",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Puhujien pooli",
@@ -913,7 +920,8 @@
       "clearAll": "Tyhjennä kaikki",
       "cancel": "Peruuta",
       "confirm": "Vahvista",
-      "generateStructure": "Luo aikataululrakenne"
+      "generateStructure": "Luo aikataululrakenne",
+      "editEventType": "Muokkaa tapahtumatyyppiä"
     },
     "modals": {
       "generateStructure": {
@@ -975,6 +983,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Napauta nyt korostettua aikaväliä sijoittaaksesi sen"
+    },
+    "editEventType": {
+      "assignmentWarning": "Joillekin puhujille on jo varattu kiinteät ajat. Rakenteen muuttaminen voi siirtää heitä — tarkista ohjelma tallennuksen jälkeen."
     }
   },
   "newsletter": {

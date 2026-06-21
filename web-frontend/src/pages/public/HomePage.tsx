@@ -260,7 +260,7 @@ const HomePage = () => {
             className="max-w-md mx-auto rounded-md border border-border bg-muted px-4 py-3 text-center text-sm text-muted-foreground"
             data-testid="registration-closed-banner"
           >
-            {t('public.registrationClosed')}
+            {tCommon('public.registrationClosed')}
           </div>
         </div>
       )}

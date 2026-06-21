@@ -542,7 +542,13 @@
       "organizerOnly": "Solo los organizadores pueden acceder a esta página",
       "typicalStartTime": "Hora de inicio habitual",
       "typicalEndTime": "Hora de fin habitual",
-      "typicalEndTimeHint": "Calculado automáticamente a partir del programa"
+      "typicalEndTimeHint": "Calculado automáticamente a partir del programa",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Añadir un apéro",
+      "aperitifDuration": "Duración del apéro (min)",
+      "aperitifPosition": "Posición del apéro",
+      "aperitifPositionStart": "Tras la apertura",
+      "aperitifPositionEnd": "Tras el cierre"
     },
     "themeImage": "Imagen del tema del evento",
     "themeImageHelp": "Cargue una imagen de tema para este evento (PNG, JPEG o SVG, máx. 5 MB). Tamaño recomendado: 1920x400px.",
@@ -882,7 +888,8 @@
     "structuralSessions": {
       "moderation": "Moderación",
       "break": "Descanso",
-      "lunch": "Almuerzo"
+      "lunch": "Almuerzo",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Grupo de ponentes",
@@ -913,7 +920,8 @@
       "clearAll": "Borrar todo",
       "cancel": "Cancelar",
       "confirm": "Confirmar",
-      "generateStructure": "Generar estructura del programa"
+      "generateStructure": "Generar estructura del programa",
+      "editEventType": "Editar tipo de evento"
     },
     "modals": {
       "generateStructure": {
@@ -975,6 +983,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Ahora toca una franja resaltada para colocarla"
+    },
+    "editEventType": {
+      "assignmentWarning": "Algunos ponentes ya están asignados a horas fijas. Cambiar la estructura puede moverlos — revisa la agenda después de guardar."
     }
   },
   "newsletter": {

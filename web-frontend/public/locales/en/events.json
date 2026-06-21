@@ -556,7 +556,13 @@
       "organizerOnly": "Only organizers can access this page",
       "typicalStartTime": "Typical Start Time",
       "typicalEndTime": "Typical End Time",
-      "typicalEndTimeHint": "Calculated automatically from the schedule"
+      "typicalEndTimeHint": "Calculated automatically from the schedule",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Add an apéro",
+      "aperitifDuration": "Apéro duration (min)",
+      "aperitifPosition": "Apéro position",
+      "aperitifPositionStart": "After opening",
+      "aperitifPositionEnd": "After closing"
     },
     "themeImage": "Event Theme Image",
     "themeImageHelp": "Upload a theme image for this event (PNG, JPEG, or SVG, max 5MB). Recommended size: 1920x400px.",
@@ -906,7 +912,8 @@
     "structuralSessions": {
       "moderation": "Moderation",
       "break": "Break",
-      "lunch": "Lunch"
+      "lunch": "Lunch",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Speaker Pool",
@@ -937,7 +944,8 @@
       "clearAll": "Clear All",
       "cancel": "Cancel",
       "confirm": "Confirm",
-      "generateStructure": "Generate Schedule Structure"
+      "generateStructure": "Generate Schedule Structure",
+      "editEventType": "Edit event type"
     },
     "modals": {
       "generateStructure": {
@@ -999,6 +1007,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Now tap a highlighted slot to place it"
+    },
+    "editEventType": {
+      "assignmentWarning": "Some speakers are already assigned at fixed times. Changing the structure may move them — review the agenda after saving."
     }
   },
   "newsletter": {

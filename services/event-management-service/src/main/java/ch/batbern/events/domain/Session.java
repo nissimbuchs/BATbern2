@@ -54,7 +54,7 @@ public class Session {
      * Phase 6/7 follow-up — bug report not Story 10.32 scope).
      */
     public static final Set<String> STRUCTURAL_SESSION_TYPES = Set.of(
-            "moderation", "break", "lunch", "networking"
+            "moderation", "break", "lunch", "networking", "aperitif"
     );
 
     /**

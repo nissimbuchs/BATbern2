@@ -277,3 +277,10 @@ All four inherit the epic's cross-cutting DoD (NFR1/5/7/8/9) and the beta-first 
 ## Deferred from: code review of story 15-7 (2026-06-20)
 
 - Q&A digest water-mark uses strict `createdAt > :since`; two top-level questions persisted at the identical microsecond could drop one. Negligible for human-posted questions at TIMESTAMPTZ microsecond precision. If ever a concern, switch to a (createdAt, id) tie-breaker or `>=` + notified-id dedup. [services/event-management-service/.../repository/SessionQnaPostRepository.java + QnaNotificationService.notifyRecipient]
+
+## Deferred from: code review of 15-2-per-event-editable-event-type-config (2026-06-21)
+- Even-split break distribution silently emits fewer breaks than requested when breakSlots ≥ maxSlots or positions collide (TimetableService). Acceptable-by-design; realistic values unaffected; consider a dialog max / validation later.
+- Admin template live-preview (EventTypeConfigurationForm/SchedulePreview.tsx + scheduleTimeline.ts) not updated for apéro/even-split — global-template editor preview diverges from backend. Authoritative backend timetable is correct.
+- EditEventTypeDialog number fields: clearing a field yields NaN → confusing zod error instead of defaulting to min. Minor UX.
+- Doc-drift: only docs/architecture/03-data-architecture.md updated; 06-backend-architecture.md + user-guide/entity-management/events.md (mapped) not touched, no [no-doc]. May trip weekly auditor.
+- i18n: 7 locales (fr/it/rm/es/fi/nl/ja) hold English placeholders for slotAssignment.editEventType.* pending hand-translation (if Nissim accepts placeholders).

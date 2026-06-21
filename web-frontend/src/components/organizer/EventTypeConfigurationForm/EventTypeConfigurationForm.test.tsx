@@ -415,4 +415,30 @@ describe('EventTypeConfigurationForm Component', () => {
       expect(typedOnSave).toHaveBeenCalled();
     });
   });
+
+  /**
+   * Story 15.2: apéro is a checkbox (on/off); duration + position reveal only when enabled.
+   */
+  it('should_toggleAperitifFields_when_aperitifCheckboxClicked', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <EventTypeConfigurationForm
+        eventType={mockEventType}
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    // Apéro off by default (mock template has no apéro) → duration/position hidden
+    expect(screen.queryByTestId('event-type-config-aperitif-duration')).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText(/add an apéro/i));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('event-type-config-aperitif-duration')).toBeInTheDocument();
+      expect(screen.getByTestId('event-type-config-aperitif-position')).toBeInTheDocument();
+    });
+  });
 });

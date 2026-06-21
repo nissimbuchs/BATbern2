@@ -4,11 +4,10 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.dto.TimetableSlot;
-import ch.batbern.events.entity.EventTypeConfiguration;
+import ch.batbern.events.entity.AgendaConfig;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.StructuralSessionsAlreadyExistException;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.service.SlugGenerationService;
@@ -40,10 +39,10 @@ import java.util.List;
 @Slf4j
 public class StructuralSessionService {
 
-    static final List<String> STRUCTURAL_TYPES = List.of("moderation", "break", "lunch");
+    static final List<String> STRUCTURAL_TYPES = List.of("moderation", "break", "lunch", "aperitif");
 
     private final EventRepository eventRepository;
-    private final EventTypeRepository eventTypeRepository;
+    private final AgendaConfigResolver agendaConfigResolver;
     private final SessionRepository sessionRepository;
     private final SessionService sessionService;
     private final SlugGenerationService slugGenerationService;
@@ -68,13 +67,8 @@ public class StructuralSessionService {
         var event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-        // 2. Load EventTypeConfiguration for this event's type
-        if (event.getEventType() == null) {
-            throw new NotFoundException("Event '" + eventCode + "' has no event type configured");
-        }
-        EventTypeConfiguration config = eventTypeRepository.findByType(event.getEventType())
-                .orElseThrow(() -> new NotFoundException(
-                        "Event type configuration not found for: " + event.getEventType()));
+        // 2. Resolve effective config (per-event override if present, else shared template)
+        AgendaConfig config = agendaConfigResolver.resolve(event);
 
         // 3. Check for existing structural sessions
         List<Session> existing = sessionRepository.findByEventIdAndSessionTypeIn(
@@ -165,6 +159,7 @@ public class StructuralSessionService {
             case MODERATION -> "moderation";
             case BREAK -> "break";
             case LUNCH -> "lunch";
+            case APERITIF -> "aperitif";
             case SPEAKER_SLOT -> throw new IllegalArgumentException(
                     "SPEAKER_SLOT is not a persisted structural session type");
         };

@@ -12,6 +12,7 @@ import { Box, Typography, Paper, Divider, Stack, Chip } from '@mui/material';
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import MicIcon from '@mui/icons-material/Mic';
+import LocalBarIcon from '@mui/icons-material/LocalBar';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import {
   buildTimeline,
@@ -28,6 +29,7 @@ const kindColors: Record<TimelineEntry['kind'], string> = {
   moderation: 'grey.200',
   break: 'orange.100',
   lunch: 'green.100',
+  aperitif: 'secondary.50',
   'session-slot': 'primary.50',
 };
 
@@ -35,6 +37,7 @@ const kindBorderColors: Record<TimelineEntry['kind'], string> = {
   moderation: 'grey.400',
   break: 'warning.main',
   lunch: 'success.main',
+  aperitif: 'secondary.main',
   'session-slot': 'primary.main',
 };
 
@@ -42,6 +45,8 @@ function EntryIcon({ kind }: { kind: TimelineEntry['kind'] }) {
   if (kind === 'moderation') return <MicIcon fontSize="small" sx={{ color: 'grey.600' }} />;
   if (kind === 'break') return <CoffeeIcon fontSize="small" sx={{ color: 'warning.main' }} />;
   if (kind === 'lunch') return <RestaurantIcon fontSize="small" sx={{ color: 'success.main' }} />;
+  if (kind === 'aperitif')
+    return <LocalBarIcon fontSize="small" sx={{ color: 'secondary.main' }} />;
   return <CalendarTodayIcon fontSize="small" sx={{ color: 'primary.main', opacity: 0.5 }} />;
 }
 

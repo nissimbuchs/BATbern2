@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-06-20
+last_updated: 2026-06-21
 project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -114,7 +114,7 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Speaker Self-Service Portal - IN PROGRESS (all stories deployed to staging, friend working)
-  epic-6: in-progress
+  epic-6: done
   6-0-speaker-coordination-service-foundation: done
   6-1-automated-speaker-invitation-system: done
   6-2-speaker-self-service-response-portal: done
@@ -124,14 +124,14 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints - IN PROGRESS (rewritten 2026-06-09)
-  epic-7: in-progress
+  epic-7: done
   7-1-topics-from-the-floor: done
   7-2-i-could-speak-on-that: done
-  7-3-slides-online-mail: review
-  7-4-thank-the-organizers: review
-  7-5-the-apero-continues: review
-  7-6-attendee-event-history: review
-  7-7-curated-thank-you-marquee: review
+  7-3-slides-online-mail: done
+  7-4-thank-the-organizers: done
+  7-5-the-apero-continues: done
+  7-6-attendee-event-history: done
+  7-7-curated-thank-you-marquee: done
   epic-7-retrospective: optional
 
   # Epic 8: Advanced Partner Analytics & Voting - IN PROGRESS (8.4 added 2026-02-23)
@@ -144,11 +144,11 @@ development_status:
   epic-8-retrospective: optional
 
   # Epic 9: Speaker Authentication - BACKLOG
-  epic-9: backlog
+  epic-9: done
   epic-9-retrospective: optional
 
   # Epic 10: Additional Stories - IN PROGRESS (split into 10.1 + 10.2, 2026-02-24)
-  epic-10: in-progress
+  epic-10: done
   10-1-event-management-administration-page: done
   10-2-email-template-management: done
   10-3-task-deadline-reminder-email: done
@@ -181,7 +181,7 @@ development_status:
   10-29-ses-bounce-processing-newsletter-list-hygiene: done
   10-30-speaker-drawer-redesign: done
   10-31-bot-protection-turnstile: done
-  10-32-additional-user-emails: review
+  10-32-additional-user-emails: done
   epic-10-retrospective: optional
 
   # Epic 11: Unified Speaker Workflow Refactor - DONE (per ADR-009; branch feature/speaker-workflow-refactor; 6 phases A-F; F.1 magic-link teardown completed code review 2026-05-25)
@@ -221,11 +221,11 @@ development_status:
   12-6-account-linking-presignup-trigger: done
   12-6a-registration-form-name-split: done
   12-7-frontend-callback-route-and-service: done
-  12-8-federated-provisioning-inactive-gating-verify: review
-  12-9-continue-with-google-button-feature-flag: review
+  12-8-federated-provisioning-inactive-gating-verify: done
+  12-9-continue-with-google-button-feature-flag: done
   12-10-apple-oidc-and-trigger-retirement-cleanup: backlog
   12-11-federated-onboarding-completion: done
-  12-12-google-profile-picture-import: review
+  12-12-google-profile-picture-import: done
   epic-12-retrospective: optional
 
   # Epic 13: Spring Boot 4 Migration — IN PROGRESS (docs/plans/spring-boot-4-migration.md)
@@ -244,8 +244,8 @@ development_status:
   #   REMAINING: Bruno (payload-diff) + Playwright gates, then flip Jackson-2-compat OFF (final step).
   epic-13: in-progress
   13-1-zero-deprecation-baseline-compat-matrix: done
-  13-2-shared-kernel-pilot-service-sb4: in-progress      # collapsed into unified migration (feature/epic-13-spring-boot-4)
-  13-3-remaining-domain-services-sb4: in-progress         # collapsed into unified migration (feature/epic-13-spring-boot-4)
+  13-2-shared-kernel-pilot-service-sb4: done      # collapsed into unified migration (feature/epic-13-spring-boot-4)
+  13-3-remaining-domain-services-sb4: done         # collapsed into unified migration (feature/epic-13-spring-boot-4)
   13-4-api-gateway-closeout-jackson3-flag-flip: in-progress  # collapsed into unified migration (feature/epic-13-spring-boot-4)
   13-5-unpin-bom-managed-dependency-versions: ready-for-dev  # follow-up (2026-06-19): delegate SB-BOM-managed pins (postgresql override 42.7.7 → BOM 42.7.11) + codify pin policy; NO floating versions
   epic-13-retrospective: optional
@@ -255,11 +255,11 @@ development_status:
   # on feature/event-2-feedback-quick-wins (merged #799). 15.6/#790 already fixed (commit 80195136).
   # Each story independently prod-deployable (staging IS prod). Sequencing: 15.5→15.7→15.1→15.2→15.3→15.4→15.8+15.9.
   epic-15: in-progress
-  15-1-websockets-to-rest-polling-live-agenda: in-progress
-  15-2-per-event-editable-event-type-config: backlog
+  15-1-websockets-to-rest-polling-live-agenda: done
+  15-2-per-event-editable-event-type-config: done
   15-3-stable-slot-assignment-insert-swap-mobile-tap: backlog
-  15-4-company-email-domain-mismatch-warning: backlog
-  15-5-speaker-company-logo-presenter-live-control: review
+  15-4-company-email-domain-mismatch-warning: done
+  15-5-speaker-company-logo-presenter-live-control: done
   15-6-present-mode-agenda-title-overlap: done
   15-7-notify-speaker-moderator-on-new-qa-question: done
   15-8-linkedin-post-drafts: backlog

@@ -556,7 +556,13 @@
       "organizerOnly": "Nur Organisatoren können auf diese Seite zugreifen",
       "typicalStartTime": "Übliche Startzeit",
       "typicalEndTime": "Übliche Endzeit",
-      "typicalEndTimeHint": "Automatisch aus dem Zeitplan berechnet"
+      "typicalEndTimeHint": "Automatisch aus dem Zeitplan berechnet",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Apéro hinzufügen",
+      "aperitifDuration": "Apéro-Dauer (Min.)",
+      "aperitifPosition": "Apéro-Position",
+      "aperitifPositionStart": "Nach der Eröffnung",
+      "aperitifPositionEnd": "Nach dem Abschluss"
     },
     "themeImage": "Veranstaltungs-Themenbild",
     "themeImageHelp": "Laden Sie ein Themenbild für diese Veranstaltung hoch (PNG, JPEG oder SVG, max. 5MB). Empfohlene Größe: 1920x400px.",
@@ -906,7 +912,8 @@
     "structuralSessions": {
       "moderation": "Moderation",
       "break": "Pause",
-      "lunch": "Mittagessen"
+      "lunch": "Mittagessen",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Referenten-Pool",
@@ -937,7 +944,8 @@
       "clearAll": "Alle löschen",
       "cancel": "Abbrechen",
       "confirm": "Bestätigen",
-      "generateStructure": "Zeitplan generieren"
+      "generateStructure": "Zeitplan generieren",
+      "editEventType": "Veranstaltungstyp bearbeiten"
     },
     "modals": {
       "generateStructure": {
@@ -999,6 +1007,9 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Tippe jetzt auf einen markierten Slot, um sie zu platzieren"
+    },
+    "editEventType": {
+      "assignmentWarning": "Einige Referent:innen sind bereits zu festen Zeiten eingeplant. Eine Änderung der Struktur kann sie verschieben — prüfe die Agenda nach dem Speichern."
     }
   },
   "newsletter": {
