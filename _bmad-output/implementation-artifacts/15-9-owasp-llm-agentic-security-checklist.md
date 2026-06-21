@@ -1,6 +1,6 @@
 # Story 15.9: OWASP LLM + Agentic security checklist in CI
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
