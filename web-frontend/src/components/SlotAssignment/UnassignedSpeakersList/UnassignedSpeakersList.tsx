@@ -17,11 +17,14 @@ import {
   LinearProgress,
   Button,
   ButtonGroup,
+  IconButton,
+  Tooltip,
   Stack,
   Skeleton,
 } from '@mui/material';
 import { DragIndicator, Visibility } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { Session } from '@/types/event.types';
 
 export interface UnassignedSpeakersListProps {
@@ -68,6 +71,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   }, [focusSessionSlug, sessions]);
 
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const assignedCount = totalSessions - sessions.length;
   const progressPercent = totalSessions > 0 ? Math.round((assignedCount / totalSessions) * 100) : 0;
 
@@ -255,20 +259,39 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
                       </Typography>
                     </Box>
 
-                    {/* View Preferences Button */}
-                    <Button
-                      size="small"
-                      startIcon={<Visibility />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onViewPreferences(username);
-                      }}
-                      data-testid={`view-preferences-${username}`}
-                      aria-label={t('slotAssignment.speakerPool.viewPreferences')}
-                      sx={{ flexShrink: 0 }}
-                    >
-                      {t('slotAssignment.speakerPool.viewPreferences')}
-                    </Button>
+                    {/* View Preferences — icon-only on mobile so the title + speaker stay
+                        legible (mirrors the assigned-slot card); labelled button on desktop. */}
+                    {isMobile ? (
+                      <Tooltip title={t('slotAssignment.speakerPool.viewPreferences')}>
+                        <IconButton
+                          size="small"
+                          edge="end"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewPreferences(username);
+                          }}
+                          data-testid={`view-preferences-${username}`}
+                          aria-label={t('slotAssignment.speakerPool.viewPreferences')}
+                          sx={{ flexShrink: 0, color: 'text.secondary' }}
+                        >
+                          <Visibility fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      <Button
+                        size="small"
+                        startIcon={<Visibility />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewPreferences(username);
+                        }}
+                        data-testid={`view-preferences-${username}`}
+                        aria-label={t('slotAssignment.speakerPool.viewPreferences')}
+                        sx={{ flexShrink: 0 }}
+                      >
+                        {t('slotAssignment.speakerPool.viewPreferences')}
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );

@@ -12,7 +12,7 @@ import java.time.Instant;
  * structural sessions). All other types map to persisted structural sessions.
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class TimetableSlot {
 
     public enum Type {
@@ -25,6 +25,15 @@ public class TimetableSlot {
 
     /** Slot type — determines rendering and droppability. */
     Type type;
+
+    /**
+     * Deterministic, computed slot identity (Story 15.3): {@code "{Type}-{ordinal}"} where
+     * ordinal is 1-based among slots of that type, in computed order — e.g. "MODERATION-1",
+     * "APERITIF-1", "SPEAKER_SLOT-3", "BREAK-2". Stable across timing/config edits; the UI and
+     * the slot-assign endpoint address slots by this key rather than by wall-clock time.
+     * Transient — never persisted on a session.
+     */
+    String slotKey;
 
     /** Slot start time (UTC). */
     Instant startTime;

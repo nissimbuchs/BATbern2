@@ -883,7 +883,10 @@
     "timeline": {
       "title": "Sessietijdlijn",
       "matchPercent": "{{percent}}% match",
-      "headerTime": "Tijd"
+      "headerTime": "Tijd",
+      "insertHint": "↓ Invoegen — latere sessies schuiven op",
+      "swapHint": "⇅ Wisselen met deze sessie",
+      "removeFromSlot": "Uit slot verwijderen"
     },
     "structuralSessions": {
       "moderation": "Moderatie",

@@ -45,6 +45,7 @@ const buildMockTimetable = (dateStr: string = '2025-12-15') => ({
     const pad = (n: number) => String(n).padStart(2, '0');
     return {
       type: 'SPEAKER_SLOT' as const,
+      slotKey: `SPEAKER_SLOT-${i + 1}`,
       startTime: `${dateStr}T${pad(h)}:00:00`,
       endTime: `${dateStr}T${pad(h + 1)}:00:00`,
       title: null,
@@ -135,6 +136,8 @@ describe('DragDropSlotAssignment Component', () => {
     assignedCount: 3,
     totalSessions: 10,
     assignTiming: vi.fn().mockResolvedValue(undefined),
+    assignToSlot: vi.fn().mockResolvedValue(undefined),
+    unassignTiming: vi.fn().mockResolvedValue(undefined),
     bulkAssignTiming: vi.fn().mockResolvedValue(undefined),
     detectConflicts: vi.fn().mockResolvedValue(undefined),
     clearConflict: vi.fn(),
@@ -388,27 +391,24 @@ describe('DragDropSlotAssignment Component', () => {
   });
 
   describe('Drag and Drop Interaction', () => {
-    it('should_assignTiming_when_sessionDroppedOnSlot', async () => {
-      // AC5: Complete drag-and-drop assignment workflow
+    it('should_assignToSlotByKey_when_sessionDroppedOnEmptySlot', async () => {
+      // AC1/AC5: dropping a pool speaker on an empty slot ASSIGNs it by stable slotKey
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
       const targetSlot = screen.getByTestId('slot-09:00-Main-Hall');
 
-      // When: Session is dropped on slot
+      // When: Session is dropped on the first (empty) slot
       fireEvent.dragStart(speakerCard!);
       fireEvent.dragOver(targetSlot);
       fireEvent.drop(targetSlot);
 
-      // Then: assignTiming hook function is called with correct parameters
+      // Then: assignToSlot is called addressing the slot by slotKey, mode ASSIGN
       await waitFor(() => {
-        expect(mockUseSlotAssignment.assignTiming).toHaveBeenCalledWith(
-          'session-1',
-          expect.objectContaining({
-            room: 'Main Hall',
-            changeReason: 'drag_drop_reassignment',
-          })
-        );
+        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalledWith('session-1', {
+          targetSlotKey: 'SPEAKER_SLOT-1',
+          mode: 'ASSIGN',
+        });
       });
     });
 
@@ -427,9 +427,9 @@ describe('DragDropSlotAssignment Component', () => {
       fireEvent.dragOver(targetSlot);
       fireEvent.drop(targetSlot);
 
-      // Then: assignTiming is called (optimistic update handled by useSlotAssignment hook)
+      // Then: assignToSlot is called (optimistic update handled by useSlotAssignment hook)
       await waitFor(() => {
-        expect(mockUseSlotAssignment.assignTiming).toHaveBeenCalled();
+        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalled();
       });
     });
 
@@ -450,6 +450,209 @@ describe('DragDropSlotAssignment Component', () => {
         expect(screen.getByTestId('speaker-pool-sidebar')).toContainElement(
           screen.getByText('John Doe - Acme Corp')
         );
+      });
+    });
+
+    it('should_insert_when_poolSpeakerDroppedOnOccupiedSlot', async () => {
+      // AC1: dragging a pool speaker onto an occupied slot INSERTs (push + reflow)
+      const { useEvent } = await import('@/hooks/useEvents');
+      const occupant: Session = {
+        sessionSlug: 'occupant-session',
+        eventCode: mockEventCode,
+        title: 'Occupant Talk',
+        startTime: '2025-12-15T09:00:00',
+        endTime: '2025-12-15T10:00:00',
+        room: 'Main Hall',
+        speakers: [],
+      };
+      vi.mocked(useEvent).mockReturnValue({
+        data: {
+          eventCode: mockEventCode,
+          date: '2025-12-15',
+          sessions: [...mockUnassignedSessions, occupant],
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
+      const tt = buildMockTimetable('2025-12-15');
+      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
+        'occupant-session';
+      vi.mocked(useTimetable).mockReturnValue({
+        data: tt,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
+      const targetSlot = screen.getByTestId('slot-09:00-Main-Hall');
+      fireEvent.dragStart(speakerCard!);
+      fireEvent.drop(targetSlot);
+
+      await waitFor(() => {
+        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalledWith('session-1', {
+          targetSlotKey: 'SPEAKER_SLOT-1',
+          mode: 'INSERT',
+        });
+      });
+    });
+
+    it('should_previewReflow_when_draggingPoolSpeakerOverOccupiedSlot', async () => {
+      // 15.3: dragging over an occupied slot previews the insert (dropped session shown in the
+      // target, occupant marked moved) + an "insert" hint — before committing.
+      const { useEvent } = await import('@/hooks/useEvents');
+      const occupant: Session = {
+        sessionSlug: 'occupant-session',
+        eventCode: mockEventCode,
+        title: 'Occupant Talk',
+        startTime: '2025-12-15T09:00:00',
+        endTime: '2025-12-15T10:00:00',
+        room: 'Main Hall',
+        speakers: [],
+      };
+      vi.mocked(useEvent).mockReturnValue({
+        data: {
+          eventCode: mockEventCode,
+          date: '2025-12-15',
+          sessions: [...mockUnassignedSessions, occupant],
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
+      const tt = buildMockTimetable('2025-12-15');
+      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
+        'occupant-session';
+      vi.mocked(useTimetable).mockReturnValue({
+        data: tt,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
+      const targetSlot = screen.getByTestId('slot-09:00-Main-Hall');
+      fireEvent.dragStart(speakerCard!);
+      fireEvent.dragOver(targetSlot);
+
+      await waitFor(() => {
+        // insert hint labels the action
+        expect(screen.getByTestId('drop-hint')).toBeInTheDocument();
+        // the target now previews the dragged session, and a cell is flagged as moved
+        expect(targetSlot).toHaveTextContent('John Doe - Acme Corp');
+        expect(document.querySelector('[data-preview-moved="true"]')).toBeTruthy();
+      });
+    });
+
+    it('should_unassign_when_removeButtonClickedOnAssignedSlot', async () => {
+      // 15.3: each assigned slot has a ✕ that returns the session to the pool
+      const { useEvent } = await import('@/hooks/useEvents');
+      const occupant: Session = {
+        sessionSlug: 'occupant-session',
+        eventCode: mockEventCode,
+        title: 'Occupant Talk',
+        startTime: '2025-12-15T09:00:00',
+        endTime: '2025-12-15T10:00:00',
+        room: 'Main Hall',
+        speakers: [],
+      };
+      vi.mocked(useEvent).mockReturnValue({
+        data: {
+          eventCode: mockEventCode,
+          date: '2025-12-15',
+          sessions: [...mockUnassignedSessions, occupant],
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
+      const tt = buildMockTimetable('2025-12-15');
+      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
+        'occupant-session';
+      vi.mocked(useTimetable).mockReturnValue({
+        data: tt,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      const removeBtn = screen.getByTestId('remove-slot-occupant-session');
+      fireEvent.click(removeBtn);
+
+      await waitFor(() => {
+        expect(mockUseSlotAssignment.unassignTiming).toHaveBeenCalledWith('occupant-session');
+      });
+    });
+
+    it('should_swap_when_assignedSpeakerDroppedOnOccupiedSlot', async () => {
+      // AC2: dragging an already-assigned speaker onto another occupied slot SWAPs
+      const { useEvent } = await import('@/hooks/useEvents');
+      const a: Session = {
+        sessionSlug: 'sess-a',
+        eventCode: mockEventCode,
+        title: 'A',
+        startTime: '2025-12-15T09:00:00',
+        endTime: '2025-12-15T10:00:00',
+        room: 'Main Hall',
+        speakers: [],
+      };
+      const b: Session = {
+        sessionSlug: 'sess-b',
+        eventCode: mockEventCode,
+        title: 'B',
+        startTime: '2025-12-15T10:00:00',
+        endTime: '2025-12-15T11:00:00',
+        room: 'Main Hall',
+        speakers: [],
+      };
+      vi.mocked(useEvent).mockReturnValue({
+        data: { eventCode: mockEventCode, date: '2025-12-15', sessions: [a, b] },
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
+      const tt = buildMockTimetable('2025-12-15');
+      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug = 'sess-a';
+      (tt.slots[1] as { assignedSessionSlug: string | null }).assignedSessionSlug = 'sess-b';
+      vi.mocked(useTimetable).mockReturnValue({
+        data: tt,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      // Drag the assigned 'A' cell (09:00) onto the occupied 10:00 slot → SWAP
+      const sourceCell = screen.getByTestId('slot-09:00-Main-Hall');
+      const targetCell = screen.getByTestId('slot-10:00-Main-Hall');
+      fireEvent.dragStart(sourceCell);
+      fireEvent.drop(targetCell);
+
+      await waitFor(() => {
+        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalledWith('sess-a', {
+          targetSlotKey: 'SPEAKER_SLOT-2',
+          mode: 'SWAP',
+        });
       });
     });
   });
@@ -585,6 +788,20 @@ describe('DragDropSlotAssignment Component', () => {
         refetch: vi.fn(),
       } as any);
 
+      // Story 15.3: cell occupancy comes from the timetable's assignedSessionSlug, not
+      // from session.startTime matching — mark slot-1 (09:00) as occupied.
+      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
+      const occupiedTimetable = buildMockTimetable('2025-12-15');
+      (occupiedTimetable.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
+        'assigned-session';
+      vi.mocked(useTimetable).mockReturnValue({
+        data: occupiedTimetable,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
       const titleEl = screen.getByText(
@@ -646,13 +863,13 @@ describe('DragDropSlotAssignment Component', () => {
         expect(document.querySelector('[data-armed="true"]')).toBeTruthy();
       });
 
-      // Tap an armed slot → assigns the selected session via the shared path.
+      // Tap an armed (empty) slot → ASSIGNs the picked-up session by slotKey.
       const armed = document.querySelector('[data-armed="true"]') as HTMLElement;
       fireEvent.click(armed);
       await waitFor(() => {
-        expect(mockUseSlotAssignment.assignTiming).toHaveBeenCalledWith(
+        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalledWith(
           'session-1',
-          expect.objectContaining({ room: 'Main Hall' })
+          expect.objectContaining({ mode: 'ASSIGN' })
         );
       });
     });

@@ -20,6 +20,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -174,7 +175,25 @@ public class TimetableService {
             addSlot(slots, TimetableSlot.Type.APERITIF, cursor, aperitifDuration, "Apéro", null);
         }
 
-        return slots;
+        return stampSlotKeys(slots);
+    }
+
+    /**
+     * Stamp a deterministic {@code slotKey} on every slot: {@code "{Type}-{ordinal}"} where
+     * ordinal is 1-based per type in computed order (Story 15.3). The key is the stable
+     * addressing handle used by the UI and the slot-assign endpoint — independent of wall-clock
+     * time, so it survives timing/config edits.
+     */
+    private static List<TimetableSlot> stampSlotKeys(List<TimetableSlot> slots) {
+        Map<TimetableSlot.Type, Integer> ordinals = new EnumMap<>(TimetableSlot.Type.class);
+        List<TimetableSlot> keyed = new ArrayList<>(slots.size());
+        for (TimetableSlot slot : slots) {
+            int ordinal = ordinals.merge(slot.getType(), 1, Integer::sum);
+            keyed.add(slot.toBuilder()
+                    .slotKey(slot.getType().name() + "-" + ordinal)
+                    .build());
+        }
+        return keyed;
     }
 
     /**
@@ -243,30 +262,21 @@ public class TimetableService {
                 .filter(s -> s.getStartTime() != null)
                 .collect(Collectors.toMap(Session::getStartTime, s -> s, (a, b) -> a));
 
-        // Enrich virtual slots with DB data
+        // Enrich virtual slots with DB data. Binding stays time-based (sessions hold exact
+        // computed times); slotKey is carried through unchanged via toBuilder (Story 15.3).
         List<TimetableSlot> enrichedSlots = virtualSlots.stream()
                 .map(slot -> {
                     if (slot.getType() == TimetableSlot.Type.SPEAKER_SLOT) {
                         Session assigned = speakerByStart.get(slot.getStartTime());
                         if (assigned != null) {
-                            return TimetableSlot.builder()
-                                    .type(slot.getType())
-                                    .startTime(slot.getStartTime())
-                                    .endTime(slot.getEndTime())
-                                    .title(slot.getTitle())
-                                    .slotIndex(slot.getSlotIndex())
+                            return slot.toBuilder()
                                     .assignedSessionSlug(assigned.getSessionSlug())
                                     .build();
                         }
                     } else {
                         Session structural = structuralByStart.get(slot.getStartTime());
                         if (structural != null) {
-                            return TimetableSlot.builder()
-                                    .type(slot.getType())
-                                    .startTime(slot.getStartTime())
-                                    .endTime(slot.getEndTime())
-                                    .title(slot.getTitle())
-                                    .slotIndex(slot.getSlotIndex())
+                            return slot.toBuilder()
                                     .sessionSlug(structural.getSessionSlug())
                                     .build();
                         }

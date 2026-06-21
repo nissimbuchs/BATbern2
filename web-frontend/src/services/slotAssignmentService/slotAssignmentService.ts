@@ -18,6 +18,16 @@ import type {
   BulkTimingResponse,
   ConflictAnalysisResponse,
 } from '@/types/event.types';
+import type { TimetableResponse } from '@/services/timetableService/timetableService';
+
+/** Story 15.3: stable slot assignment mode. */
+export type SlotAssignmentMode = 'ASSIGN' | 'INSERT' | 'SWAP';
+
+/** Story 15.3: request body for the slotKey-addressed assignment endpoint. */
+export interface SlotAssignmentRequestBody {
+  targetSlotKey: string;
+  mode: SlotAssignmentMode;
+}
 
 // API base path for slot assignment endpoints
 const SLOT_ASSIGNMENT_API_PATH = '/events';
@@ -82,6 +92,67 @@ class SlotAssignmentService {
         (error.response?.status === 401 ||
           error.response?.status === 403 ||
           error.response?.status === 409)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Assign / insert / swap a speaker session by stable slot key (Story 15.3)
+   *
+   * POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/slot
+   *
+   * @param eventCode   Event code (e.g., "BATbern142")
+   * @param sessionSlug Dragged speaker session slug
+   * @param request     Target slotKey + mode (ASSIGN | INSERT | SWAP)
+   * @returns The recomputed timetable
+   */
+  async assignSessionToSlot(
+    eventCode: string,
+    sessionSlug: string,
+    request: SlotAssignmentRequestBody
+  ): Promise<TimetableResponse> {
+    try {
+      const response = await apiClient.post<TimetableResponse>(
+        `${SLOT_ASSIGNMENT_API_PATH}/${eventCode}/sessions/${sessionSlug}/slot`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      // Preserve auth errors and the 409 (agenda-full / conflict) response body.
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 ||
+          error.response?.status === 403 ||
+          error.response?.status === 409)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Unassign a single session's slot — sends it back to the unassigned pool (Story 15.3).
+   *
+   * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}/timing
+   *
+   * @param eventCode   Event code (e.g., "BATbern142")
+   * @param sessionSlug Session slug to clear
+   * @returns The updated (now unassigned) session
+   */
+  async unassignSessionTiming(eventCode: string, sessionSlug: string): Promise<Session> {
+    try {
+      const response = await apiClient.delete<Session>(
+        `${SLOT_ASSIGNMENT_API_PATH}/${eventCode}/sessions/${sessionSlug}/timing`
+      );
+      return response.data;
+    } catch (error) {
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
       }

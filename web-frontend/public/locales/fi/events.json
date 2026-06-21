@@ -883,7 +883,10 @@
     "timeline": {
       "title": "Istuntojen aikajana",
       "matchPercent": "{{percent}}% vastaavuus",
-      "headerTime": "Aika"
+      "headerTime": "Aika",
+      "insertHint": "↓ Lisää — myöhemmät esitykset siirtyvät",
+      "swapHint": "⇅ Vaihda tähän sessioon",
+      "removeFromSlot": "Poista paikalta"
     },
     "structuralSessions": {
       "moderation": "Moderointi",

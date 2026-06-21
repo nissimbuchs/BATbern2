@@ -23,18 +23,25 @@ import {
   Alert,
   Skeleton,
   Link,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { AutoAwesome, ClearAll, CalendarMonth, Tune } from '@mui/icons-material';
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import MicIcon from '@mui/icons-material/Mic';
 import LocalBarIcon from '@mui/icons-material/LocalBar';
+import CloseIcon from '@mui/icons-material/Close';
 import { AxiosError } from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
-import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
+import { useTapToAssign } from '@/hooks/useTapToAssign/useTapToAssign';
+import {
+  slotAssignmentService,
+  type SlotAssignmentMode,
+} from '@/services/slotAssignmentService/slotAssignmentService';
 import { useEvent } from '@/hooks/useEvents';
 import { useTimetable } from '@/hooks/useTimetable/useTimetable';
 import type { TimetableSlot } from '@/services/timetableService/timetableService';
@@ -117,7 +124,8 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     conflict,
     assignedCount,
     totalSessions,
-    assignTiming,
+    assignToSlot,
+    unassignTiming,
     clearConflict,
     clearAllTimings,
     autoAssignTimings,
@@ -144,8 +152,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
   const [structuralAlreadyExist, setStructuralAlreadyExist] = useState(false);
   const [draggedSession, setDraggedSession] = useState<Session | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<{ time: string; room: string } | null>(null);
-  // 14.G.3 (mobile tap-to-assign): the tray session "picked up" by a tap.
-  const [selectedSessionSlug, setSelectedSessionSlug] = useState<string | null>(null);
   const [speakerFilter, setSpeakerFilter] = useState<'all' | 'assigned' | 'unassigned'>(
     'unassigned'
   );
@@ -215,6 +221,86 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     return map;
   }, [timetable]);
 
+  // Story 15.3: SPEAKER_SLOT indexed by its time-row label — carries the stable `slotKey`
+  // and the current occupant (`assignedSessionSlug`). The grid keeps rendering one row per
+  // time for layout, but slot IDENTITY for assignment is now the slotKey, not the HH:MM string.
+  const speakerSlotByTime = useMemo(() => {
+    const map = new Map<string, TimetableSlot>();
+    if (!timetable) return map;
+    timetable.slots
+      .filter((s) => s.type === 'SPEAKER_SLOT')
+      .forEach((s) => map.set(toTimeStr(new Date(s.startTime)), s));
+    return map;
+  }, [timetable]);
+
+  // Resolve an assigned session slug → the full Session (for cell display).
+  const sessionBySlug = useMemo(() => {
+    const map = new Map<string, Session>();
+    (event?.sessions ?? []).forEach((s) => map.set(s.sessionSlug, s));
+    return map;
+  }, [event?.sessions]);
+
+  // Story 15.3: while dragging over a SPEAKER_SLOT, compute the agenda as it WOULD look after
+  // the drop (ASSIGN / INSERT-shift / SWAP) — Map<slotKey, occupantSlug | null>. Null when not
+  // dragging, the hovered slot isn't a speaker slot, or an INSERT would overflow the agenda.
+  // Mirrors the backend SlotReorderService so the grid can preview the reflow before committing.
+  const previewBySlotKey = useMemo<Map<string, string | null> | null>(() => {
+    if (!draggedSession || !hoveredSlot || !timetable) {
+      return null;
+    }
+    const target = speakerSlotByTime.get(hoveredSlot.time);
+    if (!target?.slotKey) {
+      return null;
+    }
+    const ordered = timetable.slots.filter((s) => s.type === 'SPEAKER_SLOT');
+    const keys = ordered.map((s) => s.slotKey as string);
+    const occ = ordered.map((s) => s.assignedSessionSlug ?? null);
+    const targetIdx = keys.indexOf(target.slotKey);
+    if (targetIdx < 0) {
+      return null;
+    }
+    const dragged = draggedSession.sessionSlug;
+    const targetOcc = occ[targetIdx];
+    const detach = () => {
+      const i = occ.indexOf(dragged);
+      if (i >= 0) {
+        occ[i] = null;
+      }
+    };
+    if (!targetOcc || targetOcc === dragged) {
+      // ASSIGN
+      detach();
+      occ[targetIdx] = dragged;
+    } else if (draggedSession.startTime) {
+      // SWAP (dragged is already assigned)
+      const di = occ.indexOf(dragged);
+      if (di >= 0) {
+        occ[di] = targetOcc;
+      }
+      occ[targetIdx] = dragged;
+    } else {
+      // INSERT (pool speaker) — shift the block into the first free slot at/after target
+      detach();
+      let free = -1;
+      for (let i = targetIdx; i < occ.length; i++) {
+        if (occ[i] == null) {
+          free = i;
+          break;
+        }
+      }
+      if (free < 0) {
+        return null; // agenda full — nothing to preview
+      }
+      for (let i = free; i > targetIdx; i--) {
+        occ[i] = occ[i - 1];
+      }
+      occ[targetIdx] = dragged;
+    }
+    const map = new Map<string, string | null>();
+    keys.forEach((k, i) => map.set(k, occ[i]));
+    return map;
+  }, [draggedSession, hoveredSlot, timetable, speakerSlotByTime]);
+
   const isLoading = sessionsLoading || eventLoading || timetableLoading;
 
   // Mock speaker data for preferences panel
@@ -280,60 +366,19 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     setHoveredSlot(null);
   };
 
-  // Shared assignment path for BOTH drag-drop (desktop) and tap-to-assign (mobile,
-  // 14.G.3). Resolves the slot's exact start/end from the backend timetable and
-  // commits via the same `assignTiming` contract — no behaviour divergence.
-  const assignSessionToSlot = async (session: Session, time: string, room: string) => {
-    if (!event) {
-      console.error('Event not loaded - cannot assign timing');
+  // Story 15.3: single commit path for BOTH desktop drag and mobile tap. Addresses the
+  // target slot by its stable `slotKey` and dispatches ASSIGN / INSERT / SWAP. The backend
+  // recomputes and persists the affected sessions' times; we then refresh the grid.
+  const commitSlotAssignment = async (
+    sessionSlug: string,
+    targetSlotKey: string,
+    mode: SlotAssignmentMode
+  ) => {
+    if (!targetSlotKey) {
       return;
     }
-    if (!timetable) {
-      console.error('Timetable not loaded - cannot assign timing');
-      return;
-    }
-
-    // Use actual event date and slot duration from event type config
-    // Extract just the date part (YYYY-MM-DD) in case event.date is a full ISO datetime
-    const eventDateStr = event.date
-      ? event.date.split('T')[0]
-      : new Date().toISOString().split('T')[0];
-
-    // Find the matching SPEAKER_SLOT in the timetable to get exact start/end times
-    const matchingSlot = timetable.slots.find(
-      (s) => s.type === 'SPEAKER_SLOT' && toTimeStr(new Date(s.startTime)) === time
-    );
-
-    let startTime: string;
-    let endTime: string;
-
-    if (matchingSlot) {
-      // Use exact backend-computed times for perfect alignment
-      startTime = matchingSlot.startTime;
-      endTime = matchingSlot.endTime;
-    } else {
-      // Fallback: construct from event date + drop time (legacy path)
-      const [hours, minutes] = time.split(':').map(Number);
-      const startDate = new Date(eventDateStr);
-      startDate.setHours(hours, minutes, 0, 0);
-      startTime = startDate.toISOString();
-
-      // Use first SPEAKER_SLOT duration as default
-      const firstSpeakerSlot = timetable.slots.find((s) => s.type === 'SPEAKER_SLOT');
-      const slotDurationMs = firstSpeakerSlot
-        ? new Date(firstSpeakerSlot.endTime).getTime() -
-          new Date(firstSpeakerSlot.startTime).getTime()
-        : 45 * 60 * 1000;
-      endTime = new Date(startDate.getTime() + slotDurationMs).toISOString();
-    }
-
     try {
-      await assignTiming(session.sessionSlug, {
-        startTime,
-        endTime,
-        room,
-        changeReason: 'drag_drop_reassignment',
-      });
+      await assignToSlot(sessionSlug, { targetSlotKey, mode });
       await queryClient.invalidateQueries({ queryKey: ['event', eventCode, ['sessions']] });
       await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
       await queryClient.refetchQueries({
@@ -341,48 +386,78 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
         exact: true,
       });
     } catch (err) {
-      console.error('✗ Failed to assign timing:', err);
+      // 409 (agenda-full / conflict) is surfaced via the hook's `conflict` modal.
+      console.error('✗ Failed to assign slot:', err);
     }
   };
 
-  const handleDrop = (time: string, room: string) => async (e: React.DragEvent) => {
+  // Story 15.3: remove an assigned session from its slot → back to the unassigned pool.
+  const handleUnassign = async (sessionSlug: string) => {
+    try {
+      await unassignTiming(sessionSlug);
+      await queryClient.invalidateQueries({ queryKey: ['event', eventCode, ['sessions']] });
+      await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
+      await queryClient.refetchQueries({
+        queryKey: ['event', eventCode, ['sessions']],
+        exact: true,
+      });
+    } catch (err) {
+      console.error('✗ Failed to remove slot assignment:', err);
+    }
+  };
+
+  // Mobile tap-to-assign / tap-to-swap (14.G.3 → extracted, Story 15.3).
+  const tap = useTapToAssign({ commit: commitSlotAssignment });
+
+  // Drop onto an empty slot → ASSIGN; a pool speaker onto an occupied slot → INSERT;
+  // an already-assigned speaker onto an occupied slot → SWAP.
+  const resolveDropMode = (
+    draggedIsAssigned: boolean,
+    occupantSlug: string | null,
+    draggedSlug: string
+  ): SlotAssignmentMode => {
+    if (!occupantSlug || occupantSlug === draggedSlug) {
+      return 'ASSIGN';
+    }
+    return draggedIsAssigned ? 'SWAP' : 'INSERT';
+  };
+
+  const handleDrop = (time: string) => async (e: React.DragEvent) => {
     e.preventDefault();
     setHoveredSlot(null);
     if (!draggedSession) {
-      console.warn('No dragged session');
       return;
     }
-    await assignSessionToSlot(draggedSession, time, room);
+    const slot = speakerSlotByTime.get(time);
+    if (!slot?.slotKey) {
+      setDraggedSession(null);
+      return;
+    }
+    const occupant = slot.assignedSessionSlug ?? null;
+    const mode = resolveDropMode(!!draggedSession.startTime, occupant, draggedSession.sessionSlug);
+    await commitSlotAssignment(draggedSession.sessionSlug, slot.slotKey, mode);
     setDraggedSession(null);
   };
 
-  // Mobile tap-to-assign (14.G.3): tap a tray session to "pick it up", then tap a
-  // highlighted empty slot to place it.
-  const handleTraySelect = (session: Session) => {
-    setSelectedSessionSlug((prev) => (prev === session.sessionSlug ? null : session.sessionSlug));
-  };
-
-  const handleSlotTap = (time: string, room: string) => async () => {
-    if (!selectedSessionSlug) {
+  // Mobile: tap a slot. If a session is armed, place/swap it here; otherwise arm an
+  // occupied slot's session for a subsequent move/swap.
+  const handleSlotTap = (time: string) => async () => {
+    const slot = speakerSlotByTime.get(time);
+    if (!slot?.slotKey) {
       return;
     }
-    const session = filteredSessions.find((s) => s.sessionSlug === selectedSessionSlug);
-    if (!session) {
-      return;
+    const occupant = slot.assignedSessionSlug ?? null;
+    if (tap.hasArmed) {
+      await tap.tapSlot(slot.slotKey, occupant);
+    } else if (occupant) {
+      tap.armFromSlot(occupant, slot.slotKey);
     }
-    await assignSessionToSlot(session, time, room);
-    setSelectedSessionSlug(null);
   };
 
-  // Get session assigned to a specific time slot and room
-  const getSessionForSlot = (time: string, room: string): Session | undefined => {
-    return assignedSessions.find((session) => {
-      if (!session.startTime || session.room !== room) return false;
-      const sessionStart = new Date(session.startTime);
-      const sessionHours = sessionStart.getHours().toString().padStart(2, '0');
-      const sessionMinutes = sessionStart.getMinutes().toString().padStart(2, '0');
-      return `${sessionHours}:${sessionMinutes}` === time;
-    });
+  // Get the session occupying a SPEAKER_SLOT (by the backend-resolved occupant slug).
+  const getSessionForSlot = (time: string): Session | undefined => {
+    const occupant = speakerSlotByTime.get(time)?.assignedSessionSlug;
+    return occupant ? sessionBySlug.get(occupant) : undefined;
   };
 
   const getPreferenceMatchClass = (time: string): string => {
@@ -573,10 +648,10 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                 onFilterChange={setSpeakerFilter}
                 isLoading={isLoading}
                 focusSessionSlug={focusSessionSlug}
-                onSessionTap={isMobile ? handleTraySelect : undefined}
-                selectedSessionSlug={selectedSessionSlug}
+                onSessionTap={isMobile ? (s) => tap.armFromPool(s.sessionSlug) : undefined}
+                selectedSessionSlug={tap.armedSessionSlug}
               />
-              {isMobile && selectedSessionSlug && (
+              {isMobile && tap.hasArmed && (
                 <Typography
                   variant="caption"
                   color="primary"
@@ -672,10 +747,30 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                               hoveredSlot?.time === time && hoveredSlot?.room === room;
                             const matchClass = isHovered ? getPreferenceMatchClass(time) : '';
                             const matchPercent = isHovered ? getPreferenceMatchPercentage(time) : 0;
-                            const assignedSession = getSessionForSlot(time, room);
-                            // 14.G.3: an empty cell is "armed" (a tap target) while a
-                            // tray session is tap-selected on mobile.
-                            const armed = isMobile && !assignedSession && !!selectedSessionSlug;
+                            const slotKey = speakerSlotByTime.get(time)?.slotKey;
+                            // Actual occupant (authoritative) drives drag + mobile-tap; the
+                            // preview occupant only drives what's DISPLAYED during a drag-over.
+                            const actualAssignedSession = getSessionForSlot(time);
+                            const previewActive = previewBySlotKey !== null;
+                            const previewOccupant =
+                              previewActive && slotKey
+                                ? (previewBySlotKey.get(slotKey) ?? null)
+                                : null;
+                            const displaySession = previewActive
+                              ? previewOccupant
+                                ? sessionBySlug.get(previewOccupant)
+                                : undefined
+                              : actualAssignedSession;
+                            const isPreviewMoved =
+                              previewActive &&
+                              previewOccupant !== (actualAssignedSession?.sessionSlug ?? null);
+                            // 14.G.3 / 15.3: on mobile every slot is tappable — a target while a
+                            // session is armed, or (when occupied) a source to arm for a swap.
+                            const isArmedSource =
+                              !!actualAssignedSession &&
+                              tap.isArmed(actualAssignedSession.sessionSlug);
+                            const armed = isMobile && tap.hasArmed && !isArmedSource;
+                            const tappable = isMobile && (tap.hasArmed || !!actualAssignedSession);
 
                             return (
                               <Grid size={10 / ROOMS.length} key={room}>
@@ -683,64 +778,139 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                                   data-testid={slotId}
                                   data-slot-time={time}
                                   data-slot-room={room}
+                                  data-slot-key={slotKey}
                                   data-armed={armed ? 'true' : undefined}
-                                  draggable={!!assignedSession}
+                                  data-preview-moved={isPreviewMoved ? 'true' : undefined}
+                                  draggable={!!actualAssignedSession}
                                   onDragStart={
-                                    assignedSession ? handleDragStart(assignedSession) : undefined
+                                    actualAssignedSession
+                                      ? handleDragStart(actualAssignedSession)
+                                      : undefined
                                   }
-                                  onClick={armed ? handleSlotTap(time, room) : undefined}
+                                  onClick={tappable ? handleSlotTap(time) : undefined}
                                   className={`${isHovered ? 'drop-zone-active' : ''} ${matchClass}`}
                                   onDragOver={handleDragOver(time, room)}
                                   onDragLeave={handleDragLeave}
-                                  onDrop={handleDrop(time, room)}
+                                  onDrop={handleDrop(time)}
                                   sx={{
                                     p: 1,
                                     minHeight: 60,
+                                    position: 'relative',
                                     border: 2,
+                                    // Hovered target = primary; cascaded preview-moved cells =
+                                    // secondary (dashed) so the reflow is visually distinct.
                                     borderColor: armed
                                       ? 'secondary.main'
                                       : isHovered
                                         ? 'primary.main'
-                                        : assignedSession
-                                          ? 'success.main'
-                                          : 'divider',
-                                    borderStyle: isHovered || armed ? 'dashed' : 'solid',
+                                        : isPreviewMoved
+                                          ? 'secondary.main'
+                                          : displaySession
+                                            ? 'success.main'
+                                            : 'divider',
+                                    borderStyle:
+                                      isHovered || armed || isPreviewMoved ? 'dashed' : 'solid',
                                     bgcolor: armed
                                       ? 'action.selected'
                                       : isHovered
                                         ? 'action.hover'
-                                        : assignedSession
-                                          ? 'success.light'
-                                          : 'background.default',
-                                    cursor: assignedSession ? 'grab' : 'pointer',
+                                        : isPreviewMoved
+                                          ? 'secondary.50'
+                                          : displaySession
+                                            ? 'success.light'
+                                            : 'background.default',
+                                    opacity: isPreviewMoved && !isHovered ? 0.92 : 1,
+                                    cursor: actualAssignedSession ? 'grab' : 'pointer',
                                     transition: 'all 0.2s',
                                     '&:hover': {
-                                      bgcolor: assignedSession ? 'success.light' : 'action.hover',
+                                      bgcolor: actualAssignedSession
+                                        ? 'success.light'
+                                        : 'action.hover',
                                     },
                                     '&:active': {
-                                      cursor: assignedSession ? 'grabbing' : 'pointer',
+                                      cursor: actualAssignedSession ? 'grabbing' : 'pointer',
                                     },
                                   }}
                                 >
-                                  {assignedSession ? (
-                                    <Box>
+                                  {/* 15.3: remove an assigned session from its slot (back to
+                                      pool). Hidden during a drag-preview to avoid clutter. */}
+                                  {actualAssignedSession && !previewActive && (
+                                    <Tooltip title={t('slotAssignment.timeline.removeFromSlot')}>
+                                      <IconButton
+                                        size="small"
+                                        data-testid={`remove-slot-${actualAssignedSession.sessionSlug}`}
+                                        aria-label={t('slotAssignment.timeline.removeFromSlot')}
+                                        draggable={false}
+                                        onDragStart={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleUnassign(actualAssignedSession.sessionSlug);
+                                        }}
+                                        sx={{
+                                          position: 'absolute',
+                                          top: 2,
+                                          right: 2,
+                                          p: 0.25,
+                                          color: 'text.secondary',
+                                          '&:hover': { color: 'error.main' },
+                                        }}
+                                      >
+                                        <CloseIcon sx={{ fontSize: 16 }} />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                  {displaySession ? (
+                                    <Box sx={{ pr: actualAssignedSession ? 2.5 : 0 }}>
                                       <Typography
                                         variant="caption"
                                         fontWeight="bold"
                                         sx={{ whiteSpace: { xs: 'normal', md: 'nowrap' } }}
                                       >
-                                        {assignedSession.title}
+                                        {displaySession.title}
                                       </Typography>
-                                      {assignedSession.speakers?.[0] && (
+                                      {displaySession.speakers?.[0] && (
                                         <Typography
                                           variant="caption"
                                           display="block"
                                           sx={{ whiteSpace: { xs: 'normal', md: 'nowrap' } }}
                                         >
-                                          {assignedSession.speakers[0].firstName}{' '}
-                                          {assignedSession.speakers[0].lastName}
+                                          {displaySession.speakers[0].firstName}{' '}
+                                          {displaySession.speakers[0].lastName}
                                         </Typography>
                                       )}
+                                      {/* AC11: preference-match indicator on the hovered slot. */}
+                                      {isHovered && matchPercent > 0 && (
+                                        <Typography
+                                          variant="caption"
+                                          display="block"
+                                          color="primary"
+                                        >
+                                          {t('slotAssignment.timeline.matchPercent', {
+                                            percent: matchPercent,
+                                          })}
+                                        </Typography>
+                                      )}
+                                      {/* 15.3: on the hovered target slot, label what dropping here
+                                          will do (insert-before vs swap), based on the ACTUAL
+                                          occupant before the reflow. */}
+                                      {isHovered &&
+                                        draggedSession &&
+                                        actualAssignedSession &&
+                                        actualAssignedSession.sessionSlug !==
+                                          draggedSession.sessionSlug && (
+                                          <Typography
+                                            variant="caption"
+                                            display="block"
+                                            color="secondary"
+                                            fontWeight="bold"
+                                            data-testid="drop-hint"
+                                            sx={{ mt: 0.5 }}
+                                          >
+                                            {draggedSession.startTime
+                                              ? t('slotAssignment.timeline.swapHint')
+                                              : t('slotAssignment.timeline.insertHint')}
+                                          </Typography>
+                                        )}
                                     </Box>
                                   ) : isHovered && matchPercent > 0 ? (
                                     <Typography variant="caption" color="primary">

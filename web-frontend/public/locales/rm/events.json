@@ -883,7 +883,10 @@
     "timeline": {
       "title": "Cronologia da sessiuns",
       "matchPercent": "{{percent}}% concordanza",
-      "headerTime": "Temp"
+      "headerTime": "Temp",
+      "insertHint": "↓ Inserir — las sesiuns suandantas sa spustan",
+      "swapHint": "⇅ Baratar cun questa sesiun",
+      "removeFromSlot": "Allontanar dal slot"
     },
     "structuralSessions": {
       "moderation": "Moderaziun",

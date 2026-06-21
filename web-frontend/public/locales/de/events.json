@@ -907,7 +907,10 @@
     "timeline": {
       "title": "Sitzungs-Zeitplan",
       "matchPercent": "{{percent}}% Übereinstimmung",
-      "headerTime": "Zeit"
+      "headerTime": "Zeit",
+      "insertHint": "↓ Einfügen — spätere Vorträge rücken nach",
+      "swapHint": "⇅ Mit dieser Session tauschen",
+      "removeFromSlot": "Aus Slot entfernen"
     },
     "structuralSessions": {
       "moderation": "Moderation",

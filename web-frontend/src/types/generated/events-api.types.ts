@@ -971,6 +971,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/sessions/{sessionSlug}/slot': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Assign / insert / swap a speaker session by stable slot key (Story 15.3)
+     * @description Places a speaker session onto a `SPEAKER_SLOT` addressed by its deterministic
+     *     `slotKey` (see `TimetableSlot.slotKey`). One path covers three modes:
+     *
+     *     - `ASSIGN` — target slot is empty: the session takes that slot's computed times.
+     *     - `INSERT` — target slot is occupied: the session takes the target ordinal and
+     *       every already-assigned session at that ordinal or later shifts one slot later;
+     *       all affected sessions' times are recomputed and saved in a single transaction.
+     *       Rejected with **409** if the shift would exceed the last computed speaker slot
+     *       (agenda full).
+     *     - `SWAP` — target slot is occupied: the dragged (already-assigned) session and the
+     *       occupant exchange slots (and times).
+     *
+     *     Session time persistence is unchanged — `startTime`/`endTime` remain the stored
+     *     authority; this endpoint only recomputes and saves them for the affected sessions.
+     *
+     *     **Access**: ORGANIZER role required.
+     */
+    post: operations['assignSessionToSlot'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/agenda-config': {
     parameters: {
       query?: never;
@@ -3579,6 +3614,23 @@ export interface components {
       companyAttendees: number;
     };
     /**
+     * @description Request to place a speaker session onto a slot addressed by its stable `slotKey`
+     *     (Story 15.3). `mode` selects assign / insert-and-reflow / swap behaviour.
+     */
+    SlotAssignmentRequest: {
+      /**
+       * @description The `slotKey` of the target SPEAKER_SLOT (e.g. "SPEAKER_SLOT-3").
+       * @example SPEAKER_SLOT-3
+       */
+      targetSlotKey: string;
+      /**
+       * @description ASSIGN onto an empty slot, INSERT before an occupied slot (shifts later sessions + reflows times), or SWAP with the occupant of an occupied slot.
+       * @example INSERT
+       * @enum {string}
+       */
+      mode: 'ASSIGN' | 'INSERT' | 'SWAP';
+    };
+    /**
      * @description A single slot in the event timetable. SPEAKER_SLOT entries represent droppable
      *     speaker positions (the implicit gaps between structural sessions). All other types
      *     map to persisted structural sessions (moderation, break, lunch).
@@ -3589,7 +3641,12 @@ export interface components {
        * @example SPEAKER_SLOT
        * @enum {string}
        */
-      type: 'MODERATION' | 'BREAK' | 'LUNCH' | 'SPEAKER_SLOT';
+      type: 'MODERATION' | 'BREAK' | 'LUNCH' | 'APERITIF' | 'SPEAKER_SLOT';
+      /**
+       * @description Deterministic, computed slot identity: segment type + 1-based ordinal among that type, in computed order (e.g. "MODERATION-1", "APERITIF-1", "SPEAKER_SLOT-3", "BREAK-2"). Stable across timing/config edits — the UI and the slot-assign endpoint address slots by this key rather than by wall-clock time. Computed/transient (Story 15.3); never persisted on a session.
+       * @example SPEAKER_SLOT-3
+       */
+      slotKey?: string;
       /**
        * Format: date-time
        * @description Slot start time (UTC ISO-8601)
@@ -7985,6 +8042,48 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
+    };
+  };
+  assignSessionToSlot: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example speaker-xyz */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SlotAssignmentRequest'];
+      };
+    };
+    responses: {
+      /** @description Assignment applied; returns the updated timetable */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TimetableResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /** @description Agenda is full (no free slot to insert into) or a timing conflict was detected */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   getEventAgendaConfig: {

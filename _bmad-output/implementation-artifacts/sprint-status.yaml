@@ -257,7 +257,7 @@ development_status:
   epic-15: in-progress
   15-1-websockets-to-rest-polling-live-agenda: done
   15-2-per-event-editable-event-type-config: done
-  15-3-stable-slot-assignment-insert-swap-mobile-tap: backlog
+  15-3-stable-slot-assignment-insert-swap-mobile-tap: review
   15-4-company-email-domain-mismatch-warning: done
   15-5-speaker-company-logo-presenter-live-control: done
   15-6-present-mode-agenda-title-overlap: done
