@@ -132,7 +132,7 @@ public class NotificationService {
 
         // Send via AWS SES
         try {
-            String recipientEmail = userApiClient.getEmailByUsername(notification.getRecipientUsername());
+            String recipientEmail = userApiClient.getUserByUsername(notification.getRecipientUsername()).getEmail();
             String htmlContent = buildEmailContent(notification);
             emailService.sendHtmlEmail(recipientEmail, notification.getSubject(), htmlContent);
 
@@ -640,10 +640,14 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 ### Q&A New-Questions Digest Job (Story 15.7)
 
 `QnaNotificationService.flushPending()` (Event Management Service) runs every 5 minutes
-(`@Scheduled` + `@SchedulerLock(name = "qnaDigestFlush")`) and emails a session's **primary
-speaker, co-speakers, and moderator** when new **top-level** questions arrive in their session
-Q&A. Per-recipient behaviour:
+(`@Scheduled` + `@SchedulerLock(name = "qnaDigestFlush")`) and emails, when new **top-level**
+questions arrive in a session's Q&A: that **session's own presenters** (`PRIMARY_SPEAKER` +
+`CO_SPEAKER`) **plus the event's moderator(s)**. Per-recipient behaviour:
 
+- **Recipients (event-2 fix):** the moderator is resolved **event-wide**, not per session —
+  `SessionUserRepository.findModeratorUsernamesByEventCode(eventCode)` returns every `MODERATOR`
+  across the event. BATbern's moderator is an event-level role (assigned to the moderation
+  bookend sessions), so a per-session lookup never reached them for content-session Q&A.
 - **Cadence** comes from each recipient's `qnaNotificationFrequency` preference: `live` → at most
   one digest per **15 min** per window; `daily` → at most one per **24 h**; `off` → never.
 - **Freeze wins**: only `OPEN` Q&A windows are scanned — a `FROZEN` window never produces a digest.
@@ -652,7 +656,11 @@ Q&A. Per-recipient behaviour:
 - State is kept per `(window, recipient)` in `session_qna_notification` (`last_notified_at` throttle
   anchor + `notified_through` high-water mark, so each email counts only genuinely new questions).
 - Recipient email + locale + cadence are resolved at send time via the cached `UserApiClient`
-  (ADR-004). Email is **DE + EN only** (`qna-new-questions-{de,en}.html`); non-DE/EN → EN.
+  (ADR-004). **Email is read off the user entity** — `getUserByUsername(username).getEmail()`
+  (single-segment `/api/v1/users/{username}`, covered by the CUMS VPC service-to-service rule for
+  the no-JWT scheduled context); there is **no** dedicated `/users/{username}/email` endpoint.
+  Email body is **DE + EN only** (`qna-new-questions-{de,en}.html`); non-DE/EN → EN. The template
+  is categorised `SPEAKER` (admin-editable under the Speakers tab).
 
 ### Deadline Reminder Job
 
