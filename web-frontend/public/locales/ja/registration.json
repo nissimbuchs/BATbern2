@@ -154,7 +154,8 @@
     "checkSpam": "迷惑メールフォルダを確認してください",
     "checkEmail": "メールアドレスが正しいか確認してください",
     "waitMinutes": "数分待ってからもう一度お試しください",
-    "close": "閉じる"
+    "close": "閉じる",
+    "companyUpdated": "登録されている会社を{{company}}に更新しました。"
   },
   "confirmation": {
     "loading": {

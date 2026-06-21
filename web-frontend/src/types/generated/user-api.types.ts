@@ -1391,6 +1391,8 @@ export interface components {
       username: string;
       /** @description True if user was created, false if existing */
       created: boolean;
+      /** @description True if the caller supplied a companyId that differed from the existing user's stored company and the profile was updated as a result. Always false for newly-created users. Lets a registration flow tell the attendee their company on file was refreshed. */
+      companyUpdated?: boolean;
       /** @description Cognito user ID (only if created) */
       cognitoUserId?: string;
       user: components['schemas']['UserResponse'];

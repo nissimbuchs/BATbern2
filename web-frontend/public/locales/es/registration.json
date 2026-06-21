@@ -154,7 +154,8 @@
     "checkSpam": "Revisa tu carpeta de spam",
     "checkEmail": "Verifica que la dirección de correo sea correcta",
     "waitMinutes": "Espera unos minutos y vuelve a intentar",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "companyUpdated": "Hemos actualizado la empresa registrada para ti: {{company}}."
   },
   "confirmation": {
     "loading": {

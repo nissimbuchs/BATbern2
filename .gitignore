@@ -216,3 +216,6 @@ __pycache__/
 # Story-automator runtime artifacts (per-run logs)
 _bmad-output/story-automator/
 apps/BATbern-watch/BATbern-watch.xcodeproj/project.xcworkspace/xcuserdata/nissim.xcuserdatad/UserInterfaceState.xcuserstate
+
+# PII — local company/email mismatch audit (never commit)
+company_mismatch_candidates.md

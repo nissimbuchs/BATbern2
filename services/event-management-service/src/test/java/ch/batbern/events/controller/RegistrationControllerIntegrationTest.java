@@ -175,6 +175,53 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     }
 
     @Test
+    @DisplayName("should_returnCompanyUpdatedTrue_when_existingUserCompanyRefreshed")
+    void should_returnCompanyUpdatedTrue_when_existingUserCompanyRefreshed() throws Exception {
+        // BATbern59 badge fix: CUMS reports it refreshed the returning attendee's company.
+        when(userApiClient.getOrCreateUser(any())).thenReturn(new GetOrCreateUserResponse()
+                .username("john.doe")
+                .created(false)
+                .companyUpdated(true)
+                .user(mockUserProfile));
+
+        String requestJson = """
+                {
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "company": "New Employer AG",
+                    "termsAccepted": true
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.companyUpdated").value(true));
+    }
+
+    @Test
+    @DisplayName("should_returnCompanyUpdatedFalse_when_companyUnchanged")
+    void should_returnCompanyUpdatedFalse_when_companyUnchanged() throws Exception {
+        // Default mock returns created=true, companyUpdated unset → response must be false, not null.
+        String requestJson = """
+                {
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "termsAccepted": true
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.companyUpdated").value(false));
+    }
+
+    @Test
     @DisplayName("should_return400_when_invalidDataProvided")
     void should_return400_when_invalidDataProvided() throws Exception {
         String requestJson = """

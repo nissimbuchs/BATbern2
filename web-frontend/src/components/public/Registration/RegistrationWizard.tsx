@@ -28,7 +28,7 @@ import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
 import type { CreateRegistrationRequest } from '@/types/event.types';
-import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle, Building2 } from 'lucide-react';
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTurnstile } from '@/hooks/useTurnstile';
 
@@ -84,6 +84,9 @@ export const RegistrationWizard = ({
   const [error, setError] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  // BATbern59 badge fix: backend refreshed the attendee's company on file (they
+  // entered a company differing from their stored profile). Drives a success notice.
+  const [companyUpdated, setCompanyUpdated] = useState(false);
   const [waitlistAcknowledged, setWaitlistAcknowledged] = useState(false);
   const [isWaitlistRegistration, setIsWaitlistRegistration] = useState(false);
   const [deregisterModalOpen, setDeregisterModalOpen] = useState(false);
@@ -204,6 +207,7 @@ export const RegistrationWizard = ({
 
       // Success: Show success message inline (Story 4.1.5c)
       setRegisteredEmail(response.email);
+      setCompanyUpdated(Boolean(response.companyUpdated));
       setIsWaitlistRegistration(isEventFull);
       setRegistrationSuccess(true);
       setIsSubmitting(false);
@@ -413,6 +417,21 @@ export const RegistrationWizard = ({
             </div>
           </div>
         </div>
+
+        {/* BATbern59 badge fix: tell the attendee we refreshed their company on file */}
+        {companyUpdated && formData.company && (
+          <div
+            data-testid="registration-company-updated"
+            className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 mb-6"
+          >
+            <div className="flex items-start gap-3">
+              <Building2 className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-zinc-300">
+                {t('success.companyUpdated', { company: formData.company })}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-center gap-4">
           {onCancel && (

@@ -154,7 +154,8 @@
     "checkSpam": "Tarkista roskapostikansio",
     "checkEmail": "Tarkista, että sähköpostiosoite on oikein",
     "waitMinutes": "Odota muutama minuutti ja yritä uudelleen",
-    "close": "Sulje"
+    "close": "Sulje",
+    "companyUpdated": "Päivitimme tallennetun yrityksesi: {{company}}."
   },
   "confirmation": {
     "loading": {

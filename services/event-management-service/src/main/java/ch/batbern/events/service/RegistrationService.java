@@ -104,8 +104,11 @@ public class RegistrationService {
 
         GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
         String username = userResponse.getUsername();
-        log.info("Got/created user profile for email: {}, username: {}, created: {}",
-                request.getEmail(), username, userResponse.getCreated());
+        boolean companyUpdated = Boolean.TRUE.equals(userResponse.getCompanyUpdated());
+        log.info("Got/created user profile for email: {}, username: {}, created: {}, "
+                        + "typedCompany: '{}', companyUpdated: {}",
+                request.getEmail(), username, userResponse.getCreated(),
+                request.getCompany(), companyUpdated);
 
         // QA Fix (VALID-001): Check for duplicate registration (same event + attendee)
         // If registration exists but is pending ("registered" status), return it to resend confirmation email
@@ -118,6 +121,7 @@ public class RegistrationService {
                 log.info("Found pending registration for event: {} by user: {}, will resend confirmation email",
                         eventCode, username);
                 registration.setEventCode(eventCode); // Set transient field for API response
+                registration.setCompanyUpdated(companyUpdated);
                 return registration;
             } else if ("waitlist".equalsIgnoreCase(registration.getStatus())) {
                 // Story 10.11 (T10.4): Duplicate waitlist registration — do NOT create another entry.
@@ -125,6 +129,7 @@ public class RegistrationService {
                 log.info("Found waitlist registration for event: {} by user: {},"
                         + " will resend waitlist-confirmation email", eventCode, username);
                 registration.setEventCode(eventCode);
+                registration.setCompanyUpdated(companyUpdated);
                 waitlistPromotionEmailService.sendWaitlistConfirmationEmail(registration);
                 return registration;
             } else if ("cancelled".equalsIgnoreCase(registration.getStatus())) {
@@ -183,6 +188,7 @@ public class RegistrationService {
                 .waitlistPosition(waitlistPosition) // null for registered, 1-based for waitlist
                 .deregistrationToken(UUID.randomUUID()) // Story 10.12: self-service deregistration token
                 .registrationDate(Instant.now()) // Auto-set registration timestamp
+                .companyUpdated(companyUpdated) // BATbern59 badge fix: surfaced in API response for UI notice
                 .build();
 
         Registration saved = registrationRepository.save(registration);

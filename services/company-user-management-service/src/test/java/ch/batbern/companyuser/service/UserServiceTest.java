@@ -386,6 +386,127 @@ class UserServiceTest {
         verify(eventPublisher, never()).publish(any());
     }
 
+    // BATbern59 badge fix: existing user re-registers with a DIFFERENT company →
+    // refresh the stored profile company and flag companyUpdated so the UI can notice.
+    @Test
+    void should_updateCompany_when_existingUserProvidesDifferentCompany() {
+        // Given
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
+                .email("existing@example.com")
+                .firstName("Existing")
+                .lastName("User")
+                .companyId("New Company");
+
+        User existingUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("existing.user")
+                .email("existing@example.com")
+                .firstName("Existing")
+                .lastName("User")
+                .companyId("oldco")
+                .build();
+        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(existingUser));
+
+        ch.batbern.companyuser.domain.Company newCompany = ch.batbern.companyuser.domain.Company.builder()
+                .name("newco")
+                .displayName("New Company")
+                .build();
+        when(companyService.getOrCreateCompany("New Company")).thenReturn(newCompany);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId("existing.user");
+        userResponse.setCompanyId("newco");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(userResponse);
+
+        // When
+        GetOrCreateUserResponse response = userService.getOrCreateUser(request);
+
+        // Then
+        assertThat(response.getCreated()).isFalse();
+        assertThat(response.getCompanyUpdated()).isTrue();
+
+        ArgumentCaptor<User> savedCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().getCompanyId()).isEqualTo("newco");
+
+        verify(searchService).invalidateCache();
+        verify(eventPublisher).publish(any(UserUpdatedEvent.class));
+        verify(cognitoService, never()).createCognitoUser(any());
+    }
+
+    @Test
+    void should_notUpdateCompany_when_existingUserProvidesSameCompany() {
+        // Given — typed display name resolves to the SAME slug already on file
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
+                .email("existing@example.com")
+                .firstName("Existing")
+                .lastName("User")
+                .companyId("New Company");
+
+        User existingUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("existing.user")
+                .email("existing@example.com")
+                .firstName("Existing")
+                .lastName("User")
+                .companyId("newco")
+                .build();
+        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(existingUser));
+
+        ch.batbern.companyuser.domain.Company sameCompany = ch.batbern.companyuser.domain.Company.builder()
+                .name("newco")
+                .displayName("New Company")
+                .build();
+        when(companyService.getOrCreateCompany("New Company")).thenReturn(sameCompany);
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId("existing.user");
+        userResponse.setCompanyId("newco");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(userResponse);
+
+        // When
+        GetOrCreateUserResponse response = userService.getOrCreateUser(request);
+
+        // Then
+        assertThat(response.getCompanyUpdated()).isFalse();
+        verify(userRepository, never()).save(any());
+        verify(eventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void should_notUpdateCompany_when_existingUserProvidesBlankCompany() {
+        // Given — no company supplied: must NOT wipe the stored company
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
+                .email("existing@example.com")
+                .firstName("Existing")
+                .lastName("User");
+
+        User existingUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("existing.user")
+                .email("existing@example.com")
+                .firstName("Existing")
+                .lastName("User")
+                .companyId("oldco")
+                .build();
+        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(existingUser));
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId("existing.user");
+        userResponse.setCompanyId("oldco");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(userResponse);
+
+        // When
+        GetOrCreateUserResponse response = userService.getOrCreateUser(request);
+
+        // Then
+        assertThat(response.getCompanyUpdated()).isFalse();
+        verify(companyService, never()).getOrCreateCompany(any());
+        verify(userRepository, never()).save(any());
+        verify(eventPublisher, never()).publish(any());
+    }
+
     // Test: should_publishUserCreatedEvent_with_stringIDs (Story 1.16.2)
     @Test
     void should_publishUserCreatedEvent_with_stringIDs() {

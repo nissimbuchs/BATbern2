@@ -289,13 +289,15 @@ class EventApiClient {
     eventCode: string,
     data: CreateRegistrationRequest,
     turnstileToken?: string | null
-  ): Promise<{ message: string; email: string }> {
+  ): Promise<{ message: string; email: string; companyUpdated?: boolean }> {
     try {
-      const response = await apiClient.post<{ message: string; email: string }>(
-        `${EVENT_API_PATH}/${eventCode}/registrations`,
-        data,
-        { headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {} }
-      );
+      const response = await apiClient.post<{
+        message: string;
+        email: string;
+        companyUpdated?: boolean;
+      }>(`${EVENT_API_PATH}/${eventCode}/registrations`, data, {
+        headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {},
+      });
       return response.data;
     } catch (error) {
       throw this.transformError(error);

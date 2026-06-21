@@ -26,4 +26,11 @@ public class CreateRegistrationResponse {
      * Email address where confirmation was sent
      */
     private String email;
+
+    /**
+     * BATbern59 badge fix: true when this registration refreshed the attendee's
+     * company on file (they supplied a company differing from their stored profile).
+     * The UI uses this to show a small "we've updated your company" notice.
+     */
+    private Boolean companyUpdated;
 }

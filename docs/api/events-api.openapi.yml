@@ -3140,6 +3140,13 @@ paths:
                     type: string
                     format: email
                     example: john.doe@example.com
+                  companyUpdated:
+                    type: boolean
+                    description: >-
+                      True when the attendee was an existing user and the company
+                      they entered differed from the one on file, so their profile
+                      company was refreshed. The UI shows a notice when true.
+                    example: false
                 description: |
                   **Story 4.1.5c**: Minimal response with no sensitive data.
                   Confirmation token sent via email (not in response).
