@@ -46,7 +46,12 @@ public class EventTypeMapper {
                 .moderationStartDuration(entity.getModerationStartDuration())
                 .moderationEndDuration(entity.getModerationEndDuration())
                 .breakDuration(entity.getBreakDuration())
-                .lunchDuration(entity.getLunchDuration());
+                .lunchDuration(entity.getLunchDuration())
+                .aperitifSlots(entity.getAperitifSlots())
+                .aperitifDuration(entity.getAperitifDuration())
+                .aperitifPosition(entity.getAperitifPosition() == null ? null
+                        : EventSlotConfigurationResponse.AperitifPositionEnum
+                                .fromValue(entity.getAperitifPosition()));
     }
 
     /**
@@ -76,6 +81,15 @@ public class EventTypeMapper {
         }
         if (request.getLunchDuration() != null) {
             entity.setLunchDuration(request.getLunchDuration());
+        }
+        if (request.getAperitifSlots() != null) {
+            entity.setAperitifSlots(request.getAperitifSlots());
+        }
+        if (request.getAperitifDuration() != null) {
+            entity.setAperitifDuration(request.getAperitifDuration());
+        }
+        if (request.getAperitifPosition() != null) {
+            entity.setAperitifPosition(request.getAperitifPosition().getValue());
         }
     }
 

@@ -9713,6 +9713,24 @@ components:
           description: Duration of the lunch session, in minutes
           example: 60
           default: 60
+        aperitifSlots:
+          type: integer
+          minimum: 0
+          description: Apéro on/off count (0 = off, ≥1 = on) — Story 15.2
+          example: 1
+          default: 0
+        aperitifDuration:
+          type: integer
+          minimum: 1
+          description: Apéro duration in minutes
+          example: 90
+          default: 90
+        aperitifPosition:
+          type: string
+          enum: [start, end]
+          description: Apéro placement relative to the moderation segments
+          example: end
+          default: end
 
     UpdateEventSlotConfigurationRequest:
       type: object
@@ -9797,6 +9815,24 @@ components:
           minimum: 1
           description: Duration of the lunch session, in minutes
           example: 60
+          nullable: true
+        aperitifSlots:
+          type: integer
+          minimum: 0
+          description: Apéro on/off count (0 = off, ≥1 = on) — Story 15.2
+          example: 1
+          nullable: true
+        aperitifDuration:
+          type: integer
+          minimum: 1
+          description: Apéro duration in minutes
+          example: 90
+          nullable: true
+        aperitifPosition:
+          type: string
+          enum: [start, end]
+          description: Apéro placement relative to the moderation segments
+          example: end
           nullable: true
 
     GenerateStructuralSessionsRequest:

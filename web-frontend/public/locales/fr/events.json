@@ -542,7 +542,13 @@
       "organizerOnly": "Seuls les organisateurs peuvent accéder à cette page",
       "typicalStartTime": "Heure de début habituelle",
       "typicalEndTime": "Heure de fin habituelle",
-      "typicalEndTimeHint": "Calculé automatiquement à partir du programme"
+      "typicalEndTimeHint": "Calculé automatiquement à partir du programme",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Ajouter un apéro",
+      "aperitifDuration": "Durée de l'apéro (min)",
+      "aperitifPosition": "Position de l'apéro",
+      "aperitifPositionStart": "Après l'ouverture",
+      "aperitifPositionEnd": "Après la clôture"
     },
     "themeImage": "Image du thème de l'événement",
     "themeImageHelp": "Téléversez une image de thème pour cet événement (PNG, JPEG ou SVG, max 5 Mo). Taille recommandée : 1920x400px.",
@@ -979,30 +985,7 @@
       "placeHint": "↓ Touchez maintenant un créneau en surbrillance pour la placer"
     },
     "editEventType": {
-      "title": "Modifier le type d'événement",
-      "loading": "Chargement de la configuration…",
-      "save": "Enregistrer",
-      "saveError": "Impossible d'enregistrer la configuration. Veuillez réessayer.",
-      "assignmentWarning": "Certains intervenants sont déjà programmés à des heures fixes. Modifier la structure peut les déplacer — vérifiez l'agenda après l'enregistrement.",
-      "minSlots": "Créneaux min.",
-      "maxSlots": "Créneaux max.",
-      "slotDuration": "Durée du créneau (min)",
-      "breakSlots": "Nombre de pauses",
-      "breakDuration": "Durée de la pause (min)",
-      "lunchSlots": "Créneaux déjeuner",
-      "lunchDuration": "Durée du déjeuner (min)",
-      "moderationStartDuration": "Modération d'ouverture (min)",
-      "moderationEndDuration": "Modération de clôture (min)",
-      "aperitifSlots": "Apéro (0 = non, 1 = oui)",
-      "aperitifSlotsHelp": "Mettez 1 pour ajouter un apéro à cet événement.",
-      "aperitifDuration": "Durée de l'apéro (min)",
-      "aperitifPosition": "Position de l'apéro",
-      "positionStart": "Après l'ouverture",
-      "positionEnd": "Après la clôture",
-      "theoreticalSlotsAM": "Bloc théorique le matin (séparation matin/après-midi)",
-      "defaultCapacity": "Capacité par défaut",
-      "typicalStartTime": "Heure de début (HH:mm)",
-      "typicalEndTime": "Heure de fin (HH:mm)"
+      "assignmentWarning": "Certains intervenants sont déjà programmés à des heures fixes. Modifier la structure peut les déplacer — vérifiez l'agenda après l'enregistrement."
     }
   },
   "newsletter": {

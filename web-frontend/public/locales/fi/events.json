@@ -542,7 +542,13 @@
       "organizerOnly": "Vain järjestäjät voivat käyttää tätä sivua",
       "typicalStartTime": "Tavanomainen alkamisaika",
       "typicalEndTime": "Tavanomainen päättymisaika",
-      "typicalEndTimeHint": "Laskettu automaattisesti aikataulusta"
+      "typicalEndTimeHint": "Laskettu automaattisesti aikataulusta",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Lisää apéro",
+      "aperitifDuration": "Apéron kesto (min)",
+      "aperitifPosition": "Apéron sijainti",
+      "aperitifPositionStart": "Aloituksen jälkeen",
+      "aperitifPositionEnd": "Lopetuksen jälkeen"
     },
     "themeImage": "Tapahtuman teemakuva",
     "themeImageHelp": "Lataa teemakuva tälle tapahtumalle (PNG, JPEG tai SVG, enintään 5 Mt). Suositeltu koko: 1920x400px.",
@@ -979,30 +985,7 @@
       "placeHint": "↓ Napauta nyt korostettua aikaväliä sijoittaaksesi sen"
     },
     "editEventType": {
-      "title": "Muokkaa tapahtumatyyppiä",
-      "loading": "Ladataan asetuksia…",
-      "save": "Tallenna",
-      "saveError": "Asetusten tallentaminen epäonnistui. Yritä uudelleen.",
-      "assignmentWarning": "Joillekin puhujille on jo varattu kiinteät ajat. Rakenteen muuttaminen voi siirtää heitä — tarkista ohjelma tallennuksen jälkeen.",
-      "minSlots": "Paikat väh.",
-      "maxSlots": "Paikat enint.",
-      "slotDuration": "Paikan kesto (min)",
-      "breakSlots": "Taukojen määrä",
-      "breakDuration": "Tauon kesto (min)",
-      "lunchSlots": "Lounaspaikat",
-      "lunchDuration": "Lounaan kesto (min)",
-      "moderationStartDuration": "Aloitusjuonto (min)",
-      "moderationEndDuration": "Lopetusjuonto (min)",
-      "aperitifSlots": "Apéro (0 = pois, 1 = päällä)",
-      "aperitifSlotsHelp": "Aseta arvoksi 1 lisätäksesi apéron tähän tapahtumaan.",
-      "aperitifDuration": "Apéron kesto (min)",
-      "aperitifPosition": "Apéron sijainti",
-      "positionStart": "Aloituksen jälkeen",
-      "positionEnd": "Lopetuksen jälkeen",
-      "theoreticalSlotsAM": "Teoriaosuus aamulla (aamu/iltapäivä-jako)",
-      "defaultCapacity": "Oletuskapasiteetti",
-      "typicalStartTime": "Alkamisaika (HH:mm)",
-      "typicalEndTime": "Päättymisaika (HH:mm)"
+      "assignmentWarning": "Joillekin puhujille on jo varattu kiinteät ajat. Rakenteen muuttaminen voi siirtää heitä — tarkista ohjelma tallennuksen jälkeen."
     }
   },
   "newsletter": {

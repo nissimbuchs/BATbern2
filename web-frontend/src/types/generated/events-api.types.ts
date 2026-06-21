@@ -5131,6 +5131,25 @@ export interface components {
        * @example 60
        */
       lunchDuration: number;
+      /**
+       * @description Apéro on/off count (0 = off, ≥1 = on) — Story 15.2
+       * @default 0
+       * @example 1
+       */
+      aperitifSlots: number;
+      /**
+       * @description Apéro duration in minutes
+       * @default 90
+       * @example 90
+       */
+      aperitifDuration: number;
+      /**
+       * @description Apéro placement relative to the moderation segments
+       * @default end
+       * @example end
+       * @enum {string}
+       */
+      aperitifPosition: 'start' | 'end';
     };
     /**
      * @description Request to update event slot configuration (Story 5.1).
@@ -5204,6 +5223,22 @@ export interface components {
        * @example 60
        */
       lunchDuration?: number | null;
+      /**
+       * @description Apéro on/off count (0 = off, ≥1 = on) — Story 15.2
+       * @example 1
+       */
+      aperitifSlots?: number | null;
+      /**
+       * @description Apéro duration in minutes
+       * @example 90
+       */
+      aperitifDuration?: number | null;
+      /**
+       * @description Apéro placement relative to the moderation segments
+       * @example end
+       * @enum {string|null}
+       */
+      aperitifPosition?: 'start' | 'end' | null;
     };
     /** @description Request to generate structural sessions (moderation, break, lunch) for an event. */
     GenerateStructuralSessionsRequest: {

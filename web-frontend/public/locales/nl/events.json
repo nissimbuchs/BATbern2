@@ -542,7 +542,13 @@
       "organizerOnly": "Alleen organisatoren hebben toegang tot deze pagina",
       "typicalStartTime": "Gebruikelijke starttijd",
       "typicalEndTime": "Gebruikelijke eindtijd",
-      "typicalEndTimeHint": "Automatisch berekend op basis van het schema"
+      "typicalEndTimeHint": "Automatisch berekend op basis van het schema",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Apéro toevoegen",
+      "aperitifDuration": "Apéro-duur (min)",
+      "aperitifPosition": "Apéro-positie",
+      "aperitifPositionStart": "Na de opening",
+      "aperitifPositionEnd": "Na de afsluiting"
     },
     "themeImage": "Evenementthema-afbeelding",
     "themeImageHelp": "Upload een thema-afbeelding voor dit evenement (PNG, JPEG of SVG, max 5 MB). Aanbevolen formaat: 1920x400px.",
@@ -979,30 +985,7 @@
       "placeHint": "↓ Tik nu op een gemarkeerd tijdvak om het te plaatsen"
     },
     "editEventType": {
-      "title": "Evenementstype bewerken",
-      "loading": "Configuratie laden…",
-      "save": "Opslaan",
-      "saveError": "De configuratie kon niet worden opgeslagen. Probeer het opnieuw.",
-      "assignmentWarning": "Sommige sprekers zijn al op vaste tijden ingepland. Het wijzigen van de structuur kan ze verplaatsen — controleer de agenda na het opslaan.",
-      "minSlots": "Min. slots",
-      "maxSlots": "Max. slots",
-      "slotDuration": "Slotduur (min)",
-      "breakSlots": "Aantal pauzes",
-      "breakDuration": "Pauzeduur (min)",
-      "lunchSlots": "Lunchslots",
-      "lunchDuration": "Lunchduur (min)",
-      "moderationStartDuration": "Openingsmoderatie (min)",
-      "moderationEndDuration": "Slotmoderatie (min)",
-      "aperitifSlots": "Apéro (0 = uit, 1 = aan)",
-      "aperitifSlotsHelp": "Stel in op 1 om een apéro aan dit evenement toe te voegen.",
-      "aperitifDuration": "Apéro-duur (min)",
-      "aperitifPosition": "Apéro-positie",
-      "positionStart": "Na de opening",
-      "positionEnd": "Na de afsluiting",
-      "theoreticalSlotsAM": "Theorieblok in de ochtend (ochtend/middag-splitsing)",
-      "defaultCapacity": "Standaardcapaciteit",
-      "typicalStartTime": "Starttijd (HH:mm)",
-      "typicalEndTime": "Eindtijd (HH:mm)"
+      "assignmentWarning": "Sommige sprekers zijn al op vaste tijden ingepland. Het wijzigen van de structuur kan ze verplaatsen — controleer de agenda na het opslaan."
     }
   },
   "newsletter": {

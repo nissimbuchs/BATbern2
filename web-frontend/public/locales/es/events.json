@@ -542,7 +542,13 @@
       "organizerOnly": "Solo los organizadores pueden acceder a esta página",
       "typicalStartTime": "Hora de inicio habitual",
       "typicalEndTime": "Hora de fin habitual",
-      "typicalEndTimeHint": "Calculado automáticamente a partir del programa"
+      "typicalEndTimeHint": "Calculado automáticamente a partir del programa",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Añadir un apéro",
+      "aperitifDuration": "Duración del apéro (min)",
+      "aperitifPosition": "Posición del apéro",
+      "aperitifPositionStart": "Tras la apertura",
+      "aperitifPositionEnd": "Tras el cierre"
     },
     "themeImage": "Imagen del tema del evento",
     "themeImageHelp": "Cargue una imagen de tema para este evento (PNG, JPEG o SVG, máx. 5 MB). Tamaño recomendado: 1920x400px.",
@@ -979,30 +985,7 @@
       "placeHint": "↓ Ahora toca una franja resaltada para colocarla"
     },
     "editEventType": {
-      "title": "Editar tipo de evento",
-      "loading": "Cargando configuración…",
-      "save": "Guardar",
-      "saveError": "No se pudo guardar la configuración. Inténtalo de nuevo.",
-      "assignmentWarning": "Algunos ponentes ya están asignados a horas fijas. Cambiar la estructura puede moverlos — revisa la agenda después de guardar.",
-      "minSlots": "Espacios mín.",
-      "maxSlots": "Espacios máx.",
-      "slotDuration": "Duración del espacio (min)",
-      "breakSlots": "Número de pausas",
-      "breakDuration": "Duración de la pausa (min)",
-      "lunchSlots": "Espacios de almuerzo",
-      "lunchDuration": "Duración del almuerzo (min)",
-      "moderationStartDuration": "Moderación de apertura (min)",
-      "moderationEndDuration": "Moderación de cierre (min)",
-      "aperitifSlots": "Apéro (0 = no, 1 = sí)",
-      "aperitifSlotsHelp": "Pon 1 para añadir un apéro a este evento.",
-      "aperitifDuration": "Duración del apéro (min)",
-      "aperitifPosition": "Posición del apéro",
-      "positionStart": "Tras la apertura",
-      "positionEnd": "Tras el cierre",
-      "theoreticalSlotsAM": "Bloque teórico por la mañana (división mañana/tarde)",
-      "defaultCapacity": "Capacidad predeterminada",
-      "typicalStartTime": "Hora de inicio (HH:mm)",
-      "typicalEndTime": "Hora de fin (HH:mm)"
+      "assignmentWarning": "Algunos ponentes ya están asignados a horas fijas. Cambiar la estructura puede moverlos — revisa la agenda después de guardar."
     }
   },
   "newsletter": {

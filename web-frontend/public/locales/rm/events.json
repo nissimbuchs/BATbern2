@@ -542,7 +542,13 @@
       "organizerOnly": "Mo ils organizaturs pon acceder a questa pagina",
       "typicalStartTime": "Temp da cumenzament usità",
       "typicalEndTime": "Temp da finiziun usità",
-      "typicalEndTimeHint": "Calculà automaticamain dal program"
+      "typicalEndTimeHint": "Calculà automaticamain dal program",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Agiuntar in apéro",
+      "aperitifDuration": "Durada da l'apéro (min)",
+      "aperitifPosition": "Posiziun da l'apéro",
+      "aperitifPositionStart": "Suenter l'avertura",
+      "aperitifPositionEnd": "Suenter la serrada"
     },
     "themeImage": "Maletg da tema dal eveniment",
     "themeImageHelp": "Chargiar in maletg da tema per quest eveniment (PNG, JPEG u SVG, max 5MB). Dimensiun recumandada: 1920x400px.",
@@ -979,30 +985,7 @@
       "placeHint": "↓ Tutgar ussa in slot marcà per la plazzar"
     },
     "editEventType": {
-      "title": "Modifitgar il tip d'occurrenza",
-      "loading": "Chargiar la configuraziun…",
-      "save": "Memorisar",
-      "saveError": "Impussibel da memorisar la configuraziun. Empruvai anc ina giada.",
-      "assignmentWarning": "Tscherts oraturs èn gia planisads ad uras fixas. Midar la structura als po spustar — controllai l'agenda suenter avair memorisà.",
-      "minSlots": "Plazzas min.",
-      "maxSlots": "Plazzas max.",
-      "slotDuration": "Durada da la plazza (min)",
-      "breakSlots": "Dumber da pausas",
-      "breakDuration": "Durada da la pausa (min)",
-      "lunchSlots": "Plazzas da gentar",
-      "lunchDuration": "Durada dal gentar (min)",
-      "moderationStartDuration": "Moderaziun d'avertura (min)",
-      "moderationEndDuration": "Moderaziun da serrada (min)",
-      "aperitifSlots": "Apéro (0 = na, 1 = gea)",
-      "aperitifSlotsHelp": "Mettai sin 1 per agiuntar in apéro a questa occurrenza.",
-      "aperitifDuration": "Durada da l'apéro (min)",
-      "aperitifPosition": "Posiziun da l'apéro",
-      "positionStart": "Suenter l'avertura",
-      "positionEnd": "Suenter la serrada",
-      "theoreticalSlotsAM": "Bloc teoretic la damaun (partiziun damaun/suentermezdi)",
-      "defaultCapacity": "Capacitad standard",
-      "typicalStartTime": "Ura da cumenzament (HH:mm)",
-      "typicalEndTime": "Ura da finiziun (HH:mm)"
+      "assignmentWarning": "Tscherts oraturs èn gia planisads ad uras fixas. Midar la structura als po spustar — controllai l'agenda suenter avair memorisà."
     }
   },
   "newsletter": {

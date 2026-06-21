@@ -50,10 +50,10 @@ export function useEventTypes() {
  * @example
  * const { data: config } = useEventType('FULL_DAY');
  */
-export function useEventType(type: EventType) {
+export function useEventType(type?: EventType) {
   return useQuery({
-    queryKey: eventTypeKeys.detail(type),
-    queryFn: () => eventTypeService.getEventType(type),
+    queryKey: type ? eventTypeKeys.detail(type) : (['eventTypes', 'none'] as const),
+    queryFn: () => eventTypeService.getEventType(type!),
     enabled: !!type,
     staleTime: 1000 * 60 * 60, // 1 hour
   });

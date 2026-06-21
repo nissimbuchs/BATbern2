@@ -548,7 +548,13 @@
       "organizerOnly": "Nur Organisatore chöne uf die Syte zuegriffe",
       "typicalStartTime": "Üblechi Startziit",
       "typicalEndTime": "Üblechi Ändziit",
-      "typicalEndTimeHint": "Automatisch usem Zytplan brächnet"
+      "typicalEndTimeHint": "Automatisch usem Zytplan brächnet",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Apéro hinzufügen",
+      "aperitifDuration": "Apéro-Dauer (Min.)",
+      "aperitifPosition": "Apéro-Position",
+      "aperitifPositionStart": "Nach der Eröffnung",
+      "aperitifPositionEnd": "Nach dem Abschluss"
     },
     "themeImage": "Veranstautigsthemenbild",
     "themeImageHelp": "Es Themenbild für die Veranstatig ufelade (PNG, JPEG oder SVG, max 5MB). Empfohleui Grösse: 1920x400px.",
@@ -981,30 +987,7 @@
       "placeHint": "↓ Jetz uf e markierte Slot tippe zum platziere"
     },
     "editEventType": {
-      "title": "Veranstaltungstyp bearbeiten",
-      "loading": "Konfiguration wird geladen…",
-      "save": "Speichern",
-      "saveError": "Die Konfiguration konnte nicht gespeichert werden. Bitte versuche es erneut.",
-      "assignmentWarning": "Einige Referent:innen sind bereits zu festen Zeiten eingeplant. Eine Änderung der Struktur kann sie verschieben — prüfe die Agenda nach dem Speichern.",
-      "minSlots": "Min. Slots",
-      "maxSlots": "Max. Slots",
-      "slotDuration": "Slot-Dauer (Min.)",
-      "breakSlots": "Anzahl Pausen",
-      "breakDuration": "Pausendauer (Min.)",
-      "lunchSlots": "Mittagsslots",
-      "lunchDuration": "Mittagsdauer (Min.)",
-      "moderationStartDuration": "Eröffnungsmoderation (Min.)",
-      "moderationEndDuration": "Abschlussmoderation (Min.)",
-      "aperitifSlots": "Apéro (0 = aus, 1 = ein)",
-      "aperitifSlotsHelp": "Auf 1 setzen, um dieser Veranstaltung einen Apéro hinzuzufügen.",
-      "aperitifDuration": "Apéro-Dauer (Min.)",
-      "aperitifPosition": "Apéro-Position",
-      "positionStart": "Nach der Eröffnung",
-      "positionEnd": "Nach dem Abschluss",
-      "theoreticalSlotsAM": "Theorieblock am Vormittag (AM/PM-Teilung)",
-      "defaultCapacity": "Standardkapazität",
-      "typicalStartTime": "Startzeit (HH:mm)",
-      "typicalEndTime": "Endzeit (HH:mm)"
+      "assignmentWarning": "Einige Referent:innen sind bereits zu festen Zeiten eingeplant. Eine Änderung der Struktur kann sie verschieben — prüfe die Agenda nach dem Speichern."
     }
   },
   "newsletter": {

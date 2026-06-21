@@ -38,7 +38,8 @@ import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssi
 import { useEvent } from '@/hooks/useEvents';
 import { useTimetable } from '@/hooks/useTimetable/useTimetable';
 import type { TimetableSlot } from '@/services/timetableService/timetableService';
-import { EditEventTypeDialog } from '@/components/SlotAssignment/EditEventTypeDialog/EditEventTypeDialog';
+import { EventTypeConfigurationForm } from '@/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm';
+import { useUpdateAgendaConfig } from '@/hooks/useAgendaConfig/useAgendaConfig';
 import { UnassignedSpeakersList } from '../UnassignedSpeakersList/UnassignedSpeakersList';
 import { SpeakerPreferencePanel } from '../SpeakerPreferencePanel/SpeakerPreferencePanel';
 import { ConflictDetectionAlert } from '../ConflictDetectionAlert/ConflictDetectionAlert';
@@ -127,6 +128,11 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
 
   // Fetch authoritative timetable from backend — drives the slot grid
   const { data: timetable, isLoading: timetableLoading } = useTimetable(eventCode);
+
+  // Story 15.2: per-event "Edit event type" (reuses the shared EventTypeConfigurationForm).
+  const updateAgendaConfig = useUpdateAgendaConfig(eventCode);
+  const hasAssignments =
+    timetable?.slots.some((s) => s.type === 'SPEAKER_SLOT' && !!s.assignedSessionSlug) ?? false;
 
   // State must be declared before useMemo that depends on it
   const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null);
@@ -493,15 +499,52 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
         </Paper>
       )}
 
-      <EditEventTypeDialog
-        eventCode={eventCode}
+      <Dialog
         open={editEventTypeOpen}
         onClose={() => setEditEventTypeOpen(false)}
-        hasAssignments={
-          timetable?.slots.some((s) => s.type === 'SPEAKER_SLOT' && !!s.assignedSessionSlug) ??
-          false
-        }
-      />
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
+        data-testid="edit-event-type-modal"
+      >
+        <DialogTitle>{t('slotAssignment.actions.editEventType')}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <EventTypeConfigurationForm
+              eventCode={eventCode}
+              warning={
+                hasAssignments ? (
+                  <Alert severity="warning" data-testid="edit-event-type-assignment-warning">
+                    {t('slotAssignment.editEventType.assignmentWarning')}
+                  </Alert>
+                ) : undefined
+              }
+              onSave={async (config) => {
+                await updateAgendaConfig.mutateAsync({
+                  minSlots: config.minSlots,
+                  maxSlots: config.maxSlots,
+                  slotDuration: config.slotDuration,
+                  theoreticalSlotsAM: config.theoreticalSlotsAM,
+                  breakSlots: config.breakSlots,
+                  lunchSlots: config.lunchSlots,
+                  defaultCapacity: config.defaultCapacity,
+                  moderationStartDuration: config.moderationStartDuration ?? 5,
+                  moderationEndDuration: config.moderationEndDuration ?? 5,
+                  breakDuration: config.breakDuration ?? 20,
+                  lunchDuration: config.lunchDuration ?? 60,
+                  aperitifSlots: config.aperitifSlots ?? 0,
+                  aperitifDuration: config.aperitifDuration ?? 90,
+                  aperitifPosition: config.aperitifPosition ?? 'end',
+                  typicalStartTime: config.typicalStartTime ?? undefined,
+                  typicalEndTime: config.typicalEndTime ?? undefined,
+                });
+                setEditEventTypeOpen(false);
+              }}
+              onCancel={() => setEditEventTypeOpen(false)}
+            />
+          </Box>
+        </DialogContent>
+      </Dialog>
 
       {/* Success Banner (above the two columns) */}
       {!isLoading && allSessionsAssigned && (

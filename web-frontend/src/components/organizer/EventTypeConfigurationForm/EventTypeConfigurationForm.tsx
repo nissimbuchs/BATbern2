@@ -17,12 +17,15 @@ import {
   Stack,
   FormControlLabel,
   Switch,
+  Checkbox,
+  MenuItem,
   Alert,
   Divider,
   Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useEventType } from '@/hooks/useEventTypes';
+import { useAgendaConfig } from '@/hooks/useAgendaConfig/useAgendaConfig';
 import { SchedulePreview } from './SchedulePreview';
 import { computeScheduleEndTime } from './scheduleTimeline';
 import type { components } from '@/types/generated/events-api.types';
@@ -33,7 +36,12 @@ type UpdateEventSlotConfigurationRequest =
   components['schemas']['UpdateEventSlotConfigurationRequest'];
 
 interface EventTypeConfigurationFormProps {
+  /** Template mode (Admin): the event type whose shared template is edited. */
   eventType?: EventType;
+  /** Per-event mode (Story 15.2): the event whose copy-on-edit override is edited. */
+  eventCode?: string;
+  /** Optional banner shown above the form (e.g. the per-event assignment-desync warning). */
+  warning?: React.ReactNode;
   onSave: (config: UpdateEventSlotConfigurationRequest) => Promise<void>;
   onCancel: () => void;
 }
@@ -50,13 +58,18 @@ interface ValidationErrors {
 
 export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProps> = ({
   eventType,
+  eventCode,
+  warning,
   onSave,
   onCancel,
 }) => {
   const { t } = useTranslation('events');
 
-  // Fetch current configuration for the event type
-  const { data: currentConfig, isLoading } = useEventType(eventType!);
+  // Data source: per-event override (Story 15.2) when eventCode is set, else the shared template.
+  const { data: templateConfig, isLoading: templateLoading } = useEventType(eventType);
+  const { data: eventConfig, isLoading: eventLoading } = useAgendaConfig(eventCode, !!eventCode);
+  const currentConfig = eventCode ? eventConfig : templateConfig;
+  const isLoading = eventCode ? eventLoading : templateLoading;
 
   const [formData, setFormData] = useState<FormData>({
     minSlots: 6,
@@ -70,6 +83,9 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
     moderationEndDuration: 5,
     breakDuration: 20,
     lunchDuration: 60,
+    aperitifSlots: 0,
+    aperitifDuration: 90,
+    aperitifPosition: 'end',
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -96,6 +112,9 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
         moderationEndDuration: currentConfig.moderationEndDuration ?? 5,
         breakDuration: currentConfig.breakDuration ?? 20,
         lunchDuration: currentConfig.lunchDuration ?? 60,
+        aperitifSlots: currentConfig.aperitifSlots ?? 0,
+        aperitifDuration: currentConfig.aperitifDuration ?? 90,
+        aperitifPosition: currentConfig.aperitifPosition ?? 'end',
       });
     }
   }, [currentConfig]);
@@ -175,6 +194,7 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
   return (
     <form onSubmit={handleSubmit}>
       <Stack spacing={3}>
+        {warning}
         {errors.general && (
           <Alert severity="error" data-testid="form-error">
             {errors.general}
@@ -329,6 +349,48 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
             inputProps={{ min: 1 }}
           />
         </Stack>
+
+        <Divider />
+
+        <Typography variant="subtitle2" color="text.secondary">
+          {t('form.eventTypeConfig.aperitif')}
+        </Typography>
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={(formData.aperitifSlots ?? 0) > 0}
+              onChange={(e) => handleChange('aperitifSlots', e.target.checked ? 1 : 0)}
+              data-testid="event-type-config-aperitif-enabled"
+            />
+          }
+          label={t('form.eventTypeConfig.aperitifEnabled')}
+        />
+
+        {(formData.aperitifSlots ?? 0) > 0 && (
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label={t('form.eventTypeConfig.aperitifDuration')}
+              type="number"
+              value={formData.aperitifDuration ?? 90}
+              onChange={(e) => handleChange('aperitifDuration', parseInt(e.target.value, 10))}
+              fullWidth
+              inputProps={{ min: 1 }}
+              data-testid="event-type-config-aperitif-duration"
+            />
+            <TextField
+              select
+              label={t('form.eventTypeConfig.aperitifPosition')}
+              value={formData.aperitifPosition ?? 'end'}
+              onChange={(e) => handleChange('aperitifPosition', e.target.value)}
+              fullWidth
+              data-testid="event-type-config-aperitif-position"
+            >
+              <MenuItem value="start">{t('form.eventTypeConfig.aperitifPositionStart')}</MenuItem>
+              <MenuItem value="end">{t('form.eventTypeConfig.aperitifPositionEnd')}</MenuItem>
+            </TextField>
+          </Stack>
+        )}
 
         <Divider />
 

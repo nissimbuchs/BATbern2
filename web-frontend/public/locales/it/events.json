@@ -542,7 +542,13 @@
       "organizerOnly": "Solo gli organizzatori possono accedere a questa pagina",
       "typicalStartTime": "Orario di inizio abituale",
       "typicalEndTime": "Orario di fine abituale",
-      "typicalEndTimeHint": "Calcolato automaticamente dal programma"
+      "typicalEndTimeHint": "Calcolato automaticamente dal programma",
+      "aperitif": "Apéro",
+      "aperitifEnabled": "Aggiungi un apéro",
+      "aperitifDuration": "Durata apéro (min)",
+      "aperitifPosition": "Posizione apéro",
+      "aperitifPositionStart": "Dopo l'apertura",
+      "aperitifPositionEnd": "Dopo la chiusura"
     },
     "themeImage": "Immagine tema evento",
     "themeImageHelp": "Carica un'immagine tema per questo evento (PNG, JPEG o SVG, max 5MB). Dimensione consigliata: 1920x400px.",
@@ -979,30 +985,7 @@
       "placeHint": "↓ Ora tocca uno slot evidenziato per posizionarla"
     },
     "editEventType": {
-      "title": "Modifica tipo di evento",
-      "loading": "Caricamento della configurazione…",
-      "save": "Salva",
-      "saveError": "Impossibile salvare la configurazione. Riprova.",
-      "assignmentWarning": "Alcuni relatori sono già assegnati a orari fissi. Modificare la struttura potrebbe spostarli — controlla l'agenda dopo il salvataggio.",
-      "minSlots": "Slot min.",
-      "maxSlots": "Slot max.",
-      "slotDuration": "Durata slot (min)",
-      "breakSlots": "Numero di pause",
-      "breakDuration": "Durata pausa (min)",
-      "lunchSlots": "Slot pranzo",
-      "lunchDuration": "Durata pranzo (min)",
-      "moderationStartDuration": "Moderazione di apertura (min)",
-      "moderationEndDuration": "Moderazione di chiusura (min)",
-      "aperitifSlots": "Apéro (0 = no, 1 = sì)",
-      "aperitifSlotsHelp": "Imposta 1 per aggiungere un apéro a questo evento.",
-      "aperitifDuration": "Durata apéro (min)",
-      "aperitifPosition": "Posizione apéro",
-      "positionStart": "Dopo l'apertura",
-      "positionEnd": "Dopo la chiusura",
-      "theoreticalSlotsAM": "Blocco teorico al mattino (divisione mattino/pomeriggio)",
-      "defaultCapacity": "Capienza predefinita",
-      "typicalStartTime": "Ora di inizio (HH:mm)",
-      "typicalEndTime": "Ora di fine (HH:mm)"
+      "assignmentWarning": "Alcuni relatori sono già assegnati a orari fissi. Modificare la struttura potrebbe spostarli — controlla l'agenda dopo il salvataggio."
     }
   },
   "newsletter": {

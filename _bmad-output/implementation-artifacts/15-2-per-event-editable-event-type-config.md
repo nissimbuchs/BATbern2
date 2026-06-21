@@ -179,7 +179,7 @@ _All open questions resolved 2026-06-21 (Nissim) — see the last three entries 
 
 ### Deferred
 - [x] [Review][Defer] **Even-split silently emits fewer breaks than requested** when `breakSlots ≥ maxSlots` or positions collide [TimetableService] — acceptable-by-design (can't fit more breaks than gaps); realistic values (1–2) unaffected; parity preserved.
-- [x] [Review][Defer] **Admin template live-preview not apéro-aware** — `EventTypeConfigurationForm/SchedulePreview.tsx` + `scheduleTimeline.ts` mirror the old algorithm; the global-template editor preview won't show apéro/even-split. Authoritative backend timetable is correct; secondary surface.
+- [x] [Review][Resolved 2026-06-21] **Admin template live-preview now apéro-aware** — `scheduleTimeline.ts` + `SchedulePreview.tsx` updated with the apéro segment + even-split breaks (done as part of the dialog-reuse refactor below).
 - [x] [Review][Defer] **Number field cleared → NaN** — clearing a knob in the dialog yields a confusing zod error instead of defaulting; minor UX.
 - [x] [Review][Defer] **Doc-drift** — only `03-data-architecture.md` updated; `06-backend-architecture.md` + `user-guide/entity-management/events.md` (mapped) not touched and no `[no-doc]`; may trip the weekly auditor.
 
@@ -246,3 +246,4 @@ Amelia (claude-opus-4-8[1m]) — BMad dev-story.
 - 2026-06-21 — Story created (ready-for-dev); apéro/break/dialog decisions resolved.
 - 2026-06-21 — P1 backend (table + resolver + generalized computeTimeline + endpoints + apéro plumbing) and P2 frontend (dialog + hook + i18n) implemented. Parity preserved; full EMS suite + FE tests green. Status → review.
 - 2026-06-21 — Code review (3-layer adversarial): 5 patches applied (aperitif added to SessionTimingService/NewsletterEmailService/cockpit structural-type lists; malformed-time + maxSlots<minSlots now → 400 with ITs), and all 7 placeholder locales hand-translated. 4 items deferred (logged in deferred-work.md). Status → done.
+- 2026-06-21 — UX feedback (Nissim): replaced the bespoke `EditEventTypeDialog` with the **existing** `EventTypeConfigurationForm` + live `SchedulePreview` (deleted the bespoke dialog + test). Generalized the form to a per-event mode (`eventCode` → `useAgendaConfig`) reused in the slot-assignment toolbar; apéro added to the form as an **on/off checkbox** (+ duration + position) and to the template DTOs/mapper so the admin editor persists it too; the preview is now apéro/even-split-aware. i18n reconciled (apéro keys under `form.eventTypeConfig.*` in all 10 locales; orphaned `slotAssignment.editEventType.*` pruned). EventType + AgendaConfig ITs + form/timeline FE tests green; checkstyle/lint/type-check clean.

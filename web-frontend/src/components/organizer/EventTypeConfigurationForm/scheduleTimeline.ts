@@ -18,13 +18,16 @@ export interface ScheduleConfig {
   breakSlots?: number | null;
   lunchSlots?: number | null;
   theoreticalSlotsAM?: boolean | null;
+  aperitifSlots?: number | null;
+  aperitifDuration?: number | null;
+  aperitifPosition?: 'start' | 'end' | string | null;
 }
 
 export interface TimelineEntry {
   time: string;
   title: string;
   duration: number;
-  kind: 'moderation' | 'break' | 'lunch' | 'session-slot';
+  kind: 'moderation' | 'break' | 'lunch' | 'aperitif' | 'session-slot';
 }
 
 export function parseTime(timeStr: string | null | undefined): { h: number; m: number } {
@@ -57,6 +60,10 @@ export function buildTimeline(config: ScheduleConfig): TimelineEntry[] {
   const breakSlots = config.breakSlots ?? 0;
   const lunchSlots = config.lunchSlots ?? 0;
   const amSplit = config.theoreticalSlotsAM && lunchSlots > 0;
+  const aperitifSlots = config.aperitifSlots ?? 0;
+  const aperitifDur = config.aperitifDuration ?? 90;
+  const aperitifAtStart = aperitifSlots > 0 && config.aperitifPosition === 'start';
+  const aperitifAtEnd = aperitifSlots > 0 && !aperitifAtStart;
 
   // Moderation Start
   entries.push({
@@ -66,6 +73,17 @@ export function buildTimeline(config: ScheduleConfig): TimelineEntry[] {
     kind: 'moderation',
   });
   cursor = addMinutes(cursor.h, cursor.m, modStartDur);
+
+  // Apéro at start (after moderation-start)
+  if (aperitifAtStart) {
+    entries.push({
+      time: formatTime(cursor.h, cursor.m),
+      title: 'Apéro',
+      duration: aperitifDur,
+      kind: 'aperitif',
+    });
+    cursor = addMinutes(cursor.h, cursor.m, aperitifDur);
+  }
 
   if (amSplit) {
     const amSlots = Math.ceil(maxSlots / 2);
@@ -128,8 +146,15 @@ export function buildTimeline(config: ScheduleConfig): TimelineEntry[] {
       }
     }
   } else {
-    // Simple linear
-    const breakAfter = breakSlots > 0 ? Math.ceil(maxSlots / 2) : -1;
+    // Linear: breaks distributed evenly (count-driven), mirroring the backend.
+    // For breakSlots === 1 this is ceil(maxSlots / 2) — the legacy single mid-break.
+    const breakAfterSet = new Set<number>();
+    for (let k = 1; k <= breakSlots; k++) {
+      const pos = Math.ceil((maxSlots * k) / (breakSlots + 1));
+      if (pos >= 1 && pos < maxSlots) {
+        breakAfterSet.add(pos);
+      }
+    }
 
     for (let i = 0; i < maxSlots; i++) {
       entries.push({
@@ -140,7 +165,7 @@ export function buildTimeline(config: ScheduleConfig): TimelineEntry[] {
       });
       cursor = addMinutes(cursor.h, cursor.m, slotDur);
 
-      if (i === breakAfter - 1 && breakSlots > 0) {
+      if (breakAfterSet.has(i + 1)) {
         entries.push({
           time: formatTime(cursor.h, cursor.m),
           title: 'Pause',
@@ -160,6 +185,17 @@ export function buildTimeline(config: ScheduleConfig): TimelineEntry[] {
     kind: 'moderation',
   });
   cursor = addMinutes(cursor.h, cursor.m, modEndDur);
+
+  // Apéro at end (after moderation-end; the final segment of the day)
+  if (aperitifAtEnd) {
+    entries.push({
+      time: formatTime(cursor.h, cursor.m),
+      title: 'Apéro',
+      duration: aperitifDur,
+      kind: 'aperitif',
+    });
+    cursor = addMinutes(cursor.h, cursor.m, aperitifDur);
+  }
 
   // End marker (no duration)
   entries.push({
