@@ -885,7 +885,9 @@
     "timeline": {
       "title": "Session-Zytstrau",
       "matchPercent": "{{percent}}% Übereinstimmig",
-      "headerTime": "Zyt"
+      "headerTime": "Zyt",
+      "insertHint": "↓ Iefüege — spötri Vorträg rutsche nache",
+      "swapHint": "⇅ Mit dere Session tuusche"
     },
     "structuralSessions": {
       "moderation": "Moderierig",

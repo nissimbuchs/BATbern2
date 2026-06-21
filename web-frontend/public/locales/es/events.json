@@ -883,7 +883,9 @@
     "timeline": {
       "title": "Cronología de sesiones",
       "matchPercent": "{{percent}}% de coincidencia",
-      "headerTime": "Hora"
+      "headerTime": "Hora",
+      "insertHint": "↓ Insertar — las charlas posteriores se desplazan",
+      "swapHint": "⇅ Intercambiar con esta sesión"
     },
     "structuralSessions": {
       "moderation": "Moderación",

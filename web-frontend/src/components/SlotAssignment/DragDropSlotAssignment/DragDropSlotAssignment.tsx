@@ -236,6 +236,67 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     return map;
   }, [event?.sessions]);
 
+  // Story 15.3: while dragging over a SPEAKER_SLOT, compute the agenda as it WOULD look after
+  // the drop (ASSIGN / INSERT-shift / SWAP) — Map<slotKey, occupantSlug | null>. Null when not
+  // dragging, the hovered slot isn't a speaker slot, or an INSERT would overflow the agenda.
+  // Mirrors the backend SlotReorderService so the grid can preview the reflow before committing.
+  const previewBySlotKey = useMemo<Map<string, string | null> | null>(() => {
+    if (!draggedSession || !hoveredSlot || !timetable) {
+      return null;
+    }
+    const target = speakerSlotByTime.get(hoveredSlot.time);
+    if (!target?.slotKey) {
+      return null;
+    }
+    const ordered = timetable.slots.filter((s) => s.type === 'SPEAKER_SLOT');
+    const keys = ordered.map((s) => s.slotKey as string);
+    const occ = ordered.map((s) => s.assignedSessionSlug ?? null);
+    const targetIdx = keys.indexOf(target.slotKey);
+    if (targetIdx < 0) {
+      return null;
+    }
+    const dragged = draggedSession.sessionSlug;
+    const targetOcc = occ[targetIdx];
+    const detach = () => {
+      const i = occ.indexOf(dragged);
+      if (i >= 0) {
+        occ[i] = null;
+      }
+    };
+    if (!targetOcc || targetOcc === dragged) {
+      // ASSIGN
+      detach();
+      occ[targetIdx] = dragged;
+    } else if (draggedSession.startTime) {
+      // SWAP (dragged is already assigned)
+      const di = occ.indexOf(dragged);
+      if (di >= 0) {
+        occ[di] = targetOcc;
+      }
+      occ[targetIdx] = dragged;
+    } else {
+      // INSERT (pool speaker) — shift the block into the first free slot at/after target
+      detach();
+      let free = -1;
+      for (let i = targetIdx; i < occ.length; i++) {
+        if (occ[i] == null) {
+          free = i;
+          break;
+        }
+      }
+      if (free < 0) {
+        return null; // agenda full — nothing to preview
+      }
+      for (let i = free; i > targetIdx; i--) {
+        occ[i] = occ[i - 1];
+      }
+      occ[targetIdx] = dragged;
+    }
+    const map = new Map<string, string | null>();
+    keys.forEach((k, i) => map.set(k, occ[i]));
+    return map;
+  }, [draggedSession, hoveredSlot, timetable, speakerSlotByTime]);
+
   const isLoading = sessionsLoading || eventLoading || timetableLoading;
 
   // Mock speaker data for preferences panel
@@ -667,14 +728,30 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                               hoveredSlot?.time === time && hoveredSlot?.room === room;
                             const matchClass = isHovered ? getPreferenceMatchClass(time) : '';
                             const matchPercent = isHovered ? getPreferenceMatchPercentage(time) : 0;
-                            const assignedSession = getSessionForSlot(time);
                             const slotKey = speakerSlotByTime.get(time)?.slotKey;
+                            // Actual occupant (authoritative) drives drag + mobile-tap; the
+                            // preview occupant only drives what's DISPLAYED during a drag-over.
+                            const actualAssignedSession = getSessionForSlot(time);
+                            const previewActive = previewBySlotKey !== null;
+                            const previewOccupant =
+                              previewActive && slotKey
+                                ? (previewBySlotKey.get(slotKey) ?? null)
+                                : null;
+                            const displaySession = previewActive
+                              ? previewOccupant
+                                ? sessionBySlug.get(previewOccupant)
+                                : undefined
+                              : actualAssignedSession;
+                            const isPreviewMoved =
+                              previewActive &&
+                              previewOccupant !== (actualAssignedSession?.sessionSlug ?? null);
                             // 14.G.3 / 15.3: on mobile every slot is tappable — a target while a
                             // session is armed, or (when occupied) a source to arm for a swap.
                             const isArmedSource =
-                              !!assignedSession && tap.isArmed(assignedSession.sessionSlug);
+                              !!actualAssignedSession &&
+                              tap.isArmed(actualAssignedSession.sessionSlug);
                             const armed = isMobile && tap.hasArmed && !isArmedSource;
-                            const tappable = isMobile && (tap.hasArmed || !!assignedSession);
+                            const tappable = isMobile && (tap.hasArmed || !!actualAssignedSession);
 
                             return (
                               <Grid size={10 / ROOMS.length} key={room}>
@@ -684,9 +761,12 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                                   data-slot-room={room}
                                   data-slot-key={slotKey}
                                   data-armed={armed ? 'true' : undefined}
-                                  draggable={!!assignedSession}
+                                  data-preview-moved={isPreviewMoved ? 'true' : undefined}
+                                  draggable={!!actualAssignedSession}
                                   onDragStart={
-                                    assignedSession ? handleDragStart(assignedSession) : undefined
+                                    actualAssignedSession
+                                      ? handleDragStart(actualAssignedSession)
+                                      : undefined
                                   }
                                   onClick={tappable ? handleSlotTap(time) : undefined}
                                   className={`${isHovered ? 'drop-zone-active' : ''} ${matchClass}`}
@@ -697,50 +777,93 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
                                     p: 1,
                                     minHeight: 60,
                                     border: 2,
+                                    // Hovered target = primary; cascaded preview-moved cells =
+                                    // secondary (dashed) so the reflow is visually distinct.
                                     borderColor: armed
                                       ? 'secondary.main'
                                       : isHovered
                                         ? 'primary.main'
-                                        : assignedSession
-                                          ? 'success.main'
-                                          : 'divider',
-                                    borderStyle: isHovered || armed ? 'dashed' : 'solid',
+                                        : isPreviewMoved
+                                          ? 'secondary.main'
+                                          : displaySession
+                                            ? 'success.main'
+                                            : 'divider',
+                                    borderStyle:
+                                      isHovered || armed || isPreviewMoved ? 'dashed' : 'solid',
                                     bgcolor: armed
                                       ? 'action.selected'
                                       : isHovered
                                         ? 'action.hover'
-                                        : assignedSession
-                                          ? 'success.light'
-                                          : 'background.default',
-                                    cursor: assignedSession ? 'grab' : 'pointer',
+                                        : isPreviewMoved
+                                          ? 'secondary.50'
+                                          : displaySession
+                                            ? 'success.light'
+                                            : 'background.default',
+                                    opacity: isPreviewMoved && !isHovered ? 0.92 : 1,
+                                    cursor: actualAssignedSession ? 'grab' : 'pointer',
                                     transition: 'all 0.2s',
                                     '&:hover': {
-                                      bgcolor: assignedSession ? 'success.light' : 'action.hover',
+                                      bgcolor: actualAssignedSession
+                                        ? 'success.light'
+                                        : 'action.hover',
                                     },
                                     '&:active': {
-                                      cursor: assignedSession ? 'grabbing' : 'pointer',
+                                      cursor: actualAssignedSession ? 'grabbing' : 'pointer',
                                     },
                                   }}
                                 >
-                                  {assignedSession ? (
+                                  {displaySession ? (
                                     <Box>
                                       <Typography
                                         variant="caption"
                                         fontWeight="bold"
                                         sx={{ whiteSpace: { xs: 'normal', md: 'nowrap' } }}
                                       >
-                                        {assignedSession.title}
+                                        {displaySession.title}
                                       </Typography>
-                                      {assignedSession.speakers?.[0] && (
+                                      {displaySession.speakers?.[0] && (
                                         <Typography
                                           variant="caption"
                                           display="block"
                                           sx={{ whiteSpace: { xs: 'normal', md: 'nowrap' } }}
                                         >
-                                          {assignedSession.speakers[0].firstName}{' '}
-                                          {assignedSession.speakers[0].lastName}
+                                          {displaySession.speakers[0].firstName}{' '}
+                                          {displaySession.speakers[0].lastName}
                                         </Typography>
                                       )}
+                                      {/* AC11: preference-match indicator on the hovered slot. */}
+                                      {isHovered && matchPercent > 0 && (
+                                        <Typography
+                                          variant="caption"
+                                          display="block"
+                                          color="primary"
+                                        >
+                                          {t('slotAssignment.timeline.matchPercent', {
+                                            percent: matchPercent,
+                                          })}
+                                        </Typography>
+                                      )}
+                                      {/* 15.3: on the hovered target slot, label what dropping here
+                                          will do (insert-before vs swap), based on the ACTUAL
+                                          occupant before the reflow. */}
+                                      {isHovered &&
+                                        draggedSession &&
+                                        actualAssignedSession &&
+                                        actualAssignedSession.sessionSlug !==
+                                          draggedSession.sessionSlug && (
+                                          <Typography
+                                            variant="caption"
+                                            display="block"
+                                            color="secondary"
+                                            fontWeight="bold"
+                                            data-testid="drop-hint"
+                                            sx={{ mt: 0.5 }}
+                                          >
+                                            {draggedSession.startTime
+                                              ? t('slotAssignment.timeline.swapHint')
+                                              : t('slotAssignment.timeline.insertHint')}
+                                          </Typography>
+                                        )}
                                     </Box>
                                   ) : isHovered && matchPercent > 0 ? (
                                     <Typography variant="caption" color="primary">

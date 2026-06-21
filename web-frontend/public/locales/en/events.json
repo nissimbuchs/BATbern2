@@ -907,7 +907,9 @@
     "timeline": {
       "title": "Session Timeline",
       "matchPercent": "{{percent}}% match",
-      "headerTime": "Time"
+      "headerTime": "Time",
+      "insertHint": "↓ Insert — later talks shift down",
+      "swapHint": "⇅ Swap with this session"
     },
     "structuralSessions": {
       "moderation": "Moderation",
