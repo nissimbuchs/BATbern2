@@ -5,12 +5,10 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.dto.TimetableResponse;
 import ch.batbern.events.dto.TimetableSlot;
-import ch.batbern.events.entity.EventTypeConfiguration;
+import ch.batbern.events.entity.AgendaConfig;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +20,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,14 +48,15 @@ public class TimetableService {
 
     private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
 
-    private static final Set<String> STRUCTURAL_TYPES = Set.of("moderation", "break", "lunch");
+    private static final Set<String> STRUCTURAL_TYPES =
+            Set.of("moderation", "break", "lunch", "aperitif");
 
     private static boolean isStructural(String sessionType) {
         return sessionType != null && STRUCTURAL_TYPES.contains(sessionType);
     }
 
     private final EventRepository eventRepository;
-    private final EventTypeRepository eventTypeRepository;
+    private final AgendaConfigResolver agendaConfigResolver;
     private final SessionRepository sessionRepository;
     private final SessionService sessionService;
 
@@ -75,7 +75,7 @@ public class TimetableService {
      * @param eventDate Calendar date of the event (used to anchor wall-clock times)
      * @return Ordered list of {@link TimetableSlot} covering the full event day
      */
-    public List<TimetableSlot> computeTimeline(EventTypeConfiguration config, LocalDate eventDate) {
+    public List<TimetableSlot> computeTimeline(AgendaConfig config, LocalDate eventDate) {
         List<TimetableSlot> slots = new ArrayList<>();
 
         // Read config with safe defaults
@@ -94,122 +94,105 @@ public class TimetableService {
         int lunchDuration = config.getLunchDuration() != null ? config.getLunchDuration() : 60;
         boolean theoreticalSlotsAM = config.getTheoreticalSlotsAM() != null
                 && config.getTheoreticalSlotsAM();
+        int aperitifSlots = config.getAperitifSlots() != null ? config.getAperitifSlots() : 0;
+        int aperitifDuration = config.getAperitifDuration() != null ? config.getAperitifDuration() : 90;
+        boolean aperitifAtStart = aperitifSlots > 0
+                && "start".equalsIgnoreCase(config.getAperitifPosition());
+        boolean aperitifAtEnd = aperitifSlots > 0 && !aperitifAtStart;
 
         // Anchor cursor to event date + typicalStartTime in Europe/Zurich
         ZonedDateTime cursor = eventDate.atTime(startTime).atZone(ZURICH);
         int slotIndex = 1;
 
         // --- Moderation Start ---
-        ZonedDateTime modStartEnd = cursor.plusMinutes(modStartDur);
-        slots.add(TimetableSlot.builder()
-                .type(TimetableSlot.Type.MODERATION)
-                .startTime(cursor.toInstant())
-                .endTime(modStartEnd.toInstant())
-                .title("Moderation Start")
-                .build());
-        cursor = modStartEnd;
+        cursor = addSlot(slots, TimetableSlot.Type.MODERATION, cursor, modStartDur,
+                "Moderation Start", null);
+
+        // --- Apéro at start (after moderation-start) ---
+        if (aperitifAtStart) {
+            cursor = addSlot(slots, TimetableSlot.Type.APERITIF, cursor, aperitifDuration,
+                    "Apéro", null);
+        }
 
         // --- Speaker slots (with breaks and optional lunch) ---
         if (theoreticalSlotsAM && lunchSlots > 0) {
-            // AM/PM split
+            // AM/PM split — unchanged from the legacy algorithm (preserves full_day parity)
             int amSlots = (int) Math.ceil(maxSlots / 2.0);
             int pmSlots = maxSlots - amSlots;
             int amBreakAfter = (int) Math.ceil(amSlots / 2.0);
             int pmBreakAfter = (int) Math.ceil(pmSlots / 2.0);
             int remainingBreaks = breakSlots;
 
-            // AM block
             for (int i = 0; i < amSlots; i++) {
-                ZonedDateTime slotEnd = cursor.plusMinutes(slotDuration);
-                slots.add(TimetableSlot.builder()
-                        .type(TimetableSlot.Type.SPEAKER_SLOT)
-                        .startTime(cursor.toInstant())
-                        .endTime(slotEnd.toInstant())
-                        .slotIndex(slotIndex++)
-                        .build());
-                cursor = slotEnd;
-
+                cursor = addSlot(slots, TimetableSlot.Type.SPEAKER_SLOT, cursor, slotDuration,
+                        null, slotIndex++);
                 if (i == amBreakAfter - 1 && remainingBreaks > 0) {
-                    ZonedDateTime breakEnd = cursor.plusMinutes(breakDuration);
-                    slots.add(TimetableSlot.builder()
-                            .type(TimetableSlot.Type.BREAK)
-                            .startTime(cursor.toInstant())
-                            .endTime(breakEnd.toInstant())
-                            .title("Kaffee-Pause")
-                            .build());
-                    cursor = breakEnd;
+                    cursor = addSlot(slots, TimetableSlot.Type.BREAK, cursor, breakDuration,
+                            "Kaffee-Pause", null);
                     remainingBreaks--;
                 }
             }
 
-            // Lunch
-            ZonedDateTime lunchEnd = cursor.plusMinutes(lunchDuration);
-            slots.add(TimetableSlot.builder()
-                    .type(TimetableSlot.Type.LUNCH)
-                    .startTime(cursor.toInstant())
-                    .endTime(lunchEnd.toInstant())
-                    .title("Mittagessen")
-                    .build());
-            cursor = lunchEnd;
+            cursor = addSlot(slots, TimetableSlot.Type.LUNCH, cursor, lunchDuration,
+                    "Mittagessen", null);
 
-            // PM block
             for (int i = 0; i < pmSlots; i++) {
-                ZonedDateTime slotEnd = cursor.plusMinutes(slotDuration);
-                slots.add(TimetableSlot.builder()
-                        .type(TimetableSlot.Type.SPEAKER_SLOT)
-                        .startTime(cursor.toInstant())
-                        .endTime(slotEnd.toInstant())
-                        .slotIndex(slotIndex++)
-                        .build());
-                cursor = slotEnd;
-
+                cursor = addSlot(slots, TimetableSlot.Type.SPEAKER_SLOT, cursor, slotDuration,
+                        null, slotIndex++);
                 if (i == pmBreakAfter - 1 && remainingBreaks > 0) {
-                    ZonedDateTime breakEnd = cursor.plusMinutes(breakDuration);
-                    slots.add(TimetableSlot.builder()
-                            .type(TimetableSlot.Type.BREAK)
-                            .startTime(cursor.toInstant())
-                            .endTime(breakEnd.toInstant())
-                            .title("Pause")
-                            .build());
-                    cursor = breakEnd;
+                    cursor = addSlot(slots, TimetableSlot.Type.BREAK, cursor, breakDuration,
+                            "Pause", null);
                     remainingBreaks--;
                 }
             }
         } else {
-            // Linear: all slots in one block, one break in the middle
-            int breakAfter = breakSlots > 0 ? (int) Math.ceil(maxSlots / 2.0) : -1;
+            // Linear: breaks distributed evenly (count-driven). For breakSlots == 1 this is
+            // ceil(maxSlots / 2) — identical to the legacy single break.
+            Set<Integer> breakAfterSlots = new HashSet<>();
+            for (int k = 1; k <= breakSlots; k++) {
+                int pos = (int) Math.ceil((double) (maxSlots * k) / (breakSlots + 1));
+                if (pos >= 1 && pos < maxSlots) {
+                    breakAfterSlots.add(pos);
+                }
+            }
             for (int i = 0; i < maxSlots; i++) {
-                ZonedDateTime slotEnd = cursor.plusMinutes(slotDuration);
-                slots.add(TimetableSlot.builder()
-                        .type(TimetableSlot.Type.SPEAKER_SLOT)
-                        .startTime(cursor.toInstant())
-                        .endTime(slotEnd.toInstant())
-                        .slotIndex(slotIndex++)
-                        .build());
-                cursor = slotEnd;
-
-                if (i == breakAfter - 1 && breakSlots > 0) {
-                    ZonedDateTime breakEnd = cursor.plusMinutes(breakDuration);
-                    slots.add(TimetableSlot.builder()
-                            .type(TimetableSlot.Type.BREAK)
-                            .startTime(cursor.toInstant())
-                            .endTime(breakEnd.toInstant())
-                            .title("Pause")
-                            .build());
-                    cursor = breakEnd;
+                cursor = addSlot(slots, TimetableSlot.Type.SPEAKER_SLOT, cursor, slotDuration,
+                        null, slotIndex++);
+                if (breakAfterSlots.contains(i + 1)) {
+                    cursor = addSlot(slots, TimetableSlot.Type.BREAK, cursor, breakDuration,
+                            "Pause", null);
                 }
             }
         }
 
         // --- Moderation End ---
-        slots.add(TimetableSlot.builder()
-                .type(TimetableSlot.Type.MODERATION)
-                .startTime(cursor.toInstant())
-                .endTime(cursor.plusMinutes(modEndDur).toInstant())
-                .title("Moderation End")
-                .build());
+        cursor = addSlot(slots, TimetableSlot.Type.MODERATION, cursor, modEndDur,
+                "Moderation End", null);
+
+        // --- Apéro at end (after moderation-end; the final segment of the day) ---
+        if (aperitifAtEnd) {
+            addSlot(slots, TimetableSlot.Type.APERITIF, cursor, aperitifDuration, "Apéro", null);
+        }
 
         return slots;
+    }
+
+    /**
+     * Append a slot starting at {@code start} lasting {@code durationMinutes}; returns its end
+     * instant (the next cursor). {@code index} is the 1-based speaker-slot index, or null for
+     * structural slots.
+     */
+    private static ZonedDateTime addSlot(List<TimetableSlot> slots, TimetableSlot.Type type,
+            ZonedDateTime start, int durationMinutes, String title, Integer index) {
+        ZonedDateTime end = start.plusMinutes(durationMinutes);
+        slots.add(TimetableSlot.builder()
+                .type(type)
+                .startTime(start.toInstant())
+                .endTime(end.toInstant())
+                .title(title)
+                .slotIndex(index)
+                .build());
+        return end;
     }
 
     /**
@@ -236,13 +219,8 @@ public class TimetableService {
                 .orElseThrow(() -> new EventNotFoundException(
                         "Event not found with code: " + eventCode));
 
-        // Load config
-        if (event.getEventType() == null) {
-            throw new NotFoundException("Event '" + eventCode + "' has no event type configured");
-        }
-        EventTypeConfiguration config = eventTypeRepository.findByType(event.getEventType())
-                .orElseThrow(() -> new NotFoundException(
-                        "Event type configuration not found for: " + event.getEventType()));
+        // Resolve effective config (per-event override if present, else shared template)
+        AgendaConfig config = agendaConfigResolver.resolve(event);
 
         // Compute virtual timeline
         LocalDate eventDate = event.getDate()

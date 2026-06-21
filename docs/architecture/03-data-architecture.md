@@ -482,6 +482,20 @@ interface EventSlotConfiguration {
   theoreticalSlotsAM: boolean; // theoretical presentations in morning
   breakSlots: number;
   lunchSlots: number;
+  // Story 15.2 — apéro knobs (added to the shared template AND the per-event override).
+  // afternoon/evening templates default aperitifSlots=1 @ 90 min, position=end; full_day=0.
+  aperitifSlots: number; // 0 = off, >=1 = on
+  aperitifDuration: number; // minutes
+  aperitifPosition: 'start' | 'end'; // after moderation-start | after moderation-end (default)
+}
+
+// Story 15.2 — per-event copy-on-edit override of the event-type template.
+// One row per event (table `event_agenda_config`, FK event_id → events.id). Created only
+// when an organizer first edits the event type in slot assignment; the shared `event_types`
+// template is never mutated. Resolution (AgendaConfigResolver): per-event override if a row
+// exists, else the shared template. Mirrors every EventSlotConfiguration knob + the apéro knobs.
+interface EventAgendaConfig extends EventSlotConfiguration {
+  eventId: string;
 }
 
 interface EventSlot {

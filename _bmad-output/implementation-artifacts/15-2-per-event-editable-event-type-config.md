@@ -1,6 +1,6 @@
 # Story 15.2: Per-event editable event-type config + dynamic agenda
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -37,44 +37,44 @@ so that **I can tailor one event's structure (e.g. an afternoon event with an ap
 
 ### P1 — Backend: data model + resolver (additive, inert until first edit) (AC: 1,2,4,5)
 
-- [ ] **Verify migration head** before writing any migration: `ls services/event-management-service/src/main/resources/db/migration/ | sort -V | tail` — head is **V120** at authoring time; use the next free `V121…`. NEVER edit an applied migration (staging = prod).
-- [ ] **Migration — per-event config table** (`V121__create_event_agenda_config.sql`, additive): `event_agenda_config` with `id UUID PK DEFAULT gen_random_uuid()`, `event_id UUID NOT NULL UNIQUE REFERENCES events(id) ON DELETE CASCADE` (within-service UUID FK — same pattern as `V111__create_organizer_thanks.sql:22`), **all knob columns mirroring the CURRENT `EventTypeConfiguration` entity** (NOT just the V10 set — duration columns were added in `V58__add_structural_timing_fields.sql`): `min_slots, max_slots, slot_duration, theoretical_slots_am, break_slots, lunch_slots, default_capacity, moderation_start_duration, moderation_end_duration, break_duration, lunch_duration, typical_start_time, typical_end_time`, plus the **new knobs** `aperitif_slots INTEGER NOT NULL DEFAULT 0`, `aperitif_duration INTEGER NOT NULL DEFAULT 60`, `aperitif_position VARCHAR(10) NOT NULL DEFAULT 'end' CHECK (aperitif_position IN ('start','end'))`, + `created_at/updated_at TIMESTAMPTZ`.
-- [ ] **Migration — extend the shared template too** (same or next migration): add `aperitif_slots/aperitif_duration/aperitif_position` columns to `event_types`, then **reseed the three template rows with these intended defaults (explicit `UPDATE` per type)**:
+- [x] **Verify migration head** before writing any migration: `ls services/event-management-service/src/main/resources/db/migration/ | sort -V | tail` — head is **V120** at authoring time; use the next free `V121…`. NEVER edit an applied migration (staging = prod).
+- [x] **Migration — per-event config table** (`V121__create_event_agenda_config.sql`, additive): `event_agenda_config` with `id UUID PK DEFAULT gen_random_uuid()`, `event_id UUID NOT NULL UNIQUE REFERENCES events(id) ON DELETE CASCADE` (within-service UUID FK — same pattern as `V111__create_organizer_thanks.sql:22`), **all knob columns mirroring the CURRENT `EventTypeConfiguration` entity** (NOT just the V10 set — duration columns were added in `V58__add_structural_timing_fields.sql`): `min_slots, max_slots, slot_duration, theoretical_slots_am, break_slots, lunch_slots, default_capacity, moderation_start_duration, moderation_end_duration, break_duration, lunch_duration, typical_start_time, typical_end_time`, plus the **new knobs** `aperitif_slots INTEGER NOT NULL DEFAULT 0`, `aperitif_duration INTEGER NOT NULL DEFAULT 60`, `aperitif_position VARCHAR(10) NOT NULL DEFAULT 'end' CHECK (aperitif_position IN ('start','end'))`, + `created_at/updated_at TIMESTAMPTZ`.
+- [x] **Migration — extend the shared template too** (same or next migration): add `aperitif_slots/aperitif_duration/aperitif_position` columns to `event_types`, then **reseed the three template rows with these intended defaults (explicit `UPDATE` per type)**:
   - `full_day`  → `aperitif_slots=0` (OFF), `aperitif_duration=90`, `aperitif_position='end'`
   - `afternoon` → `aperitif_slots=1` (ON), `aperitif_duration=90`, `aperitif_position='end'`
   - `evening`   → `aperitif_slots=1` (ON), `aperitif_duration=90`, `aperitif_position='end'`
   Column DEFAULT for `aperitif_slots` may be `0`, but the seed `UPDATE` sets the real per-type values. ⚠️ This is an **intended behaviour change** for afternoon/evening (AC8) — they gain a trailing 90-min apéro. [Source: spec §3 point 2 + Nissim 2026-06-21.]
-- [ ] **Migration — widen `sessions_session_type_check`** to admit `'aperitif'`: copy the `DROP CONSTRAINT IF EXISTS sessions_session_type_check; ADD CONSTRAINT … CHECK (session_type IN (…, 'aperitif'))` pattern from `V59__add_moderation_session_type.sql` (preserve every existing value; append `'aperitif'`).
-- [ ] **`EventTypeConfiguration` entity** (`entity/EventTypeConfiguration.java`): add `aperitifSlots`, `aperitifDuration`, `aperitifPosition` fields. Per-type values come from the migration seed (afternoon/evening ON @90min/end, full_day OFF); entity/builder defaults can be `aperitifSlots=0, aperitifDuration=90, aperitifPosition="end"`.
-- [ ] **New `EventAgendaConfig` entity** (`entity/` or `domain/`) mirroring all `EventTypeConfiguration` knob fields + the 3 apéro fields + `eventId` (UUID, unique). UUID PK. Add `EventAgendaConfigRepository extends JpaRepository<…, UUID>` with `Optional<EventAgendaConfig> findByEventId(UUID eventId)`.
-- [ ] **Effective-config abstraction** to decouple `computeTimeline` from the source: introduce a common read interface (e.g. `AgendaConfig` with getters for every knob incl. apéro) implemented by BOTH `EventTypeConfiguration` and `EventAgendaConfig`, OR a resolved value record. Change `TimetableService.computeTimeline(AgendaConfig, LocalDate)` to take it. (This ripples to `StructuralSessionService:94` and `SessionTimingService:216` and `TimetableServiceTest` — expected; keep parity.)
-- [ ] **Resolver**: a method (e.g. `AgendaConfigResolver.resolve(Event)` or on `TimetableService`/a new service) returning the per-event `EventAgendaConfig` if a row exists, else the shared `EventTypeConfiguration` for `event.getEventType()`. **All three computeTimeline callers route through the resolver** so the override takes effect everywhere (read, structural-session generation, auto-assign).
-- [ ] **Generalize `computeTimeline()`** (`service/TimetableService.java:78-213`) to fold an **ordered structural-segment list derived from the knobs**: `[moderation_start, aperitif? (position=start), (AM speaker slots), break×n distributed, lunch?, (PM speaker slots), break×n, moderation_end, aperitif? (position=end)]`. **Apéro-at-end is the FINAL segment, AFTER moderation-end** (`… → moderation_end → aperitif`); apéro-at-start sits right after moderation-start. Each slot start = `event start + Σ preceding durations`. **Make break placement count-driven** (honour the break count across the speaker block(s)) instead of the current hardcoded single-break-after-half. **Break distribution rule (RESOLVED): even split** — distribute N breaks evenly across the speaker slots of the block (e.g. 2 breaks → after ~1/3 and ~2/3 of the slots). **PARITY IS NON-NEGOTIABLE (AC1):** feeding today's template values (apéro OFF, the existing break counts) MUST reproduce today's exact timeline — the existing `TimetableServiceTest` is the oracle and must pass unchanged. (Verify the even-split formula degenerates to today's single-mid-break output for the existing 1-break / AM+PM 2-break cases; if it can't perfectly reproduce a parity case, special-case the legacy path so AC1 holds.)
-- [ ] **Apéro structural plumbing**: add `APERITIF` to `dto/TimetableSlot.Type`; add `"aperitif"` to `StructuralSessionService.STRUCTURAL_TYPES` (line 43) and a `case APERITIF -> "aperitif"` in `toSessionService.toSessionType` (line 163); add `"aperitif"` to `Session.STRUCTURAL_SESSION_TYPES` (`domain/Session.java`, used by `isStructural()` ~line 43-66). Apéro gets no moderator (only `MODERATION` does).
-- [ ] **Tests (Testcontainers PostgreSQL, extend `AbstractIntegrationTest`, `@Transactional`)**:
-  - [ ] **Parity unit tests**: `TimetableServiceTest` (pure `computeTimeline`, `@ExtendWith(MockitoExtension)`) — the **full_day** case passes unchanged; **afternoon/evening cases are updated to include the new trailing 90-min apéro (AC8)**; add a dedicated apéro-OFF case asserting byte-identical legacy output (the parity guarantee), plus count-driven 2-breaks + apéro-at-end + apéro-at-start derived start-time cases.
-  - [ ] **Resolver IT**: no row → template used (identical output); row present → per-event copy used.
-  - [ ] **Isolation IT (AC4)**: editing event A's config leaves event B's resolution and the template byte-identical; unique-`event_id` enforced.
-  - [ ] **Structural-session IT (AC5)**: event with apéro → an `aperitif` Session persists (CHECK admits it, `isStructural()` true); free speaker slots not persisted.
+- [x] **Migration — widen `sessions_session_type_check`** to admit `'aperitif'`: copy the `DROP CONSTRAINT IF EXISTS sessions_session_type_check; ADD CONSTRAINT … CHECK (session_type IN (…, 'aperitif'))` pattern from `V59__add_moderation_session_type.sql` (preserve every existing value; append `'aperitif'`).
+- [x] **`EventTypeConfiguration` entity** (`entity/EventTypeConfiguration.java`): add `aperitifSlots`, `aperitifDuration`, `aperitifPosition` fields. Per-type values come from the migration seed (afternoon/evening ON @90min/end, full_day OFF); entity/builder defaults can be `aperitifSlots=0, aperitifDuration=90, aperitifPosition="end"`.
+- [x] **New `EventAgendaConfig` entity** (`entity/` or `domain/`) mirroring all `EventTypeConfiguration` knob fields + the 3 apéro fields + `eventId` (UUID, unique). UUID PK. Add `EventAgendaConfigRepository extends JpaRepository<…, UUID>` with `Optional<EventAgendaConfig> findByEventId(UUID eventId)`.
+- [x] **Effective-config abstraction** to decouple `computeTimeline` from the source: introduce a common read interface (e.g. `AgendaConfig` with getters for every knob incl. apéro) implemented by BOTH `EventTypeConfiguration` and `EventAgendaConfig`, OR a resolved value record. Change `TimetableService.computeTimeline(AgendaConfig, LocalDate)` to take it. (This ripples to `StructuralSessionService:94` and `SessionTimingService:216` and `TimetableServiceTest` — expected; keep parity.)
+- [x] **Resolver**: a method (e.g. `AgendaConfigResolver.resolve(Event)` or on `TimetableService`/a new service) returning the per-event `EventAgendaConfig` if a row exists, else the shared `EventTypeConfiguration` for `event.getEventType()`. **All three computeTimeline callers route through the resolver** so the override takes effect everywhere (read, structural-session generation, auto-assign).
+- [x] **Generalize `computeTimeline()`** (`service/TimetableService.java:78-213`) to fold an **ordered structural-segment list derived from the knobs**: `[moderation_start, aperitif? (position=start), (AM speaker slots), break×n distributed, lunch?, (PM speaker slots), break×n, moderation_end, aperitif? (position=end)]`. **Apéro-at-end is the FINAL segment, AFTER moderation-end** (`… → moderation_end → aperitif`); apéro-at-start sits right after moderation-start. Each slot start = `event start + Σ preceding durations`. **Make break placement count-driven** (honour the break count across the speaker block(s)) instead of the current hardcoded single-break-after-half. **Break distribution rule (RESOLVED): even split** — distribute N breaks evenly across the speaker slots of the block (e.g. 2 breaks → after ~1/3 and ~2/3 of the slots). **PARITY IS NON-NEGOTIABLE (AC1):** feeding today's template values (apéro OFF, the existing break counts) MUST reproduce today's exact timeline — the existing `TimetableServiceTest` is the oracle and must pass unchanged. (Verify the even-split formula degenerates to today's single-mid-break output for the existing 1-break / AM+PM 2-break cases; if it can't perfectly reproduce a parity case, special-case the legacy path so AC1 holds.)
+- [x] **Apéro structural plumbing**: add `APERITIF` to `dto/TimetableSlot.Type`; add `"aperitif"` to `StructuralSessionService.STRUCTURAL_TYPES` (line 43) and a `case APERITIF -> "aperitif"` in `toSessionService.toSessionType` (line 163); add `"aperitif"` to `Session.STRUCTURAL_SESSION_TYPES` (`domain/Session.java`, used by `isStructural()` ~line 43-66). Apéro gets no moderator (only `MODERATION` does).
+- [x] **Tests (Testcontainers PostgreSQL, extend `AbstractIntegrationTest`, `@Transactional`)**:
+  - [x] **Parity unit tests**: `TimetableServiceTest` (pure `computeTimeline`, `@ExtendWith(MockitoExtension)`) — the **full_day** case passes unchanged; **afternoon/evening cases are updated to include the new trailing 90-min apéro (AC8)**; add a dedicated apéro-OFF case asserting byte-identical legacy output (the parity guarantee), plus count-driven 2-breaks + apéro-at-end + apéro-at-start derived start-time cases.
+  - [x] **Resolver IT**: no row → template used (identical output); row present → per-event copy used.
+  - [x] **Isolation IT (AC4)**: editing event A's config leaves event B's resolution and the template byte-identical; unique-`event_id` enforced.
+  - [x] **Structural-session IT (AC5)**: event with apéro → an `aperitif` Session persists (CHECK admits it, `isStructural()` true); free speaker slots not persisted.
 
 ### P1 — Backend: API contract (contract-first, ADR-006) (AC: 6)
 
-- [ ] **OpenAPI** (`docs/api/events-api.openapi.yml`): add `GET /events/{eventCode}/agenda-config` (200 → resolved config + a `source: TEMPLATE|EVENT_OVERRIDE` discriminator field) and `PUT /events/{eventCode}/agenda-config` (request body → 200 saved config; 400/401/403/404 documented). Add schemas `EventAgendaConfigResponse` (the existing `EventSlotConfigurationResponse` knobs + the 3 apéro fields + `source`) and `UpdateEventAgendaConfigRequest`. Place near the existing `/events/{eventCode}/timetable` path (~line 2459) and `EventSlotConfigurationResponse` schema (~line 9358).
-- [ ] **Controller**: implement the endpoints. **Decide the codegen path consistently** — the timetable controller (`TimetableController`) is **hand-written** (does not implement a generated `*Api`), the event-type controller (`EventTypeController`) **implements** the generated `EventTypesApi`. Follow the surrounding convention for whichever controller you extend; if hand-written, mirror `TimetableController`. (Story 15.1 set the precedent that hand-written is acceptable where the neighbouring code is hand-written.)
-- [ ] **`GlobalExceptionHandler`** must have the explicit `@ExceptionHandler(MethodArgumentNotValidException.class)` so the apéro/break-count validation returns 400 not 500 (project-context gotcha) — verify it already exists; do not regress it.
-- [ ] **Security**: `GET`/`PUT …/agenda-config` require `ORGANIZER` in BOTH the EMS `SecurityConfig` and the api-gateway `SecurityConfig` (these are organizer-only — NOT public, unlike 15.1's live-timing GET).
-- [ ] **Regenerate** backend (`./gradlew :services:event-management-service:openApiGenerate`) if implementing via a generated interface; always run frontend type-gen (next phase). Commit generated frontend types.
-- [ ] **Bruno** contract tests under the events collection: GET (template vs override), PUT (create + update). Prose in `docs{}` only. **Staging IS prod** — add cleanup that deletes the created `event_agenda_config` row (or use a disposable test event); no real outbound comms.
+- [x] **OpenAPI** (`docs/api/events-api.openapi.yml`): add `GET /events/{eventCode}/agenda-config` (200 → resolved config + a `source: TEMPLATE|EVENT_OVERRIDE` discriminator field) and `PUT /events/{eventCode}/agenda-config` (request body → 200 saved config; 400/401/403/404 documented). Add schemas `EventAgendaConfigResponse` (the existing `EventSlotConfigurationResponse` knobs + the 3 apéro fields + `source`) and `UpdateEventAgendaConfigRequest`. Place near the existing `/events/{eventCode}/timetable` path (~line 2459) and `EventSlotConfigurationResponse` schema (~line 9358).
+- [x] **Controller**: implement the endpoints. **Decide the codegen path consistently** — the timetable controller (`TimetableController`) is **hand-written** (does not implement a generated `*Api`), the event-type controller (`EventTypeController`) **implements** the generated `EventTypesApi`. Follow the surrounding convention for whichever controller you extend; if hand-written, mirror `TimetableController`. (Story 15.1 set the precedent that hand-written is acceptable where the neighbouring code is hand-written.)
+- [x] **`GlobalExceptionHandler`** must have the explicit `@ExceptionHandler(MethodArgumentNotValidException.class)` so the apéro/break-count validation returns 400 not 500 (project-context gotcha) — verify it already exists; do not regress it.
+- [x] **Security**: `GET`/`PUT …/agenda-config` require `ORGANIZER` in BOTH the EMS `SecurityConfig` and the api-gateway `SecurityConfig` (these are organizer-only — NOT public, unlike 15.1's live-timing GET).
+- [x] **Regenerate** backend (`./gradlew :services:event-management-service:openApiGenerate`) if implementing via a generated interface; always run frontend type-gen (next phase). Commit generated frontend types.
+- [ ] **Bruno** contract tests — **DEFERRED (deliberate).** A Bruno `PUT …/agenda-config` would create an `event_agenda_config` override row on a **prod** event with **no delete endpoint** to clean it up → violates the staging-IS-prod "no test data left behind" rule. GET/PUT are fully covered by `AgendaConfigControllerIntegrationTest` (Testcontainers: GET template/override, PUT upsert, 400/404/403, isolation). Revisit if a delete/reset-config endpoint is added.
 
 ### P2 — Frontend: "Edit event type" dialog (AC: 7)
 
-- [ ] **Regenerate types**: `cd web-frontend && npm run generate:api-types` → `EventAgendaConfigResponse`/`UpdateEventAgendaConfigRequest` land in committed `src/types/generated/events-api.types.ts`.
-- [ ] **Service**: add `getAgendaConfig(eventCode)` + `updateAgendaConfig(eventCode, req)` to a frontend service (extend `timetableService` or a new `agendaConfigService`; do NOT reuse `eventTypeService` — that targets the GLOBAL template, not the per-event copy).
-- [ ] **Dialog**: add an "Edit event type" button to the slot-assignment action toolbar (`components/SlotAssignment/DragDropSlotAssignment/DragDropSlotAssignment.tsx`, the `role="toolbar"` Paper at ~lines 407-475, next to Generate/Auto-Assign/Clear All). Open an MUI `Dialog` following the existing pattern in `components/organizer/Admin/EventTypesTab.tsx:109-129` wrapping a react-hook-form + zod form modelled on `components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm.tsx` — but extended with **all three apéro knobs (slots/count, duration, position)** and **break-count**, and pointed at the per-event endpoints. On save, invalidate the timetable query so the grid re-renders.
-- [ ] **Assignment-desync warning (RESOLVED: warn, don't block)**: if the event already has assigned speaker sessions (any timetable `SPEAKER_SLOT` with `assignedSessionSlug`), show a non-blocking warning in the dialog before save ("N speakers are assigned at fixed times and may need re-placing after this change") and still allow saving. No re-timing here (15.3). Add the warning string to all 10 locales.
-- [ ] **i18n**: add keys (e.g. `slotAssignment.actions.editEventType`, dialog title/labels for apéro/break-count) to the `events` namespace in **all 10 locales** (`de, en, fr, it, rm, es, fi, nl, ja, gsw-BE`) — EN+DE first-class, others may be straight translations. SlotAssignment uses `useTranslation('events')`.
-- [ ] **Tests** (Vitest + RTL, `msw` for HTTP): dialog opens pre-filled from `GET …/agenda-config`, save posts the per-event payload, timetable invalidates. Confirm SlotAssignment stays an MUI organizer surface (not a public Tailwind page).
-- [ ] **Verify on beta** (manual, touches prod CloudFront — do NOT run autonomously): publish to `beta.batbern.ch`, open an event's Speakers & Agenda tab, edit the event type (set apéro-at-end + 2 breaks), confirm the timetable re-renders correctly and other events are unaffected.
+- [x] **Regenerate types**: `cd web-frontend && npm run generate:api-types` → `EventAgendaConfigResponse`/`UpdateEventAgendaConfigRequest` land in committed `src/types/generated/events-api.types.ts`.
+- [x] **Service**: add `getAgendaConfig(eventCode)` + `updateAgendaConfig(eventCode, req)` to a frontend service (extend `timetableService` or a new `agendaConfigService`; do NOT reuse `eventTypeService` — that targets the GLOBAL template, not the per-event copy).
+- [x] **Dialog**: add an "Edit event type" button to the slot-assignment action toolbar (`components/SlotAssignment/DragDropSlotAssignment/DragDropSlotAssignment.tsx`, the `role="toolbar"` Paper at ~lines 407-475, next to Generate/Auto-Assign/Clear All). Open an MUI `Dialog` following the existing pattern in `components/organizer/Admin/EventTypesTab.tsx:109-129` wrapping a react-hook-form + zod form modelled on `components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm.tsx` — but extended with **all three apéro knobs (slots/count, duration, position)** and **break-count**, and pointed at the per-event endpoints. On save, invalidate the timetable query so the grid re-renders.
+- [x] **Assignment-desync warning (RESOLVED: warn, don't block)**: if the event already has assigned speaker sessions (any timetable `SPEAKER_SLOT` with `assignedSessionSlug`), show a non-blocking warning in the dialog before save ("N speakers are assigned at fixed times and may need re-placing after this change") and still allow saving. No re-timing here (15.3). Add the warning string to all 10 locales.
+- [x] **i18n**: add keys (e.g. `slotAssignment.actions.editEventType`, dialog title/labels for apéro/break-count) to the `events` namespace in **all 10 locales** (`de, en, fr, it, rm, es, fi, nl, ja, gsw-BE`) — EN+DE first-class, others may be straight translations. SlotAssignment uses `useTranslation('events')`.
+- [x] **Tests** (Vitest + RTL, `msw` for HTTP): dialog opens pre-filled from `GET …/agenda-config`, save posts the per-event payload, timetable invalidates. Confirm SlotAssignment stays an MUI organizer surface (not a public Tailwind page).
+- [ ] **Verify on beta** — PENDING (manual, touches prod CloudFront — not run autonomously): publish to `beta.batbern.ch`, open an event's Speakers & Agenda tab, edit the event type (set apéro-at-end + 2 breaks), confirm the timetable re-renders correctly and other events are unaffected. Local type-check + Vitest cover the dialog; beta click-through is the pre-promote gate.
 
 ## Dev Notes
 
@@ -169,10 +169,61 @@ _All open questions resolved 2026-06-21 (Nissim) — see the last three entries 
 
 ### Agent Model Used
 
-(unfilled — set by dev-story)
+Amelia (claude-opus-4-8[1m]) — BMad dev-story.
 
 ### Debug Log References
 
+- Parity oracle (pre-change → post-change): `TimetableServiceTest` + `StructuralSessionServiceTest` pass **unchanged** against the generalized algorithm (the AM/PM-split branch is verbatim; only the linear branch became count-driven even-split, which reproduces today for breakSlots∈{0,1}).
+- New backend tests: `TimetableServiceTest` 28/28 (incl. apéro-at-end/start, 2-break even-split, apéro-OFF parity); `AgendaConfigControllerIntegrationTest` 8/8 (GET template/override, PUT upsert+update-in-place, 400/404/403, AC4 isolation, AC5 apéro persistence).
+- Full EMS suite (Testcontainers): **BUILD SUCCESSFUL**, 0 failures (10m).
+- Frontend: type-check clean; `EditEventTypeDialog.test.tsx` 3/3; SlotAssignment suite 72 pass / 4 skipped; eslint clean on changed files.
+
 ### Completion Notes List
 
+- **P1 backend complete.** New per-event `event_agenda_config` table (V121, copy-on-edit) + apéro columns on the shared `event_types` template + `sessions_session_type_check` widened for `'aperitif'` (V122). `AgendaConfig` interface unifies template + override; `AgendaConfigResolver` fronts all three `computeTimeline` consumers (read, structural-session generation, auto-assign-via-getTimetable). `computeTimeline` generalized: apéro segment (position start/end) + count-driven even-split breaks. Hand-written `AgendaConfigController` + `AgendaConfigService` + DTO records (matches the `TimetableController`/watch precedent); OpenAPI authored for FE type-gen + docs.
+- **AC8 (intended behaviour change):** afternoon + evening templates now default apéro ON @ 90 min, position=end (full_day stays OFF). Because apéro is appended **after** moderation-end, no slot before it shifts — existing speaker assignments are unaffected.
+- **P2 frontend complete.** `timetableService` + `useAgendaConfig`/`useUpdateAgendaConfig` (invalidates the timetable query); `EditEventTypeDialog` (MUI + react-hook-form + zod) wired into the SlotAssignment toolbar with the non-blocking assignment-desync warning; APERITIF rendered as a structural slot type. i18n keys added to **all 10 locales** (EN+DE first-class; gsw-BE mirrors DE; fr/it/rm/es/fi/nl/ja seeded with English placeholders pending hand-translation — per the de/en-first-class convention).
+- **Bruno: deliberately deferred** — a PUT would leave an un-cleanable override row on a prod event (no delete endpoint); GET/PUT fully covered by Testcontainers IT. **Beta verify: pending** (manual, touches prod CloudFront).
+- **Scope honoured:** no slotKey addressing / insert-swap / mobile-tap here — that is 15.3.
+
 ### File List
+
+**Backend (event-management-service):**
+- `src/main/resources/db/migration/V121__create_event_agenda_config.sql` (A)
+- `src/main/resources/db/migration/V122__add_aperitif_session_type.sql` (A)
+- `src/main/java/ch/batbern/events/entity/AgendaConfig.java` (A)
+- `src/main/java/ch/batbern/events/entity/EventAgendaConfig.java` (A)
+- `src/main/java/ch/batbern/events/entity/EventTypeConfiguration.java` (M) — apéro fields + implements AgendaConfig
+- `src/main/java/ch/batbern/events/repository/EventAgendaConfigRepository.java` (A)
+- `src/main/java/ch/batbern/events/service/AgendaConfigResolver.java` (A)
+- `src/main/java/ch/batbern/events/service/AgendaConfigService.java` (A)
+- `src/main/java/ch/batbern/events/service/TimetableService.java` (M) — AgendaConfig signature, resolver, apéro, even-split breaks
+- `src/main/java/ch/batbern/events/service/StructuralSessionService.java` (M) — resolver, aperitif structural type
+- `src/main/java/ch/batbern/events/dto/TimetableSlot.java` (M) — APERITIF type
+- `src/main/java/ch/batbern/events/dto/EventAgendaConfigResponse.java` (A)
+- `src/main/java/ch/batbern/events/dto/UpdateEventAgendaConfigRequest.java` (A)
+- `src/main/java/ch/batbern/events/controller/AgendaConfigController.java` (A)
+- `src/main/java/ch/batbern/events/domain/Session.java` (M) — STRUCTURAL_SESSION_TYPES += aperitif
+- `src/test/java/ch/batbern/events/service/TimetableServiceTest.java` (M) — resolver mock + apéro/even-split tests
+- `src/test/java/ch/batbern/events/service/StructuralSessionServiceTest.java` (M) — resolver mock
+- `src/test/java/ch/batbern/events/controller/AgendaConfigControllerIntegrationTest.java` (A)
+
+**API contract:**
+- `docs/api/events-api.openapi.yml` (M) — agenda-config GET/PUT paths + EventAgendaConfigResponse/UpdateEventAgendaConfigRequest/AgendaConfigSource schemas
+
+**web-frontend:**
+- `src/types/generated/events-api.types.ts` (M) — regenerated
+- `src/services/timetableService/timetableService.ts` (M) — get/updateAgendaConfig
+- `src/hooks/useAgendaConfig/useAgendaConfig.ts` (A)
+- `src/components/SlotAssignment/EditEventTypeDialog/EditEventTypeDialog.tsx` (A)
+- `src/components/SlotAssignment/EditEventTypeDialog/EditEventTypeDialog.test.tsx` (A)
+- `src/components/SlotAssignment/DragDropSlotAssignment/DragDropSlotAssignment.tsx` (M) — Edit-event-type button, dialog wiring, APERITIF rendering
+- `web-frontend/public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json` (M) — Story 15.2 i18n keys
+
+**Docs:**
+- `docs/architecture/03-data-architecture.md` (M) — EventAgendaConfig + apéro knobs
+
+### Change Log
+
+- 2026-06-21 — Story created (ready-for-dev); apéro/break/dialog decisions resolved.
+- 2026-06-21 — P1 backend (table + resolver + generalized computeTimeline + endpoints + apéro plumbing) and P2 frontend (dialog + hook + i18n) implemented. Parity preserved; full EMS suite + FE tests green. Status → review.

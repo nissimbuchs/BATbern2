@@ -882,7 +882,8 @@
     "structuralSessions": {
       "moderation": "Moderatie",
       "break": "Pauze",
-      "lunch": "Lunch"
+      "lunch": "Lunch",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Sprekerspool",
@@ -913,7 +914,8 @@
       "clearAll": "Alles wissen",
       "cancel": "Annuleren",
       "confirm": "Bevestigen",
-      "generateStructure": "Schemastructuur genereren"
+      "generateStructure": "Schemastructuur genereren",
+      "editEventType": "Edit event type"
     },
     "modals": {
       "generateStructure": {
@@ -975,6 +977,32 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Tik nu op een gemarkeerd tijdvak om het te plaatsen"
+    },
+    "editEventType": {
+      "title": "Edit event type",
+      "loading": "Loading configuration…",
+      "save": "Save",
+      "saveError": "Could not save the configuration. Please try again.",
+      "assignmentWarning": "Some speakers are already assigned at fixed times. Changing the structure may move them — review the agenda after saving.",
+      "minSlots": "Min. slots",
+      "maxSlots": "Max. slots",
+      "slotDuration": "Slot duration (min)",
+      "breakSlots": "Number of breaks",
+      "breakDuration": "Break duration (min)",
+      "lunchSlots": "Lunch slots",
+      "lunchDuration": "Lunch duration (min)",
+      "moderationStartDuration": "Opening moderation (min)",
+      "moderationEndDuration": "Closing moderation (min)",
+      "aperitifSlots": "Apéro (0 = off, 1 = on)",
+      "aperitifSlotsHelp": "Set to 1 to add an apéro to this event.",
+      "aperitifDuration": "Apéro duration (min)",
+      "aperitifPosition": "Apéro position",
+      "positionStart": "After opening",
+      "positionEnd": "After closing",
+      "theoreticalSlotsAM": "Morning theory block (AM/PM split)",
+      "defaultCapacity": "Default capacity",
+      "typicalStartTime": "Start time (HH:mm)",
+      "typicalEndTime": "End time (HH:mm)"
     }
   },
   "newsletter": {

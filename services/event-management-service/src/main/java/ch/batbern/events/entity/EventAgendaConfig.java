@@ -1,9 +1,6 @@
 package ch.batbern.events.entity;
 
-import ch.batbern.events.converter.EventTypeConverter;
-import ch.batbern.events.dto.generated.EventType;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,151 +22,97 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 /**
- * Event Type Configuration entity (Story 5.1).
+ * Per-event copy-on-edit override of the {@link EventTypeConfiguration} template (Story 15.2).
  *
- * Maps to event_types table created in V10__Create_event_types_table.sql.
- * Stores slot requirements and scheduling parameters for each event type template.
- *
- * Source of Truth: docs/architecture/03-data-architecture.md, Section "EventType"
+ * <p>Maps to the {@code event_agenda_config} table (V121). Exactly one row per event, created
+ * only when an organizer first edits the event type in slot assignment. Mirrors every knob of
+ * the shared template plus the apéro knobs. Events with no row resolve to the shared template
+ * via {@link ch.batbern.events.service.AgendaConfigResolver}.</p>
  */
 @Entity
-@Table(name = "event_types")
+@Table(name = "event_agenda_config")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EventTypeConfiguration implements AgendaConfig {
+public class EventAgendaConfig implements AgendaConfig {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    /**
-     * Event type enum: FULL_DAY, AFTERNOON, EVENING.
-     * Stored as lowercase_snake_case in database (full_day, afternoon, evening) per ADR-003.
-     */
-    @Convert(converter = EventTypeConverter.class)
-    @Column(nullable = false, unique = true, length = 20)
-    private EventType type;
+    /** Within-service UUID FK to events(id); one row per event (unique). */
+    @Column(name = "event_id", nullable = false, unique = true)
+    private UUID eventId;
 
-    /**
-     * Minimum number of session slots for this event type.
-     */
     @Column(name = "min_slots", nullable = false)
     @Min(1)
     private Integer minSlots;
 
-    /**
-     * Maximum number of session slots for this event type.
-     * Must be >= minSlots (enforced in service layer).
-     */
     @Column(name = "max_slots", nullable = false)
     @Min(1)
     private Integer maxSlots;
 
-    /**
-     * Duration of each slot in minutes.
-     * Minimum 15 minutes.
-     */
     @Column(name = "slot_duration", nullable = false)
     @Min(15)
     private Integer slotDuration;
 
-    /**
-     * Whether theoretical presentations are scheduled in morning slots.
-     */
     @Column(name = "theoretical_slots_am", nullable = false)
     @Builder.Default
     private Boolean theoreticalSlotsAM = true;
 
-    /**
-     * Number of break slots included in event.
-     */
     @Column(name = "break_slots", nullable = false)
     @Min(0)
     @Builder.Default
     private Integer breakSlots = 0;
 
-    /**
-     * Number of lunch slots included in event.
-     */
     @Column(name = "lunch_slots", nullable = false)
     @Min(0)
     @Builder.Default
     private Integer lunchSlots = 0;
 
-    /**
-     * Default attendee capacity for this event type.
-     */
     @Column(name = "default_capacity", nullable = false)
     @Min(1)
     private Integer defaultCapacity;
 
-    /**
-     * Duration of moderation session at the start of the event, in minutes.
-     */
     @Column(name = "moderation_start_duration", nullable = false)
     @Min(1)
     @Builder.Default
     private Integer moderationStartDuration = 5;
 
-    /**
-     * Duration of moderation session at the end of the event, in minutes.
-     */
     @Column(name = "moderation_end_duration", nullable = false)
     @Min(1)
     @Builder.Default
     private Integer moderationEndDuration = 5;
 
-    /**
-     * Duration of each break session, in minutes.
-     */
     @Column(name = "break_duration", nullable = false)
     @Min(1)
     @Builder.Default
     private Integer breakDuration = 20;
 
-    /**
-     * Duration of the lunch session, in minutes.
-     */
     @Column(name = "lunch_duration", nullable = false)
     @Min(1)
     @Builder.Default
     private Integer lunchDuration = 60;
 
-    /**
-     * Apéro on/off count (0 = off, ≥1 = on). Story 15.2 — afternoon/evening default 1, full_day 0.
-     */
     @Column(name = "aperitif_slots", nullable = false)
     @Min(0)
     @Builder.Default
     private Integer aperitifSlots = 0;
 
-    /**
-     * Apéro duration in minutes (Story 15.2, default 90).
-     */
     @Column(name = "aperitif_duration", nullable = false)
     @Min(1)
     @Builder.Default
     private Integer aperitifDuration = 90;
 
-    /**
-     * Apéro placement: "start" (after moderation-start) or "end" (after moderation-end). Story 15.2.
-     */
     @Column(name = "aperitif_position", nullable = false, length = 10)
     @Builder.Default
     private String aperitifPosition = "end";
 
-    /**
-     * Typical start time for this event type (e.g., 09:00 for FULL_DAY).
-     */
     @Column(name = "typical_start_time")
     private LocalTime typicalStartTime;
 
-    /**
-     * Typical end time for this event type (e.g., 17:00 for FULL_DAY).
-     */
     @Column(name = "typical_end_time")
     private LocalTime typicalEndTime;
 
@@ -182,16 +125,15 @@ public class EventTypeConfiguration implements AgendaConfig {
     private Instant updatedAt;
 
     /**
-     * Validates that maxSlots >= minSlots (business rule).
-     * Called before persist/update.
+     * Validates that maxSlots >= minSlots (business rule, mirrors EventTypeConfiguration).
      */
     @PrePersist
     @PreUpdate
     private void validateSlotConfiguration() {
         if (maxSlots != null && minSlots != null && maxSlots < minSlots) {
             throw new IllegalStateException(
-                    String.format("maxSlots (%d) must be >= minSlots (%d) for event type %s",
-                            maxSlots, minSlots, type));
+                    String.format("maxSlots (%d) must be >= minSlots (%d) for event %s",
+                            maxSlots, minSlots, eventId));
         }
     }
 }

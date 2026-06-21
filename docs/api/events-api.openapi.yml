@@ -2496,6 +2496,82 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /events/{eventCode}/agenda-config:
+    get:
+      tags:
+        - Sessions
+      summary: Get the resolved agenda config for an event (Story 15.2)
+      description: |
+        Returns the effective agenda/slot configuration for the event: the per-event
+        copy-on-edit override (`event_agenda_config`) if one exists, otherwise the shared
+        event-type template (`event_types`). The `source` field indicates which was returned.
+
+        **Access**: ORGANIZER role required.
+      operationId: getEventAgendaConfig
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: BATbern142
+      responses:
+        '200':
+          description: Resolved agenda config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAgendaConfigResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Sessions
+      summary: Upsert the per-event agenda config override (Story 15.2)
+      description: |
+        Copy-on-edit: creates or updates the per-event `event_agenda_config` row from the
+        provided knobs. The shared event-type template is never modified. Returns the saved
+        per-event config (with `source = EVENT_OVERRIDE`).
+
+        **Access**: ORGANIZER role required.
+      operationId: updateEventAgendaConfig
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventAgendaConfigRequest'
+      responses:
+        '200':
+          description: Per-event agenda config saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAgendaConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /events/{eventCode}/sessions/structural:
     post:
       tags:
@@ -9361,6 +9437,194 @@ components:
         - AFTERNOON
         - EVENING
       example: FULL_DAY
+
+    AgendaConfigSource:
+      type: string
+      description: Whether the resolved config came from the shared template or a per-event override (Story 15.2).
+      enum:
+        - TEMPLATE
+        - EVENT_OVERRIDE
+      example: TEMPLATE
+
+    EventAgendaConfigResponse:
+      type: object
+      description: |
+        Resolved agenda/slot config for an event (Story 15.2). Same knobs as the event-type
+        template plus the apéro knobs, with a `source` flag indicating template vs per-event override.
+      required:
+        - source
+        - minSlots
+        - maxSlots
+        - slotDuration
+        - theoreticalSlotsAM
+        - breakSlots
+        - lunchSlots
+        - defaultCapacity
+        - moderationStartDuration
+        - moderationEndDuration
+        - breakDuration
+        - lunchDuration
+        - aperitifSlots
+        - aperitifDuration
+        - aperitifPosition
+      properties:
+        source:
+          $ref: '#/components/schemas/AgendaConfigSource'
+        minSlots:
+          type: integer
+          minimum: 1
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          example: false
+        breakSlots:
+          type: integer
+          minimum: 0
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          example: 0
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          example: 200
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          example: 5
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          example: 5
+        breakDuration:
+          type: integer
+          minimum: 1
+          example: 20
+        lunchDuration:
+          type: integer
+          minimum: 1
+          example: 60
+        aperitifSlots:
+          type: integer
+          minimum: 0
+          description: Apéro on/off count (0 = off, ≥1 = on)
+          example: 1
+        aperitifDuration:
+          type: integer
+          minimum: 1
+          description: Apéro duration in minutes
+          example: 90
+        aperitifPosition:
+          type: string
+          enum: [start, end]
+          description: Apéro placement relative to the moderation segments
+          example: end
+        typicalStartTime:
+          type: string
+          format: time
+          nullable: true
+          example: "13:00"
+        typicalEndTime:
+          type: string
+          format: time
+          nullable: true
+          example: "19:00"
+
+    UpdateEventAgendaConfigRequest:
+      type: object
+      description: |
+        Copy-on-edit payload for the per-event agenda config (Story 15.2). Writes only the
+        per-event `event_agenda_config` row — never the shared template.
+      required:
+        - minSlots
+        - maxSlots
+        - slotDuration
+        - theoreticalSlotsAM
+        - breakSlots
+        - lunchSlots
+        - defaultCapacity
+        - moderationStartDuration
+        - moderationEndDuration
+        - breakDuration
+        - lunchDuration
+        - aperitifSlots
+        - aperitifDuration
+        - aperitifPosition
+      properties:
+        minSlots:
+          type: integer
+          minimum: 1
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          example: false
+        breakSlots:
+          type: integer
+          minimum: 0
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          example: 0
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          example: 200
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          example: 5
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          example: 5
+        breakDuration:
+          type: integer
+          minimum: 1
+          example: 20
+        lunchDuration:
+          type: integer
+          minimum: 1
+          example: 60
+        aperitifSlots:
+          type: integer
+          minimum: 0
+          example: 1
+        aperitifDuration:
+          type: integer
+          minimum: 1
+          example: 90
+        aperitifPosition:
+          type: string
+          enum: [start, end]
+          example: end
+        typicalStartTime:
+          type: string
+          format: time
+          nullable: true
+          example: "13:00"
+        typicalEndTime:
+          type: string
+          format: time
+          nullable: true
+          example: "19:00"
 
     EventSlotConfigurationResponse:
       type: object

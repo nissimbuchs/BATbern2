@@ -884,7 +884,8 @@
     "structuralSessions": {
       "moderation": "Moderierig",
       "break": "Pause",
-      "lunch": "Mittagesse"
+      "lunch": "Mittagesse",
+      "aperitif": "Apéro"
     },
     "speakerPool": {
       "title": "Rednerpool",
@@ -915,7 +916,8 @@
       "clearAll": "Alles lösche",
       "cancel": "Abbräche",
       "confirm": "Bestätige",
-      "generateStructure": "Zeitplanstruktur generiere"
+      "generateStructure": "Zeitplanstruktur generiere",
+      "editEventType": "Veranstaltungstyp bearbeiten"
     },
     "modals": {
       "generateStructure": {
@@ -977,6 +979,32 @@
     },
     "tapToAssign": {
       "placeHint": "↓ Jetz uf e markierte Slot tippe zum platziere"
+    },
+    "editEventType": {
+      "title": "Veranstaltungstyp bearbeiten",
+      "loading": "Konfiguration wird geladen…",
+      "save": "Speichern",
+      "saveError": "Die Konfiguration konnte nicht gespeichert werden. Bitte versuche es erneut.",
+      "assignmentWarning": "Einige Referent:innen sind bereits zu festen Zeiten eingeplant. Eine Änderung der Struktur kann sie verschieben — prüfe die Agenda nach dem Speichern.",
+      "minSlots": "Min. Slots",
+      "maxSlots": "Max. Slots",
+      "slotDuration": "Slot-Dauer (Min.)",
+      "breakSlots": "Anzahl Pausen",
+      "breakDuration": "Pausendauer (Min.)",
+      "lunchSlots": "Mittagsslots",
+      "lunchDuration": "Mittagsdauer (Min.)",
+      "moderationStartDuration": "Eröffnungsmoderation (Min.)",
+      "moderationEndDuration": "Abschlussmoderation (Min.)",
+      "aperitifSlots": "Apéro (0 = aus, 1 = ein)",
+      "aperitifSlotsHelp": "Auf 1 setzen, um dieser Veranstaltung einen Apéro hinzuzufügen.",
+      "aperitifDuration": "Apéro-Dauer (Min.)",
+      "aperitifPosition": "Apéro-Position",
+      "positionStart": "Nach der Eröffnung",
+      "positionEnd": "Nach dem Abschluss",
+      "theoreticalSlotsAM": "Theorieblock am Vormittag (AM/PM-Teilung)",
+      "defaultCapacity": "Standardkapazität",
+      "typicalStartTime": "Startzeit (HH:mm)",
+      "typicalEndTime": "Endzeit (HH:mm)"
     }
   },
   "newsletter": {

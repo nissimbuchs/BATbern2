@@ -24,10 +24,11 @@ import {
   Skeleton,
   Link,
 } from '@mui/material';
-import { AutoAwesome, ClearAll, CalendarMonth } from '@mui/icons-material';
+import { AutoAwesome, ClearAll, CalendarMonth, Tune } from '@mui/icons-material';
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import MicIcon from '@mui/icons-material/Mic';
+import LocalBarIcon from '@mui/icons-material/LocalBar';
 import { AxiosError } from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +38,7 @@ import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssi
 import { useEvent } from '@/hooks/useEvents';
 import { useTimetable } from '@/hooks/useTimetable/useTimetable';
 import type { TimetableSlot } from '@/services/timetableService/timetableService';
+import { EditEventTypeDialog } from '@/components/SlotAssignment/EditEventTypeDialog/EditEventTypeDialog';
 import { UnassignedSpeakersList } from '../UnassignedSpeakersList/UnassignedSpeakersList';
 import { SpeakerPreferencePanel } from '../SpeakerPreferencePanel/SpeakerPreferencePanel';
 import { ConflictDetectionAlert } from '../ConflictDetectionAlert/ConflictDetectionAlert';
@@ -55,7 +57,7 @@ export interface DragDropSlotAssignmentProps {
 // Story 5.7: Single conference room (Main Hall)
 const ROOMS = ['Main Hall'];
 
-const STRUCTURAL_TYPES = ['moderation', 'break', 'lunch'] as const;
+const STRUCTURAL_TYPES = ['moderation', 'break', 'lunch', 'aperitif'] as const;
 type StructuralType = (typeof STRUCTURAL_TYPES)[number];
 
 const STRUCTURAL_STYLES: Record<
@@ -80,6 +82,12 @@ const STRUCTURAL_STYLES: Record<
     icon: <RestaurantIcon fontSize="small" sx={{ color: 'success.main' }} />,
     labelKey: 'slotAssignment.structuralSessions.lunch',
   },
+  aperitif: {
+    bgcolor: 'secondary.50',
+    borderColor: 'secondary.main',
+    icon: <LocalBarIcon fontSize="small" sx={{ color: 'secondary.main' }} />,
+    labelKey: 'slotAssignment.structuralSessions.aperitif',
+  },
 };
 
 const toTimeStr = (d: Date) =>
@@ -88,7 +96,7 @@ const toTimeStr = (d: Date) =>
 /** Resolve the structural session type from a TimetableSlot.type string. */
 const timetableTypeToStructural = (type: TimetableSlot['type']): StructuralType | null => {
   const lower = type.toLowerCase();
-  if (lower === 'moderation' || lower === 'break' || lower === 'lunch') {
+  if (lower === 'moderation' || lower === 'break' || lower === 'lunch' || lower === 'aperitif') {
     return lower as StructuralType;
   }
   return null;
@@ -125,6 +133,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
   const [autoAssignModalOpen, setAutoAssignModalOpen] = useState(false);
   const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
   const [generateStructuralOpen, setGenerateStructuralOpen] = useState(false);
+  const [editEventTypeOpen, setEditEventTypeOpen] = useState(false);
   const [generateStructuralError, setGenerateStructuralError] = useState<string | null>(null);
   const [structuralAlreadyExist, setStructuralAlreadyExist] = useState(false);
   const [draggedSession, setDraggedSession] = useState<Session | null>(null);
@@ -443,6 +452,15 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Button
               variant="outlined"
+              startIcon={<Tune />}
+              onClick={() => setEditEventTypeOpen(true)}
+              data-testid="edit-event-type-button"
+            >
+              {t('slotAssignment.actions.editEventType')}
+            </Button>
+
+            <Button
+              variant="outlined"
               startIcon={<CalendarMonth />}
               onClick={() => {
                 setGenerateStructuralError(null);
@@ -474,6 +492,16 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
           </Box>
         </Paper>
       )}
+
+      <EditEventTypeDialog
+        eventCode={eventCode}
+        open={editEventTypeOpen}
+        onClose={() => setEditEventTypeOpen(false)}
+        hasAssignments={
+          timetable?.slots.some((s) => s.type === 'SPEAKER_SLOT' && !!s.assignedSessionSlug) ??
+          false
+        }
+      />
 
       {/* Success Banner (above the two columns) */}
       {!isLoading && allSessionsAssigned && (
