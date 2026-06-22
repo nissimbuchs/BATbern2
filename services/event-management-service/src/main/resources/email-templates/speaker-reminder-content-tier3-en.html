@@ -1,43 +1,30 @@
 <!-- subject: Final Reminder: Presentation Materials - {{eventTitle}} -->
+<p class="lbl lbl-blue">Final Reminder</p>
 <h2>Final Reminder: Presentation Materials</h2>
+<p class="sub">Berner Architekten Treffen</p>
 
 <p>Dear {{speakerName}},</p>
 
-<p>This is our final reminder regarding the submission of your presentation materials for the upcoming Berner Architekten Treffen. We have contacted you previously but have not yet received your content.</p>
+<p>This is our final reminder. We have contacted you several times but have not yet received your submission.</p>
 
-<p><strong>{{eventTitle}}</strong><br>
-Date: {{eventDate}}</p>
+<p><strong>{{eventTitle}}</strong> — Date: {{eventDate}}</p>
 
 <div class="deadline-box urgent">
-    <h3>Final Content Deadline</h3>
-    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
-    <p style="margin-top: 10px; font-size: 14px;">Only <strong>{{daysRemaining}} days</strong> remaining.</p>
+  <h3>Final Content Deadline</h3>
+  <p class="deadline-date">{{deadline}}</p>
+  <p class="muted">Only {{daysRemaining}} days remaining.</p>
 </div>
 
-<p><strong>Important:</strong> We need your presentation materials to finalize the event program. Without your submission by the deadline above, we will be unable to properly promote your session and may need to make changes to the program schedule. If circumstances prevent you from submitting your materials, please let us know immediately so we can discuss alternatives.</p>
-
-<p>Required materials:</p>
-<ul>
-    <li>Presentation title and abstract</li>
-    <li>Speaker biography and photo</li>
-    <li>Presentation slides (if available)</li>
-</ul>
+<p><strong>Important:</strong> Without your submission by the deadline, we will be unable to properly promote your session and may need to make changes to the program schedule. If circumstances are preventing you from submitting, please let us know immediately.</p>
 
 <div class="cta-section">
-    <p><strong>Submit your materials immediately:</strong></p>
-    <a href="{{portalLink}}" class="cta-button">View Your Dashboard</a>
+  <a href="{{portalLink}}" class="btn btn-primary">View Your Dashboard</a>
 </div>
 
-<div class="contact-box">
-    <h3>Need to Discuss?</h3>
-    <p>If you are facing any challenges or need to discuss the timeline, please reach out to us right away:</p>
-    <p>
-        <strong>{{organizerName}}</strong><br>
-        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-    </p>
+<div class="contact-block">
+  <h3>Need to Discuss?</h3>
+  <p>Please reach out so we can work together to find a solution.<br>
+  {{organizerName}} / <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a></p>
 </div>
 
-<p>We value your participation and want to ensure your session is presented in the best possible way.</p>
-
-<p>Best regards,<br>
-<strong>The BATbern Team</strong></p>
+<p>Best regards,<br><strong>The BATbern Team</strong></p>

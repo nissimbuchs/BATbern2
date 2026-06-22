@@ -1,114 +1,28 @@
-<!-- subject: Will you be there? — {{eventTitle}} is fully booked -->
-<!-- registrant-notice-deregistration-call-selfservice-en.html — "Deregistration call", self-service variant (English) -->
-<!-- Content-only fragment for the batbern-default layout. -->
-<!--
-  Like registrant-notice-deregistration-call, but WITHOUT the per-recipient placeholder
-  {{deregistrationUrl}} (which is only populated after the next backend deploy). This
-  variant instead points at the already-LIVE self-service: on the event page click
-  "Cancel my registration", enter your email, then confirm via the link we send. Works
-  with no new deploy.
-  Event variables:    {{eventType}} {{eventTitle}} {{eventNumber}} {{eventDate}}
-                      {{eventUrl}} {{currentYear}}
--->
+<!-- subject: Will you be there? — BATbern{{eventNumber}} · {{eventTitle}} is fully booked -->
+<div class="hero">
+  <p class="lbl lbl-blue">Berner Architekten Treffen · {{eventType}}</p>
+  <h2>Will you be there?</h2>
+  <p class="sub">BATbern{{eventNumber}} · {{eventTitle}}</p>
+</div>
 
-<!-- ═══════════════════════════════════════════════════════
-     HERO BLOCK — dark navy, like the website header
-     ═══════════════════════════════════════════════════════ -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; margin-bottom: 0;">
-    <tr>
-        <td style="background-color: #18202E; border-radius: 10px 10px 0 0;
-                   padding: 28px 28px 24px; font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-            <p style="margin: 0 0 6px; font-size: 11px; font-weight: 600;
-                      text-transform: uppercase; letter-spacing: 2px; color: #4A90B8;">
-                Berner Architekten Treffen &nbsp;&middot;&nbsp; {{eventType}}
-            </p>
-            <h2 style="margin: 0 0 8px; font-size: 22px; font-weight: 700;
-                       line-height: 1.3; color: #F4F4F5;">
-                Will you be there?
-            </h2>
-            <p style="margin: 0; font-size: 13px; color: #8BA5B8; font-weight: 400;">
-                {{eventTitle}} &nbsp;&middot;&nbsp; BATbern #{{eventNumber}}
-            </p>
-        </td>
-    </tr>
-</table>
+<p>Dear participant,</p>
 
-<!-- Body text -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; background-color: #FFFFFF;
-              border-left: 1px solid #E4E4E7; border-right: 1px solid #E4E4E7;
-              border-bottom: 1px solid #E4E4E7; border-radius: 0 0 10px 10px;
-              margin-bottom: 20px; padding: 4px 0;
-              font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    <tr>
-        <td style="padding: 20px 24px 4px;">
-            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                Dear participant,
-            </p>
-            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                <strong>{{eventTitle}}</strong> on {{eventDate}} is
-                <strong>fully booked</strong> &mdash; and there are people on the waitlist
-                who would love to join.
-            </p>
-            <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                If you find you <strong>can no longer attend</strong>, we would be very grateful
-                if you cancelled your registration. That frees up your seat so someone from the
-                waitlist can take it.
-            </p>
-        </td>
-    </tr>
-</table>
+<p><strong>{{eventTitle}}</strong> on {{eventDate}} is <strong>fully booked</strong> — and there are people on the waitlist who would love to join.</p>
 
-<!-- ═══════════════════════════════════════════════════════
-     CTA SECTION — self-service cancellation via the event page
-     ═══════════════════════════════════════════════════════ -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; background-color: #F0F6FB;
-              border: 1px solid #C8DFF0; border-radius: 10px; margin-bottom: 24px;
-              font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    <tr>
-        <td style="padding: 20px 24px;">
-            <p style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #18181B;">
-                &#10005;&nbsp; How to cancel
-            </p>
-            <p style="margin: 0 0 14px; font-size: 14px; color: #71717A;">
-                Two steps &mdash; no login required:
-            </p>
-            <ol style="margin: 0 0 16px; padding-left: 20px; font-size: 14px; line-height: 1.7; color: #3F3F46;">
-                <li>Open the event page and click <strong>&ldquo;Cancel my registration&rdquo;</strong>.</li>
-                <li>Enter your email address &mdash; we&rsquo;ll send you a confirmation link that completes the cancellation in one click.</li>
-            </ol>
-            <a href="{{eventUrl}}"
-               style="display: inline-block; background-color: #2C5F7C; color: #FFFFFF;
-                      text-decoration: none; padding: 11px 28px; border-radius: 6px;
-                      font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
-                Go to the event page &rarr;
-            </a>
-            <p style="margin: 14px 0 0; font-size: 12px; color: #A1A1AA;">
-                Or copy this link into your browser:
-                <a href="{{eventUrl}}" style="color: #4A90B8; text-decoration: none;">{{eventUrl}}</a>
-            </p>
-        </td>
-    </tr>
-</table>
+<p>If you find you <strong>can no longer attend</strong>, we would be very grateful if you cancelled your registration. That frees up your seat so someone from the waitlist can take it.</p>
 
-<!-- Closing -->
-<p style="margin: 0 0 4px; font-size: 15px; color: #18181B; text-align: left;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    If you&rsquo;re coming: great &mdash; there&rsquo;s nothing to do. We look forward to seeing you!
-</p>
-<p style="margin: 0 0 24px; font-size: 13px; color: #71717A; text-align: left;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    The BATbern Organising Committee
-</p>
+<div class="cta-box">
+  <p><strong>✕ How to cancel</strong></p>
+  <p class="muted">Two steps — no login required:</p>
+  <ol>
+    <li>Open the event page and click <strong>“Cancel my registration”</strong>.</li>
+    <li>Enter your email address — we’ll send you a confirmation link that completes the cancellation in one click.</li>
+  </ol>
+  <a href="{{eventUrl}}" class="btn btn-primary">Go to the event page →</a>
+  <p class="link-fallback">Or copy this link into your browser: <a href="{{eventUrl}}">{{eventUrl}}</a></p>
+</div>
 
-<!-- ═══════════════════════════════════════════════════════
-     FOOTER — explains why this one-off mail arrived
-     ═══════════════════════════════════════════════════════ -->
-<hr style="border: none; border-top: 1px solid #E4E4E7; margin: 0 0 16px;">
-<p style="font-size: 11px; color: #A1A1AA; text-align: center; margin: 0;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    You are receiving this one-off email because you registered for {{eventTitle}}.<br>
-    &copy; {{currentYear}} Berner Architekten Treffen
-</p>
+<p>If you’re coming: great — there’s nothing to do. We look forward to seeing you!<br><span class="muted">The BATbern Organising Committee</span></p>
+
+<hr class="divider">
+<p class="gdpr">You are receiving this one-off email because you registered for {{eventTitle}}.</p>

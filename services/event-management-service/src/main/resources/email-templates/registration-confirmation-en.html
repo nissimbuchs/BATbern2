@@ -1,55 +1,47 @@
-<!-- subject: Registration Confirmation - {{eventTitle}} -->
-<h2>📧 Registration Received</h2>
+<!-- subject: Registration Confirmation - {{eventCode}} - {{eventTitle}} -->
+<p class="lbl lbl-blue">Registration</p>
+<h2>Registration Received</h2>
+<p class="sub">Please confirm your email address</p>
 
 <p>Hello {{attendeeFirstName}} {{attendeeLastName}},</p>
-
 <p>Thank you for registering! To complete your registration, please confirm your email address for the following event:</p>
 
-<div class="event-details">
-    <h2>{{eventTitle}}</h2>
-    <div class="detail-row">
-        <span class="detail-label">Date:</span>
-        <span class="detail-value">{{eventDate}}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Time:</span>
-        <span class="detail-value">{{eventTime}}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Venue:</span>
-        <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
-    </div>
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Date</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Time</td>
+      <td class="detail-value">{{eventTime}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Venue</td>
+      <td class="detail-value">{{venueName}}<br>{{venueAddress}}</td>
+    </tr>
+  </table>
 </div>
 
-<p><strong>Important:</strong> Please confirm your registration within 48 hours by clicking the button below:</p>
+<p><strong>Important:</strong> Please confirm your registration within 48 hours:</p>
 
-<div style="text-align: center;">
-    <a href="{{confirmationUrl}}" class="cta-button">✓ Confirm Registration Now</a>
+<div class="cta-section">
+  <a href="{{confirmationUrl}}" class="btn btn-accept">Confirm Registration</a>
 </div>
+<p class="link-fallback">If the button does not work, copy this link into your browser:<br><a href="{{confirmationUrl}}">{{confirmationUrl}}</a></p>
 
-<p style="font-size: 12px; color: #666; margin-top: 20px;">
-    If the button doesn't work, copy and paste this link into your browser:<br>
-    <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
-</p>
-
-<div class="create-account-box">
-    <h3>💡 Create a Free Account</h3>
-    <p>With a BATbern account, you can:</p>
-    <ul>
-        <li>Manage your registrations</li>
-        <li>Receive event updates</li>
-        <li>Access exclusive content</li>
-    </ul>
-    <a href="{{createAccountUrl}}" class="cta-button">Create Free Account Now</a>
+<div class="info-box">
+  <h3>Create a Free Account</h3>
+  <ul>
+    <li>Manage registrations</li>
+    <li>Receive event updates</li>
+    <li>Access exclusive content</li>
+  </ul>
+  <a href="{{createAccountUrl}}" class="btn btn-primary">Create Free Account</a>
 </div>
 
 <p>A calendar entry (.ics file) is attached to this email.</p>
-
 <p>We look forward to seeing you at the event!</p>
-
-<p style="font-size: 12px; color: #666; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
-    Need to cancel? <a href="{{deregistrationUrl}}" style="color: #666;">Cancel your registration</a>
-</p>
-
-<p>Best regards,<br>
-<strong>The BATbern Team</strong></p>
+<p class="muted">Need to cancel? <a href="{{deregistrationUrl}}">Cancel your registration</a></p>
+<p>Best regards,<br><strong>The BATbern Team</strong></p>

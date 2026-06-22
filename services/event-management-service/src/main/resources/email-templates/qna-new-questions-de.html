@@ -1,98 +1,22 @@
 <!-- subject: Neue Fragen in der Q&A — {{sessionTitle}} -->
-<!-- qna-new-questions-de.html — Story 15.7 "Neue Q&A-Fragen" Digest (Deutsch) -->
-<!-- Content-only Fragment für das batbern-default Layout. -->
-<!--
-  Geht an Referent:innen, Co-Referent:innen und Moderator:innen einer Session, wenn in deren
-  Q&A neue Fragen aus dem Publikum eintreffen. Gebündelt (Digest), niemals eine Mail pro Frage.
-  Übernimmt die Gestaltung von slides-online / newsletter-event.
-  Verfügbare Variablen: {{count}} {{isSingle}} {{isMultiple}} {{sessionTitle}} {{eventTitle}}
-                        {{eventNumber}} {{qnaLink}} {{recipientName}} {{currentYear}}
--->
+<div class="hero">
+  <p class="lbl lbl-blue">Berner Architekten Treffen · Q&amp;A</p>
+  <h2>{{#isSingle}}Eine neue Frage in Ihrer Q&amp;A{{/isSingle}}{{#isMultiple}}{{count}} neue Fragen in Ihrer Q&amp;A{{/isMultiple}}</h2>
+  <p class="sub">{{sessionTitle}} · {{eventTitle}} (BATbern #{{eventNumber}})</p>
+</div>
 
-<!-- HERO-BLOCK -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; margin-bottom: 0;">
-    <tr>
-        <td style="background-color: #18202E; border-radius: 10px 10px 0 0;
-                   padding: 28px 28px 24px; font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-            <p style="margin: 0 0 6px; font-size: 11px; font-weight: 600;
-                      text-transform: uppercase; letter-spacing: 2px; color: #4A90B8;">
-                Berner Architekten Treffen &nbsp;&middot;&nbsp; Q&amp;A
-            </p>
-            <h2 style="margin: 0 0 8px; font-size: 22px; font-weight: 700;
-                       line-height: 1.3; color: #F4F4F5;">
-                {{#isSingle}}Eine neue Frage in Ihrer Q&amp;A{{/isSingle}}{{#isMultiple}}{{count}} neue Fragen in Ihrer Q&amp;A{{/isMultiple}}
-            </h2>
-            <p style="margin: 0; font-size: 13px; color: #8BA5B8; font-weight: 400;">
-                {{sessionTitle}} &nbsp;&middot;&nbsp; {{eventTitle}} (BATbern #{{eventNumber}})
-            </p>
-        </td>
-    </tr>
-</table>
+<p>Hallo {{recipientName}}</p>
 
-<!-- Fliesstext -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; background-color: #FFFFFF;
-              border-left: 1px solid #E4E4E7; border-right: 1px solid #E4E4E7;
-              border-bottom: 1px solid #E4E4E7; border-radius: 0 0 10px 10px;
-              margin-bottom: 20px; padding: 4px 0;
-              font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    <tr>
-        <td style="padding: 20px 24px 4px;">
-            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                Hallo {{recipientName}}
-            </p>
-            <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                In der Q&amp;A zu Ihrer Session <strong>{{sessionTitle}}</strong>
-                {{#isSingle}}ist eine neue Frage aus dem Publikum eingegangen.{{/isSingle}}{{#isMultiple}}sind {{count}} neue Fragen aus dem Publikum eingegangen.{{/isMultiple}}
-                Sie können direkt darauf antworten.
-            </p>
-        </td>
-    </tr>
-</table>
+<p>In der Q&amp;A zu Ihrer Session <strong>{{sessionTitle}}</strong> {{#isSingle}}ist eine neue Frage aus dem Publikum eingegangen.{{/isSingle}}{{#isMultiple}}sind {{count}} neue Fragen aus dem Publikum eingegangen.{{/isMultiple}} Sie können direkt darauf antworten.</p>
 
-<!-- CTA-SEKTION -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; background-color: #F0F6FB;
-              border: 1px solid #C8DFF0; border-radius: 10px; margin-bottom: 24px;
-              font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    <tr>
-        <td style="padding: 20px 24px;">
-            <p style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #18181B;">
-                &#128172;&nbsp; Zur Q&amp;A
-            </p>
-            <p style="margin: 0 0 16px; font-size: 14px; color: #71717A;">
-                Fragen ansehen und beantworten.
-            </p>
-            <a href="{{qnaLink}}"
-               style="display: inline-block; background-color: #2C5F7C; color: #FFFFFF;
-                      text-decoration: none; padding: 11px 28px; border-radius: 6px;
-                      font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
-                Q&amp;A öffnen &rarr;
-            </a>
-            <p style="margin: 14px 0 0; font-size: 12px; color: #A1A1AA;">
-                Oder kopieren Sie diesen Link in Ihren Browser:
-                <a href="{{qnaLink}}" style="color: #4A90B8; text-decoration: none;">{{qnaLink}}</a>
-            </p>
-        </td>
-    </tr>
-</table>
+<div class="cta-box">
+  <p><strong>💬 Zur Q&amp;A</strong></p>
+  <p class="muted">Fragen ansehen und beantworten.</p>
+  <a href="{{qnaLink}}" class="btn btn-primary">Q&amp;A öffnen →</a>
+  <p class="link-fallback">Oder kopieren Sie diesen Link in Ihren Browser: <a href="{{qnaLink}}">{{qnaLink}}</a></p>
+</div>
 
-<!-- Schluss -->
-<p style="margin: 0 0 4px; font-size: 15px; color: #18181B; text-align: left;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    Danke, dass Sie Ihr Wissen mit der BAT-Community teilen.
-</p>
-<p style="margin: 0 0 24px; font-size: 13px; color: #71717A; text-align: left;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    Das BATbern-Organisationskomitee
-</p>
+<p>Danke, dass Sie Ihr Wissen mit der BAT-Community teilen.<br><span class="muted">Das BATbern-Organisationskomitee</span></p>
 
-<!-- FUSSZEILE -->
-<hr style="border: none; border-top: 1px solid #E4E4E7; margin: 0 0 16px;">
-<p style="font-size: 11px; color: #A1A1AA; text-align: center; margin: 0;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    Sie erhalten diese E-Mail als Referent:in oder Moderator:in dieser Session.
-    Die Häufigkeit dieser Benachrichtigungen können Sie in Ihren Konto-Einstellungen anpassen.<br>
-    &copy; {{currentYear}} Berner Architekten Treffen
-</p>
+<hr class="divider">
+<p class="gdpr">Sie erhalten diese E-Mail als Referent:in oder Moderator:in dieser Session. Die Häufigkeit dieser Benachrichtigungen können Sie in Ihren Konto-Einstellungen anpassen.</p>

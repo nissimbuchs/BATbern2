@@ -1,41 +1,36 @@
 <!-- subject: Erinnerung: Präsentationsunterlagen - {{eventTitle}} -->
+<p class="lbl lbl-blue">Erinnerung</p>
 <h2>Erinnerung: Präsentationsunterlagen</h2>
+<p class="sub">Berner Architekten Treffen</p>
 
 <p>Guten Tag {{speakerName}},</p>
 
-<p>Nochmals vielen Dank, dass Sie unsere Einladung als Referent beim kommenden Berner Architekten Treffen angenommen haben. Wir möchten Sie daran erinnern, Ihre Präsentationsunterlagen einzureichen, damit wir mit der Vorbereitung des Eventprogramms beginnen können.</p>
+<p>Nochmals vielen Dank für Ihre Zusage als Referent. Wir möchten Sie daran erinnern, Ihre Präsentationsunterlagen einzureichen, damit wir mit der Vorbereitung des Eventprogramms beginnen können.</p>
 
-<p><strong>{{eventTitle}}</strong><br>
-Datum: {{eventDate}}</p>
+<p><strong>{{eventTitle}}</strong> — Datum: {{eventDate}}</p>
 
 <div class="deadline-box">
-    <h3>Frist für die Einreichung</h3>
-    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
-    <p style="margin-top: 10px; font-size: 14px;">Sie haben noch <strong>{{daysRemaining}} Tage</strong> Zeit, Ihre Unterlagen einzureichen.</p>
+  <h3>Frist für die Einreichung</h3>
+  <p class="deadline-date">{{deadline}}</p>
+  <p class="muted">Sie haben noch {{daysRemaining}} Tage Zeit.</p>
 </div>
 
 <p>Bitte reichen Sie Folgendes über das Referenten-Portal ein:</p>
 <ul>
-    <li>Titel und Zusammenfassung Ihrer Präsentation</li>
-    <li>Referentenbiografie und Foto</li>
-    <li>Präsentationsfolien (falls verfügbar)</li>
+  <li>Titel und Zusammenfassung</li>
+  <li>Referentenbiografie und Foto</li>
+  <li>Präsentationsfolien (falls verfügbar)</li>
 </ul>
 
 <div class="cta-section">
-    <p><strong>Unterlagen einreichen:</strong></p>
-    <a href="{{portalLink}}" class="cta-button">Zum Dashboard</a>
+  <a href="{{portalLink}}" class="btn btn-primary">Zum Dashboard</a>
 </div>
 
-<div class="contact-box">
-    <h3>Fragen?</h3>
-    <p>Falls Sie Hinweise zu den Anforderungen benötigen oder Fragen haben, helfen wir Ihnen gerne:</p>
-    <p>
-        <strong>{{organizerName}}</strong><br>
-        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-    </p>
+<div class="contact-block">
+  <h3>Fragen?</h3>
+  <p>{{organizerName}} / <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a></p>
 </div>
 
-<p>Wir freuen uns auf Ihre Teilnahme und Ihre Unterlagen!</p>
+<p>Wir freuen uns auf Ihre Teilnahme!</p>
 
-<p>Mit freundlichen Grüßen,<br>
-<strong>Das BATbern Team</strong></p>
+<p>Mit freundlichen Grüssen,<br><strong>Das BATbern Team</strong></p>

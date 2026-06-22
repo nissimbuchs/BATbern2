@@ -1,10 +1,30 @@
 <!-- subject: Sie stehen auf der Warteliste – {{eventTitle}} -->
-<h2>Hallo {{recipientName}},</h2>
+<p class="lbl lbl-blue">Warteliste</p>
+<h2>Sie stehen auf der Warteliste</h2>
+<p class="sub">Wir benachrichtigen Sie, sobald ein Platz frei wird</p>
+
+<p>Hallo {{recipientName}},</p>
 <p>Die Veranstaltung ist leider bereits ausgebucht. Sie wurden auf die Warteliste gesetzt:</p>
-<p><strong>{{eventTitle}}</strong><br>
-Datum: {{eventDate}}<br>
-Ort: {{venueAddress}}</p>
-<p>Ihr Registrierungscode: <strong>{{registrationCode}}</strong></p>
+
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Datum</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Ort</td>
+      <td class="detail-value">{{venueAddress}}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="reg-code">
+  <p class="reg-code-label">Ihr Registrierungscode</p>
+  <p class="reg-code-value">{{registrationCode}}</p>
+</div>
+
 <p>Falls ein Platz frei wird, werden wir Sie automatisch benachrichtigen und registrieren.</p>
 <p>Bei Fragen besuchen Sie: <a href="{{eventUrl}}">{{eventUrl}}</a></p>
-<p>Mit freundlichen Grüssen,<br>Das BATbern Team</p>
+<p>Mit freundlichen Grüssen,<br><strong>Das BATbern Team</strong></p>

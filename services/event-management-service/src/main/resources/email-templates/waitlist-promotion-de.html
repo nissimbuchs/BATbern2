@@ -1,21 +1,37 @@
 <!-- subject: Sie wurden von der Warteliste registriert – {{eventTitle}} -->
+<p class="lbl lbl-blue">Warteliste</p>
 <h2>Herzlichen Glückwunsch, {{recipientName}}!</h2>
+<p class="sub">Ein Platz ist für Sie frei geworden</p>
+
 <p>Ein Platz ist frei geworden und Sie wurden von der Warteliste für folgende Veranstaltung registriert:</p>
-<p><strong>{{eventTitle}}</strong><br>
-Datum: {{eventDate}}<br>
-Ort: {{venueAddress}}</p>
-<p>Ihr Registrierungscode: <strong>{{registrationCode}}</strong></p>
-<p><strong>Wichtig:</strong> Bitte bestätigen Sie Ihre Registrierung innerhalb von 48 Stunden:</p>
-<div style="text-align: center;">
-    <a href="{{confirmationUrl}}" class="cta-button">✓ Registrierung jetzt bestätigen</a>
+
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Datum</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Ort</td>
+      <td class="detail-value">{{venueAddress}}</td>
+    </tr>
+  </table>
 </div>
-<p style="font-size: 12px; color: #666; margin-top: 20px;">
-    Falls der Button nicht funktioniert, kopieren Sie bitte diesen Link in Ihren Browser:<br>
-    <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
-</p>
+
+<div class="reg-code">
+  <p class="reg-code-label">Ihr Registrierungscode</p>
+  <p class="reg-code-value">{{registrationCode}}</p>
+</div>
+
+<p><strong>Wichtig:</strong> Bitte bestätigen Sie Ihre Registrierung innerhalb von 48 Stunden:</p>
+
+<div class="cta-section">
+  <a href="{{confirmationUrl}}" class="btn btn-accept">Registrierung bestätigen</a>
+</div>
+<p class="link-fallback">Falls der Button nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:<br><a href="{{confirmationUrl}}">{{confirmationUrl}}</a></p>
+
 <p>Wir freuen uns, Sie am Event begrüssen zu dürfen!</p>
-<p>Bei Fragen stehen wir Ihnen gerne zur Verfügung: <a href="{{eventUrl}}">{{eventUrl}}</a></p>
-<p style="font-size: 12px; color: #666; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
-    Möchten Sie Ihre Registrierung stornieren? <a href="{{deregistrationUrl}}" style="color: #666;">Hier abmelden</a>
-</p>
-<p>Mit freundlichen Grüssen,<br>Das BATbern Team</p>
+<p>Bei Fragen: <a href="{{eventUrl}}">{{eventUrl}}</a></p>
+<p class="muted">Möchten Sie Ihre Registrierung stornieren? <a href="{{deregistrationUrl}}">Hier abmelden</a></p>
+<p>Mit freundlichen Grüssen,<br><strong>Das BATbern Team</strong></p>

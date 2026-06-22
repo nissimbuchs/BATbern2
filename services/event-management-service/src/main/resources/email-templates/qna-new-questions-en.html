@@ -1,98 +1,22 @@
 <!-- subject: New questions in your session Q&A — {{sessionTitle}} -->
-<!-- qna-new-questions-en.html — Story 15.7 "New Q&A questions" digest (English) -->
-<!-- Content-only fragment for the batbern-default layout. -->
-<!--
-  Sent to a session's speaker, co-speakers and moderator when new audience questions arrive in
-  their Q&A. Bundled (digest), never one mail per question. Shares the slides-online / newsletter
-  styling.
-  Available variables: {{count}} {{isSingle}} {{isMultiple}} {{sessionTitle}} {{eventTitle}}
-                       {{eventNumber}} {{qnaLink}} {{recipientName}} {{currentYear}}
--->
+<div class="hero">
+  <p class="lbl lbl-blue">Berner Architekten Treffen · Q&amp;A</p>
+  <h2>{{#isSingle}}A new question in your Q&amp;A{{/isSingle}}{{#isMultiple}}{{count}} new questions in your Q&amp;A{{/isMultiple}}</h2>
+  <p class="sub">{{sessionTitle}} · {{eventTitle}} (BATbern #{{eventNumber}})</p>
+</div>
 
-<!-- HERO BLOCK -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; margin-bottom: 0;">
-    <tr>
-        <td style="background-color: #18202E; border-radius: 10px 10px 0 0;
-                   padding: 28px 28px 24px; font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-            <p style="margin: 0 0 6px; font-size: 11px; font-weight: 600;
-                      text-transform: uppercase; letter-spacing: 2px; color: #4A90B8;">
-                Berner Architekten Treffen &nbsp;&middot;&nbsp; Q&amp;A
-            </p>
-            <h2 style="margin: 0 0 8px; font-size: 22px; font-weight: 700;
-                       line-height: 1.3; color: #F4F4F5;">
-                {{#isSingle}}A new question in your Q&amp;A{{/isSingle}}{{#isMultiple}}{{count}} new questions in your Q&amp;A{{/isMultiple}}
-            </h2>
-            <p style="margin: 0; font-size: 13px; color: #8BA5B8; font-weight: 400;">
-                {{sessionTitle}} &nbsp;&middot;&nbsp; {{eventTitle}} (BATbern #{{eventNumber}})
-            </p>
-        </td>
-    </tr>
-</table>
+<p>Hi {{recipientName}}</p>
 
-<!-- Body -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; background-color: #FFFFFF;
-              border-left: 1px solid #E4E4E7; border-right: 1px solid #E4E4E7;
-              border-bottom: 1px solid #E4E4E7; border-radius: 0 0 10px 10px;
-              margin-bottom: 20px; padding: 4px 0;
-              font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    <tr>
-        <td style="padding: 20px 24px 4px;">
-            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                Hi {{recipientName}}
-            </p>
-            <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                The Q&amp;A for your session <strong>{{sessionTitle}}</strong> has
-                {{#isSingle}}a new question from the audience.{{/isSingle}}{{#isMultiple}}{{count}} new questions from the audience.{{/isMultiple}}
-                You can reply to them directly.
-            </p>
-        </td>
-    </tr>
-</table>
+<p>The Q&amp;A for your session <strong>{{sessionTitle}}</strong> has {{#isSingle}}a new question from the audience.{{/isSingle}}{{#isMultiple}}{{count}} new questions from the audience.{{/isMultiple}} You can reply to them directly.</p>
 
-<!-- CTA SECTION -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; background-color: #F0F6FB;
-              border: 1px solid #C8DFF0; border-radius: 10px; margin-bottom: 24px;
-              font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    <tr>
-        <td style="padding: 20px 24px;">
-            <p style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #18181B;">
-                &#128172;&nbsp; Go to the Q&amp;A
-            </p>
-            <p style="margin: 0 0 16px; font-size: 14px; color: #71717A;">
-                View the questions and answer them.
-            </p>
-            <a href="{{qnaLink}}"
-               style="display: inline-block; background-color: #2C5F7C; color: #FFFFFF;
-                      text-decoration: none; padding: 11px 28px; border-radius: 6px;
-                      font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
-                Open the Q&amp;A &rarr;
-            </a>
-            <p style="margin: 14px 0 0; font-size: 12px; color: #A1A1AA;">
-                Or copy this link into your browser:
-                <a href="{{qnaLink}}" style="color: #4A90B8; text-decoration: none;">{{qnaLink}}</a>
-            </p>
-        </td>
-    </tr>
-</table>
+<div class="cta-box">
+  <p><strong>💬 Go to the Q&amp;A</strong></p>
+  <p class="muted">View the questions and answer them.</p>
+  <a href="{{qnaLink}}" class="btn btn-primary">Open the Q&amp;A →</a>
+  <p class="link-fallback">Or copy this link into your browser: <a href="{{qnaLink}}">{{qnaLink}}</a></p>
+</div>
 
-<!-- Sign-off -->
-<p style="margin: 0 0 4px; font-size: 15px; color: #18181B; text-align: left;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    Thank you for sharing your knowledge with the BAT community.
-</p>
-<p style="margin: 0 0 24px; font-size: 13px; color: #71717A; text-align: left;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    The BATbern organising committee
-</p>
+<p>Thank you for sharing your knowledge with the BAT community.<br><span class="muted">The BATbern organising committee</span></p>
 
-<!-- FOOTER -->
-<hr style="border: none; border-top: 1px solid #E4E4E7; margin: 0 0 16px;">
-<p style="font-size: 11px; color: #A1A1AA; text-align: center; margin: 0;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    You receive this email as a speaker or moderator of this session.
-    You can adjust how often you get these notifications in your account settings.<br>
-    &copy; {{currentYear}} Berner Architekten Treffen
-</p>
+<hr class="divider">
+<p class="gdpr">You receive this email as a speaker or moderator of this session. You can adjust how often you get these notifications in your account settings.</p>
