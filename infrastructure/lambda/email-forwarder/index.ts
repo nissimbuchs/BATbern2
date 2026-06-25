@@ -98,7 +98,15 @@ export const handler = async (event: S3Event): Promise<void> => {
         const moderatorAddr = `batbern${speakerMatch[1]}-moderator@${forwardingDomain}`;
         for (const m of await resolveRecipients(moderatorAddr)) moderatorCcSet.add(m);
       } else if (moderatorMatch) {
-        for (const m of resolved) moderatorCcSet.add(m);
+        // A standalone batbern{N}-moderator@ mail (no -speaker@ alias in this
+        // message) makes the moderator the actual destination → individual send.
+        // Also feed moderatorCcSet so that a mixed mail addressing BOTH -speaker@
+        // and -moderator@ still Cc's the moderator on the speaker broadcast
+        // (the speakerMode block de-dups To vs Cc, so no double delivery).
+        for (const m of resolved) {
+          recipientSet.add(m);
+          moderatorCcSet.add(m);
+        }
       } else {
         for (const r of resolved) recipientSet.add(r);
       }

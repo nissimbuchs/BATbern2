@@ -38,7 +38,7 @@ Frozen Q&A attached to the session's public archive page — permanent
 |--------|-----|------|
 | Post a question / answer | Logged-in attendees and speakers | While the window is **open** |
 | Read the Q&A | **Anyone** (public) — including the frozen archive | Always |
-| Take down a post | Organizers | While open |
+| Take down a post | Organizers | While open — removed posts are dropped entirely from the thread |
 | Extend / close early | Organizers | While open |
 
 - **Posting is login-gated.** An anonymous attempt to post a question or answer is rejected with **401**.
@@ -46,7 +46,7 @@ Frozen Q&A attached to the session's public archive page — permanent
 
 ## Moderation
 
-The Q&A ships on a deliberately simple moderation floor: **login accountability + organizer takedown**. Every post is attributable to a logged-in user, and you can **remove any post**. Changes (takedown, extend, close-early) take effect immediately. Agent-assisted curation is a possible later layer — it is not a launch dependency.
+The Q&A ships on a deliberately simple moderation floor: **login accountability + organizer takedown**. Every post is attributable to a logged-in user, and you can **remove any post**. Removed posts are dropped entirely from the thread (not shown as tombstones); removing a question also drops its answers. Posts stay soft-deleted in the database for audit. Changes (takedown, extend, close-early) take effect immediately. Agent-assisted curation is a possible later layer — it is not a launch dependency.
 
 ## When the window closes
 

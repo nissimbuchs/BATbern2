@@ -1149,6 +1149,63 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
     expect(raw).toContain('X-SES-CONFIGURATION-SET: batbern-staging-forwarder');
   });
 
+  // Regression for the 2026-06-25 incident (PR #787, commit 5ed2bef3): a standalone
+  // batbern{N}-moderator@ mail (no -speaker@ alias in the same message) was silently
+  // dropped. The moderator addresses were routed into moderatorCcSet, which is only
+  // consumed inside the speaker-broadcast branch; with speakerMode=false they were
+  // orphaned and the handler logged "No recipients resolved" → EmailsUnresolved.
+  test('should_deliverToModerator_when_standaloneModeratorAlias', async () => {
+    mockFetch();
+    mockS3(
+      [
+        'From: Visitor <visitor@example.com>',
+        'To: batbern59-moderator@batbern.ch',
+        'Subject: Question for the moderator',
+        'Content-Type: text/plain',
+        '',
+        'Hello moderator',
+      ].join('\r\n'),
+    );
+
+    await forwarderHandler(s3Event() as never);
+
+    // The moderator address resolves to ['mod@batbern.ch'] — it must actually be sent to.
+    const calls = sesMock.commandCalls(SendRawEmailCommand);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].args[0].input.Destinations).toEqual(['mod@batbern.ch']);
+  });
+
+  // Guard the behaviour change: a mixed mail addressing BOTH -speaker@ and -moderator@
+  // must still produce ONE speaker broadcast and must NOT deliver the moderator twice
+  // (once individually + once on the broadcast). speakerMode folds recipientSet into the
+  // visible To and de-dups Cc, so the moderator appears exactly once across To+Cc.
+  test('should_notDoubleDeliverModerator_when_bothSpeakerAndModeratorAliases', async () => {
+    mockFetch();
+    mockS3(
+      [
+        'From: Org <org@test.ch>',
+        'To: batbern59-speaker@batbern.ch, batbern59-moderator@batbern.ch',
+        'Subject: Info for speakers and moderator',
+        'Content-Type: text/plain',
+        '',
+        'Hello all',
+      ].join('\r\n'),
+    );
+
+    await forwarderHandler(s3Event() as never);
+
+    // Exactly one broadcast send, not an extra individual send for the moderator.
+    const calls = sesMock.commandCalls(SendRawEmailCommand);
+    expect(calls).toHaveLength(1);
+    const dests = calls[0].args[0].input.Destinations as string[];
+    // Each address appears once; moderator is not duplicated.
+    expect(dests).toEqual(
+      expect.arrayContaining(['alice@example.com', 'bob@example.com', 'mod@batbern.ch']),
+    );
+    expect(dests).toHaveLength(3);
+    expect(dests.filter((d) => d === 'mod@batbern.ch')).toHaveLength(1);
+  });
+
   test('should_keepIndividualSends_when_nonSpeakerAlias', async () => {
     mockFetch();
     mockS3(

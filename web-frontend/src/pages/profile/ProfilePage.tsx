@@ -104,7 +104,22 @@ const ProfilePage = () => {
     mutationFn: (updates: Partial<User> & { termsAccepted?: boolean }) =>
       updateUserProfile(updates),
     onSuccess: (updatedUser) => {
-      queryClient.setQueryData(['user-profile-me'], { ...profileData, user: updatedUser });
+      // PUT /me returns `companyId` but does NOT expand the nested `company`
+      // object (only GET ?include=company does). Writing the bare response into
+      // the cache would drop the resolved display name, so the post-save re-sync
+      // falls back to the slug in the company chip (#811). Preserve the display
+      // name we already hold in state, mirroring the GET-expanded company shape.
+      const mergedUser: User = {
+        ...updatedUser,
+        company: updatedUser.companyId
+          ? {
+              id: updatedUser.companyId,
+              name: updatedUser.companyId,
+              displayName: companyDisplayName || undefined,
+            }
+          : undefined,
+      };
+      queryClient.setQueryData(['user-profile-me'], { ...profileData, user: mergedUser });
       setHasUnsavedChanges(false);
     },
   });

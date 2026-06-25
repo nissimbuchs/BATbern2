@@ -137,6 +137,39 @@ describe('ProfilePage — Story 12.11 role-neutral profile with tabs', () => {
     });
   });
 
+  it('should_keepCompanyDisplayName_when_profileSavedWithSelectedCompany', async () => {
+    // #811: the company chip shows the display name on load but reverted to the
+    // slug after Save. Root cause: PUT /me returns `companyId` but does NOT expand
+    // the `company` object (only GET ?include=company does), so the post-save
+    // re-sync fell back to `companyId` (the slug). The chip label is
+    // `companyDisplayName || companyId`, so the resolved name must survive the save.
+    const loaded = profileFixture({
+      company: { id: 'elca', name: 'elca', displayName: 'ELCA' },
+    });
+    mockedGetProfile.mockResolvedValue(loaded as never);
+    // Mirror the real backend PUT response: companyId present, company object absent.
+    mockedUpdateProfile.mockResolvedValue({ ...loaded.user, company: undefined } as never);
+    const user = userEvent.setup();
+
+    renderPage();
+
+    const chip = await screen.findByTestId('registration-company-chip');
+    expect(chip).toHaveTextContent('ELCA');
+
+    const firstNameInput = await screen.findByLabelText('First Name');
+    await user.clear(firstNameInput);
+    await user.type(firstNameInput, 'Changed');
+    await user.click(screen.getByText('Save Changes'));
+
+    await waitFor(() => expect(mockedUpdateProfile).toHaveBeenCalled());
+
+    // After save the chip must still show the display name, never the slug.
+    await waitFor(() => {
+      expect(screen.getByTestId('registration-company-chip')).toHaveTextContent('ELCA');
+    });
+    expect(screen.getByTestId('registration-company-chip')).not.toHaveTextContent('elca');
+  });
+
   it('should_showConsentCheckboxWithLinks_when_termsNotAccepted', async () => {
     mockedGetProfile.mockResolvedValue(profileFixture({ termsAcceptedAt: null }) as never);
     const user = userEvent.setup();
