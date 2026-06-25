@@ -99,15 +99,17 @@ Subscribers and attendees can manage their preferences simply by **replying** to
 
 ### Email Forwarding & Distribution Lists (2026-03)
 
-The platform provides serverless email forwarding for 6 inboxes: `ok@`, `info@`, `events@`, `partner@`, `support@`, and `batbernNN@batbern.ch`. Emails received at these addresses are automatically forwarded to the appropriate recipients based on their role or event registration status:
+The platform provides serverless email forwarding for 6 inboxes: `ok@`, `info@`, `events@`, `partner@`, `support@`, and `batbernNN@batbern.ch` (including the per-event aliases `batbernNN-speaker@`, `batbernNN-moderator@` and `batbernNN-participants@`). Emails received at these addresses are automatically forwarded to the appropriate recipients based on their role or event registration status:
 
 - **Dynamic recipient resolution** — Lambda resolves recipients via role-based and registration-based API calls
 - **Sender exclusion** — Original sender is excluded from forwarding to prevent bounce loops
 - **CC address forwarding** — CC recipients on inbound emails are recognised as mailing-list addresses and resolved through the same recipient-resolution pipeline; they are forwarded alongside the primary recipients
 - **All mailing list variants recognised** — All `batbernNN@batbern.ch` series addresses (e.g. `batbern44@batbern.ch`) are detected and handled correctly, not only the latest series
+- **Event-specific aliases** — The `-speaker@` alias resolves to both the primary speaker and co-speakers on the event's scheduled sessions, delivered as a single visible message (all speakers in `To:`, the event organizer in `Cc:`) so the recipient list is verifiable at a glance. The `-moderator@` alias reaches the event organizer. Other aliases keep one-copy-per-recipient delivery for privacy.
 - **Environment isolation** — Staging uses `replies@staging.batbern.ch` with `noreply@batbern.ch`; production uses `replies@batbern.ch` with `noreply@batbern.ch`
 - **Admin configuration** — Organizers manage forwarding rules via Admin Settings UI
 - **Additional user emails** (Story 10.32) — A user can register additional email addresses on their profile. Those addresses then both **receive** fan-out mail destined for the user's primary email and are treated as **authorised senders** by the forwarder's sender-auth check (so mail sent from a legacy/shared/personal address is not silently dropped).
+- **SES delivery tracking** — Forwarded mail is routed through a dedicated SES configuration set, so delivery/bounce/complaint events are tracked separately from newsletter sends (forwarder bounces do not affect newsletter list hygiene).
 
 ### Partner Meeting iCal RSVP Parsing (2026-03)
 

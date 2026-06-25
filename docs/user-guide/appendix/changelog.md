@@ -8,8 +8,8 @@ Version history and release notes for the BATbern platform. Releases follow [Sem
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes and minor improvements
 
-**Current Version**: v1.3.0
-**Last Updated**: 2026-06-13
+**Current Version**: v1.3.1
+**Last Updated**: 2026-06-25
 
 ---
 
@@ -39,6 +39,8 @@ Each release includes:
 - 📋 Attendee Event History — logged-in dashboard of events the attendee registered for / attended
 - 📋 Curated Thank-You Marquee — feature selected thank-you notes in the public homepage marquee
 
+> **ℹ️ Note**: Several Epic 7 attendee touchpoints already shipped incrementally in **v1.3.1** (dashboard greeting, pre-event Q&A visibility, Thank-the-Organizers navigation button). The items above track what remains for the v1.4.0 cut.
+
 **Planned Features — Platform**:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
@@ -62,6 +64,19 @@ Each release includes:
 ---
 
 ## v1.3.x - Current Release
+
+### v1.3.1 - Q&A, Email Forwarding & Registrant-Notice Fixes `[2026-06-15]`
+
+**Type**: Patch Release
+
+**Improvements**:
+- ✅ Speaker email alias (`batbernNN-speaker@`) now resolves to the primary speaker **and** co-speakers, and is delivered as a single visible message — all speakers in `To:`, the event organizer in `Cc:` — so the recipient list is verifiable at a glance. Forwarded mail now has dedicated SES delivery/bounce tracking, separate from newsletter list hygiene.
+- ✅ Early Epic 7 attendee touchpoints shipped incrementally: the attendee dashboard greets by profile first name; per-session Q&A is visible pre-event (from when speakers are published); and Thank-the-Organizers moved to a prominent navigation button.
+
+**Bug Fixes**:
+- ✅ Removed Q&A posts are now dropped entirely from the thread instead of shown as tombstones; removing a question also drops its answers (posts stay soft-deleted in the database for audit).
+- ✅ The post-event "slides are online" email now reaches registrants who **attended** the event — audience is `registered` + `confirmed` + `attended` (`waitlist`/`cancelled` excluded) — matching the mail's post-event timing.
+- ✅ Company-logo lookup reads the denormalised `logo_url` column (fixes missing logos); company logos render with CDN `fit=inside` to avoid black bars.
 
 ### v1.3.0 - Google SSO, Unified Speaker Workflow & Organizer/Admin Cluster `[2026-06-13]`
 

@@ -36,7 +36,7 @@ AWS SES  →  DE / EN "slides-online" template
 ## For organizers
 
 1. Open the **"Newsletter: Slides Are Online"** task on the event.
-2. Send. The email goes to the event's **active registrants** — those with status `registered` or `confirmed`. It is not sent to the global newsletter-subscriber pool; the recipients are this event's registrants only.
+2. Send. The email goes to the event's **active registrants** — those with status `registered`, `confirmed`, or `attended` (the mail fires after the event, so attendees are included; waitlisted and cancelled registrants are not). It is not sent to the global newsletter-subscriber pool; the recipients are this event's registrants only.
 3. The send reuses the existing newsletter-send infrastructure, so it is paged, throttled, and audited like any other newsletter.
 
 <div class="alert info">

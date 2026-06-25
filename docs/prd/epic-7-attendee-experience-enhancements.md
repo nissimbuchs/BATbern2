@@ -245,7 +245,7 @@ As an **attendee who registered for an event**, I want an email the day the slid
 
 **Scope (what it is):**
 - A default organizer task ("Newsletter: Slides Are Online", due ~2 weeks after the event) is auto-created with the event's task set (existing `EventTaskService` template mechanism — zero engine change).
-- From that task the organizer manually sends a "slides are online" email to the event's **active registrants** (`registered`/`confirmed`), reusing the existing newsletter-send infra with a NEW DE+EN `slides-online` template.
+- From that task the organizer manually sends a "slides are online" email to the event's **active registrants** (`registered`/`confirmed`/`attended` — the mail fires post-event, so people who actually attended are included; `waitlist`/`cancelled` excluded), reusing the existing newsletter-send infra with a NEW DE+EN `slides-online` template.
 - Per-recipient locale = web-language preference (de* → German, en → English, **else German fallback**); recipients honour the global email opt-out; double-send guarded.
 - Event-anchored, never a recurring digest (cadence-match #24).
 
@@ -272,7 +272,7 @@ Organizer opens task → POST /api/v1/events/{eventCode}/newsletter/send
 
 **Given** an event with the auto-created "Newsletter: Slides Are Online" task
 **When** the organizer sends from that task
-**Then** each active registrant (`registered`/`confirmed`, not opted out) receives one "slides are online" email, in German if their language preference starts with `de`, English if `en`, else German fallback.
+**Then** each active registrant (`registered`/`confirmed`/`attended`, not opted out) receives one "slides are online" email, in German if their language preference starts with `de`, English if `en`, else German fallback.
 
 **Given** a slides-online send already completed for an event
 **When** the organizer attempts to send again
