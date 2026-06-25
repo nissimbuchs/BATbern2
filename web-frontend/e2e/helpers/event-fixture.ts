@@ -409,3 +409,30 @@ export async function getUnassignedSessionCount(token: string, eventCode: string
   const data = (await res.json()) as unknown[];
   return Array.isArray(data) ? data.length : 0;
 }
+
+/**
+ * Fetch the configured max speaker slots for an event type (EVENING/AFTERNOON/FULL_DAY) — the
+ * same `event_types.max_slots` the backend exposes as `speakerStatusSummary.maxSlotsAllowed` and
+ * the kanban uses for the slot-capacity gate (the drawer "accept on behalf" action hides once
+ * accepted+invited >= maxSlots). Read it from the LIVE config so scenarios adapt to organizer-
+ * tuned caps instead of hard-coding a number that silently drifts (e.g. EVENING was 4 at seed,
+ * tightened to 3 in staging — which deterministically broke the golden path's phase 6).
+ */
+export async function getEventTypeMaxSlots(token: string, type: string): Promise<number> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/events/types/${type}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(
+      `[event-fixture] get event type ${type} failed: ${res.status} ${res.statusText} ${body}`
+    );
+  }
+  const data = (await res.json()) as { maxSlots?: number };
+  if (typeof data.maxSlots !== 'number' || data.maxSlots < 1) {
+    throw new Error(
+      `[event-fixture] event type ${type} returned invalid maxSlots: ${JSON.stringify(data)}`
+    );
+  }
+  return data.maxSlots;
+}

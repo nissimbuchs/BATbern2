@@ -14,15 +14,22 @@
  *        • Path A (email → speaker portal): the Cognito test speaker (batbern.speaker) is
  *          promoted by selecting the EXISTING user, sent an invitation (READY → INVITED), then
  *          logs into the SPEAKER PORTAL and ACCEPTS (INVITED → ACCEPTED).
- *        • Path B (organizer direct): 3 fresh test speakers go READY → ACCEPTED via the drawer's
- *          "Accept on behalf" alternative action (reason required).
- *   5. A 5th test speaker goes READY → DECLINED via the drawer's "Decline" alternative action.
- *   6. The 4 accepted speakers go ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED through the UI.
- *   7. Slots are auto-assigned through the slot-assignment UI; with 4 publishable speakers the
- *      event reaches AGENDA_PUBLISHED, then the lifecycle is driven to ARCHIVED.
+ *        • Path B (organizer direct): the remaining fresh test speakers needed to fill the slot
+ *          cap go READY → ACCEPTED via the drawer's "Accept on behalf" alternative action
+ *          (reason required).
+ *   5. Every speaker past the cap goes READY → DECLINED via the drawer's "Decline" action.
+ *   6. The accepted speakers go ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED through the UI.
+ *   7. Slots are auto-assigned through the slot-assignment UI; with the cap filled by publishable
+ *      speakers the event reaches AGENDA_PUBLISHED, then the lifecycle is driven to ARCHIVED.
  *
- * End state: 4 QUALITY_REVIEWED + 1 DECLINED speaker, EVENING slot cap (4 occupants) exactly
- * filled, event ARCHIVED — connecting the speaker-pool slice to the event-workflow slice.
+ * Slot cap is READ FROM THE LIVE EVENING event-type config (`maxSlots`) in beforeAll — the same
+ * value the kanban's slot-capacity gate uses — and the accept-track count is sized to it (1 Path A
+ * + maxSlots-1 on-behalf). This is deliberate after the 2026-06 incident: EVENING was tightened
+ * from 4 to 3 slots in staging, and the old hard-coded "accept 4" made phase 6 try to accept past
+ * the cap, where the "accept on behalf" action is (correctly) hidden — a deterministic nightly red.
+ *
+ * End state: `maxSlots` QUALITY_REVIEWED + the rest DECLINED, EVENING slot cap exactly filled,
+ * event ARCHIVED — connecting the speaker-pool slice to the event-workflow slice.
  *
  * Determinism & tagging (plan risk #3 / OQ-1): the CONTACTED → READY *promote* provisions a
  * Cognito user out-of-band (Pattern N) — deterministic on staging, intermittently flaky on
@@ -51,6 +58,7 @@ import {
   transitionWorkflow,
   getWorkflowState,
   getUnassignedSessionCount,
+  getEventTypeMaxSlots,
   type RegistrationEvent,
 } from '../helpers/event-fixture';
 import { cleanupByCode } from '../helpers/test-fixtures-cleanup';
@@ -86,16 +94,32 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
   let fixtureEvent: RegistrationEvent;
   /** Captured pool ids, indexed parallel to SPEAKER_NAMES. */
   const ids: string[] = [];
+  /**
+   * EVENING slot cap, read from the LIVE event-type config in beforeAll. The accept-track count
+   * (Path A + accept-on-behalf) is sized to exactly fill this — the "accept on behalf" drawer
+   * action hides once accepted+invited >= maxSlots, so hard-coding 4 deterministically broke
+   * phase 6 when staging tightened EVENING to 3. Everything downstream derives from `slotCap`.
+   */
+  let slotCap: number;
 
   test.beforeAll(async () => {
     token = readOrganizerToken();
     speaker = readSpeakerIdentity();
-    // Path A is integral to this walk (it fills 1 of the 4 slots and exercises the portal), so
+    // Path A is integral to this walk (it fills 1 of the slots and exercises the portal), so
     // the whole golden path requires the SPEAKER token — skip cleanly when it's absent (the
     // `speaker` Playwright project only activates with SPEAKER_AUTH_TOKEN anyway).
     test.skip(!speaker, 'Golden path needs the SPEAKER token (batbern.speaker) for Path A');
     fixtureEvent = await createRegistrationEvent(token); // EVENING, CREATED, captured BATbern{N}
     await createAndSelectTopic(token, fixtureEvent.eventCode);
+    // Read the configured EVENING cap from the same source the UI gate uses. The scenario fills
+    // exactly `slotCap` accept-track speakers (1 Path A + slotCap-1 on-behalf) and declines the
+    // rest, so it needs ≥2 slots (1 Path A + ≥1 on-behalf) AND ≥1 spare to decline.
+    slotCap = await getEventTypeMaxSlots(token, 'EVENING');
+    test.skip(
+      slotCap < 2 || slotCap >= SPEAKER_NAMES.length,
+      `Golden path is sized for 2 <= EVENING maxSlots < ${SPEAKER_NAMES.length} (got ${slotCap}); ` +
+        'adjust SPEAKER_NAMES or the event-type config to re-enable.'
+    );
   });
 
   test.afterAll(async () => {
@@ -297,12 +321,14 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
       .toBe('ACCEPTED');
   });
 
-  test('phase 6 — Path B: organizer accepts 3 speakers on behalf (READY → ACCEPTED) via the drawer', async ({
+  test('phase 6 — Path B: organizer accepts the remaining slots on behalf (READY → ACCEPTED) via the drawer', async ({
     page,
   }) => {
-    // Speakers 1-3 via the drawer's "Accept on behalf" alternative action (reason required). This
-    // fills the EVENING slot cap exactly: batbern.speaker (1, accepted above) + these 3 = 4.
-    for (const id of ids.slice(1, 4)) {
+    // Fill the EVENING slot cap exactly via the drawer's "Accept on behalf" action (reason
+    // required): batbern.speaker (1, accepted above) + (slotCap - 1) on-behalf = slotCap. The
+    // action hides once accepted+invited >= maxSlots, so accepting beyond the cap is BLOCKED by
+    // design — sizing the loop to `ids.slice(1, slotCap)` keeps every accept inside the cap.
+    for (const id of ids.slice(1, slotCap)) {
       await openKanban(page);
       await drawerStatusChange(page, id, 'accept-on-behalf');
       await expect
@@ -311,22 +337,26 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
     }
   });
 
-  test('phase 7 — the 5th speaker is DECLINED from READY via the drawer alternative action', async ({
+  test('phase 7 — the remaining READY speakers are DECLINED via the drawer alternative action', async ({
     page,
   }) => {
-    await openKanban(page);
-    await drawerStatusChange(page, ids[4], 'decline');
-    await expect
-      .poll(() => getSpeakerStatus(token, fixtureEvent.eventCode, ids[4]), { timeout: 20_000 })
-      .toBe('DECLINED');
+    // Everyone past the cap (ids[slotCap..]) is declined from READY — exercises the drawer's
+    // "Decline" alternative action and leaves a clean accept/decline split.
+    for (const id of ids.slice(slotCap)) {
+      await openKanban(page);
+      await drawerStatusChange(page, id, 'decline');
+      await expect
+        .poll(() => getSpeakerStatus(token, fixtureEvent.eventCode, id), { timeout: 20_000 })
+        .toBe('DECLINED');
+    }
   });
 
   // ── phases 8-11: content → quality → slots → event lifecycle to ARCHIVED ─────────────────
 
-  /** The 4 ACCEPTED speakers (batbern.speaker + the 3 on-behalf). */
-  const acceptedIds = () => ids.slice(0, 4);
+  /** The ACCEPTED speakers (batbern.speaker + the on-behalf accepts) = exactly `slotCap`. */
+  const acceptedIds = () => ids.slice(0, slotCap);
 
-  test('phase 8 — the 4 accepted speakers submit content (ACCEPTED → CONTENT_SUBMITTED)', async ({
+  test('phase 8 — the accepted speakers submit content (ACCEPTED → CONTENT_SUBMITTED)', async ({
     page,
   }) => {
     for (const id of acceptedIds()) {
@@ -346,7 +376,7 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
     }
   });
 
-  test('phase 9 — the organizer approves all 4 (CONTENT_SUBMITTED → QUALITY_REVIEWED)', async ({
+  test('phase 9 — the organizer approves all accepted speakers (CONTENT_SUBMITTED → QUALITY_REVIEWED)', async ({
     page,
   }) => {
     for (const id of acceptedIds()) {
@@ -377,8 +407,8 @@ test.describe('Speaker-pool kanban golden path (intensive, UI-driven)', { tag: '
     await expect(page.getByTestId('auto-assign-modal')).toBeHidden({ timeout: 20_000 });
 
     // Auto-assign places the accepted speakers into the EVENING slots. The count drops but need
-    // not reach 0 — the DECLINED speaker still owns an orphan placeholder session that has no
-    // accepted speaker and so is not auto-assigned. The authoritative proof that the 4 ACCEPTED
+    // not reach 0 — each DECLINED speaker still owns an orphan placeholder session that has no
+    // accepted speaker and so is not auto-assigned. The authoritative proof that the ACCEPTED
     // speakers got slots is phase 11 (the event can only reach AGENDA_PUBLISHED when every
     // accepted speaker is publishable = QUALITY_REVIEWED AND slot-assigned).
     await expect
