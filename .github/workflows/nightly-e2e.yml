@@ -103,14 +103,30 @@ jobs:
           write_role_token "${{ secrets.STAGING_PARTNER_EMAIL }}" "${{ secrets.STAGING_PARTNER_PASSWORD }}" "partner"
 
       - name: Run full @gate suite
-        # Non-blocking: the nightly never gates a deploy. The whole proven suite runs here so
-        # the per-deploy gate can stay the fast @smoke subset (plan §A9, risk #6).
+        id: gate
+        # continue-on-error so the @quarantine promotion re-test below still runs even when the
+        # gate has a failure — but the gate OUTCOME is captured and the job is failed at the end
+        # (see "Summarise + fail on @gate regression"). The nightly never gates a *deploy* (that's
+        # deploy-staging.yml's @smoke), but it MUST go red when the proven suite regresses;
+        # previously continue-on-error left the whole workflow green even with a hard failure, so
+        # a 9-day phase-6 regression went unnoticed behind a row of green checks.
         continue-on-error: true
         env:
           CI: 'true'
         run: |
           chmod +x scripts/ci/run-playwright-tests.sh
-          ./scripts/ci/run-playwright-tests.sh staging --scope "${{ github.event.inputs.scope || 'gate' }}"
+          set -o pipefail
+          ./scripts/ci/run-playwright-tests.sh staging --scope "${{ github.event.inputs.scope || 'gate' }}" \
+            2>&1 | tee /tmp/gate-output.log
+
+      - name: Preserve @gate report before quarantine re-test
+        if: always()
+        run: |
+          # The @quarantine run writes the SAME default report/results dirs and would clobber the
+          # gate artefacts (the 2026-06 nightly lost the phase-6 failure DOM this way). Move them
+          # aside so the gate report survives for debugging.
+          [ -d web-frontend/playwright-report ] && mv web-frontend/playwright-report web-frontend/playwright-report-gate || true
+          [ -d web-frontend/test-results ] && mv web-frontend/test-results web-frontend/test-results-gate || true
 
       - name: Re-test @quarantine specs (promotion check)
         # Only on the scheduled run; surfaces flakes that have settled so they can be
@@ -122,12 +138,33 @@ jobs:
         run: |
           ./scripts/ci/run-playwright-tests.sh staging --scope quarantine
 
-      - name: Upload nightly Playwright report
+      - name: Upload nightly Playwright reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: nightly-playwright-report
           path: |
+            web-frontend/playwright-report-gate/
+            web-frontend/test-results-gate/
             web-frontend/playwright-report/
             web-frontend/test-results/
           retention-days: 14
+
+      - name: Summarise + fail on @gate regression
+        if: always()
+        run: |
+          # Surface the @gate Playwright summary at a glance, then fail the JOB if the gate
+          # regressed — this is the alert: a red nightly means the proven suite is no longer green.
+          SUMMARY=$(grep -aE "[0-9]+ (passed|failed|flaky|did not run)" /tmp/gate-output.log | tail -6 || true)
+          {
+            echo "## Nightly @gate result"
+            echo ""
+            echo '```'
+            echo "${SUMMARY:-(no summary captured)}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.gate.outcome }}" = "failure" ]; then
+            echo "::error::Nightly @gate suite regressed — the proven suite is no longer green. See the step summary and the nightly-playwright-report artifact (playwright-report-gate/)."
+            exit 1
+          fi
+          echo "✅ @gate suite is green."
