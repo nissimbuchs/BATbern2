@@ -5,73 +5,53 @@
 
 <p>Wir freuen uns, Sie als Referent zu unserem kommenden Berner Architekten Treffen einzuladen:</p>
 
-<div class="event-details">
-    <h2>{{eventTitle}}</h2>
-    <div class="detail-row">
-        <span class="detail-label">Datum:</span>
-        <span class="detail-value">{{eventDate}}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Uhrzeit:</span>
-        <span class="detail-value">{{eventTime}}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Veranstaltungsort:</span>
-        <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
-    </div>
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr><td class="detail-label">Datum</td><td class="detail-value">{{eventDate}}</td></tr>
+    <tr><td class="detail-label">Uhrzeit</td><td class="detail-value">{{eventTime}}</td></tr>
+    <tr><td class="detail-label">Ort</td><td class="detail-value">{{venueName}}<br>{{venueAddress}}</td></tr>
+  </table>
 </div>
 
 {{#sessionTitle}}
-<div class="session-info">
-    <h3>Vorgesehenes Thema</h3>
-    <p><strong>{{sessionTitle}}</strong></p>
-    {{#sessionDescription}}
-    <p>{{sessionDescription}}</p>
-    {{/sessionDescription}}
+<div class="session-card">
+  <h3>Vorgesehenes Thema</h3>
+  <p><strong>{{sessionTitle}}</strong></p>
+  {{#sessionDescription}}<p>{{sessionDescription}}</p>{{/sessionDescription}}
 </div>
 {{/sessionTitle}}
 
-<p>Wir wuerden uns sehr freuen, Sie als Referenten bei unserem Event begruessen zu duerfen. Ihre Expertise und Ihr Wissen waeren eine wertvolle Bereicherung fuer unser Publikum.</p>
+<p>Wir würden uns sehr freuen, Sie als Referenten bei unserem Event begrüssen zu dürfen. Ihre Expertise und Ihr Wissen wären eine wertvolle Bereicherung für unser Publikum.</p>
 
-<div class="login-section">
-    <h3>Ihr Referenten-Portal-Konto</h3>
-    <p>Um diese Einladung zu beantworten und Ihre Session-Unterlagen zu verwalten, melden Sie sich bitte im Referenten-Portal an:</p>
-    <p style="text-align: center; margin: 20px 0;">
-        <a href="{{loginUrl}}" class="cta-button cta-accept" style="display: inline-block; padding: 12px 24px; background-color: #0066cc; color: white; text-decoration: none; border-radius: 4px;">Zum Referenten-Portal anmelden</a>
-    </p>
-    <p><strong>Anmelde-URL:</strong> <a href="{{loginUrl}}" style="color: #0066cc; word-break: break-all;">{{loginUrl}}</a></p>
-    <p><strong>Benutzername:</strong> {{usernameForLogin}}</p>
-    {{#temporaryPassword}}
-    <p><strong>Temporäres Passwort:</strong> <code style="font-family: monospace; background-color: #f5f5f5; padding: 4px 8px; border-radius: 3px;">{{temporaryPassword}}</code></p>
-    <p style="font-size: 13px; color: #666;">Bei der ersten Anmeldung werden Sie aufgefordert, ein eigenes Passwort festzulegen. Das temporaere Passwort ist {{tempPasswordValidityDays}} Tage gueltig.</p>
-    {{/temporaryPassword}}
-    {{#useExistingPassword}}
-    <p style="font-size: 14px;">Sie verfuegen bereits ueber ein BATbern-Konto. Bitte melden Sie sich mit Ihrem bestehenden Passwort an oder verwenden Sie die Funktion "Passwort vergessen" auf der Anmeldeseite, falls Sie es zuruecksetzen moechten.</p>
-    {{/useExistingPassword}}
+<div class="portal-section">
+  <h3>Ihr Referenten-Portal-Konto</h3>
+  <p>Um diese Einladung zu beantworten und Ihre Session-Unterlagen zu verwalten, melden Sie sich bitte im Referenten-Portal an:</p>
+  <a href="{{loginUrl}}" class="portal-link">Zum Referenten-Portal anmelden</a>
+  <p>Benutzername: <strong>{{usernameForLogin}}</strong></p>
+  {{#temporaryPassword}}
+  <p>Temporäres Passwort: <code>{{temporaryPassword}}</code></p>
+  <p class="muted">Bei der ersten Anmeldung werden Sie aufgefordert, ein eigenes Passwort festzulegen. Das temporäre Passwort ist {{tempPasswordValidityDays}} Tage gültig.</p>
+  {{/temporaryPassword}}
+  {{#useExistingPassword}}
+  <p class="muted">Sie verfügen bereits über ein BATbern-Konto. Bitte melden Sie sich mit Ihrem bestehenden Passwort an oder verwenden Sie die Funktion "Passwort vergessen" auf der Anmeldeseite, falls Sie es zurücksetzen möchten.</p>
+  {{/useExistingPassword}}
+  <p class="link-fallback">Anmelde-URL: <a href="{{loginUrl}}">{{loginUrl}}</a></p>
 </div>
 
 {{#responseDeadline}}
 <div class="deadline-box">
-    <h3>Bitte antworten Sie bis</h3>
-    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{responseDeadline}}</p>
-    {{#contentDeadline}}
-    <p style="margin-top: 10px; font-size: 14px;">
-        Falls Sie zusagen, bitten wir Sie, Ihre Prasentationsunterlagen bis zum <strong>{{contentDeadline}}</strong> einzureichen.
-    </p>
-    {{/contentDeadline}}
+  <h3>Bitte antworten Sie bis</h3>
+  <p class="deadline-date">{{responseDeadline}}</p>
+  {{#contentDeadline}}<p class="muted">Falls Sie zusagen, bitten wir Sie, Ihre Präsentationsunterlagen bis zum <strong>{{contentDeadline}}</strong> einzureichen.</p>{{/contentDeadline}}
 </div>
 {{/responseDeadline}}
 
-<div class="contact-box">
-    <h3>Fragen?</h3>
-    <p>Bei Fragen stehen wir Ihnen gerne zur Verfuegung:</p>
-    <p>
-        <strong>{{organizerName}}</strong><br>
-        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-    </p>
+<div class="contact-block">
+  <h3>Fragen?</h3>
+  <p><strong>{{organizerName}}</strong><br><a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a></p>
 </div>
 
-<p>Wir freuen uns auf Ihre Rueckmeldung!</p>
+<p>Wir freuen uns auf Ihre Rückmeldung!</p>
 
-<p>Mit freundlichen Gruessen,<br>
-<strong>Das BATbern Team</strong></p>
+<p>Mit freundlichen Grüssen,<br><strong>Das BATbern Team</strong></p>

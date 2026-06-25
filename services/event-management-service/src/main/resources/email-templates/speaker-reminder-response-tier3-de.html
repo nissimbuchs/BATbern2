@@ -1,36 +1,30 @@
 <!-- subject: Letzte Erinnerung: Einladung als Referent - {{eventTitle}} -->
+<p class="lbl lbl-blue">Letzte Erinnerung</p>
 <h2>Letzte Erinnerung: Einladung als Referent</h2>
+<p class="sub">Berner Architekten Treffen</p>
 
 <p>Guten Tag {{speakerName}},</p>
 
-<p>Dies ist unsere letzte Erinnerung bezüglich Ihrer Einladung als Referent für das kommende Berner Architekten Treffen. Wir haben Sie bereits mehrfach kontaktiert, aber noch keine Antwort von Ihnen erhalten.</p>
+<p>Dies ist unsere letzte Erinnerung bezüglich unserer Einladung als Referent. Wir haben bisher keine Rückmeldung von Ihnen erhalten.</p>
 
-<p><strong>{{eventTitle}}</strong><br>
-Datum: {{eventDate}}</p>
+<p><strong>{{eventTitle}}</strong> — Datum: {{eventDate}}</p>
 
 <div class="deadline-box urgent">
-    <h3>Letzte Frist</h3>
-    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
-    <p style="margin-top: 10px; font-size: 14px;">Nur noch <strong>{{daysRemaining}} Tage</strong> verbleibend.</p>
+  <h3>Letzte Frist</h3>
+  <p class="deadline-date">{{deadline}}</p>
+  <p class="muted">Nur noch {{daysRemaining}} Tage verbleibend.</p>
 </div>
 
-<p><strong>Wichtig:</strong> Sollten wir bis zur oben genannten Frist keine Rückmeldung von Ihnen erhalten, müssen wir einen alternativen Referenten suchen, um unser Eventprogramm zu vervollständigen. Wir würden Sie sehr gerne dabei haben, also nehmen Sie sich bitte einen Moment Zeit, um zu antworten.</p>
+<p><strong>Wichtig:</strong> Sollten wir bis zur Frist keine Rückmeldung erhalten, müssen wir einen alternativen Referenten suchen.</p>
 
 <div class="cta-section">
-    <p><strong>Bitte antworten Sie umgehend:</strong></p>
-    <a href="{{portalLink}}" class="cta-button">Zum Dashboard</a>
+  <a href="{{portalLink}}" class="btn btn-primary">Zum Dashboard</a>
 </div>
 
-<div class="contact-box">
-    <h3>Möchten Sie etwas besprechen?</h3>
-    <p>Falls es Umstände gibt, die wir berücksichtigen sollten, oder Sie alternative Vereinbarungen besprechen möchten, kontaktieren Sie uns bitte sofort:</p>
-    <p>
-        <strong>{{organizerName}}</strong><br>
-        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-    </p>
+<div class="contact-block">
+  <h3>Möchten Sie etwas besprechen?</h3>
+  <p>Wir sind offen für ein kurzes Gespräch, falls Sie Fragen haben oder die Situation besprechen möchten.<br>
+  {{organizerName}} / <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a></p>
 </div>
 
-<p>Wir hoffen aufrichtig, Sie als Teil unseres Events begrüßen zu dürfen.</p>
-
-<p>Mit freundlichen Grüßen,<br>
-<strong>Das BATbern Team</strong></p>
+<p>Mit freundlichen Grüssen,<br><strong>Das BATbern Team</strong></p>

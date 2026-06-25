@@ -1,34 +1,35 @@
 <!-- subject: Cancel Your Registration for {{eventTitle}} -->
-<h2>Your Cancellation Request</h2>
+<h2>Your Deregistration Request</h2>
 
 <p>Hello {{recipientName}},</p>
 
-<p>You requested to cancel your registration for the following event:</p>
+<p>You have requested to cancel your registration for the following event:</p>
 
-<div class="event-details">
-    <h2>{{eventTitle}}</h2>
-    <div class="detail-row">
-        <span class="detail-label">Date:</span>
-        <span class="detail-value">{{eventDate}}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Event Code:</span>
-        <span class="detail-value">{{eventCode}}</span>
-    </div>
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Date</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Event Code</td>
+      <td class="detail-value">{{eventCode}}</td>
+    </tr>
+  </table>
 </div>
 
 <p>Click the button below to cancel your registration:</p>
 
-<div style="text-align: center;">
-    <a href="{{deregistrationLink}}" class="cta-button" style="background-color: #d32f2f;">Cancel Registration</a>
+<div class="cta-section">
+  <a class="btn btn-danger" href="{{deregistrationLink}}">Cancel registration</a>
 </div>
 
-<p style="font-size: 12px; color: #666; margin-top: 20px;">
-    If the button doesn't work, copy and paste this link into your browser:<br>
-    <a href="{{deregistrationLink}}" style="color: #d32f2f; word-break: break-all;">{{deregistrationLink}}</a>
+<p class="link-fallback">If the button does not work, please copy this link into your browser.<br>
+  <a href="{{deregistrationLink}}">{{deregistrationLink}}</a>
 </p>
 
-<p><strong>Note:</strong> This link can only be used once. If you did not request a cancellation, you can safely ignore this email.</p>
+<p>Note: This link can only be used once. If you did not request a cancellation, you can safely ignore this email.</p>
 
-<p>Best regards,<br>
-<strong>The BATbern Team</strong></p>
+<p>Kind regards<br>
+<span class="muted">The BATbern Team</span></p>

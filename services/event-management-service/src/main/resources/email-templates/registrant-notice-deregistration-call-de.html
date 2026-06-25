@@ -1,113 +1,24 @@
-<!-- subject: Sind Sie dabei? — {{eventTitle}} ist ausgebucht -->
-<!-- registrant-notice-deregistration-call-de.html — "Deregistration call" (Deutsch) -->
-<!-- Content-only Fragment für das batbern-default Layout. -->
-<!--
-  Geht an die AKTIVEN ANGEMELDETEN eines ausgebuchten Events kurz vor dem Termin.
-  Bittet höflich darum, die Anmeldung zu stornieren, falls man doch nicht teilnehmen kann,
-  damit Personen auf der Warteliste nachrücken können. Einmalig, organisatorisch ausgelöst.
-  Übernimmt die Gestaltung von slides-online / newsletter-event:
-  - Schrift: Plus Jakarta Sans
-  - Dunkler Navy-Hero-Block, Zinc-Farbskala, Primärblau #4A90B8
-  - Tabellen-Layout für E-Mail-Client-Kompatibilität; Sonderzeichen als HTML-Entities
-  Event-Variablen:    {{eventType}} {{eventTitle}} {{eventNumber}} {{eventDate}}
-                      {{eventDetailLink}} {{currentYear}}
-  Pro-Empfänger:      {{recipientName}} {{deregistrationUrl}}
--->
+<!-- subject: Sind Sie dabei? — BATbern{{eventNumber}} · {{eventTitle}} ist ausgebucht -->
+<div class="hero">
+  <p class="lbl lbl-blue">Berner Architekten Treffen · {{eventType}}</p>
+  <h2>Sind Sie dabei?</h2>
+  <p class="sub">BATbern{{eventNumber}} · {{eventTitle}}</p>
+</div>
 
-<!-- ═══════════════════════════════════════════════════════
-     HERO-BLOCK — dunkles Navy, wie der Website-Header
-     ═══════════════════════════════════════════════════════ -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; margin-bottom: 0;">
-    <tr>
-        <td style="background-color: #18202E; border-radius: 10px 10px 0 0;
-                   padding: 28px 28px 24px; font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-            <p style="margin: 0 0 6px; font-size: 11px; font-weight: 600;
-                      text-transform: uppercase; letter-spacing: 2px; color: #4A90B8;">
-                Berner Architekten Treffen &nbsp;&middot;&nbsp; {{eventType}}
-            </p>
-            <h2 style="margin: 0 0 8px; font-size: 22px; font-weight: 700;
-                       line-height: 1.3; color: #F4F4F5;">
-                Sind Sie dabei?
-            </h2>
-            <p style="margin: 0; font-size: 13px; color: #8BA5B8; font-weight: 400;">
-                {{eventTitle}} &nbsp;&middot;&nbsp; BATbern #{{eventNumber}}
-            </p>
-        </td>
-    </tr>
-</table>
+<p>Liebe / Lieber {{recipientName}},</p>
 
-<!-- Fliesstext -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; background-color: #FFFFFF;
-              border-left: 1px solid #E4E4E7; border-right: 1px solid #E4E4E7;
-              border-bottom: 1px solid #E4E4E7; border-radius: 0 0 10px 10px;
-              margin-bottom: 20px; padding: 4px 0;
-              font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    <tr>
-        <td style="padding: 20px 24px 4px;">
-            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                Liebe&nbsp;/&nbsp;Lieber {{recipientName}},
-            </p>
-            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                das <strong>{{eventTitle}}</strong> vom {{eventDate}} ist
-                <strong>vollständig ausgebucht</strong> &mdash; und es stehen Personen auf der
-                Warteliste, die gerne dabei wären.
-            </p>
-            <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.7; color: #3F3F46;">
-                Falls Sie <strong>doch nicht teilnehmen</strong> können, würden wir uns sehr
-                freuen, wenn Sie Ihre Anmeldung stornieren. So wird Ihr Platz frei und jemand
-                von der Warteliste kann nachrücken. Ein Klick genügt:
-            </p>
-        </td>
-    </tr>
-</table>
+<p>das <strong>{{eventTitle}}</strong> vom {{eventDate}} ist <strong>vollständig ausgebucht</strong> — und es stehen Personen auf der Warteliste, die gerne dabei wären.</p>
 
-<!-- ═══════════════════════════════════════════════════════
-     CTA-SEKTION — Anmeldung stornieren
-     ═══════════════════════════════════════════════════════ -->
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="border-collapse: collapse; background-color: #F0F6FB;
-              border: 1px solid #C8DFF0; border-radius: 10px; margin-bottom: 24px;
-              font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    <tr>
-        <td style="padding: 20px 24px;">
-            <p style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #18181B;">
-                &#10005;&nbsp; Ich kann nicht teilnehmen
-            </p>
-            <p style="margin: 0 0 16px; font-size: 14px; color: #71717A;">
-                Ihre Anmeldung wird sofort storniert &mdash; kein Login nötig.
-            </p>
-            <a href="{{deregistrationUrl}}"
-               style="display: inline-block; background-color: #2C5F7C; color: #FFFFFF;
-                      text-decoration: none; padding: 11px 28px; border-radius: 6px;
-                      font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
-                Anmeldung stornieren &rarr;
-            </a>
-            <p style="margin: 14px 0 0; font-size: 12px; color: #A1A1AA;">
-                Oder kopieren Sie diesen Link in Ihren Browser:
-                <a href="{{deregistrationUrl}}" style="color: #4A90B8; text-decoration: none;">{{deregistrationUrl}}</a>
-            </p>
-        </td>
-    </tr>
-</table>
+<p>Falls Sie <strong>doch nicht teilnehmen</strong> können, würden wir uns sehr freuen, wenn Sie Ihre Anmeldung stornieren. So wird Ihr Platz frei und jemand von der Warteliste kann nachrücken. Ein Klick genügt:</p>
 
-<!-- Schluss -->
-<p style="margin: 0 0 4px; font-size: 15px; color: #18181B; text-align: left;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    Wenn Sie dabei sind: perfekt &mdash; Sie müssen nichts tun. Wir freuen uns auf Sie!
-</p>
-<p style="margin: 0 0 24px; font-size: 13px; color: #71717A; text-align: left;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    Das BATbern-Organisationskomitee
-</p>
+<div class="cta-box">
+  <p><strong>✕ Ich kann nicht teilnehmen</strong></p>
+  <p class="muted">Ihre Anmeldung wird sofort storniert — kein Login nötig.</p>
+  <a href="{{deregistrationUrl}}" class="btn btn-primary">Anmeldung stornieren →</a>
+  <p class="link-fallback">Oder kopieren Sie diesen Link in Ihren Browser: <a href="{{deregistrationUrl}}">{{deregistrationUrl}}</a></p>
+</div>
 
-<!-- ═══════════════════════════════════════════════════════
-     FUSSZEILE — erklärt, warum diese einmalige Mail kam
-     ═══════════════════════════════════════════════════════ -->
-<hr style="border: none; border-top: 1px solid #E4E4E7; margin: 0 0 16px;">
-<p style="font-size: 11px; color: #A1A1AA; text-align: center; margin: 0;
-          font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;">
-    Sie erhalten diese einmalige E-Mail, weil Sie sich für {{eventTitle}} angemeldet haben.<br>
-    &copy; {{currentYear}} Berner Architekten Treffen
-</p>
+<p>Wenn Sie dabei sind: perfekt — Sie müssen nichts tun. Wir freuen uns auf Sie!<br><span class="muted">Das BATbern-Organisationskomitee</span></p>
+
+<hr class="divider">
+<p class="gdpr">Sie erhalten diese einmalige E-Mail, weil Sie sich für {{eventTitle}} angemeldet haben.</p>

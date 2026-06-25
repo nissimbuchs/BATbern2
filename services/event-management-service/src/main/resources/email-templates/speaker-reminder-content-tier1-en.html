@@ -1,41 +1,36 @@
 <!-- subject: Reminder: Presentation Materials - {{eventTitle}} -->
+<p class="lbl lbl-blue">Reminder</p>
 <h2>Reminder: Presentation Materials</h2>
+<p class="sub">Berner Architekten Treffen</p>
 
 <p>Dear {{speakerName}},</p>
 
-<p>Thank you again for accepting our invitation to speak at the upcoming Berner Architekten Treffen. We wanted to remind you about submitting your presentation materials so we can begin preparing the event program.</p>
+<p>Thank you again for accepting our invitation to speak. We wanted to remind you about submitting your presentation materials so we can begin preparing the event programme.</p>
 
-<p><strong>{{eventTitle}}</strong><br>
-Date: {{eventDate}}</p>
+<p><strong>{{eventTitle}}</strong> — Date: {{eventDate}}</p>
 
 <div class="deadline-box">
-    <h3>Content Submission Deadline</h3>
-    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
-    <p style="margin-top: 10px; font-size: 14px;">You have <strong>{{daysRemaining}} days</strong> remaining to submit your materials.</p>
+  <h3>Content Submission Deadline</h3>
+  <p class="deadline-date">{{deadline}}</p>
+  <p class="muted">You have {{daysRemaining}} days remaining.</p>
 </div>
 
 <p>Please submit the following through the speaker portal:</p>
 <ul>
-    <li>Presentation title and abstract</li>
-    <li>Speaker biography and photo</li>
-    <li>Presentation slides (if available)</li>
+  <li>Presentation title and abstract</li>
+  <li>Speaker biography and photo</li>
+  <li>Presentation slides (if available)</li>
 </ul>
 
 <div class="cta-section">
-    <p><strong>Submit your materials:</strong></p>
-    <a href="{{portalLink}}" class="cta-button">View Your Dashboard</a>
+  <a href="{{portalLink}}" class="btn btn-primary">View Your Dashboard</a>
 </div>
 
-<div class="contact-box">
-    <h3>Questions?</h3>
-    <p>If you need guidance on content requirements or have any questions, we are here to help:</p>
-    <p>
-        <strong>{{organizerName}}</strong><br>
-        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-    </p>
+<div class="contact-block">
+  <h3>Questions?</h3>
+  <p>{{organizerName}} / <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a></p>
 </div>
 
-<p>We are excited about your participation and look forward to receiving your materials!</p>
+<p>We look forward to your participation!</p>
 
-<p>Best regards,<br>
-<strong>The BATbern Team</strong></p>
+<p>Best regards,<br><strong>The BATbern Team</strong></p>

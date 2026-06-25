@@ -1,14 +1,9 @@
 <!-- subject: BATbern vom {{eventDate}} zum Thema "{{topicTitle}}" — Zeitplan -->
-<p>Guten Tag {{salutation}}</p>
-
+<p>Hallo {{salutation}}</p>
 <p>Hier der Zeitplan für den Event am {{eventDate}}:</p>
-
 <p><strong>Agenda:</strong></p>
-{{agenda}}
-
-{{#notes}}
+<p>{{agenda}} {{#notes}}</p>
 <p>{{notes}}</p>
-{{/notes}}
-
-<p>Freundliche Grüsse<br>
-{{organizerSignature}}</p>
+<p>{{/notes}}</p>
+<p>Freundliche Grüsse</p>
+<p>{{organizerSignature}}<br>BATbern OK</p>

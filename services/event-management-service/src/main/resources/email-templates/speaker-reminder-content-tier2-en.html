@@ -1,43 +1,39 @@
 <!-- subject: Urgent Reminder: Presentation Materials - {{eventTitle}} -->
+<p class="lbl lbl-blue">Urgent Reminder</p>
 <h2>Urgent Reminder: Presentation Materials</h2>
+<p class="sub">Berner Architekten Treffen</p>
 
 <p>Dear {{speakerName}},</p>
 
-<p>Your content submission deadline for the Berner Architekten Treffen is approaching quickly. We have not yet received your presentation materials and need them soon to finalize the event program and promotional materials.</p>
+<p>The deadline for submitting your presentation materials is approaching quickly. We have not yet received your submission.</p>
 
-<p><strong>{{eventTitle}}</strong><br>
-Date: {{eventDate}}</p>
+<p><strong>{{eventTitle}}</strong> — Date: {{eventDate}}</p>
 
 <div class="deadline-box urgent">
-    <h3>Content Deadline Approaching</h3>
-    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
-    <p style="margin-top: 10px; font-size: 14px;">Only <strong>{{daysRemaining}} days</strong> remaining to submit your materials.</p>
+  <h3>Content Deadline Approaching</h3>
+  <p class="deadline-date">{{deadline}}</p>
+  <p class="muted">Only {{daysRemaining}} days remaining.</p>
 </div>
 
-<p>We need the following items to prepare your session for the event:</p>
+<p>Please submit the following through the speaker portal:</p>
 <ul>
-    <li>Presentation title and abstract</li>
-    <li>Speaker biography and photo</li>
-    <li>Presentation slides (if available)</li>
+  <li>Presentation title and abstract</li>
+  <li>Speaker biography and photo</li>
+  <li>Presentation slides (if available)</li>
 </ul>
 
-<p>Your timely submission ensures we can properly promote your session and provide attendees with accurate information about your talk.</p>
+<p>Your timely submission ensures we can properly promote your session.</p>
 
 <div class="cta-section">
-    <p><strong>Submit your materials now:</strong></p>
-    <a href="{{portalLink}}" class="cta-button">View Your Dashboard</a>
+  <a href="{{portalLink}}" class="btn btn-primary">View Your Dashboard</a>
 </div>
 
-<div class="contact-box">
-    <h3>Need Help?</h3>
-    <p>If you are experiencing any difficulties with the submission process or need an extension, please let us know immediately:</p>
-    <p>
-        <strong>{{organizerName}}</strong><br>
-        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-    </p>
+<div class="contact-block">
+  <h3>Need Help?</h3>
+  <p>If you are having difficulties or need to request a deadline extension, please reach out.<br>
+  {{organizerName}} / <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a></p>
 </div>
 
-<p>Thank you for your prompt attention to this matter.</p>
+<p>Thank you for your attention to this matter.</p>
 
-<p>Best regards,<br>
-<strong>The BATbern Team</strong></p>
+<p>Best regards,<br><strong>The BATbern Team</strong></p>

@@ -1,10 +1,30 @@
 <!-- subject: You're on the waitlist – {{eventTitle}} -->
-<h2>Hello {{recipientName}},</h2>
+<p class="lbl lbl-blue">Waitlist</p>
+<h2>You're on the Waitlist</h2>
+<p class="sub">We'll notify you as soon as a spot opens up</p>
+
+<p>Hello {{recipientName}},</p>
 <p>Unfortunately, this event is full. You have been added to the waitlist for:</p>
-<p><strong>{{eventTitle}}</strong><br>
-Date: {{eventDate}}<br>
-Venue: {{venueAddress}}</p>
-<p>Your registration code: <strong>{{registrationCode}}</strong></p>
+
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Date</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Venue</td>
+      <td class="detail-value">{{venueAddress}}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="reg-code">
+  <p class="reg-code-label">Your Registration Code</p>
+  <p class="reg-code-value">{{registrationCode}}</p>
+</div>
+
 <p>If a spot becomes available, we will automatically notify and register you.</p>
 <p>For questions, visit: <a href="{{eventUrl}}">{{eventUrl}}</a></p>
-<p>Best regards,<br>The BATbern Team</p>
+<p>Best regards,<br><strong>The BATbern Team</strong></p>

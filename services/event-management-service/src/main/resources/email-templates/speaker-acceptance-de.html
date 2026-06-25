@@ -1,80 +1,75 @@
 <!-- subject: Bestätigung Ihrer Teilnahme - {{eventTitle}} -->
+<p class="lbl lbl-blue">Referenten-Bestätigung</p>
 <h2>Vielen Dank für Ihre Zusage!</h2>
-<p style="text-align: center;"><span class="success-badge">Teilnahme bestätigt</span></p>
+<p class="sub">Berner Architekten Treffen</p>
+
+<span class="success-badge">Teilnahme bestätigt</span>
 
 <p>Liebe/r {{speakerName}},</p>
 
-<p>Vielen Dank, dass Sie unsere Einladung als Referent/in beim kommenden Berner Architekten Treffen angenommen haben. Wir freuen uns sehr auf Sie!</p>
+<p>Vielen Dank, dass Sie unsere Einladung als Referent beim kommenden Berner Architekten Treffen angenommen haben. Wir freuen uns sehr auf Sie!</p>
 
-<div class="event-details">
-    <h2>{{eventTitle}}</h2>
-    <div class="detail-row">
-        <span class="detail-label">Datum:</span>
-        <span class="detail-value">{{eventDate}}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Zeit:</span>
-        <span class="detail-value">{{eventTime}}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Ort:</span>
-        <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
-    </div>
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Datum</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Zeit</td>
+      <td class="detail-value">{{eventTime}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Ort</td>
+      <td class="detail-value">{{venueName}}<br>{{venueAddress}}</td>
+    </tr>
+  </table>
 </div>
 
 {{#sessionTitle}}
-<div class="session-info">
-    <h3>Ihre Session</h3>
-    <p><strong>{{sessionTitle}}</strong></p>
+<div class="session-card">
+  <h3>Ihre Session</h3>
+  <p>{{sessionTitle}}</p>
 </div>
 {{/sessionTitle}}
 
 <div class="portal-section">
-    <h2>Ihr Referenten-Portal</h2>
-    <p>Nutzen Sie die untenstehenden Links, um auf Ihr Referenten-Dashboard zuzugreifen und Ihre Präsentationsinhalte einzureichen. Melden Sie sich mit dem Konto an, das Sie für diese Konferenz erstellt haben.</p>
-
-    <div class="portal-links">
-        <a href="{{dashboardLink}}" class="portal-link">Referenten-Dashboard</a>
-        <a href="{{contentUrl}}" class="portal-link secondary">Präsentationsinhalte einreichen</a>
-    </div>
-
-    <p style="font-size: 12px; color: #666;">
-        Falls die Buttons nicht funktionieren, kopieren Sie diesen Link in Ihren Browser:<br>
-        <strong>Inhalte:</strong> <a href="{{contentUrl}}" style="word-break: break-all;">{{contentUrl}}</a>
-    </p>
+  <h3>Ihr Referenten-Portal</h3>
+  <p>Nutzen Sie die folgenden Links, um Ihr Profil zu verwalten und Präsentationsinhalte einzureichen. Bewahren Sie diese E-Mail auf.</p>
+  <a href="{{dashboardLink}}" class="portal-link">Referenten-Dashboard</a>
+  <a href="{{profileUrl}}" class="portal-link secondary">Profil aktualisieren</a>
+  <a href="{{contentUrl}}" class="portal-link secondary">Präsentationsinhalte einreichen</a>
+  <p class="link-fallback">Profil: <a href="{{profileUrl}}">{{profileUrl}}</a><br>Inhalte: <a href="{{contentUrl}}">{{contentUrl}}</a></p>
 </div>
 
-<div class="important-note">
-    <h3>Profil aktualisieren</h3>
-    <p>Ihre Referenten-Bio, Foto und Kontaktdaten verwalten Sie in Ihrem Konto-Profil, das Sie über das Benutzermenü oben rechts im Referenten-Portal erreichen.</p>
+<div class="info-box">
+  <h3>Wichtig: E-Mail aufbewahren</h3>
+  <p>Die Portal-Links sind Ihr persönlicher Zugang. Sie können jederzeit über diese Links zum Portal zurückkehren.</p>
 </div>
 
 {{#contentDeadline}}
-<div class="deadline-box urgent">
-    <h3>Abgabefrist für Inhalte</h3>
-    <p>Bitte reichen Sie Ihren Präsentationstitel und Abstract bis spätestens <strong>{{contentDeadline}}</strong> ein.</p>
+<div class="deadline-box">
+  <h3>Abgabefrist für Inhalte</h3>
+  <p class="deadline-date">{{contentDeadline}}</p>
+  <p class="muted">Bitte reichen Sie Ihren Präsentationstitel und Abstract bis zu diesem Datum ein.</p>
 </div>
 {{/contentDeadline}}
 
 <div class="next-steps">
-    <h3>Nächste Schritte</h3>
-    <ol>
-        <li><strong>Vervollständigen Sie Ihr Referenten-Profil</strong> - Fügen Sie Ihre Biografie, Foto und Fachgebiete hinzu</li>
-        <li><strong>Reichen Sie Ihre Präsentationsinhalte ein</strong> - Titel, Abstract und optional Ihre Folien</li>
-        <li><strong>Warten Sie auf die Bestätigung</strong> - Wir prüfen und bestätigen Ihren Session-Slot</li>
-    </ol>
+  <h3>Nächste Schritte</h3>
+  <ol>
+    <li>Referenten-Profil vervollständigen (Bio, Foto, Fachgebiete)</li>
+    <li>Präsentationsinhalte einreichen (Titel, Abstract, optional Folien)</li>
+    <li>Bestätigung abwarten</li>
+  </ol>
 </div>
 
-<div class="contact-box">
-    <h3>Fragen?</h3>
-    <p>Bei Fragen oder wenn Sie Unterstützung benötigen, kontaktieren Sie uns gerne:</p>
-    <p>
-        <strong>{{organizerName}}</strong><br>
-        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-    </p>
+<div class="contact-block">
+  <h3>Fragen?</h3>
+  <p>{{organizerName}} / <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a></p>
 </div>
 
 <p>Wir freuen uns auf Ihre Präsentation!</p>
 
-<p>Mit freundlichen Grüssen,<br>
-<strong>Das BATbern Team</strong></p>
+<p>Mit freundlichen Grüssen,<br><strong>Das BATbern Team</strong></p>

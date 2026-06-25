@@ -1,36 +1,30 @@
 <!-- subject: Final Reminder: Speaker Invitation - {{eventTitle}} -->
+<p class="lbl lbl-blue">Final Reminder</p>
 <h2>Final Reminder: Speaker Invitation</h2>
+<p class="sub">Berner Architekten Treffen</p>
 
 <p>Dear {{speakerName}},</p>
 
-<p>This is our final reminder regarding your speaker invitation for the upcoming Berner Architekten Treffen event. We have reached out to you previously but have not yet received your response.</p>
+<p>This is our final reminder regarding our speaker invitation. We have not yet received any response from you.</p>
 
-<p><strong>{{eventTitle}}</strong><br>
-Date: {{eventDate}}</p>
+<p><strong>{{eventTitle}}</strong> — Date: {{eventDate}}</p>
 
 <div class="deadline-box urgent">
-    <h3>Final Deadline</h3>
-    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
-    <p style="margin-top: 10px; font-size: 14px;">Only <strong>{{daysRemaining}} days</strong> remaining.</p>
+  <h3>Final Deadline</h3>
+  <p class="deadline-date">{{deadline}}</p>
+  <p class="muted">Only {{daysRemaining}} days remaining.</p>
 </div>
 
-<p><strong>Important:</strong> If we do not hear from you by the deadline above, we will need to proceed with finding an alternative speaker to ensure our event program is complete. We would very much prefer to have you on board, so please take a moment to respond.</p>
+<p><strong>Important:</strong> If we do not hear from you by the deadline, we will need to proceed with finding an alternative speaker.</p>
 
 <div class="cta-section">
-    <p><strong>Please respond immediately:</strong></p>
-    <a href="{{portalLink}}" class="cta-button">View Your Dashboard</a>
+  <a href="{{portalLink}}" class="btn btn-primary">View Your Dashboard</a>
 </div>
 
-<div class="contact-box">
-    <h3>Need to Discuss?</h3>
-    <p>If there are any circumstances we should be aware of, or if you need to discuss alternative arrangements, please contact us right away:</p>
-    <p>
-        <strong>{{organizerName}}</strong><br>
-        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-    </p>
+<div class="contact-block">
+  <h3>Need to Discuss?</h3>
+  <p>We are open to a brief conversation if you have any questions or concerns.<br>
+  {{organizerName}} / <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a></p>
 </div>
 
-<p>We sincerely hope to have you as part of our event.</p>
-
-<p>Best regards,<br>
-<strong>The BATbern Team</strong></p>
+<p>Best regards,<br><strong>The BATbern Team</strong></p>
