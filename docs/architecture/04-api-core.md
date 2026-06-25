@@ -125,54 +125,76 @@ components:
 
 ### Common Schemas
 
+> **Single source of truth:** the canonical `ErrorResponse`, `PaginationMetadata`,
+> `PaginatedResponse`, and `ValidationError` schemas live in
+> [`docs/api/_shared.openapi.yml`](../api/_shared.openapi.yml) and are backed by the
+> shared-kernel Java classes (`ch.batbern.shared.dto.ErrorResponse`,
+> `ch.batbern.shared.api.PaginationMetadata`). Specs reference them via the ADR-006 stub
+> pattern (`x-java-type`) — never redefine them inline. The snippets below document the
+> **actual wire shape** (ADR-013 §6); they are illustrative copies of `_shared.openapi.yml`.
+
 ```yaml
-Pagination:
+# Page-based pagination metadata (NOT offset/cursor). Source: shared-kernel api.PaginationMetadata.
+PaginationMetadata:
   type: object
+  required: [page, limit, totalItems, totalPages, hasNext, hasPrev]
   properties:
+    page:
+      type: integer
+      description: Current page index
     limit:
       type: integer
-      default: 20
-      maximum: 100
-    offset:
+      description: Page size (items per page)
+    totalItems:
       type: integer
-      default: 0
-    total:
+      format: int64
+      description: Total number of items across all pages
+    totalPages:
       type: integer
-      description: Total number of items
-    hasMore:
+      description: Total number of pages
+    hasNext:
       type: boolean
-      description: Whether more items are available
+      description: Whether a next page exists
+    hasPrev:
+      type: boolean
+      description: Whether a previous page exists
 
+# Flat error envelope (NOT nested under `error`). Source: shared-kernel dto.ErrorResponse.
+# @JsonInclude(NON_NULL): absent fields are omitted from the wire.
 ErrorResponse:
   type: object
   properties:
+    timestamp:
+      type: string
+      format: date-time
+    path:
+      type: string
+      description: Request path that generated the error
+    status:
+      type: integer
+      description: HTTP status code
     error:
+      type: string
+      description: Short HTTP reason phrase
+    errorCode:
+      type: string
+      description: Stable machine-readable error code for typed client handling
+    message:
+      type: string
+      description: Human-readable error message
+    correlationId:
+      type: string
+      description: Correlation ID for tracing
+    severity:
+      type: string
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+    details:
       type: object
-      properties:
-        code:
-          type: string
-          description: Machine-readable error code
-        message:
-          type: string
-          description: Human-readable error message
-        details:
-          type: object
-          additionalProperties: true
-          description: Additional error context
-        timestamp:
-          type: string
-          format: date-time
-        requestCode:
-          type: string
-
-          description: Meaningful identifier (see ADR-003)
-          description: Correlation ID for tracing
-        path:
-          type: string
-          description: Request path that generated the error
-        severity:
-          type: string
-          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+      additionalProperties: true
+      description: Additional structured context (e.g. per-field validation errors)
+    stackTrace:
+      type: string
+      description: Dev/staging diagnostics only — never in production
 
 Venue:
   type: object
@@ -355,20 +377,23 @@ Rate limit exceeded returns `429 Too Many Requests` with retry-after header.
 
 ### Pagination
 
-All list endpoints support consistent pagination parameters:
+All list endpoints use **page-based** pagination (NOT offset/cursor):
+- `page` - Page index (default: 0)
 - `limit` - Items per page (default: 20, max: 100)
-- `offset` - Number of items to skip (default: 0)
-- Alternative: `cursor` - Opaque cursor for cursor-based pagination
+- `sort` - JSON:API-style sort expression (ADR-013 §3)
+- `filter` - JSON:API-style filter expression (ADR-013 §3)
 
-Response includes pagination metadata:
+Response wraps data in a `PaginatedResponse` with `PaginationMetadata`:
 ```json
 {
   "data": [...],
   "pagination": {
+    "page": 0,
     "limit": 20,
-    "offset": 0,
-    "total": 150,
-    "hasMore": true
+    "totalItems": 150,
+    "totalPages": 8,
+    "hasNext": true,
+    "hasPrev": false
   }
 }
 ```
