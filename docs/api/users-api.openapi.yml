@@ -298,6 +298,9 @@ paths:
         **Cache Invalidation**: All user caches cleared on update
 
       operationId: updateCurrentUser
+      deprecated: true
+      x-deprecation-note: >-
+        PUT is redundant with PATCH (same all-optional UpdateUserRequest). Use PATCH /users/me. Scheduled for removal (ADR-013 §1, api-consolidation Phase 4).
       requestBody:
         required: true
         content:
@@ -1327,6 +1330,9 @@ paths:
         3. Client calls confirm endpoint with file ID
 
       operationId: uploadProfilePicture
+      deprecated: true
+      x-deprecation-note: >-
+        Duplicate presigned-URL initiator. Use POST /users/me/picture/presigned-url. Scheduled for removal (api-consolidation Phase 4).
       requestBody:
         required: true
         content:

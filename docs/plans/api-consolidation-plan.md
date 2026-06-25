@@ -13,6 +13,27 @@ verify no live caller first.
 
 ---
 
+## Execution status — branch `api-consolidation` (updated 2026-06-25 overnight)
+
+Landed = committed + pushed, green (build/compile verified; pre-push hook ran the suite).
+
+| Phase | Status | Notes |
+|---|---|---|
+| **0 Shared-kernel** | ✅ **LANDED** | Deleted dead duplicate `utils.ErrorResponse` + `ErrorHandlingUtils` (+test); added `docs/api/_shared.openapi.yml`; fixed `04-api-core.md`. Full build-java green. |
+| **1 Dead-spec removal** | ✅ **LANDED** | events-api stale `/topics*` block (8 paths, 6 schemas) + partners-api orphan voting (2 paths, 5 schemas, tag) removed. Regen+compile green. |
+| **2 Document live routes / re-enable generators** | ⏸️ **DEFERRED** | speaker-coordination + attendee-experience have **no controllers** (hollow stubs; speaker logic lives in EMS). Re-enabling their generators emits unimplemented interfaces and needs a contract-ownership decision — not a safe autonomous step. Documenting `/partners/me` etc. into the **wired** partners-api also changes the generated `PartnersApi` that `PartnerController` implements (compile risk). Both need a human design call. |
+| **3 Convention conformance** | 🟡 **PARTIAL — LANDED (stub half)** | Inline `ErrorResponse`/`PaginationMetadata` → ADR-006 stub in companies/users/topics (codegen-neutral, verified). **Deferred:** list-query collapse — frontend uses `sortBy`/`sortDir` (newsletter, partner); deprecate-then-remove. |
+| **4 Mutation-model fixes** | 🟡 **PARTIAL — LANDED (deprecate half)** | Marked `deprecated: true`: `PUT /companies/{name}`, `PUT /users/me` (redundant PATCH twins), `POST /users/me/picture` (dup upload). **Deferred (removal):** needs a deprecation period + frontend migration off these + the lifecycle-mutator merge (publish/advance/transition) + session PUT/PATCH fix. |
+| **5 Partner consolidation 5→2** | ⏸️ **DEFERRED** | Merging notes/analytics/topics into the generator-wired partners-api creates unused generated interfaces + DTO name clashes unless controllers are rewired to implement them — a real refactor with test impact. Not safe unattended; do as a focused human-reviewed PR. |
+| **6 events-api decomposition** | ⏸️ **DEFERRED** | Only 4/49 EMS controllers implement generated interfaces (EventTypes, SpeakerOutreach, EmailTemplates, AiPrompts), so controller re-points are few — but the carve is large 11k-line YAML surgery + 9 new generator tasks; a partial carve is worse than none. Fully specified below; execute as a single dedicated PR. |
+
+**Net tonight:** Phases 0, 1, 3-stub, 4-deprecate landed green. The deferred items are
+the contract-removing / multi-file-refactor / design-decision halves — deliberately left
+for human-reviewed PRs rather than risk an unattended broken branch or a broken production
+contract. Each deferral is annotated inline in its phase below.
+
+---
+
 ## Versioning & deprecation approach
 
 All specs are under `/api/v1`. We are **not** cutting `/api/v2`. The cleanups fall in three

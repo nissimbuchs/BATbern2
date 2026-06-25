@@ -327,6 +327,9 @@ paths:
         **Cache Invalidation**: All company caches cleared on update
 
       operationId: updateCompany
+      deprecated: true
+      x-deprecation-note: >-
+        PUT is redundant with PATCH (same all-optional UpdateCompanyRequest). Use PATCH /companies/{name}. Scheduled for removal (ADR-013 §1, api-consolidation Phase 4).
       parameters:
         - name: name
           in: path
