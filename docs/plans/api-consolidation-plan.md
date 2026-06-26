@@ -13,24 +13,110 @@ verify no live caller first.
 
 ---
 
-## Execution status — branch `api-consolidation` (updated 2026-06-25 overnight)
+## Execution status — branch `api-consolidation` (updated 2026-06-26)
 
-Landed = committed + pushed, green (build/compile verified; pre-push hook ran the suite).
+Landed = committed + pushed, green (pre-push hook ran the FULL suite each push).
+Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref shared schemas
++ partner orphan FE cleanup), `7f761a31` (EMS lifecycle), `fb44bc5d` (CUMS removals),
+`eb4d1fb6` (deprecate-half, now superseded), `af3cd875` (Phase 3 stub, now superseded),
+`a7802ef3` (Phase 1), `4bce02ef` (Phase 0).
 
 | Phase | Status | Notes |
 |---|---|---|
-| **0 Shared-kernel** | ✅ **LANDED** | Deleted dead duplicate `utils.ErrorResponse` + `ErrorHandlingUtils` (+test); added `docs/api/_shared.openapi.yml`; fixed `04-api-core.md`. Full build-java green. |
-| **1 Dead-spec removal** | ✅ **LANDED** | events-api stale `/topics*` block (8 paths, 6 schemas) + partners-api orphan voting (2 paths, 5 schemas, tag) removed. Regen+compile green. |
-| **2 Document live routes / re-enable generators** | ⏸️ **DEFERRED** | speaker-coordination + attendee-experience have **no controllers** (hollow stubs; speaker logic lives in EMS). Re-enabling their generators emits unimplemented interfaces and needs a contract-ownership decision — not a safe autonomous step. Documenting `/partners/me` etc. into the **wired** partners-api also changes the generated `PartnersApi` that `PartnerController` implements (compile risk). Both need a human design call. |
-| **3 Convention conformance** | 🟡 **PARTIAL — LANDED (stub half)** | Inline `ErrorResponse`/`PaginationMetadata` → ADR-006 stub in companies/users/topics (codegen-neutral, verified). **Deferred:** list-query collapse — frontend uses `sortBy`/`sortDir` (newsletter, partner); deprecate-then-remove. |
-| **4 Mutation-model fixes** | 🟢 **CUMS REMOVALS LANDED** | Single-user system → removed outright (no deprecation): `PUT /companies/{name}` (controller method deleted), `PUT /users/me` → converted to `PATCH /users/me` (backend had no PATCH /me before — now real), `POST /users/me/picture` (dup, was spec-only). Frontend adapted (updateUserProfile→PATCH; dead `associateProfilePicture` deleted); CUMS tests + Bruno tests PUT→PATCH. Verified: CUMS compile+test, FE type-check+unit, live PUT→404/PATCH→200, Bruno companies 12/12 + users 35/35. **Remaining EMS items** (lifecycle mutator merge publish/advance/transition, session PUT/PATCH, named inline bodies, slot-config merge, registration-cancel merge, partner deactivation path) tracked below. |
-| **5 Partner consolidation 5→2** | ⏸️ **DEFERRED** | Merging notes/analytics/topics into the generator-wired partners-api creates unused generated interfaces + DTO name clashes unless controllers are rewired to implement them — a real refactor with test impact. Not safe unattended; do as a focused human-reviewed PR. |
-| **6 events-api decomposition** | ⏸️ **DEFERRED** | Only 4/49 EMS controllers implement generated interfaces (EventTypes, SpeakerOutreach, EmailTemplates, AiPrompts), so controller re-points are few — but the carve is large 11k-line YAML surgery + 9 new generator tasks; a partial carve is worse than none. Fully specified below; execute as a single dedicated PR. |
+| **0 Shared-kernel** | ✅ **DONE** | Deleted dead duplicate `utils.ErrorResponse` + `ErrorHandlingUtils` (+test); added `docs/api/_shared.openapi.yml`; fixed `04-api-core.md`. |
+| **1 Dead-spec removal** | ✅ **DONE** | events-api stale `/topics*` block + partners-api orphan voting removed (spec). **Frontend completion (in `e9dd536a`):** removed the dead orphan-voting client `getPartnerVotes`/`usePartnerVotes` (+tests) that called the never-implemented 404. |
+| **2 Document live routes / re-enable generators** | ❌ **WON'T DO** | Owner decision (2026-06-26): speaker/attendee services stay dormant (consolidating toward an EMS/CUMS few-service backend), so **do NOT re-enable their generators**. The route-documentation bit is dropped too (low value, codegen risk on the wired partners-api). Phase closed. |
+| **3 Convention conformance** | 🟡 **HALF DONE** | ✅ **Shared schema solution DONE** (`e9dd536a`, supersedes the Phase 3 stub): `ErrorResponse`/`PaginationMetadata` in companies/users/topics/events/partners now `$ref` `_shared.openapi.yml` — works for **both** generators (see "Shared-schema standard" below). ⏳ **REMAINING: list-query collapse** — see resume guide. |
+| **4 Mutation-model fixes** | 🟡 **HALF DONE** | ✅ **CUMS removals DONE** (`fb44bc5d`): `PUT /companies/{name}` deleted; `PUT /users/me` → `PATCH /me`; dup `POST /users/me/picture` removed; frontend + Bruno adapted. ✅ **EMS lifecycle DONE** (`7f761a31`): removed `workflow/advance` phantom; `transition` PUT→POST. ⏳ **REMAINING EMS items** — see resume guide. |
+| **5 Partner consolidation 5→2** | ⏳ **TODO** | Not started. Merge notes/analytics/topics into the generator-wired partners-api + rewire controllers to implement the generated interfaces (real refactor w/ test impact). Full spec in the Phase 5 section below. |
+| **6 events-api decomposition** | ⏳ **TODO** | Not started. Carve the 11k-line events-api into ~9 per-domain specs + generator tasks. Only **4/49** EMS controllers implement generated interfaces (EventTypes, SpeakerOutreach, EmailTemplates, AiPrompts) → few re-points. Full spec in the Phase 6 section below. Do as a single dedicated PR.
 
-**Net tonight:** Phases 0, 1, 3-stub, 4-deprecate landed green. The deferred items are
-the contract-removing / multi-file-refactor / design-decision halves — deliberately left
-for human-reviewed PRs rather than risk an unattended broken branch or a broken production
-contract. Each deferral is annotated inline in its phase below.
+---
+
+## Shared-schema standard (decided + verified 2026-06-26 — use for ALL specs)
+
+**One canonical definition in `docs/api/_shared.openapi.yml`** (full `properties` **+**
+`x-java-type`), `$ref`'d by every spec:
+```yaml
+PaginationMetadata:
+  $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
+```
+Why it works for both generators (proven on companies-api against both):
+- **`openapi-typescript` 7.x** resolves the external `$ref` (built-in Redocly bundling) → **full TS type**.
+- **`openapi-generator` (Gradle)** resolves the ref AND maps by *name* via the existing
+  `schemaMappings`/`importMappings` → shared-kernel class, **no duplicate DTO**.
+- ❌ Do NOT use a body-less `x-java-type` stub (the abandoned Phase 3 approach): it's fine
+  for Java but `openapi-typescript` emits `Record<string, never>` (empty type) → breaks the FE.
+
+**Latent landmines still to fix (peripheral specs, optional consistency pass):**
+`events-api`/`partners-api` were already done in `e9dd536a`. But `speakers-api`,
+`attendees-api`, `partner-meetings/notes/topics/analytics`, `file-upload`, `auth-endpoints`
+still have bespoke/empty `ErrorResponse` (and some `Pagination`) shapes — convert them to
+`$ref` `_shared` too when convenient (low risk; most aren't generator-wired).
+
+---
+
+## Versioning rule for this repo (decided 2026-06-26)
+
+**Single-user system, we own backend + frontend + the email-forwarder Lambda.** So: **remove
+redundant endpoints outright and adapt all callers in the same commit — NO `deprecated:`
+period.** (This supersedes the deprecate-then-remove guidance in the "Versioning & deprecation
+approach" section below; that section is kept for historical context only.)
+
+---
+
+## ▶ RESUME GUIDE — finish Phase 3 & 4, then 5 & 6
+
+Workflow per change: edit spec → `npm run generate:api-types` (FE) + Gradle regen/compile
+(BE) → fix tests → restart the touched service (`make dev-native-restart-service SERVICE=…`)
+→ Bruno + Playwright @smoke → commit → push (pre-push runs the full suite, ~10 min).
+**Env gotchas:** macOS has no `timeout` (use the Bash tool's own param); dev Postgres is the
+existing `batbern-dev-postgres` container (`docker start` it); refresh tokens with
+`./scripts/auth/refresh-token.sh staging [role] </dev/null`; run the **FULL** FE suite
+(`npx vitest run`) before pushing — a targeted run missed `partnerApi.test.ts` once and the
+pre-push hook rejected the push.
+
+### Phase 3 — list-query collapse (the only Phase 3 remainder)
+Goal (ADR-013 §3): list endpoints expose **one** vocabulary (`filter`/`sort`), not ad-hoc
+`role`/`company`/`search`/`status`/`sortBy`/`sortDir`. Lowest-risk approach: **keep the
+service/repository logic; change only the controller param surface** and parse `filter`/`sort`
+into the existing service args.
+- **`listUsers`** (`UserController.listUsers` + `users-api`): drop `role`/`company`/`sortBy`/`sortDir`.
+  ⚠️ **`?role=` is an infrastructure contract** — the email-forwarder Lambda calls
+  `GET /api/v1/users?role=ORGANIZER` unauthenticated (`infrastructure/lambda/email-forwarder/
+  sender-auth.ts:96`, `address-resolver.ts:130`). Update BOTH Lambda files to the new
+  `filter` form in the same commit (+ their unit tests `infrastructure/test/unit/email-forwarder.test.ts`).
+- **`listNewsletterSubscribers`** (`NewsletterController` + events-api): drop `search`/`status`/`sortBy`/`sortDir`.
+  ⚠️ Current params are **enum-validated** (`status: [all,active,unsubscribed]`, `sortBy: [...]`);
+  prefer keeping that validation (don't dump everything into a stringly JSON blob — fold sort
+  into a single `sort=-subscribedAt` and keep typed filter params, or document the filter keys).
+- Frontend callers: `web-frontend/src/services/api/userManagementApi.ts` (builds role/company/sortBy/sortDir),
+  `web-frontend/src/services/api/newsletterApi.ts` (builds search/status/sortBy/sortDir).
+- Tests: backend controller/integration tests for both list endpoints; FE `newsletterApi.test.ts`, user-mgmt tests.
+
+### Phase 4 — remaining EMS items (CUMS + lifecycle already done)
+- **`session` PUT vs PATCH** (`events-api` `PUT /events/{eventCode}/sessions/{sessionSlug}`):
+  `UpdateSessionRequest` is byte-identical to create & mostly optional → make PUT a true
+  full-replace (require full shape) OR demote to PATCH (recommended: PATCH). Backend `SessionController`.
+- **Name the inline `object` request bodies** (events-api): `assignSpeakerToSession`,
+  `declineSpeaker`, `patchMyNewsletterSubscription`, `batchImportSessions`. Spec typing →
+  regen FE types (gives named TS types). Low risk.
+- **Merge slot-config schemas** (events-api): `UpdateEventSlotConfigurationRequest` ⟷
+  `UpdateEventAgendaConfigRequest` overlap → reconcile to one schema or base+extension.
+- **Registration-cancel merge** (events-api): `POST /registrations/cancel` (email token) vs
+  `POST /registrations/deregister` (deregistration token) are two token-cancel flows → keep
+  one (likely-legacy = `cancelRegistration`). Keep `DELETE …/my-registration` (authed) +
+  `/registrations/deregister/by-email` (request-link). FE callers: `deregistrationService.ts`,
+  `eventApiClient.ts` (`registrations/cancel`), `registrationService.ts`. Behavioral — verify with Bruno + PW.
+- **Partner deactivation — pick one path** (partners-api): `isActive=false` in
+  `PATCH /partners/{companyName}` AND `DELETE /partners/{companyName}` (soft-delete) both
+  deactivate. Choose one (recommend DELETE = soft-deactivate; drop `isActive` from the PATCH body),
+  update `PartnerController` + FE `partnerApi.ts` + tests.
+
+### Then Phase 5 (partner 5→2) and Phase 6 (events-api decomposition)
+Full specs are in the Phase 5 and Phase 6 sections below. Both are large, single-PR efforts.
+Recommended order: finish 3 + 4 (above), then 6 (decomposition — unblocks cleaner per-domain
+specs), then 5 (partner consolidation).
 
 ---
 
