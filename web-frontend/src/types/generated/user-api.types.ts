@@ -99,24 +99,7 @@ export interface paths {
      *     **Performance**: <100ms (P95)
      */
     get: operations['getCurrentUser'];
-    /**
-     * Update current user profile
-     * @description Update the profile of the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC2
-     *
-     *     **Validation Rules**:
-     *     - Email must be valid and unique
-     *     - Names: 2-100 characters
-     *     - Bio: max 5000 characters
-     *
-     *     **Cognito Sync**: Updates synchronize with AWS Cognito
-     *
-     *     **Events Published**: UserUpdatedEvent to EventBridge
-     *
-     *     **Cache Invalidation**: All user caches cleared on update
-     */
-    put: operations['updateCurrentUser'];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -532,23 +515,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /**
-     * Upload profile picture
-     * @description Generate presigned S3 upload URL for profile picture.
-     *
-     *     **Acceptance Criteria**: AC10
-     *
-     *     **File Constraints**:
-     *     - Max size: 5 MB
-     *     - Allowed formats: PNG, JPG, JPEG
-     *     - Recommended dimensions: 400x400 to 1000x1000 pixels
-     *
-     *     **Upload Process**:
-     *     1. Client calls this endpoint to get presigned URL
-     *     2. Client uploads directly to S3 using presigned URL
-     *     3. Client calls confirm endpoint with file ID
-     */
-    post: operations['uploadProfilePicture'];
+    post?: never;
     /**
      * Remove own profile picture
      * @description Remove the authenticated user's own profile picture.
@@ -1542,53 +1509,10 @@ export interface components {
        */
       profilePictureUrl: string;
     };
-    PaginationMetadata: {
-      /**
-       * @description Current page (1-indexed)
-       * @example 1
-       */
-      page: number;
-      /**
-       * @description Items per page
-       * @example 20
-       */
-      limit: number;
-      /**
-       * @description Total number of items
-       * @example 150
-       */
-      totalItems: number;
-      /**
-       * @description Total number of pages
-       * @example 8
-       */
-      totalPages: number;
-      /**
-       * @description Whether there is a next page
-       * @example true
-       */
-      hasNext: boolean;
-      /**
-       * @description Whether there is a previous page
-       * @example false
-       */
-      hasPrev: boolean;
-    };
-    ErrorResponse: {
-      /** @example VALIDATION_ERROR */
-      error: string;
-      /** @example BAD_REQUEST */
-      errorCode?: string;
-      /** @example Invalid request data */
-      message: string;
-      /**
-       * Format: date-time
-       * @example 2025-01-15T10:30:00Z
-       */
-      timestamp: string;
-      /** @description Additional error details */
-      details?: Record<string, never>;
-    };
+    /** @description Page-based pagination metadata — canonical def in docs/api/_shared.openapi.yml (shared-kernel api.PaginationMetadata) */
+    PaginationMetadata: Record<string, never>;
+    /** @description Standard error envelope — canonical def in docs/api/_shared.openapi.yml (shared-kernel dto.ErrorResponse) */
+    ErrorResponse: Record<string, never>;
     PairingCodeResponse: {
       /** @example 482910 */
       pairingCode?: string;
@@ -1858,34 +1782,6 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  updateCurrentUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateUserRequest'];
-      };
-    };
-    responses: {
-      /** @description User updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -2494,51 +2390,6 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  uploadProfilePicture: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          filename: string;
-          fileSizeBytes: number;
-          /** @enum {string} */
-          mimeType: 'image/png' | 'image/jpeg' | 'image/svg+xml';
-        };
-      };
-    };
-    responses: {
-      /** @description Presigned upload URL generated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /**
-             * Format: uri
-             * @description Presigned S3 upload URL (valid for 15 minutes)
-             */
-            uploadUrl?: string;
-            /** @description File identifier for confirmation */
-            fileId?: string;
-            /**
-             * @description URL expiration time in seconds
-             * @example 900
-             */
-            expiresIn?: number;
-          };
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
       500: components['responses']['InternalServerError'];
     };
   };

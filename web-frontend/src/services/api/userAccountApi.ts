@@ -129,7 +129,7 @@ export const updateUserProfile = async (
   // silently dropped and consent could never be recorded.
   if (updates.termsAccepted !== undefined) allowedFields.termsAccepted = updates.termsAccepted;
 
-  const response = await apiClient.put(`${USER_API_PATH}/me`, allowedFields);
+  const response = await apiClient.patch(`${USER_API_PATH}/me`, allowedFields);
 
   // Transform response back to expected format
   const data = response.data;
@@ -316,20 +316,6 @@ export const confirmUpload = async (
     status: 'CONFIRMED',
     cloudFrontUrl: data.profilePictureUrl,
   };
-};
-
-/**
- * Associate uploaded picture with user profile
- * Note: This is handled automatically by the confirm endpoint
- * Backend associates the picture during confirmation phase
- */
-export const associateProfilePicture = async (uploadId: string): Promise<User> => {
-  // Backend automatically associates the picture during confirm phase
-  // This function is kept for backward compatibility but may not be needed
-  const response = await apiClient.put(`${USER_API_PATH}/me`, {
-    profilePictureFileId: uploadId,
-  });
-  return response.data;
 };
 
 /**

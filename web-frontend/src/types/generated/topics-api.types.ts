@@ -295,39 +295,8 @@ export interface components {
       data: components['schemas']['Topic'][];
       pagination: components['schemas']['PaginationMetadata'];
     };
-    PaginationMetadata: {
-      /**
-       * @description Current page (1-indexed)
-       * @example 1
-       */
-      page: number;
-      /**
-       * @description Items per page
-       * @example 20
-       */
-      limit: number;
-      /**
-       * Format: int64
-       * @description Total number of items across all pages
-       * @example 87
-       */
-      totalItems: number;
-      /**
-       * @description Total number of pages
-       * @example 5
-       */
-      totalPages: number;
-      /**
-       * @description Whether there is a next page
-       * @example true
-       */
-      hasNext: boolean;
-      /**
-       * @description Whether there is a previous page
-       * @example false
-       */
-      hasPrev: boolean;
-    };
+    /** @description Page-based pagination metadata — canonical def in docs/api/_shared.openapi.yml (shared-kernel api.PaginationMetadata) */
+    PaginationMetadata: Record<string, never>;
     CreateTopicRequest: {
       /**
        * @description Topic title (must be unique)
@@ -374,19 +343,8 @@ export interface components {
        */
       message: string;
     };
-    ErrorResponse: {
-      /** @example VALIDATION_ERROR */
-      error: string;
-      /** @example BAD_REQUEST */
-      errorCode?: string;
-      /** @example Invalid request data */
-      message: string;
-      /** Format: date-time */
-      timestamp: string;
-      details?: {
-        [key: string]: unknown;
-      };
-    };
+    /** @description Standard error envelope — canonical def in docs/api/_shared.openapi.yml (shared-kernel dto.ErrorResponse) */
+    ErrorResponse: Record<string, never>;
   };
   responses: {
     /** @description Bad request - validation error */

@@ -84,23 +84,7 @@ export interface paths {
      *     **Performance**: <150ms (P95)
      */
     get: operations['getCompany'];
-    /**
-     * Update company (full replacement)
-     * @description Replace all company data with new data.
-     *
-     *     **Acceptance Criteria**: AC4
-     *
-     *     **Story 1.16.2**: Uses company name as identifier instead of UUID
-     *
-     *     **Validation Rules**:
-     *     - Company name must be unique
-     *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
-     *
-     *     **Events Published**: CompanyUpdatedEvent to EventBridge
-     *
-     *     **Cache Invalidation**: All company caches cleared on update
-     */
-    put: operations['updateCompany'];
+    put?: never;
     post?: never;
     /**
      * Delete company
@@ -522,53 +506,10 @@ export interface components {
       data: components['schemas']['CompanyResponse'][];
       pagination: components['schemas']['PaginationMetadata'];
     };
-    PaginationMetadata: {
-      /**
-       * @description Current page (1-indexed)
-       * @example 1
-       */
-      page: number;
-      /**
-       * @description Items per page
-       * @example 20
-       */
-      limit: number;
-      /**
-       * @description Total number of items
-       * @example 100
-       */
-      totalItems: number;
-      /**
-       * @description Total number of pages
-       * @example 5
-       */
-      totalPages: number;
-      /**
-       * @description Whether there is a next page
-       * @example true
-       */
-      hasNext: boolean;
-      /**
-       * @description Whether there is a previous page
-       * @example false
-       */
-      hasPrev: boolean;
-    };
-    ErrorResponse: {
-      /** @example VALIDATION_ERROR */
-      error: string;
-      /** @example BAD_REQUEST */
-      errorCode?: string;
-      /** @example Invalid filter syntax */
-      message: string;
-      /**
-       * Format: date-time
-       * @example 2025-01-15T10:30:00Z
-       */
-      timestamp: string;
-      /** @description Additional error details */
-      details?: Record<string, never>;
-    };
+    /** @description Page-based pagination metadata — canonical def in docs/api/_shared.openapi.yml (shared-kernel api.PaginationMetadata) */
+    PaginationMetadata: Record<string, never>;
+    /** @description Standard error envelope — canonical def in docs/api/_shared.openapi.yml (shared-kernel dto.ErrorResponse) */
+    ErrorResponse: Record<string, never>;
   };
   responses: {
     /** @description Bad request - validation error */
@@ -723,39 +664,6 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  updateCompany: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Company name (unique identifier) */
-        name: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateCompanyRequest'];
-      };
-    };
-    responses: {
-      /** @description Company updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CompanyResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
     };
   };

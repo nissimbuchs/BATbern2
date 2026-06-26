@@ -105,13 +105,13 @@ public class UserController {
      * @param request Update request with validation
      * @return Updated user profile
      */
-    @PutMapping("/me")
-    @Timed(value = "users.updateCurrentUser",
-            description = "Time to update current user profile",
+    @PatchMapping("/me")
+    @Timed(value = "users.patchCurrentUser",
+            description = "Time to partially update current user profile",
             percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<UserResponse> updateCurrentUser(
+    public ResponseEntity<UserResponse> patchCurrentUser(
             @Valid @RequestBody UpdateUserRequest request) {
-        log.info("Updating current user profile");
+        log.info("Patching current user profile");
 
         UserResponse response = userService.updateCurrentUser(request);
 
