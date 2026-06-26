@@ -18,7 +18,7 @@ import type { AxiosResponse } from 'axios';
 vi.mock('@/services/api/apiClient', () => ({
   default: {
     get: vi.fn(),
-    put: vi.fn(),
+    post: vi.fn(),
   },
 }));
 
@@ -154,13 +154,13 @@ describe('workflowService', () => {
         config: {} as any,
       };
 
-      vi.mocked(apiClient.put).mockResolvedValue(mockResponse);
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
 
       // When: Transitioning to new state
       const result = await workflowService.transitionWorkflowState('BATbern56', 'TOPIC_SELECTION');
 
       // Then: Should call correct endpoint with request body
-      expect(apiClient.put).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
+      expect(apiClient.post).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
         targetState: 'TOPIC_SELECTION',
         overrideValidation: false,
       });
@@ -180,7 +180,7 @@ describe('workflowService', () => {
         isAxiosError: true,
       };
 
-      vi.mocked(apiClient.put).mockRejectedValue(mockError);
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
 
       // When/Then: Should throw error
       await expect(
@@ -205,7 +205,7 @@ describe('workflowService', () => {
         isAxiosError: true,
       };
 
-      vi.mocked(apiClient.put).mockRejectedValue(mockError);
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
 
       // When/Then: Should throw error with details
       await expect(
@@ -226,7 +226,7 @@ describe('workflowService', () => {
         isAxiosError: true,
       };
 
-      vi.mocked(apiClient.put).mockRejectedValue(mockError);
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
 
       // When/Then: Should throw error
       await expect(
@@ -247,7 +247,7 @@ describe('workflowService', () => {
         isAxiosError: true,
       };
 
-      vi.mocked(apiClient.put).mockRejectedValue(mockError);
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
 
       // When/Then: Should throw error
       await expect(
@@ -270,7 +270,7 @@ describe('workflowService', () => {
         config: {} as any,
       };
 
-      vi.mocked(apiClient.put).mockResolvedValue(mockResponse);
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
 
       // When: Transitioning with override (no reason)
       const result = await workflowService.transitionWorkflowState(
@@ -280,7 +280,7 @@ describe('workflowService', () => {
       );
 
       // Then: Should include overrideValidation field
-      expect(apiClient.put).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
+      expect(apiClient.post).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
         targetState: 'SPEAKER_OUTREACH',
         overrideValidation: true,
       });
@@ -302,7 +302,7 @@ describe('workflowService', () => {
         config: {} as any,
       };
 
-      vi.mocked(apiClient.put).mockResolvedValue(mockResponse);
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
 
       // When: Transitioning with override and reason
       const result = await workflowService.transitionWorkflowState(
@@ -313,7 +313,7 @@ describe('workflowService', () => {
       );
 
       // Then: Should include both overrideValidation and overrideReason
-      expect(apiClient.put).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
+      expect(apiClient.post).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
         targetState: 'SPEAKER_OUTREACH',
         overrideValidation: true,
         overrideReason: 'Emergency speaker confirmation needed',

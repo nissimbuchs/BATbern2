@@ -68,7 +68,7 @@ class WorkflowService {
       requestBody.overrideReason = reason;
     }
 
-    const response = await apiClient.put<Event>(
+    const response = await apiClient.post<Event>(
       `${WORKFLOW_API_PATH}/${eventCode}/workflow/transition`,
       requestBody
     );

@@ -19,7 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -66,7 +66,7 @@ public class EventWorkflowController {
      * @param request Transition request containing target state
      * @return Updated event with new workflow state
      */
-    @PutMapping("/{code}/workflow/transition")
+    @PostMapping("/{code}/workflow/transition")
     @PreAuthorize("hasRole('ORGANIZER')")
     @org.springframework.cache.annotation.Caching(evict = {
         @CacheEvict(value = "eventWithIncludes", allEntries = true),

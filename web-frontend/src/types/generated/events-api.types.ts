@@ -226,39 +226,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/workflow/advance': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Advance workflow to next state
-     * @description Advance event workflow to the next state in the state machine.
-     *
-     *     **Acceptance Criteria**: AC8
-     *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
-     *
-     *     **Workflow States**:
-     *     1. draft → planning
-     *     2. planning → ready
-     *     3. ready → published
-     *     4. published → completed
-     *
-     *     **Invalid Transitions**: archived events cannot advance workflow
-     *
-     *     **Cache Invalidation**: All event caches cleared on workflow advance
-     */
-    post: operations['advanceWorkflow'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/workflow/transition': {
     parameters: {
       query?: never;
@@ -267,6 +234,7 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
+    put?: never;
     /**
      * Transition event to target workflow state
      * @description Transition an event to a specific target workflow state.
@@ -302,8 +270,7 @@ export interface paths {
      *
      *     **Cache Invalidation**: All event caches cleared on state transition
      */
-    put: operations['transitionEventWorkflowState'];
-    post?: never;
+    post: operations['transitionEventWorkflowState'];
     delete?: never;
     options?: never;
     head?: never;
@@ -5005,10 +4972,84 @@ export interface components {
        */
       overwrite: boolean;
     };
-    /** @description Pagination metadata from shared-kernel */
-    PaginationMetadata: Record<string, never>;
-    /** @description Standard error response from shared-kernel */
-    ErrorResponse: Record<string, never>;
+    /**
+     * @description Page-based pagination metadata returned with every paginated list response.
+     *     Backed by `ch.batbern.shared.api.PaginationMetadata`. Page-based — NOT
+     *     offset/cursor.
+     */
+    PaginationMetadata: {
+      /**
+       * @description Zero-based (or one-based per spec) current page index.
+       * @example 0
+       */
+      page: number;
+      /**
+       * @description Page size — items per page.
+       * @example 20
+       */
+      limit: number;
+      /**
+       * Format: int64
+       * @description Total number of items across all pages.
+       * @example 150
+       */
+      totalItems: number;
+      /**
+       * @description Total number of pages.
+       * @example 8
+       */
+      totalPages: number;
+      /** @description Whether a next page exists. */
+      hasNext: boolean;
+      /** @description Whether a previous page exists. */
+      hasPrev: boolean;
+    };
+    /**
+     * @description Standard error envelope returned on every 4xx/5xx response across all services.
+     *     Flat shape (NOT nested under `error`). Backed by
+     *     `ch.batbern.shared.dto.ErrorResponse`. `@JsonInclude(NON_NULL)` — absent fields
+     *     are omitted from the wire.
+     */
+    ErrorResponse: {
+      /**
+       * Format: date-time
+       * @description When the error occurred (ISO-8601 / Instant).
+       */
+      timestamp?: string;
+      /** @description Request path that generated the error. */
+      path?: string;
+      /**
+       * @description HTTP status code.
+       * @example 400
+       */
+      status?: number;
+      /** @description Short HTTP reason phrase (e.g. "Bad Request"). */
+      error?: string;
+      /**
+       * @description Stable machine-readable error code for typed client handling
+       *     (e.g. `ADDITIONAL_EMAIL_DUPLICATE`, `ERR_VALIDATION`).
+       * @example ERR_VALIDATION
+       */
+      errorCode?: string;
+      /** @description Human-readable error message. */
+      message?: string;
+      /** @description Correlation ID for tracing this request across services. */
+      correlationId?: string;
+      /**
+       * @description Operational severity classification.
+       * @enum {string}
+       */
+      severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      /**
+       * @description Additional structured context (e.g. per-field validation errors keyed by
+       *     field name). Free-form object.
+       */
+      details?: {
+        [key: string]: unknown;
+      };
+      /** @description Present only in dev/staging diagnostics — never in production. */
+      stackTrace?: string;
+    };
     /**
      * @description Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed).
      *     Defines the current state of an event in the organizer workflow.
@@ -6201,32 +6242,6 @@ export interface operations {
     requestBody?: never;
     responses: {
       /** @description Event published successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Event'];
-        };
-      };
-      404: components['responses']['NotFound'];
-      422: components['responses']['UnprocessableEntity'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  advanceWorkflow: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code in format BATbern{number} */
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Workflow advanced successfully */
       200: {
         headers: {
           [name: string]: unknown;

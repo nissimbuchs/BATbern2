@@ -649,53 +649,8 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{eventCode}/workflow/advance:
-    post:
-      tags:
-        - Event Actions
-      summary: Advance workflow to next state
-      description: |
-        Advance event workflow to the next state in the state machine.
-
-        **Acceptance Criteria**: AC8
-        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
-
-        **Workflow States**:
-        1. draft → planning
-        2. planning → ready
-        3. ready → published
-        4. published → completed
-
-        **Invalid Transitions**: archived events cannot advance workflow
-
-        **Cache Invalidation**: All event caches cleared on workflow advance
-
-      operationId: advanceWorkflow
-      parameters:
-        - name: eventCode
-          in: path
-          description: Event code in format BATbern{number}
-          required: true
-          schema:
-            type: string
-            pattern: '^BATbern[0-9]+$'
-            example: BATbern142
-      responses:
-        '200':
-          description: Workflow advanced successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Event'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
   /events/{eventCode}/workflow/transition:
-    put:
+    post:
       tags:
         - Event Actions
       summary: Transition event to target workflow state
@@ -9344,17 +9299,9 @@ components:
             If true, deletes existing structural sessions and recreates them.
 
     PaginationMetadata:
-      type: object
-      description: Pagination metadata from shared-kernel
-      x-java-type: ch.batbern.shared.api.PaginationMetadata
-      x-java-type-import: ch.batbern.shared.api.PaginationMetadata
-
+      $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
     ErrorResponse:
-      type: object
-      description: Standard error response from shared-kernel
-      x-java-type: ch.batbern.shared.dto.ErrorResponse
-      x-java-type-import: ch.batbern.shared.dto.ErrorResponse
-
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
     EventWorkflowState:
       type: string
       description: |
