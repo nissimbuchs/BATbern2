@@ -2855,23 +2855,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - username
-                - speakerRole
-              properties:
-                username:
-                  type: string
-                  pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-                  example: john.doe
-                speakerRole:
-                  type: string
-                  enum: [PRIMARY_SPEAKER, CO_SPEAKER, MODERATOR, PANELIST]
-                  example: PRIMARY_SPEAKER
-                presentationTitle:
-                  type: string
-                  maxLength: 255
-                  example: Security Auditing Tools Deep Dive
+              $ref: '#/components/schemas/AssignSpeakerToSessionRequest'
       responses:
         '201':
           description: Speaker assigned successfully
@@ -3001,11 +2985,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                declineReason:
-                  type: string
-                  example: Schedule conflict
+              $ref: '#/components/schemas/DeclineSpeakerRequest'
       responses:
         '200':
           description: Speaker declined successfully
@@ -5185,11 +5165,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [subscribed]
-              properties:
-                subscribed:
-                  type: boolean
+              $ref: '#/components/schemas/PatchNewsletterSubscriptionRequest'
       responses:
         '200':
           description: Subscription updated
@@ -8389,6 +8365,39 @@ components:
           minimum: 1
           description: When provided (>0), recomputes endTime as startTime + durationMinutes.
 
+    AssignSpeakerToSessionRequest:
+      type: object
+      required:
+        - username
+        - speakerRole
+      properties:
+        username:
+          type: string
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+        speakerRole:
+          type: string
+          enum: [PRIMARY_SPEAKER, CO_SPEAKER, MODERATOR, PANELIST]
+          example: PRIMARY_SPEAKER
+        presentationTitle:
+          type: string
+          maxLength: 255
+          example: Security Auditing Tools Deep Dive
+
+    DeclineSpeakerRequest:
+      type: object
+      properties:
+        declineReason:
+          type: string
+          example: Schedule conflict
+
+    PatchNewsletterSubscriptionRequest:
+      type: object
+      required: [subscribed]
+      properties:
+        subscribed:
+          type: boolean
+
     CreateRegistrationRequest:
       type: object
       description: |
@@ -8886,8 +8895,14 @@ components:
     UpdateEventAgendaConfigRequest:
       type: object
       description: |
-        Copy-on-edit payload for the per-event agenda config (Story 15.2). Writes only the
+        Copy-on-edit payload for the PER-EVENT agenda config (Story 15.2). Writes only the
         per-event `event_agenda_config` row — never the shared template.
+
+        Shares the slot-configuration field vocabulary with `UpdateEventSlotConfigurationRequest`
+        but is a DISTINCT contract: this one targets a single event's agenda row and requires the
+        full slot shape (all timing/slot fields mandatory) so the per-event override is complete.
+        Use `UpdateEventSlotConfigurationRequest` instead to edit the event-TYPE-level defaults
+        (fewer required fields; timing fields optional/nullable).
       required:
         - minSlots
         - maxSlots
@@ -9079,8 +9094,14 @@ components:
     UpdateEventSlotConfigurationRequest:
       type: object
       description: |
-        Request to update event slot configuration (Story 5.1).
-        All fields are required for update operation.
+        Request to update the event-TYPE-level slot configuration defaults (Story 5.1):
+        only the 7 core slot fields are required; timing fields (typical times, moderation/
+        break/lunch/apéro durations) are optional/nullable and fall back to defaults.
+
+        Shares the slot field vocabulary with `UpdateEventAgendaConfigRequest` but is a DISTINCT
+        contract: that one targets a single event's per-event agenda row (copy-on-edit) and
+        requires the full slot shape. Use it instead when overriding one event rather than the
+        event-type defaults.
       required:
         - minSlots
         - maxSlots

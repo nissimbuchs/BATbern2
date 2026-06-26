@@ -4298,6 +4298,24 @@ export interface components {
       /** @description When provided (>0), recomputes endTime as startTime + durationMinutes. */
       durationMinutes?: number;
     };
+    AssignSpeakerToSessionRequest: {
+      /** @example john.doe */
+      username: string;
+      /**
+       * @example PRIMARY_SPEAKER
+       * @enum {string}
+       */
+      speakerRole: 'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST';
+      /** @example Security Auditing Tools Deep Dive */
+      presentationTitle?: string;
+    };
+    DeclineSpeakerRequest: {
+      /** @example Schedule conflict */
+      declineReason?: string;
+    };
+    PatchNewsletterSubscriptionRequest: {
+      subscribed: boolean;
+    };
     /**
      * @description Story 4.1.5a: Event registration request (ADR-006)
      *     Public endpoint - no authentication required.
@@ -4673,8 +4691,14 @@ export interface components {
       typicalEndTime?: string | null;
     };
     /**
-     * @description Copy-on-edit payload for the per-event agenda config (Story 15.2). Writes only the
+     * @description Copy-on-edit payload for the PER-EVENT agenda config (Story 15.2). Writes only the
      *     per-event `event_agenda_config` row — never the shared template.
+     *
+     *     Shares the slot-configuration field vocabulary with `UpdateEventSlotConfigurationRequest`
+     *     but is a DISTINCT contract: this one targets a single event's agenda row and requires the
+     *     full slot shape (all timing/slot fields mandatory) so the per-event override is complete.
+     *     Use `UpdateEventSlotConfigurationRequest` instead to edit the event-TYPE-level defaults
+     *     (fewer required fields; timing fields optional/nullable).
      */
     UpdateEventAgendaConfigRequest: {
       /** @example 6 */
@@ -4817,8 +4841,14 @@ export interface components {
       aperitifPosition: 'start' | 'end';
     };
     /**
-     * @description Request to update event slot configuration (Story 5.1).
-     *     All fields are required for update operation.
+     * @description Request to update the event-TYPE-level slot configuration defaults (Story 5.1):
+     *     only the 7 core slot fields are required; timing fields (typical times, moderation/
+     *     break/lunch/apéro durations) are optional/nullable and fall back to defaults.
+     *
+     *     Shares the slot field vocabulary with `UpdateEventAgendaConfigRequest` but is a DISTINCT
+     *     contract: that one targets a single event's per-event agenda row (copy-on-edit) and
+     *     requires the full slot shape. Use it instead when overriding one event rather than the
+     *     event-type defaults.
      */
     UpdateEventSlotConfigurationRequest: {
       /**
@@ -7770,17 +7800,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': {
-          /** @example john.doe */
-          username: string;
-          /**
-           * @example PRIMARY_SPEAKER
-           * @enum {string}
-           */
-          speakerRole: 'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST';
-          /** @example Security Auditing Tools Deep Dive */
-          presentationTitle?: string;
-        };
+        'application/json': components['schemas']['AssignSpeakerToSessionRequest'];
       };
     };
     responses: {
@@ -7868,10 +7888,7 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        'application/json': {
-          /** @example Schedule conflict */
-          declineReason?: string;
-        };
+        'application/json': components['schemas']['DeclineSpeakerRequest'];
       };
     };
     responses: {
@@ -9477,9 +9494,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': {
-          subscribed: boolean;
-        };
+        'application/json': components['schemas']['PatchNewsletterSubscriptionRequest'];
       };
     };
     responses: {
