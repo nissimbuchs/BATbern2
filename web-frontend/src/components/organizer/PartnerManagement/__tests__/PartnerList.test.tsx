@@ -57,7 +57,7 @@ const mockPartners = [
 const mockPaginationMetadata = {
   page: 0,
   size: 20,
-  totalElements: 24,
+  totalItems: 24,
   totalPages: 2,
 };
 
@@ -370,7 +370,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
       mockUsePartners.mockReturnValue({
         data: {
           data: [],
-          metadata: { page: 0, size: 20, totalElements: 0, totalPages: 0 },
+          metadata: { page: 0, size: 20, totalItems: 0, totalPages: 0 },
         },
         isLoading: false,
         isError: false,
@@ -396,7 +396,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
       mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
-          metadata: { page: 0, size: 20, totalElements: 2, totalPages: 1 },
+          metadata: { page: 0, size: 20, totalItems: 2, totalPages: 1 },
         },
         isLoading: false,
         isError: false,

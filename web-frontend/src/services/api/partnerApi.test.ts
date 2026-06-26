@@ -14,7 +14,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as partnerApi from './partnerApi';
 import {
   getPartnerDetail,
-  getPartnerVotes,
   createPartner,
   updatePartner,
   getPartnerContacts,
@@ -376,18 +375,6 @@ describe('Partner API Client - Story 2.8.2 (Partner Detail View)', () => {
     });
   });
 
-  describe('getPartnerVotes', () => {
-    // Test 4: should_fetchVotes_when_votesTabActivated
-    it('should_fetchVotes_when_votesTabActivated', async () => {
-      const companyName = 'GoogleZH';
-
-      // Should attempt to call API
-      await expect(getPartnerVotes(companyName)).rejects.toThrow(
-        /(Network Error|status code 500|timeout|Not implemented)/
-      );
-    });
-  });
-
   // TODO: Uncomment these tests when functions are implemented in partnerApi.ts
   describe.skip('getPartnerMeetings (NOT YET IMPLEMENTED)', () => {
     // Test 5: should_fetchMeetings_when_meetingsTabActivated
@@ -472,7 +459,6 @@ describe('Partner API Client - Story 2.8.2 (Partner Detail View)', () => {
     it('should_haveAllRequiredMethods_when_apiImported', () => {
       // Verify currently implemented API methods exist
       expect(getPartnerDetail).toBeDefined();
-      expect(getPartnerVotes).toBeDefined();
       // TODO: Uncomment when implemented
       // expect(getPartnerMeetings).toBeDefined();
       // expect(getPartnerActivity).toBeDefined();
@@ -485,14 +471,12 @@ describe('Partner API Client - Story 2.8.2 (Partner Detail View)', () => {
     it('should_returnPromises_when_methodsCalled', () => {
       // All methods should be async functions - catch errors to prevent unhandled rejections
       const promise1 = getPartnerDetail('test').catch(() => {});
-      const promise2 = getPartnerVotes('test').catch(() => {});
       // TODO: Uncomment when implemented
       // const promise3 = getPartnerMeetings('test').catch(() => {});
       // const promise4 = getPartnerActivity('test').catch(() => {});
       // const promise5 = getPartnerNotes('test').catch(() => {});
 
       expect(promise1).toBeInstanceOf(Promise);
-      expect(promise2).toBeInstanceOf(Promise);
       // expect(promise3).toBeInstanceOf(Promise);
       // expect(promise4).toBeInstanceOf(Promise);
       // expect(promise5).toBeInstanceOf(Promise);

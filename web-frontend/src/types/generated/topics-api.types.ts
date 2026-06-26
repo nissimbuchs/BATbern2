@@ -295,8 +295,38 @@ export interface components {
       data: components['schemas']['Topic'][];
       pagination: components['schemas']['PaginationMetadata'];
     };
-    /** @description Page-based pagination metadata — canonical def in docs/api/_shared.openapi.yml (shared-kernel api.PaginationMetadata) */
-    PaginationMetadata: Record<string, never>;
+    /**
+     * @description Page-based pagination metadata returned with every paginated list response.
+     *     Backed by `ch.batbern.shared.api.PaginationMetadata`. Page-based — NOT
+     *     offset/cursor.
+     */
+    PaginationMetadata: {
+      /**
+       * @description Zero-based (or one-based per spec) current page index.
+       * @example 0
+       */
+      page: number;
+      /**
+       * @description Page size — items per page.
+       * @example 20
+       */
+      limit: number;
+      /**
+       * Format: int64
+       * @description Total number of items across all pages.
+       * @example 150
+       */
+      totalItems: number;
+      /**
+       * @description Total number of pages.
+       * @example 8
+       */
+      totalPages: number;
+      /** @description Whether a next page exists. */
+      hasNext: boolean;
+      /** @description Whether a previous page exists. */
+      hasPrev: boolean;
+    };
     CreateTopicRequest: {
       /**
        * @description Topic title (must be unique)
@@ -343,8 +373,52 @@ export interface components {
        */
       message: string;
     };
-    /** @description Standard error envelope — canonical def in docs/api/_shared.openapi.yml (shared-kernel dto.ErrorResponse) */
-    ErrorResponse: Record<string, never>;
+    /**
+     * @description Standard error envelope returned on every 4xx/5xx response across all services.
+     *     Flat shape (NOT nested under `error`). Backed by
+     *     `ch.batbern.shared.dto.ErrorResponse`. `@JsonInclude(NON_NULL)` — absent fields
+     *     are omitted from the wire.
+     */
+    ErrorResponse: {
+      /**
+       * Format: date-time
+       * @description When the error occurred (ISO-8601 / Instant).
+       */
+      timestamp?: string;
+      /** @description Request path that generated the error. */
+      path?: string;
+      /**
+       * @description HTTP status code.
+       * @example 400
+       */
+      status?: number;
+      /** @description Short HTTP reason phrase (e.g. "Bad Request"). */
+      error?: string;
+      /**
+       * @description Stable machine-readable error code for typed client handling
+       *     (e.g. `ADDITIONAL_EMAIL_DUPLICATE`, `ERR_VALIDATION`).
+       * @example ERR_VALIDATION
+       */
+      errorCode?: string;
+      /** @description Human-readable error message. */
+      message?: string;
+      /** @description Correlation ID for tracing this request across services. */
+      correlationId?: string;
+      /**
+       * @description Operational severity classification.
+       * @enum {string}
+       */
+      severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      /**
+       * @description Additional structured context (e.g. per-field validation errors keyed by
+       *     field name). Free-form object.
+       */
+      details?: {
+        [key: string]: unknown;
+      };
+      /** @description Present only in dev/staging diagnostics — never in production. */
+      stackTrace?: string;
+    };
   };
   responses: {
     /** @description Bad request - validation error */

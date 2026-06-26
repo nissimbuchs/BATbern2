@@ -547,10 +547,7 @@ components:
           $ref: '#/components/schemas/PaginationMetadata'
 
     PaginationMetadata:
-      type: object
-      description: Page-based pagination metadata — canonical def in docs/api/_shared.openapi.yml (shared-kernel api.PaginationMetadata)
-      x-java-type: ch.batbern.shared.api.PaginationMetadata
-      x-java-type-import: ch.batbern.shared.api.PaginationMetadata
+      $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
     CreateTopicRequest:
       type: object
       required:
@@ -615,10 +612,7 @@ components:
           example: 'Topic selected successfully'
 
     ErrorResponse:
-      type: object
-      description: Standard error envelope — canonical def in docs/api/_shared.openapi.yml (shared-kernel dto.ErrorResponse)
-      x-java-type: ch.batbern.shared.dto.ErrorResponse
-      x-java-type-import: ch.batbern.shared.dto.ErrorResponse
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
   responses:
     BadRequest:
       description: Bad request - validation error

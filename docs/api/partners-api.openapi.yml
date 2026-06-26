@@ -428,11 +428,6 @@ components:
 
     # Shared-kernel types (imported, not generated)
     ErrorResponse:
-      type: object
-      x-java-class: ch.batbern.shared.dto.ErrorResponse
-      description: Imported from shared-kernel
-
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
     PaginationMetadata:
-      type: object
-      x-java-class: ch.batbern.shared.api.PaginationMetadata
-      description: Imported from shared-kernel
+      $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
