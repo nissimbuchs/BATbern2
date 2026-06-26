@@ -41,6 +41,34 @@ We have adopted a **hybrid contract-first approach** using OpenAPI code generati
 - Frontend and backend both generate code from the same OpenAPI specs
 - Specifications maintained alongside code, versioned in Git
 
+#### 1a. Shared schemas: ONE definition via `$ref` to `_shared.openapi.yml` (decided 2026-06-26)
+
+Common schemas (`ErrorResponse`, `PaginationMetadata`, `PaginatedResponse`, `ValidationError`)
+are defined **once** in `docs/api/_shared.openapi.yml` — with their **full `properties`** plus
+the `x-java-type` vendor extension — and every spec references them by `$ref`:
+
+```yaml
+components:
+  schemas:
+    ErrorResponse:
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
+    PaginationMetadata:
+      $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
+```
+
+This is the **only** sanctioned pattern, because it satisfies **both** generators (verified):
+
+- **Backend — `openapi-generator`**: resolves the external `$ref`, then the `schemaMappings` /
+  `importMappings` below map the schema **by name** to the shared-kernel class → **no duplicate
+  DTO** is generated. (Mapping is name-based, independent of whether the schema has a body.)
+- **Frontend — `openapi-typescript` 7.x**: resolves the external `$ref` (built-in Redocly
+  bundling) → emits the **full TypeScript type**.
+
+**Anti-pattern (do NOT use):** a body-less "stub" schema (`type: object` + `x-java-type`, no
+`properties`). It works for the Java side (name mapping) but `openapi-typescript` turns it into
+an empty `Record<string, never>`, silently breaking every frontend consumer. The canonical
+schema must keep its `properties` so the TS type is real; the `$ref` keeps it DRY.
+
 ### 2. Backend: Generated Interfaces + Manual Implementation
 
 **Pattern**: Generate API interfaces and DTOs, implement manually

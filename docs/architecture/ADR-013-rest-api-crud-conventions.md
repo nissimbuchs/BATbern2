@@ -112,13 +112,20 @@ resources." Never expose a UUID where a stable meaningful ID exists.
 - **Pagination:** list responses wrap data in `PaginatedResponse<T>` with
   `PaginationMetadata` (`page, limit, totalItems, totalPages, hasNext, hasPrev`).
   Page-based, not offset/cursor.
-- **Reuse, don't redefine:** specs reference these via the ADR-006 stub pattern
-  (`x-java-type` + `x-java-type-import`, the `events-api` style — `x-java-class` is retired).
-  No spec carries a full inline copy of `ErrorResponse` / `PaginationMetadata`.
-- **`ValidationError`** (`field`, `message`) is promoted to shared-kernel and referenced for
-  field-level validation failures.
-- Every spec is wired to a generator with the shared `importMappings` / `schemaMappings`
-  block. A spec that is implemented but not generator-wired is non-conformant.
+- **Reuse, don't redefine (single source via `$ref`):** the canonical schemas live **once**
+  in `docs/api/_shared.openapi.yml` (full `properties` **+** `x-java-type`). Every spec
+  references them: `$ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'`.
+  This works for **both** generators (verified 2026-06-26):
+  - `openapi-typescript` 7.x resolves the external `$ref` (Redocly bundling) → **full TS type**.
+  - `openapi-generator` resolves the `$ref` **and** maps by *name* via `schemaMappings`/
+    `importMappings` → the shared-kernel class, **no duplicate DTO**.
+  - ❌ Do **not** use a body-less `x-java-type` stub (no `properties`): it works for Java but
+    `openapi-typescript` emits an empty `Record<string, never>` and breaks frontend types.
+    (This corrects the earlier stub guidance — see ADR-006.)
+- **`ValidationError`** (`field`, `message`) lives in `_shared.openapi.yml` and is referenced
+  for field-level validation failures.
+- A spec that is implemented and generator-wired must `$ref` the shared schemas, not redefine
+  them. (Dormant/un-wired specs for consolidated-away services — see ADR-014 — are exempt.)
 
 ### 7. Documentation must match reality
 
