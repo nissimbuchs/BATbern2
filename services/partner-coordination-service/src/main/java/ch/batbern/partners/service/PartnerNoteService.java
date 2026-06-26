@@ -2,9 +2,9 @@ package ch.batbern.partners.service;
 
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnerNote;
-import ch.batbern.partners.dto.CreateNoteRequest;
-import ch.batbern.partners.dto.PartnerNoteDTO;
-import ch.batbern.partners.dto.UpdateNoteRequest;
+import ch.batbern.partners.dto.generated.CreateNoteRequest;
+import ch.batbern.partners.dto.generated.PartnerNoteDTO;
+import ch.batbern.partners.dto.generated.UpdateNoteRequest;
 import ch.batbern.partners.exception.PartnerNoteNotFoundException;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerNoteRepository;
@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -137,13 +139,16 @@ public class PartnerNoteService {
     }
 
     private PartnerNoteDTO toDTO(PartnerNote note) {
-        return PartnerNoteDTO.builder()
+        return new PartnerNoteDTO()
                 .id(note.getId())
                 .title(note.getTitle())
                 .content(note.getContent())
                 .authorUsername(note.getAuthorUsername())
-                .createdAt(note.getCreatedAt())
-                .updatedAt(note.getUpdatedAt())
-                .build();
+                .createdAt(toOffset(note.getCreatedAt()))
+                .updatedAt(toOffset(note.getUpdatedAt()));
+    }
+
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
     }
 }

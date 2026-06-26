@@ -83,16 +83,255 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get partner statistics
-     * @description Get aggregate statistics across all partners including:
-     *     - Total active partners count
+     * Get partner portfolio summary
+     * @description Aggregate **partnership portfolio** statistics across all partners — the relationship
+     *     side of the house, distinct from attendance `Partner Analytics`:
+     *     - Total / active partner counts
      *     - Partners by tier breakdown
-     *     - Recently added partners
-     *     - Expiring partnerships
+     *     - Recently added partners (last 30 days)
+     *     - Expiring partnerships (next 90 days)
+     *
+     *     For per-event *attendance* metrics of a single partner, see
+     *     `GET /partners/{companyName}/analytics/dashboard` (Partner Analytics).
      */
     get: operations['getPartnerStatistics'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/partners/{companyName}/notes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (meaningful ID per ADR-003) */
+        companyName: string;
+      };
+      cookie?: never;
+    };
+    /**
+     * List all notes for a partner
+     * @description Returns all notes for the specified partner sorted by created_at descending.
+     *     ORGANIZER role required (AC1, AC2).
+     */
+    get: operations['listPartnerNotes'];
+    put?: never;
+    /**
+     * Create a note for a partner
+     * @description Creates a note for the specified partner. title and content are required.
+     *     authorUsername is captured from the authenticated user's JWT.
+     *     ORGANIZER role required (AC1, AC3).
+     */
+    post: operations['createPartnerNote'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/partners/{companyName}/notes/{noteId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (meaningful ID per ADR-003) */
+        companyName: string;
+        noteId: string;
+      };
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a partner note
+     * @description Deletes the specified note. ORGANIZER role required (AC1, AC5).
+     */
+    delete: operations['deletePartnerNote'];
+    options?: never;
+    head?: never;
+    /**
+     * Update a partner note
+     * @description Partial update — only provided non-null fields are changed.
+     *     ORGANIZER role required (AC1, AC4).
+     */
+    patch: operations['updatePartnerNote'];
+    trace?: never;
+  };
+  '/partners/{companyName}/analytics/dashboard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get partner attendance dashboard
+     * @description Returns per-event attendance summary and cost-per-attendee KPI for a partner company.
+     *     Results are cached for 15 minutes (Caffeine cache in partner-coordination-service).
+     *
+     *     Access (AC6): ORGANIZER may access any company; PARTNER only their own company.
+     */
+    get: operations['getAttendanceDashboard'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/partners/{companyName}/analytics/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export attendance data as Excel (XLSX)
+     * @description Returns the attendance table as an XLSX file download.
+     *     Columns: Event, Date, Your Attendees, Total Attendees, Percentage.
+     *     Footer includes totals and cost-per-attendee.
+     */
+    get: operations['exportAttendance'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/partners/topics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List all topic suggestions with vote counts
+     * @description Returns all topic suggestions, sorted by vote count descending.
+     *     For PARTNER callers, the `currentPartnerHasVoted` flag reflects whether
+     *     the caller's company has voted on each topic.
+     *     For ORGANIZER callers, `currentPartnerHasVoted` is always false.
+     */
+    get: operations['listTopics'];
+    put?: never;
+    /**
+     * Suggest a new topic
+     * @description Partner or Organizer submits a new topic suggestion.
+     *
+     *     - **PARTNER**: `companyName` is resolved from the JWT principal; any `companyName` field in
+     *       the request body is ignored (security: partners cannot spoof their company).
+     *     - **ORGANIZER**: must supply `companyName` in the request body to record the suggestion on
+     *       behalf of the specified partner company (e.g. during a partner meeting). Returns 400 if
+     *       `companyName` is missing or blank.
+     */
+    post: operations['suggestTopic'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/partners/topics/{topicId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a topic suggestion
+     * @description Delete a topic suggestion. A PARTNER may only delete topics suggested by their own
+     *     company; an ORGANIZER may delete any topic.
+     */
+    delete: operations['deleteTopic'];
+    options?: never;
+    head?: never;
+    /**
+     * Edit a topic's title/description
+     * @description Edit a topic suggestion's title/description. A PARTNER may only edit topics suggested by
+     *     their own company; an ORGANIZER may edit any topic.
+     */
+    patch: operations['updateTopic'];
+    trace?: never;
+  };
+  '/partners/topics/{topicId}/vote': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cast a vote on a topic (toggle on)
+     * @description Adds the caller's company vote to the specified topic.
+     *     Idempotent — if the company already voted, the request succeeds with no change.
+     */
+    post: operations['castVote'];
+    /**
+     * Remove a vote from a topic (toggle off)
+     * @description Removes the caller's company vote from the specified topic.
+     *     Idempotent — if no vote exists, the request succeeds with no change.
+     */
+    delete: operations['removeVote'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/partners/topics/{topicId}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update topic status (Organizer only)
+     * @description Organizer sets a topic status to SELECTED or DECLINED.
+     *     When setting SELECTED, `plannedEvent` may be provided (e.g. "BATbern58").
+     */
+    patch: operations['updateTopicStatus'];
+    trace?: never;
+  };
+  '/attendees/topics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Suggest a topic as an attendee (Topics From the Floor)
+     * @description Story 7.1 — a logged-in ATTENDEE suggests a future event topic. The suggestion flows
+     *     into the same topic pool as partner suggestions, tagged `source=COMMUNITY` with no
+     *     company. Submit-only: there is intentionally no attendee read/list endpoint.
+     *
+     *     The `/attendees` prefix is an intentional attendee-facing alias; the request is routed
+     *     to partner-coordination-service by the gateway (the topic pool lives there).
+     */
+    post: operations['suggestCommunityTopic'];
     delete?: never;
     options?: never;
     head?: never;
@@ -195,6 +434,130 @@ export interface components {
         partnershipEndDate?: string;
       }[];
     };
+    /** @description Partner note (Story 8.4) */
+    PartnerNoteDTO: {
+      /**
+       * Format: uuid
+       * @description Note ID
+       */
+      id: string;
+      /** @description Note title */
+      title: string;
+      /** @description Note content (HTML supported) */
+      content: string;
+      /** @description Organizer username (ADR-003) */
+      authorUsername: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CreateNoteRequest: {
+      /** @description Note title (required) */
+      title: string;
+      /** @description Note content (required) */
+      content: string;
+    };
+    /** @description All fields optional — only provided non-null fields are changed */
+    UpdateNoteRequest: {
+      /** @description Note title */
+      title?: string;
+      /** @description Note content */
+      content?: string;
+    };
+    /** @description Partner attendance dashboard (Story 8.1) */
+    PartnerDashboardResponse: {
+      /** @description Per-event attendance records, sorted by date descending */
+      attendanceSummary?: components['schemas']['AttendanceSummaryRecord'][];
+      /**
+       * Format: decimal
+       * @description Total partnership cost divided by total company attendees. Null if no attendees or no cost configured.
+       * @example 555.56
+       */
+      costPerAttendee?: number | null;
+    };
+    AttendanceSummaryRecord: {
+      /**
+       * @description Event code (ADR-003)
+       * @example BATbern57
+       */
+      eventCode?: string;
+      /**
+       * @description Event title
+       * @example Cloud Native Architecture
+       */
+      eventTitle?: string;
+      /**
+       * Format: date-time
+       * @description Event date (ISO-8601)
+       * @example 2024-06-01T00:00:00Z
+       */
+      eventDate?: string;
+      /**
+       * Format: int64
+       * @description Total confirmed registrations for this event
+       * @example 120
+       */
+      totalAttendees?: number;
+      /**
+       * Format: int64
+       * @description Confirmed registrations from the partner company
+       * @example 12
+       */
+      companyAttendees?: number;
+    };
+    /** @description A topic suggestion with vote counts (Story 8.2 / 7.1) */
+    TopicDTO: {
+      /**
+       * Format: uuid
+       * @description Topic UUID
+       */
+      id: string;
+      /** @description Topic title */
+      title: string;
+      /** @description Topic description */
+      description?: string | null;
+      /** @description Company that suggested this topic (ADR-003 identifier). Null for COMMUNITY (attendee) suggestions — Story 7.1. */
+      suggestedByCompany?: string | null;
+      /** @description Total number of votes */
+      voteCount: number;
+      /** @description True if the calling partner's company has voted for this topic */
+      currentPartnerHasVoted: boolean;
+      /**
+       * @description Topic lifecycle status
+       * @enum {string}
+       */
+      status: 'PROPOSED' | 'SELECTED' | 'DECLINED';
+      /** @description Event code when topic is selected (e.g. BATbern58) */
+      plannedEvent?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /**
+       * @description Origin of the suggestion: PARTNER (Story 8.2) or COMMUNITY/attendee (Story 7.1)
+       * @enum {string}
+       */
+      source: 'PARTNER' | 'COMMUNITY';
+    };
+    TopicSuggestionRequest: {
+      /** @description Topic title (required) */
+      title: string;
+      /** @description Short description (optional, max 500 chars) */
+      description?: string | null;
+      /**
+       * @description Organizer-only: the partner company on whose behalf the topic is submitted.
+       *     Required when caller has ORGANIZER role; ignored for PARTNER callers.
+       */
+      companyName?: string | null;
+    };
+    TopicStatusUpdateRequest: {
+      /**
+       * @description New status — only SELECTED or DECLINED allowed
+       * @enum {string}
+       */
+      status: 'SELECTED' | 'DECLINED';
+      /** @description Event code to associate with the selected topic (e.g. BATbern58) */
+      plannedEvent?: string | null;
+    };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.
      *     Flat shape (NOT nested under `error`). Backed by
@@ -275,7 +638,10 @@ export interface components {
     };
   };
   responses: never;
-  parameters: never;
+  parameters: {
+    /** @description Topic suggestion UUID */
+    topicId: string;
+  };
   requestBodies: never;
   headers: never;
   pathItems: never;
@@ -518,6 +884,645 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['PartnerStatistics'];
+        };
+      };
+    };
+  };
+  listPartnerNotes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (meaningful ID per ADR-003) */
+        companyName: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of partner notes */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PartnerNoteDTO'][];
+        };
+      };
+      /** @description Forbidden — ORGANIZER role required */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Partner not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  createPartnerNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (meaningful ID per ADR-003) */
+        companyName: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateNoteRequest'];
+      };
+    };
+    responses: {
+      /** @description Note created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PartnerNoteDTO'];
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden — ORGANIZER role required */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Partner not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  deletePartnerNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (meaningful ID per ADR-003) */
+        companyName: string;
+        noteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Note deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden — ORGANIZER role required */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Note not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  updatePartnerNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (meaningful ID per ADR-003) */
+        companyName: string;
+        noteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateNoteRequest'];
+      };
+    };
+    responses: {
+      /** @description Note updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PartnerNoteDTO'];
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden — ORGANIZER role required */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Note not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getAttendanceDashboard: {
+    parameters: {
+      query?: {
+        /**
+         * @description Earliest year to include. Defaults to current year minus 5 (last 5 years).
+         * @example 2020
+         */
+        fromYear?: number;
+      };
+      header?: never;
+      path: {
+        /**
+         * @description Partner company name (ADR-003 meaningful identifier)
+         * @example GoogleZH
+         */
+        companyName: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Attendance dashboard data */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PartnerDashboardResponse'];
+        };
+      };
+      /** @description Forbidden — PARTNER may only access their own company's analytics */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Partner not found for the given companyName */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  exportAttendance: {
+    parameters: {
+      query?: {
+        /**
+         * @description Earliest year to include. Defaults to current year minus 5.
+         * @example 2020
+         */
+        fromYear?: number;
+      };
+      header?: never;
+      path: {
+        /**
+         * @description Partner company name (ADR-003 meaningful identifier)
+         * @example GoogleZH
+         */
+        companyName: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description XLSX file download */
+      200: {
+        headers: {
+          /** @example attachment; filename="attendance-GoogleZH.xlsx" */
+          'Content-Disposition'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': string;
+        };
+      };
+      /** @description Forbidden — PARTNER may only export their own company's data */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Partner not found for the given companyName */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  listTopics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of topics sorted by vote count descending */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicDTO'][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  suggestTopic: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TopicSuggestionRequest'];
+      };
+    };
+    responses: {
+      /** @description Topic suggestion created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicDTO'];
+        };
+      };
+      /** @description Validation error or missing companyName (organizer path) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden — requires PARTNER or ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  deleteTopic: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Topic suggestion UUID */
+        topicId: components['parameters']['topicId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Topic deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden — only the submitting company (or an organizer) may delete */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Topic not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  updateTopic: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Topic suggestion UUID */
+        topicId: components['parameters']['topicId'];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TopicSuggestionRequest'];
+      };
+    };
+    responses: {
+      /** @description Topic updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicDTO'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden — only the submitting company (or an organizer) may edit */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Topic not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  castVote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Topic suggestion UUID */
+        topicId: components['parameters']['topicId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Vote registered (or already existed) */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden — only PARTNER role may vote */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Topic not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  removeVote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Topic suggestion UUID */
+        topicId: components['parameters']['topicId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Vote removed (or did not exist) */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden — only PARTNER role may vote */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Topic not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  updateTopicStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Topic suggestion UUID */
+        topicId: components['parameters']['topicId'];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TopicStatusUpdateRequest'];
+      };
+    };
+    responses: {
+      /** @description Topic status updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicDTO'];
+        };
+      };
+      /** @description Invalid status value */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden — only ORGANIZER role may update status */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Topic not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  suggestCommunityTopic: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TopicSuggestionRequest'];
+      };
+    };
+    responses: {
+      /** @description Community topic suggestion created (source=COMMUNITY) */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicDTO'];
+        };
+      };
+      /** @description Validation error (title 5–255 chars, description ≤ 500 chars) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unauthenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden — requires ATTENDEE role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
         };
       };
     };

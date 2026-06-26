@@ -3,7 +3,8 @@ package ch.batbern.partners.service;
 import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.dto.AttendanceSummaryDTO;
 import ch.batbern.partners.domain.Partner;
-import ch.batbern.partners.dto.PartnerDashboardDTO;
+import ch.batbern.partners.dto.generated.AttendanceSummaryRecord;
+import ch.batbern.partners.dto.generated.PartnerDashboardResponse;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -38,7 +40,7 @@ public class PartnerAnalyticsService {
      * @return dashboard DTO containing per-event summary + cost-per-attendee
      * @throws PartnerNotFoundException if no partner record exists for companyName
      */
-    public PartnerDashboardDTO getAttendanceDashboard(String companyName, int fromYear) {
+    public PartnerDashboardResponse getAttendanceDashboard(String companyName, int fromYear) {
         log.debug("Building attendance dashboard for company={}, fromYear={}", companyName, fromYear);
 
         int resolvedFromYear = (fromYear > 0) ? fromYear : (LocalDate.now().getYear() - 5);
@@ -53,7 +55,23 @@ public class PartnerAnalyticsService {
 
         BigDecimal costPerAttendee = computeCostPerAttendee(partner.getPartnershipCost(), summaries);
 
-        return new PartnerDashboardDTO(summaries, costPerAttendee);
+        List<AttendanceSummaryRecord> records = summaries.stream()
+                .map(PartnerAnalyticsService::toRecord)
+                .toList();
+
+        return new PartnerDashboardResponse()
+                .attendanceSummary(records)
+                .costPerAttendee(costPerAttendee);
+    }
+
+    /** Map the event-management client DTO to the generated API record. */
+    private static AttendanceSummaryRecord toRecord(AttendanceSummaryDTO s) {
+        return new AttendanceSummaryRecord()
+                .eventCode(s.eventCode())
+                .eventTitle(s.eventTitle())
+                .eventDate(s.eventDate() != null ? s.eventDate().atOffset(ZoneOffset.UTC) : null)
+                .totalAttendees(s.totalAttendees())
+                .companyAttendees(s.companyAttendees());
     }
 
     /**
