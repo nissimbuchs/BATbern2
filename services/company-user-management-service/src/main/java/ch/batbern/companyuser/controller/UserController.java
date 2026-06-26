@@ -35,6 +35,11 @@ import ch.batbern.companyuser.service.ImageUrlFetcher;
 import ch.batbern.companyuser.service.ProfilePictureService;
 import ch.batbern.companyuser.service.UserSearchService;
 import ch.batbern.companyuser.service.UserService;
+import ch.batbern.shared.api.SortCriteria;
+import ch.batbern.shared.api.SortDirection;
+import ch.batbern.shared.api.SortParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +80,9 @@ public class UserController {
     private final UserRepository userRepository;
     private final ch.batbern.companyuser.service.UserReconciliationService reconciliationService;
     private final ch.batbern.companyuser.service.RoleService roleService;
+
+    /** Lenient parser for the JSON {@code filter} query param (ADR-013 §3). */
+    private static final ObjectMapper LIST_FILTER_MAPPER = new ObjectMapper();
 
     /**
      * AC1: Get current authenticated user
@@ -141,43 +149,56 @@ public class UserController {
 
     /**
      * AC3: List users (admin/organizer only)
-     * GET /api/v1/users?filter={}&role={}&company={}&page={}&limit={}
+     * GET /api/v1/users?filter={}&sort={}&search={}&page={}&limit={}
+     *
+     * ADR-013 §3: a single list-query vocabulary. {@code role} / {@code company}
+     * are expressed inside the JSON {@code filter} (e.g. {@code {"role":"ORGANIZER"}});
+     * ordering is expressed with {@code sort} (e.g. {@code -createdAt}). The legacy
+     * ad-hoc {@code role}/{@code company}/{@code sortBy}/{@code sortDir} params were removed.
      *
      * Performance optimized: Uses database-level pagination with JOIN FETCH
      * to avoid N+1 query problem and only loads requested page.
      *
-     * @param filter Advanced JSON filter (Task 14)
-     * @param role Filter by role
-     * @param company Filter by company ID
-     * @param page Page number - 1-based (default 1, first page)
-     * @param limit Page size (default 20)
+     * @param filter Advanced JSON filter (supports role, company/companyId, active)
+     * @param sort   Sort spec (comma-separated; prefix with - for descending)
+     * @param search Free-text search across name/email
+     * @param page   Page number - 1-based (default 1, first page)
+     * @param limit  Page size (default 20)
      * @return Paginated list of users
      */
     @GetMapping
-    // No @PreAuthorize: Story 10.26 — Lambda email forwarder calls GET /api/v1/users?role=ORGANIZER/PARTNER
-    // without auth (routes via NAT GW, not VPC). Security enforced at filter chain (SecurityConfig.permitAll).
+    // No @PreAuthorize: Story 10.26 — the Lambda email forwarder and internal service clients call
+    // GET /api/v1/users?filter={"role":"ORGANIZER"|"PARTNER"} without auth (routes via NAT GW, not VPC).
+    // Security enforced at filter chain (SecurityConfig.permitAll).
     @Timed(value = "users.listUsers",
             description = "Time to list users (admin/organizer)",
             percentiles = {0.5, 0.95, 0.99})
-    // CHECKSTYLE.OFF: ParameterNumber - search endpoint with sort/filter/pagination params
     public ResponseEntity<PaginatedUserResponse> listUsers(
             @RequestParam(required = false) String filter,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) String company,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String sort,
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "20") int limit,
-            @RequestParam(required = false, defaultValue = "name") String sortBy,
-            @RequestParam(required = false, defaultValue = "asc") String sortDir) {
-    // CHECKSTYLE.ON: ParameterNumber
-        log.debug("UserController Listing users: role={}, company={}, search={},"
-                + " page={}, limit={}, sortBy={}, sortDir={}",
-                role, company, search, page, limit, sortBy, sortDir);
+            @RequestParam(required = false, defaultValue = "20") int limit) {
+        // Derive the legacy service args from the JSON:API filter/sort vocabulary.
+        String role = extractFilterString(filter, "role");
+        String company = extractFilterString(filter, "company");
+        if (company == null) {
+            company = extractFilterString(filter, "companyId");
+        }
+        // Shared SortParser is the canonical sort vocabulary (see EventSearchService/CompanyQueryService).
+        // Only the first key is honoured here (the service whitelists a single sortable field).
+        List<SortCriteria> sortCriteria = SortParser.parse(sort);
+        String sortBy = sortCriteria.isEmpty() ? null : sortCriteria.get(0).getField();
+        String sortDir = (!sortCriteria.isEmpty()
+                && sortCriteria.get(0).getDirection() == SortDirection.DESC) ? "desc" : "asc";
+
+        log.debug("UserController listing users: filter={}, search={}, sort={}, page={}, limit={}",
+                filter, search, sort, page, limit);
 
         // Convert 1-based page to 0-based for service layer
         int pageIndex = Math.max(0, page - 1);
 
-        // Use optimized paginated service method
+        // Use optimized paginated service method (server-side filter + sort + pagination)
         Page<UserResponse> usersPage = userService.listUsersPaginated(
                 role, company, search, filter, pageIndex, limit, sortBy, sortDir);
 
@@ -197,6 +218,23 @@ public class UserController {
         response.setPagination(paginationMetadata);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Extract a top-level string value (e.g. {@code role}, {@code company}) from the JSON
+     * {@code filter} query param. Lenient by design: a malformed/absent filter yields {@code null}
+     * so list behaviour degrades to "no filter" rather than a 400 (matches legacy semantics).
+     */
+    private static String extractFilterString(String filter, String key) {
+        if (filter == null || filter.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode node = LIST_FILTER_MAPPER.readTree(filter).get(key);
+            return (node != null && node.isValueNode()) ? node.asText() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

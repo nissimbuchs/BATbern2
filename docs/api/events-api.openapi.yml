@@ -5310,20 +5310,15 @@ paths:
             type: string
             enum: [all, active, unsubscribed]
             default: all
-        - name: sortBy
+        - name: sort
           in: query
-          description: Sort field (whitelisted server-side)
+          description: >-
+            Sort spec (single field; prefix with - for descending). Whitelisted
+            server-side to: email, firstName, subscribedAt, unsubscribedAt, source, language.
           schema:
             type: string
-            enum: [email, firstName, subscribedAt, unsubscribedAt, source, language]
-            default: subscribedAt
-        - name: sortDir
-          in: query
-          description: Sort direction
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: desc
+            default: '-subscribedAt'
+            example: '-subscribedAt'
       responses:
         '200':
           description: Paginated subscriber list

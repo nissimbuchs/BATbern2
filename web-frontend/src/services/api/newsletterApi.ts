@@ -30,8 +30,9 @@ export const listNewsletterSubscribers = async (
   };
   if (filters.searchQuery?.trim()) params.search = filters.searchQuery;
   if (filters.status && filters.status !== 'all') params.status = filters.status;
-  if (filters.sortBy) params.sortBy = filters.sortBy;
-  if (filters.sortDir) params.sortDir = filters.sortDir;
+  // ADR-013 §3: single `sort` vocabulary (e.g. `-subscribedAt`) instead of sortBy+sortDir.
+  if (filters.sortBy)
+    params.sort = filters.sortDir === 'asc' ? filters.sortBy : `-${filters.sortBy}`;
 
   const response = await apiClient.get<PagedNewsletterSubscribersResponse>(
     `${NEWSLETTER_API_PATH}/subscribers`,

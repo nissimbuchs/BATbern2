@@ -9621,10 +9621,8 @@ export interface operations {
         search?: string;
         /** @description Filter by subscription status */
         status?: 'all' | 'active' | 'unsubscribed';
-        /** @description Sort field (whitelisted server-side) */
-        sortBy?: 'email' | 'firstName' | 'subscribedAt' | 'unsubscribedAt' | 'source' | 'language';
-        /** @description Sort direction */
-        sortDir?: 'asc' | 'desc';
+        /** @description Sort spec (single field; prefix with - for descending). Whitelisted server-side to: email, firstName, subscribedAt, unsubscribedAt, source, language. */
+        sort?: string;
       };
       header?: never;
       path?: never;

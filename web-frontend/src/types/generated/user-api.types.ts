@@ -1902,14 +1902,8 @@ export interface operations {
         fields?: string;
         /** @description Comma-separated list of resources to include */
         include?: string;
-        /** @description Filter by specific role (deprecated, use filter parameter) */
-        role?: 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
-        /** @description Filter by company name (deprecated, use filter parameter) */
-        company?: string;
-        /** @description Field to sort by (whitelisted server-side) */
-        sortBy?: 'name' | 'email' | 'company';
-        /** @description Sort direction */
-        sortDir?: 'asc' | 'desc';
+        /** @description Free-text search across name and email */
+        search?: string;
       };
       header?: never;
       path?: never;

@@ -26,7 +26,7 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 | **0 Shared-kernel** | ✅ **DONE** | Deleted dead duplicate `utils.ErrorResponse` + `ErrorHandlingUtils` (+test); added `docs/api/_shared.openapi.yml`; fixed `04-api-core.md`. |
 | **1 Dead-spec removal** | ✅ **DONE** | events-api stale `/topics*` block + partners-api orphan voting removed (spec). **Frontend completion (in `e9dd536a`):** removed the dead orphan-voting client `getPartnerVotes`/`usePartnerVotes` (+tests) that called the never-implemented 404. |
 | **2 Document live routes / re-enable generators** | ❌ **WON'T DO** | Owner decision (2026-06-26), now **ADR-014**: speaker/attendee services stay dormant (consolidating toward an EMS/CUMS few-service backend), so **do NOT re-enable their generators**. The route-documentation bit is dropped too (low value, codegen risk on the wired partners-api). Phase closed. |
-| **3 Convention conformance** | 🟡 **HALF DONE** | ✅ **Shared schema solution DONE** (`e9dd536a`, supersedes the Phase 3 stub): `ErrorResponse`/`PaginationMetadata` in companies/users/topics/events/partners now `$ref` `_shared.openapi.yml` — works for **both** generators (see "Shared-schema standard" below). ⏳ **REMAINING: list-query collapse** — see resume guide. |
+| **3 Convention conformance** | ✅ **DONE** | ✅ **Shared schema solution DONE** (`e9dd536a`): shared `$ref` `_shared.openapi.yml` for both generators. ✅ **List-query collapse DONE**: `listUsers` (CUMS) `role`/`company`/`sortBy`/`sortDir` → `filter`/`sort`; **5 live callers migrated** (email-forwarder Lambda ×2 + partner `getUsersByRole` + EMS `getOrganizerUsernames`/`getPartnerUsernames` — the latter 3 were **undocumented in the original plan**) using fully-encoded `URI`s. `listNewsletterSubscribers` (EMS) `sortBy`+`sortDir` → `sort` (typed `status`/`search` kept). Both controllers now use shared `SortParser`. **🐛 Bug fixed:** users-list sort was a no-op — all 8 paginated `UserRepository` queries hardcoded `ORDER BY u.lastName ASC`, overriding the `Pageable` sort; removed so server-side sort actually works (+ fixed a `Set.of(...).contains(null)` NPE it exposed). |
 | **4 Mutation-model fixes** | 🟡 **HALF DONE** | ✅ **CUMS removals DONE** (`fb44bc5d`): `PUT /companies/{name}` deleted; `PUT /users/me` → `PATCH /me`; dup `POST /users/me/picture` removed; frontend + Bruno adapted. ✅ **EMS lifecycle DONE** (`7f761a31`): removed `workflow/advance` phantom; `transition` PUT→POST. ⏳ **REMAINING EMS items** — see resume guide. |
 | **5 Partner consolidation 5→2** | ⏳ **TODO** | Not started. Merge notes/analytics/topics into the generator-wired partners-api + rewire controllers to implement the generated interfaces (real refactor w/ test impact). Full spec in the Phase 5 section below. |
 | **6 events-api decomposition** | ⏳ **TODO** | Not started. Carve the 11k-line events-api into ~9 per-domain specs + generator tasks. Only **4/49** EMS controllers implement generated interfaces (EventTypes, SpeakerOutreach, EmailTemplates, AiPrompts) → few re-points. Full spec in the Phase 6 section below. Do as a single dedicated PR.
@@ -76,7 +76,11 @@ existing `batbern-dev-postgres` container (`docker start` it); refresh tokens wi
 (`npx vitest run`) before pushing — a targeted run missed `partnerApi.test.ts` once and the
 pre-push hook rejected the push.
 
-### Phase 3 — list-query collapse (the only Phase 3 remainder)
+### Phase 3 — list-query collapse ✅ DONE
+**Landed** (see status table above): `listUsers` + `listNewsletterSubscribers` collapsed to `filter`/`sort`,
+5 live `?role=` callers migrated, shared `SortParser` adopted, and the dead users-list server-side
+sort (hardcoded JPQL `ORDER BY`) fixed. Original notes retained below for context.
+
 Goal (ADR-013 §3): list endpoints expose **one** vocabulary (`filter`/`sort`), not ad-hoc
 `role`/`company`/`search`/`status`/`sortBy`/`sortDir`. Lowest-risk approach: **keep the
 service/repository logic; change only the controller param surface** and parse `filter`/`sort`
