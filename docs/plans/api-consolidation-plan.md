@@ -16,13 +16,15 @@ verify no live caller first.
 ## Execution status — branch `api-consolidation` (updated 2026-06-26)
 
 Landed = committed + pushed, green on what the local hooks actually run.
-⚠️ **Correction (Phase 6):** there is **no pre-push hook** (`.husky/` has only `pre-commit`,
-which runs lint-staged + Checkstyle/Spotless + frontend vitest-related — NOT the Java
-Testcontainers integration suite). `build.yml` (full suite) triggers only on push to
-`develop`/`main` and PR→`develop`, so **feature-branch commits never ran the backend
-integration tests**. This is how the Phase 4 `7f761a31` PUT→POST flip left
-`EventWorkflowControllerIntegrationTest` sending PUT (→405) undetected — it compiles fine
-(runtime routing mismatch) and no gate executed it until Phase 6 ran the full EMS suite.
+⚠️ **Correction (Phase 6):** the active hooks live in **`.githooks/`** (not `.husky/`, which
+is stale). `.githooks/pre-push` *did* run per-service tests — but with **`-PskipIntegration`**,
+which excludes the Testcontainers `*IntegrationTest` classes. So integration tests were skipped
+locally and only ran in CI on push-to-`develop`/PR→`develop`. This is how the Phase 4
+`7f761a31` PUT→POST flip left `EventWorkflowControllerIntegrationTest` sending PUT (→405)
+undetected — it compiles fine (runtime routing mismatch) and no local gate executed it until
+Phase 6 ran the full EMS suite. **Fixed in Phase 6:** `-PskipIntegration` removed from
+`.githooks/pre-push` + `docs/api/*` mapped to owning services, so pre-push now runs the
+integration suite for changed components (needs Docker).
 Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref shared schemas
 + partner orphan FE cleanup), `7f761a31` (EMS lifecycle), `fb44bc5d` (CUMS removals),
 `eb4d1fb6` (deprecate-half, now superseded), `af3cd875` (Phase 3 stub, now superseded),
@@ -76,9 +78,10 @@ approach" section below; that section is kept for historical context only.)
 
 Workflow per change: edit spec → `npm run generate:api-types` (FE) + Gradle regen/compile
 (BE) → fix tests → restart the touched service (`make dev-native-restart-service SERVICE=…`)
-→ Bruno + Playwright @smoke → commit → push. **NOTE:** no pre-push hook runs the Java
-integration suite — run `./gradlew :services:<svc>:test` yourself for any service you touched
-(the branch only gets a full integration run once it's PR'd to `develop`).
+→ Bruno + Playwright @smoke → commit → push. `.githooks/pre-push` now runs the FULL
+integration suite (incl. Testcontainers) for changed components — Docker must be up, expect
+multi-minute pushes on backend/spec changes; bypass with `git push --no-verify` only in an
+emergency.
 **Env gotchas:** macOS has no `timeout` (use the Bash tool's own param); dev Postgres is the
 existing `batbern-dev-postgres` container (`docker start` it); refresh tokens with
 `./scripts/auth/refresh-token.sh staging [role] </dev/null`; run the **FULL** FE suite
