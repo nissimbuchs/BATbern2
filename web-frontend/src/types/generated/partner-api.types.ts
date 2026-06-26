@@ -125,11 +125,15 @@ export interface components {
       /** Format: date */
       partnershipEndDate?: string;
     };
+    /**
+     * @description Partial partner update. Deactivation is NOT done here — use
+     *     DELETE /partners/{companyName} (soft-deactivate, sets the partnership end date).
+     *     Reactivation: PATCH partnershipEndDate to a future date.
+     */
     UpdatePartnerRequest: {
       partnershipLevel?: components['schemas']['PartnershipLevel'];
       /** Format: date */
       partnershipEndDate?: string;
-      isActive?: boolean;
     };
     PartnerListResponse: {
       data: components['schemas']['PartnerResponse'][];

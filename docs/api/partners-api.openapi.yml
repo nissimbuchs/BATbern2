@@ -297,14 +297,16 @@ components:
 
     UpdatePartnerRequest:
       type: object
+      description: |
+        Partial partner update. Deactivation is NOT done here — use
+        DELETE /partners/{companyName} (soft-deactivate, sets the partnership end date).
+        Reactivation: PATCH partnershipEndDate to a future date.
       properties:
         partnershipLevel:
           $ref: '#/components/schemas/PartnershipLevel'
         partnershipEndDate:
           type: string
           format: date
-        isActive:
-          type: boolean
 
     PartnerListResponse:
       type: object
