@@ -180,7 +180,7 @@ class RegistrationEmailServiceTest {
                 });
 
         // When
-        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.GERMAN);
+        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.GERMAN);
 
         // Wait for async operation (in test mode, email service returns immediately)
         Thread.sleep(100);
@@ -241,7 +241,7 @@ class RegistrationEmailServiceTest {
                 .thenReturn(mockIcsFile);
 
         // When
-        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.ENGLISH);
+        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.ENGLISH);
 
         // Wait for async operation
         Thread.sleep(100);
@@ -294,7 +294,7 @@ class RegistrationEmailServiceTest {
                 .thenReturn(mockIcsFile);
 
         // When
-        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.GERMAN);
+        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.GERMAN);
 
         // Wait for async operation
         Thread.sleep(100);
@@ -356,7 +356,7 @@ class RegistrationEmailServiceTest {
 
         // When
         registrationEmailService.sendRegistrationConfirmation(
-                registration, userProfile, event, "tok", "ctok", "http://localhost/dereg", Locale.GERMAN);
+                registration, userProfile, event, "tok", "http://localhost/dereg", Locale.GERMAN);
         Thread.sleep(100);
 
         // Then — start time should be 13:00 Swiss, NOT 02:00
@@ -427,7 +427,7 @@ class RegistrationEmailServiceTest {
 
         // When
         registrationEmailService.sendRegistrationConfirmation(
-                registration, userProfile, event, "tok", "ctok", "http://localhost/dereg", Locale.GERMAN);
+                registration, userProfile, event, "tok", "http://localhost/dereg", Locale.GERMAN);
         Thread.sleep(100);
 
         // Then — should use earliest session start (13:30) and latest session end (15:15)
@@ -484,7 +484,7 @@ class RegistrationEmailServiceTest {
 
         // When
         registrationEmailService.sendRegistrationConfirmation(
-                registration, userProfile, event, "tok", "ctok", "http://localhost/dereg", Locale.GERMAN);
+                registration, userProfile, event, "tok", "http://localhost/dereg", Locale.GERMAN);
         Thread.sleep(100);
 
         // Then — should use event type times (AFTERNOON: 13:00–19:00), NOT session times
@@ -536,7 +536,7 @@ class RegistrationEmailServiceTest {
                 .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyList(), anyString(), any(), anyList());
 
         // When & Then - should not throw exception
-        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.GERMAN);
+        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.GERMAN);
 
         // Wait for async operation
         Thread.sleep(100);
@@ -594,7 +594,7 @@ class RegistrationEmailServiceTest {
         // When
         registrationEmailService.sendRegistrationConfirmation(
                 registration, userProfile, event,
-                "tok", "cancel", "http://x/deregister?token=t", Locale.GERMAN);
+                "tok", "http://x/deregister?token=t", Locale.GERMAN);
         Thread.sleep(100);
 
         // Then
@@ -647,7 +647,7 @@ class RegistrationEmailServiceTest {
 
         registrationEmailService.sendRegistrationConfirmation(
                 registration, userProfile, event,
-                "tok", "cancel", "http://x/deregister?token=t", Locale.GERMAN);
+                "tok", "http://x/deregister?token=t", Locale.GERMAN);
         Thread.sleep(100);
 
         verify(emailService, times(1)).sendHtmlEmailWithAttachments(

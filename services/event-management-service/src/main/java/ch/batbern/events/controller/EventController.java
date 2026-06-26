@@ -1604,8 +1604,6 @@ public class EventController {
 
         String confirmationToken = confirmationTokenService.generateConfirmationToken(
                 registration.getId(), eventCode);
-        String cancellationToken = confirmationTokenService.generateCancellationToken(
-                registration.getId(), eventCode);
 
         ch.batbern.events.dto.generated.users.UserResponse userProfile =
                 userApiClient.getUserByUsername(registration.getAttendeeUsername());
@@ -1619,7 +1617,6 @@ public class EventController {
                 userProfile,
                 event,
                 confirmationToken,
-                cancellationToken,
                 deregistrationUrl,
                 java.util.Locale.GERMAN
         );
@@ -1862,12 +1859,6 @@ public class EventController {
                 eventCode
         );
 
-        // Generate cancellation token (48h validity)
-        String cancellationToken = confirmationTokenService.generateCancellationToken(
-                registration.getId(),
-                eventCode
-        );
-
         // Fetch event for email
         ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
@@ -1879,10 +1870,9 @@ public class EventController {
         // Story 10.11: Waitlist registrations get waitlist-confirmation email (sent by service).
         // Regular registrations get normal confirmation email with JWT tokens.
         if (!"waitlist".equals(registration.getStatus())) {
-            // Send confirmation email with JWT tokens (Story 4.1.5c + Anonymous Cancellation)
+            // Send confirmation email with JWT token (Story 4.1.5c).
             // Email includes:
             //   - Confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
-            //   - Cancellation link: https://batbern.ch/cancel-registration?token={cancellationToken}
             //   - Deregistration link: https://batbern.ch/deregister?token={deregistrationToken} (Story 10.12)
             String deregistrationUrl = registration.getDeregistrationToken() != null
                     ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
@@ -1892,16 +1882,13 @@ public class EventController {
                     userProfile,
                     event,
                     confirmationToken,
-                    cancellationToken,
                     deregistrationUrl,
                     java.util.Locale.GERMAN // Default to German for BATbern events
             );
 
-            log.info("Confirmation and cancellation tokens generated, email queued for registration {}: "
-                            + "confirm={}, cancel={}",
+            log.info("Confirmation token generated, email queued for registration {}: confirm={}",
                     registration.getId(),
-                    confirmationToken.substring(0, 20) + "...",
-                    cancellationToken.substring(0, 20) + "...");
+                    confirmationToken.substring(0, 20) + "...");
         }
 
         // QA Fix (VALID-001): Return different status for resend vs new registration
@@ -2239,77 +2226,6 @@ public class EventController {
         } catch (io.jsonwebtoken.JwtException e) {
             log.warn("Invalid confirmation token: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid or expired confirmation token");
-        }
-    }
-
-    /**
-     * Cancel Event Registration - Email Cancellation Flow (Story 4.1.5d)
-     *
-     * POST /api/v1/events/{eventCode}/registrations/cancel?token={JWT}
-     *
-     * Cancels a registration using the JWT token from the cancellation email.
-     * Deletes the registration record from the database.
-     * Token is valid for 48 hours.
-     *
-     * @param eventCode Event code (for URL consistency)
-     * @param token JWT cancellation token from email
-     * @return Success message
-     */
-    @PostMapping("/{eventCode}/registrations/cancel")
-    @Operation(
-            summary = "Cancel Registration",
-            description = "Cancel a registration using the token from the cancellation email. "
-                + "Token is valid for 48 hours. Registration will be permanently deleted."
-    )
-    public ResponseEntity<Map<String, String>> cancelRegistration(
-            @PathVariable String eventCode,
-            @RequestParam("token") String token) {
-        log.debug("POST /api/v1/events/{}/registrations/cancel", eventCode);
-
-        try {
-            // Validate token
-            io.jsonwebtoken.Claims claims = confirmationTokenService.validateCancellationToken(token);
-
-            // Extract registration ID and event code from token
-            UUID registrationId = confirmationTokenService.getRegistrationId(claims);
-            String tokenEventCode = confirmationTokenService.getEventCode(claims);
-
-            // Verify event code in URL matches token
-            if (!eventCode.equals(tokenEventCode)) {
-                throw new IllegalArgumentException(
-                    "Event code in URL does not match token: " + eventCode);
-            }
-
-            // Find registration
-            Registration registration = registrationRepository.findById(registrationId)
-                    .orElseThrow(() -> new NoSuchElementException(
-                        "Registration not found: " + registrationId));
-
-            // Verify registration belongs to the event
-            Event event = eventRepository.findById(registration.getEventId())
-                    .orElseThrow(() -> new NoSuchElementException(
-                        "Event not found for registration: " + registrationId));
-
-            if (!event.getEventCode().equals(eventCode)) {
-                throw new IllegalArgumentException(
-                    "Registration does not belong to event: " + eventCode);
-            }
-
-            // Story 10.12: Soft-cancel (status = "cancelled") instead of hard-delete.
-            // Triggers waitlist promotion via cancelRegistration().
-            registrationService.cancelRegistration(registration);
-
-            log.info("Registration cancelled successfully: registrationId={}, eventCode={}",
-                    registrationId, eventCode);
-
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Registration cancelled successfully");
-            response.put("status", "CANCELLED");
-            return ResponseEntity.ok(response);
-
-        } catch (io.jsonwebtoken.JwtException e) {
-            log.warn("Invalid or expired cancellation token: {}", e.getMessage());
-            throw new IllegalArgumentException("Invalid or expired cancellation token");
         }
     }
 

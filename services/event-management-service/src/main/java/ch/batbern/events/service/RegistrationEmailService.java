@@ -71,7 +71,6 @@ public class RegistrationEmailService {
      * @param userProfile      User profile DTO
      * @param event            Event entity
      * @param confirmationToken JWT token for email confirmation (Story 4.1.5c)
-     * @param cancellationToken JWT token for email cancellation (Anonymous Cancellation Flow)
      * @param deregistrationUrl Full URL to self-service deregistration page (Story 10.12)
      * @param locale           User's preferred locale (defaults to German if null)
      */
@@ -81,7 +80,6 @@ public class RegistrationEmailService {
             UserResponse userProfile,
             Event event,
             String confirmationToken,
-            String cancellationToken,
             String deregistrationUrl,
             Locale locale
     ) {
@@ -98,7 +96,7 @@ public class RegistrationEmailService {
             ZonedDateTime eventDateTime = resolveEventDateTime(event);
 
             // Load email template (i18n)
-            EmailTokens tokens = new EmailTokens(confirmationToken, cancellationToken, deregistrationUrl);
+            EmailTokens tokens = new EmailTokens(confirmationToken, deregistrationUrl);
             EmailContent content = loadEmailTemplate(emailLocale, registration, userProfile, event,
                 eventDateTime, tokens);
 
@@ -244,7 +242,7 @@ public class RegistrationEmailService {
 
     private record EmailContent(String html, String subject) {}
 
-    private record EmailTokens(String confirmationToken, String cancellationToken, String deregistrationUrl) {}
+    private record EmailTokens(String confirmationToken, String deregistrationUrl) {}
 
     /**
      * Load and populate email template with user/event data.
@@ -275,8 +273,6 @@ public class RegistrationEmailService {
                 Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
                 Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode()
                     + "/confirm-registration?token=" + tokens.confirmationToken()),
-                Map.entry("cancellationUrl", baseUrl + "/events/" + event.getEventCode()
-                    + "/cancel-registration?token=" + tokens.cancellationToken()),
                 Map.entry("deregistrationUrl",
                     tokens.deregistrationUrl() != null ? tokens.deregistrationUrl() : ""),
                 Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
