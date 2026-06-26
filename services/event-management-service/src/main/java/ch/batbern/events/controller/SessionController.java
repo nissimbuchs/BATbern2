@@ -6,7 +6,6 @@ import ch.batbern.events.dto.BatchImportSessionRequest;
 import ch.batbern.events.dto.BatchImportSessionResult;
 import ch.batbern.events.dto.CreateSessionRequest;
 import ch.batbern.events.dto.SessionResponse;
-import ch.batbern.events.dto.UpdateSessionRequest;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
@@ -36,7 +35,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -217,63 +215,6 @@ public class SessionController {
         SessionResponse response = sessionService.toSessionResponse(savedSession, eventCode);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    /**
-     * AC10: Update an existing session (full replacement)
-     * Story 1.16.2: Uses sessionSlug as path parameter
-     * PUT /api/v1/events/{eventCode}/sessions/{sessionSlug}
-     */
-    @PutMapping("/{sessionSlug}")
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<SessionResponse> updateSession(
-            @PathVariable String eventCode,
-            @PathVariable String sessionSlug,
-            @Valid @RequestBody UpdateSessionRequest request) {
-
-        // Find event by eventCode
-        UUID eventId = eventRepository.findByEventCode(eventCode)
-                .map(event -> event.getId())
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
-
-        // Find existing session by sessionSlug
-        Session session = sessionRepository.findBySessionSlug(sessionSlug)
-                .orElseThrow(() -> new ValidationException("Session not found: " + sessionSlug));
-
-        // Verify session belongs to the event
-        if (!session.getEventId().equals(eventId)) {
-            throw new ValidationException("Session does not belong to this event");
-        }
-
-        // Update session
-        session.setTitle(request.getTitle());
-        session.setDescription(request.getDescription());
-        session.setSessionType(request.getSessionType());
-        Instant newStartTime = parseInstant(request.getStartTime());
-        Instant newEndTime = parseInstant(request.getEndTime());
-        boolean timingChanged = !newStartTime.equals(session.getStartTime())
-                || !newEndTime.equals(session.getEndTime());
-        session.setStartTime(newStartTime);
-        session.setEndTime(newEndTime);
-        session.setRoom(request.getRoom());
-        session.setCapacity(request.getCapacity());
-        session.setLanguage(request.getLanguage());
-
-        // Clear actual execution data when scheduled times change (W4.x: stale values
-        // corrupt Watch countdown and Delayed-button logic after a reschedule).
-        if (timingChanged) {
-            session.setActualStartTime(null);
-            session.setActualEndTime(null);
-            session.setOverrunMinutes(null);
-            session.setCompletedByUsername(null);
-        }
-
-        Session updatedSession = sessionRepository.save(session);
-
-        // Convert to SessionResponse with speakers (Story 1.15a.1b)
-        SessionResponse response = sessionService.toSessionResponse(updatedSession, eventCode);
-
-        return ResponseEntity.ok(response);
     }
 
     /**

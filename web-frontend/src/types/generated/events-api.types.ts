@@ -1047,14 +1047,7 @@ export interface paths {
      *     **Public Endpoint**: No authentication required for GET requests
      */
     get: operations['getSession'];
-    /**
-     * Update session
-     * @description Update an existing session.
-     *
-     *     **Acceptance Criteria**: AC10
-     *     **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
-     */
-    put: operations['updateSession'];
+    put?: never;
     post?: never;
     /**
      * Delete session
@@ -1066,7 +1059,17 @@ export interface paths {
     delete: operations['deleteSession'];
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Partially update a session
+     * @description Partially update an existing session. Only the provided fields are changed.
+     *
+     *     Supported fields: title, description, durationMinutes (recomputes endTime from startTime).
+     *     Slot timing (startTime/endTime/room) is managed via the dedicated `/slot` endpoint.
+     *
+     *     **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs.
+     *     Replaces the removed full-replace `PUT` (ADR-013: PATCH-partial is the single mutation).
+     */
+    patch: operations['patchSession'];
     trace?: never;
   };
   '/events/{eventCode}/sessions/{sessionSlug}/speakers': {
@@ -4318,43 +4321,14 @@ export interface components {
       language: string;
     };
     /**
-     * @description Update session request - supports partial updates and slot assignment.
-     *
-     *     **Slot Assignment**: Update only startTime/endTime/room to assign timing to placeholder session.
-     *     **Full Update**: Update any combination of fields.
-     *     **Clear Timing**: Set startTime/endTime/room to null to revert to placeholder.
+     * @description Partial session update (PATCH). Only the provided fields are changed.
+     *     Slot timing (startTime/endTime/room) is managed via the dedicated `/slot` endpoint.
      */
-    UpdateSessionRequest: {
-      title: string;
+    PatchSessionRequest: {
+      title?: string;
       description?: string;
-      /**
-       * @description Session type - can be null for placeholder sessions
-       * @enum {string|null}
-       */
-      sessionType?:
-        | 'keynote'
-        | 'presentation'
-        | 'workshop'
-        | 'panel_discussion'
-        | 'networking'
-        | 'break'
-        | 'lunch'
-        | 'moderation'
-        | null;
-      /**
-       * Format: date-time
-       * @description Session start time - use for slot assignment, set to null to clear
-       */
-      startTime?: string | null;
-      /**
-       * Format: date-time
-       * @description Session end time - use for slot assignment, set to null to clear
-       */
-      endTime?: string | null;
-      /** @description Session room - assigned during slot assignment */
-      room?: string | null;
-      capacity?: number;
-      language?: string;
+      /** @description When provided (>0), recomputes endTime as startTime + durationMinutes. */
+      durationMinutes?: number;
     };
     /**
      * @description Story 4.1.5a: Event registration request (ADR-006)
@@ -7734,38 +7708,6 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  updateSession: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code in format BATbern{number} */
-        eventCode: string;
-        /** @description URL-friendly slug generated from session title */
-        sessionSlug: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateSessionRequest'];
-      };
-    };
-    responses: {
-      /** @description Session updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Session'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
   deleteSession: {
     parameters: {
       query?: never;
@@ -7787,6 +7729,38 @@ export interface operations {
         };
         content?: never;
       };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  patchSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description URL-friendly slug generated from session title */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PatchSessionRequest'];
+      };
+    };
+    responses: {
+      /** @description Session updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };

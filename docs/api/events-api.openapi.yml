@@ -2691,17 +2691,20 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-    put:
+    patch:
       tags:
         - Sessions
-      summary: Update session
+      summary: Partially update a session
       description: |
-        Update an existing session.
+        Partially update an existing session. Only the provided fields are changed.
 
-        **Acceptance Criteria**: AC10
-        **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
+        Supported fields: title, description, durationMinutes (recomputes endTime from startTime).
+        Slot timing (startTime/endTime/room) is managed via the dedicated `/slot` endpoint.
 
-      operationId: updateSession
+        **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs.
+        Replaces the removed full-replace `PUT` (ADR-013: PATCH-partial is the single mutation).
+
+      operationId: patchSession
       parameters:
         - name: eventCode
           in: path
@@ -2724,14 +2727,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateSessionRequest'
+              $ref: '#/components/schemas/PatchSessionRequest'
       responses:
         '200':
           description: Session updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
+                $ref: '#/components/schemas/SessionResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -8450,47 +8453,21 @@ components:
           maxLength: 10
           default: de
 
-    UpdateSessionRequest:
+    PatchSessionRequest:
       type: object
       description: |
-        Update session request - supports partial updates and slot assignment.
-
-        **Slot Assignment**: Update only startTime/endTime/room to assign timing to placeholder session.
-        **Full Update**: Update any combination of fields.
-        **Clear Timing**: Set startTime/endTime/room to null to revert to placeholder.
-      required:
-        - title
+        Partial session update (PATCH). Only the provided fields are changed.
+        Slot timing (startTime/endTime/room) is managed via the dedicated `/slot` endpoint.
       properties:
         title:
           type: string
           maxLength: 255
         description:
           type: string
-        sessionType:
-          type: string
-          nullable: true
-          description: Session type - can be null for placeholder sessions
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
-        startTime:
-          type: string
-          format: date-time
-          nullable: true
-          description: Session start time - use for slot assignment, set to null to clear
-        endTime:
-          type: string
-          format: date-time
-          nullable: true
-          description: Session end time - use for slot assignment, set to null to clear
-        room:
-          type: string
-          maxLength: 100
-          nullable: true
-          description: Session room - assigned during slot assignment
-        capacity:
+        durationMinutes:
           type: integer
-        language:
-          type: string
-          maxLength: 10
+          minimum: 1
+          description: When provided (>0), recomputes endTime as startTime + durationMinutes.
 
     CreateRegistrationRequest:
       type: object
