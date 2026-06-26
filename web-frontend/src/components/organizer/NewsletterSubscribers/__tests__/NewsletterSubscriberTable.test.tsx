@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../../../i18n/config';
 import NewsletterSubscriberTable from '../NewsletterSubscriberTable';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-newsletter-api.types';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
 

@@ -1,0 +1,486 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event AI API
+  version: 1.0.0
+  description: 'AI assist (event description, theme image, abstract analysis), AI prompt administration, and public feature flags.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: AI Assist
+  description: AI-assisted event content creation — description, theme image, abstract analysis (Story 10.16)
+paths:
+  /ai-prompts:
+    get:
+      tags:
+      - AI Prompts
+      summary: List all AI prompts
+      description: 'Returns all three organizer-editable OpenAI prompts (event_description, theme_image, abstract_quality).
+
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: listAiPrompts
+      responses:
+        '200':
+          description: List of AI prompts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+  /ai-prompts/{promptKey}:
+    get:
+      tags:
+      - AI Prompts
+      summary: Get a single AI prompt
+      description: 'Returns a single AI prompt by its key.
+
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: getAiPrompt
+      parameters:
+      - name: promptKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: AI prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+    put:
+      tags:
+      - AI Prompts
+      summary: Update an AI prompt
+      description: 'Updates the prompt text for the given key.
+
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: updateAiPrompt
+      parameters:
+      - name: promptKey
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAiPromptRequest'
+      responses:
+        '200':
+          description: Updated prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+  /ai-prompts/{promptKey}/reset:
+    post:
+      tags:
+      - AI Prompts
+      summary: Reset an AI prompt to its default text
+      description: 'Copies the original default prompt text back to prompt_text.
+
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: resetAiPrompt
+      parameters:
+      - name: promptKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Prompt after reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+  /public/settings/features:
+    get:
+      tags:
+      - AI Assist
+      operationId: getFeatureFlags
+      summary: Get feature flags (public, no auth required)
+      security: []
+      responses:
+        '200':
+          description: Feature flags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlagsResponse'
+  /events/{eventCode}/ai/description:
+    post:
+      tags:
+      - AI Assist
+      operationId: generateEventDescription
+      summary: Generate AI event description (GPT-4o, German, 150-200 words). Looks up event/topic data from eventCode.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern56
+      responses:
+        '200':
+          description: Generated description
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiDescriptionResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventCode}/ai/theme-image:
+    post:
+      tags:
+      - AI Assist
+      operationId: generateThemeImage
+      summary: Generate AI theme image (DALL-E 3), upload to S3. Looks up event/topic data from eventCode.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern56
+      - name: seed
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Optional seed string for cache-busting a re-generation
+      responses:
+        '200':
+          description: Generated theme image URL and S3 key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiThemeImageResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventCode}/ai/theme-image/apply:
+    post:
+      tags:
+      - AI Assist
+      operationId: applyThemeImage
+      summary: Persist an AI-generated theme image URL on the event record
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyThemeImageRequest'
+      responses:
+        '200':
+          description: Image URL persisted on the event
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /speakers/{speakerId}/ai/analyze-abstract:
+    post:
+      tags:
+      - AI Assist
+      operationId: analyzeAbstract
+      summary: Analyze speaker abstract quality (GPT-4o). speakerId is SpeakerPool UUID; backend looks up speaker name, session title and abstract.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: speakerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Abstract analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbstractAnalysisResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+components:
+  schemas:
+    FeatureFlagsResponse:
+      type: object
+      properties:
+        aiContentEnabled:
+          type: boolean
+    AiDescriptionResponse:
+      type: object
+      properties:
+        description:
+          type: string
+    AiThemeImageResponse:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        s3Key:
+          type: string
+    ApplyThemeImageRequest:
+      type: object
+      required:
+      - imageUrl
+      properties:
+        imageUrl:
+          type: string
+          description: CloudFront URL of the AI-generated image to persist on the event
+    AbstractAnalysisResponse:
+      type: object
+      properties:
+        noPromotionScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: 1=heavy product promotion, 10=no promotion at all
+        noPromotionFeedback:
+          type: string
+          description: Brief German explanation of the noPromotionScore
+        lessonsLearnedScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: 1=no real-world experience mentioned, 10=clearly practical lessons learned
+        lessonsLearnedFeedback:
+          type: string
+          description: Brief German explanation of the lessonsLearnedScore
+        wordCount:
+          type: integer
+          description: Number of words in the original abstract
+        shortenedAbstract:
+          type: string
+          nullable: true
+          description: Shortened German abstract (max 150 words) if original exceeds 160 words, otherwise null
+    AiPromptResponse:
+      type: object
+      description: Organizer-editable OpenAI prompt configuration
+      required:
+      - promptKey
+      - displayName
+      - promptText
+      - defaultText
+      - updatedAt
+      properties:
+        promptKey:
+          type: string
+          description: Prompt identifier (event_description, theme_image, abstract_quality)
+        displayName:
+          type: string
+          description: Human-readable name shown in Admin UI
+        promptText:
+          type: string
+          description: Current prompt text (editable by organizer)
+        defaultText:
+          type: string
+          description: Original default prompt text (used to reset)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+    UpdateAiPromptRequest:
+      type: object
+      description: Request to update an AI prompt's text
+      required:
+      - promptText
+      properties:
+        promptText:
+          type: string
+          description: New prompt text
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

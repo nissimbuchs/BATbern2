@@ -2,7 +2,7 @@
  * TypeScript types for participant batch import feature
  */
 
-import type { components } from './generated/events-api.types';
+import type { components } from './generated/event-registrations-api.types';
 
 /**
  * Source participant data structure from CSV

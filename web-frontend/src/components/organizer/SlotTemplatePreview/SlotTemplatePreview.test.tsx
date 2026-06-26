@@ -12,7 +12,7 @@
  * - Typical start-end times
  * - Default capacity
  * - i18n compliance (all text uses react-i18next)
- * - Generated types usage from events-api.types.ts
+ * - Generated types usage from events-core-api.types.ts
  */
 
 import React from 'react';
@@ -21,7 +21,7 @@ import { render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { SlotTemplatePreview } from './SlotTemplatePreview';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 type EventType = components['schemas']['EventType'];
 type EventSlotConfigurationResponse = components['schemas']['EventSlotConfigurationResponse'];
@@ -195,7 +195,7 @@ describe('SlotTemplatePreview Component', () => {
 
   /**
    * Test 7.4j: should_useGeneratedTypes_when_componentRendered
-   * ADR-006: Component uses generated types from events-api.types.ts
+   * ADR-006: Component uses generated types from events-core-api.types.ts
    * (This is a TypeScript compile-time check - if types are wrong, component won't compile)
    */
   it('should_useGeneratedTypes_when_componentRendered', () => {

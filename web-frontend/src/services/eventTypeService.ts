@@ -10,7 +10,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 // Import generated types from OpenAPI spec (ADR-006 compliance)
 type EventType = components['schemas']['EventType'];

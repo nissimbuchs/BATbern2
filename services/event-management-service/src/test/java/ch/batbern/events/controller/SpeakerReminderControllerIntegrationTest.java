@@ -86,7 +86,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                 .venueName("Test Venue")
                 .venueAddress("Test Address, 3000 Bern")
                 .venueCapacity(100)
-                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .eventType(ch.batbern.events.core.dto.generated.EventType.EVENING)
                 .workflowState(EventWorkflowState.SPEAKER_IDENTIFICATION)
                 .organizerUsername("organizer.test")
                 .createdAt(Instant.now())

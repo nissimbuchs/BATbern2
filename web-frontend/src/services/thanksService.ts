@@ -7,7 +7,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 export type ThanksCountResponse = components['schemas']['ThanksCountResponse'];
 export type ThanksNoteResponse = components['schemas']['ThanksNoteResponse'];

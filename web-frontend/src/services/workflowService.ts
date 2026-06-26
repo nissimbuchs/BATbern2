@@ -10,7 +10,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 // Type definitions from OpenAPI spec
 export type WorkflowStatusDto = components['schemas']['WorkflowStatusDto'];

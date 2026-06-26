@@ -12,7 +12,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { eventApiClient } from '@/services/eventApiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 type TeaserImageUploadUrlRequest = components['schemas']['TeaserImageUploadUrlRequest'];
 type TeaserImageUpdateRequest = components['schemas']['TeaserImageUpdateRequest'];

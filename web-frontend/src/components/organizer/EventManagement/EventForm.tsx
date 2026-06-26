@@ -56,7 +56,7 @@ import type { Event, EventUI, CreateEventRequest } from '@/types/event.types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 import { workflowService } from '@/services/workflowService';
 import { useQueryClient } from '@tanstack/react-query';
 import { EventTasksTab } from '../Tasks/EventTasksTab';

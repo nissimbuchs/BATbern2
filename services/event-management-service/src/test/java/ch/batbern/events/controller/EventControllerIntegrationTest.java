@@ -6,7 +6,7 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;

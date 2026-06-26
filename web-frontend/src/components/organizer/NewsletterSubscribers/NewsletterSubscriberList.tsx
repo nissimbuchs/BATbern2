@@ -19,7 +19,7 @@ import UnsubscribeDialog from './UnsubscribeDialog';
 import ResubscribeDialog from './ResubscribeDialog';
 import DeleteSubscriberDialog from './DeleteSubscriberDialog';
 import UnsuppressDialog from './UnsuppressDialog';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-newsletter-api.types';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
 

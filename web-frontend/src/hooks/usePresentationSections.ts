@@ -11,7 +11,7 @@
 import { useMemo } from 'react';
 import type { PresentationEventDetail, PresentationSession } from '@/services/presentationService';
 import type { User } from '@/types/user.types';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 import type { PresentationSettings } from '@/services/presentationService';
 
 type TeaserImageItem = components['schemas']['TeaserImageItem'];

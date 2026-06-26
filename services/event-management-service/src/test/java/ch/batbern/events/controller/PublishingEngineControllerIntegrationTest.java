@@ -80,7 +80,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .venueAddress("Kornhausstrasse 3, 3013 Bern")
                 .venueCapacity(300)
                 .organizerUsername("test.organizer")
-                .eventType(ch.batbern.events.dto.generated.EventType.FULL_DAY)
+                .eventType(ch.batbern.events.core.dto.generated.EventType.FULL_DAY)
                 .workflowState(ch.batbern.shared.types.EventWorkflowState.SLOT_ASSIGNMENT) // Ready for publishing
                 .topicCode("cloud-architecture") // Required for topic validation
                 // currentPublishedPhase will be added in GREEN phase (Task 3b)

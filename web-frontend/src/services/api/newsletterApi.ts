@@ -8,7 +8,7 @@
 
 import apiClient from './apiClient';
 import type { NewsletterSubscriberFilters } from '@/stores/newsletterSubscriberStore';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-newsletter-api.types';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
 type PaginationMetadata = components['schemas']['PaginationMetadata'];

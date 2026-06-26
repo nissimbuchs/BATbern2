@@ -63,7 +63,7 @@ class SessionMaterialsRepositoryIntegrationTest extends AbstractIntegrationTest 
                 .venueName("Test Venue")
                 .venueAddress("Test Address")
                 .venueCapacity(100)
-                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .eventType(ch.batbern.events.core.dto.generated.EventType.EVENING)
                 .workflowState(EventWorkflowState.CREATED)
                 .organizerUsername("test.organizer")
                 .createdAt(Instant.now())

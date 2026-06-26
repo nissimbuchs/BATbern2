@@ -36,7 +36,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-newsletter-api.types';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
 

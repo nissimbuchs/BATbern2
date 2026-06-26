@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ActiveSessionCard } from './ActiveSessionCard';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-watch-api.types';
 
 type WatchSessionDetail = components['schemas']['WatchSessionDetail'];
 type WatchSpeaker = WatchSessionDetail['speakers'][number];

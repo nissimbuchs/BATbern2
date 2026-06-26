@@ -1,0 +1,1709 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event Registrations API
+  version: 1.0.0
+  description: 'Attendee registrations, participants and exports, waitlist promotion, distribution lists, and token/email deregistration.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: Registrations
+  description: Event registration management
+paths:
+  /events/{eventCode}/registrations:
+    get:
+      tags:
+      - Registrations
+      summary: List event registrations
+      description: 'Retrieve all registrations for a specific event with optional filtering.
+
+
+        **Acceptance Criteria**: AC11
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+
+        **Filter Examples**:
+
+        - By status: `{"status":"confirmed"}`
+
+        - By date: `{"registrationDate":{"$gte":"2025-01-01"}}`
+
+        '
+      operationId: listRegistrations
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      - name: filter
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+          maximum: 100
+      responses:
+        '200':
+          description: Registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Registration'
+                  pagination:
+                    $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Registrations
+      summary: Create event registration (anonymous or authenticated)
+      description: 'Create a new registration for the event. Supports both anonymous and authenticated registration.
+
+
+        **Story**: 4.1.5a - Anonymous registration with email-based account linking (ADR-006)
+
+        **Security**: Public endpoint - no authentication required
+
+
+        **Anonymous Registration**:
+
+        - No authentication required
+
+        - Email serves as identifier
+
+        - Registration code generated (BAT-YYYY-NNNNNN)
+
+        - Confirmation email sent automatically
+
+
+        **Authenticated Registration**:
+
+        - If user is authenticated, linked to user account immediately
+
+        - Can view in dashboard
+
+
+        **Account Linking (ADR-006)**:
+
+        - When anonymous user creates account with same email, user_profile updated with cognito_user_id
+
+        - All past registrations automatically linked (via attendeeId FK to user_profiles)
+
+        - See ADR-006 for details
+
+        '
+      operationId: createRegistration
+      security: []
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbernXXX
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegistrationRequest'
+      responses:
+        '201':
+          description: Registration created successfully - confirmation email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                - email
+                properties:
+                  message:
+                    type: string
+                    example: Registration successful. Please check your email to confirm.
+                  email:
+                    type: string
+                    format: email
+                    example: john.doe@example.com
+                  companyUpdated:
+                    type: boolean
+                    description: True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
+                    example: false
+                description: '**Story 4.1.5c**: Minimal response with no sensitive data.
+
+                  Confirmation token sent via email (not in response).
+
+                  User must click email link to confirm registration.
+
+                  '
+        '400':
+          description: Invalid request (validation errors)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                duplicateEmail:
+                  summary: Duplicate registration
+                  value:
+                    error: Already registered
+                    message: This email is already registered for this event
+                    code: DUPLICATE_REGISTRATION
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          description: Rate limit exceeded (public endpoint protection)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/distribution-list/{kind}:
+    get:
+      tags:
+      - Registrations
+      summary: Resolve the email distribution list for an event (internal Lambda route)
+      description: "Returns the email addresses to fan out for the per-event mailing aliases\n`batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and\n`batbern{N}-participants@batbern.ch`.\n\n- `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)\n  of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.\n- `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their\n  verified `additionalEmails`.\n- `participants`: every active registrant (`registered`/`confirmed`/`attended`;\n  excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the\n  same audience as the Communications → Event registrants send. Lowercase-deduped.\n\n**Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:\n  - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is\n    VPC-only).\n  - Organizer JWT from interactive callers.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).\n"
+      operationId: getEventDistributionList
+      security: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      - name: kind
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - speakers
+          - moderator
+          - participants
+      responses:
+        '200':
+          description: Distribution list resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistributionListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/participants:
+    post:
+      tags:
+      - Registrations
+      summary: Add an existing user as a confirmed participant (organizer)
+      description: "Organizer-only. Adds an EXISTING BATbern user (chosen via the user autocomplete) onto\nthe event directly as a `confirmed` participant — skipping the self-registration +\nemail-confirmation step. The created row is a REAL attendee (counts toward capacity and\nthe event delete-guard), audited with `metadata.addedByOrganizer`.\n\n- Capacity: respected by default; if the event is full, returns `409` with\n  `details.code = \"capacity_exceeded\"`. Pass `force: true` to add over capacity.\n- Duplicate: an already-active registration returns `409` (generic). A `cancelled`\n  prior registration is replaced.\n- `notify` (default true) sends the attendee a \"you have a confirmed spot\" email.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-organizer-add-participant.md`.\n"
+      operationId: addParticipant
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddParticipantRequest'
+      responses:
+        '201':
+          description: Participant added as confirmed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registrationCode:
+                    type: string
+                    example: BATbern57-A1B2C3
+                  status:
+                    type: string
+                    example: confirmed
+                  attendeeUsername:
+                    type: string
+                    example: jane.doe
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 'Conflict — either the user is already registered (generic) or the event is full
+
+            (`details.code = "capacity_exceeded"`; retry with `force: true`).
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/participants/export.xlsx:
+    get:
+      tags:
+      - Registrations
+      summary: Export participant name-badge data as XLSX
+      description: "Streams an Office Open XML XLSX with one row per participant of the event. Columns\n(German — physical badges): `Vorname`, `Name`, `Firma`, `Rolle`. Roles are\n`Organisator`, `Referent`, `Teilnehmer` with precedence\nOrganisator > Referent > Teilnehmer (a user appearing in multiple sets renders once\nwith the highest-precedence role).\n\nRow sources (union, dedup-by-username):\n  - All organizer-role users (cross-service via UserApiClient).\n  - All `PRIMARY_SPEAKER` and `CO_SPEAKER` `session_users` of the event.\n  - All `registered`/`confirmed`/`attended` registrations of the event.\n\nFilename suggestion: `{eventCode}-namensschilder.xlsx`.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F3).\n"
+      operationId: exportParticipantsXlsx
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      responses:
+        '200':
+          description: XLSX file
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="BATbern57-namensschilder.xlsx"
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/participants/export.docx:
+    get:
+      tags:
+      - Registrations
+      summary: Export participant name badges as DOCX (Avery L4784 + BAT logo)
+      description: "Streams a printable Microsoft Word document laid out for Avery\nZweckform L4784 name-badge sheets with the BAT logo embedded in every\nbadge. Each badge renders three lines:\n\n  - Name (Vorname + Nachname, bold, 12pt)\n  - Firma (next to the BAT logo, 12pt)\n  - Rolle (`Organisator | Referent | Teilnehmer`, italic, 10pt)\n\nRow sources, dedupe, role precedence and sort order are identical to\nthe XLSX export (`exportParticipantsXlsx`) — both endpoints draw from\nthe same `ParticipantsCollector`. The DOCX paginates as 27 badges\nper A4 page (9 badge rows × 3 badge columns); trailing slots on the\nlast page are visually blank but preserve the layout for clean printing.\n\nFilename suggestion: `{eventCode}-namensschilder.docx`.\n\n**Spec extension:** name-badge DOCX export (sibling of `exportParticipantsXlsx`).\n"
+      operationId: exportParticipantsDocx
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      responses:
+        '200':
+          description: DOCX file (Office Open XML wordprocessingml)
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="BATbern57-namensschilder.docx"
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/my-registration:
+    get:
+      tags:
+      - Registrations
+      summary: Get my registration status for an event
+      description: 'Returns the authenticated user''s registration status for the specified event.
+
+        Always returns 200. Use the `registered` boolean to determine if a record exists.
+
+
+        **Story**: 10.10 - Registration Status Indicator for Logged-in Users (AC1)
+
+        **Security**: Requires Bearer JWT authentication. Returns 401 for unauthenticated requests.
+
+
+        **ADR-003**: Uses eventCode (meaningful ID) not UUID.
+
+        **ADR-004**: Response is minimal — no user profile fields (firstName, lastName, email).
+
+        '
+      operationId: getMyRegistration
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      responses:
+        '200':
+          description: Registration status for the authenticated user (registered or not)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyRegistrationResponse'
+              examples:
+                registered:
+                  summary: User has a registration
+                  value:
+                    registered: true
+                    registrationCode: BATbern142-reg-ABC123
+                    eventCode: BATbern142
+                    status: CONFIRMED
+                    registrationDate: '2025-11-01T10:30:00Z'
+                not_registered:
+                  summary: User has no registration
+                  value:
+                    registered: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Registrations
+      summary: Quick registration for authenticated attendee
+      description: 'Creates a confirmed registration for the currently authenticated user without
+
+        requiring form input or email confirmation. User profile data is read from the
+
+        session (JWT). No confirmation email is sent.
+
+
+        **Security**: Requires Bearer JWT authentication.
+
+        '
+      operationId: createMyRegistration
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      responses:
+        '201':
+          description: Registration created (confirmed or waitlisted)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                - email
+                properties:
+                  message:
+                    type: string
+                    example: Registration confirmed.
+                  email:
+                    type: string
+                    format: email
+                    example: john.doe@example.com
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: User is already registered for this event
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Registrations
+      summary: Cancel my registration
+      description: 'Immediately cancels the authenticated user''s registration for the given event.
+
+        No email is sent. Triggers waitlist promotion if applicable.
+
+
+        **Security**: Requires Bearer JWT authentication.
+
+        '
+      operationId: deleteMyRegistration
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      responses:
+        '204':
+          description: Registration cancelled successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No active registration found for this user and event
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/registrations/{registrationCode}:
+    get:
+      tags:
+      - Registrations
+      summary: Get registration by confirmation code
+      description: 'Retrieve registration details by confirmation code.
+
+
+        **Story**: 4.1.6 - Registration Confirmation
+
+        **Security**: Public endpoint - confirmation code acts as access token
+
+        '
+      operationId: getRegistration
+      security: []
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbernXXX
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      - name: registrationCode
+        in: path
+        description: Registration code in format BAT-YYYY-NNNNNN
+        required: true
+        schema:
+          type: string
+          pattern: ^BAT-[0-9]{4}-[0-9]{6}$
+          example: BAT-2025-000123
+      responses:
+        '200':
+          description: Registration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '404':
+          description: Registration not found (invalid confirmation code)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+      - Registrations
+      summary: Update registration
+      description: 'Partially update a registration.
+
+
+        **Story**: 4.1.6 - Uses registrationCode
+
+        '
+      operationId: updateRegistration
+      security: []
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbernXXX
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      - name: registrationCode
+        in: path
+        description: Registration code in format BAT-YYYY-NNNNNN
+        required: true
+        schema:
+          type: string
+          pattern: ^BAT-[0-9]{4}-[0-9]{6}$
+          example: BAT-2025-000123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchRegistrationRequest'
+      responses:
+        '200':
+          description: Registration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Registrations
+      summary: Cancel registration
+      description: 'Cancel a registration from the event.
+
+
+        **Story**: 4.1.6 - Public cancellation with confirmation code
+
+        '
+      operationId: deleteRegistration
+      security: []
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbernXXX
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      - name: registrationCode
+        in: path
+        description: Registration code in format BAT-YYYY-NNNNNN
+        required: true
+        schema:
+          type: string
+          pattern: ^BAT-[0-9]{4}-[0-9]{6}$
+          example: BAT-2025-000123
+      responses:
+        '204':
+          description: Registration deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/registrations/{registrationCode}/promote:
+    post:
+      tags:
+      - Registrations
+      summary: Manually promote a waitlisted registration
+      description: 'Organizer-only action to manually promote a waitlisted registration to registered status.
+
+
+        **Story**: 10.11 — Venue Capacity Enforcement & Waitlist Management (AC3, AC5)
+
+        **Security**: ORGANIZER role required
+
+        '
+      operationId: promoteFromWaitlist
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbernXXX
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      - name: registrationCode
+        in: path
+        description: Registration code of the waitlisted registration
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: Registration successfully promoted from waitlist to registered
+        '404':
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: Registration exists but is not on the waitlist
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                error: Registration is not on the waitlist
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/registrations/confirm:
+    post:
+      tags:
+      - Registrations
+      summary: Confirm registration via email token
+      description: 'Confirm a registration using the JWT token sent via email.
+
+
+        **Story**: 4.1.5c - Secure Email-Based Registration Confirmation
+
+        **Security**: Public endpoint - JWT token provides authentication and authorization
+
+
+        **Token Validation**:
+
+        - JWT signature verified (HMAC-SHA256)
+
+        - Token expiry checked (48 hours from registration)
+
+        - Token type must be "email-confirmation"
+
+        - Registration ID extracted from token claims
+
+        - Event code in URL must match event code in token
+
+
+        **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
+
+        '
+      operationId: confirmRegistration
+      security: []
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbernXXX
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      - name: token
+        in: query
+        description: JWT confirmation token from email link
+        required: true
+        schema:
+          type: string
+          example: eyJhbGciOiJIUzI1NiJ9.eyJyZWdpc3RyYXRpb25JZCI6IjEyMzQ1Njc4LTkwYWItY2RlZi0xMjM0LTU2Nzg5MGFiY2RlZiIsImV2ZW50Q29kZSI6IkJBVGJlcm41NyIsInR5cGUiOiJlbWFpbC1jb25maXJtYXRpb24iLCJpYXQiOjE3MDUwMDAwMDAsImV4cCI6MTcwNTE3MjgwMH0.signature
+      responses:
+        '200':
+          description: Registration confirmed successfully (or already confirmed)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                - status
+                properties:
+                  message:
+                    type: string
+                    example: Registration confirmed successfully
+                  status:
+                    type: string
+                    enum:
+                    - CONFIRMED
+                    example: CONFIRMED
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                expiredToken:
+                  summary: Token expired
+                  value:
+                    error: Invalid token
+                    message: Token has expired (48 hour validity)
+                    code: TOKEN_EXPIRED
+                invalidToken:
+                  summary: Invalid token signature
+                  value:
+                    error: Invalid token
+                    message: Token signature validation failed
+                    code: INVALID_TOKEN
+        '404':
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                error: Not found
+                message: Registration not found
+                code: REGISTRATION_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /registrations/deregister/verify:
+    get:
+      tags:
+      - Registrations
+      summary: Verify deregistration token (public)
+      description: 'Verifies a deregistration token and returns registration details for confirmation.
+
+        Returns 404 if the token is unknown, already cancelled, or absent/malformed
+
+        (e.g. an email client truncated the link) — an invalid link is always a 404, never a 500.
+
+
+        **Story**: 10.12 — Self-Service Deregistration
+
+        **Security**: Public endpoint — UUID token provides authentication
+
+        '
+      operationId: verifyDeregistrationToken
+      security: []
+      parameters:
+      - name: token
+        in: query
+        description: UUID deregistration token
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Token valid — returns registration summary for confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeregistrationVerifyResponse'
+        '404':
+          description: Token not found or registration already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                error: invalid_token
+                message: Deregistration token not found or already used
+  /registrations/deregister:
+    post:
+      tags:
+      - Registrations
+      summary: Cancel registration via deregistration token (public)
+      description: 'Cancels a registration using the self-service deregistration token.
+
+        Sets registration status to "cancelled" and triggers waitlist promotion.
+
+
+        **Story**: 10.12 — Self-Service Deregistration
+
+        **Security**: Public endpoint — UUID token provides authentication
+
+        '
+      operationId: deregisterByToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeregistrationRequest'
+      responses:
+        '200':
+          description: Registration cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registration cancelled successfully
+        '404':
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: Registration already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                error: already_cancelled
+                message: This registration has already been cancelled
+  /registrations/deregister/by-email:
+    post:
+      tags:
+      - Registrations
+      summary: Request deregistration link via email (public, anti-enumeration)
+      description: 'Sends a deregistration link to the provided email address if a matching registration is found.
+
+        Always returns 200 to prevent email enumeration — the caller cannot determine whether
+
+        a registration exists from the response.
+
+
+        **Story**: 10.12 — Self-Service Deregistration
+
+        **Security**: Public endpoint — anti-enumeration design
+
+        '
+      operationId: requestDeregistrationByEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeregistrationByEmailRequest'
+      responses:
+        '200':
+          description: 'Always 200 regardless of whether registration was found.
+
+            "If you are registered, you''ll receive a deregistration email."
+
+            '
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: If you are registered for this event, you'll receive a cancellation link by email.
+  /events/batch_registrations:
+    post:
+      tags:
+      - Registrations
+      summary: Create batch event registrations for a participant
+      description: 'Creates multiple event registrations for a single participant in one transaction.
+
+        Used for bulk importing historical attendance data.
+
+
+        **Story**: BAT-12 - API Contract - Participant Batch Registration
+
+
+        **Behavior**:
+
+        - Creates user if doesn''t exist (get-or-create by email)
+
+        - Skips duplicate registrations (idempotent)
+
+        - Returns partial success if some registrations fail
+
+
+        **Use Case**: Historical data migration for 2,307 participants
+
+
+        **Performance**: <500ms (P95) for 100 registrations
+
+        '
+      operationId: createBatchRegistrations
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRegistrationRequest'
+            examples:
+              historicalAttendee:
+                summary: Historical participant with multiple events
+                value:
+                  participantEmail: adrian.buerki@centrisag.ch
+                  firstName: Adrian
+                  lastName: Bürki
+                  registrations:
+                  - eventCode: BATbern17
+                    status: ATTENDED
+                  - eventCode: BATbern25
+                    status: ATTENDED
+                  - eventCode: BATbern31
+                    status: ATTENDED
+              syntheticEmail:
+                summary: Participant with synthetic email
+                value:
+                  participantEmail: max.muster@batbern.ch
+                  firstName: Max
+                  lastName: Muster
+                  registrations:
+                  - eventCode: BATbern1
+                    status: ATTENDED
+      responses:
+        '200':
+          description: Batch registrations processed (full or partial success)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchRegistrationResponse'
+              examples:
+                fullSuccess:
+                  summary: All registrations successful
+                  value:
+                    username: adrian.buerki
+                    totalRegistrations: 3
+                    successfulRegistrations: 3
+                    failedRegistrations: []
+                    errors: []
+                partialSuccess:
+                  summary: Some registrations failed
+                  value:
+                    username: adrian.buerki
+                    totalRegistrations: 3
+                    successfulRegistrations: 2
+                    failedRegistrations:
+                    - eventCode: BATbern99
+                      reason: Event not found
+                    errors:
+                    - Event BATbern99 not found
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    error: Validation failed
+                    message: Invalid email format
+                    code: VALIDATION_ERROR
+                    details:
+                    - field: participantEmail
+                      message: must be a well-formed email address
+                emptyRegistrations:
+                  summary: Empty registrations array
+                  value:
+                    error: Validation failed
+                    message: Registrations array cannot be empty
+                    code: VALIDATION_ERROR
+                    details:
+                    - field: registrations
+                      message: must contain at least 1 item
+                tooManyRegistrations:
+                  summary: Too many registrations
+                  value:
+                    error: Validation failed
+                    message: Too many registrations in batch
+                    code: VALIDATION_ERROR
+                    details:
+                    - field: registrations
+                      message: must contain at most 100 items
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                error: Forbidden
+                message: This operation requires ORGANIZER role
+                code: INSUFFICIENT_PERMISSIONS
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/registrations:
+    get:
+      tags:
+      - Registrations
+      summary: List user registrations across all events
+      description: 'Retrieve all event registrations for a specific user.
+
+        Used by user detail page to show participation history.
+
+
+        **Story**: BAT-15 - Integration - Participant Batch Import
+
+        **Security**: Requires authentication
+
+        '
+      operationId: listUserRegistrations
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: X-Attendee-Username
+        in: header
+        description: Username to filter registrations (passed as header to avoid sensitive data in URL)
+        required: true
+        schema:
+          type: string
+          example: a.roethlisberger
+      responses:
+        '200':
+          description: User registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Registration'
+              example:
+              - registrationCode: BATbern34-reg-A3X9K2
+                eventCode: BATbern34
+                eventTitle: Cloud Native Architecture
+                eventDate: '2023-03-15T18:00:00Z'
+                status: attended
+                registrationDate: '2023-02-01T10:30:00Z'
+              - registrationCode: BATbern36-reg-B7Y1M4
+                eventCode: BATbern36
+                eventTitle: Microservices Patterns
+                eventDate: '2023-05-20T18:00:00Z'
+                status: attended
+                registrationDate: '2023-04-10T14:20:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    AddParticipantRequest:
+      type: object
+      required:
+      - username
+      properties:
+        username:
+          type: string
+          description: The chosen existing user's username (= UserResponse.id).
+          example: jane.doe
+        force:
+          type: boolean
+          default: false
+          description: When the event is full, true adds over capacity; false returns 409.
+        notify:
+          type: boolean
+          default: true
+          description: Send the attendee a "you have a confirmed spot" email.
+    MyRegistrationResponse:
+      type: object
+      description: 'Story 10.10: Minimal registration status for the authenticated user (AC1).
+
+        ADR-004: No user profile fields (firstName, lastName, email) — owned by User Management Service.
+
+        ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+
+
+        Always returns 200. Use `registered` to determine if a record exists.
+
+        '
+      required:
+      - registered
+      properties:
+        registered:
+          type: boolean
+          description: Whether the authenticated user has a registration record for this event.
+          example: true
+        registrationCode:
+          type: string
+          description: Unique registration code (public identifier). Present when registered=true.
+          example: BATbern142-reg-ABC123
+        eventCode:
+          type: string
+          description: Event code this registration belongs to. Present when registered=true.
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+        status:
+          type: string
+          description: Registration status (uppercase). Present when registered=true.
+          enum:
+          - REGISTERED
+          - CONFIRMED
+          - WAITLIST
+          - CANCELLED
+          - ATTENDED
+          example: CONFIRMED
+        registrationDate:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp when registration was created. Present when registered=true.
+          example: '2025-11-01T10:30:00Z'
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: 'Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
+
+            Backward-compatible addition — null for non-waitlist registrations.
+
+            '
+          example: 3
+    DistributionListResponse:
+      type: object
+      description: 'Email distribution list resolved for an event/kind pair.
+
+        Spec: `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).
+
+        '
+      required:
+      - eventCode
+      - kind
+      - emails
+      properties:
+        eventCode:
+          type: string
+          example: BATbern57
+        kind:
+          type: string
+          enum:
+          - speakers
+          - moderator
+        emails:
+          type: array
+          description: Lowercase, deduplicated email addresses.
+          items:
+            type: string
+            example: alice@example.com
+    Registration:
+      type: object
+      description: 'Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
+
+        All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
+
+        '
+      required:
+      - registrationCode
+      - eventCode
+      - status
+      - attendeeUsername
+      properties:
+        registrationCode:
+          type: string
+          description: Unique registration code (BAT-YYYY-NNNNNN format) acts as access token
+          pattern: ^BAT-[0-9]{4}-[0-9]{6}$
+          example: BAT-2025-000123
+        eventCode:
+          type: string
+          description: Event code this registration belongs to
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+        eventTitle:
+          type: string
+          description: Event title (included for convenience)
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date (included for convenience)
+        attendeeUsername:
+          type: string
+          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          description: 'Attendee username from user_profiles (ADR-003: meaningful identifiers in public APIs).
+
+            Format: firstname.lastname or firstname.lastname.2 for duplicates.
+
+            Always present - anonymous users are in user_profiles with cognito_user_id = NULL.
+
+            ADR-006: Unified table eliminates need for separate anonymous_* fields.
+
+            '
+          example: john.doe
+        firstName:
+          type: string
+          description: First name from user_profiles
+        lastName:
+          type: string
+          description: Last name from user_profiles
+        email:
+          type: string
+          format: email
+          description: Email from user_profiles
+        company:
+          type: string
+          description: Company name from user_profiles.company_id (FK to companies table)
+        status:
+          type: string
+          enum:
+          - REGISTERED
+          - WAITLIST
+          - CONFIRMED
+          - CANCELLED
+          - ATTENDED
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
+          example: 2
+        registrationDate:
+          type: string
+          format: date-time
+        sessionPreferences:
+          type: array
+          items:
+            type: string
+          description: Event-level registration - sessions are preferences only, not commitments
+        specialRequests:
+          type: string
+          nullable: true
+          description: Dietary preferences, accessibility needs, etc.
+        communicationPreferences:
+          type: object
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              default: false
+            eventReminders:
+              type: boolean
+              default: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateRegistrationRequest:
+      type: object
+      description: 'Story 4.1.5a: Event registration request (ADR-006)
+
+        Public endpoint - no authentication required.
+
+        Creates user_profile with cognito_user_id = NULL for anonymous users.
+
+        '
+      required:
+      - email
+      - firstName
+      - lastName
+      - termsAccepted
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Email address for registration and confirmation
+          example: john.doe@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: First name
+          example: John
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Last name
+          example: Doe
+        company:
+          type: string
+          maxLength: 255
+          description: Company name (optional)
+          example: Acme Corp
+        role:
+          type: string
+          maxLength: 255
+          description: Job title/role (optional)
+          example: Software Architect
+        termsAccepted:
+          type: boolean
+          description: User must accept terms and conditions
+          example: true
+        communicationPreferences:
+          type: object
+          description: Email communication preferences
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              default: false
+              description: Subscribe to newsletter
+            eventReminders:
+              type: boolean
+              default: true
+              description: Receive event reminders
+        specialRequests:
+          type: string
+          description: Dietary preferences, accessibility needs, etc.
+          example: Vegetarian meal preference
+    PatchRegistrationRequest:
+      type: object
+      description: 'Story 4.1.5a/4.1.6: Update registration details
+
+        Public endpoint - uses confirmation code for access
+
+        '
+      properties:
+        specialRequests:
+          type: string
+          description: Update dietary preferences, accessibility needs, etc.
+          example: Vegan meal preference, wheelchair accessible seating
+        communicationPreferences:
+          type: object
+          description: Update email communication preferences
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              description: Subscribe to newsletter
+            eventReminders:
+              type: boolean
+              description: Receive event reminders
+    BatchRegistrationRequest:
+      type: object
+      description: 'Story BAT-12: Batch registration request for historical data import.
+
+        Creates multiple event registrations for a single participant.
+
+        '
+      required:
+      - participantEmail
+      - firstName
+      - lastName
+      - registrations
+      properties:
+        participantEmail:
+          type: string
+          format: email
+          maxLength: 255
+          description: Participant email (used for user lookup/creation)
+          example: adrian.buerki@centrisag.ch
+        firstName:
+          type: string
+          maxLength: 100
+          description: Participant first name
+          example: Adrian
+        lastName:
+          type: string
+          maxLength: 100
+          description: Participant last name
+          example: Bürki
+        companyId:
+          type: string
+          maxLength: 100
+          description: 'Company identifier (company name).
+
+            Optional for participants without company affiliation.
+
+            Story 3.2: Batch import includes company information from CSV.
+
+            '
+          example: Centris AG
+        registrations:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: Array of event registrations (max 100 per batch)
+          items:
+            $ref: '#/components/schemas/BatchRegistrationItem'
+    BatchRegistrationItem:
+      type: object
+      description: Single event registration within a batch
+      required:
+      - eventCode
+      - status
+      properties:
+        eventCode:
+          type: string
+          pattern: ^BATbern\d+$
+          description: Event code in format BATbernN where N is event number
+          example: BATbern25
+        status:
+          type: string
+          enum:
+          - REGISTERED
+          - ATTENDED
+          - CANCELLED
+          description: Registration status (use 'ATTENDED' for historical data)
+          example: ATTENDED
+    BatchRegistrationResponse:
+      type: object
+      description: 'Response for batch registration operation.
+
+        Returns partial success - some registrations may fail while others succeed.
+
+        '
+      required:
+      - username
+      - totalRegistrations
+      - successfulRegistrations
+      - failedRegistrations
+      - errors
+      properties:
+        username:
+          type: string
+          description: Username of created/found participant
+          example: adrian.buerki
+        totalRegistrations:
+          type: integer
+          description: Total number of registrations attempted
+          example: 3
+        successfulRegistrations:
+          type: integer
+          description: Number of registrations successfully created
+          example: 3
+        failedRegistrations:
+          type: array
+          description: List of registrations that failed
+          items:
+            $ref: '#/components/schemas/FailedRegistration'
+        errors:
+          type: array
+          description: List of error messages
+          items:
+            type: string
+          example:
+          - Event BATbern99 not found
+    DeregistrationVerifyResponse:
+      type: object
+      description: 'Story 10.12 (AC3): Response from GET /registrations/deregister/verify.
+
+        Returns registration summary so the user can confirm they want to cancel.
+
+        '
+      required:
+      - registrationCode
+      - eventCode
+      - eventTitle
+      - eventDate
+      - attendeeFirstName
+      properties:
+        registrationCode:
+          type: string
+          description: Public registration code
+          example: BATbern142-reg-A3X9K2
+        eventCode:
+          type: string
+          description: Event code
+          example: BATbern142
+        eventTitle:
+          type: string
+          description: Event title
+          example: BATbern — Berner Architekten Treffen
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date as ISO-8601
+          example: '2026-06-15T18:00:00Z'
+        attendeeFirstName:
+          type: string
+          description: Attendee first name for personalised confirmation message
+          example: Max
+    DeregistrationRequest:
+      type: object
+      description: 'Story 10.12 (AC3): Body for POST /registrations/deregister.'
+      required:
+      - token
+      properties:
+        token:
+          type: string
+          format: uuid
+          description: Deregistration UUID token from confirmation email
+          example: 550e8400-e29b-41d4-a716-446655440000
+    DeregistrationByEmailRequest:
+      type: object
+      description: 'Story 10.12 (AC3): Body for POST /registrations/deregister/by-email.'
+      required:
+      - email
+      - eventCode
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the registrant
+          example: max.muster@example.com
+        eventCode:
+          type: string
+          description: Event code the user is registered for
+          example: BATbern142
+    RegistrationAdminResponse:
+      type: object
+      description: 'Story 10.12 (T1.4): Organizer-only registration view that includes sensitive fields
+
+        such as deregistrationToken. Schema separation is the security control — do NOT add
+
+        deregistrationToken to RegistrationResponse (public schema).
+
+        ADR-003: Uses registrationCode/eventCode as public identifiers.
+
+        '
+      required:
+      - registrationCode
+      - eventCode
+      - status
+      - attendeeUsername
+      properties:
+        registrationCode:
+          type: string
+          description: Unique registration code (public identifier)
+          example: BATbern142-reg-ABC123
+        eventCode:
+          type: string
+          description: Event code this registration belongs to
+          example: BATbern142
+        status:
+          type: string
+          description: Registration status (uppercase)
+          enum:
+          - REGISTERED
+          - CONFIRMED
+          - WAITLIST
+          - CANCELLED
+          example: CONFIRMED
+        attendeeUsername:
+          type: string
+          description: Cross-service reference to user_profiles.username
+          example: max.muster
+        attendeeFirstName:
+          type: string
+          example: Max
+        attendeeLastName:
+          type: string
+          example: Muster
+        attendeeEmail:
+          type: string
+          format: email
+          example: max.muster@example.com
+        attendeeCompany:
+          type: string
+          nullable: true
+          example: Acme AG
+        registrationDate:
+          type: string
+          format: date-time
+          example: '2026-01-15T10:30:00Z'
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: Story 10.11 — Position on the waitlist (1-based). Null when not waitlisted.
+          example: 3
+        deregistrationToken:
+          type: string
+          format: uuid
+          readOnly: true
+          description: 'Story 10.12: UUID token used for self-service deregistration link.
+
+            ORGANIZER VIEW ONLY — never exposed in public RegistrationResponse.
+
+            '
+          example: 550e8400-e29b-41d4-a716-446655440000
+    FailedRegistration:
+      type: object
+      description: Details of a failed registration within a batch
+      required:
+      - eventCode
+      - reason
+      properties:
+        eventCode:
+          type: string
+          description: Event code that failed
+          example: BATbern99
+        reason:
+          type: string
+          description: Reason for failure
+          example: Event not found
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

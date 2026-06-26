@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { Close, WarningAmber } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-newsletter-api.types';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useUnsuppressSubscriber } from '@/hooks/useNewsletterSubscribers';
 

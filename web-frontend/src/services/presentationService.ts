@@ -7,13 +7,15 @@
  */
 
 import apiClient from './api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+// events-api split into per-domain specs (API consolidation Phase 6).
+import type { components as coreComponents } from '@/types/generated/events-core-api.types';
+import type { components as sessionsComponents } from '@/types/generated/event-sessions-api.types';
 import type { components as companyComponents } from '@/types/generated/company-api.types';
 import type { User } from '@/types/user.types';
 
-export type PresentationEventDetail = components['schemas']['Event'] & {
-  venue?: components['schemas']['Venue'];
-  sessions?: components['schemas']['Session'][];
+export type PresentationEventDetail = coreComponents['schemas']['Event'] & {
+  venue?: coreComponents['schemas']['Venue'];
+  sessions?: sessionsComponents['schemas']['Session'][];
   topic?: {
     code?: string;
     name?: string;
@@ -22,7 +24,7 @@ export type PresentationEventDetail = components['schemas']['Event'] & {
   } | null;
 };
 
-export type PresentationSession = components['schemas']['Session'];
+export type PresentationSession = sessionsComponents['schemas']['Session'];
 export type PresentationSettings = companyComponents['schemas']['PresentationSettingsResponse'];
 export type PresentationSettingsRequest =
   companyComponents['schemas']['PresentationSettingsRequest'];
@@ -60,8 +62,8 @@ export const getPublicOrganizers = async (): Promise<User[]> => {
  */
 export const getUpcomingEvents = async (
   excludeEventCode?: string
-): Promise<components['schemas']['Event'][]> => {
-  const response = await apiClient.get<{ data: components['schemas']['Event'][] }>('/events', {
+): Promise<coreComponents['schemas']['Event'][]> => {
+  const response = await apiClient.get<{ data: coreComponents['schemas']['Event'][] }>('/events', {
     params: {
       status: 'AGENDA_PUBLISHED,TOPIC_SELECTION_DONE,TOPIC_SELECTION,CREATED',
       limit: 10,
@@ -71,7 +73,7 @@ export const getUpcomingEvents = async (
   });
   // API returns paginated response; extract data array
   const events =
-    response.data.data ?? (response.data as unknown as components['schemas']['Event'][]);
+    response.data.data ?? (response.data as unknown as coreComponents['schemas']['Event'][]);
   // Filter to strictly future events (same pattern as public UpcomingEventsSection),
   // excluding the event currently on screen, then sort by date ascending and take the first 3.
   const now = new Date();
@@ -108,9 +110,9 @@ export const updatePresentationSettings = async (
  * Uses _global as reserved eventCode (maps to event_code IS NULL on backend).
  */
 export const getGlobalTeaserImages = async (): Promise<
-  components['schemas']['TeaserImageItem'][]
+  coreComponents['schemas']['TeaserImageItem'][]
 > => {
-  const response = await apiClient.get<components['schemas']['TeaserImageItem'][]>(
+  const response = await apiClient.get<coreComponents['schemas']['TeaserImageItem'][]>(
     '/events/_global/teaser-images',
     SKIP_AUTH
   );

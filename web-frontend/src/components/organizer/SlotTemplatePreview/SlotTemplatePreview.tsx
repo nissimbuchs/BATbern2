@@ -15,7 +15,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, Chip, Stack } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 // Import generated types from OpenAPI spec (ADR-006 compliance)
 type EventType = components['schemas']['EventType'];

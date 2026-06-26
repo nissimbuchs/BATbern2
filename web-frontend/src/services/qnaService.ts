@@ -6,7 +6,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-sessions-api.types';
 
 export type QnaWindowResponse = components['schemas']['QnaWindowResponse'];
 export type QnaPostResponse = components['schemas']['QnaPostResponse'];

@@ -8,7 +8,7 @@
  */
 import { type JSX } from 'react';
 
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-sessions-api.types';
 import { SpeakerCard } from './SpeakerCard';
 
 type SessionSpeaker = components['schemas']['SessionSpeaker'];

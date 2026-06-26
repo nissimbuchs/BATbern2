@@ -1,8 +1,8 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.EmailTemplate;
-import ch.batbern.events.dto.generated.CreateEmailTemplateRequest;
-import ch.batbern.events.dto.generated.UpdateEmailTemplateRequest;
+import ch.batbern.events.newsletter.dto.generated.CreateEmailTemplateRequest;
+import ch.batbern.events.newsletter.dto.generated.UpdateEmailTemplateRequest;
 import ch.batbern.events.repository.EmailTemplateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

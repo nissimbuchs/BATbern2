@@ -1,5 +1,5 @@
 import { http, HttpResponse, delay } from 'msw';
-import type { components } from '../../types/generated/events-api.types';
+import type { components } from '../../types/generated/event-registrations-api.types';
 
 type BatchRegistrationRequest = components['schemas']['BatchRegistrationRequest'];
 type BatchRegistrationResponse = components['schemas']['BatchRegistrationResponse'];

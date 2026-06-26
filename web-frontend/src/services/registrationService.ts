@@ -7,7 +7,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-registrations-api.types';
 
 export type MyRegistrationResponse = components['schemas']['MyRegistrationResponse'];
 

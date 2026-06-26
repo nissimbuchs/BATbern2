@@ -10,24 +10,30 @@
  * - Frontend-specific enums and helpers
  */
 
-import type { components } from './generated/events-api.types';
+// events-api was split into per-domain specs (API consolidation Phase 6); each re-export
+// below is sourced from the spec that owns the schema.
+import type { components as coreComponents } from './generated/events-core-api.types';
+import type { components as sessionsComponents } from './generated/event-sessions-api.types';
+import type { components as registrationsComponents } from './generated/event-registrations-api.types';
+import type { components as analyticsComponents } from './generated/event-analytics-api.types';
 
 // ============================================================================
 // Re-export Generated API Types
 // ============================================================================
 
-export type Event = components['schemas']['Event'];
-export type EventDetail = components['schemas']['EventDetail'];
-export type Venue = components['schemas']['Venue'];
-export type Speaker = components['schemas']['Speaker'];
-export type Session = components['schemas']['Session'];
-export type SessionSpeaker = components['schemas']['SessionSpeaker'];
-export type Registration = components['schemas']['Registration'];
-export type EventAnalytics = components['schemas']['EventAnalytics'];
-export type CreateEventRequest = components['schemas']['CreateEventRequest'];
-export type UpdateEventRequest = components['schemas']['UpdateEventRequest'];
-export type PatchEventRequest = components['schemas']['PatchEventRequest'];
-export type CreateRegistrationRequest = components['schemas']['CreateRegistrationRequest'];
+export type Event = coreComponents['schemas']['Event'];
+export type EventDetail = coreComponents['schemas']['EventDetail'];
+export type Venue = coreComponents['schemas']['Venue'];
+export type Speaker = coreComponents['schemas']['Speaker'];
+export type Session = sessionsComponents['schemas']['Session'];
+export type SessionSpeaker = sessionsComponents['schemas']['SessionSpeaker'];
+export type Registration = registrationsComponents['schemas']['Registration'];
+export type EventAnalytics = analyticsComponents['schemas']['EventAnalytics'];
+export type CreateEventRequest = coreComponents['schemas']['CreateEventRequest'];
+export type UpdateEventRequest = coreComponents['schemas']['UpdateEventRequest'];
+export type PatchEventRequest = coreComponents['schemas']['PatchEventRequest'];
+export type CreateRegistrationRequest =
+  registrationsComponents['schemas']['CreateRegistrationRequest'];
 
 // ============================================================================
 // UI-Extended Types (extends API types with frontend-only fields)

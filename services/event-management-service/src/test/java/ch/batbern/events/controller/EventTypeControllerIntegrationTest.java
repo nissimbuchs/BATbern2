@@ -1,8 +1,8 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.dto.generated.UpdateEventSlotConfigurationRequest;
+import ch.batbern.events.core.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.UpdateEventSlotConfigurationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

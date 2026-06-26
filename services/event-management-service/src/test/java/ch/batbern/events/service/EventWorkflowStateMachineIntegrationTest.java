@@ -4,7 +4,7 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.events.exception.WorkflowValidationException;
 import ch.batbern.events.repository.EventRepository;

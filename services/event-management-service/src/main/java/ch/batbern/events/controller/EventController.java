@@ -7,10 +7,10 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
-import ch.batbern.events.dto.generated.BatchRegistrationRequest;
-import ch.batbern.events.dto.generated.BatchRegistrationResponse;
-import ch.batbern.events.dto.generated.CreateRegistrationRequest;
-import ch.batbern.events.dto.generated.MyRegistrationResponse;
+import ch.batbern.events.registrations.dto.generated.BatchRegistrationRequest;
+import ch.batbern.events.registrations.dto.generated.BatchRegistrationResponse;
+import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
+import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
 import ch.batbern.events.dto.EventResponse;
@@ -1008,7 +1008,7 @@ public class EventController {
         event.setMetadata(request.getMetadata());
         event.setDescription(request.getDescription());
         if (request.getEventType() != null) {
-            event.setEventType(ch.batbern.events.dto.generated.EventType.fromValue(request.getEventType()));
+            event.setEventType(ch.batbern.events.core.dto.generated.EventType.fromValue(request.getEventType()));
         }
         if (request.getWorkflowState() != null) {
             event.setWorkflowState(request.getWorkflowState());
@@ -1504,7 +1504,7 @@ public class EventController {
             event.setDescription(request.getDescription());
         }
         if (request.getEventType() != null) {
-            event.setEventType(ch.batbern.events.dto.generated.EventType.fromValue(request.getEventType()));
+            event.setEventType(ch.batbern.events.core.dto.generated.EventType.fromValue(request.getEventType()));
         }
         // Story 2.5.3a: Set theme image upload ID (association happens after save in PATCH handler)
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {

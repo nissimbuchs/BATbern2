@@ -107,7 +107,7 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
                 .venueName("Venue")
                 .venueAddress("Address")
                 .venueCapacity(100)
-                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .eventType(ch.batbern.events.core.dto.generated.EventType.EVENING)
                 .workflowState(EventWorkflowState.SPEAKER_IDENTIFICATION)
                 .organizerUsername(ORGANIZER_USERNAME)
                 .build());
@@ -121,7 +121,7 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
                 .venueName("Venue")
                 .venueAddress("Address")
                 .venueCapacity(100)
-                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .eventType(ch.batbern.events.core.dto.generated.EventType.EVENING)
                 .workflowState(EventWorkflowState.SPEAKER_IDENTIFICATION)
                 .organizerUsername(ORGANIZER_USERNAME)
                 .build());

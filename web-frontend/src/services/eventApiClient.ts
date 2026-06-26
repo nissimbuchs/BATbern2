@@ -24,18 +24,20 @@ import type {
   CreateRegistrationRequest,
   Registration,
 } from '@/types/event.types';
-import type { components } from '@/types/generated/events-api.types';
+// events-api split into per-domain specs (API consolidation Phase 6).
+import type { components as mediaComponents } from '@/types/generated/event-media-api.types';
+import type { components as coreComponents } from '@/types/generated/events-core-api.types';
 
-type EventPhotoResponse = components['schemas']['EventPhotoResponse'];
-type EventPhotoUploadRequest = components['schemas']['EventPhotoUploadRequest'];
-type EventPhotoUploadResponse = components['schemas']['EventPhotoUploadResponse'];
-type EventPhotoConfirmRequest = components['schemas']['EventPhotoConfirmRequest'];
+type EventPhotoResponse = mediaComponents['schemas']['EventPhotoResponse'];
+type EventPhotoUploadRequest = mediaComponents['schemas']['EventPhotoUploadRequest'];
+type EventPhotoUploadResponse = mediaComponents['schemas']['EventPhotoUploadResponse'];
+type EventPhotoConfirmRequest = mediaComponents['schemas']['EventPhotoConfirmRequest'];
 
-type TeaserImageItem = components['schemas']['TeaserImageItem'];
-type TeaserImageUploadUrlRequest = components['schemas']['TeaserImageUploadUrlRequest'];
-type TeaserImageUploadUrlResponse = components['schemas']['TeaserImageUploadUrlResponse'];
-type TeaserImageConfirmRequest = components['schemas']['TeaserImageConfirmRequest'];
-type TeaserImageUpdateRequest = components['schemas']['TeaserImageUpdateRequest'];
+type TeaserImageItem = coreComponents['schemas']['TeaserImageItem'];
+type TeaserImageUploadUrlRequest = coreComponents['schemas']['TeaserImageUploadUrlRequest'];
+type TeaserImageUploadUrlResponse = coreComponents['schemas']['TeaserImageUploadUrlResponse'];
+type TeaserImageConfirmRequest = coreComponents['schemas']['TeaserImageConfirmRequest'];
+type TeaserImageUpdateRequest = coreComponents['schemas']['TeaserImageUpdateRequest'];
 
 // API base path for event endpoints
 const EVENT_API_PATH = '/events';

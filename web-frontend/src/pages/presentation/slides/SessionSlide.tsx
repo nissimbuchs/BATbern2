@@ -10,7 +10,7 @@ import { type JSX } from 'react';
 import type { PresentationSession } from '@/services/presentationService';
 import { SpeakerCard } from '../SpeakerCard';
 import { TwoSpeakerCard } from '../TwoSpeakerCard';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-sessions-api.types';
 
 type SessionSpeaker = components['schemas']['SessionSpeaker'];
 

@@ -15,7 +15,14 @@ verify no live caller first.
 
 ## Execution status — branch `api-consolidation` (updated 2026-06-26)
 
-Landed = committed + pushed, green (pre-push hook ran the FULL suite each push).
+Landed = committed + pushed, green on what the local hooks actually run.
+⚠️ **Correction (Phase 6):** there is **no pre-push hook** (`.husky/` has only `pre-commit`,
+which runs lint-staged + Checkstyle/Spotless + frontend vitest-related — NOT the Java
+Testcontainers integration suite). `build.yml` (full suite) triggers only on push to
+`develop`/`main` and PR→`develop`, so **feature-branch commits never ran the backend
+integration tests**. This is how the Phase 4 `7f761a31` PUT→POST flip left
+`EventWorkflowControllerIntegrationTest` sending PUT (→405) undetected — it compiles fine
+(runtime routing mismatch) and no gate executed it until Phase 6 ran the full EMS suite.
 Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref shared schemas
 + partner orphan FE cleanup), `7f761a31` (EMS lifecycle), `fb44bc5d` (CUMS removals),
 `eb4d1fb6` (deprecate-half, now superseded), `af3cd875` (Phase 3 stub, now superseded),
@@ -29,7 +36,7 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 | **3 Convention conformance** | ✅ **DONE** | ✅ **Shared schema solution DONE** (`e9dd536a`): shared `$ref` `_shared.openapi.yml` for both generators. ✅ **List-query collapse DONE**: `listUsers` (CUMS) `role`/`company`/`sortBy`/`sortDir` → `filter`/`sort`; **5 live callers migrated** (email-forwarder Lambda ×2 + partner `getUsersByRole` + EMS `getOrganizerUsernames`/`getPartnerUsernames` — the latter 3 were **undocumented in the original plan**) using fully-encoded `URI`s. `listNewsletterSubscribers` (EMS) `sortBy`+`sortDir` → `sort` (typed `status`/`search` kept). Both controllers now use shared `SortParser`. **🐛 Bug fixed:** users-list sort was a no-op — all 8 paginated `UserRepository` queries hardcoded `ORDER BY u.lastName ASC`, overriding the `Pageable` sort; removed so server-side sort actually works (+ fixed a `Set.of(...).contains(null)` NPE it exposed). |
 | **4 Mutation-model fixes** | ✅ **DONE** | ✅ **CUMS removals DONE** (`fb44bc5d`). ✅ **EMS lifecycle DONE** (`7f761a31`). ✅ **Session PUT removed** (`ed59fa0b`): dead full-replace PUT twin (no caller; field-nulling footgun) deleted + dead `UpdateSessionRequest` DTO/`SessionMapper.applyUpdateRequest`; spec now documents the live `patch:` (`PatchSessionRequest`). ✅ **Partner deactivation DONE** (`d6fdc5b0`): dropped dead `isActive` from `UpdatePartnerRequest` (backend ignored it; FE toggle unwired) — DELETE is the canonical soft-deactivate. ✅ **Registration-cancel resolved** — NOT a merge (the two are distinct flows). Investigated the legacy JWT `/cancel`: confirmed **dead** (no email template renders `cancellationUrl`; all use the Story-10.12 `/deregister` UUID flow) and **removed** it end-to-end — endpoint, `generate/validateCancellationToken`, the dead `cancellationToken`/`cancellationUrl` threaded through the registration-confirmation email path, spec path, FE `CancelRegistrationPage` + route + `eventApiClient.cancelRegistration`, and all tests. The shared `RegistrationService.cancelRegistration(Registration)` (used by `/deregister` + waitlist) stays. ✅ **Spec polish DONE:** named the inline `object` request bodies as `AssignSpeakerToSessionRequest`/`DeclineSpeakerRequest`/`PatchNewsletterSubscriptionRequest` (batchImportSessions already used a named items schema). Reconciled `UpdateEventSlotConfigurationRequest` ⟷ `UpdateEventAgendaConfigRequest` by **documenting the distinction** (cross-referenced descriptions: event-type-level defaults vs per-event copy-on-edit, differing required-field strictness) rather than a structural `allOf` merge — they are genuinely distinct contracts on different endpoints, and `UpdateEventAgendaConfigRequest` is a hand-written backend DTO, so an `allOf` merge would risk a live feature's generated types for no real gain. **Phase 4 COMPLETE.** |
 | **5 Partner consolidation 5→2** | ✅ **DONE** | Folded `partner-notes-api` + `partner-analytics-api` + `partner-topics-api` into the generator-wired `partners-api.openapi.yml` (5→2; `partner-meetings-api` kept separate + brought to parity: shared `$ref` `ErrorResponse`, documented `GET /partner-meetings/{id}/rsvps` + the internal RSVP callback, bounded-list note). `/attendees/topics` relocated under a dedicated **Attendee Topics** tag (documented alias). **Spec made truthful**: added the live-but-undocumented `PATCH`/`DELETE /partners/topics/{topicId}` (updateTopic/deleteTopic) and `eventTitle` on `AttendanceSummaryRecord`; clarified `getPartnerStatistics` (portfolio summary) vs `analytics/dashboard` (attendance) boundary; normalized tags + relative `/api/v1` server + global `bearerAuth`. **Controllers rewired** to implement the generated interfaces: `PartnerNoteController`→`PartnerNotesApi`, `PartnerAnalyticsController`→`PartnerAnalyticsApi` (export now returns `Resource`), `TopicController`→`PartnerTopicsApi` (role resolved from `SecurityContextHolder`, no injected `Authentication`), `AttendeeTopicController`→`AttendeeTopicsApi`. Hand-written record/Lombok DTOs (PartnerNoteDTO, CreateNoteRequest, UpdateNoteRequest, TopicDTO, TopicSuggestionRequest, TopicStatusUpdateRequest, PartnerDashboardDTO) deleted — generated DTOs thread through the service layer (Instant→OffsetDateTime, String→inner enums). FE: deleted `partner-notes/partner-topics` generate scripts + stale `.types.ts`, repointed `partnerNotesApi.ts` to `partner-api.types`. Full BE partner-coordination suite + full FE vitest (5334) + FE type-check green. |
-| **6 events-api decomposition** | ⏳ **TODO** | Not started. Carve the 11k-line events-api into ~9 per-domain specs + generator tasks. Only **4/49** EMS controllers implement generated interfaces (EventTypes, SpeakerOutreach, EmailTemplates, AiPrompts) → few re-points. Full spec in the Phase 6 section below. Do as a single dedicated PR.
+| **6 events-api decomposition** | ✅ **DONE** | Carved the 10.3k-line `events-api.openapi.yml` (94 paths / 122 ops / 131 schemas / 16 tags) into **9 per-domain specs** — `events-core` + `event-{sessions,speakers,registrations,newsletter,media,ai,analytics,watch}-api` — driven by a deterministic carve script (path→domain map + computed schema ownership; report-only validated first). **Paths preserved verbatim** (122/122 ops, 0 dangling refs, no dup ops). Only cross-spec coupling is `core → sessions` (Event embeds `List<Session>`); every other spec depends only on shared-kernel. **Full per-domain Java + TS packages** (owner's explicit choice): 9 `openApiGenerate<Domain>` Gradle tasks (each → `ch.batbern.events.<domain>.{api,dto}.generated`), 9 FE `event*-api.types.ts`. **165 Java FQN re-points** across 102 files (`dto.generated.X` → `<domain>.dto.generated.X`) + 4 controller interface re-points (EventTypes→core, SpeakerOutreach→speakers, AiPrompts→ai, EmailTemplates→newsletter). **54 FE files re-pointed** (51 single-domain swap + 3 multi-domain aliased imports). **🐛 openapi-generator bug #17647 worked around:** `schemaMappings` to a cross-package type emits illegal `List<@Valid <FQN>>`; switched core's Session/SessionSpeaker to `importMappings` (import + simple name) + a `doLast` that deletes the dead duplicate copy. 2 defined-but-unreachable schemas (`Speaker`, `RegistrationAdminResponse`) **preserved** (FE alias / security schema) — pure reorg, no schema loss. Updated: security-scan matrix (1→9 entries), BATbern-watch `generate-types.sh` (loops 9 specs), FE generated README. Clean Java compile (main+test) + FE type-check (0 errors) + EMS suite + FE vitest green. Single PR.
 
 ---
 
@@ -69,7 +76,9 @@ approach" section below; that section is kept for historical context only.)
 
 Workflow per change: edit spec → `npm run generate:api-types` (FE) + Gradle regen/compile
 (BE) → fix tests → restart the touched service (`make dev-native-restart-service SERVICE=…`)
-→ Bruno + Playwright @smoke → commit → push (pre-push runs the full suite, ~10 min).
+→ Bruno + Playwright @smoke → commit → push. **NOTE:** no pre-push hook runs the Java
+integration suite — run `./gradlew :services:<svc>:test` yourself for any service you touched
+(the branch only gets a full integration run once it's PR'd to `develop`).
 **Env gotchas:** macOS has no `timeout` (use the Bash tool's own param); dev Postgres is the
 existing `batbern-dev-postgres` container (`docker start` it); refresh tokens with
 `./scripts/auth/refresh-token.sh staging [role] </dev/null`; run the **FULL** FE suite
@@ -325,7 +334,22 @@ The partner resource is fragmented: core CRUD + contacts live in `partners-api`,
 
 ---
 
-## Phase 6 — events-api decomposition (one pass, strategy B)
+## Phase 6 — events-api decomposition (one pass, strategy B) — ✅ DONE
+
+> **Landed as described below, with two judgment-call deviations recorded during the carve:**
+> 1. **teaser-images stayed in `events-core`** (not `event-media`). `Event` embeds `TeaserImageItem`,
+>    and teaser DTOs have no shared-kernel class to "lift to `_shared`" — so the plan's own fallback
+>    ("keep teaser in events-core to avoid the split") was taken. `event-media-api` = Event Photos only.
+> 2. **`core → sessions` is a real cross-spec `$ref`** (Event embeds `List<Session>`). openapi-generator
+>    7.2.0 emits illegal `List<@Valid <fully.qualified.Name>>` for a `schemaMappings` cross-package type
+>    (bug [#17647](https://github.com/OpenAPITools/openapi-generator/issues/17647)). Fixed by referencing
+>    Session/SessionSpeaker via `importMappings` (import + simple name) and deleting the dead duplicate
+>    copy the core task then emits, via a `doLast` on `openApiGenerate`. All other 7 specs depend only on
+>    shared-kernel — a clean DAG.
+>
+> Both unreachable-but-defined schemas (`Speaker`, `RegistrationAdminResponse`) were **preserved** in
+> their natural domain (core / registrations) rather than dropped — Phase 6 is pure reorganization.
+
 
 `events-api.openapi.yml` is a single flat **11,276-line file: 104 paths, 134 schemas, 17
 tags, 0 external `$ref`s**, bundling ~9 unrelated sub-domains (newsletter, AI, watch,

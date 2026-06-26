@@ -1,0 +1,326 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event Media API
+  version: 1.0.0
+  description: 'Event photo gallery: upload-url issuance, confirmation, listing, and deletion.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+paths:
+  /events/recent-photos:
+    get:
+      tags:
+      - Event Photos
+      summary: Recent photos from last N events (homepage use)
+      operationId: getRecentEventPhotos
+      security: []
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+      - name: lastNEvents
+        in: query
+        schema:
+          type: integer
+          default: 5
+      responses:
+        '200':
+          description: Random sample of recent photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventPhotoResponse'
+  /events/{eventCode}/photos:
+    get:
+      tags:
+      - Event Photos
+      summary: List photos for an event
+      operationId: listEventPhotos
+      security: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: List of event photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventPhotoResponse'
+  /events/{eventCode}/photos/upload-url:
+    post:
+      tags:
+      - Event Photos
+      summary: Request presigned URL for photo upload
+      operationId: requestEventPhotoUploadUrl
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPhotoUploadRequest'
+      responses:
+        '200':
+          description: Presigned URL + photoId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventPhotoUploadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventCode}/photos/confirm:
+    post:
+      tags:
+      - Event Photos
+      summary: Confirm photo upload and persist record
+      operationId: confirmEventPhotoUpload
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPhotoConfirmRequest'
+      responses:
+        '200':
+          description: Photo confirmed and stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventPhotoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventCode}/photos/{photoId}:
+    delete:
+      tags:
+      - Event Photos
+      summary: Delete a photo (DB record + S3 object)
+      operationId: deleteEventPhoto
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: photoId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Photo deleted
+        '404':
+          description: Photo not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+components:
+  schemas:
+    EventPhotoResponse:
+      type: object
+      required:
+      - id
+      - eventCode
+      - displayUrl
+      - uploadedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventCode:
+          type: string
+        displayUrl:
+          type: string
+        filename:
+          type: string
+        uploadedBy:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+        sortOrder:
+          type: integer
+    EventPhotoUploadRequest:
+      type: object
+      required:
+      - filename
+      - contentType
+      - fileSize
+      properties:
+        filename:
+          type: string
+        contentType:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+          - image/webp
+        fileSize:
+          type: integer
+          format: int64
+    EventPhotoUploadResponse:
+      type: object
+      required:
+      - photoId
+      - uploadUrl
+      - s3Key
+      - expiresIn
+      properties:
+        photoId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
+        s3Key:
+          type: string
+        expiresIn:
+          type: integer
+    EventPhotoConfirmRequest:
+      type: object
+      required:
+      - photoId
+      - s3Key
+      properties:
+        photoId:
+          type: string
+          format: uuid
+        s3Key:
+          type: string
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

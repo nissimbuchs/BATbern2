@@ -5,7 +5,7 @@
  * (topics.json + sessions.json) into API-compatible format for batch import.
  */
 
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 import type {
   LegacyEvent,
   LegacySession,

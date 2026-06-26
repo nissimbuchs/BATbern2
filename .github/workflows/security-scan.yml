@@ -51,8 +51,24 @@ jobs:
       fail-fast: false         # run all APIs even if one fails
       matrix:
         include:
-          - api: events
-            spec: docs/api/events-api.openapi.yml
+          - api: events-core
+            spec: docs/api/events-core-api.openapi.yml
+          - api: event-sessions
+            spec: docs/api/event-sessions-api.openapi.yml
+          - api: event-speakers
+            spec: docs/api/event-speakers-api.openapi.yml
+          - api: event-registrations
+            spec: docs/api/event-registrations-api.openapi.yml
+          - api: event-newsletter
+            spec: docs/api/event-newsletter-api.openapi.yml
+          - api: event-media
+            spec: docs/api/event-media-api.openapi.yml
+          - api: event-ai
+            spec: docs/api/event-ai-api.openapi.yml
+          - api: event-analytics
+            spec: docs/api/event-analytics-api.openapi.yml
+          - api: event-watch
+            spec: docs/api/event-watch-api.openapi.yml
           - api: companies
             spec: docs/api/companies-api.openapi.yml
           - api: speakers

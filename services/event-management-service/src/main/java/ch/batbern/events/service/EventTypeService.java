@@ -1,8 +1,8 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
-import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.dto.generated.UpdateEventSlotConfigurationRequest;
+import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.core.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.UpdateEventSlotConfigurationRequest;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.mapper.EventTypeMapper;
 import ch.batbern.events.repository.EventTypeRepository;

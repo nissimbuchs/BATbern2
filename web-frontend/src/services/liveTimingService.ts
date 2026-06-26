@@ -13,7 +13,7 @@
  */
 
 import apiClient from './api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-watch-api.types';
 
 export type LiveTimingResponse = components['schemas']['LiveTimingResponse'];
 export type LiveTimingActionRequest = components['schemas']['LiveTimingActionRequest'];

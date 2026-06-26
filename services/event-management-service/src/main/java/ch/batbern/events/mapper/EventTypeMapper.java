@@ -1,7 +1,7 @@
 package ch.batbern.events.mapper;
 
-import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
-import ch.batbern.events.dto.generated.UpdateEventSlotConfigurationRequest;
+import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.core.dto.generated.UpdateEventSlotConfigurationRequest;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import org.springframework.stereotype.Component;
 
