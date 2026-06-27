@@ -1807,28 +1807,6 @@ components:
           type: string
         capacity:
           type: integer
-    Speaker:
-      type: object
-      description: 'Speaker information (speakers are users per Story 1.16.2)
-
-        '
-      properties:
-        username:
-          type: string
-          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
-          example: john.doe
-          description: Speaker username in firstname.lastname format (Story 1.16.2)
-        firstName:
-          type: string
-        lastName:
-          type: string
-        company:
-          type: string
-        title:
-          type: string
-        profilePhoto:
-          type: string
-          format: uri
     CreateEventRequest:
       type: object
       required:

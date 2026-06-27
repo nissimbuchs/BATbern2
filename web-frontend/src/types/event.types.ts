@@ -24,7 +24,6 @@ import type { components as analyticsComponents } from './generated/event-analyt
 export type Event = coreComponents['schemas']['Event'];
 export type EventDetail = coreComponents['schemas']['EventDetail'];
 export type Venue = coreComponents['schemas']['Venue'];
-export type Speaker = coreComponents['schemas']['Speaker'];
 export type Session = sessionsComponents['schemas']['Session'];
 export type SessionSpeaker = sessionsComponents['schemas']['SessionSpeaker'];
 export type Registration = registrationsComponents['schemas']['Registration'];
@@ -38,19 +37,6 @@ export type CreateRegistrationRequest =
 // ============================================================================
 // UI-Extended Types (extends API types with frontend-only fields)
 // ============================================================================
-
-/**
- * UI-Extended Speaker Type
- * Adds frontend-specific fields to the base Speaker type from API
- */
-export interface SpeakerUI extends Speaker {
-  // Archive browsing fields (Story 4.2)
-  speakerId?: string; // UUID identifier for speaker
-  fullName?: string; // Computed full name (firstName + lastName)
-  companyName?: string; // Speaker's company name (legacy frontend-only field; prefer companyDisplayName)
-  companyDisplayName?: string; // Human-readable company name (displayName ?? name); prefer over `company` slug
-  photoUrl?: string; // Speaker's photo URL (alias for profilePictureUrl)
-}
 
 /**
  * Session Material Type (Story 5.9)

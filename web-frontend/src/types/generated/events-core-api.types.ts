@@ -802,20 +802,6 @@ export interface components {
       address?: string;
       capacity?: number;
     };
-    /** @description Speaker information (speakers are users per Story 1.16.2) */
-    Speaker: {
-      /**
-       * @description Speaker username in firstname.lastname format (Story 1.16.2)
-       * @example john.doe
-       */
-      username?: string;
-      firstName?: string;
-      lastName?: string;
-      company?: string;
-      title?: string;
-      /** Format: uri */
-      profilePhoto?: string;
-    };
     CreateEventRequest: {
       title: string;
       eventNumber: number;

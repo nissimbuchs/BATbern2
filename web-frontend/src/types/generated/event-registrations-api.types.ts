@@ -796,63 +796,6 @@ export interface components {
        */
       eventCode: string;
     };
-    /**
-     * @description Story 10.12 (T1.4): Organizer-only registration view that includes sensitive fields
-     *     such as deregistrationToken. Schema separation is the security control — do NOT add
-     *     deregistrationToken to RegistrationResponse (public schema).
-     *     ADR-003: Uses registrationCode/eventCode as public identifiers.
-     */
-    RegistrationAdminResponse: {
-      /**
-       * @description Unique registration code (public identifier)
-       * @example BATbern142-reg-ABC123
-       */
-      registrationCode: string;
-      /**
-       * @description Event code this registration belongs to
-       * @example BATbern142
-       */
-      eventCode: string;
-      /**
-       * @description Registration status (uppercase)
-       * @example CONFIRMED
-       * @enum {string}
-       */
-      status: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
-      /**
-       * @description Cross-service reference to user_profiles.username
-       * @example max.muster
-       */
-      attendeeUsername: string;
-      /** @example Max */
-      attendeeFirstName?: string;
-      /** @example Muster */
-      attendeeLastName?: string;
-      /**
-       * Format: email
-       * @example max.muster@example.com
-       */
-      attendeeEmail?: string;
-      /** @example Acme AG */
-      attendeeCompany?: string | null;
-      /**
-       * Format: date-time
-       * @example 2026-01-15T10:30:00Z
-       */
-      registrationDate?: string;
-      /**
-       * @description Story 10.11 — Position on the waitlist (1-based). Null when not waitlisted.
-       * @example 3
-       */
-      waitlistPosition?: number | null;
-      /**
-       * Format: uuid
-       * @description Story 10.12: UUID token used for self-service deregistration link.
-       *     ORGANIZER VIEW ONLY — never exposed in public RegistrationResponse.
-       * @example 550e8400-e29b-41d4-a716-446655440000
-       */
-      readonly deregistrationToken?: string;
-    };
     /** @description Details of a failed registration within a batch */
     FailedRegistration: {
       /**
