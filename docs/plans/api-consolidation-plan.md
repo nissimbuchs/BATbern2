@@ -479,11 +479,27 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   watch app; record→class DTO migration; method renames) — needs an owner decision + watch-app
 >   coordination. `PublicOrganizerController` + `LogoController` are **undocumented** (no spec
 >   operation / generated interface) → require a spec addition first (Phase-2-style).
-> - ⏳ **Next:** `CompanyController` (must MERGE `CompanyGetOrCreateController`; spans
->   Companies/Search/Verification APIs; ~14-file DTO migration — DTOs built inline in
->   CompanyService/QueryService/SearchService, no mapper — incl. nested `CompanyStatistics`/
->   `CompanyLogo` and field renames `verified`→`isVerified`, `Instant`→`OffsetDateTime`,
->   `String`→`URI`), then `UserController` (30 ops / ~8 interfaces).
+> - ✅ **Wired:** `CompanyController` → `CompaniesApi` + `CompanySearchApi` + `CompanyVerificationApi`
+>   (3 interfaces, 9 ops). MERGED the former `CompanyGetOrCreateController` (the `/companies:get-or-create`
+>   colon path combines correctly once the class prefix is `/api/v1`, not `/api/v1/companies`). Consolidated
+>   all 9 hand-written DTOs → generated twins across `CompanyController` + `CompanyService`/`QueryService`/
+>   `SearchService` + `UserService`; deleted the hand-written DTOs. `verified`→`isVerified` and
+>   `Instant`→`OffsetDateTime` (mapper-boundary `.atOffset(UTC)`, entity/DB untouched) done; `CompanyLogo.url`
+>   stays `URI` (no maxLength) via a guarded `toUri` mirroring `UserResponseMapper`. **5 spec/contract-drift
+>   bugs surfaced by the wiring + fixed (all behaviour-preserving):** (1) `website` was `format:uri`+`maxLength`
+>   → generated `@Size URI` → `UnexpectedTypeException` 500 on every @Valid body with a website; dropped
+>   `format:uri` (string + @Size, mirrors users-api profilePictureUrl). (2) `name` `pattern:^[A-Za-z0-9]+$`
+>   was never enforced by the hand-rolled controller (which allowed spaces, "Swisscom AG") → relaxed spec to
+>   `@Size(2..255)` to match deployed behaviour. (3) `validate-uid` had `@Pattern` on the `uid` *query param*,
+>   which would 400 every malformed UID before the handler → made `valid:false` unreachable (contradicting the
+>   spec's own example); removed it (format check stays in `SwissUIDValidationService`). (4) generated DTOs
+>   lacked the hand-written `@JsonInclude(NON_NULL)` → null fields leaked, breaking `?fields=`/`?include=`
+>   sparse contracts; restored via generator `additionalModelTypeAnnotations`. (5) the interface's `@Min(1)`
+>   on `page` now fires (method validation) → `ConstraintViolationException` was unmapped → 500; added a
+>   `GlobalExceptionHandler` mapping it → 400. Full CUMS suite green (730 tests). `@WebMvcTest`
+>   `CompanyControllerTest` removed — SB4 slice doesn't register interface-inherited `@RequestMapping`; its
+>   unique validate-uid/verify coverage moved into `CompanyControllerIntegrationTest` (full context), matching
+>   the PublicUser/PresentationSettings convention. ⏳ **Next:** `UserController` (30 ops / ~8 interfaces).
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
 >   `UserControllerIntegrationTest.should_filterByRole_when_roleFilterProvided`). The tests still sent

@@ -516,7 +516,12 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
+            # No `pattern` here: this endpoint's whole purpose is to report whether an arbitrary
+            # input is a valid UID (returns {valid:false,...} for malformed input — see the
+            # invalidUID example below). A @Pattern on the query param would 400 every malformed
+            # UID before the handler runs, making valid:false unreachable and breaking the deployed
+            # behaviour (the hand-rolled controller accepted any string). Format check lives in the
+            # handler (SwissUIDValidationService), not in request validation.
             example: 'CHE-123.456.789'
       responses:
         '200':
@@ -809,8 +814,11 @@ components:
           pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
           example: CHE-123.456.789
         website:
+          # Modelled as a plain string (NOT `format: uri`) so the Spring generator's Bean
+          # Validation @Size(max=500) applies cleanly — @Size has no validator for java.net.URI,
+          # so `format: uri` + maxLength yields `@Size URI` → UnexpectedTypeException (500) on every
+          # @Valid request body carrying a website. Mirrors users-api profilePictureUrl (ADR-013).
           type: string
-          format: uri
           maxLength: 500
           example: https://swiss-it.ch
         industry:
@@ -916,11 +924,14 @@ components:
       properties:
         name:
           type: string
-          description: Company name (unique identifier, alphanumeric only)
-          pattern: '^[A-Za-z0-9]+$'
+          # No `^[A-Za-z0-9]+$` pattern: the deployed CompanyController has always validated name
+          # as @Size(2..255) only (spaces allowed, e.g. "Swisscom AG"). The alphanumeric pattern was
+          # contract drift never enforced by the hand-rolled controller — applying it now (Phase 7
+          # contract-first wiring) would 400 real requests. Relaxed to match production behaviour.
+          description: Company name (unique identifier; 2-255 chars)
           minLength: 2
           maxLength: 255
-          example: SwissITSolutionsAG
+          example: Swisscom AG
         displayName:
           type: string
           maxLength: 255
@@ -930,8 +941,11 @@ components:
           pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
           example: CHE-123.456.789
         website:
+          # Modelled as a plain string (NOT `format: uri`) so the Spring generator's Bean
+          # Validation @Size(max=500) applies cleanly — @Size has no validator for java.net.URI,
+          # so `format: uri` + maxLength yields `@Size URI` → UnexpectedTypeException (500) on every
+          # @Valid request body carrying a website. Mirrors users-api profilePictureUrl (ADR-013).
           type: string
-          format: uri
           maxLength: 500
           example: https://swiss-it.ch
         industry:
@@ -952,10 +966,12 @@ components:
       properties:
         name:
           type: string
-          description: Company name (unique identifier, alphanumeric only)
-          pattern: '^[A-Za-z0-9]+$'
+          # See CreateCompanyRequest.name: the alphanumeric pattern was never enforced by the
+          # deployed controller (@Size only); relaxed to match production behaviour (Phase 7).
+          description: Company name (unique identifier; 2-255 chars)
+          minLength: 2
           maxLength: 255
-          example: SwissITSolutionsAG
+          example: Swisscom AG
         displayName:
           type: string
           maxLength: 255
@@ -965,8 +981,11 @@ components:
           pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
           example: CHE-123.456.789
         website:
+          # Modelled as a plain string (NOT `format: uri`) so the Spring generator's Bean
+          # Validation @Size(max=500) applies cleanly — @Size has no validator for java.net.URI,
+          # so `format: uri` + maxLength yields `@Size URI` → UnexpectedTypeException (500) on every
+          # @Valid request body carrying a website. Mirrors users-api profilePictureUrl (ADR-013).
           type: string
-          format: uri
           maxLength: 500
           example: https://swiss-it.ch
         industry:

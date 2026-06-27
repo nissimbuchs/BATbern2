@@ -2,7 +2,7 @@ package ch.batbern.companyuser.integration;
 
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
-import ch.batbern.companyuser.dto.CompanySearchResponse;
+import ch.batbern.companyuser.dto.generated.CompanySearchResponse;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.service.CompanySearchService;
 import ch.batbern.shared.test.AbstractIntegrationTest;

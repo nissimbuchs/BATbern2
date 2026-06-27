@@ -1,10 +1,10 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
-import ch.batbern.companyuser.dto.CompanyLogo;
-import ch.batbern.companyuser.dto.CompanyResponse;
-import ch.batbern.companyuser.dto.CompanyStatistics;
-import ch.batbern.companyuser.dto.PaginatedCompanyResponse;
+import ch.batbern.companyuser.dto.generated.CompanyLogo;
+import ch.batbern.companyuser.dto.generated.CompanyResponse;
+import ch.batbern.companyuser.dto.generated.CompanyStatistics;
+import ch.batbern.companyuser.dto.generated.PaginatedCompanyResponse;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.specification.CompanySpecification;
 import ch.batbern.shared.api.FieldSelector;
@@ -27,6 +27,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -124,17 +126,19 @@ public class CompanyQueryService {
      * Story 1.16.2: Use company name as unique identifier (no separate id field)
      */
     private CompanyResponse mapToResponse(Company company, Set<String> selectedFields, Set<String> includes) {
-        // Build base response
-        CompanyResponse.CompanyResponseBuilder builder = CompanyResponse.builder()
+        // Build base response (generated DTO: URI website, OffsetDateTime timestamps, isVerified)
+        CompanyResponse.Builder builder = CompanyResponse.builder()
                 .name(company.getName())  // Story 1.16.2: name is the unique identifier
                 .displayName(company.getDisplayName())
                 .swissUID(company.getSwissUID())
                 .website(company.getWebsite())
                 .industry(company.getIndustry())
                 .description(company.getDescription())
-                .verified(company.isVerified())
-                .createdAt(company.getCreatedAt())
-                .updatedAt(company.getUpdatedAt())
+                .isVerified(company.isVerified())
+                .createdAt(company.getCreatedAt() != null
+                        ? company.getCreatedAt().atOffset(ZoneOffset.UTC) : null)
+                .updatedAt(company.getUpdatedAt() != null
+                        ? company.getUpdatedAt().atOffset(ZoneOffset.UTC) : null)
                 .createdBy(company.getCreatedBy());
 
         // Apply field selection if specified
@@ -156,15 +160,15 @@ public class CompanyQueryService {
      * Apply field selection to response builder
      * Only include fields specified in selectedFields set
      */
-    private CompanyResponse.CompanyResponseBuilder applyFieldSelection(
-            CompanyResponse.CompanyResponseBuilder builder, Set<String> selectedFields) {
+    private CompanyResponse.Builder applyFieldSelection(
+            CompanyResponse.Builder builder, Set<String> selectedFields) {
 
         // Convert DTO to map for field selection
         CompanyResponse tempResponse = builder.build();
 
         // Manually build new response with only selected fields
         // Story 1.16.2: id field removed, name is the unique identifier
-        CompanyResponse.CompanyResponseBuilder filteredBuilder = CompanyResponse.builder();
+        CompanyResponse.Builder filteredBuilder = CompanyResponse.builder();
 
         // Story 1.16.2: Treat "id" field selector as "name" for backward compatibility
         if (selectedFields.contains("id") || selectedFields.contains("name")) {
@@ -186,7 +190,7 @@ public class CompanyQueryService {
             filteredBuilder.description(tempResponse.getDescription());
         }
         if (selectedFields.contains("isVerified")) {
-            filteredBuilder.verified(tempResponse.getVerified());
+            filteredBuilder.isVerified(tempResponse.getIsVerified());
         }
         if (selectedFields.contains("createdAt")) {
             filteredBuilder.createdAt(tempResponse.getCreatedAt());
@@ -220,7 +224,7 @@ public class CompanyQueryService {
         if (includes.contains("logo")) {
             if (company.getLogoUrl() != null) {
                 CompanyLogo logo = CompanyLogo.builder()
-                        .url(company.getLogoUrl())
+                        .url(toUri(company.getLogoUrl(), company.getName()))
                         .s3Key(company.getLogoS3Key())
                         .fileId(company.getLogoFileId())
                         .build();
@@ -229,6 +233,23 @@ public class CompanyQueryService {
                 // No logo available, set to null (will be excluded by @JsonInclude)
                 response.setLogo(null);
             }
+        }
+    }
+
+    /**
+     * Convert a nullable stored URL string to a {@link URI} for the generated DTOs.
+     * Mirrors {@code UserResponseMapper}/{@code CompanyService}: null/blank or malformed → null
+     * (logged) rather than throwing.
+     */
+    private static URI toUri(String value, String companyName) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return URI.create(value);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid URL for company {}: {}", companyName, value);
+            return null;
         }
     }
 }

@@ -347,10 +347,7 @@ export interface components {
       displayName?: string;
       /** @example CHE-123.456.789 */
       swissUID?: string;
-      /**
-       * Format: uri
-       * @example https://swiss-it.ch
-       */
+      /** @example https://swiss-it.ch */
       website?: string;
       /** @example Technology */
       industry?: string;
@@ -435,18 +432,15 @@ export interface components {
     };
     CreateCompanyRequest: {
       /**
-       * @description Company name (unique identifier, alphanumeric only)
-       * @example SwissITSolutionsAG
+       * @description Company name (unique identifier; 2-255 chars)
+       * @example Swisscom AG
        */
       name: string;
       /** @example Swiss IT Solutions AG */
       displayName?: string;
       /** @example CHE-123.456.789 */
       swissUID?: string;
-      /**
-       * Format: uri
-       * @example https://swiss-it.ch
-       */
+      /** @example https://swiss-it.ch */
       website?: string;
       /** @example Technology */
       industry?: string;
@@ -460,18 +454,15 @@ export interface components {
     };
     UpdateCompanyRequest: {
       /**
-       * @description Company name (unique identifier, alphanumeric only)
-       * @example SwissITSolutionsAG
+       * @description Company name (unique identifier; 2-255 chars)
+       * @example Swisscom AG
        */
       name?: string;
       /** @example Swiss IT Solutions AG */
       displayName?: string;
       /** @example CHE-123.456.789 */
       swissUID?: string;
-      /**
-       * Format: uri
-       * @example https://swiss-it.ch
-       */
+      /** @example https://swiss-it.ch */
       website?: string;
       /** @example Technology */
       industry?: string;

@@ -1,7 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
-import ch.batbern.companyuser.dto.CompanySearchResponse;
+import ch.batbern.companyuser.dto.generated.CompanySearchResponse;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

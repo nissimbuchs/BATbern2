@@ -1,187 +1,83 @@
 package ch.batbern.companyuser.controller;
 
-import ch.batbern.companyuser.dto.CompanyResponse;
-import ch.batbern.companyuser.dto.CreateCompanyRequest;
-import ch.batbern.companyuser.dto.CompanySearchResponse;
-import ch.batbern.companyuser.dto.PaginatedCompanyResponse;
-import ch.batbern.companyuser.dto.UIDValidationResponse;
-import ch.batbern.companyuser.dto.UpdateCompanyRequest;
+import ch.batbern.companyuser.api.generated.CompaniesApi;
+import ch.batbern.companyuser.api.generated.CompanySearchApi;
+import ch.batbern.companyuser.api.generated.CompanyVerificationApi;
+import ch.batbern.companyuser.dto.generated.CompanyResponse;
+import ch.batbern.companyuser.dto.generated.CompanySearchResponse;
+import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.GetOrCreateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.PaginatedCompanyResponse;
+import ch.batbern.companyuser.dto.generated.UIDValidationResponse;
+import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
 import ch.batbern.companyuser.service.CompanyQueryService;
 import ch.batbern.companyuser.service.CompanySearchService;
 import ch.batbern.companyuser.service.CompanyService;
 import ch.batbern.companyuser.service.SwissUIDValidationService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 /**
- * REST API controller for company management operations
- * AC4: REST API implementation with OpenAPI documentation
- * AC5: Company search with autocomplete functionality
+ * REST API controller for company management operations.
+ *
+ * <p>Phase 7 (ADR-006 / api-consolidation): contract-first — this controller
+ * {@code implements} the generated {@code CompaniesApi}, {@code CompanySearchApi}, and
+ * {@code CompanyVerificationApi} interfaces, which carry the HTTP method/path mappings and
+ * request/response DTO types from {@code companies-api.openapi.yml}. The class-level
+ * {@code @RequestMapping("/api/v1")} supplies the version prefix the interface paths omit
+ * (e.g. interface {@code /companies} → {@code /api/v1/companies}). This also folds in the
+ * former {@code CompanyGetOrCreateController}: the generated {@code getOrCreateCompany}
+ * mapping ({@code /companies:get-or-create}) combines with the {@code /api/v1} prefix to the
+ * correct colon-adjacent path, so no separate controller is needed.
+ *
+ * <p>Method-level {@code @PreAuthorize} stays on the implementation (the generated interface
+ * carries no security); behaviour matches the pre-wiring controller exactly.
  */
 @RestController
-@RequestMapping("/api/v1/companies")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Company Management", description = "Company management operations")
-@SecurityRequirement(name = "bearerAuth")
-public class CompanyController {
+public class CompanyController implements CompaniesApi, CompanySearchApi, CompanyVerificationApi {
 
     private final CompanyService companyService;
     private final CompanySearchService searchService;
     private final SwissUIDValidationService uidValidationService;
     private final CompanyQueryService queryService;
 
-    /**
-     * Create a new company
-     * Requires ORGANIZER, SPEAKER, or PARTNER role
-     * AC4: Company creation endpoint
-     */
-    @PostMapping
+    /** Create a new company. Requires ORGANIZER, SPEAKER, or PARTNER role. */
+    @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'SPEAKER', 'PARTNER')")
-    @Operation(
-            summary = "Create a new company",
-            description = "Creates a new company in the system. Requires ORGANIZER, SPEAKER, or PARTNER role."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "201",
-                description = "Company created successfully",
-                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid request data (validation failed)"
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "403",
-                description = "Forbidden - insufficient permissions"
-            ),
-        @ApiResponse(
-                responseCode = "409",
-                description = "Conflict - company with this name already exists"
-            )
-    })
-    public ResponseEntity<CompanyResponse> createCompany(
-            @Valid @RequestBody CreateCompanyRequest request) {
-        log.info("Creating company: {}", request.getName());
-        CompanyResponse response = companyService.createCompany(request);
+    public ResponseEntity<CompanyResponse> createCompany(CreateCompanyRequest createCompanyRequest) {
+        log.info("Creating company: {}", createCompanyRequest.getName());
+        CompanyResponse response = companyService.createCompany(createCompanyRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
-     * Get company by name
-     * Public endpoint for partner showcase enrichment
-     * AC4: Company retrieval endpoint
-     * Story 1.16.2: Use company name as identifier instead of UUID
+     * Get company by name. Public endpoint for partner showcase logo/website enrichment.
+     * Story 1.16.2: uses company name instead of UUID.
      */
-    @GetMapping("/{name}")
-    @Operation(
-            summary = "Get company by name",
-            description = "Retrieves a company by its unique name. Public endpoint for partner showcase "
-                    + "logo/website enrichment. Story 1.16.2: Uses company name instead of UUID."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Company found",
-                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "404",
-                description = "Company not found"
-            )
-    })
-    public ResponseEntity<CompanyResponse> getCompany(
-            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
-            @PathVariable String name) {
+    @Override
+    public ResponseEntity<CompanyResponse> getCompany(String name) {
         log.debug("Fetching company: {}", name);
-        CompanyResponse response = companyService.getCompanyByName(name);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(companyService.getCompanyByName(name));
     }
 
     /**
-     * List all companies with advanced query support
-     * Requires authentication
-     * AC4: Company list endpoint
-     * AC14: Advanced query patterns (filter, sort, pagination, field selection)
-     * AC15: Resource expansion (include=statistics,logo)
+     * List companies with advanced query support (filter/sort/pagination/fields/include).
+     * AC14/AC15. Requires authentication.
      */
-    @GetMapping
+    @Override
     @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "List all companies with advanced query support",
-            description = "Retrieves a paginated list of companies with support for filtering, sorting, "
-                    + "field selection, and resource expansion. "
-                    + "Supports MongoDB-style JSON filters, multi-field sorting, pagination, sparse fieldsets, "
-                    + "and resource includes. "
-                    + "Examples: ?filter={\"industry\":\"Technology\"}&sort=-name&page=1&limit=20"
-                    + "&fields=id,name&include=statistics,logo"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Companies retrieved successfully with pagination metadata",
-                content = @Content(schema = @Schema(implementation = PaginatedCompanyResponse.class))
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid query parameters (invalid JSON, negative page, etc.)"
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            )
-    })
-    public ResponseEntity<PaginatedCompanyResponse> getAllCompanies(
-            @Parameter(description = "MongoDB-style JSON filter (e.g., {\"industry\":\"Technology\"})",
-                    example = "{\"industry\":\"Technology\"}")
-            @RequestParam(required = false) String filter,
-            @Parameter(description = "Sort fields (comma-separated, prefix with - for DESC)",
-                    example = "-name,createdAt")
-            @RequestParam(required = false) String sort,
-            @Parameter(description = "Page number (1-indexed, default: 1)",
-                    example = "1")
-            @RequestParam(required = false) Integer page,
-            @Parameter(description = "Items per page (default: 20, max: 100)",
-                    example = "20")
-            @RequestParam(required = false) Integer limit,
-            @Parameter(description = "Comma-separated field names to return (sparse fieldsets)",
-                    example = "id,name,industry")
-            @RequestParam(required = false) String fields,
-            @Parameter(description = "Comma-separated relation names to include (resource expansion)",
-                    example = "statistics,logo")
-            @RequestParam(required = false) String include) {
+    public ResponseEntity<PaginatedCompanyResponse> listCompanies(
+            String filter, String sort, Integer page, Integer limit, String fields, String include) {
         log.debug("Querying companies with filter: {}, sort: {}, page: {}, limit: {}, fields: {}, include: {}",
                 filter, sort, page, limit, fields, include);
         PaginatedCompanyResponse response = queryService.queryCompanies(filter, sort, page, limit, fields, include);
@@ -189,164 +85,60 @@ public class CompanyController {
     }
 
     /**
-     * Search companies with autocomplete
-     * Requires authentication
-     * AC5 & AC11: Company search endpoint with Caffeine caching and configurable limit
+     * Idempotently resolve a display name to an existing company (matched by generated slug)
+     * or create a new one. Authenticated-only. (Former CompanyGetOrCreateController.)
      */
-    @GetMapping("/search")
-    // Story 4.1.5: Public endpoint for registration autocomplete (no authentication required)
-    @Operation(
-            summary = "Search companies with autocomplete",
-            description = "Search companies by name with autocomplete functionality. "
-                    + "Results are cached using Caffeine for 15 minutes. P95 latency < 100ms with cache. "
-                    + "Public endpoint for registration autocomplete. "
-                    + "Supports resource expansion via include parameter (e.g., ?include=logo)."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Search results returned successfully"
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid query or limit parameter"
-            )
-    })
-    public ResponseEntity<List<CompanySearchResponse>> searchCompanies(
-            @Parameter(description = "Search query (minimum 1 character)", required = true)
-            @RequestParam String query,
-            @Parameter(description = "Maximum number of results (default: 20)")
-            @RequestParam(required = false, defaultValue = "20") int limit,
-            @Parameter(description = "Comma-separated list of resources to include (e.g., logo)", example = "logo")
-            @RequestParam(required = false) String include) {
-        log.debug("Searching companies with query: {}, limit: {}, include: {}", query, limit, include);
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CompanyResponse> getOrCreateCompany(GetOrCreateCompanyRequest getOrCreateCompanyRequest) {
+        String displayName = getOrCreateCompanyRequest.getDisplayName();
+        log.info("Get-or-create company for display name: {}", displayName);
+        return ResponseEntity.ok(companyService.getOrCreateCompanyResponse(displayName));
+    }
 
-        // Use overloaded method with include parameter if provided
+    /**
+     * Search companies with autocomplete. Public endpoint for registration autocomplete
+     * (Caffeine-cached). Supports resource expansion via {@code include} (e.g. {@code logo}).
+     */
+    @Override
+    public ResponseEntity<List<CompanySearchResponse>> searchCompanies(String query, Integer limit, String include) {
+        int effectiveLimit = limit != null ? limit : 20;
+        log.debug("Searching companies with query: {}, limit: {}, include: {}", query, effectiveLimit, include);
+
         List<CompanySearchResponse> results = (include != null && !include.isEmpty())
-                ? searchService.searchCompanies(query, limit, include)
-                : searchService.searchCompanies(query, limit);
+                ? searchService.searchCompanies(query, effectiveLimit, include)
+                : searchService.searchCompanies(query, effectiveLimit);
 
         return ResponseEntity.ok(results);
     }
 
     /**
-     * Partially update company
-     * Requires ORGANIZER role
-     * AC4: Company partial update endpoint
-     * Story 1.16.2: Use company name as identifier instead of UUID
+     * Partially update a company. Requires ORGANIZER role. Publishes CompanyUpdated event.
+     * Story 1.16.2: uses company name instead of UUID.
      */
-    @PatchMapping("/{name}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Partially update company",
-            description = "Updates specific fields of an existing company. Requires ORGANIZER role. "
-                    + "Publishes CompanyUpdated event. Story 1.16.2: Uses company name instead of UUID."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Company updated successfully",
-                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid request data (validation failed)"
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "403",
-                description = "Forbidden - requires ORGANIZER role"
-            ),
-        @ApiResponse(
-                responseCode = "404",
-                description = "Company not found"
-            ),
-        @ApiResponse(
-                responseCode = "409",
-                description = "Conflict - company name already exists"
-            )
-    })
-    public ResponseEntity<CompanyResponse> patchCompany(
-            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
-            @PathVariable String name,
-            @Valid @RequestBody UpdateCompanyRequest request) {
+    public ResponseEntity<CompanyResponse> patchCompany(String name, UpdateCompanyRequest updateCompanyRequest) {
         log.info("Patching company: {}", name);
-        CompanyResponse response = companyService.updateCompany(name, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(companyService.updateCompany(name, updateCompanyRequest));
     }
 
     /**
-     * Delete company
-     * Requires ORGANIZER role
-     * AC4: Company deletion endpoint
-     * Story 1.16.2: Use company name as identifier instead of UUID
+     * Delete a company. Requires ORGANIZER role. Publishes CompanyDeleted event.
+     * Story 1.16.2: uses company name instead of UUID.
      */
-    @DeleteMapping("/{name}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Delete company",
-            description = "Deletes a company from the system. Requires ORGANIZER role. "
-                    + "Publishes CompanyDeleted event. Story 1.16.2: Uses company name instead of UUID."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "204",
-                description = "Company deleted successfully"
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "403",
-                description = "Forbidden - requires ORGANIZER role"
-            ),
-        @ApiResponse(
-                responseCode = "404",
-                description = "Company not found"
-            )
-    })
-    public ResponseEntity<Void> deleteCompany(
-            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
-            @PathVariable String name) {
+    public ResponseEntity<Void> deleteCompany(String name) {
         log.info("Deleting company: {}", name);
         companyService.deleteCompany(name);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Validate Swiss UID format
-     * Requires authentication
-     * AC12: Swiss UID validation endpoint
-     */
-    @GetMapping("/validate-uid")
+    /** Validate Swiss UID format (CHE-XXX.XXX.XXX). Requires authentication. AC12. */
+    @Override
     @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "Validate Swiss UID format",
-            description = "Validates Swiss company UID (Unternehmens-Identifikationsnummer) format. "
-                    + "Expected format: CHE-XXX.XXX.XXX"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Validation result returned",
-                content = @Content(schema = @Schema(implementation = UIDValidationResponse.class))
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Missing UID parameter"
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            )
-    })
-    public ResponseEntity<UIDValidationResponse> validateUID(
-            @Parameter(description = "Swiss UID to validate", required = true)
-            @RequestParam(required = true) String uid) {
+    public ResponseEntity<UIDValidationResponse> validateUID(String uid) {
         log.debug("Validating Swiss UID: {}", uid);
 
         boolean isValid = uidValidationService.isValidUID(uid);
@@ -364,46 +156,17 @@ public class CompanyController {
     }
 
     /**
-     * Verify company
-     * Requires ORGANIZER role
-     * AC13: Company verification workflow
-     * Story 1.16.2: Use company name as identifier instead of UUID
+     * Mark a company as verified. Requires ORGANIZER role. Idempotent. Publishes
+     * CompanyVerified event. AC13. Story 1.16.2: uses company name instead of UUID.
      */
-    @PostMapping("/{name}/verify")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Verify company",
-            description = "Marks a company as verified by an ORGANIZER. Publishes CompanyVerified event. "
-                    + "Idempotent operation. Story 1.16.2: Uses company name instead of UUID."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Company verified successfully",
-                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "403",
-                description = "Forbidden - requires ORGANIZER role"
-            ),
-        @ApiResponse(
-                responseCode = "404",
-                description = "Company not found"
-            )
-    })
-    public ResponseEntity<CompanyResponse> verifyCompany(
-            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
-            @PathVariable String name) {
+    public ResponseEntity<CompanyResponse> verifyCompany(String name) {
         log.info("Verifying company: {}", name);
-        CompanyResponse response = companyService.verifyCompany(name);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(companyService.verifyCompany(name));
     }
 
-    // Story 1.16.3: Old company-specific logo endpoints removed
+    // Story 1.16.3: Old company-specific logo endpoints removed.
     // Use generic endpoints instead:
     // - POST /api/v1/logos/presigned-url (generate upload URL)
     // - POST /api/v1/logos/{uploadId}/confirm (confirm upload)

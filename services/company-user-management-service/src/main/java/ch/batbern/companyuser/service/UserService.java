@@ -1222,7 +1222,7 @@ public class UserService {
      */
     private ch.batbern.companyuser.dto.generated.Company expandCompany(String companyId) {
         try {
-            ch.batbern.companyuser.dto.CompanyResponse company =
+            ch.batbern.companyuser.dto.generated.CompanyResponse company =
                 companyService.getCompanyByName(companyId);
             return new ch.batbern.companyuser.dto.generated.Company()
                     .id(company.getName())
