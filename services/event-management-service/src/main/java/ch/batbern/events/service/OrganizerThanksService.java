@@ -2,9 +2,9 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OrganizerThanks;
-import ch.batbern.events.dto.FeaturedThanksResponse;
-import ch.batbern.events.dto.ThanksCountResponse;
-import ch.batbern.events.dto.ThanksNoteResponse;
+import ch.batbern.events.core.dto.generated.FeaturedThanksResponse;
+import ch.batbern.events.core.dto.generated.ThanksCountResponse;
+import ch.batbern.events.core.dto.generated.ThanksNoteResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.ThanksNotAllowedException;
 import ch.batbern.events.exception.ThanksNotFeaturableException;
@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +101,7 @@ public class OrganizerThanksService {
 
         long count = thanksRepository.countByEventId(event.getId());
         if (!includeNotes) {
-            return ThanksCountResponse.ofCount(count);
+            return new ThanksCountResponse(count);
         }
 
         List<OrganizerThanks> rows = thanksRepository.findByEventIdOrderByCreatedAtDesc(event.getId());
@@ -117,18 +118,25 @@ public class OrganizerThanksService {
                     ThanksAuthorProjection a = t.getThankedByUsername() == null
                             ? null : portraits.get(t.getThankedByUsername());
                     boolean showCompany = a != null && !Boolean.FALSE.equals(a.getShowCompany());
-                    return new ThanksNoteResponse(
-                            t.getId(),
-                            t.getNote(),
-                            t.getThankedByUsername(),
-                            a != null ? a.getFirstName() : null,
-                            a != null ? a.getLastName() : null,
-                            showCompany ? a.getCompanyDisplayName() : null,
-                            t.getFeaturedAt() != null,
-                            t.getCreatedAt());
+                    return noteResponse(t, a, showCompany);
                 })
                 .toList();
-        return new ThanksCountResponse(count, notes);
+        return new ThanksCountResponse(count).notes(notes);
+    }
+
+    /** Build the generated ThanksNoteResponse (Instant → OffsetDateTime at the wire boundary). */
+    private static ThanksNoteResponse noteResponse(
+            OrganizerThanks t, ThanksAuthorProjection a, boolean showCompany) {
+        Instant createdAt = t.getCreatedAt();
+        return new ThanksNoteResponse()
+                .id(t.getId())
+                .note(t.getNote())
+                .thankedByUsername(t.getThankedByUsername())
+                .thankedByFirstName(a != null ? a.getFirstName() : null)
+                .thankedByLastName(a != null ? a.getLastName() : null)
+                .thankedByCompanyName(showCompany ? a.getCompanyDisplayName() : null)
+                .featured(t.getFeaturedAt() != null)
+                .createdAt(createdAt == null ? null : createdAt.atOffset(ZoneOffset.UTC));
     }
 
     /**
@@ -148,13 +156,13 @@ public class OrganizerThanksService {
 
     private FeaturedThanksResponse toFeaturedResponse(FeaturedThanksProjection p) {
         boolean showCompany = !Boolean.FALSE.equals(p.getShowCompany());
-        return new FeaturedThanksResponse(
-                p.getNote(),
-                p.getEventCode(),
-                p.getFirstName(),
-                p.getLastName(),
-                showCompany ? p.getCompanyDisplayName() : null,
-                showCompany ? p.getCompanyLogoUrl() : null);
+        return new FeaturedThanksResponse()
+                .note(p.getNote())
+                .eventCode(p.getEventCode())
+                .thankedByFirstName(p.getFirstName())
+                .thankedByLastName(p.getLastName())
+                .thankedByCompanyName(showCompany ? p.getCompanyDisplayName() : null)
+                .thankedByCompanyLogoUrl(showCompany ? p.getCompanyLogoUrl() : null);
     }
 
     /**
@@ -180,15 +188,7 @@ public class OrganizerThanksService {
                 : loadAuthorPortraits(Set.of(thanks.getThankedByUsername()))
                         .get(thanks.getThankedByUsername());
         boolean showCompany = a != null && !Boolean.FALSE.equals(a.getShowCompany());
-        return new ThanksNoteResponse(
-                thanks.getId(),
-                thanks.getNote(),
-                thanks.getThankedByUsername(),
-                a != null ? a.getFirstName() : null,
-                a != null ? a.getLastName() : null,
-                showCompany ? a.getCompanyDisplayName() : null,
-                thanks.getFeaturedAt() != null,
-                thanks.getCreatedAt());
+        return noteResponse(thanks, a, showCompany);
     }
 
     /** Batch-load author portraits keyed by username (empty map for no usernames). */

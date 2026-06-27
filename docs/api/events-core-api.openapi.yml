@@ -31,6 +31,8 @@ tags:
   description: Event workflow state transitions and status (EventWorkflowController)
 - name: Event Types
   description: Event type configuration management (Story 5.1)
+- name: Organizer Thanks
+  description: Attendee thank-the-organizers notes + public featured marquee (Story 7.7, OrganizerThanksController)
 - name: Teaser Images
   description: Event-specific and global teaser image management (EventTeaserImageController).
     eventCode "_global" maps to images shown on all event presentations.
@@ -835,7 +837,7 @@ paths:
   /events/{eventCode}/thanks:
     post:
       tags:
-      - Event Actions
+      - Organizer Thanks
       summary: Thank the organizers ("Thank the Organizers")
       description: "Send a one-click thank-you to the volunteer organizers after an event is live/completed.\n\n**Story**: 7.4 - \"Thank the Organizers\"\n**Authorization**: PUBLIC — anonymous allowed. Authentication is OPTIONAL.\n**Abuse guard (anonymous only)**: a valid Cloudflare Turnstile token\n(`X-Turnstile-Token` header) is required at the gateway, and submissions are\nrate-limited per (event, client-IP) at the service.\n\n**Business Rules**:\n- The event must be `EVENT_LIVE` or `EVENT_COMPLETED` — else 409 (`THANKS_NOT_ALLOWED`).\n- Logged-in attendees are deduped to one thank-you per event (a repeat updates the\n  optional note, it never double-counts).\n- Anonymous thank-yous are clap-style and not user-deduped; exceeding the per-(event,IP)\n  rate limit returns 429 (`THANKS_RATE_LIMITED`) without incrementing the counter.\n- The response carries the new aggregate `count`. Submitted notes are NEVER returned here.\n"
       operationId: submitThanks
@@ -912,7 +914,7 @@ paths:
       security: []
     get:
       tags:
-      - Event Actions
+      - Organizer Thanks
       summary: Get the thank-the-organizers aggregate (and notes for organizers)
       description: 'Returns the public clap-style aggregate `count` for an event. Organizer-authenticated
 
@@ -955,7 +957,7 @@ paths:
   /events/{eventCode}/thanks/{id}:
     patch:
       tags:
-      - Event Actions
+      - Organizer Thanks
       summary: Feature/un-feature a thank-you note (curated marquee)
       description: 'Organizer-only. Marks a logged-in thank-you note as featured (or un-features it) for the
 
@@ -1031,7 +1033,7 @@ paths:
   /thanks/featured:
     get:
       tags:
-      - Event Actions
+      - Organizer Thanks
       summary: Get curated featured thank-you notes for the public marquee
       description: 'Returns up to `limit` (capped at 9) RANDOM organizer-featured, logged-in thank-you notes
 
@@ -1050,12 +1052,11 @@ paths:
       - name: limit
         in: query
         required: false
-        description: Max notes to return (default 9, hard-capped at 9).
+        description: 'Max notes to return (default 9). The server soft-clamps to [1, 9] —
+          out-of-range values are accepted (not rejected) and clamped, not a 400.'
         schema:
           type: integer
           default: 9
-          minimum: 1
-          maximum: 9
       responses:
         '200':
           description: Up to `limit` random featured thank-you notes (may be empty).

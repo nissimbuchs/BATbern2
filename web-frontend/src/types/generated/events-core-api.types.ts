@@ -2205,7 +2205,7 @@ export interface operations {
   getFeaturedThanks: {
     parameters: {
       query?: {
-        /** @description Max notes to return (default 9, hard-capped at 9). */
+        /** @description Max notes to return (default 9). The server soft-clamps to [1, 9] — out-of-range values are accepted (not rejected) and clamped, not a 400. */
         limit?: number;
       };
       header?: never;
