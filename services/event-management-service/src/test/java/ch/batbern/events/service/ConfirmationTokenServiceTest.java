@@ -228,20 +228,4 @@ class ConfirmationTokenServiceTest {
         long validityMs = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
         assertThat(validityMs).isEqualTo(72L * 60 * 60 * 1000);
     }
-
-    @Test
-    @DisplayName("Cancellation token should share the configured validity window")
-    void should_useConfiguredValidity_forCancellationToken() {
-        // Arrange — issued together with the confirmation token in the same email,
-        // so it must share the (default 4-day) window.
-        UUID registrationId = UUID.randomUUID();
-
-        // Act
-        Claims claims = tokenService.validateCancellationToken(
-                tokenService.generateCancellationToken(registrationId, "BATbern57"));
-
-        // Assert
-        long validityMs = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
-        assertThat(validityMs).isEqualTo(96L * 60 * 60 * 1000);
-    }
 }

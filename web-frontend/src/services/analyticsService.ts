@@ -8,7 +8,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-analytics-api.types';
 
 // ─── Re-export generated types for consumer convenience ───────────────────────
 

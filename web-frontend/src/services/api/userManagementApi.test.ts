@@ -223,6 +223,40 @@ describe('UserManagementApi', () => {
       expect(result.data[0].isActive).toBe(true);
     });
 
+    it('should_buildFilterAndSortParams_when_roleCompanyStatusAndSortProvided', async () => {
+      // ADR-013 §3: role/company/active fold into the JSON `filter`; ordering uses `sort`.
+      const mockResponse = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 20,
+          totalItems: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+      };
+      mock.onGet('/users').reply(200, mockResponse);
+
+      const filters: UserFilters = { role: ['SPEAKER'], company: 'TechCorp AG', status: 'active' };
+      const pagination: UserPagination = { page: 1, limit: 20 };
+
+      await listUsers(filters, pagination, undefined, 'name', 'desc');
+
+      const sentParams = mock.history.get[0].params as Record<string, string>;
+      expect(JSON.parse(sentParams.filter)).toEqual({
+        role: 'SPEAKER',
+        company: 'TechCorp AG',
+        active: true,
+      });
+      expect(sentParams.sort).toBe('-name');
+      // Legacy ad-hoc params must no longer be sent
+      expect(sentParams.role).toBeUndefined();
+      expect(sentParams.company).toBeUndefined();
+      expect(sentParams.sortBy).toBeUndefined();
+      expect(sentParams.sortDir).toBeUndefined();
+    });
+
     it('should_paginate_when_paginationParametersProvided', async () => {
       const mockResponse = {
         data: [],

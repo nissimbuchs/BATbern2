@@ -135,8 +135,6 @@ public class RegistrationResendService {
 
         String confirmationToken = confirmationTokenService.generateConfirmationToken(
                 registration.getId(), event.getEventCode());
-        String cancellationToken = confirmationTokenService.generateCancellationToken(
-                registration.getId(), event.getEventCode());
         String deregistrationUrl = registration.getDeregistrationToken() != null
                 ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
                 : null;
@@ -146,7 +144,6 @@ public class RegistrationResendService {
                 userProfile,
                 event,
                 confirmationToken,
-                cancellationToken,
                 deregistrationUrl,
                 Locale.GERMAN);
 

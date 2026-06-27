@@ -19,6 +19,9 @@ import ch.batbern.events.service.NewsletterSubscriberService;
 import ch.batbern.shared.api.PaginationMetadata;
 import ch.batbern.shared.api.PaginationParams;
 import ch.batbern.shared.api.PaginationUtils;
+import ch.batbern.shared.api.SortCriteria;
+import ch.batbern.shared.api.SortDirection;
+import ch.batbern.shared.api.SortParser;
 import ch.batbern.shared.dto.PaginatedResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -167,8 +170,15 @@ public class NewsletterController {
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "all") String status,
-            @RequestParam(required = false, defaultValue = "subscribedAt") String sortBy,
-            @RequestParam(required = false, defaultValue = "desc") String sortDir) {
+            @RequestParam(required = false, defaultValue = "-subscribedAt") String sort) {
+
+        // ADR-013 §3: single `sort` vocabulary (replaces sortBy+sortDir). Default -subscribedAt = newest first.
+        // `status` (enum: all/active/unsubscribed) and `search` stay as typed params per the consolidation plan.
+        List<SortCriteria> sortCriteria = SortParser.parse(sort);
+        SortCriteria primary = sortCriteria.isEmpty()
+                ? new SortCriteria("subscribedAt", SortDirection.DESC) : sortCriteria.get(0);
+        String sortBy = primary.getField();
+        String sortDir = primary.getDirection() == SortDirection.DESC ? "desc" : "asc";
 
         PaginationParams params = PaginationUtils.parseParams(page, limit);
         List<SubscriberResponse> data = subscriberService

@@ -435,7 +435,7 @@ public class SlidesOnlineEmailService {
         return vars;
     }
 
-    private String localizeEventType(ch.batbern.events.dto.generated.EventType eventType, boolean isDe) {
+    private String localizeEventType(ch.batbern.events.core.dto.generated.EventType eventType, boolean isDe) {
         if (eventType == null) {
             return isDe ? "Abend-BAT" : "Evening BAT";
         }

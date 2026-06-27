@@ -45,28 +45,28 @@ export const listUsers = async (
     limit: pagination.limit,
   };
 
-  if (sortBy) params.sortBy = sortBy;
-  if (sortDir) params.sortDir = sortDir;
+  // ADR-013 §3: single list-query vocabulary. Ordering goes through `sort`
+  // (e.g. `-name` for descending); role/company/active go through the JSON `filter`.
+  if (sortBy) {
+    params.sort = sortDir === 'desc' ? `-${sortBy}` : sortBy;
+  }
 
   // Add includes parameter
   if (includes && includes.length > 0) {
     params.include = includes.join(',');
   }
 
-  // Add role as separate query parameter (not in filter object)
-  // Backend expects ?role=ATTENDEE, not filter={"role":["ATTENDEE"]}
+  // Build the JSON filter (role, company, active status).
+  const filterObj: Record<string, string | boolean> = {};
+
   if (filters.role && filters.role.length > 0) {
     // Take the first role if multiple are selected (backend accepts single role)
-    params.role = filters.role[0];
+    filterObj.role = filters.role[0];
   }
 
-  // Backend expects ?company=GoogleZH as a dedicated query param (not inside filter JSON)
   if (filters.company) {
-    params.company = filters.company;
+    filterObj.company = filters.company;
   }
-
-  // Build filter object for JSON filter syntax (active status only)
-  const filterObj: Record<string, string | boolean> = {};
 
   if (filters.status && filters.status !== 'all') {
     filterObj.active = filters.status === 'active';

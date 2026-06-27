@@ -456,6 +456,29 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
+    @DisplayName("GET /newsletter/subscribers?sort=email — ascending by email (ADR-013 sort vocab)")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void should_sortAscByEmail_when_sortParamProvided() throws Exception {
+        NewsletterSubscriber zulu = NewsletterSubscriber.builder()
+                .email("zulu@example.com").language("de")
+                .source("explicit").unsubscribeToken("tok-asc1")
+                .subscribedAt(Instant.parse("2025-01-01T00:00:00Z"))
+                .build();
+        subscriberRepository.save(zulu);
+        NewsletterSubscriber alpha = NewsletterSubscriber.builder()
+                .email("alpha@example.com").language("de")
+                .source("explicit").unsubscribeToken("tok-asc2")
+                .subscribedAt(Instant.parse("2026-01-01T00:00:00Z"))
+                .build();
+        subscriberRepository.save(alpha);
+
+        mockMvc.perform(get("/api/v1/newsletter/subscribers").param("sort", "email"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].email").value("alpha@example.com"))
+                .andExpect(jsonPath("$.data[1].email").value("zulu@example.com"));
+    }
+
+    @Test
     @DisplayName("POST /newsletter/subscribers/{id}/unsubscribe — organizer → 200")
     @WithMockUser(username = "organizer", roles = "ORGANIZER")
     void should_unsubscribeSubscriber_when_organizerRequests() throws Exception {

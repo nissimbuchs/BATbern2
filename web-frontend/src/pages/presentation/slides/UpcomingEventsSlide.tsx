@@ -8,7 +8,7 @@
 import { type JSX } from 'react';
 
 import { format } from 'date-fns';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 type Event = components['schemas']['Event'];
 

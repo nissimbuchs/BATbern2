@@ -1,0 +1,2642 @@
+openapi: 3.0.3
+info:
+  title: BATbern Events Core API
+  version: 1.0.0
+  description: 'Event lifecycle CRUD, event types, bulk operations, workflow transitions, thanks, teaser images, and the attendee-portal dashboard read.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: Events
+  description: Event CRUD and listing operations
+- name: Bulk Operations
+  description: Batch operations on multiple events
+- name: Event Actions
+  description: Event publishing and workflow operations
+- name: Event Types
+  description: Event type configuration management (Story 5.1)
+paths:
+  /events:
+    get:
+      tags:
+      - Events
+      summary: List and search events
+      description: 'Retrieve a paginated list of events with optional filtering and sorting.
+
+
+        **Acceptance Criteria**: AC1
+
+
+        **Filter Syntax Examples**:
+
+        - Single filter: `{"workflowState":"PUBLISHED"}`
+
+        - Year filter: `{"year":2025}`
+
+        - Text search: `{"title":{"$contains":"Cloud"}}`
+
+        - Date range: `{"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}`
+
+        - Multiple filters: `{"workflowState":"PUBLISHED","year":2025}`
+
+        - Search with filter: `{"workflowState":"PUBLISHED","title":{"$contains":"Cloud"}}`
+
+        - Logical operators: `{"$or":[{"workflowState":"PUBLISHED"},{"workflowState":"ARCHIVED"}]}`
+
+        - In operator: `{"workflowState":{"$in":["PUBLISHED","ARCHIVED"]}}`
+
+
+        **Supported Filter Fields**:
+
+        - `year`: Integer (convenience filter, matches events from Jan 1 - Dec 31 of given year)
+
+        - `date`: ISO 8601 timestamp (supports $gte, $lte, $gt, $lt operators for date ranges)
+
+        - `workflowState`: String (single workflow state) or use `$in` operator for multiple states
+
+        - `eventNumber`: Integer (event number)
+
+        - `title`: String (supports $contains, $startsWith, $endsWith operators for text search)
+
+
+        **Sort Syntax**:
+
+        - Ascending: `date`
+
+        - Descending: `-date`
+
+
+        **Performance**: <100ms (P95)
+
+        '
+      operationId: listEvents
+      parameters:
+      - name: filter
+        in: query
+        description: JSON filter criteria
+        required: false
+        schema:
+          type: string
+          example: '{"workflowState":"PUBLISHED","year":2025}'
+      - name: sort
+        in: query
+        description: Sort field (prefix with - for descending)
+        required: false
+        schema:
+          type: string
+          example: -date
+      - name: page
+        in: query
+        description: Page number (0-indexed)
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        description: Items per page (max 100)
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: include
+        in: query
+        description: Comma-separated list of resources to include
+        required: false
+        schema:
+          type: string
+          example: venue,sessions
+      responses:
+        '200':
+          description: Successful response with paginated events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  pagination:
+                    $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+              examples:
+                basicList:
+                  summary: Basic event list
+                  value:
+                    data:
+                    - eventCode: BATbern142
+                      title: Spring Conference 2025
+                      eventNumber: 142
+                      date: 2025-05-15 09:00:00+00:00
+                      registrationDeadline: 2025-05-01 23:59:59+00:00
+                      venueName: Kursaal Bern
+                      venueAddress: Kornhausstrasse 3, 3013 Bern
+                      venueCapacity: 200
+                      workflowState: PUBLISHED
+                      organizerUsername: john.doe
+                      currentAttendeeCount: 187
+                      description: Cloud Native Architecture
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Events
+      summary: Create a new event
+      description: 'Create a new event with complete event data.
+
+
+        **Acceptance Criteria**: AC3
+
+
+        **Performance**: <200ms (P95)
+
+        '
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            examples:
+              basicEvent:
+                summary: Basic event creation
+                value:
+                  title: Summer Workshop 2025
+                  eventNumber: 143
+                  date: 2025-07-20 09:00:00+00:00
+                  registrationDeadline: 2025-07-10 23:59:59+00:00
+                  venueName: Kursaal Bern
+                  venueAddress: Kornhausstrasse 3, 3013 Bern
+                  venueCapacity: 150
+                  workflowState: CREATED
+                  organizerUsername: john.doe
+                  currentAttendeeCount: 0
+                  description: AI/ML in Production
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+      - Bulk Operations
+      summary: Batch update multiple events
+      description: 'Update multiple events in a single request.
+
+
+        **Acceptance Criteria**: AC14
+
+
+        **Performance**: <1000ms for 50 events (P95)
+
+        '
+      operationId: batchUpdateEvents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchUpdateRequest'
+      responses:
+        '200':
+          description: Batch update completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchUpdateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/current:
+    get:
+      tags:
+      - Events
+      summary: Get current event for the public homepage
+      description: "Retrieve the event the public homepage should feature. No authentication required.\n\n**Story**: 4.1.3 - Public event landing page hero section\n**Public Access**: No authentication required\n\nTwo-phase selection (afterglow takes precedence):\n1. **Afterglow**: the most recently completed event still inside its 14-day post-event\n   window (EVENT_COMPLETED, date within the last 14 days). It keeps featuring on the\n   homepage so attendees get the post-event experience, even if the next event has\n   already published its topic/speakers/agenda. The scheduler auto-archives after 14 days.\n2. **Upcoming**: otherwise, the earliest upcoming published event by date\n   (currentPublishedPhase != null).\n\nIf neither exists, returns 404.\n\n**Performance**: <150ms (P95)\n"
+      operationId: getCurrentEvent
+      parameters:
+      - name: include
+        in: query
+        description: Comma-separated list of resources to expand (topics,venue,sessions)
+        required: false
+        schema:
+          type: string
+          example: topics,venue,sessions
+      responses:
+        '200':
+          description: Current event retrieved successfully
+          headers:
+            X-Cache-Status:
+              description: Cache hit/miss indicator
+              schema:
+                type: string
+                enum:
+                - HIT
+                - MISS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+              example:
+                eventCode: BATbern57
+                title: Cloud-Native Architecture in Practice
+                eventNumber: 57
+                workflowState: PUBLISHED
+                description: Join us for an evening exploring modern cloud-native architecture patterns and best practices.
+                date: '2025-03-15T18:00:00Z'
+                registrationDeadline: '2025-03-10T23:59:59Z'
+                venueName: Bern TechHub
+                venueAddress: Waisenhausplatz 30, 3014 Bern
+                venueCapacity: 120
+                organizerUsername: john.doe
+                currentAttendeeCount: 87
+                publishedAt: '2025-02-01T10:00:00Z'
+                venue:
+                  id: venue-001
+                  name: Bern TechHub
+                  capacity: 120
+                  address: Waisenhausplatz 30, 3014 Bern
+                topics:
+                - id: topic-1
+                  name: Microservices
+                  color: blue
+                - id: topic-2
+                  name: Kubernetes
+                  color: cyan
+        '404':
+          description: No current published event found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+              example:
+                error: Not Found
+                message: No current published event available
+                timestamp: '2025-03-15T12:00:00Z'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}:
+    get:
+      tags:
+      - Events
+      summary: Get event details
+      description: 'Retrieve detailed information about a specific event with optional resource expansion.
+
+
+        **Acceptance Criteria**: AC2
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+
+        **Include Options**:
+
+        - `venue`: Venue details with address and capacity
+
+        - `sessions`: Event sessions with schedule (speakers included in sessions)
+
+        - `topics`: Event topics and categories
+
+        - `workflow`: Workflow state and history
+
+        - `registrations`: Registration counts and status
+
+        - `catering`: Catering arrangements
+
+        - `team`: Team assignments
+
+        - `publishing`: Publishing details
+
+        - `notifications`: Notification settings
+
+        - `analytics`: Event analytics and metrics
+
+
+        **Performance**:
+
+        - Basic (no includes): <150ms (P95)
+
+        - All includes: <500ms (P95)
+
+        - Cached: <50ms (P95)
+
+
+        **Caching**: 15-minute TTL with automatic invalidation on updates
+
+        '
+      operationId: getEvent
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      - name: include
+        in: query
+        description: Comma-separated list of resources to include
+        required: false
+        schema:
+          type: string
+          example: venue,sessions,workflow
+      responses:
+        '200':
+          description: Event details retrieved successfully
+          headers:
+            X-Cache-Status:
+              description: Cache hit status (HIT or MISS)
+              schema:
+                type: string
+                enum:
+                - HIT
+                - MISS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+              examples:
+                basicEvent:
+                  summary: Basic event (no includes)
+                  value:
+                    eventCode: BATbern142
+                    title: Spring Conference 2025
+                    eventNumber: 142
+                    date: 2025-05-15 09:00:00+00:00
+                    registrationDeadline: 2025-05-01 23:59:59+00:00
+                    venueName: Kursaal Bern
+                    venueAddress: Kornhausstrasse 3, 3013 Bern
+                    venueCapacity: 500
+                    workflowState: PUBLISHED
+                    organizerUsername: john.doe
+                    currentAttendeeCount: 187
+                    description: Cloud Native Architecture
+                expandedEvent:
+                  summary: Event with venue
+                  value:
+                    eventCode: BATbern142
+                    title: Spring Conference 2025
+                    eventNumber: 142
+                    date: 2025-05-15 09:00:00+00:00
+                    registrationDeadline: 2025-05-01 23:59:59+00:00
+                    venueName: Kursaal Bern
+                    venueAddress: Kornhausstrasse 3, 3013 Bern
+                    venueCapacity: 500
+                    workflowState: PUBLISHED
+                    organizerUsername: john.doe
+                    currentAttendeeCount: 187
+                    description: Cloud Native Architecture
+                    venue:
+                      id: ven-001
+                      name: Kursaal Bern
+                      address: Kornhausstrasse 3, 3013 Bern
+                      capacity: 500
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+      - Events
+      summary: Update event (full replacement)
+      description: 'Replace all event data with new data.
+
+
+        **Acceptance Criteria**: AC4
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+
+        **Cache Invalidation**: All event caches cleared on update
+
+        '
+      operationId: updateEvent
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+      - Events
+      summary: Partially update event
+      description: 'Update specific fields of an event without replacing all data.
+
+
+        **Acceptance Criteria**: AC5
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+
+        **Cache Invalidation**: All event caches cleared on update
+
+        '
+      operationId: patchEvent
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchEventRequest'
+            examples:
+              updateTitle:
+                summary: Update only title
+                value:
+                  title: Spring Conference 2025 - Updated
+      responses:
+        '200':
+          description: Event patched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Events
+      summary: Delete event
+      description: 'Delete an event and all associated data.
+
+
+        **Acceptance Criteria**: AC6
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+
+        **Cascade Deletion**: Deletes all sessions, registrations, and related data
+
+        **Cache Invalidation**: All event caches cleared on deletion
+
+        '
+      operationId: deleteEvent
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      responses:
+        '204':
+          description: Event deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/publish:
+    post:
+      tags:
+      - Event Actions
+      summary: Publish event
+      description: 'Publish an event after validation checks.
+
+
+        **Acceptance Criteria**: AC7
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+
+        **Validation Rules**:
+
+        - Event must have a date
+
+        - Event must have a title
+
+        - Event must be in draft status
+
+
+        **Cache Invalidation**: All event caches cleared on publish
+
+        '
+      operationId: publishEvent
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      responses:
+        '200':
+          description: Event published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/workflow/transition:
+    post:
+      tags:
+      - Event Actions
+      summary: Transition event to target workflow state
+      description: 'Transition an event to a specific target workflow state.
+
+
+        **Story**: 5.1a - Workflow State Machine Foundation
+
+        **Acceptance Criteria**: AC12
+
+        **Authorization**: Requires ORGANIZER role
+
+        **Rate Limiting**: 10 transitions per minute per user (API Gateway)
+
+        **Performance**: <200ms (P95)
+
+
+        **16-Step Workflow**:
+
+        1. CREATED - Initial state
+
+        2. TOPIC_SELECTION - Topics being selected
+
+        3. SPEAKER_BRAINSTORMING - Identifying potential speakers
+
+        4. SPEAKER_OUTREACH - Contacting speakers
+
+        5. SPEAKER_CONFIRMATION - Confirming speaker participation
+
+        6. CONTENT_COLLECTION - Collecting presentations and materials
+
+        7. QUALITY_REVIEW - Reviewing content quality
+
+        8. THRESHOLD_CHECK - Checking minimum speaker threshold
+
+        9. OVERFLOW_MANAGEMENT - Managing speaker overflow
+
+        10. SLOT_ASSIGNMENT - Assigning speakers to time slots
+
+        11. AGENDA_PUBLISHED - Publishing agenda
+
+        12. (removed - AGENDA_FINALIZED consolidated into AGENDA_PUBLISHED flow, V82)
+
+        13. NEWSLETTER_SENT - Newsletter sent to attendees
+
+        14. EVENT_READY - Event ready to start
+
+        15. PARTNER_MEETING_COMPLETE - Partner meetings completed
+
+        16. ARCHIVED - Event archived
+
+
+        **Validation**:
+
+        - Some transitions require business rule validation (e.g., minimum speakers for SPEAKER_OUTREACH)
+
+        - Invalid transitions return 400 Bad Request
+
+        - Validation failures return 422 Unprocessable Entity
+
+
+        **Cache Invalidation**: All event caches cleared on state transition
+
+        '
+      operationId: transitionEventWorkflowState
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitionStateRequest'
+            examples:
+              validTransition:
+                summary: Valid transition from CREATED to TOPIC_SELECTION
+                value:
+                  targetState: TOPIC_SELECTION
+      responses:
+        '200':
+          description: Workflow transition successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventCode:
+                    type: string
+                    example: BATbern142
+                  workflowState:
+                    type: string
+                    example: TOPIC_SELECTION
+                  updatedAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                invalidTransition:
+                  summary: Invalid transition (e.g., CREATED → ARCHIVED)
+                  value:
+                    timestamp: '2025-12-11T10:00:00Z'
+                    path: /api/v1/events/BATbern142/workflow/transition
+                    status: 400
+                    error: Bad Request
+                    message: Invalid transition from CREATED to ARCHIVED
+                    correlationId: abc-123-def
+                    severity: MEDIUM
+                    details:
+                      fromState: CREATED
+                      toState: ARCHIVED
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Validation failure (business rules not met)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                insufficientSpeakers:
+                  summary: Insufficient speakers for transition
+                  value:
+                    timestamp: '2025-12-11T10:00:00Z'
+                    path: /api/v1/events/BATbern142/workflow/transition
+                    status: 422
+                    error: Unprocessable Entity
+                    message: Insufficient speakers identified
+                    correlationId: abc-123-def
+                    severity: HIGH
+                    details:
+                      required: 6
+                      identified: 3
+                      placeholder: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/workflow/status:
+    get:
+      tags:
+      - Event Actions
+      summary: Get current workflow status
+      description: 'Retrieve the current workflow status including current state, next available states,
+
+        and validation messages.
+
+
+        **Story**: 5.1a - Workflow State Machine Foundation
+
+        **Acceptance Criteria**: AC13
+
+        **Authorization**: Requires authentication (any authenticated user)
+
+        **Rate Limiting**: Applied at API Gateway level
+
+
+        **Response includes**:
+
+        - Current workflow state
+
+        - Next available states (states that can be transitioned to)
+
+        - Blocked transitions (states that cannot be transitioned to due to business rules)
+
+        - Validation messages (reasons why certain transitions are blocked)
+
+
+        **Performance**: <100ms (P95)
+
+        '
+      operationId: getWorkflowStatus
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      responses:
+        '200':
+          description: Workflow status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowStatusDto'
+              examples:
+                createdState:
+                  summary: Event in CREATED state
+                  value:
+                    currentState: CREATED
+                    nextAvailableStates:
+                    - TOPIC_SELECTION
+                    blockedTransitions: []
+                    validationMessages: []
+                speakerBrainstormingState:
+                  summary: Event in SPEAKER_BRAINSTORMING state with validation blocker
+                  value:
+                    currentState: SPEAKER_BRAINSTORMING
+                    nextAvailableStates:
+                    - SPEAKER_OUTREACH
+                    blockedTransitions:
+                    - SPEAKER_OUTREACH
+                    validationMessages:
+                    - 'Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/thanks:
+    post:
+      tags:
+      - Event Actions
+      summary: Thank the organizers ("Thank the Organizers")
+      description: "Send a one-click thank-you to the volunteer organizers after an event is live/completed.\n\n**Story**: 7.4 - \"Thank the Organizers\"\n**Authorization**: PUBLIC — anonymous allowed. Authentication is OPTIONAL.\n**Abuse guard (anonymous only)**: a valid Cloudflare Turnstile token\n(`X-Turnstile-Token` header) is required at the gateway, and submissions are\nrate-limited per (event, client-IP) at the service.\n\n**Business Rules**:\n- The event must be `EVENT_LIVE` or `EVENT_COMPLETED` — else 409 (`THANKS_NOT_ALLOWED`).\n- Logged-in attendees are deduped to one thank-you per event (a repeat updates the\n  optional note, it never double-counts).\n- Anonymous thank-yous are clap-style and not user-deduped; exceeding the per-(event,IP)\n  rate limit returns 429 (`THANKS_RATE_LIMITED`) without incrementing the counter.\n- The response carries the new aggregate `count`. Submitted notes are NEVER returned here.\n"
+      operationId: submitThanks
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitThanksRequest'
+      responses:
+        '200':
+          description: Thank-you recorded; returns the new aggregate count (notes never included).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThanksCountResponse'
+        '400':
+          description: Validation error (note too long, or an unknown body field)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          description: Turnstile verification failed (anonymous submission, invalid/blocked token)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: '`THANKS_NOT_ALLOWED` — the event is not yet live or completed.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: Thank-yous open only after the event is live or completed.
+                status: 409
+                error: Conflict
+                details:
+                  code: THANKS_NOT_ALLOWED
+        '429':
+          description: '`THANKS_RATE_LIMITED` — too many anonymous thank-yous for this event from your IP.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: Too many thank-yous for this event from your network — please try later.
+                status: 429
+                error: Too Many Requests
+                details:
+                  code: THANKS_RATE_LIMITED
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+    get:
+      tags:
+      - Event Actions
+      summary: Get the thank-the-organizers aggregate (and notes for organizers)
+      description: 'Returns the public clap-style aggregate `count` for an event. Organizer-authenticated
+
+        callers additionally receive the submitted `notes` (AC6); the public response is
+
+        count-only — there is no public note wall.
+
+
+        **Story**: 7.4 - "Thank the Organizers"
+
+        **Authorization**: PUBLIC for the count. Notes returned ONLY to ORGANIZER callers.
+
+        '
+      operationId: getThanks
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      responses:
+        '200':
+          description: Aggregate count (notes present only for organizer callers).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThanksCountResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+  /events/{eventCode}/thanks/{id}:
+    patch:
+      tags:
+      - Event Actions
+      summary: Feature/un-feature a thank-you note (curated marquee)
+      description: 'Organizer-only. Marks a logged-in thank-you note as featured (or un-features it) for the
+
+        PUBLIC curated marquee. Featuring an anonymous note is rejected (409 `THANKS_NOT_FEATURABLE`)
+
+        — anonymous claps have no name and can never reach the public surface.
+
+
+        **Story**: 7.7 - "Curated Thank-You Notes in the Partner Marquee"
+
+        **Authorization**: ORGANIZER only.
+
+        '
+      operationId: setThanksFeatured
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      - name: id
+        in: path
+        description: The thank-you note id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThanksFeaturePatchRequest'
+      responses:
+        '200':
+          description: The updated organizer note view.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThanksNoteResponse'
+        '400':
+          description: Validation error (missing featured flag)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '404':
+          description: '`THANKS_NOT_FOUND` — no such thank-you for this event.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: '`THANKS_NOT_FEATURABLE` — the note is anonymous and cannot be featured.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: Anonymous thank-yous cannot be featured on the public marquee.
+                status: 409
+                error: Conflict
+                details:
+                  code: THANKS_NOT_FEATURABLE
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /thanks/featured:
+    get:
+      tags:
+      - Event Actions
+      summary: Get curated featured thank-you notes for the public marquee
+      description: 'Returns up to `limit` (capped at 9) RANDOM organizer-featured, logged-in thank-you notes
+
+        across ALL events, enriched with the author''s first name + company logo. Anonymous notes
+
+        are structurally excluded; the raw username is never returned. PUBLIC.
+
+
+        **Story**: 7.7 - "Curated Thank-You Notes in the Partner Marquee"
+
+        **Authorization**: PUBLIC.
+
+        '
+      operationId: getFeaturedThanks
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        description: Max notes to return (default 9, hard-capped at 9).
+        schema:
+          type: integer
+          default: 9
+          minimum: 1
+          maximum: 9
+      responses:
+        '200':
+          description: Up to `limit` random featured thank-you notes (may be empty).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeaturedThanksResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+  /attendee-portal/dashboard:
+    get:
+      tags:
+      - Event Actions
+      summary: Attendee dashboard — events I participated in (Story 7.6)
+      description: 'Returns every event the authenticated attendee participated in (each non-cancelled
+
+        registration), split into upcoming (soonest-first) and past (most-recent-first). The
+
+        username is taken from the JWT — there is no path/header parameter. Authenticated only.
+
+        '
+      operationId: getAttendeeDashboard
+      responses:
+        '200':
+          description: The attendee's event history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendeeDashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/types:
+    get:
+      tags:
+      - Event Types
+      summary: List all event type configurations
+      description: 'Retrieve all event type configurations (FULL_DAY, AFTERNOON, EVENING).
+
+
+        **Story**: 5.1 - Event Type Definition
+
+        **Acceptance Criteria**: AC1
+
+
+        Event types define slot requirements and templates for different event formats.
+
+        This endpoint returns cached configurations (Caffeine cache, 1 hour TTL).
+
+
+        **Performance**: <50ms (P95) - cached response
+
+        '
+      operationId: listEventTypes
+      responses:
+        '200':
+          description: Event types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSlotConfigurationResponse'
+              example:
+              - type: FULL_DAY
+                minSlots: 6
+                maxSlots: 8
+                slotDuration: 45
+                theoreticalSlotsAM: true
+                breakSlots: 2
+                lunchSlots: 1
+                defaultCapacity: 300
+                typicalStartTime: 09:00
+                typicalEndTime: '16:00'
+              - type: AFTERNOON
+                minSlots: 6
+                maxSlots: 8
+                slotDuration: 45
+                theoreticalSlotsAM: false
+                breakSlots: 1
+                lunchSlots: 0
+                defaultCapacity: 200
+                typicalStartTime: '13:00'
+                typicalEndTime: '19:00'
+              - type: EVENING
+                minSlots: 3
+                maxSlots: 4
+                slotDuration: 45
+                theoreticalSlotsAM: false
+                breakSlots: 1
+                lunchSlots: 0
+                defaultCapacity: 200
+                typicalStartTime: '16:00'
+                typicalEndTime: '19:00'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/types/{type}:
+    get:
+      tags:
+      - Event Types
+      summary: Get specific event type configuration
+      description: 'Retrieve configuration for a specific event type.
+
+
+        **Story**: 5.1 - Event Type Definition
+
+        **Acceptance Criteria**: AC2
+
+
+        Returns slot configuration details for the specified event type.
+
+        Cached response (Caffeine cache, 1 hour TTL).
+
+
+        **Performance**: <50ms (P95) - cached response
+
+        '
+      operationId: getEventType
+      parameters:
+      - name: type
+        in: path
+        required: true
+        description: Event type identifier
+        schema:
+          $ref: '#/components/schemas/EventType'
+        example: FULL_DAY
+      responses:
+        '200':
+          description: Event type configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSlotConfigurationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+    put:
+      tags:
+      - Event Types
+      summary: Update event type configuration (ORGANIZER only)
+      description: 'Update configuration for a specific event type.
+
+
+        **Story**: 5.1 - Event Type Definition
+
+        **Acceptance Criteria**: AC3, AC8
+
+
+        **Authorization**: Requires ORGANIZER role
+
+
+        Updates slot configuration for the event type template.
+
+        Cache is automatically invalidated after successful update.
+
+
+        **Validation**:
+
+        - minSlots must be > 0
+
+        - maxSlots must be >= minSlots
+
+        - slotDuration must be >= 15 minutes
+
+        - defaultCapacity must be > 0
+
+        '
+      operationId: updateEventType
+      parameters:
+      - name: type
+        in: path
+        required: true
+        description: Event type identifier
+        schema:
+          $ref: '#/components/schemas/EventType'
+        example: FULL_DAY
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventSlotConfigurationRequest'
+            example:
+              minSlots: 6
+              maxSlots: 8
+              slotDuration: 45
+              theoreticalSlotsAM: true
+              breakSlots: 2
+              lunchSlots: 1
+              defaultCapacity: 200
+              typicalStartTime: 09:00
+              typicalEndTime: '17:00'
+      responses:
+        '200':
+          description: Event type configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSlotConfigurationResponse'
+        '400':
+          description: Validation error (e.g., minSlots > maxSlots)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/teaser-images/upload-url:
+    post:
+      tags:
+      - Events
+      operationId: generateTeaserImageUploadUrl
+      summary: Get presigned S3 PUT URL for teaser image upload (organizer-only)
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern57
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageUploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned URL + s3Key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageUploadUrlResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventCode}/teaser-images/confirm:
+    post:
+      tags:
+      - Events
+      operationId: confirmTeaserImageUpload
+      summary: Confirm upload and persist new teaser image
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern57
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageConfirmRequest'
+      responses:
+        '200':
+          description: Teaser image confirmed and persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageItem'
+        '422':
+          description: Max image limit reached
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventCode}/teaser-images/{imageId}:
+    patch:
+      tags:
+      - Events
+      operationId: updateTeaserImage
+      summary: Update presentation position of a teaser image
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern57
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageUpdateRequest'
+      responses:
+        '200':
+          description: Teaser image updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageItem'
+        '404':
+          description: Teaser image not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags:
+      - Events
+      operationId: deleteTeaserImage
+      summary: Delete a specific teaser image by ID
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern57
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Teaser image deleted
+        '404':
+          description: Teaser image not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+components:
+  schemas:
+    TeaserImagePresentationPosition:
+      type: string
+      description: Controls which slide the image appears after in the moderator presentation.
+      enum:
+      - AFTER_WELCOME
+      - AFTER_COMMITTEE
+      - AFTER_TOPIC_REVEAL
+      - AFTER_UPCOMING_EVENTS
+    TeaserImageItem:
+      type: object
+      required:
+      - id
+      - imageUrl
+      - displayOrder
+      - presentationPosition
+      description: A single teaser image for the moderator presentation page.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the teaser image.
+        imageUrl:
+          type: string
+          format: uri
+          description: CloudFront URL for the teaser image.
+          example: https://cdn.batbern.ch/events/BATbern57/teaser/abc123.jpg
+        displayOrder:
+          type: integer
+          description: Order in which the image is displayed (ascending).
+          example: 0
+        presentationPosition:
+          $ref: '#/components/schemas/TeaserImagePresentationPosition'
+    TeaserImageUpdateRequest:
+      type: object
+      required:
+      - presentationPosition
+      properties:
+        presentationPosition:
+          $ref: '#/components/schemas/TeaserImagePresentationPosition'
+    TeaserImageUploadUrlRequest:
+      type: object
+      required:
+      - contentType
+      - fileName
+      properties:
+        contentType:
+          type: string
+          description: MIME type of the image (image/jpeg, image/png, image/webp).
+          example: image/jpeg
+        fileName:
+          type: string
+          description: Original filename.
+          example: teaser.jpg
+    TeaserImageUploadUrlResponse:
+      type: object
+      required:
+      - uploadUrl
+      - s3Key
+      - expiresIn
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Presigned S3 PUT URL for direct upload.
+        s3Key:
+          type: string
+          description: S3 object key to use in the confirm step.
+          example: events/BATbern57/teaser/abc123-def456.jpg
+        expiresIn:
+          type: integer
+          description: URL expiry in seconds.
+          example: 900
+    TeaserImageConfirmRequest:
+      type: object
+      required:
+      - s3Key
+      properties:
+        s3Key:
+          type: string
+          description: S3 object key returned by the upload-url step.
+          example: events/BATbern57/teaser/abc123-def456.jpg
+    Event:
+      type: object
+      required:
+      - eventCode
+      - title
+      - eventNumber
+      - date
+      - registrationDeadline
+      - venueName
+      - venueAddress
+      - venueCapacity
+      - organizerUsername
+      properties:
+        eventCode:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+          description: 'Human-readable event identifier in format "BATbern{number}".
+
+            Story 1.16.2: Public API uses meaningful IDs, not UUIDs.
+
+            '
+        title:
+          type: string
+          maxLength: 255
+          example: Spring Conference 2025
+        eventNumber:
+          type: integer
+          example: 142
+          description: Sequential event number (e.g., BATbern
+        date:
+          type: string
+          format: date-time
+          example: 2025-05-15 09:00:00+00:00
+          description: Event date
+        registrationDeadline:
+          type: string
+          format: date-time
+          example: 2025-05-01 23:59:59+00:00
+        venueName:
+          type: string
+          maxLength: 255
+          example: Kursaal Bern
+        venueAddress:
+          type: string
+          example: Kornhausstrasse 3, 3013 Bern
+        venueCapacity:
+          type: integer
+          example: 500
+        registrationCapacity:
+          type: integer
+          nullable: true
+          description: 'Story 10.11: Organizer-configured registration limit (≤ venueCapacity). NULL = unlimited.
+
+            Distinct from venueCapacity (fire-code limit). Null means no cap is enforced.
+
+            '
+          example: 60
+        qnaEnabled:
+          type: boolean
+          description: 'Story 7.5 rework: master on/off for this event''s per-session Q&A.'
+          example: true
+        qnaOpenTrigger:
+          type: string
+          enum:
+          - EVENT_COMPLETED
+          - SPEAKERS_PUBLISHED
+          description: 'Story 7.5 rework: WHEN the Q&A windows open. EVENT_COMPLETED (default, "digital
+
+            afterglow") or SPEAKERS_PUBLISHED (opt-in: open once the speakers phase publishes).
+
+            '
+          example: EVENT_COMPLETED
+        qnaWindowDays:
+          type: integer
+          description: 'Story 7.5 rework: window length; windows close at (event date + this many days).'
+          example: 14
+        confirmedCount:
+          type: integer
+          description: Story 10.11 — Count of registrations with status registered or confirmed.
+          example: 42
+        waitlistCount:
+          type: integer
+          description: Story 10.11 — Count of registrations with status waitlist.
+          example: 3
+        spotsRemaining:
+          type: integer
+          nullable: true
+          description: Story 10.11 — registrationCapacity - confirmedCount. Null when registrationCapacity is null (unlimited).
+          example: 18
+        realAttendeeCount:
+          type: integer
+          description: 'Count of *real* (self-registered) attendees in an active status — i.e. registrations
+
+            WITHOUT an `autoRegisteredFrom` metadata marker. Excludes programmatic enrollments
+
+            (organizers/partners auto-enrolled at event creation, and auto-registered speakers).
+
+            An event is deletable only when this is 0 (deleteEvent returns 409 otherwise); the
+
+            organizer UI uses it to enable/disable the Delete button.
+
+            '
+          example: 0
+        organizerUsername:
+          type: string
+          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          example: john.doe
+          description: 'Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
+
+            '
+        currentAttendeeCount:
+          type: integer
+          example: 0
+          default: 0
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          type: string
+          description: JSONB metadata
+          example: '{"theme":"cloud-native","category":"technology"}'
+        description:
+          type: string
+          example: Cloud Native Architecture and Best Practices
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        themeImageUrl:
+          type: string
+          nullable: true
+          format: uri
+          maxLength: 1000
+          example: https://d123456.cloudfront.net/logos/2025/events/BATbern57/theme-abc123.png
+          description: 'CloudFront URL for event theme image.
+
+            Story 2.5.3a: Event Theme Image Upload
+
+            '
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          example: abc123-def456
+          description: 'Upload ID from three-phase upload pattern (internal reference).
+
+            Story 2.5.3a: Event Theme Image Upload
+
+            This is returned so the frontend can track what was uploaded.
+
+            '
+        teaserImages:
+          type: array
+          nullable: true
+          description: 'Ordered list of teaser images shown as individual slides on the moderator
+
+            presentation page (between topic-reveal and agenda-preview).
+
+            Story 10.22: Event Teaser Images.
+
+            '
+          items:
+            $ref: '#/components/schemas/TeaserImageItem'
+        topicCode:
+          type: string
+          nullable: true
+          pattern: ^[a-z0-9-]+$
+          description: 'Topic code (slug-format identifier) of the selected topic.
+
+            Story 5.2: Topic Selection & Speaker Brainstorming
+
+            ADR-003: Meaningful Identifiers - use topicCode instead of UUID
+
+            '
+          example: cloud-native-security-2024
+        eventType:
+          $ref: '#/components/schemas/EventType'
+          description: 'Event type (FULL_DAY, AFTERNOON, EVENING).
+
+            Story 5.1: Event Type Definition
+
+            '
+        typicalStartTime:
+          type: string
+          format: time
+          description: 'Typical start time for this event type (from event_types table).
+
+            Combined with event date for display purposes.
+
+            '
+          example: 09:00
+        typicalEndTime:
+          type: string
+          format: time
+          description: 'Typical end time for this event type (from event_types table).
+
+            Combined with event date for display purposes.
+
+            '
+          example: '16:00'
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+          description: 'Current workflow state (16-step workflow).
+
+            Story 5.1a: Event Workflow State Machine
+
+            '
+        topic:
+          type: object
+          nullable: true
+          description: 'Expanded topic details (only included when ?include=topics).
+
+            Story BAT-109: Archive browsing with topic expansion
+
+            '
+          properties:
+            code:
+              type: string
+              example: cloud-native-security-2024
+            name:
+              type: string
+              example: Cloud Native Security
+            description:
+              type: string
+              example: Security patterns for cloud-native applications
+            category:
+              type: string
+              enum:
+              - technical
+              - management
+              - soft_skills
+              - industry_trends
+              - tools_platforms
+              example: technical
+        venue:
+          $ref: '#/components/schemas/Venue'
+          nullable: true
+          description: 'Expanded venue details (only included when ?include=venue).
+
+            Story BAT-109: Archive browsing with venue expansion
+
+            '
+        sessions:
+          type: array
+          nullable: true
+          description: 'Expanded session list with speakers (only included when ?include=sessions or ?include=speakers).
+
+            Story BAT-109: Archive browsing with session expansion
+
+            '
+          items:
+            $ref: ./event-sessions-api.openapi.yml#/components/schemas/Session
+    EventDetail:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          venue:
+            $ref: '#/components/schemas/Venue'
+          sessions:
+            type: array
+            items:
+              $ref: ./event-sessions-api.openapi.yml#/components/schemas/Session
+          currentPublishedPhase:
+            type: string
+            nullable: true
+            enum:
+            - TOPIC
+            - SPEAKERS
+            - AGENDA
+            description: 'Progressive publishing phase for watch app (Story W1.2)
+
+              - TOPIC: Event topic selected, speakers TBA
+
+              - SPEAKERS: Speaker list published
+
+              - AGENDA: Full session details published
+
+              '
+    Venue:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        capacity:
+          type: integer
+    CreateEventRequest:
+      type: object
+      required:
+      - title
+      - eventNumber
+      - date
+      - registrationDeadline
+      - venueName
+      - venueAddress
+      - venueCapacity
+      - organizerUsername
+      - eventType
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        eventNumber:
+          type: integer
+        date:
+          type: string
+          format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+          maxLength: 255
+        venueAddress:
+          type: string
+        venueCapacity:
+          type: integer
+          minimum: 1
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited.
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        organizerUsername:
+          type: string
+          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          example: john.doe
+          description: 'Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
+
+            '
+        currentAttendeeCount:
+          type: integer
+          default: 0
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        description:
+          type: string
+          maxLength: 5000
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          example: abc123-def456
+          description: 'Upload ID from /logos/presigned-url for event theme image.
+
+            Story 2.5.3a: Event Theme Image Upload
+
+            '
+    UpdateEventRequest:
+      type: object
+      required:
+      - title
+      - eventNumber
+      - date
+      - registrationDeadline
+      - venueName
+      - venueAddress
+      - venueCapacity
+      - organizerUsername
+      - eventType
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        eventNumber:
+          type: integer
+        date:
+          type: string
+          format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+          maxLength: 255
+        venueAddress:
+          type: string
+        venueCapacity:
+          type: integer
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap).
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        organizerUsername:
+          type: string
+          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          example: john.doe
+          description: 'Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
+
+            '
+        currentAttendeeCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        description:
+          type: string
+          maxLength: 5000
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: Upload ID from /logos/presigned-url for event theme image
+    PatchEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        eventNumber:
+          type: integer
+        date:
+          type: string
+          format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+          maxLength: 255
+        venueAddress:
+          type: string
+        venueCapacity:
+          type: integer
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap).
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        organizerUsername:
+          type: string
+          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          example: john.doe
+          description: 'Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
+
+            '
+        currentAttendeeCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        description:
+          type: string
+          maxLength: 5000
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: Upload ID from /logos/presigned-url for event theme image
+        qnaEnabled:
+          type: boolean
+          description: 'Story 7.5 rework: master on/off for this event''s per-session Q&A.'
+        qnaOpenTrigger:
+          type: string
+          enum:
+          - EVENT_COMPLETED
+          - SPEAKERS_PUBLISHED
+          description: 'Story 7.5 rework: when the Q&A windows open.'
+        qnaWindowDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: 'Story 7.5 rework: window length in days (close = event date + this).'
+    BatchUpdateRequest:
+      type: object
+      required:
+      - updates
+      properties:
+        updates:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              fields:
+                type: object
+    BatchUpdateResponse:
+      type: object
+      properties:
+        successful:
+          type: integer
+          example: 45
+        failed:
+          type: integer
+          example: 5
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              error:
+                type: string
+    EventType:
+      type: string
+      description: 'Event type identifier (Story 5.1 - Event Type Definition).
+
+        Matches EventType enum from architecture (03-data-architecture.md:547-551).
+
+        '
+      enum:
+      - FULL_DAY
+      - AFTERNOON
+      - EVENING
+      example: FULL_DAY
+    EventSlotConfigurationResponse:
+      type: object
+      description: 'Event slot configuration for an event type (Story 5.1).
+
+        Defines slot requirements and scheduling parameters.
+
+        '
+      required:
+      - type
+      - minSlots
+      - maxSlots
+      - slotDuration
+      - theoreticalSlotsAM
+      - breakSlots
+      - lunchSlots
+      - defaultCapacity
+      - typicalStartTime
+      - typicalEndTime
+      properties:
+        type:
+          $ref: '#/components/schemas/EventType'
+        minSlots:
+          type: integer
+          minimum: 1
+          description: Minimum number of session slots
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          description: Maximum number of session slots
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          description: Duration of each slot in minutes
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          description: Whether theoretical presentations are scheduled in morning slots
+          example: true
+        breakSlots:
+          type: integer
+          minimum: 0
+          description: Number of break slots included in event
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          description: Number of lunch slots included in event
+          example: 1
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          description: Default attendee capacity for this event type
+          example: 200
+        typicalStartTime:
+          type: string
+          format: time
+          description: Typical start time for this event type
+          example: 09:00
+        typicalEndTime:
+          type: string
+          format: time
+          description: Typical end time for this event type
+          example: '17:00'
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event start, in minutes
+          example: 5
+          default: 5
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event end, in minutes
+          example: 5
+          default: 5
+        breakDuration:
+          type: integer
+          minimum: 1
+          description: Duration of each break session, in minutes
+          example: 20
+          default: 20
+        lunchDuration:
+          type: integer
+          minimum: 1
+          description: Duration of the lunch session, in minutes
+          example: 60
+          default: 60
+        aperitifSlots:
+          type: integer
+          minimum: 0
+          description: Apéro on/off count (0 = off, ≥1 = on) — Story 15.2
+          example: 1
+          default: 0
+        aperitifDuration:
+          type: integer
+          minimum: 1
+          description: Apéro duration in minutes
+          example: 90
+          default: 90
+        aperitifPosition:
+          type: string
+          enum:
+          - start
+          - end
+          description: Apéro placement relative to the moderation segments
+          example: end
+          default: end
+    UpdateEventSlotConfigurationRequest:
+      type: object
+      description: 'Request to update the event-TYPE-level slot configuration defaults (Story 5.1):
+
+        only the 7 core slot fields are required; timing fields (typical times, moderation/
+
+        break/lunch/apéro durations) are optional/nullable and fall back to defaults.
+
+
+        Shares the slot field vocabulary with `UpdateEventAgendaConfigRequest` but is a DISTINCT
+
+        contract: that one targets a single event''s per-event agenda row (copy-on-edit) and
+
+        requires the full slot shape. Use it instead when overriding one event rather than the
+
+        event-type defaults.
+
+        '
+      required:
+      - minSlots
+      - maxSlots
+      - slotDuration
+      - theoreticalSlotsAM
+      - breakSlots
+      - lunchSlots
+      - defaultCapacity
+      properties:
+        minSlots:
+          type: integer
+          minimum: 1
+          description: Minimum number of session slots
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          description: Maximum number of session slots (must be >= minSlots)
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          description: Duration of each slot in minutes
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          description: Whether theoretical presentations are scheduled in morning slots
+          example: true
+        breakSlots:
+          type: integer
+          minimum: 0
+          description: Number of break slots included in event
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          description: Number of lunch slots included in event
+          example: 1
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          description: Default attendee capacity for this event type
+          example: 200
+        typicalStartTime:
+          type: string
+          format: time
+          description: Typical start time for this event type
+          example: 09:00
+          nullable: true
+        typicalEndTime:
+          type: string
+          format: time
+          description: Typical end time for this event type
+          example: '17:00'
+          nullable: true
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event start, in minutes
+          example: 5
+          nullable: true
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event end, in minutes
+          example: 5
+          nullable: true
+        breakDuration:
+          type: integer
+          minimum: 1
+          description: Duration of each break session, in minutes
+          example: 20
+          nullable: true
+        lunchDuration:
+          type: integer
+          minimum: 1
+          description: Duration of the lunch session, in minutes
+          example: 60
+          nullable: true
+        aperitifSlots:
+          type: integer
+          minimum: 0
+          description: Apéro on/off count (0 = off, ≥1 = on) — Story 15.2
+          example: 1
+          nullable: true
+        aperitifDuration:
+          type: integer
+          minimum: 1
+          description: Apéro duration in minutes
+          example: 90
+          nullable: true
+        aperitifPosition:
+          type: string
+          enum:
+          - start
+          - end
+          description: Apéro placement relative to the moderation segments
+          example: end
+          nullable: true
+    EventWorkflowState:
+      type: string
+      description: 'Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed).
+
+        Defines the current state of an event in the organizer workflow.
+
+        The scheduler transitions AGENDA_PUBLISHED directly to EVENT_LIVE on event day.
+
+        '
+      enum:
+      - CREATED
+      - TOPIC_SELECTION
+      - SPEAKER_IDENTIFICATION
+      - SLOT_ASSIGNMENT
+      - AGENDA_PUBLISHED
+      - EVENT_LIVE
+      - EVENT_COMPLETED
+      - ARCHIVED
+      example: SPEAKER_IDENTIFICATION
+    TransitionStateRequest:
+      type: object
+      description: 'Request to transition event to target workflow state (Story 5.1a - AC12).
+
+        The target state must be a valid transition from the current state.
+
+        '
+      required:
+      - targetState
+      properties:
+        targetState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        overrideValidation:
+          type: boolean
+          nullable: true
+          description: 'Override workflow validation flag.
+
+            When true, allows any state transition bypassing validation rules.
+
+            Defaults to false if not provided.
+
+            '
+          default: false
+        overrideReason:
+          type: string
+          maxLength: 500
+          description: 'Optional reason for overriding workflow validation.
+
+            Used for audit trail when overrideValidation is true.
+
+            '
+    WorkflowStatusDto:
+      type: object
+      description: 'Current workflow status including available and blocked transitions (Story 5.1a - AC13).
+
+        Provides organizers with visibility into what transitions are possible and why.
+
+        '
+      required:
+      - currentState
+      - nextAvailableStates
+      - blockedTransitions
+      - validationMessages
+      properties:
+        currentState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        nextAvailableStates:
+          type: array
+          description: List of states that can be transitioned to from current state
+          items:
+            $ref: '#/components/schemas/EventWorkflowState'
+          example:
+          - SPEAKER_OUTREACH
+        blockedTransitions:
+          type: array
+          description: List of states that are blocked due to validation failures
+          items:
+            $ref: '#/components/schemas/EventWorkflowState'
+          example:
+          - SPEAKER_OUTREACH
+        validationMessages:
+          type: array
+          description: Validation messages explaining why certain transitions are blocked
+          items:
+            type: string
+          example:
+          - 'Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified (need 6, have 3)'
+    SubmitThanksRequest:
+      type: object
+      description: 'Story 7.4 "Thank the Organizers": the optional body of a thank-you. Identity (logged-in
+
+        username) is taken from the JWT server-side, never from the body, so the only field is an
+
+        optional short `note`. A one-click thank-you may send an empty body / no body at all.
+
+        `additionalProperties: false`: an unexpected field is rejected with HTTP 400.
+
+        '
+      additionalProperties: false
+      properties:
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional short note for the organizers (organizer-visible only).
+          example: Thank you for 20 years of BATbern!
+    ThanksNoteResponse:
+      type: object
+      description: 'Story 7.4: a single organizer-visible thank-you note. Returned ONLY in the
+
+        organizer-authenticated GET response — never to anonymous/public callers. Story 7.7 adds
+
+        the row `id` + `featured` flag (for the ★ feature toggle) and the resolved author display
+
+        name so the Appreciation panel can show a friendly name rather than the raw username.
+
+        '
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The thank-you note id (for the organizer feature toggle).
+        note:
+          type: string
+          nullable: true
+          description: The submitted note (may be null if the thank-you carried no note).
+        thankedByUsername:
+          type: string
+          nullable: true
+          description: The logged-in attendee's username, or null for an anonymous clap.
+        thankedByFirstName:
+          type: string
+          nullable: true
+          description: Resolved author first name (null for anonymous).
+        thankedByLastName:
+          type: string
+          nullable: true
+          description: Resolved author last name (null for anonymous).
+        thankedByCompanyName:
+          type: string
+          nullable: true
+          description: Resolved company display name (null when anonymous or opted out).
+        featured:
+          type: boolean
+          description: Whether this note is currently featured on the public marquee (Story 7.7).
+        createdAt:
+          type: string
+          format: date-time
+          description: When the thank-you was submitted.
+    ThanksFeaturePatchRequest:
+      type: object
+      description: 'Story 7.7: organizer request to feature/un-feature a thank-you note on the public marquee.
+
+        '
+      additionalProperties: false
+      required:
+      - featured
+      properties:
+        featured:
+          type: boolean
+          description: true to feature the note publicly; false to remove it.
+    FeaturedThanksResponse:
+      type: object
+      description: 'Story 7.7: one featured thank-you note for the PUBLIC marquee — organizer-curated,
+
+        logged-in-only, enriched with the author''s name + company logo. The raw username is never
+
+        exposed; company name/logo are null when the author opted out of showing their company.
+
+        '
+      properties:
+        note:
+          type: string
+          nullable: true
+          description: The submitted note text.
+        eventCode:
+          type: string
+          description: The event the thank-you was for.
+        thankedByFirstName:
+          type: string
+          nullable: true
+          description: Author first name (shown on the card).
+        thankedByLastName:
+          type: string
+          nullable: true
+          description: Author last name.
+        thankedByCompanyName:
+          type: string
+          nullable: true
+          description: Company display name (null when the author opted out).
+        thankedByCompanyLogoUrl:
+          type: string
+          nullable: true
+          description: Company logo CloudFront URL (null when opted out or no logo).
+    ThanksCountResponse:
+      type: object
+      description: 'Story 7.4: response for both the POST submit and the GET aggregate. `count` (the public
+
+        clap-style aggregate) is always present. `notes` is populated ONLY for organizer GET
+
+        callers; it is null for the public GET and for POST responses (no public note wall).
+
+        '
+      required:
+      - count
+      properties:
+        count:
+          type: integer
+          format: int64
+          description: The aggregate number of thank-yous for the event.
+          example: 42
+        notes:
+          type: array
+          nullable: true
+          description: Organizer-only list of submitted notes (newest first); null for the public.
+          items:
+            $ref: '#/components/schemas/ThanksNoteResponse'
+    AttendeeEventCardResponse:
+      type: object
+      description: 'Story 7.6: one event on the attendee dashboard. The client links the card to
+
+        `/events/{eventCode}` (upcoming) or `/archive/{eventCode}` (past).
+
+        '
+      required:
+      - eventCode
+      - eventTitle
+      properties:
+        eventCode:
+          type: string
+          example: BATbern57
+        eventTitle:
+          type: string
+        eventDate:
+          type: string
+          format: date-time
+        eventLocation:
+          type: string
+          nullable: true
+          description: The event venue name.
+        workflowState:
+          type: string
+          nullable: true
+          description: The event's UPPER_CASE workflow state (e.g. EVENT_COMPLETED, ARCHIVED).
+        registrationStatus:
+          type: string
+          nullable: true
+          description: The attendee's registration status (registered|confirmed|waitlist|attended).
+    AttendeeDashboardResponse:
+      type: object
+      description: 'Story 7.6: the attendee''s event history — every participated (non-cancelled) event, split
+
+        into upcoming (soonest-first) and past (most-recent-first).
+
+        '
+      required:
+      - upcomingEvents
+      - pastEvents
+      properties:
+        attendeeName:
+          type: string
+          nullable: true
+          description: Display name (denormalized from a registration) or the username.
+        upcomingEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendeeEventCardResponse'
+        pastEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendeeEventCardResponse'
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

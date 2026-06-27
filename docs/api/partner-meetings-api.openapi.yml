@@ -15,6 +15,8 @@ paths:
       description: |
         Returns all partner meetings sorted by meeting date descending.
         ORGANIZER role required.
+
+        Bounded collection (two meetings per event year) — intentionally unpaginated.
       operationId: "listPartnerMeetings"
       tags: ["Partner Meetings"]
       responses:
@@ -28,6 +30,10 @@ paths:
                   $ref: "#/components/schemas/PartnerMeetingDTO"
         "403":
           description: "Forbidden — ORGANIZER role required"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
         - bearerAuth: []
 
@@ -172,8 +178,58 @@ paths:
                 $ref: "#/components/schemas/SendInviteResponse"
         "403":
           description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: "Meeting not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+        - bearerAuth: []
+
+  /partner-meetings/{meetingId}/rsvps:
+    get:
+      summary: "List RSVPs for a partner meeting"
+      description: |
+        Returns the RSVP list and accepted/declined/tentative summary for a meeting — Story 10.27 (AC7).
+        ORGANIZER role required.
+
+        RSVPs are recorded by an internal, VPC-only callback `POST /internal/partner-meetings/rsvps`
+        (no JWT — secured by the Service Connect private DNS namespace) that ingests inbound iCal
+        REPLY emails. That callback is intentionally NOT exposed through the API gateway and is
+        therefore not part of this public contract.
+      operationId: "getMeetingRsvps"
+      tags: ["Partner Meetings"]
+      parameters:
+        - name: meetingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "RSVP list and summary"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeetingRsvpListResponse"
+        "403":
+          description: "Forbidden — ORGANIZER role required"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Meeting not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
         - bearerAuth: []
 
@@ -308,6 +364,54 @@ components:
         - message
         - meetingId
         - recipientCount
+
+    MeetingRsvpListResponse:
+      type: object
+      description: "RSVP list + summary for a partner meeting — Story 10.27 (AC7)"
+      properties:
+        meetingId:
+          type: string
+          format: uuid
+        inviteSentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "When the calendar invite was sent, null if not yet sent"
+        rsvps:
+          type: array
+          items:
+            $ref: "#/components/schemas/RsvpDTO"
+        summary:
+          $ref: "#/components/schemas/RsvpSummary"
+
+    RsvpDTO:
+      type: object
+      properties:
+        attendeeEmail:
+          type: string
+          description: "Email of the partner contact who responded"
+        status:
+          type: string
+          enum: [ACCEPTED, DECLINED, TENTATIVE]
+          description: "iCal PARTSTAT mapped to an RSVP status"
+        respondedAt:
+          type: string
+          format: date-time
+
+    RsvpSummary:
+      type: object
+      description: "RSVP counts by status"
+      properties:
+        accepted:
+          type: integer
+        declined:
+          type: integer
+        tentative:
+          type: integer
+
+    # Shared-kernel types (imported, not generated)
+    ErrorResponse:
+      $ref: "./_shared.openapi.yml#/components/schemas/ErrorResponse"
 
   securitySchemes:
     bearerAuth:

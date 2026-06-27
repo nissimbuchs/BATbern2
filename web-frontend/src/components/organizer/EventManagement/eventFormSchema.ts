@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 import type { PatchEventRequest } from '@/types/event.types';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 /**
  * Converts legacy lowercase snake_case event types to UPPER_CASE enum values

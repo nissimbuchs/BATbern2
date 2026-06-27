@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -393,7 +393,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
         // When & Then
         // Story 1.16.2: use company name instead of UUID
-        mockMvc.perform(put("/api/v1/companies/{name}", testCompany.getName())
+        mockMvc.perform(patch("/api/v1/companies/{name}", testCompany.getName())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -418,7 +418,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
         // When & Then
         // Story 1.16.2: use company name instead of UUID
-        mockMvc.perform(put("/api/v1/companies/{name}", testCompany.getName())
+        mockMvc.perform(patch("/api/v1/companies/{name}", testCompany.getName())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
@@ -435,7 +435,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
         // When & Then
         // Story 1.16.2: use company name instead of UUID
-        mockMvc.perform(put("/api/v1/companies/{name}", testCompany.getName())
+        mockMvc.perform(patch("/api/v1/companies/{name}", testCompany.getName())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -456,7 +456,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         // When & Then
-        mockMvc.perform(put("/api/v1/companies/{name}", nonExistentName)
+        mockMvc.perform(patch("/api/v1/companies/{name}", nonExistentName)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());

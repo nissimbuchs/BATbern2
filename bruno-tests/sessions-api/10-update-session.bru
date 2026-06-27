@@ -4,7 +4,7 @@ meta {
   seq: 10
 }
 
-put {
+patch {
   url: {{baseUrl}}/events/{{createdEventCode}}/sessions/{{createdSessionSlug}}
   body: json
   auth: bearer
@@ -18,12 +18,7 @@ body:json {
   {
     "title": "Opening Keynote - Updated",
     "description": "Updated session description",
-    "sessionType": "keynote",
-    "startTime": "2025-12-15T09:00:00Z",
-    "endTime": "2025-12-15T10:30:00Z",
-    "room": "Main Hall",
-    "capacity": 150,
-    "language": "de"
+    "durationMinutes": 90
   }
 }
 
@@ -40,7 +35,7 @@ tests {
     const session = res.getBody();
     expect(session.sessionSlug).to.equal(bru.getVar("createdSessionSlug"));
     expect(session.title).to.equal('Opening Keynote - Updated');
-    expect(session.capacity).to.equal(150);
+    expect(session.description).to.equal('Updated session description');
   });
 
   test("should verify no UUID id field (Story 1.16.2)", function() {

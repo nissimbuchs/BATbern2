@@ -96,14 +96,431 @@ flyway {
     table = 'flyway_schema_history_event_management'
 }
 
-// OpenAPI Generator - Generate API interfaces and DTOs from OpenAPI spec
+// OpenAPI Generator — events-core (default task). Carved from events-api in API consolidation Phase 6.
+// The monolithic events-api spec was split into 9 per-domain specs (events-core + 8 siblings),
+// each generating into its own ch.batbern.events.<domain>.{api,dto}.generated package.
 openApiGenerate {
     generatorName = 'spring'
-    inputSpec = "$rootDir/docs/api/events-api.openapi.yml".toString()
-    outputDir = "$buildDir/generated".toString()
-    apiPackage = 'ch.batbern.events.api.generated'
-    modelPackage = 'ch.batbern.events.dto.generated'
-    invokerPackage = 'ch.batbern.events.api.invoker'
+    inputSpec = "$rootDir/docs/api/events-core-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-core".toString()
+    apiPackage = 'ch.batbern.events.core.api.generated'
+    modelPackage = 'ch.batbern.events.core.dto.generated'
+    invokerPackage = 'ch.batbern.events.core.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse',
+        'Session': 'ch.batbern.events.sessions.dto.generated.Session',
+        'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// The core Event aggregate embeds Session/SessionSpeaker (owned by event-sessions-api).
+// Core references them via importMappings (import + simple name — the only form that
+// compiles; schemaMappings would emit an illegal `@Valid <fully.qualified.Name>`, see
+// openapi-generator bug #17647). importMappings also emits a dead duplicate copy of those
+// two models into the core package; delete them so the sessions-owned classes stay the
+// single source (Event.java imports ch.batbern.events.sessions.dto.generated.Session).
+tasks.named('openApiGenerate').configure {
+    doLast {
+        delete "$buildDir/generated-core/src/main/java/ch/batbern/events/core/dto/generated/Session.java"
+        delete "$buildDir/generated-core/src/main/java/ch/batbern/events/core/dto/generated/SessionSpeaker.java"
+    }
+}
+
+// OpenAPI Generator (sessions) — carved from events-api in API consolidation Phase 6
+task openApiGenerateSessions(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-sessions-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-sessions".toString()
+    apiPackage = 'ch.batbern.events.sessions.api.generated'
+    modelPackage = 'ch.batbern.events.sessions.dto.generated'
+    invokerPackage = 'ch.batbern.events.sessions.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator (speakers) — carved from events-api in API consolidation Phase 6
+task openApiGenerateSpeakers(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-speakers-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-speakers".toString()
+    apiPackage = 'ch.batbern.events.speakers.api.generated'
+    modelPackage = 'ch.batbern.events.speakers.dto.generated'
+    invokerPackage = 'ch.batbern.events.speakers.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator (registrations) — carved from events-api in API consolidation Phase 6
+task openApiGenerateRegistrations(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-registrations-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-registrations".toString()
+    apiPackage = 'ch.batbern.events.registrations.api.generated'
+    modelPackage = 'ch.batbern.events.registrations.dto.generated'
+    invokerPackage = 'ch.batbern.events.registrations.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator (newsletter) — carved from events-api in API consolidation Phase 6
+task openApiGenerateNewsletter(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-newsletter-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-newsletter".toString()
+    apiPackage = 'ch.batbern.events.newsletter.api.generated'
+    modelPackage = 'ch.batbern.events.newsletter.dto.generated'
+    invokerPackage = 'ch.batbern.events.newsletter.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator (media) — carved from events-api in API consolidation Phase 6
+task openApiGenerateMedia(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-media-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-media".toString()
+    apiPackage = 'ch.batbern.events.media.api.generated'
+    modelPackage = 'ch.batbern.events.media.dto.generated'
+    invokerPackage = 'ch.batbern.events.media.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator (ai) — carved from events-api in API consolidation Phase 6
+task openApiGenerateAi(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-ai-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-ai".toString()
+    apiPackage = 'ch.batbern.events.ai.api.generated'
+    modelPackage = 'ch.batbern.events.ai.dto.generated'
+    invokerPackage = 'ch.batbern.events.ai.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator (analytics) — carved from events-api in API consolidation Phase 6
+task openApiGenerateAnalytics(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-analytics-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-analytics".toString()
+    apiPackage = 'ch.batbern.events.analytics.api.generated'
+    modelPackage = 'ch.batbern.events.analytics.dto.generated'
+    invokerPackage = 'ch.batbern.events.analytics.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator (watch) — carved from events-api in API consolidation Phase 6
+task openApiGenerateWatch(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-watch-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-watch".toString()
+    apiPackage = 'ch.batbern.events.watch.api.generated'
+    modelPackage = 'ch.batbern.events.watch.dto.generated'
+    invokerPackage = 'ch.batbern.events.watch.api.invoker'
     validateSpec = false
 
     importMappings = [
@@ -262,13 +679,21 @@ tasks.register('aiSecurityTest', Test) {
 }
 
 // Make compileJava depend on all OpenAPI generation tasks
-compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics
 
 // Add generated sources to source sets
 sourceSets {
     main {
         java {
-            srcDir "$buildDir/generated/src/main/java"
+            srcDir "$buildDir/generated-core/src/main/java"
+            srcDir "$buildDir/generated-sessions/src/main/java"
+            srcDir "$buildDir/generated-speakers/src/main/java"
+            srcDir "$buildDir/generated-registrations/src/main/java"
+            srcDir "$buildDir/generated-newsletter/src/main/java"
+            srcDir "$buildDir/generated-media/src/main/java"
+            srcDir "$buildDir/generated-ai/src/main/java"
+            srcDir "$buildDir/generated-analytics/src/main/java"
+            srcDir "$buildDir/generated-watch/src/main/java"
             srcDir "$buildDir/generated-users-client/src/main/java"
             srcDir "$buildDir/generated-topics/src/main/java"
         }
@@ -277,7 +702,15 @@ sourceSets {
 
 // Clean generated sources when running clean
 clean {
-    delete "$buildDir/generated"
+    delete "$buildDir/generated-core"
+    delete "$buildDir/generated-sessions"
+    delete "$buildDir/generated-speakers"
+    delete "$buildDir/generated-registrations"
+    delete "$buildDir/generated-newsletter"
+    delete "$buildDir/generated-media"
+    delete "$buildDir/generated-ai"
+    delete "$buildDir/generated-analytics"
+    delete "$buildDir/generated-watch"
     delete "$buildDir/generated-users-client"
     delete "$buildDir/generated-topics"
 }

@@ -1,9 +1,9 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.EventTeaserImage;
-import ch.batbern.events.dto.generated.TeaserImageItem;
-import ch.batbern.events.dto.generated.TeaserImagePresentationPosition;
-import ch.batbern.events.dto.generated.TeaserImageUploadUrlResponse;
+import ch.batbern.events.core.dto.generated.TeaserImageItem;
+import ch.batbern.events.core.dto.generated.TeaserImagePresentationPosition;
+import ch.batbern.events.core.dto.generated.TeaserImageUploadUrlResponse;
 import ch.batbern.events.exception.TeaserImageLimitExceededException;
 import ch.batbern.events.exception.TeaserImageNotFoundException;
 import ch.batbern.events.repository.EventTeaserImageRepository;

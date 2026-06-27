@@ -3,7 +3,6 @@ package ch.batbern.events.mapper;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.CreateSessionRequest;
 import ch.batbern.events.dto.SessionResponse;
-import ch.batbern.events.dto.UpdateSessionRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -190,114 +189,6 @@ class SessionMapperTest {
             assertThat(result.getRoom()).isNull();
             assertThat(result.getCapacity()).isNull();
             assertThat(result.getLanguage()).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("applyUpdateRequest")
-    class ApplyUpdateRequestTests {
-
-        @Test
-        @DisplayName("should do nothing when entity is null")
-        void shouldDoNothingWhenEntityIsNull() {
-            UpdateSessionRequest request = UpdateSessionRequest.builder()
-                    .title("Updated Title")
-                    .sessionType("presentation")
-                    .startTime("2025-07-01T14:00:00Z")
-                    .endTime("2025-07-01T15:00:00Z")
-                    .build();
-
-            // Should not throw
-            mapper.applyUpdateRequest(null, request);
-        }
-
-        @Test
-        @DisplayName("should do nothing when request is null")
-        void shouldDoNothingWhenRequestIsNull() {
-            Session entity = Session.builder()
-                    .title("Original Title")
-                    .build();
-
-            mapper.applyUpdateRequest(entity, null);
-
-            assertThat(entity.getTitle()).isEqualTo("Original Title");
-        }
-
-        @Test
-        @DisplayName("should update all fields from UpdateSessionRequest")
-        void shouldUpdateAllFieldsFromRequest() {
-            // Given
-            Session entity = Session.builder()
-                    .title("Old Title")
-                    .sessionType("keynote")
-                    .startTime(Instant.parse("2025-06-01T10:00:00Z"))
-                    .endTime(Instant.parse("2025-06-01T11:00:00Z"))
-                    .room("Old Room")
-                    .capacity(100)
-                    .language("de")
-                    .build();
-
-            UpdateSessionRequest request = UpdateSessionRequest.builder()
-                    .title("New Title")
-                    .description("New description")
-                    .sessionType("workshop")
-                    .startTime("2025-07-15T14:00:00Z")
-                    .endTime("2025-07-15T16:00:00Z")
-                    .room("New Room")
-                    .capacity(50)
-                    .language("en")
-                    .build();
-
-            // When
-            mapper.applyUpdateRequest(entity, request);
-
-            // Then
-            assertThat(entity.getTitle()).isEqualTo("New Title");
-            assertThat(entity.getDescription()).isEqualTo("New description");
-            assertThat(entity.getSessionType()).isEqualTo("workshop");
-            assertThat(entity.getStartTime()).isEqualTo(Instant.parse("2025-07-15T14:00:00Z"));
-            assertThat(entity.getEndTime()).isEqualTo(Instant.parse("2025-07-15T16:00:00Z"));
-            assertThat(entity.getRoom()).isEqualTo("New Room");
-            assertThat(entity.getCapacity()).isEqualTo(50);
-            assertThat(entity.getLanguage()).isEqualTo("en");
-        }
-
-        @Test
-        @DisplayName("should handle null values in update request")
-        void shouldHandleNullValuesInUpdateRequest() {
-            // Given
-            Session entity = Session.builder()
-                    .title("Existing Title")
-                    .description("Existing description")
-                    .sessionType("presentation")
-                    .startTime(Instant.parse("2025-06-01T10:00:00Z"))
-                    .endTime(Instant.parse("2025-06-01T11:00:00Z"))
-                    .room("Existing Room")
-                    .capacity(100)
-                    .language("de")
-                    .build();
-
-            UpdateSessionRequest request = UpdateSessionRequest.builder()
-                    .title("Updated Title")
-                    .description(null) // Clear description
-                    .sessionType("workshop")
-                    .startTime("2025-07-01T14:00:00Z")
-                    .endTime("2025-07-01T15:00:00Z")
-                    .room(null) // Clear room
-                    .capacity(null) // Clear capacity
-                    .language(null) // Clear language
-                    .build();
-
-            // When
-            mapper.applyUpdateRequest(entity, request);
-
-            // Then - all fields are set (even to null since it's full replacement)
-            assertThat(entity.getTitle()).isEqualTo("Updated Title");
-            assertThat(entity.getDescription()).isNull();
-            assertThat(entity.getSessionType()).isEqualTo("workshop");
-            assertThat(entity.getRoom()).isNull();
-            assertThat(entity.getCapacity()).isNull();
-            assertThat(entity.getLanguage()).isNull();
         }
     }
 

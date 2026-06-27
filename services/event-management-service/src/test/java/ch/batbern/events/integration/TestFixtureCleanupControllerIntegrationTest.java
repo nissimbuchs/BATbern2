@@ -6,7 +6,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Topic;
 import ch.batbern.events.dto.TestFixtureCleanupRequest;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.notification.Notification;
 import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.repository.EventRepository;

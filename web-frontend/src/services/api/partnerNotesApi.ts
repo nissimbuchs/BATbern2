@@ -1,5 +1,5 @@
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/partner-notes-api.types';
+import type { components } from '@/types/generated/partner-api.types';
 
 export type PartnerNoteDTO = components['schemas']['PartnerNoteDTO'];
 export type CreateNoteRequest = components['schemas']['CreateNoteRequest'];

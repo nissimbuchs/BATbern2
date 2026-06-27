@@ -152,7 +152,7 @@ export const PartnerList: React.FC = () => {
                 current: (pagination?.page || 0) + 1,
                 total: pagination?.totalPages || 1,
               })}{' '}
-              • {t('pagination.partners', { count: pagination?.totalElements || 0 })}
+              • {t('pagination.partners', { count: pagination?.totalItems || 0 })}
             </Typography>
 
             <ButtonGroup variant="outlined" size="small">
@@ -225,7 +225,7 @@ export const PartnerList: React.FC = () => {
               current: (pagination?.page || 0) + 1,
               total: pagination?.totalPages || 1,
             })}{' '}
-            • {t('pagination.partners', { count: pagination?.totalElements || 0 })}
+            • {t('pagination.partners', { count: pagination?.totalItems || 0 })}
           </Typography>
 
           <ButtonGroup variant="outlined" size="small">

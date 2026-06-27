@@ -1,8 +1,8 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.EmailTemplate;
-import ch.batbern.events.dto.generated.CreateEmailTemplateRequest;
-import ch.batbern.events.dto.generated.UpdateEmailTemplateRequest;
+import ch.batbern.events.newsletter.dto.generated.CreateEmailTemplateRequest;
+import ch.batbern.events.newsletter.dto.generated.UpdateEmailTemplateRequest;
 import ch.batbern.events.repository.EmailTemplateRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;

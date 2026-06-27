@@ -117,8 +117,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
                 // Email confirmation endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
-                // Email cancellation endpoint (no auth required, token-protected)
-                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/cancel").permitAll()
 
                 // Story 11.E.3 / 11.F.1: /api/v1/speaker-portal/** is Cognito-secured via
                 // @PreAuthorize("hasRole('SPEAKER')") on each controller. The magic-link auth

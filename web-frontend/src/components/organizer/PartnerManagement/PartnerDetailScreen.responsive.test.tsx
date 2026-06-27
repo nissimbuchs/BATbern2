@@ -10,13 +10,11 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PartnerDetailScreen } from './PartnerDetailScreen';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
-import { usePartnerVotes } from '@/hooks/usePartnerVotes';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 
 // Mock hooks
 vi.mock('@/hooks/usePartnerDetail');
-vi.mock('@/hooks/usePartnerVotes');
 vi.mock('@/hooks/usePartnerMeetings');
 vi.mock('@/hooks/usePartnerNotes');
 // Story 8.0: mock useAuth (PartnerDetailScreen now uses auth context)
@@ -25,7 +23,6 @@ vi.mock('@/hooks/useAuth', () => ({
 }));
 
 const mockUsePartnerDetail = vi.mocked(usePartnerDetail);
-const mockUsePartnerVotes = vi.mocked(usePartnerVotes);
 const mockUsePartnerMeetings = vi.mocked(usePartnerMeetings);
 const mockUsePartnerNotes = vi.mocked(usePartnerNotes);
 
@@ -125,12 +122,6 @@ describe('Partner Detail Screen - Responsive Design', () => {
       isLoading: false,
       isError: false,
       error: null,
-    });
-
-    mockUsePartnerVotes.mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
     });
 
     mockUsePartnerMeetings.mockReturnValue({

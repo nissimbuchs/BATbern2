@@ -83,7 +83,7 @@ class RegistrationResendServiceTest {
         service.resendUnconfirmedRegistrations();
 
         verify(registrationEmailService, never())
-                .sendRegistrationConfirmation(any(), any(), any(), any(), any(), any(), any());
+                .sendRegistrationConfirmation(any(), any(), any(), any(), any(), any());
         verify(registrationRepository, never()).save(any());
     }
 
@@ -101,12 +101,11 @@ class RegistrationResendServiceTest {
         when(eventRepository.findById(reg.getEventId())).thenReturn(Optional.of(event));
         when(userApiClient.getUserByUsername("test.user")).thenReturn(user);
         when(confirmationTokenService.generateConfirmationToken(reg.getId(), "BATbern59")).thenReturn("ctoken");
-        when(confirmationTokenService.generateCancellationToken(reg.getId(), "BATbern59")).thenReturn("xtoken");
 
         service.resendUnconfirmedRegistrations();
 
         verify(registrationEmailService).sendRegistrationConfirmation(
-                eq(reg), eq(user), eq(event), eq("ctoken"), eq("xtoken"), any(), any());
+                eq(reg), eq(user), eq(event), eq("ctoken"), any(), any());
         verify(registrationRepository).save(reg);
         assertThat(reg.getConfirmationResendCount()).isEqualTo(1);
         assertThat(reg.getConfirmationResentAt()).isNotNull();
@@ -128,7 +127,7 @@ class RegistrationResendServiceTest {
         service.resendUnconfirmedRegistrations();
 
         verify(registrationEmailService, never())
-                .sendRegistrationConfirmation(any(), any(), any(), any(), any(), any(), any());
+                .sendRegistrationConfirmation(any(), any(), any(), any(), any(), any());
         verify(registrationRepository, never()).save(any());
         assertThat(reg.getConfirmationResendCount()).isZero();
     }

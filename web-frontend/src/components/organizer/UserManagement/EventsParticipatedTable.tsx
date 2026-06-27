@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import axios from 'axios';
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-registrations-api.types';
 
 type Registration = components['schemas']['Registration'];
 

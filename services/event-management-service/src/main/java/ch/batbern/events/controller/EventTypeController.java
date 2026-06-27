@@ -1,9 +1,9 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.api.generated.EventTypesApi;
-import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
-import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.dto.generated.UpdateEventSlotConfigurationRequest;
+import ch.batbern.events.core.api.generated.EventTypesApi;
+import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.core.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.UpdateEventSlotConfigurationRequest;
 import ch.batbern.events.service.EventTypeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

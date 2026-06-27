@@ -28,7 +28,7 @@ import {
   type PresentationSettings,
 } from '@/services/presentationService';
 import type { User } from '@/types/user.types';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 export interface PresentationData {
   event: PresentationEventDetail | null;

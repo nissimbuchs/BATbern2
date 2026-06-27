@@ -89,14 +89,28 @@ describe('Newsletter API Service', () => {
       expect(callParams.status).toBeUndefined();
     });
 
-    it('should_includeSortParams_when_provided', async () => {
+    it('should_includeAscendingSortParam_when_sortDirAsc', async () => {
       vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { data: [], pagination: {} } });
 
       await listNewsletterSubscribers({ sortBy: 'email', sortDir: 'asc' }, { page: 1, limit: 20 });
 
-      expect(apiClient.get).toHaveBeenCalledWith('/newsletter/subscribers', {
-        params: expect.objectContaining({ sortBy: 'email', sortDir: 'asc' }),
-      });
+      // ADR-013 §3: single `sort` vocabulary; ascending = bare field name.
+      const callParams = vi.mocked(apiClient.get).mock.calls[0][1]?.params;
+      expect(callParams.sort).toBe('email');
+      expect(callParams.sortBy).toBeUndefined();
+      expect(callParams.sortDir).toBeUndefined();
+    });
+
+    it('should_includeDescendingSortParam_when_sortDirDesc', async () => {
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { data: [], pagination: {} } });
+
+      await listNewsletterSubscribers(
+        { sortBy: 'subscribedAt', sortDir: 'desc' },
+        { page: 1, limit: 20 }
+      );
+
+      const callParams = vi.mocked(apiClient.get).mock.calls[0][1]?.params;
+      expect(callParams.sort).toBe('-subscribedAt');
     });
   });
 

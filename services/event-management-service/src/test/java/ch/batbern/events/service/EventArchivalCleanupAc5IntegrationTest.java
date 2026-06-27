@@ -3,7 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventTask;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTaskRepository;

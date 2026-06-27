@@ -1,0 +1,1311 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event Newsletter API
+  version: 1.0.0
+  description: 'Event newsletters, registrant notices, slides-online mailing, newsletter subscriber lifecycle, and email templates.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: Email Templates
+  description: Email template management for organizers (Story 10.2)
+- name: Newsletter
+  description: Newsletter subscription, unsubscribe, and sending (Story 10.7)
+paths:
+  /email-templates:
+    get:
+      tags:
+      - Email Templates
+      summary: List email templates
+      description: 'Returns all email templates with optional filtering by category and layout flag.
+
+
+        **Story**: 10.2 - Email Template Management
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: listEmailTemplates
+      parameters:
+      - name: category
+        in: query
+        required: false
+        description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE)
+        schema:
+          type: string
+          enum:
+          - SPEAKER
+          - REGISTRATION
+          - TASK_REMINDER
+          - LAYOUT
+          - NEWSLETTER
+          - VENUE_COORDINATION
+          - REGISTRANT_NOTICE
+      - name: isLayout
+        in: query
+        required: false
+        description: Filter to layout templates only (true) or content templates only (false)
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: List of email templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmailTemplateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+    post:
+      tags:
+      - Email Templates
+      summary: Create a custom email template
+      description: 'Creates a new custom (non-system) email template.
+
+
+        **Story**: 10.2 - Email Template Management
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: createEmailTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmailTemplateRequest'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Template with this key and locale already exists
+      security:
+      - BearerAuth: []
+  /email-templates/{templateKey}/{locale}:
+    get:
+      tags:
+      - Email Templates
+      summary: Get a single email template
+      description: 'Returns a single email template by key and locale.
+
+
+        **Story**: 10.2 - Email Template Management
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: getEmailTemplate
+      parameters:
+      - name: templateKey
+        in: path
+        required: true
+        description: Template key (e.g. speaker-invitation, batbern-default)
+        schema:
+          type: string
+      - name: locale
+        in: path
+        required: true
+        description: Locale (de or en)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Email template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+    put:
+      tags:
+      - Email Templates
+      summary: Update an email template
+      description: 'Updates subject, htmlBody and/or layoutKey of an existing template.
+
+
+        **Story**: 10.2 - Email Template Management
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: updateEmailTemplate
+      parameters:
+      - name: templateKey
+        in: path
+        required: true
+        description: Template key
+        schema:
+          type: string
+      - name: locale
+        in: path
+        required: true
+        description: Locale (de or en)
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailTemplateRequest'
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+    delete:
+      tags:
+      - Email Templates
+      summary: Delete a custom email template
+      description: 'Deletes a custom (non-system) email template. Returns 400 for system or layout templates.
+
+
+        **Story**: 10.2 - Email Template Management
+
+        **Authorization**: ORGANIZER role required.
+
+        '
+      operationId: deleteEmailTemplate
+      parameters:
+      - name: templateKey
+        in: path
+        required: true
+        description: Template key
+        schema:
+          type: string
+      - name: locale
+        in: path
+        required: true
+        description: Locale (de or en)
+        schema:
+          type: string
+      responses:
+        '204':
+          description: Template deleted
+        '400':
+          description: Cannot delete system or layout templates
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+  /newsletter/subscribe:
+    post:
+      tags:
+      - Newsletter
+      summary: Subscribe to BATbern newsletter (public)
+      operationId: subscribeNewsletter
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribeRequest'
+      responses:
+        '200':
+          description: Successfully subscribed
+        '409':
+          description: Email already actively subscribed
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '400':
+          description: Invalid email address
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+  /newsletter/unsubscribe/verify:
+    get:
+      tags:
+      - Newsletter
+      summary: Verify unsubscribe token (public)
+      operationId: verifyUnsubscribeToken
+      security: []
+      parameters:
+      - name: token
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Token valid — returns subscriber email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+        '404':
+          description: Token not found or already unsubscribed
+  /newsletter/unsubscribe:
+    post:
+      tags:
+      - Newsletter
+      summary: Unsubscribe via token (public)
+      operationId: unsubscribeNewsletter
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterUnsubscribeRequest'
+      responses:
+        '200':
+          description: Successfully unsubscribed
+        '404':
+          description: Token not found
+  /newsletter/my-subscription:
+    get:
+      tags:
+      - Newsletter
+      summary: Get authenticated user's subscription status
+      operationId: getMyNewsletterSubscription
+      responses:
+        '200':
+          description: Subscription status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+      - Newsletter
+      summary: Update authenticated user's subscription
+      operationId: patchMyNewsletterSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchNewsletterSubscriptionRequest'
+      responses:
+        '200':
+          description: Subscription updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /newsletter/subscribers:
+    get:
+      tags:
+      - Newsletter
+      summary: List subscribers with pagination, search, and sort (ORGANIZER)
+      operationId: listNewsletterSubscribers
+      parameters:
+      - name: page
+        in: query
+        description: Page number (1-based)
+        schema:
+          type: integer
+          default: 1
+          minimum: 1
+      - name: limit
+        in: query
+        description: Items per page (max 100)
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+          maximum: 100
+      - name: search
+        in: query
+        description: Case-insensitive partial match against email or first name
+        schema:
+          type: string
+      - name: status
+        in: query
+        description: Filter by subscription status
+        schema:
+          type: string
+          enum:
+          - all
+          - active
+          - unsubscribed
+          default: all
+      - name: sort
+        in: query
+        description: 'Sort spec (single field; prefix with - for descending). Whitelisted server-side to: email, firstName, subscribedAt, unsubscribedAt, source, language.'
+        schema:
+          type: string
+          default: -subscribedAt
+          example: -subscribedAt
+      responses:
+        '200':
+          description: Paginated subscriber list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubscriberResponse'
+                  pagination:
+                    $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /newsletter/subscribers/{id}/unsubscribe:
+    post:
+      tags:
+      - Newsletter
+      summary: Unsubscribe a subscriber by ID (ORGANIZER)
+      operationId: unsubscribeSubscriberById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Subscriber unsubscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberResponse'
+        '404':
+          description: Subscriber not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: Subscriber already unsubscribed
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /newsletter/subscribers/{id}/resubscribe:
+    post:
+      tags:
+      - Newsletter
+      summary: Re-subscribe a subscriber by ID (ORGANIZER)
+      operationId: resubscribeSubscriberById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Subscriber re-subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberResponse'
+        '404':
+          description: Subscriber not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: Subscriber already active
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /newsletter/subscribers/{id}/unsuppress:
+    post:
+      tags:
+      - Newsletter
+      summary: Unsuppress a subscriber by ID (ORGANIZER) — Story 10.29
+      operationId: unsuppressSubscriberById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Subscriber unsuppressed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberResponse'
+        '404':
+          description: Subscriber not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: Subscriber is not suppressed
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /newsletter/subscribers/{id}:
+    delete:
+      tags:
+      - Newsletter
+      summary: Delete a subscriber by ID (ORGANIZER)
+      operationId: deleteSubscriberById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Subscriber deleted
+        '404':
+          description: Subscriber not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventCode}/slides-online/send:
+    post:
+      tags:
+      - Newsletter
+      summary: Send the "slides are online" mail to the event's active registrants (ORGANIZER)
+      description: 'Story 7.3 — sends a one-shot, event-triggered "The Slides Are Online" mail to the event''s
+
+        ACTIVE REGISTRANTS (status registered/confirmed), NOT the global newsletter-subscriber pool.
+
+        Recipients with a global newsletter opt-out (unsubscribed/suppressed) are excluded. The
+
+        template language is per-recipient (de* → German, en → English, else → German fallback).
+
+        Guarded against double-send (409 if already in progress or already sent). Runs asynchronously.
+
+        '
+      operationId: sendSlidesOnline
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Slides-online send queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlidesOnlineSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+        '409':
+          description: A slides-online send is already in progress or has already been sent
+  /events/{eventCode}/registrant-notices/preview:
+    post:
+      tags:
+      - Newsletter
+      summary: Preview a registrant-notice mail in a chosen language (ORGANIZER)
+      description: 'Story 7.3 hardening — renders a REGISTRANT_NOTICE-category template (e.g. slides-online)
+
+        in the chosen preview language and reports how many active registrants would receive it.
+
+        The actual send still resolves each registrant''s own language; this locale is preview-only.
+
+        Rejects (400) a template that is not REGISTRANT_NOTICE.
+
+        '
+      operationId: previewRegistrantNotice
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrantNoticePreviewRequest'
+      responses:
+        '200':
+          description: Rendered preview + recipient count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrantNoticePreviewResponse'
+        '400':
+          description: Template is not a registrant-notice template
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+  /events/{eventCode}/registrant-notices/send:
+    post:
+      tags:
+      - Newsletter
+      summary: Send a registrant-notice mail to the event's active registrants (ORGANIZER)
+      description: 'Story 7.3 hardening — sends a REGISTRANT_NOTICE-category template (e.g. slides-online) to the
+
+        event''s ACTIVE REGISTRANTS (registered/confirmed), NOT the newsletter-subscriber pool. Honours
+
+        the global newsletter opt-out, resolves the language per recipient (de*/en/else→German), guards
+
+        against double-send (409), and runs asynchronously. Rejects (400) a non-REGISTRANT_NOTICE template.
+
+        '
+      operationId: sendRegistrantNotice
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrantNoticeSendRequest'
+      responses:
+        '200':
+          description: Registrant-notice send queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlidesOnlineSendResponse'
+        '400':
+          description: Template is not a registrant-notice template
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+        '409':
+          description: A send of this template is already in progress or has already been sent
+  /events/{eventCode}/newsletter/send:
+    post:
+      tags:
+      - Newsletter
+      summary: Send newsletter to all active subscribers (ORGANIZER)
+      operationId: sendEventNewsletter
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSendRequest'
+      responses:
+        '200':
+          description: Newsletter sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+  /events/{eventCode}/newsletter/preview:
+    post:
+      tags:
+      - Newsletter
+      summary: Preview newsletter email (ORGANIZER, no send)
+      operationId: previewEventNewsletter
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSendRequest'
+      responses:
+        '200':
+          description: Preview content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterPreviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+  /events/{eventCode}/newsletter/history:
+    get:
+      tags:
+      - Newsletter
+      summary: Get newsletter send history for an event (ORGANIZER)
+      operationId: getNewsletterHistory
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Send history list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NewsletterSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+  /events/{eventCode}/newsletter/sends/{sendId}/status:
+    get:
+      tags:
+      - Newsletter
+      summary: Poll send-job progress for a newsletter send (ORGANIZER)
+      operationId: getNewsletterSendStatus
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sendId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Current send-job status and progress counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSendStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or send record not found
+  /events/{eventCode}/newsletter/sends/{sendId}/retry:
+    post:
+      tags:
+      - Newsletter
+      summary: Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER)
+      operationId: retryNewsletterSend
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sendId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Retry job accepted; returns updated send response with PENDING status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or send record not found
+        '409':
+          description: Send is already COMPLETED or IN_PROGRESS — retry not allowed
+components:
+  schemas:
+    NewsletterSubscribeRequest:
+      type: object
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+          maxLength: 100
+        language:
+          type: string
+          enum:
+          - de
+          - en
+          default: de
+    NewsletterUnsubscribeRequest:
+      type: object
+      required:
+      - token
+      properties:
+        token:
+          type: string
+    NewsletterSubscriptionStatusResponse:
+      type: object
+      required:
+      - subscribed
+      properties:
+        subscribed:
+          type: boolean
+        email:
+          type: string
+    NewsletterSendRequest:
+      type: object
+      required:
+      - isReminder
+      - locale
+      properties:
+        isReminder:
+          type: boolean
+        locale:
+          type: string
+          enum:
+          - de
+          - en
+        templateKey:
+          type: string
+          nullable: true
+          description: 'Optional template key override. If omitted, uses default ''newsletter-event''. Must be a NEWSLETTER category template key present in DB.
+
+            '
+        maxRecipients:
+          type: integer
+          nullable: true
+          description: 'Story 10.29 AC7: Maximum number of recipients for canary send mode. If omitted, sends to all active subscribers.
+
+            '
+    NewsletterSendResponse:
+      type: object
+      required:
+      - id
+      - sentAt
+      - isReminder
+      - locale
+      - recipientCount
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        sentAt:
+          type: string
+          format: date-time
+        isReminder:
+          type: boolean
+        locale:
+          type: string
+        recipientCount:
+          type: integer
+        sentByUsername:
+          type: string
+        status:
+          type: string
+          enum:
+          - PENDING
+          - IN_PROGRESS
+          - COMPLETED
+          - PARTIAL
+          - FAILED
+          description: Send-job status
+        sentCount:
+          type: integer
+        failedCount:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+    SlidesOnlineSendResponse:
+      type: object
+      description: Story 7.3 — response for a dedicated "slides are online" send (runs async).
+      required:
+      - sendId
+      - status
+      - recipientCount
+      properties:
+        sendId:
+          type: string
+          format: uuid
+          description: Id of the underlying newsletter_sends audit row (template_key='slides-online').
+        status:
+          type: string
+          enum:
+          - PENDING
+          - IN_PROGRESS
+          - COMPLETED
+          - PARTIAL
+          - FAILED
+          description: Send-job status at return time (PENDING).
+        recipientCount:
+          type: integer
+          description: Number of active registrants resolved as the recipient base.
+    RegistrantNoticePreviewRequest:
+      type: object
+      description: Story 7.3 hardening — request to preview a registrant-notice mail.
+      required:
+      - templateKey
+      properties:
+        templateKey:
+          type: string
+          description: A REGISTRANT_NOTICE-category template key (e.g. slides-online).
+        locale:
+          type: string
+          enum:
+          - de
+          - en
+          description: Preview language; defaults to German when omitted/unknown.
+    RegistrantNoticeSendRequest:
+      type: object
+      description: Story 7.3 hardening — request to send a registrant-notice mail to registrants.
+      required:
+      - templateKey
+      properties:
+        templateKey:
+          type: string
+          description: A REGISTRANT_NOTICE-category template key (e.g. slides-online).
+    RegistrantNoticePreviewResponse:
+      type: object
+      description: Story 7.3 hardening — rendered preview + active-registrant recipient count.
+      required:
+      - subject
+      - htmlPreview
+      - recipientCount
+      properties:
+        subject:
+          type: string
+          description: Rendered, variable-substituted subject line.
+        htmlPreview:
+          type: string
+          description: Rendered, layout-merged HTML body for the preview iframe.
+        recipientCount:
+          type: integer
+          description: Number of active registrants (registered/confirmed) who would receive the mail.
+    NewsletterSendStatusResponse:
+      type: object
+      required:
+      - id
+      - status
+      - sentCount
+      - failedCount
+      - totalCount
+      - percentComplete
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - PENDING
+          - IN_PROGRESS
+          - COMPLETED
+          - PARTIAL
+          - FAILED
+        sentCount:
+          type: integer
+        failedCount:
+          type: integer
+        totalCount:
+          type: integer
+        percentComplete:
+          type: integer
+          minimum: 0
+          maximum: 100
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+    NewsletterPreviewResponse:
+      type: object
+      required:
+      - subject
+      - htmlPreview
+      - recipientCount
+      properties:
+        subject:
+          type: string
+        htmlPreview:
+          type: string
+        recipientCount:
+          type: integer
+    SubscriberResponse:
+      type: object
+      required:
+      - id
+      - email
+      - subscribedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        firstName:
+          type: string
+        language:
+          type: string
+        source:
+          type: string
+        username:
+          type: string
+        subscribedAt:
+          type: string
+          format: date-time
+        unsubscribedAt:
+          type: string
+          format: date-time
+          nullable: true
+        bounceType:
+          type: string
+          nullable: true
+          description: 'Bounce type: ''hard'', ''soft'', ''complaint'', or null'
+        bounceCount:
+          type: integer
+          nullable: true
+          description: Number of bounces recorded
+        lastBouncedAt:
+          type: string
+          format: date-time
+          nullable: true
+        suppressedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Non-null means subscriber is excluded from sends
+    EmailTemplateResponse:
+      type: object
+      description: Email template with full content and metadata
+      required:
+      - templateKey
+      - locale
+      - category
+      - htmlBody
+      - isLayout
+      - isSystemTemplate
+      - updatedAt
+      properties:
+        templateKey:
+          type: string
+          description: Template identifier key (e.g. speaker-invitation, batbern-default)
+        locale:
+          type: string
+          description: Locale code (de or en)
+        category:
+          type: string
+          description: Template category
+          enum:
+          - SPEAKER
+          - REGISTRATION
+          - TASK_REMINDER
+          - LAYOUT
+          - NEWSLETTER
+          - VENUE_COORDINATION
+          - REGISTRANT_NOTICE
+        subject:
+          type: string
+          nullable: true
+          description: Email subject line (null for layout templates)
+          maxLength: 500
+        htmlBody:
+          type: string
+          description: HTML body content
+        variables:
+          type: object
+          nullable: true
+          description: Available template variables (JSONB)
+          additionalProperties: true
+        isLayout:
+          type: boolean
+          description: True if this is a layout (shell) template
+        layoutKey:
+          type: string
+          nullable: true
+          description: Key of the layout template to use (null for standalone or layout templates)
+        isSystemTemplate:
+          type: boolean
+          description: True if this is a built-in system template (cannot be deleted)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+    CreateEmailTemplateRequest:
+      type: object
+      description: Request to create a custom email template
+      required:
+      - templateKey
+      - locale
+      - category
+      - htmlBody
+      properties:
+        templateKey:
+          type: string
+          description: Unique template key (kebab-case, no spaces)
+          maxLength: 100
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+        locale:
+          type: string
+          description: Locale code (de or en)
+          maxLength: 5
+        category:
+          type: string
+          description: Template category
+          enum:
+          - SPEAKER
+          - REGISTRATION
+          - TASK_REMINDER
+          - LAYOUT
+          - NEWSLETTER
+          - VENUE_COORDINATION
+          - REGISTRANT_NOTICE
+        subject:
+          type: string
+          nullable: true
+          description: Email subject (required for content templates, null for layout)
+          maxLength: 500
+        htmlBody:
+          type: string
+          description: HTML body content
+        variables:
+          type: object
+          nullable: true
+          description: Available template variables
+          additionalProperties: true
+        isLayout:
+          type: boolean
+          description: Whether this is a layout template
+          default: false
+        layoutKey:
+          type: string
+          nullable: true
+          description: Layout template key to use (e.g. batbern-default)
+          maxLength: 100
+    UpdateEmailTemplateRequest:
+      type: object
+      description: Request to update an existing email template
+      properties:
+        subject:
+          type: string
+          nullable: true
+          description: Updated subject line (null for layout templates)
+          maxLength: 500
+        htmlBody:
+          type: string
+          description: Updated HTML body
+        layoutKey:
+          type: string
+          nullable: true
+          description: Updated layout key (null = standalone)
+          maxLength: 100
+    PatchNewsletterSubscriptionRequest:
+      type: object
+      required:
+      - subscribed
+      properties:
+        subscribed:
+          type: boolean
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

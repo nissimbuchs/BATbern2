@@ -18,7 +18,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { liveTimingService } from '@/services/liveTimingService';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-watch-api.types';
 
 type WatchSessionDetail = components['schemas']['WatchSessionDetail'];
 type LiveTimingActionRequest = components['schemas']['LiveTimingActionRequest'];

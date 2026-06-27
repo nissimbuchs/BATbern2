@@ -15,6 +15,8 @@ export interface paths {
      * List all partner meetings
      * @description Returns all partner meetings sorted by meeting date descending.
      *     ORGANIZER role required.
+     *
+     *     Bounded collection (two meetings per event year) — intentionally unpaginated.
      */
     get: operations['listPartnerMeetings'];
     put?: never;
@@ -76,6 +78,32 @@ export interface paths {
      *     ORGANIZER role required.
      */
     post: operations['sendPartnerMeetingInvite'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/partner-meetings/{meetingId}/rsvps': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List RSVPs for a partner meeting
+     * @description Returns the RSVP list and accepted/declined/tentative summary for a meeting — Story 10.27 (AC7).
+     *     ORGANIZER role required.
+     *
+     *     RSVPs are recorded by an internal, VPC-only callback `POST /internal/partner-meetings/rsvps`
+     *     (no JWT — secured by the Service Connect private DNS namespace) that ingests inbound iCal
+     *     REPLY emails. That callback is intentionally NOT exposed through the API gateway and is
+     *     therefore not part of this public contract.
+     */
+    get: operations['getMeetingRsvps'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -178,6 +206,81 @@ export interface components {
       /** @description Number of partner contacts the invite is being sent to */
       recipientCount: number;
     };
+    /** @description RSVP list + summary for a partner meeting — Story 10.27 (AC7) */
+    MeetingRsvpListResponse: {
+      /** Format: uuid */
+      meetingId?: string;
+      /**
+       * Format: date-time
+       * @description When the calendar invite was sent, null if not yet sent
+       */
+      inviteSentAt?: string | null;
+      rsvps?: components['schemas']['RsvpDTO'][];
+      summary?: components['schemas']['RsvpSummary'];
+    };
+    RsvpDTO: {
+      /** @description Email of the partner contact who responded */
+      attendeeEmail?: string;
+      /**
+       * @description iCal PARTSTAT mapped to an RSVP status
+       * @enum {string}
+       */
+      status?: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
+      /** Format: date-time */
+      respondedAt?: string;
+    };
+    /** @description RSVP counts by status */
+    RsvpSummary: {
+      accepted?: number;
+      declined?: number;
+      tentative?: number;
+    };
+    /**
+     * @description Standard error envelope returned on every 4xx/5xx response across all services.
+     *     Flat shape (NOT nested under `error`). Backed by
+     *     `ch.batbern.shared.dto.ErrorResponse`. `@JsonInclude(NON_NULL)` — absent fields
+     *     are omitted from the wire.
+     */
+    ErrorResponse: {
+      /**
+       * Format: date-time
+       * @description When the error occurred (ISO-8601 / Instant).
+       */
+      timestamp?: string;
+      /** @description Request path that generated the error. */
+      path?: string;
+      /**
+       * @description HTTP status code.
+       * @example 400
+       */
+      status?: number;
+      /** @description Short HTTP reason phrase (e.g. "Bad Request"). */
+      error?: string;
+      /**
+       * @description Stable machine-readable error code for typed client handling
+       *     (e.g. `ADDITIONAL_EMAIL_DUPLICATE`, `ERR_VALIDATION`).
+       * @example ERR_VALIDATION
+       */
+      errorCode?: string;
+      /** @description Human-readable error message. */
+      message?: string;
+      /** @description Correlation ID for tracing this request across services. */
+      correlationId?: string;
+      /**
+       * @description Operational severity classification.
+       * @enum {string}
+       */
+      severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      /**
+       * @description Additional structured context (e.g. per-field validation errors keyed by
+       *     field name). Free-form object.
+       */
+      details?: {
+        [key: string]: unknown;
+      };
+      /** @description Present only in dev/staging diagnostics — never in production. */
+      stackTrace?: string;
+    };
   };
   responses: never;
   parameters: never;
@@ -210,7 +313,9 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
       };
     };
   };
@@ -394,14 +499,58 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
       };
       /** @description Meeting not found */
       404: {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getMeetingRsvps: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        meetingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description RSVP list and summary */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MeetingRsvpListResponse'];
+        };
+      };
+      /** @description Forbidden — ORGANIZER role required */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Meeting not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
       };
     };
   };

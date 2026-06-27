@@ -1,0 +1,1669 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event Speakers API
+  version: 1.0.0
+  description: 'Event-scoped speaker coordination: speaker pool, self-nomination, promotion to READY, invitations, and outreach history.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: Event Actions
+  description: Event publishing and workflow operations
+- name: Speaker Outreach
+  description: Speaker outreach tracking and history (Story 5.3)
+paths:
+  /events/{eventCode}/speakers/pool:
+    post:
+      tags:
+      - Event Actions
+      summary: Add speaker to event speaker pool
+      description: "Add a potential speaker to the event speaker pool during brainstorming phase.\n\n**Story**: 5.2 - Topic Selection & Speaker Brainstorming\n**Acceptance Criteria**: AC9-13\n**Authorization**: Requires ORGANIZER role\n**Rate Limiting**: Applied at API Gateway level\n\n**Business Rules**:\n- Event must exist\n- Speaker name is required\n- Company, expertise, and notes are optional\n- Organizer assignment is optional (can be assigned later)\n- Initial status is automatically set to 'identified'\n- **Tightened by ADR-009 (Story 11.D.1):** `email` is not accepted on this endpoint;\n  speakers are only promoted to a real identity via\n  `POST /speakers/{speakerId}/promote` once they reach the READY state per ADR-009 §0.2.\n  Any client-supplied `email` (or other unknown) field returns 400 Bad Request.\n\n**Performance**: <150ms (P95)\n"
+      operationId: addSpeakerToPool
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSpeakerToPoolRequest'
+      responses:
+        '201':
+          description: Speaker added to pool successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: 'Validation error. Two paths to this status:
+
+            (a) speakerName missing/empty, or
+
+            (b) unknown field present in the body — notably `email`, which is rejected
+
+            per Story 11.D.1 (AR23): use `POST /speakers/{speakerId}/promote` to
+
+            attach an email when promoting a CONTACTED speaker to READY.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                missingSpeakerName:
+                  summary: speakerName missing
+                  value:
+                    message: Speaker name is required
+                    timestamp: '2025-12-13T10:00:00Z'
+                    path: /api/v1/events/BATbern56/speakers/pool
+                    status: 400
+                    error: Bad Request
+                unknownField:
+                  summary: Unknown field 'email' rejected (AR23)
+                  value:
+                    message: Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to provision a speaker with an email
+                    timestamp: '2025-12-13T10:00:00Z'
+                    path: /api/v1/events/BATbern56/speakers/pool
+                    status: 400
+                    error: Bad Request
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: 'Event not found: BATbern56'
+                timestamp: '2025-12-13T10:00:00Z'
+                path: /api/v1/events/BATbern56/speakers/pool
+                status: 404
+                error: Not Found
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+    get:
+      tags:
+      - Event Actions
+      summary: Get speaker pool for event
+      description: 'Retrieve all speakers in the event''s speaker pool.
+
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+
+        **Authorization**: Requires ORGANIZER role
+
+        **Rate Limiting**: Applied at API Gateway level
+
+
+        **Performance**: <150ms (P95)
+
+        '
+      operationId: getSpeakerPool
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      responses:
+        '200':
+          description: Speaker pool retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpeakerPoolResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/speakers/self-nominate:
+    post:
+      tags:
+      - Event Actions
+      summary: Attendee self-nominates as a speaker ("I Could Speak on That")
+      description: "A logged-in attendee raises their hand with a proposed talk once the event's topic\nis set + published, feeding the speaker pipeline from the floor.\n\n**Story**: 7.2 - \"I Could Speak on That\"\n**Authorization**: Requires ATTENDEE role (login-gated end-to-end)\n**Rate Limiting**: Applied at API Gateway level\n\n**Business Rules**:\n- The event's topic must be set (`topicCode != null`) AND the event must be\n  published (`publishedAt != null` or `currentPublishedPhase != 'none'`) — else 409.\n- The nomination lands as a `speaker_pool` row at the `IDENTIFIED` default, tagged\n  `source = 'self_nomination'` with `proposedByUsername` = the caller's username.\n  **No** Cognito user, SPEAKER role, or session is created here — provisioning stays\n  organizer-only at promote-to-READY.\n- Identity (speaker name + company) is auto-filled from the attendee's profile; the\n  body carries only the proposed talk. Unknown body fields are rejected (400).\n- At most **one** self-nomination per attendee per event — a second attempt returns 409.\n"
+      operationId: selfNominateSpeaker
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelfNominateSpeakerRequest'
+      responses:
+        '201':
+          description: Self-nomination created (status IDENTIFIED, source self_nomination)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: Validation error (missing sessionTitle/abstract, or an unknown field)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          description: Not authenticated (anonymous caller — rejected at the API gateway)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: 'Conflict. Two paths:
+
+            (a) `SELF_NOMINATION_NOT_ALLOWED` — the event''s topic is unset or it is unpublished, or
+
+            (b) `DUPLICATE_SELF_NOMINATION` — this attendee already self-nominated for the event.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                notAllowed:
+                  summary: Topic unset / not published
+                  value:
+                    message: Self-nomination is not open for BATbern57 — the event topic must be set and published first.
+                    status: 409
+                    error: Conflict
+                    details:
+                      code: SELF_NOMINATION_NOT_ALLOWED
+                duplicate:
+                  summary: Already self-nominated
+                  value:
+                    message: You have already self-nominated for BATbern57.
+                    status: 409
+                    error: Conflict
+                    details:
+                      code: DUPLICATE_SELF_NOMINATION
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/speakers/pool/{speakerId}:
+    patch:
+      tags:
+      - Event Actions
+      summary: Patch a speaker pool entry (organizer assignment / notes)
+      description: 'Partial update of a speaker pool entry. Only fields named in
+
+        `PatchSpeakerPoolRequest` may be sent; any other field (notably `email`)
+
+        is rejected with HTTP 400 (`additionalProperties: false` +
+
+        `@JsonIgnoreProperties(ignoreUnknown = false)`).
+
+
+        **Story**: 11.D.1 (AR23) — `email` is captured exclusively by
+
+        `POST /speakers/{speakerId}/promote`. Sending `email` here is a
+
+        contract error.
+
+        **Authorization**: Requires ORGANIZER role.
+
+        '
+      operationId: patchSpeakerPoolEntry
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchSpeakerPoolRequest'
+      responses:
+        '200':
+          description: Speaker pool entry updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: 'Validation error — typically because the request body contains a
+
+            field outside `PatchSpeakerPoolRequest` (e.g. `email`).
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                emailRejected:
+                  summary: Email field rejected — use POST /promote instead
+                  value:
+                    message: Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to attach an email
+                    timestamp: '2026-05-16T10:00:00Z'
+                    path: /api/v1/events/BATbern56/speakers/pool/550e8400-e29b-41d4-a716-446655440000
+                    status: 400
+                    error: Bad Request
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+    delete:
+      tags:
+      - Event Actions
+      summary: Delete speaker from event pool
+      description: 'Remove a speaker from the event''s speaker pool.
+
+
+        **Authorization**: Requires ORGANIZER role
+
+        **Rate Limiting**: Applied at API Gateway level
+
+
+        **Business Rules**:
+
+        - Event must exist
+
+        - Speaker must exist in the pool
+
+        - Can only delete speakers in IDENTIFIED or CONTACTED status
+
+
+        **Performance**: <150ms (P95)
+
+        '
+      operationId: deleteSpeakerFromPool
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '204':
+          description: Speaker deleted successfully
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/speakers/{speakerId}/promote:
+    post:
+      tags:
+      - Event Actions
+      summary: Promote a CONTACTED speaker to READY (provisions User + SPEAKER role)
+      description: "Drives the `CONTACTED → READY` workflow transition for a speaker in the event pool.\n\n**Story**: 11.D.1 — Unified Speaker Workflow Refactor / Phase D\n**ADR**: ADR-009 §0.2 — `CONTACTED → READY` is the User-provisioning gate\n**Authorization**: Requires ORGANIZER role\n**Same-state behaviour**: Re-promoting an already-READY speaker returns\n  `409 Conflict` with `details.code = INVALID_PROMOTION_STATE` and\n  `details.currentState = READY`. Promote is only valid from CONTACTED;\n  subsequent identity changes go through a dedicated organizer action\n  (not this endpoint).\n\n**Side effects on success**:\n  - Workflow state transitions `CONTACTED → READY` via\n    `SpeakerWorkflowService.transition(...)` (the sole status writer).\n  - `UserApiClient.provisionUserWithRole(...)` is called: a User row is created if\n    none exists for the email; SPEAKER role is granted (idempotent).\n  - A `Session` + `PRIMARY_SPEAKER` `session_users` row is provisioned with the\n    canonical username (Story 11.E.8). The legacy `speaker_pool.username` and\n    `speaker_pool.email` columns were dropped in Story 11.E.9 (Flyway V103); the\n    response's `username` / `email` are now overlay-derived via\n    `PrimarySpeakerResolver.applyOverlay(...)`.\n  - `speaker_status_history` row is inserted (previous_status=contacted,\n    new_status=ready, changed_by_username=organizer).\n  - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published.\n\n**Why a dedicated endpoint?** `POST /speakers/pool` rejects `email` (AR23); the\nonly path that attaches an email + provisions an identity is this endpoint.\n`PUT /speakers/{speakerId}/status` with `newStatus=READY` also returns 400 with\ncode `READY_REQUIRES_PROMOTE_ENDPOINT` — promotion MUST go through this path.\n"
+      operationId: promoteSpeakerToReady
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteSpeakerRequest'
+      responses:
+        '200':
+          description: 'Speaker promoted to READY. Response is the updated speaker pool entry
+
+            with status=ready, username populated, and email populated.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: 'Validation error. Triggered by: missing/blank/malformed email, body fields
+
+            beyond the schema (`additionalProperties: false`), or invalid path parameters.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                missingEmail:
+                  summary: Email missing
+                  value:
+                    message: 'email: must not be blank'
+                    timestamp: '2026-05-16T10:00:00Z'
+                    path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote
+                    status: 400
+                    error: Bad Request
+                unknownField:
+                  summary: Unknown field rejected
+                  value:
+                    message: Invalid request format
+                    timestamp: '2026-05-16T10:00:00Z'
+                    path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote
+                    status: 400
+                    error: Bad Request
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: 'Speaker is in a state where promotion is invalid (any state other than
+
+            CONTACTED). Body contains `details.code = "INVALID_PROMOTION_STATE"` and
+
+            `details.currentState = "<state>"` so callers can render a tailored
+
+            message. Includes already-READY (re-promote is not idempotent — see
+
+            Same-state behaviour above).
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                alreadyInvited:
+                  summary: Speaker already INVITED
+                  value:
+                    message: speaker is already in INVITED; promote is only valid from CONTACTED
+                    timestamp: '2026-05-16T10:00:00Z'
+                    path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote
+                    status: 409
+                    error: Conflict
+                    details:
+                      code: INVALID_PROMOTION_STATE
+                      currentState: INVITED
+                alreadyReady:
+                  summary: Speaker already READY (re-promote rejected)
+                  value:
+                    message: speaker is already READY; promote is only valid from CONTACTED
+                    timestamp: '2026-05-16T10:00:00Z'
+                    path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote
+                    status: 409
+                    error: Conflict
+                    details:
+                      code: INVALID_PROMOTION_STATE
+                      currentState: READY
+                stillIdentified:
+                  summary: Speaker still in IDENTIFIED — log outreach first
+                  value:
+                    message: speaker must be in CONTACTED before promoting; log outreach first
+                    timestamp: '2026-05-16T10:00:00Z'
+                    path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote
+                    status: 409
+                    error: Conflict
+                    details:
+                      code: INVALID_PROMOTION_STATE
+                      currentState: IDENTIFIED
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/speakers/invite:
+    post:
+      tags:
+      - Speaker Invitation
+      summary: Invite a speaker to an event
+      description: 'Create a SpeakerPool entry for a speaker and optionally auto-create
+
+        a User account if one doesn''t exist.
+
+
+        **Story**: 6.1b - Speaker Invitation System
+
+        **Acceptance Criteria**: AC1 (invite), AC2 (auto-create user), AC7 (idempotency)
+
+        **Authorization**: Requires ORGANIZER role
+
+
+        **Business Rules**:
+
+        - If the speaker email already exists in the pool for this event, returns existing entry (idempotent)
+
+        - Auto-creates a User via UserApiClient if no user exists for the email
+
+        - Speaker starts in IDENTIFIED status
+
+        - Cognito account is NOT created for speakers initially
+
+
+        **Performance**: <300ms (P95)
+
+        '
+      operationId: inviteSpeaker
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code
+        required: true
+        schema:
+          type: string
+          example: batbern-2026-spring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteSpeakerRequest'
+      responses:
+        '201':
+          description: Speaker invited successfully (new entry created)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSpeakerResponse'
+        '200':
+          description: Speaker already exists in pool (idempotent return)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSpeakerResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/speakers/invite-batch:
+    post:
+      tags:
+      - Speaker Invitation
+      summary: Batch invite speakers to an event
+      description: 'Invite multiple speakers in a single request with partial failure support.
+
+
+        **Story**: 6.1b - Speaker Invitation System
+
+        **Acceptance Criteria**: AC5 (batch)
+
+        **Authorization**: Requires ORGANIZER role
+
+
+        **Business Rules**:
+
+        - Maximum 50 speakers per batch
+
+        - Processing continues even if individual invitations fail
+
+        - Returns 207 Multi-Status when some succeed and some fail
+
+
+        **Performance**: <2000ms (P95) for 50 speakers
+
+        '
+      operationId: inviteSpeakerBatch
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code
+        required: true
+        schema:
+          type: string
+          example: batbern-2026-spring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchInviteRequest'
+      responses:
+        '200':
+          description: All invitations processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchInviteResponse'
+        '207':
+          description: Partial success - some invitations failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchInviteResponse'
+        '400':
+          description: Validation error (e.g., empty speakers list)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/speakers/{username}/send-invitation:
+    post:
+      tags:
+      - Speaker Invitation
+      summary: Send invitation email to a speaker
+      description: "Send or resend a personalized Cognito-flow invitation email containing a login URL\nand (for first-time speakers) a temporary password. Story 11.F.1 retired magic-link\ntokens; speakers now sign in via Cognito and the portal is gated by\n@PreAuthorize(\"hasRole('SPEAKER')\").\n\n**Story**: 6.1b - Speaker Invitation System (updated by 11.E.2 / 11.F.1)\n**Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)\n**Authorization**: Requires ORGANIZER role\n\n**Business Rules**:\n- Speaker must exist in the pool for this event\n- Transitions speaker status to INVITED\n- CUMS sibling endpoint `POST /users/{username}/issue-invitation-credentials`\n  mints a Cognito temporary password when needed (FRESH_TEMP_PASSWORD action),\n  otherwise the email signals the speaker to reuse their existing password.\n- Publishes SpeakerInvitationSentEvent domain event\n- Records outreach history and status transition history\n- Email sent asynchronously; failure does not block the response\n\n**Performance**: <300ms (P95)\n"
+      operationId: sendSpeakerInvitation
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code
+        required: true
+        schema:
+          type: string
+          example: batbern-2026-spring
+      - name: username
+        in: path
+        description: Speaker's username or UUID (for brainstormed speakers)
+        required: true
+        schema:
+          type: string
+          example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendInvitationRequest'
+      responses:
+        '200':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendInvitationResponse'
+        '400':
+          description: Validation error (e.g., missing email, invalid deadlines)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/speakers/{speakerId}/outreach:
+    post:
+      tags:
+      - Speaker Outreach
+      summary: Record speaker outreach attempt
+      description: 'Record a contact attempt with a potential speaker during outreach phase.
+
+
+        **Story**: 5.3 - Speaker Outreach Tracking
+
+        **Acceptance Criteria**: AC1-4
+
+        **Authorization**: Requires ORGANIZER role
+
+        **Rate Limiting**: Applied at API Gateway level
+
+
+        **Business Rules**:
+
+        - Speaker must exist in speaker pool
+
+        - Speaker must be in IDENTIFIED, CONTACTED, or READY state
+
+        - Contact method must be email, phone, or in_person
+
+        - Automatically transitions speaker from IDENTIFIED → CONTACTED on first outreach
+
+        - Subsequent outreach attempts are logged without status change
+
+        - Organizer username is captured from authentication context
+
+
+        **State Transitions**:
+
+        - IDENTIFIED → CONTACTED (first outreach)
+
+        - CONTACTED → CONTACTED (additional outreach)
+
+        - READY → READY (follow-up outreach)
+
+
+        **Performance**: <200ms (P95)
+
+        '
+      operationId: recordSpeakerOutreach
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordOutreachRequest'
+      responses:
+        '201':
+          description: Outreach attempt recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutreachHistoryResponse'
+        '400':
+          description: Validation error (e.g., invalid contact method)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: 'Invalid contact method: sms. Must be one of: email, phone, in_person'
+                timestamp: '2025-12-14T10:00:00Z'
+                path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach
+                status: 400
+                error: Bad Request
+        '404':
+          description: Speaker or event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: 'Speaker not found: 550e8400-e29b-41d4-a716-446655440000'
+                timestamp: '2025-12-14T10:00:00Z'
+                path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach
+                status: 404
+                error: Not Found
+        '409':
+          description: Invalid state transition (speaker not in valid state for outreach)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: Cannot record outreach for speaker 550e8400-e29b-41d4-a716-446655440000 in state DECLINED. Speaker must be in IDENTIFIED, CONTACTED, or READY state.
+                timestamp: '2025-12-14T10:00:00Z'
+                path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach
+                status: 409
+                error: Conflict
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+    get:
+      tags:
+      - Speaker Outreach
+      summary: Get speaker outreach history
+      description: 'Retrieve all outreach attempts for a speaker, ordered by most recent first.
+
+
+        **Story**: 5.3 - Speaker Outreach Tracking
+
+        **Acceptance Criteria**: AC6
+
+        **Authorization**: Requires ORGANIZER role
+
+        **Rate Limiting**: Applied at API Gateway level
+
+
+        **Response**:
+
+        - Returns chronological history of all contact attempts
+
+        - Includes contact method, date, notes, and organizer
+
+        - Ordered by contact date descending (most recent first)
+
+
+        **Performance**: <150ms (P95)
+
+        '
+      operationId: getSpeakerOutreachHistory
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Outreach history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutreachHistoryResponse'
+        '404':
+          description: Speaker or event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: 'Speaker not found: 550e8400-e29b-41d4-a716-446655440000'
+                timestamp: '2025-12-14T10:00:00Z'
+                path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach
+                status: 404
+                error: Not Found
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+components:
+  schemas:
+    SelfNominateSpeakerRequest:
+      type: object
+      description: 'Story 7.2 "I Could Speak on That": an attendee''s speaker self-nomination body. The
+
+        attendee supplies only the proposed talk — their name + company are auto-filled from
+
+        their user profile server-side, so identity is never re-typed and cannot be spoofed.
+
+        `additionalProperties: false`: an unexpected field (e.g. `speakerName`, `status`) is
+
+        rejected with HTTP 400.
+
+        '
+      additionalProperties: false
+      required:
+      - sessionTitle
+      - abstract
+      properties:
+        sessionTitle:
+          type: string
+          minLength: 5
+          maxLength: 200
+          description: The proposed talk title. Max 200 to match the canonical session content title — the pitch is carried verbatim into the session at promote (ADR-012).
+          example: Event-driven architecture in practice
+        abstract:
+          type: string
+          minLength: 10
+          maxLength: 5000
+          description: The proposed talk abstract, stored raw (no agent pre-screen).
+          example: A field report on migrating a monolith to an event-driven core, including the dead ends.
+    AddSpeakerToPoolRequest:
+      type: object
+      description: 'Request to add a potential speaker to the event speaker pool during brainstorming phase.
+
+        Story 5.2 - AC9-12: Speaker Pool Management.
+
+        Story 11.D.1 (AR23): `additionalProperties: false` — any client-supplied `email` (or
+
+        other unknown field) is rejected with HTTP 400. Use `POST /speakers/{speakerId}/promote`
+
+        to attach an email when promoting a CONTACTED speaker to READY.
+
+        '
+      additionalProperties: false
+      required:
+      - speakerName
+      properties:
+        speakerName:
+          type: string
+          maxLength: 255
+          description: Name of the potential speaker (required)
+          example: Jane Smith
+        company:
+          type: string
+          maxLength: 255
+          description: Company or organization of the speaker (optional)
+          example: Tech Corp AG
+        expertise:
+          type: string
+          description: Areas of expertise (optional)
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          maxLength: 255
+          description: Username of organizer assigned for outreach (optional)
+          example: alice.mueller
+        notes:
+          type: string
+          description: Free-text notes about the speaker (optional)
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+    PatchSpeakerPoolRequest:
+      type: object
+      description: 'Partial-update body for `PATCH /events/{eventCode}/speakers/pool/{speakerId}`
+
+        (Story 11.D.1 AR23; extended by Epic 11 bug fix 2026-05-18 to support inline
+
+        edits of the brainstorm-level metadata `speakerName` / `company` / `expertise`).
+
+        All fields are optional — only non-null fields are applied to the entry.
+
+        `additionalProperties: false` rejects stale fields, notably `email`, which is
+
+        captured exclusively by `POST /speakers/{speakerId}/promote`.
+
+        '
+      additionalProperties: false
+      properties:
+        speakerName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: 'Display name on the brainstorm/kanban (nullable not allowed — pass an existing
+
+            value to keep, omit to leave unchanged). For READY+ speakers the canonical name
+
+            lives on the linked User; this field updates the pool entry only.
+
+            '
+          example: Jane Smith
+        company:
+          type: string
+          maxLength: 255
+          description: Speaker's company affiliation as known at brainstorm time (free text).
+          example: ACME GmbH
+        expertise:
+          type: string
+          maxLength: 1000
+          description: Comma-separated or free-text expertise tags shown on the kanban card.
+          example: Cloud Architecture, Kubernetes
+        assignedOrganizerId:
+          type: string
+          maxLength: 255
+          description: Username of organizer assigned for outreach (nullable to clear).
+          example: alice.mueller
+        notes:
+          type: string
+          description: Free-text notes about the speaker (nullable to clear).
+          example: Followed up via LinkedIn 2026-05-12 — interested but needs date confirmation.
+    PromoteSpeakerRequest:
+      type: object
+      description: 'Request body for `POST /speakers/{speakerId}/promote` (Story 11.D.1; tightened by
+
+        Story 11.E.4 AC4). Drives the `CONTACTED → READY` workflow transition and provisions
+
+        a User + SPEAKER role via `UserApiClient.provisionUserWithRole(...)`.
+
+
+        `firstName` and `lastName` are **required** (tightened from optional by Story 11.E.4
+
+        AC4, PM decision 2026-05-18). They populate the Cognito user''s `given_name` /
+
+        `family_name` attributes; the previous fallback to splitting `speaker_pool.speakerName`
+
+        (with literal placeholders `"Speaker"` / `"Unknown"` when the name was blank) is
+
+        removed. Callers MUST collect these fields from the organizer.
+
+
+        `additionalProperties: false`: stale fields from pre-refactor frontends are rejected
+
+        with HTTP 400 rather than silently ignored.
+
+        '
+      additionalProperties: false
+      required:
+      - email
+      - firstName
+      - lastName
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: 'Required. Speaker email — becomes the User lookup key (case-insensitive) in
+
+            CUMS and the Cognito username on first provisioning. Post Story 11.E.9 (V103)
+
+            the email is not duplicated on `speaker_pool`; it lives only in CUMS and is
+
+            resolved via `PrimarySpeakerResolver.resolveEmail(pool)` at read time.
+
+            '
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^.*\S.*$
+          description: 'Required (Story 11.E.4 AC4). Populates the Cognito user''s `given_name` attribute
+
+            and the User''s `first_name` column. Must contain at least one non-whitespace
+
+            character — blank / whitespace-only values are rejected by both the spec
+
+            `pattern` and server-side `@NotBlank` validation → HTTP 400.
+
+            '
+          example: Jane
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^.*\S.*$
+          description: 'Required (Story 11.E.4 AC4). Populates the Cognito user''s `family_name` attribute
+
+            and the User''s `last_name` column. Must contain at least one non-whitespace
+
+            character — blank / whitespace-only values are rejected by both the spec
+
+            `pattern` and server-side `@NotBlank` validation → HTTP 400.
+
+            '
+          example: Smith
+    SpeakerPoolResponse:
+      type: object
+      description: 'Response representing a speaker pool entry.
+
+        Story 5.2 - AC9-13: Speaker Pool Management
+
+        '
+      required:
+      - id
+      - eventId
+      - speakerName
+      - status
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the speaker pool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        eventId:
+          type: string
+          format: uuid
+          description: UUID of the event this speaker is associated with
+          example: 789e4567-e89b-12d3-a456-426614174111
+        speakerName:
+          type: string
+          description: Name of the potential speaker
+          example: Jane Smith
+        company:
+          type: string
+          nullable: true
+          description: Company identifier/slug of the speaker (from User.companyId). Stable key — NOT for display.
+          example: TechCorpAG
+        companyDisplayName:
+          type: string
+          nullable: true
+          description: 'Human-readable company name (companies.display_name, falling back to
+
+            companies.name, then the slug). Prefer this over `company` for display.
+
+            '
+          example: Tech Corp AG
+        expertise:
+          type: string
+          nullable: true
+          description: Areas of expertise
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          nullable: true
+          description: Username of organizer assigned for outreach
+          example: alice.mueller
+        status:
+          type: string
+          enum:
+          - identified
+          - contacted
+          - ready
+          - accepted
+          - declined
+          - content_submitted
+          - quality_reviewed
+          - slot_assigned
+          - confirmed
+          - withdrew
+          - overflow
+          description: 'Current status of the speaker in the pool workflow.
+
+            Story 5.2 - AC13: Initial status = ''identified''
+
+            '
+          example: identified
+        notes:
+          type: string
+          nullable: true
+          description: Free-text notes about the speaker
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern.
+        source:
+          type: string
+          enum:
+          - organizer_added
+          - self_nomination
+          description: 'Story 7.2 — provenance of the pool row. `organizer_added` for organizer-sourced
+
+            candidates (the default), `self_nomination` for attendee "I Could Speak on That"
+
+            entries. Lets the organizer pool/brainstorming UI flag self-nominations.
+
+            '
+          example: self_nomination
+        proposedByUsername:
+          type: string
+          nullable: true
+          description: Story 7.2 — username of the self-nominating attendee (null for organizer-added rows).
+          example: jane.attendee
+        proposedSessionTitle:
+          type: string
+          nullable: true
+          description: Story 7.2 — the talk title the attendee proposed (null for organizer-added rows).
+          example: Event-driven architecture in practice
+        proposedAbstract:
+          type: string
+          nullable: true
+          description: Story 7.2 — the talk abstract the attendee proposed, stored raw (null for organizer-added rows).
+          example: A field report on migrating a monolith to an event-driven core.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when speaker was added to pool
+          example: 2025-12-13 10:00:00+00:00
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+          example: 2025-12-13 10:15:00+00:00
+    RecordOutreachRequest:
+      type: object
+      description: 'Request to record a speaker outreach attempt.
+
+        Story 5.3 - AC1-4: Speaker Outreach Tracking
+
+        '
+      required:
+      - contactDate
+      - contactMethod
+      properties:
+        contactDate:
+          type: string
+          format: date-time
+          description: Date and time when contact was made
+          example: 2025-12-14 14:30:00+00:00
+        contactMethod:
+          type: string
+          enum:
+          - email
+          - phone
+          - in_person
+          description: 'Method of contact used to reach the speaker.
+
+            Valid values: email, phone, in_person
+
+            '
+          example: email
+        notes:
+          type: string
+          maxLength: 5000
+          description: 'Free-text notes about the conversation.
+
+            Organizers record speaker response, next steps, availability, etc.
+
+            '
+          example: 'Spoke with Jane about presenting on Kubernetes security.
+
+            She''s interested but needs to check her calendar.
+
+            Follow up next Tuesday.
+
+            '
+    OutreachHistoryResponse:
+      type: object
+      description: 'Response representing a speaker outreach attempt.
+
+        Story 5.3 - AC5-6: Speaker Outreach History
+
+        '
+      required:
+      - id
+      - speakerPoolId
+      - contactDate
+      - contactMethod
+      - organizerUsername
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this outreach record
+          example: 550e8400-e29b-41d4-a716-446655440000
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the speaker in the speaker pool
+          example: 123e4567-e89b-12d3-a456-426614174000
+        contactDate:
+          type: string
+          format: date-time
+          description: Date and time when contact was made
+          example: 2025-12-14 14:30:00+00:00
+        contactMethod:
+          type: string
+          enum:
+          - email
+          - phone
+          - in_person
+          description: Method of contact used
+          example: email
+        notes:
+          type: string
+          nullable: true
+          description: Notes about the conversation
+          example: 'Spoke with Jane about presenting on Kubernetes security.
+
+            She''s interested but needs to check her calendar.
+
+            Follow up next Tuesday.
+
+            '
+        organizerUsername:
+          type: string
+          description: Username of the organizer who made the contact
+          example: alice.mueller
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when outreach record was created
+          example: 2025-12-14 14:35:00+00:00
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+          example: 2025-12-14 14:35:00+00:00
+    InviteSpeakerRequest:
+      type: object
+      description: 'Request to invite a speaker to an event.
+
+        Story 6.1b - AC1: Speaker Invitation
+
+        '
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          nullable: true
+          description: Speaker's first name (used for user creation if not found)
+          example: Jane
+        lastName:
+          type: string
+          nullable: true
+          description: Speaker's last name (used for user creation if not found)
+          example: Smith
+        company:
+          type: string
+          nullable: true
+          description: Speaker's company name
+          example: Tech Corp AG
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Session to assign speaker to (optional)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        notes:
+          type: string
+          nullable: true
+          description: Notes about the speaker
+          example: Expert in cloud architecture
+    InviteSpeakerResponse:
+      type: object
+      description: 'Response for a speaker invitation.
+
+        Story 6.1b - AC1, AC7: Speaker Invitation with idempotency
+
+        '
+      required:
+      - speakerPoolId
+      - email
+      - speakerName
+      - status
+      - created
+      - createdAt
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the SpeakerPool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        username:
+          type: string
+          nullable: true
+          description: Speaker's username
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        speakerName:
+          type: string
+          description: Display name of the speaker
+          example: Jane Smith
+        status:
+          type: string
+          enum:
+          - identified
+          - contacted
+          - ready
+          - accepted
+          - declined
+          - content_submitted
+          - quality_reviewed
+          - slot_assigned
+          - confirmed
+          - withdrew
+          - overflow
+          description: Current workflow status
+          example: identified
+        created:
+          type: boolean
+          description: True if newly created, false if existing (idempotent return)
+          example: true
+        userCreated:
+          type: boolean
+          description: True if a new User account was created
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: When the SpeakerPool entry was created
+          example: 2026-01-15 10:00:00+00:00
+    BatchInviteRequest:
+      type: object
+      description: 'Request to invite multiple speakers in a batch.
+
+        Story 6.1b - AC5: Batch Invitation
+
+        '
+      required:
+      - speakers
+      properties:
+        speakers:
+          type: array
+          minItems: 1
+          maxItems: 50
+          description: List of speakers to invite (1-50 per batch)
+          items:
+            $ref: '#/components/schemas/InviteSpeakerRequest'
+    BatchInviteResponse:
+      type: object
+      description: 'Response for a batch speaker invitation with partial failure support.
+
+        Story 6.1b - AC5: Batch Invitation
+
+        '
+      required:
+      - totalRequested
+      - successCount
+      - failedCount
+      - results
+      - errors
+      properties:
+        totalRequested:
+          type: integer
+          description: Total number of speakers requested
+          example: 5
+        successCount:
+          type: integer
+          description: Number of speakers successfully invited
+          example: 4
+        failedCount:
+          type: integer
+          description: Number of failed invitations
+          example: 1
+        results:
+          type: array
+          description: Individual results for successful invitations
+          items:
+            $ref: '#/components/schemas/InviteSpeakerResponse'
+        errors:
+          type: array
+          description: Details of failed invitations
+          items:
+            type: object
+            required:
+            - email
+            - errorCode
+            - errorMessage
+            properties:
+              email:
+                type: string
+                format: email
+                description: Email of the speaker that failed
+                example: invalid@broken.test
+              errorCode:
+                type: string
+                description: Error classification code
+                enum:
+                - INVALID_REQUEST
+                - EVENT_NOT_FOUND
+                - USER_SERVICE_ERROR
+                - INTERNAL_ERROR
+                example: USER_SERVICE_ERROR
+              errorMessage:
+                type: string
+                description: Human-readable error message
+                example: Failed to create user account
+    SendInvitationRequest:
+      type: object
+      description: "Request to send/resend an invitation email to a speaker.\nStory 6.1b - AC3 (updated by 11.E.2 / 11.F.1): Invitation Email\n\nThe email includes:\n- Cognito login URL + temporary password (FRESH_TEMP_PASSWORD)\n  OR existing-password reminder (USE_EXISTING_PASSWORD)\n- Event details, deadlines, and session info\n"
+      required:
+      - responseDeadline
+      properties:
+        responseDeadline:
+          type: string
+          format: date
+          description: Deadline for speaker to respond (must be in the future)
+          example: '2026-02-28'
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Deadline for speaker to submit content (must be after responseDeadline)
+          example: '2026-03-10'
+        locale:
+          type: string
+          nullable: true
+          description: Preferred language for the email (defaults to 'de')
+          enum:
+          - de
+          - en
+          example: de
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Override email address (for speakers without email in database)
+          example: jane.smith@example.com
+    SendInvitationResponse:
+      type: object
+      description: 'Response after sending an invitation email.
+
+        Story 6.1b - AC3: Invitation Email
+
+        '
+      required:
+      - speakerPoolId
+      - status
+      - invitedAt
+      - responseDeadline
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the SpeakerPool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        username:
+          type: string
+          nullable: true
+          description: Speaker's username
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        status:
+          type: string
+          enum:
+          - invited
+          description: Updated status (always INVITED after sending)
+          example: invited
+        invitedAt:
+          type: string
+          format: date-time
+          description: When the invitation was sent
+          example: 2026-01-15 10:00:00+00:00
+        responseDeadline:
+          type: string
+          format: date
+          description: Deadline for speaker to respond
+          example: '2026-02-28'
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Deadline for content submission
+          example: '2026-03-10'
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

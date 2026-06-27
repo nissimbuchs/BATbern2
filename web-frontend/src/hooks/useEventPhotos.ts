@@ -4,7 +4,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { eventApiClient } from '@/services/eventApiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-media-api.types';
 
 type EventPhotoUploadRequest = components['schemas']['EventPhotoUploadRequest'];
 

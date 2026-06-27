@@ -1,7 +1,7 @@
 package ch.batbern.events.entity;
 
 import ch.batbern.events.converter.EventTypeConverter;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;

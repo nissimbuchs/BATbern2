@@ -1,7 +1,7 @@
 package ch.batbern.partners.service;
 
-import ch.batbern.partners.client.dto.AttendanceSummaryDTO;
-import ch.batbern.partners.dto.PartnerDashboardDTO;
+import ch.batbern.partners.dto.generated.AttendanceSummaryRecord;
+import ch.batbern.partners.dto.generated.PartnerDashboardResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -43,7 +43,7 @@ public class PartnerAttendanceExportService {
      * @param dashboard   dashboard data from PartnerAnalyticsService
      * @return raw XLSX bytes
      */
-    public byte[] generateXlsx(String companyName, PartnerDashboardDTO dashboard) {
+    public byte[] generateXlsx(String companyName, PartnerDashboardResponse dashboard) {
         log.debug("Generating attendance XLSX export for company={}", companyName);
 
         try (SXSSFWorkbook workbook = new SXSSFWorkbook(100)) {
@@ -68,27 +68,33 @@ public class PartnerAttendanceExportService {
             writeCell(header, 5, "Percentage (%)", headerStyle);
 
             // Data rows
-            List<AttendanceSummaryDTO> summaries = dashboard.attendanceSummary();
+            List<AttendanceSummaryRecord> summaries = dashboard.getAttendanceSummary();
+            if (summaries == null) {
+                summaries = List.of();
+            }
             long totalCompanyAttendees = 0;
             long totalAttendees = 0;
 
             for (int i = 0; i < summaries.size(); i++) {
-                AttendanceSummaryDTO s = summaries.get(i);
+                AttendanceSummaryRecord s = summaries.get(i);
                 Row row = sheet.createRow(i + 1);
 
-                double percentage = s.totalAttendees() > 0
-                    ? (double) s.companyAttendees() / s.totalAttendees() * 100.0
+                long companyAttendees = s.getCompanyAttendees() != null ? s.getCompanyAttendees() : 0L;
+                long eventTotalAttendees = s.getTotalAttendees() != null ? s.getTotalAttendees() : 0L;
+
+                double percentage = eventTotalAttendees > 0
+                    ? (double) companyAttendees / eventTotalAttendees * 100.0
                     : 0.0;
 
-                writeCell(row, 0, s.eventCode(), null);
-                writeCell(row, 1, s.eventTitle() != null ? s.eventTitle() : "", null);
-                writeCell(row, 2, DATE_FORMATTER.format(s.eventDate()), null);
-                writeNumericCell(row, 3, s.companyAttendees());
-                writeNumericCell(row, 4, s.totalAttendees());
+                writeCell(row, 0, s.getEventCode(), null);
+                writeCell(row, 1, s.getEventTitle() != null ? s.getEventTitle() : "", null);
+                writeCell(row, 2, DATE_FORMATTER.format(s.getEventDate()), null);
+                writeNumericCell(row, 3, companyAttendees);
+                writeNumericCell(row, 4, eventTotalAttendees);
                 writeCell(row, 5, String.format("%.1f%%", percentage), null);
 
-                totalCompanyAttendees += s.companyAttendees();
-                totalAttendees += s.totalAttendees();
+                totalCompanyAttendees += companyAttendees;
+                totalAttendees += eventTotalAttendees;
             }
 
             // Footer row — totals
@@ -106,11 +112,11 @@ public class PartnerAttendanceExportService {
             writeCell(footerRow, 5, String.format("%.1f%%", overallPct), footerStyle);
 
             // Cost per attendee row
-            if (dashboard.costPerAttendee() != null) {
+            if (dashboard.getCostPerAttendee() != null) {
                 Row kpiRow = sheet.createRow(footerIdx + 1);
                 writeCell(kpiRow, 0, "Cost Per Attendee (CHF)", footerStyle);
                 writeCell(kpiRow, 1,
-                    dashboard.costPerAttendee().setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                    dashboard.getCostPerAttendee().setScale(2, RoundingMode.HALF_UP).toPlainString(),
                     footerStyle);
             }
 

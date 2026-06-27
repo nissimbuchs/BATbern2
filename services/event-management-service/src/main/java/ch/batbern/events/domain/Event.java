@@ -2,7 +2,7 @@ package ch.batbern.events.domain;
 
 import ch.batbern.events.converter.EventTypeConverter;
 import ch.batbern.events.converter.EventWorkflowStateConverter;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.shared.types.EventWorkflowState;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;

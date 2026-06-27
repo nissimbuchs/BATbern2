@@ -4,7 +4,7 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.config.TestUserApiClientConfig;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.entity.AppSettingEntity;

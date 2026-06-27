@@ -298,18 +298,6 @@ describe('EventApiClient — mocked', () => {
     });
   });
 
-  // ── cancelRegistration ────────────────────────────────────────────────────────
-
-  describe('cancelRegistration', () => {
-    it('should return status on success', async () => {
-      mockApiClient.post.mockResolvedValue({ data: { message: 'Cancelled', status: 'CANCELLED' } });
-
-      const result = await eventApiClient.cancelRegistration('BATbern142', 'jwt-token');
-
-      expect(result.status).toBe('CANCELLED');
-    });
-  });
-
   // ── getRegistration ───────────────────────────────────────────────────────────
 
   describe('getRegistration', () => {

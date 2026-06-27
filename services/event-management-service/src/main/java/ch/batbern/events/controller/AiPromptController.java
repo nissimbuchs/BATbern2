@@ -1,8 +1,8 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.api.generated.AiPromptsApi;
-import ch.batbern.events.dto.generated.AiPromptResponse;
-import ch.batbern.events.dto.generated.UpdateAiPromptRequest;
+import ch.batbern.events.ai.api.generated.AiPromptsApi;
+import ch.batbern.events.ai.dto.generated.AiPromptResponse;
+import ch.batbern.events.ai.dto.generated.UpdateAiPromptRequest;
 import ch.batbern.events.mapper.AiPromptMapper;
 import ch.batbern.events.service.AiPromptService;
 import jakarta.persistence.EntityNotFoundException;

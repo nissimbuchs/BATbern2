@@ -9,7 +9,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-newsletter-api.types';
 
 type EmailTemplateResponse = components['schemas']['EmailTemplateResponse'];
 type CreateEmailTemplateRequest = components['schemas']['CreateEmailTemplateRequest'];

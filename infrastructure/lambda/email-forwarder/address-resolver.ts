@@ -127,7 +127,9 @@ async function fetchUsersByRole(role: string): Promise<string[]> {
   let totalPages = 1;
 
   while (page < totalPages) {
-    const url = `${API_GATEWAY_URL}/api/v1/users?role=${role}&page=${page}&limit=100`;
+    // ADR-013 §3: role is expressed via the JSON `filter` vocabulary, not an ad-hoc ?role= param.
+    const filter = encodeURIComponent(JSON.stringify({ role }));
+    const url = `${API_GATEWAY_URL}/api/v1/users?filter=${filter}&page=${page}&limit=100`;
     const response = await fetch(url);
 
     if (!response.ok) {

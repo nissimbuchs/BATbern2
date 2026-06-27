@@ -1,10 +1,10 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.dto.generated.AnalyticsAttendanceResponse;
-import ch.batbern.events.dto.generated.AnalyticsCompaniesResponse;
-import ch.batbern.events.dto.generated.AnalyticsOverviewResponse;
-import ch.batbern.events.dto.generated.AnalyticsTopicsResponse;
-import ch.batbern.events.dto.generated.CompanyDistributionResponse;
+import ch.batbern.events.analytics.dto.generated.AnalyticsAttendanceResponse;
+import ch.batbern.events.analytics.dto.generated.AnalyticsCompaniesResponse;
+import ch.batbern.events.analytics.dto.generated.AnalyticsOverviewResponse;
+import ch.batbern.events.analytics.dto.generated.AnalyticsTopicsResponse;
+import ch.batbern.events.analytics.dto.generated.CompanyDistributionResponse;
 import ch.batbern.events.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
