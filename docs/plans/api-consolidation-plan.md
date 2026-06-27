@@ -48,8 +48,8 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
 > regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
 > service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 8/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
-> EventWorkflow, Analytics, Deregistration, TeaserImages), Partner 5/10.
+> prod controllers); EMS is 9/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
+> EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist), Partner 5/10.
 
 | Phase | Status | Notes |
 |---|---|---|
@@ -636,8 +636,20 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   `core.dto.generated.*`); `imageId` path param is `format: uuid` → generated `UUID`, matching the controller.
 >   **Note:** the core generator is the plugin's default `openApiGenerate` task (not `openApiGenerateCore`).
 >   **Verified:** EMS main+test compile; `EventTeaserImageControllerIntegrationTest` 12/12 green (Testcontainers);
->   FE types regenerated (events-core gains `listTeaserImages`) + type-check green. ⏳ **Next EMS:** continue
->   per-controller re-tag+wire (e.g. Sessions, Participants, Newsletter), splitting each domain tag as wired.
+>   FE types regenerated (events-core gains `listTeaserImages`) + type-check green.
+> - ✅ **Wired (5th EMS):** `AiAssistController` → `AiAssistApi` (event-ai spec, 5 ops: getFeatureFlags /
+>   generateEventDescription / generateThemeImage / applyThemeImage / analyzeAbstract). **No re-tag needed** —
+>   event-ai already has `AI Assist` as a controller-specific tag (`AI Prompts` is separate, already wired to
+>   AiPromptController). `generateDescription`→operationId `generateEventDescription`; bare override params;
+>   method `@PreAuthorize`/`@CacheEvict` kept. **DTO consolidation:** deleted the nested hand-written record
+>   `ApplyThemeImageRequest`, threaded the generated `ai.dto.generated.ApplyThemeImageRequest` (`getImageUrl()`)
+>   through controller + the LLM08 security test. No spec change (interface + DTO already existed) → no FE regen.
+>   `/public/settings/features` stays here for now (Phase 8 flags it for relocation off the AI controller — wiring
+>   it to AiAssistApi today doesn't block that move). **Verified (full live cycle):** EMS compile;
+>   `AiAssistControllerIntegrationTest`+`AiAssistControllerSecurityTest` 14/14 green; EMS restarted + live gateway
+>   smoke — public feature-flags 200, ai/description no-auth 401, theme-image/apply bad+lookalike URL 400 (LLM08
+>   guard intact, body bound to generated DTO); no real LLM calls. ⏳ **Next EMS:** continue per-controller wire
+>   (e.g. AgendaConfig — needs real DTO consolidation w/ enum + LocalTime mapping; Sessions; Participants).
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
 >   `UserControllerIntegrationTest.should_filterByRole_when_roleFilterProvided`). The tests still sent
