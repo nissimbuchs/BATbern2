@@ -30,12 +30,25 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 `eb4d1fb6` (deprecate-half, now superseded), `af3cd875` (Phase 3 stub, now superseded),
 `a7802ef3` (Phase 1), `4bce02ef` (Phase 0).
 
-> **Phases 9a + 7 are being done on a sibling branch `api-consolidation-phase7`** (forked
-> off `api-consolidation` while that branch is still deploying/merging). It carries the
-> generator upgrade (9a) and the Phase-7 controller wiring. **It must be rebased onto
-> `api-consolidation` once that lands.** Phase 9a is the deliberate pre-req: upgrade the
-> generator first so the ~50 Phase-7 controllers bind to the final 7.14.0 interface shape
-> once, instead of being re-touched if a later upgrade reshaped the interfaces.
+> **Phases 9a + 7 are on branch `api-consolidation-phase7`** (forked off `api-consolidation`).
+> It carries the generator upgrade (9a) and the Phase-7 controller wiring. Phase 9a is the
+> deliberate pre-req: upgrade the generator first so the Phase-7 controllers bind to the final
+> 7.14.0 interface shape once.
+>
+> ✅ **Rebased onto `develop` 2026-06-27** — `api-consolidation` landed as squash **PR #815**
+> (`refactor(api): ADR-013 consolidation …`). Because #815 is a squash, the branch was rebased
+> with `git rebase --onto origin/develop <fork-point 5e15eeb3>` so only the **13 phase7-unique
+> commits** replay on top (the duplicate `URL-encode listUsers filter` commit auto-dropped as
+> "already upstream"; the one Bruno conflict resolved to develop's percent-encoded form). Verified
+> post-rebase: CUMS + EMS compile, `UserControllerIntegrationTest` + `EventWorkflowControllerIntegrationTest`
+> green. Backup: `backup/phase7-pre-rebase-3b43fe17`.
+>
+> ▶ **RESUME (next session):** continue EMS Phase 7 per-controller — pick the next controller
+> (e.g. Sessions, Registrations, Analytics, Newsletter), **split its op-group out of the shared
+> domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
+> regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
+> service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
+> prod controllers); EMS is 5/49, Partner 5/10.
 
 | Phase | Status | Notes |
 |---|---|---|
