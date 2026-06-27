@@ -27,6 +27,8 @@ tags:
   description: Batch operations on multiple events
 - name: Event Actions
   description: Event publishing and workflow operations
+- name: Event Workflow
+  description: Event workflow state transitions and status (EventWorkflowController)
 - name: Event Types
   description: Event type configuration management (Story 5.1)
 paths:
@@ -614,7 +616,7 @@ paths:
   /events/{eventCode}/workflow/transition:
     post:
       tags:
-      - Event Actions
+      - Event Workflow
       summary: Transition event to target workflow state
       description: 'Transition an event to a specific target workflow state.
 
@@ -704,17 +706,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  eventCode:
-                    type: string
-                    example: BATbern142
-                  workflowState:
-                    type: string
-                    example: TOPIC_SELECTION
-                  updatedAt:
-                    type: string
-                    format: date-time
+                $ref: '#/components/schemas/WorkflowTransitionResponse'
         '400':
           description: Invalid state transition
           content:
@@ -765,7 +757,7 @@ paths:
   /events/{eventCode}/workflow/status:
     get:
       tags:
-      - Event Actions
+      - Event Workflow
       summary: Get current workflow status
       description: 'Retrieve the current workflow status including current state, next available states,
 
@@ -2298,6 +2290,23 @@ components:
       - EVENT_COMPLETED
       - ARCHIVED
       example: SPEAKER_IDENTIFICATION
+    WorkflowTransitionResponse:
+      type: object
+      description: Result of a successful workflow state transition.
+      required:
+      - eventCode
+      - workflowState
+      properties:
+        eventCode:
+          type: string
+          example: BATbern142
+        workflowState:
+          type: string
+          description: The event's workflow state name after the transition.
+          example: TOPIC_SELECTION
+        updatedAt:
+          type: string
+          format: date-time
     TransitionStateRequest:
       type: object
       description: 'Request to transition event to target workflow state (Story 5.1a - AC12).
@@ -2309,7 +2318,13 @@ components:
       - targetState
       properties:
         targetState:
-          $ref: '#/components/schemas/EventWorkflowState'
+          type: string
+          description: |
+            Target workflow state name (an EventWorkflowState constant, e.g.
+            SPEAKER_OUTREACH). Typed as a string — the domain enum carries ~20 states
+            and is validated server-side by the workflow state machine; the spec-level
+            EventWorkflowState enum is intentionally not used here to avoid an
+            incomplete-enum contract.
         overrideValidation:
           type: boolean
           nullable: true
@@ -2343,19 +2358,21 @@ components:
       - validationMessages
       properties:
         currentState:
-          $ref: '#/components/schemas/EventWorkflowState'
+          type: string
+          description: Current workflow state name (an EventWorkflowState constant).
+          example: SPEAKER_BRAINSTORMING
         nextAvailableStates:
           type: array
           description: List of states that can be transitioned to from current state
           items:
-            $ref: '#/components/schemas/EventWorkflowState'
+            type: string
           example:
           - SPEAKER_OUTREACH
         blockedTransitions:
           type: array
           description: List of states that are blocked due to validation failures
           items:
-            $ref: '#/components/schemas/EventWorkflowState'
+            type: string
           example:
           - SPEAKER_OUTREACH
         validationMessages:
