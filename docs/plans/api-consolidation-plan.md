@@ -48,11 +48,23 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
 > regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
 > service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 12/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
+> prod controllers); EMS is 13/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
 > EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist, AgendaConfig, Participants,
-> SessionQna), Partner 5/10. **Autonomous run 2026-06-27 night:** wiring all remaining EMS per-controller,
-> running Bruno+Playwright+commit each. Lesson: ALWAYS give Bruno the long Bash timeout — a SIGTERM'd
-> Bruno run took EMS down mid-suite and produced misleading 500s (not a code bug).
+> SessionQna, OrganizerThanks), Partner 5/10. **Autonomous run 2026-06-27 night:** wiring remaining EMS
+> per-controller, Bruno+Playwright+commit each. **Key findings about the REMAINING ~24 EMS controllers
+> (most are NOT clean per-controller wires):** (1) **Shared-DTO cluster** — ~7 hand DTOs (SpeakerPoolResponse,
+> SessionResponse, TimetableResponse, SessionSpeakerResponse, SessionMaterialResponse, ContentSubmitResponse,
+> SlidesOnlineSendResponse) are returned by MULTIPLE controllers + services; wiring any one to its generated
+> return type needs a coordinated consolidation (or controller-level mapping) — not independent. (2) **Undocumented**
+> controllers need spec authoring first: SpeakerPortal*, EventTask, TaskTemplate, SpeakerStatus, SpeakerReminder,
+> VenueCoordination, Admin, AdminSettings, TopicSessionData, TopicSimilarity, EventQna, GlobalSession. (3) **Ad-hoc
+> returns** (`ResponseEntity<?>`/`Map`) need typed contracts designed: SlotAssignment(6), Session(1), SessionMaterials(3),
+> SpeakerReminder(2), EventController(5). (4) **Email-triggering** ops (RegistrantNotice/SpeakerInvitation/SlidesOnline/
+> VenueCoordination send) — smoke read-only paths only. (5) **Defer**: Watch* (external watch-app contract, Phase 8);
+> **skip**: DevEmail/TestFixtureCleanup (dev/test-only). **Lessons:** ALWAYS give Bruno the long Bash timeout (a
+> SIGTERM'd Bruno run took EMS down mid-suite → misleading 500s); never re-list deleted files in `git add` (it aborts
+> staging → a broken version got committed; use `git rm`/`git add -A`, and don't trust pre-commit checkstyle when the
+> index diverged from the working tree).
 
 | Phase | Status | Notes |
 |---|---|---|
