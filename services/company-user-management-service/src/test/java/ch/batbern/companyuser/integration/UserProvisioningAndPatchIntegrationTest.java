@@ -284,7 +284,9 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(patch("/api/v1/users/no.such.user/profile")
+        // Well-formed but absent username (matches the users-api {username} @Pattern, so it
+        // reaches the service and 404s rather than failing path validation with 400).
+        mockMvc.perform(patch("/api/v1/users/ghost.user/profile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNotFound());

@@ -1439,10 +1439,19 @@ export interface components {
        */
       fileName: string;
       /**
-       * @description File size in bytes (max 5 MB)
+       * @description File size in bytes. The 5 MB ceiling is enforced server-side by
+       *     ProfilePictureService (friendly `exceeds 5MB limit` 400) rather than a
+       *     declarative `maximum`, preserving the pre-wiring contract + message.
        * @example 1048576
        */
       fileSize: number;
+      /**
+       * @description Client-declared MIME type of the upload. Accepted for documentation-truth
+       *     (the frontend sends `file.type`), but the server authoritatively derives the
+       *     content type from the file extension — this value is not trusted or required.
+       * @example image/png
+       */
+      mimeType?: string;
     };
     /** @description Presigned URL response for S3 upload */
     PresignedUploadUrl: {

@@ -1,7 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.PresignedUploadUrl;
+import ch.batbern.companyuser.dto.generated.PresignedUploadUrl;
 import ch.batbern.companyuser.exception.FileSizeExceededException;
 import ch.batbern.companyuser.exception.InvalidFileTypeException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Map;
@@ -116,14 +117,14 @@ public class ProfilePictureService {
 
         log.info("Generated presigned URL for file ID: {}, S3 key: {}", fileId, s3Key);
 
-        return PresignedUploadUrl.builder()
-                .uploadUrl(uploadUrl)
+        // Generated DTO (users-api PresignedUploadUrl): no-arg + fluent setters; uploadUrl is a URI.
+        return new PresignedUploadUrl()
+                .uploadUrl(URI.create(uploadUrl))
                 .fileId(fileId)
                 .s3Key(s3Key)
                 .fileExtension(fileExtension)
                 .expiresInMinutes(PRESIGNED_URL_EXPIRATION_MINUTES)
-                .requiredHeaders(Map.of("Content-Type", mimeType))
-                .build();
+                .requiredHeaders(Map.of("Content-Type", mimeType));
     }
 
     /**
