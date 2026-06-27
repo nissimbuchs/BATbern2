@@ -93,17 +93,23 @@ openApiGenerate {
         useJakartaEe: "true",
         dateLibrary: "java8",
         generateBuilders: "true",
-        skipDefaultInterface: "true"
+        skipDefaultInterface: "true",
+        containerDefaultToNull: "true"  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 }
 
 // Generate Company Service Client DTOs
 task generateCompanyClientDtos(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
-    generatorName = "java"
-    library = "native"
+    // Models-only cross-service client DTOs. Uses the `spring` generator (not `java`/`native`)
+    // to mirror EMS's openApiGenerateUsersClient: the Java client model template injects an
+    // unsatisfied `import ...ApiClient;` under models-only generation (openapi-generator 7.x),
+    // whereas the spring model template does not.
+    generatorName = "spring"
     inputSpec = "$rootDir/docs/api/companies-api.openapi.yml".toString()
     outputDir = "$buildDir/generated-client-company".toString()
+    apiPackage = "ch.batbern.partners.client.company.api.generated"
     modelPackage = "ch.batbern.partners.client.company.dto"
+    validateSpec = false
 
     globalProperties = [
         models: "",
@@ -113,20 +119,31 @@ task generateCompanyClientDtos(type: org.openapitools.generator.gradle.plugin.ta
 
     configOptions = [
         dateLibrary: "java8",
-        useJakartaEe: "true",
-        serializationLibrary: "jackson",
+        interfaceOnly: "false",
+        skipDefaultInterface: "true",
+        useTags: "false",
+        useSpringBoot3: "true",
+        documentationProvider: "none",
         openApiNullable: "false",
-        generateBuilders: "true"
+        hideGenerationTimestamp: "true",
+        useBeanValidation: "true",
+        performBeanValidation: "true",
+        useOptional: "false",
+        useJakartaEe: "true",
+        generateBuilders: "true",
+        containerDefaultToNull: "true"  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 }
 
 // Generate User Service Client DTOs
 task generateUserClientDtos(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
-    generatorName = "java"
-    library = "native"
+    // Models-only cross-service client DTOs — see generateCompanyClientDtos for why `spring`.
+    generatorName = "spring"
     inputSpec = "$rootDir/docs/api/users-api.openapi.yml".toString()
     outputDir = "$buildDir/generated-client-user".toString()
+    apiPackage = "ch.batbern.partners.client.user.api.generated"
     modelPackage = "ch.batbern.partners.client.user.dto"
+    validateSpec = false
 
     globalProperties = [
         models: "",
@@ -136,10 +153,19 @@ task generateUserClientDtos(type: org.openapitools.generator.gradle.plugin.tasks
 
     configOptions = [
         dateLibrary: "java8",
-        useJakartaEe: "true",
-        serializationLibrary: "jackson",
+        interfaceOnly: "false",
+        skipDefaultInterface: "true",
+        useTags: "false",
+        useSpringBoot3: "true",
+        documentationProvider: "none",
         openApiNullable: "false",
-        generateBuilders: "true"
+        hideGenerationTimestamp: "true",
+        useBeanValidation: "true",
+        performBeanValidation: "true",
+        useOptional: "false",
+        useJakartaEe: "true",
+        generateBuilders: "true",
+        containerDefaultToNull: "true"  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 }
 

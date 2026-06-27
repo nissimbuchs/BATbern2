@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Controller for Email Template Management API (Story 10.2).
@@ -44,10 +43,9 @@ public class EmailTemplateController implements EmailTemplatesApi {
 
     @Override
     public ResponseEntity<List<EmailTemplateResponse>> listEmailTemplates(
-            Optional<String> category, Optional<Boolean> isLayout) {
+            String category, Boolean isLayout) {
         log.debug("GET /api/v1/email-templates category={} isLayout={}", category, isLayout);
-        List<EmailTemplate> templates = emailTemplateService.findAll(
-                category.orElse(null), isLayout.orElse(null));
+        List<EmailTemplate> templates = emailTemplateService.findAll(category, isLayout);
         return ResponseEntity.ok(templates.stream()
                 .map(emailTemplateMapper::toResponse)
                 .toList());

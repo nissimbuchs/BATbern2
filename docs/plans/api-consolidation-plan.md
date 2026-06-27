@@ -30,6 +30,13 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 `eb4d1fb6` (deprecate-half, now superseded), `af3cd875` (Phase 3 stub, now superseded),
 `a7802ef3` (Phase 1), `4bce02ef` (Phase 0).
 
+> **Phases 9a + 7 are being done on a sibling branch `api-consolidation-phase7`** (forked
+> off `api-consolidation` while that branch is still deploying/merging). It carries the
+> generator upgrade (9a) and the Phase-7 controller wiring. **It must be rebased onto
+> `api-consolidation` once that lands.** Phase 9a is the deliberate pre-req: upgrade the
+> generator first so the ~50 Phase-7 controllers bind to the final 7.14.0 interface shape
+> once, instead of being re-touched if a later upgrade reshaped the interfaces.
+
 | Phase | Status | Notes |
 |---|---|---|
 | **0 Shared-kernel** | ✅ **DONE** | Deleted dead duplicate `utils.ErrorResponse` + `ErrorHandlingUtils` (+test); added `docs/api/_shared.openapi.yml`; fixed `04-api-core.md`. |
@@ -39,9 +46,10 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 | **4 Mutation-model fixes** | ✅ **DONE** | ✅ **CUMS removals DONE** (`fb44bc5d`). ✅ **EMS lifecycle DONE** (`7f761a31`). ✅ **Session PUT removed** (`ed59fa0b`): dead full-replace PUT twin (no caller; field-nulling footgun) deleted + dead `UpdateSessionRequest` DTO/`SessionMapper.applyUpdateRequest`; spec now documents the live `patch:` (`PatchSessionRequest`). ✅ **Partner deactivation DONE** (`d6fdc5b0`): dropped dead `isActive` from `UpdatePartnerRequest` (backend ignored it; FE toggle unwired) — DELETE is the canonical soft-deactivate. ✅ **Registration-cancel resolved** — NOT a merge (the two are distinct flows). Investigated the legacy JWT `/cancel`: confirmed **dead** (no email template renders `cancellationUrl`; all use the Story-10.12 `/deregister` UUID flow) and **removed** it end-to-end — endpoint, `generate/validateCancellationToken`, the dead `cancellationToken`/`cancellationUrl` threaded through the registration-confirmation email path, spec path, FE `CancelRegistrationPage` + route + `eventApiClient.cancelRegistration`, and all tests. The shared `RegistrationService.cancelRegistration(Registration)` (used by `/deregister` + waitlist) stays. ✅ **Spec polish DONE:** named the inline `object` request bodies as `AssignSpeakerToSessionRequest`/`DeclineSpeakerRequest`/`PatchNewsletterSubscriptionRequest` (batchImportSessions already used a named items schema). Reconciled `UpdateEventSlotConfigurationRequest` ⟷ `UpdateEventAgendaConfigRequest` by **documenting the distinction** (cross-referenced descriptions: event-type-level defaults vs per-event copy-on-edit, differing required-field strictness) rather than a structural `allOf` merge — they are genuinely distinct contracts on different endpoints, and `UpdateEventAgendaConfigRequest` is a hand-written backend DTO, so an `allOf` merge would risk a live feature's generated types for no real gain. **Phase 4 COMPLETE.** |
 | **5 Partner consolidation 5→2** | ✅ **DONE** | Folded `partner-notes-api` + `partner-analytics-api` + `partner-topics-api` into the generator-wired `partners-api.openapi.yml` (5→2; `partner-meetings-api` kept separate + brought to parity: shared `$ref` `ErrorResponse`, documented `GET /partner-meetings/{id}/rsvps` + the internal RSVP callback, bounded-list note). `/attendees/topics` relocated under a dedicated **Attendee Topics** tag (documented alias). **Spec made truthful**: added the live-but-undocumented `PATCH`/`DELETE /partners/topics/{topicId}` (updateTopic/deleteTopic) and `eventTitle` on `AttendanceSummaryRecord`; clarified `getPartnerStatistics` (portfolio summary) vs `analytics/dashboard` (attendance) boundary; normalized tags + relative `/api/v1` server + global `bearerAuth`. **Controllers rewired** to implement the generated interfaces: `PartnerNoteController`→`PartnerNotesApi`, `PartnerAnalyticsController`→`PartnerAnalyticsApi` (export now returns `Resource`), `TopicController`→`PartnerTopicsApi` (role resolved from `SecurityContextHolder`, no injected `Authentication`), `AttendeeTopicController`→`AttendeeTopicsApi`. Hand-written record/Lombok DTOs (PartnerNoteDTO, CreateNoteRequest, UpdateNoteRequest, TopicDTO, TopicSuggestionRequest, TopicStatusUpdateRequest, PartnerDashboardDTO) deleted — generated DTOs thread through the service layer (Instant→OffsetDateTime, String→inner enums). FE: deleted `partner-notes/partner-topics` generate scripts + stale `.types.ts`, repointed `partnerNotesApi.ts` to `partner-api.types`. Full BE partner-coordination suite + full FE vitest (5334) + FE type-check green. |
 | **6 events-api decomposition** | ✅ **DONE** | Carved the 10.3k-line `events-api.openapi.yml` (94 paths / 122 ops / 131 schemas / 16 tags) into **9 per-domain specs** — `events-core` + `event-{sessions,speakers,registrations,newsletter,media,ai,analytics,watch}-api` — driven by a deterministic carve script (path→domain map + computed schema ownership; report-only validated first). **Paths preserved verbatim** (122/122 ops, 0 dangling refs, no dup ops). Only cross-spec coupling is `core → sessions` (Event embeds `List<Session>`); every other spec depends only on shared-kernel. **Full per-domain Java + TS packages** (owner's explicit choice): 9 `openApiGenerate<Domain>` Gradle tasks (each → `ch.batbern.events.<domain>.{api,dto}.generated`), 9 FE `event*-api.types.ts`. **165 Java FQN re-points** across 102 files (`dto.generated.X` → `<domain>.dto.generated.X`) + 4 controller interface re-points (EventTypes→core, SpeakerOutreach→speakers, AiPrompts→ai, EmailTemplates→newsletter). **54 FE files re-pointed** (51 single-domain swap + 3 multi-domain aliased imports). **🐛 openapi-generator bug #17647 worked around:** `schemaMappings` to a cross-package type emits illegal `List<@Valid <FQN>>`; switched core's Session/SessionSpeaker to `importMappings` (import + simple name) + a `doLast` that deletes the dead duplicate copy. 2 defined-but-unreachable schemas (`Speaker`, `RegistrationAdminResponse`) **removed** as dead-code cleanup (follow-up): `Speaker` was an ADR-004-violating User-field duplicate with only a dead `SpeakerUI` alias; `RegistrationAdminResponse` had no path/code use. Updated: security-scan matrix (1→9 entries), BATbern-watch `generate-types.sh` (loops 9 specs), FE generated README. Clean Java compile (main+test) + FE type-check (0 errors) + EMS suite + FE vitest green. Single PR.
-| **7 Contract-first completion** | ⏳ **TODO** | **Platform-wide** (see §Phase 7), root cause of the Phase 4 PUT→POST drift. Few controllers `implements` their generated `*Api` interface: **EMS 4/~45, CUMS 2/13 (worst), Partner 5/10**, speaker/attendee dormant. Wire the rest + consolidate hand-written DTOs shadowing generated schemas. Slice by service (CUMS→EMS→Partner); medium risk. |
+| **7 Contract-first completion** | 🚧 **IN PROGRESS** (branch `api-consolidation-phase7`, after 9a) | **Platform-wide** (see §Phase 7), root cause of the Phase 4 PUT→POST drift. Few controllers `implements` their generated `*Api` interface: **EMS 4/49, CUMS 2/13 (worst), Partner 5/10**, speaker/attendee dormant. Wire the rest + consolidate hand-written DTOs shadowing generated schemas (EMS has ~51 shadows). Slice by service (CUMS→EMS→Partner); medium risk. **Generator upgraded to 7.14.0 first (9a)** so controllers wire against the final interface shape (plain `@Nullable` params, no `Optional` unwrapping). |
 | **8 Domain-boundary corrections** | ⏳ **TODO** | Relocate misfiled endpoints (`/public/settings/features` off `AiAssistController`; `/attendee-portal/dashboard` → attendee domain) + normalize Watch paths that hard-code `/api/v1/`. Client-affecting (watch app); see §Phase 8. |
-| **9 Tooling & spec hygiene** | ⏳ **TODO** | Upgrade openapi-generator past 7.2.0 to drop the #17647 `doLast` workaround; declare top-level `tags`; fix stale `workflowService.ts` PUT comments. Low risk; see §Phase 9. |
+| **9a Generator upgrade** | ✅ **DONE** (branch `api-consolidation-phase7`) | Upgraded openapi-generator **7.2.0 → 7.14.0** (both pins: `settings.gradle` + root `build.gradle`). **#17647 is fixed** → removed the EMS `core→sessions` workaround (`importMappings`+`doLast`); `Session`/`SessionSpeaker` now use plain `schemaMappings` and `Event.java` emits the legal `pkg.@Valid Session`. Did this **before Phase 7** so controllers wire against the final interface shape once. Churn was tiny: param type `Optional<X>`→`@Nullable X` (fixed `EmailTemplateController`); enum prefix no longer stripped, `WELCOME`→`AFTER_WELCOME` (wire values unchanged; fixed 4 refs in `EventTeaserImageServiceTest`); Java-client models-only now injects an unsatisfied `ApiClient` import → switched partner's `generateCompanyClientDtos`/`generateUserClientDtos` to the `spring` generator (consistent w/ EMS). **🐛 Wire-behaviour fix:** 7.14 default-initialises collection fields (`= new ArrayList<>()`) instead of leaving them null, so an unset list serialised as `[]` instead of being absent — broke the `?include=` sparse-fieldset contract (`TopicControllerIntegrationTest` saw `usageHistory: []` when not embedded). Fixed by adding `containerDefaultToNull: 'true'` to **every** generator `configOptions` block (CUMS ×2, EMS ×11, partner ×3) → restores pre-7.14 null-default. All other changes additive (per-DTO inner `Builder`, `@Nullable` field annots). Whole Java monorepo compiles main+test; FE unaffected (its types come from `openapi-typescript`, not this plugin). See §Phase 9. |
+| **9 Tooling & spec hygiene (rest)** | ⏳ **TODO** | Generator upgrade done (→ 9a). Remaining: declare top-level `tags`; fix stale `workflowService.ts` PUT comments. Low risk; see §Phase 9. |
 
 ---
 
@@ -347,11 +355,13 @@ The partner resource is fragmented: core CRUD + contacts live in `partners-api`,
 >    and teaser DTOs have no shared-kernel class to "lift to `_shared`" — so the plan's own fallback
 >    ("keep teaser in events-core to avoid the split") was taken. `event-media-api` = Event Photos only.
 > 2. **`core → sessions` is a real cross-spec `$ref`** (Event embeds `List<Session>`). openapi-generator
->    7.2.0 emits illegal `List<@Valid <fully.qualified.Name>>` for a `schemaMappings` cross-package type
->    (bug [#17647](https://github.com/OpenAPITools/openapi-generator/issues/17647)). Fixed by referencing
->    Session/SessionSpeaker via `importMappings` (import + simple name) and deleting the dead duplicate
->    copy the core task then emits, via a `doLast` on `openApiGenerate`. All other 7 specs depend only on
->    shared-kernel — a clean DAG.
+>    7.2.0 emitted illegal `List<@Valid <fully.qualified.Name>>` for a `schemaMappings` cross-package type
+>    (bug [#17647](https://github.com/OpenAPITools/openapi-generator/issues/17647)). Was worked around by
+>    referencing Session/SessionSpeaker via `importMappings` (import + simple name) and deleting the dead
+>    duplicate copy the core task then emitted, via a `doLast` on `openApiGenerate`. **⚠️ This workaround
+>    was REMOVED in Phase 9a** (generator upgraded to 7.14.0, which fixes #17647 → emits the legal
+>    `pkg.@Valid Type`); Session/SessionSpeaker are now plain `schemaMappings`. All other 7 specs depend
+>    only on shared-kernel — a clean DAG.
 >
 > Two defined-but-unreachable schemas (`Speaker`, `RegistrationAdminResponse`) were initially preserved
 > (pure-reorg caution), then **removed** as a follow-up once confirmed dead: `Speaker` duplicated User
@@ -501,12 +511,28 @@ callers in the same change.
 
 Low-risk cleanup; no contract change.
 
-- `[KEEP-BUT-FIX]` **Upgrade openapi-generator from 7.2.0.** The cross-package `@Valid` bug
-  ([#17647](https://github.com/OpenAPITools/openapi-generator/issues/17647)) forced the
-  `core→sessions` workaround (`importMappings` + a `doLast` deleting the dead duplicate
-  `Session`/`SessionSpeaker`). If a newer generator emits `pkg.@Valid Type` correctly, drop the
-  workaround and use plain `schemaMappings` (no duplicate, no `doLast`). Spike + regression-test
-  the generated output before adopting.
+- ✅ **DONE (Phase 9a, branch `api-consolidation-phase7`)** — **Upgraded openapi-generator
+  7.2.0 → 7.14.0.** The cross-package `@Valid` bug
+  ([#17647](https://github.com/OpenAPITools/openapi-generator/issues/17647)) **is fixed** in
+  7.14.0: it now emits the legal `pkg.@Valid Type`, so the `core→sessions` workaround
+  (`importMappings` + the `doLast` deleting the dead duplicate `Session`/`SessionSpeaker`) was
+  **removed** — `Session`/`SessionSpeaker` are back on plain `schemaMappings`, no duplicate, no
+  `doLast`. Spike outcome (regression-tested before adopting): file set identical, whole Java
+  monorepo compiles main+test, full suites green. Migration churn was tiny — (a) optional
+  query/body params changed from `Optional<X>` to `@Nullable X` (one wired controller,
+  `EmailTemplateController`, adapted); (b) generator no longer strips a common enum-value prefix
+  (`WELCOME`→`AFTER_WELCOME`, `JPEG`→`IMAGE_JPEG`) — **wire values unchanged**, only the Java
+  constant identifier (4 refs in `EventTeaserImageServiceTest` adapted); (c) the `java`/`native`
+  models-only client generator now injects an unsatisfied `ApiClient` import, so partner's
+  `generateCompanyClientDtos`/`generateUserClientDtos` were switched to the `spring` generator
+  (consistent with EMS's `openApiGenerateUsersClient`); and (d) 7.14 default-initialises collection
+  fields to empty (was null), which made unset lists serialise as `[]` instead of absent and broke the
+  `?include=` sparse-fieldset contract — restored to pre-7.14 behaviour by adding
+  `containerDefaultToNull: 'true'` to **every** generator `configOptions` block (CUMS ×2, EMS ×11,
+  partner ×3). Everything else additive (per-DTO inner `Builder`, `@Nullable` field annotations). Frontend types
+  are generated by the separate `openapi-typescript` npm tool and are **not affected** by this
+  Gradle-plugin bump. Done **before Phase 7** so the ~50 controllers wire against the final 7.14.0
+  interface shape exactly once.
 - `[KEEP-BUT-FIX]` **Declare top-level `tags`** in every spec for the tags used on operations
   (`event-media-api` currently declares none; `Event Photos`/`Speaker Invitation`/`Organizer` are
   used but undeclared). Fold the single-op `Organizer` tag into a neighbour.
