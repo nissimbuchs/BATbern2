@@ -23,6 +23,9 @@ security:
 tags:
 - name: Registrations
   description: Event registration management
+- name: Deregistration
+  description: Self-service attendee deregistration (token- and email-initiated cancellation,
+    Story 10.12). Public — the UUID token is the auth mechanism (ADR-005).
 paths:
   /events/{eventCode}/registrations:
     get:
@@ -769,7 +772,7 @@ paths:
   /registrations/deregister/verify:
     get:
       tags:
-      - Registrations
+      - Deregistration
       summary: Verify deregistration token (public)
       description: 'Verifies a deregistration token and returns registration details for confirmation.
 
@@ -788,11 +791,13 @@ paths:
       parameters:
       - name: token
         in: query
-        description: UUID deregistration token
-        required: true
+        description: 'UUID deregistration token. Optional and parsed defensively: an absent,
+          blank, or malformed (non-UUID) value is treated as an invalid link → 404 (the same
+          outcome as an unknown/expired token), never a 400 or 500. A mail client truncating
+          the link at "?token=" must not produce a server error.'
+        required: false
         schema:
           type: string
-          format: uuid
       responses:
         '200':
           description: Token valid — returns registration summary for confirmation
@@ -812,7 +817,7 @@ paths:
   /registrations/deregister:
     post:
       tags:
-      - Registrations
+      - Deregistration
       summary: Cancel registration via deregistration token (public)
       description: 'Cancels a registration using the self-service deregistration token.
 
@@ -861,7 +866,7 @@ paths:
   /registrations/deregister/by-email:
     post:
       tags:
-      - Registrations
+      - Deregistration
       summary: Request deregistration link via email (public, anti-enumeration)
       description: 'Sends a deregistration link to the provided email address if a matching registration is found.
 

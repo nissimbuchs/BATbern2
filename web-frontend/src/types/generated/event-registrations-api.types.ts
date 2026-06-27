@@ -1466,9 +1466,9 @@ export interface operations {
   };
   verifyDeregistrationToken: {
     parameters: {
-      query: {
-        /** @description UUID deregistration token */
-        token: string;
+      query?: {
+        /** @description UUID deregistration token. Optional and parsed defensively: an absent, blank, or malformed (non-UUID) value is treated as an invalid link → 404 (the same outcome as an unknown/expired token), never a 400 or 500. A mail client truncating the link at "?token=" must not produce a server error. */
+        token?: string;
       };
       header?: never;
       path?: never;

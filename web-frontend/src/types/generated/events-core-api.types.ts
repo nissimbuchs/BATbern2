@@ -1130,12 +1130,31 @@ export interface components {
       | 'EVENT_LIVE'
       | 'EVENT_COMPLETED'
       | 'ARCHIVED';
+    /** @description Result of a successful workflow state transition. */
+    WorkflowTransitionResponse: {
+      /** @example BATbern142 */
+      eventCode: string;
+      /**
+       * @description The event's workflow state name after the transition.
+       * @example TOPIC_SELECTION
+       */
+      workflowState: string;
+      /** Format: date-time */
+      updatedAt?: string;
+    };
     /**
      * @description Request to transition event to target workflow state (Story 5.1a - AC12).
      *     The target state must be a valid transition from the current state.
      */
     TransitionStateRequest: {
-      targetState: components['schemas']['EventWorkflowState'];
+      /**
+       * @description Target workflow state name (an EventWorkflowState constant, e.g.
+       *     SPEAKER_OUTREACH). Typed as a string — the domain enum carries ~20 states
+       *     and is validated server-side by the workflow state machine; the spec-level
+       *     EventWorkflowState enum is intentionally not used here to avoid an
+       *     incomplete-enum contract.
+       */
+      targetState: string;
       /**
        * @description Override workflow validation flag.
        *     When true, allows any state transition bypassing validation rules.
@@ -1154,21 +1173,25 @@ export interface components {
      *     Provides organizers with visibility into what transitions are possible and why.
      */
     WorkflowStatusDto: {
-      currentState: components['schemas']['EventWorkflowState'];
+      /**
+       * @description Current workflow state name (an EventWorkflowState constant).
+       * @example SPEAKER_BRAINSTORMING
+       */
+      currentState: string;
       /**
        * @description List of states that can be transitioned to from current state
        * @example [
        *       "SPEAKER_OUTREACH"
        *     ]
        */
-      nextAvailableStates: components['schemas']['EventWorkflowState'][];
+      nextAvailableStates: string[];
       /**
        * @description List of states that are blocked due to validation failures
        * @example [
        *       "SPEAKER_OUTREACH"
        *     ]
        */
-      blockedTransitions: components['schemas']['EventWorkflowState'][];
+      blockedTransitions: string[];
       /**
        * @description Validation messages explaining why certain transitions are blocked
        * @example [
@@ -1917,14 +1940,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            /** @example BATbern142 */
-            eventCode?: string;
-            /** @example TOPIC_SELECTION */
-            workflowState?: string;
-            /** Format: date-time */
-            updatedAt?: string;
-          };
+          'application/json': components['schemas']['WorkflowTransitionResponse'];
         };
       };
       /** @description Invalid state transition */
