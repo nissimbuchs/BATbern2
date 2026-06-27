@@ -48,8 +48,8 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
 > regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
 > service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 9/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
-> EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist), Partner 5/10.
+> prod controllers); EMS is 10/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
+> EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist, AgendaConfig), Partner 5/10.
 
 | Phase | Status | Notes |
 |---|---|---|
@@ -648,8 +648,22 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   it to AiAssistApi today doesn't block that move). **Verified (full live cycle):** EMS compile;
 >   `AiAssistControllerIntegrationTest`+`AiAssistControllerSecurityTest` 14/14 green; EMS restarted + live gateway
 >   smoke — public feature-flags 200, ai/description no-auth 401, theme-image/apply bad+lookalike URL 400 (LLM08
->   guard intact, body bound to generated DTO); no real LLM calls. ⏳ **Next EMS:** continue per-controller wire
->   (e.g. AgendaConfig — needs real DTO consolidation w/ enum + LocalTime mapping; Sessions; Participants).
+>   guard intact, body bound to generated DTO); no real LLM calls.
+> - ✅ **Wired (6th EMS, first with real DTO consolidation):** `AgendaConfigController` → `AgendaConfigApi`
+>   (event-sessions spec, 2 ops: getEventAgendaConfig / updateEventAgendaConfig). Split the 2 agenda-config ops
+>   out of the broad `Sessions` tag into a new **Agenda Config** tag. Methods renamed to operationIds; bare params;
+>   `@PreAuthorize` kept. **PUT stays PUT** (legit full-replace: all knobs required, copy-on-edit upsert — not a
+>   Phase-4 PATCH demotion). **DTO consolidation (the real work):** deleted hand-written records
+>   `dto.EventAgendaConfigResponse` + `dto.UpdateEventAgendaConfigRequest`; threaded the generated
+>   `sessions.dto.generated` twins through `AgendaConfigService`. Boundary mapping: `source` String →
+>   `AgendaConfigSource` enum; `aperitifPosition` String ↔ inner `AperitifPositionEnum` (`.getValue()` → DB String
+>   column, `.fromValue()` back); `typicalStart/EndTime` stay String (generated as String, NOT LocalTime — one
+>   less mapping than feared); record accessors → generated getters throughout. **Wire values unchanged**
+>   (`@JsonValue`) — verified live: GET returns `source=TEMPLATE`, `aperitifPosition=end` exactly as before.
+>   **Verified (full live cycle):** `AgendaConfigControllerIntegrationTest` 10/10 green; EMS restarted + gateway
+>   smoke (GET auth 200 w/ correct enum serialization, GET/PUT no-auth 401); no spec schema change → no FE regen.
+>   ⏳ **Next EMS:** continue per-controller wire (e.g. Sessions, Participants, Newsletter, GlobalSession — the
+>   last needs a spec addition since `/sessions` search is undocumented).
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
 >   `UserControllerIntegrationTest.should_filterByRole_when_roleFilterProvided`). The tests still sent
