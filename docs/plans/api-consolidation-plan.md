@@ -48,8 +48,8 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
 > regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
 > service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 7/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
-> EventWorkflow, Analytics, Deregistration), Partner 5/10.
+> prod controllers); EMS is 8/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
+> EventWorkflow, Analytics, Deregistration, TeaserImages), Partner 5/10.
 
 | Phase | Status | Notes |
 |---|---|---|
@@ -623,7 +623,20 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   `DeregistrationControllerIntegrationTest` 13/13 green (Testcontainers) incl. the NO-token / empty-token /
 >   malformed-token → 404 regression cases + anti-enumeration + waitlist-promotion. **FE types regenerated**
 >   (`event-registrations`: token→optional; also picked up pre-existing `events-core` drift — commit `081d43fd`
->   changed that spec but never regenerated FE types); FE type-check green. ⏳ **Next EMS:** continue
+>   changed that spec but never regenerated FE types); FE type-check green.
+> - ✅ **Wired (4th EMS via re-tag):** `EventTeaserImageController` → `TeaserImagesApi` (events-core spec, 5 ops:
+>   listTeaserImages / generateTeaserImageUploadUrl / confirmTeaserImageUpload / updateTeaserImage /
+>   deleteTeaserImage). The 4 documented teaser ops were under the catch-all `Events` tag; split all into a new
+>   **Teaser Images** tag → `TeaserImagesApi` == the controller. **🐛 Spec made truthful:** the live
+>   `GET /events/{eventCode}/teaser-images` (listImages) was **undocumented** (UserController pattern) → added
+>   it to events-core (op `listTeaserImages`, returns `array` of `TeaserImageItem`) so all 5 wire to one
+>   interface. Methods renamed to operationIds; bare override params; method-level `@PreAuthorize`/`@CacheEvict`
+>   kept on the overrides (orthogonal to mapping). **No `@Pattern` on the teaser `eventCode`** (deliberate — the
+>   controller accepts the sentinel `_global`); the new list op also omits it. No DTO consolidation (already used
+>   `core.dto.generated.*`); `imageId` path param is `format: uuid` → generated `UUID`, matching the controller.
+>   **Note:** the core generator is the plugin's default `openApiGenerate` task (not `openApiGenerateCore`).
+>   **Verified:** EMS main+test compile; `EventTeaserImageControllerIntegrationTest` 12/12 green (Testcontainers);
+>   FE types regenerated (events-core gains `listTeaserImages`) + type-check green. ⏳ **Next EMS:** continue
 >   per-controller re-tag+wire (e.g. Sessions, Participants, Newsletter), splitting each domain tag as wired.
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
