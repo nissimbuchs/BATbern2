@@ -39,6 +39,9 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 | **4 Mutation-model fixes** | ✅ **DONE** | ✅ **CUMS removals DONE** (`fb44bc5d`). ✅ **EMS lifecycle DONE** (`7f761a31`). ✅ **Session PUT removed** (`ed59fa0b`): dead full-replace PUT twin (no caller; field-nulling footgun) deleted + dead `UpdateSessionRequest` DTO/`SessionMapper.applyUpdateRequest`; spec now documents the live `patch:` (`PatchSessionRequest`). ✅ **Partner deactivation DONE** (`d6fdc5b0`): dropped dead `isActive` from `UpdatePartnerRequest` (backend ignored it; FE toggle unwired) — DELETE is the canonical soft-deactivate. ✅ **Registration-cancel resolved** — NOT a merge (the two are distinct flows). Investigated the legacy JWT `/cancel`: confirmed **dead** (no email template renders `cancellationUrl`; all use the Story-10.12 `/deregister` UUID flow) and **removed** it end-to-end — endpoint, `generate/validateCancellationToken`, the dead `cancellationToken`/`cancellationUrl` threaded through the registration-confirmation email path, spec path, FE `CancelRegistrationPage` + route + `eventApiClient.cancelRegistration`, and all tests. The shared `RegistrationService.cancelRegistration(Registration)` (used by `/deregister` + waitlist) stays. ✅ **Spec polish DONE:** named the inline `object` request bodies as `AssignSpeakerToSessionRequest`/`DeclineSpeakerRequest`/`PatchNewsletterSubscriptionRequest` (batchImportSessions already used a named items schema). Reconciled `UpdateEventSlotConfigurationRequest` ⟷ `UpdateEventAgendaConfigRequest` by **documenting the distinction** (cross-referenced descriptions: event-type-level defaults vs per-event copy-on-edit, differing required-field strictness) rather than a structural `allOf` merge — they are genuinely distinct contracts on different endpoints, and `UpdateEventAgendaConfigRequest` is a hand-written backend DTO, so an `allOf` merge would risk a live feature's generated types for no real gain. **Phase 4 COMPLETE.** |
 | **5 Partner consolidation 5→2** | ✅ **DONE** | Folded `partner-notes-api` + `partner-analytics-api` + `partner-topics-api` into the generator-wired `partners-api.openapi.yml` (5→2; `partner-meetings-api` kept separate + brought to parity: shared `$ref` `ErrorResponse`, documented `GET /partner-meetings/{id}/rsvps` + the internal RSVP callback, bounded-list note). `/attendees/topics` relocated under a dedicated **Attendee Topics** tag (documented alias). **Spec made truthful**: added the live-but-undocumented `PATCH`/`DELETE /partners/topics/{topicId}` (updateTopic/deleteTopic) and `eventTitle` on `AttendanceSummaryRecord`; clarified `getPartnerStatistics` (portfolio summary) vs `analytics/dashboard` (attendance) boundary; normalized tags + relative `/api/v1` server + global `bearerAuth`. **Controllers rewired** to implement the generated interfaces: `PartnerNoteController`→`PartnerNotesApi`, `PartnerAnalyticsController`→`PartnerAnalyticsApi` (export now returns `Resource`), `TopicController`→`PartnerTopicsApi` (role resolved from `SecurityContextHolder`, no injected `Authentication`), `AttendeeTopicController`→`AttendeeTopicsApi`. Hand-written record/Lombok DTOs (PartnerNoteDTO, CreateNoteRequest, UpdateNoteRequest, TopicDTO, TopicSuggestionRequest, TopicStatusUpdateRequest, PartnerDashboardDTO) deleted — generated DTOs thread through the service layer (Instant→OffsetDateTime, String→inner enums). FE: deleted `partner-notes/partner-topics` generate scripts + stale `.types.ts`, repointed `partnerNotesApi.ts` to `partner-api.types`. Full BE partner-coordination suite + full FE vitest (5334) + FE type-check green. |
 | **6 events-api decomposition** | ✅ **DONE** | Carved the 10.3k-line `events-api.openapi.yml` (94 paths / 122 ops / 131 schemas / 16 tags) into **9 per-domain specs** — `events-core` + `event-{sessions,speakers,registrations,newsletter,media,ai,analytics,watch}-api` — driven by a deterministic carve script (path→domain map + computed schema ownership; report-only validated first). **Paths preserved verbatim** (122/122 ops, 0 dangling refs, no dup ops). Only cross-spec coupling is `core → sessions` (Event embeds `List<Session>`); every other spec depends only on shared-kernel. **Full per-domain Java + TS packages** (owner's explicit choice): 9 `openApiGenerate<Domain>` Gradle tasks (each → `ch.batbern.events.<domain>.{api,dto}.generated`), 9 FE `event*-api.types.ts`. **165 Java FQN re-points** across 102 files (`dto.generated.X` → `<domain>.dto.generated.X`) + 4 controller interface re-points (EventTypes→core, SpeakerOutreach→speakers, AiPrompts→ai, EmailTemplates→newsletter). **54 FE files re-pointed** (51 single-domain swap + 3 multi-domain aliased imports). **🐛 openapi-generator bug #17647 worked around:** `schemaMappings` to a cross-package type emits illegal `List<@Valid <FQN>>`; switched core's Session/SessionSpeaker to `importMappings` (import + simple name) + a `doLast` that deletes the dead duplicate copy. 2 defined-but-unreachable schemas (`Speaker`, `RegistrationAdminResponse`) **removed** as dead-code cleanup (follow-up): `Speaker` was an ADR-004-violating User-field duplicate with only a dead `SpeakerUI` alias; `RegistrationAdminResponse` had no path/code use. Updated: security-scan matrix (1→9 entries), BATbern-watch `generate-types.sh` (loops 9 specs), FE generated README. Clean Java compile (main+test) + FE type-check (0 errors) + EMS suite + FE vitest green. Single PR.
+| **7 Contract-first completion** | ⏳ **TODO** | Surfaced during Phase 6 (see §Phase 7). Only **4/~45** EMS controllers implement their generated `*Api` interface; wire the other ~41 (root cause of the Phase 4 PUT→POST drift) + consolidate hand-written DTOs that shadow generated schemas. Slice by domain; medium risk. |
+| **8 Domain-boundary corrections** | ⏳ **TODO** | Relocate misfiled endpoints (`/public/settings/features` off `AiAssistController`; `/attendee-portal/dashboard` → attendee domain) + normalize Watch paths that hard-code `/api/v1/`. Client-affecting (watch app); see §Phase 8. |
+| **9 Tooling & spec hygiene** | ⏳ **TODO** | Upgrade openapi-generator past 7.2.0 to drop the #17647 `doLast` workaround; declare top-level `tags`; fix stale `workflowService.ts` PUT comments. Low risk; see §Phase 9. |
 
 ---
 
@@ -432,6 +435,77 @@ Do it in **one PR** so the repo never sits in a half-carved state.
 
 ---
 
+## Phase 7 — Contract-first completion (controllers → generated interfaces) — ⏳ TODO
+
+Surfaced during Phase 6. The single most valuable follow-up, and the root cause of the
+Phase 4 PUT→POST drift that Phase 6 had to fix.
+
+**Problem:** only **4 of ~45** EMS controllers (`EventTypeController`, `SpeakerOutreachController`,
+`AiPromptController`, `EmailTemplateController`) actually `implements` their generated `*Api`
+interface. The other ~41 hand-roll `@RequestMapping`/`@PostMapping`/`@GetMapping` and merely
+*consume* the generated DTOs. So the OpenAPI spec is **not an enforced contract** for most of
+EMS — a controller can map a different verb/path than the spec declares and nothing fails to
+compile (exactly how `EventWorkflowController` PUT→POST silently diverged from its
+`EventWorkflowControllerIntegrationTest`). ADR-006's intent is controller-implements-generated-
+interface.
+
+- `[KEEP-BUT-FIX]` Wire each EMS controller to `implements <Domain>Api` (the 9 per-domain
+  interface sets now exist post-Phase 6 → a largely 1:1 import + `@Override` swap, e.g.
+  `SessionController implements event-sessions SessionsApi`). The generated interface carries the
+  mapping annotations, so the controller drops its own `@RequestMapping`s.
+- `[KEEP-BUT-FIX]` **Consolidate hand-written DTOs that shadow generated schemas.** Several live
+  in `ch.batbern.events.dto` alongside a generated twin (`AttendeeDashboardResponse`,
+  `SessionImportDetail`, `SpeakerPoolResponse`, `SpeakerContentInfo`, …) — the generated DTO is
+  emitted but unused because the hand-rolled one wins. Thread the generated DTO through and delete
+  the hand-written twin (the deleted `Speaker` schema was the same disease).
+- Apply the same audit to the other services (CUMS/partner already mostly wired; verify).
+
+**Risk:** medium — behaviour-sensitive (verb/path/response shape must match the spec exactly;
+mismatches surface as 404/405/400). Do per-controller, run that service's integration suite each
+time (the Phase 6 pre-push hook fix now runs them). NOT a single big-bang PR — slice by domain.
+
+---
+
+## Phase 8 — Domain-boundary corrections (endpoint relocation + path normalization) — ⏳ TODO
+
+Behaviour/contract-affecting, so deliberately deferred from the Phase 6 reorg.
+
+- `[RENAME]` **Relocate misfiled endpoints** (Phase 6 homed them pragmatically):
+  - `GET /public/settings/features` (feature flags) is served by `AiAssistController` — flags are
+    not AI. Move to a public/app-settings controller + its own spec section.
+  - `GET /attendee-portal/dashboard` is attendee-domain logic in EMS. Plan + ADR-014 flag it for
+    relocation to attendee-experience; revisit when/if that service is reactivated.
+- `[KEEP-BUT-FIX]` **Normalize the Watch paths.** `event-watch-api` paths hard-code the
+  `/api/v1/` prefix (`/api/v1/events/{eventCode}/live-timing`, `/api/v1/watch/...`) while every
+  other spec relies on the server base path. Strip the literal prefix so the watch contract matches
+  the rest. ⚠️ This is a real URL change for the BATbern-watch app client — coordinate + version it
+  (and update `apps/BATbern-watch`).
+
+**Risk:** medium — client-affecting (watch app, feature-flag callers). Usage-check → migrate
+callers in the same change.
+
+---
+
+## Phase 9 — Tooling & spec hygiene — ⏳ TODO
+
+Low-risk cleanup; no contract change.
+
+- `[KEEP-BUT-FIX]` **Upgrade openapi-generator from 7.2.0.** The cross-package `@Valid` bug
+  ([#17647](https://github.com/OpenAPITools/openapi-generator/issues/17647)) forced the
+  `core→sessions` workaround (`importMappings` + a `doLast` deleting the dead duplicate
+  `Session`/`SessionSpeaker`). If a newer generator emits `pkg.@Valid Type` correctly, drop the
+  workaround and use plain `schemaMappings` (no duplicate, no `doLast`). Spike + regression-test
+  the generated output before adopting.
+- `[KEEP-BUT-FIX]` **Declare top-level `tags`** in every spec for the tags used on operations
+  (`event-media-api` currently declares none; `Event Photos`/`Speaker Invitation`/`Organizer` are
+  used but undeclared). Fold the single-op `Organizer` tag into a neighbour.
+- `[KEEP-BUT-FIX]` Fix stale Javadoc in `web-frontend/src/services/workflowService.ts` (comments
+  still say "PUT …/workflow/transition" after the POST change).
+
+**Risk:** low.
+
+---
+
 ## Patterns to standardize on (the org reference, by example)
 
 These already exist in the codebase and become the canonical examples in ADR-013:
@@ -459,10 +533,18 @@ These already exist in the codebase and become the canonical examples in ADR-013
 | 4 Mutation-model fixes | med | yes | deprecate-then-remove; regen FE types + service layer |
 | 5 Partner consolidation | low | none | merged spec generates; controllers unchanged |
 | 6 events-api decomposition | low–med | none (paths preserved) | all per-domain specs generate; controllers re-point; build green; one PR |
+| 7 Contract-first completion | med | none (verb/path must match spec) | per-domain slices; each service's integration suite green |
+| 8 Domain-boundary corrections | med | yes (watch app, flag callers) | usage-check + migrate callers; version watch path change |
+| 9 Tooling & spec hygiene | low | none | generator upgrade regression-tested; build green |
 
 Land 0→1→2→3 as the low-risk consolidation pass; schedule 4 and 5 as follow-ups with the
 deprecate-then-remove cycle so no live client breaks. Phase 6 (events-api decomposition)
 depends on 0 + 1 (clean shared schemas, dead block gone) and is done as a single PR.
+
+Phases 7–9 were surfaced *during* Phase 6 and deliberately left out of the pure-reorg PR.
+Recommended order: **7 first** (contract-first completion — highest value, closes the
+drift class that bit Phase 4), then 8 (boundary corrections, client-coordinated), then 9
+(tooling/hygiene, anytime). 7 is enabled by 6 (the per-domain `*Api` interfaces now exist).
 
 > **EMS note:** this plan is the input for applying ADR-013 to EMS. The EMS-specific work
 > (Phase 1 dead-topic removal, Phase 4 EMS mutation fixes, Phase 6 spec decomposition) is
