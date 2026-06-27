@@ -6,8 +6,8 @@ import ch.batbern.events.domain.QnaWindowStatus;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionQnaPost;
 import ch.batbern.events.domain.SessionQnaWindow;
-import ch.batbern.events.dto.QnaPostResponse;
-import ch.batbern.events.dto.QnaWindowResponse;
+import ch.batbern.events.sessions.dto.generated.QnaPostResponse;
+import ch.batbern.events.sessions.dto.generated.QnaWindowResponse;
 import ch.batbern.events.exception.QnaWindowFrozenException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionQnaPostRepository;
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
@@ -263,8 +264,14 @@ public class SessionQnaService {
         Map<String, QnaAuthorProjection> portraits = loadAuthorPortraits(authorUsernames);
         List<QnaPostResponse> posts =
                 visible.stream().map(p -> toPostResponse(p, portraits)).toList();
-        return new QnaWindowResponse(window.getStatus().name(), window.getOpensAt(),
-                window.getClosesAt(), posts);
+        return new QnaWindowResponse(
+                QnaWindowResponse.StatusEnum.fromValue(window.getStatus().name()), posts)
+                .opensAt(toOffset(window.getOpensAt()))
+                .closesAt(toOffset(window.getClosesAt()));
+    }
+
+    private static java.time.OffsetDateTime toOffset(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 
     /** Batch-load poster portraits keyed by username (empty map for no usernames). */
@@ -280,22 +287,19 @@ public class SessionQnaService {
                                            Map<String, QnaAuthorProjection> portraits) {
         if (post.isRemoved()) {
             // Tombstone — null out identity + content (the UI shows "removed by organizer").
-            return new QnaPostResponse(post.getId(), post.getParentPostId(),
-                    null, null, null, null, null, null, true, post.getCreatedAt());
+            return new QnaPostResponse(post.getId(), true, toOffset(post.getCreatedAt()))
+                    .parentPostId(post.getParentPostId());
         }
         QnaAuthorProjection a = portraits.get(post.getPostedByUsername());
         // Honour the user's "show company" preference; absent projection → no enrichment.
         boolean showCompany = a != null && !Boolean.FALSE.equals(a.getShowCompany());
-        return new QnaPostResponse(
-                post.getId(),
-                post.getParentPostId(),
-                post.getPostedByUsername(),
-                a != null ? a.getFirstName() : null,
-                a != null ? a.getLastName() : null,
-                showCompany ? a.getCompanyDisplayName() : null,
-                showCompany ? a.getCompanyLogoUrl() : null,
-                post.getBody(),
-                false,
-                post.getCreatedAt());
+        return new QnaPostResponse(post.getId(), false, toOffset(post.getCreatedAt()))
+                .parentPostId(post.getParentPostId())
+                .postedByUsername(post.getPostedByUsername())
+                .postedByFirstName(a != null ? a.getFirstName() : null)
+                .postedByLastName(a != null ? a.getLastName() : null)
+                .postedByCompanyName(showCompany ? a.getCompanyDisplayName() : null)
+                .postedByCompanyLogoUrl(showCompany ? a.getCompanyLogoUrl() : null)
+                .body(post.getBody());
     }
 }

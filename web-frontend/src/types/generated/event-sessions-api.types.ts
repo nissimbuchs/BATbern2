@@ -972,7 +972,7 @@ export interface components {
      */
     QnaPostRequest: {
       /**
-       * @description The question or answer text.
+       * @description The question or answer text (non-empty).
        * @example How did you handle schema migration during the cutover?
        */
       body: string;

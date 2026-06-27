@@ -28,13 +28,15 @@ tags:
 - name: Agenda Config
   description: Per-event agenda/slot configuration with copy-on-edit override (Story 15.2,
     AgendaConfigController)
+- name: Session QnA
+  description: Per-session Q&A thread — public read, authenticated post, organizer takedown (SessionQnaController)
 - name: Bulk Operations
   description: Batch operations on multiple events
 paths:
   /events/{eventCode}/sessions/{sessionSlug}/qna:
     get:
       tags:
-      - Event Actions
+      - Session QnA
       summary: Get a session's Q&A thread ("The Apéro Continues")
       description: 'Returns the open or frozen Q&A thread for a session. PUBLIC — anonymous may read the
 
@@ -138,7 +140,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/qna/posts:
     post:
       tags:
-      - Event Actions
+      - Session QnA
       summary: Post a Q&A question or answer (logged-in)
       description: 'Any logged-in user may post within an open window (AC2). `parentPostId` set = an answer to
 
@@ -217,7 +219,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/qna/posts/{postId}:
     delete:
       tags:
-      - Event Actions
+      - Session QnA
       summary: Take down a Q&A post (organizer)
       description: 'Organizer-only soft-delete (AC4): the post becomes a "removed by organizer" tombstone
 
@@ -1883,8 +1885,9 @@ components:
       properties:
         body:
           type: string
+          minLength: 1
           maxLength: 5000
-          description: The question or answer text.
+          description: The question or answer text (non-empty).
           example: How did you handle schema migration during the cutover?
         parentPostId:
           type: string
