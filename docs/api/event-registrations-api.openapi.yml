@@ -26,6 +26,9 @@ tags:
 - name: Deregistration
   description: Self-service attendee deregistration (token- and email-initiated cancellation,
     Story 10.12). Public — the UUID token is the auth mechanism (ADR-005).
+- name: Participants
+  description: Organizer participant management — add-participant, name-badge XLSX/DOCX
+    exports, and the internal email distribution-list route (ParticipantsController).
 paths:
   /events/{eventCode}/registrations:
     get:
@@ -197,7 +200,7 @@ paths:
   /events/{eventCode}/distribution-list/{kind}:
     get:
       tags:
-      - Registrations
+      - Participants
       summary: Resolve the email distribution list for an event (internal Lambda route)
       description: "Returns the email addresses to fan out for the per-event mailing aliases\n`batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and\n`batbern{N}-participants@batbern.ch`.\n\n- `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)\n  of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.\n- `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their\n  verified `additionalEmails`.\n- `participants`: every active registrant (`registered`/`confirmed`/`attended`;\n  excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the\n  same audience as the Communications → Event registrants send. Lowercase-deduped.\n\n**Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:\n  - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is\n    VPC-only).\n  - Organizer JWT from interactive callers.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).\n"
       operationId: getEventDistributionList
@@ -233,7 +236,7 @@ paths:
   /events/{eventCode}/participants:
     post:
       tags:
-      - Registrations
+      - Participants
       summary: Add an existing user as a confirmed participant (organizer)
       description: "Organizer-only. Adds an EXISTING BATbern user (chosen via the user autocomplete) onto\nthe event directly as a `confirmed` participant — skipping the self-registration +\nemail-confirmation step. The created row is a REAL attendee (counts toward capacity and\nthe event delete-guard), audited with `metadata.addedByOrganizer`.\n\n- Capacity: respected by default; if the event is full, returns `409` with\n  `details.code = \"capacity_exceeded\"`. Pass `force: true` to add over capacity.\n- Duplicate: an already-active registration returns `409` (generic). A `cancelled`\n  prior registration is replaced.\n- `notify` (default true) sends the attendee a \"you have a confirmed spot\" email.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-organizer-add-participant.md`.\n"
       operationId: addParticipant
@@ -289,7 +292,7 @@ paths:
   /events/{eventCode}/participants/export.xlsx:
     get:
       tags:
-      - Registrations
+      - Participants
       summary: Export participant name-badge data as XLSX
       description: "Streams an Office Open XML XLSX with one row per participant of the event. Columns\n(German — physical badges): `Vorname`, `Name`, `Firma`, `Rolle`. Roles are\n`Organisator`, `Referent`, `Teilnehmer` with precedence\nOrganisator > Referent > Teilnehmer (a user appearing in multiple sets renders once\nwith the highest-precedence role).\n\nRow sources (union, dedup-by-username):\n  - All organizer-role users (cross-service via UserApiClient).\n  - All `PRIMARY_SPEAKER` and `CO_SPEAKER` `session_users` of the event.\n  - All `registered`/`confirmed`/`attended` registrations of the event.\n\nFilename suggestion: `{eventCode}-namensschilder.xlsx`.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F3).\n"
       operationId: exportParticipantsXlsx
@@ -323,7 +326,7 @@ paths:
   /events/{eventCode}/participants/export.docx:
     get:
       tags:
-      - Registrations
+      - Participants
       summary: Export participant name badges as DOCX (Avery L4784 + BAT logo)
       description: "Streams a printable Microsoft Word document laid out for Avery\nZweckform L4784 name-badge sheets with the BAT logo embedded in every\nbadge. Each badge renders three lines:\n\n  - Name (Vorname + Nachname, bold, 12pt)\n  - Firma (next to the BAT logo, 12pt)\n  - Rolle (`Organisator | Referent | Teilnehmer`, italic, 10pt)\n\nRow sources, dedupe, role precedence and sort order are identical to\nthe XLSX export (`exportParticipantsXlsx`) — both endpoints draw from\nthe same `ParticipantsCollector`. The DOCX paginates as 27 badges\nper A4 page (9 badge rows × 3 badge columns); trailing slots on the\nlast page are visually blank but preserve the layout for clean printing.\n\nFilename suggestion: `{eventCode}-namensschilder.docx`.\n\n**Spec extension:** name-badge DOCX export (sibling of `exportParticipantsXlsx`).\n"
       operationId: exportParticipantsDocx
@@ -1181,6 +1184,7 @@ components:
           enum:
           - speakers
           - moderator
+          - participants
         emails:
           type: array
           description: Lowercase, deduplicated email addresses.

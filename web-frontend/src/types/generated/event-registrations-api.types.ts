@@ -523,7 +523,7 @@ export interface components {
       /** @example BATbern57 */
       eventCode: string;
       /** @enum {string} */
-      kind: 'speakers' | 'moderator';
+      kind: 'speakers' | 'moderator' | 'participants';
       /** @description Lowercase, deduplicated email addresses. */
       emails: string[];
     };
