@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users?filter={"role":"ATTENDEE"}&page=1&limit=20
+  url: {{baseUrl}}/users?filter=%7B%22role%22%3A%22ATTENDEE%22%7D&page=1&limit=20
   body: none
   auth: bearer
 }
 
 params:query {
-  filter: {"role":"ATTENDEE"}
+  ~filter: {"role":"ATTENDEE"}
   page: 1
   limit: 20
 }
