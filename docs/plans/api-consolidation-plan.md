@@ -65,6 +65,23 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > SIGTERM'd Bruno run took EMS down mid-suite → misleading 500s); never re-list deleted files in `git add` (it aborts
 > staging → a broken version got committed; use `git rm`/`git add -A`, and don't trust pre-commit checkstyle when the
 > index diverged from the working tree).
+>
+> ⚠️ **PENDING PUSH (2026-06-27 night):** the 8 newest phase7 commits (AgendaConfig → OrganizerThanks,
+> local HEAD `1c9125c0`; remote tip stuck at `cf039e9c` = AiAssist) are **committed + individually verified**
+> (each: its integration test + EMS restart + live gateway smoke + full Bruno 14/14 + FE type-check) but **NOT
+> pushed** — the `.githooks/pre-push` gate (full backend integration + frontend vitest, ~12 min) was repeatedly
+> **killed by a background-task wall-clock limit** in the agent runner before it could finish (it was PASSING both
+> times). **Action:** run `git push origin api-consolidation-phase7` from a normal interactive terminal (not the
+> agent's background runner) — it will complete uninterrupted. Do NOT `--no-verify`. The gate genuinely passes.
+>
+> ▶ **NEXT-CLEAN wire (analyzed, ready):** `SpeakerInvitationController` → `SpeakerInvitationApi` (event-speakers,
+> 3 ops inviteSpeaker/inviteSpeakerBatch/sendSpeakerInvitation; tag already 1:1, NO re-tag). Consolidation: 6 local
+> DTOs (InviteSpeaker{Request,Response}, BatchInvite{Request,Response}+BatchInviteResponseErrorsInner,
+> SendInvitation{Request,Response}) → generated speakers.dto.generated twins through `SpeakerInvitationService`.
+> Type conversions: status String→StatusEnum, Instant→OffsetDateTime (invitedAt), LocalDate (responseDeadline)
+> stays, nested results/errors lists. record accessors (`response.created()`/`failedCount()`) → getters. ALL 3 ops
+> are email-SENDS → verify via `SpeakerInvitationControllerIntegrationTest` only (mocked mail); do NOT live-smoke
+> a send (staging=prod). RegistrantNotice is NOT clean (returns the shared `SlidesOnlineSendResponse`).
 
 | Phase | Status | Notes |
 |---|---|---|
