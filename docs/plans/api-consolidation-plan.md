@@ -48,8 +48,11 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
 > regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
 > service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 11/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
-> EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist, AgendaConfig, Participants), Partner 5/10.
+> prod controllers); EMS is 12/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
+> EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist, AgendaConfig, Participants,
+> SessionQna), Partner 5/10. **Autonomous run 2026-06-27 night:** wiring all remaining EMS per-controller,
+> running Bruno+Playwright+commit each. Lesson: ALWAYS give Bruno the long Bash timeout — a SIGTERM'd
+> Bruno run took EMS down mid-suite and produced misleading 500s (not a code bug).
 
 | Phase | Status | Notes |
 |---|---|---|
