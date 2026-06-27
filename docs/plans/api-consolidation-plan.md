@@ -42,7 +42,7 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 | **0 Shared-kernel** | ✅ **DONE** | Deleted dead duplicate `utils.ErrorResponse` + `ErrorHandlingUtils` (+test); added `docs/api/_shared.openapi.yml`; fixed `04-api-core.md`. |
 | **1 Dead-spec removal** | ✅ **DONE** | events-api stale `/topics*` block + partners-api orphan voting removed (spec). **Frontend completion (in `e9dd536a`):** removed the dead orphan-voting client `getPartnerVotes`/`usePartnerVotes` (+tests) that called the never-implemented 404. |
 | **2 Document live routes / re-enable generators** | ❌ **WON'T DO** | Owner decision (2026-06-26), now **ADR-014**: speaker/attendee services stay dormant (consolidating toward an EMS/CUMS few-service backend), so **do NOT re-enable their generators**. The route-documentation bit is dropped too (low value, codegen risk on the wired partners-api). Phase closed. |
-| **3 Convention conformance** | ✅ **DONE** | ✅ **Shared schema solution DONE** (`e9dd536a`): shared `$ref` `_shared.openapi.yml` for both generators. ✅ **List-query collapse DONE**: `listUsers` (CUMS) `role`/`company`/`sortBy`/`sortDir` → `filter`/`sort`; **5 live callers migrated** (email-forwarder Lambda ×2 + partner `getUsersByRole` + EMS `getOrganizerUsernames`/`getPartnerUsernames` — the latter 3 were **undocumented in the original plan**) using fully-encoded `URI`s. `listNewsletterSubscribers` (EMS) `sortBy`+`sortDir` → `sort` (typed `status`/`search` kept). Both controllers now use shared `SortParser`. **🐛 Bug fixed:** users-list sort was a no-op — all 8 paginated `UserRepository` queries hardcoded `ORDER BY u.lastName ASC`, overriding the `Pageable` sort; removed so server-side sort actually works (+ fixed a `Set.of(...).contains(null)` NPE it exposed). |
+| **3 Convention conformance** | ✅ **DONE** | ✅ **Shared schema solution DONE** (`e9dd536a`): shared `$ref` `_shared.openapi.yml` for both generators. ✅ **List-query collapse DONE**: `listUsers` (CUMS) `role`/`company`/`sortBy`/`sortDir` → `filter`/`sort`; **5 live callers migrated** (email-forwarder Lambda ×2 + partner `getUsersByRole` + EMS `getOrganizerUsernames`/`getPartnerUsernames` — the latter 3 were **undocumented in the original plan**) using fully-encoded `URI`s. `listNewsletterSubscribers` (EMS) `sortBy`+`sortDir` → `sort` (typed `status`/`search` kept). Both controllers now use shared `SortParser`. **🐛 Bug fixed:** users-list sort was a no-op — all 8 paginated `UserRepository` queries hardcoded `ORDER BY u.lastName ASC`, overriding the `Pageable` sort; removed so server-side sort actually works (+ fixed a `Set.of(...).contains(null)` NPE it exposed). **🐛 Open bug (found 2026-06-27):** the `listUsers` `filter` parses the `roles` key but never applies it as a query predicate → `?filter={"roles":…}` returns role-unfiltered results (2 Bruno `users-api` tests fail). See §Phase 3 for the fix. |
 | **4 Mutation-model fixes** | ✅ **DONE** | ✅ **CUMS removals DONE** (`fb44bc5d`). ✅ **EMS lifecycle DONE** (`7f761a31`). ✅ **Session PUT removed** (`ed59fa0b`): dead full-replace PUT twin (no caller; field-nulling footgun) deleted + dead `UpdateSessionRequest` DTO/`SessionMapper.applyUpdateRequest`; spec now documents the live `patch:` (`PatchSessionRequest`). ✅ **Partner deactivation DONE** (`d6fdc5b0`): dropped dead `isActive` from `UpdatePartnerRequest` (backend ignored it; FE toggle unwired) — DELETE is the canonical soft-deactivate. ✅ **Registration-cancel resolved** — NOT a merge (the two are distinct flows). Investigated the legacy JWT `/cancel`: confirmed **dead** (no email template renders `cancellationUrl`; all use the Story-10.12 `/deregister` UUID flow) and **removed** it end-to-end — endpoint, `generate/validateCancellationToken`, the dead `cancellationToken`/`cancellationUrl` threaded through the registration-confirmation email path, spec path, FE `CancelRegistrationPage` + route + `eventApiClient.cancelRegistration`, and all tests. The shared `RegistrationService.cancelRegistration(Registration)` (used by `/deregister` + waitlist) stays. ✅ **Spec polish DONE:** named the inline `object` request bodies as `AssignSpeakerToSessionRequest`/`DeclineSpeakerRequest`/`PatchNewsletterSubscriptionRequest` (batchImportSessions already used a named items schema). Reconciled `UpdateEventSlotConfigurationRequest` ⟷ `UpdateEventAgendaConfigRequest` by **documenting the distinction** (cross-referenced descriptions: event-type-level defaults vs per-event copy-on-edit, differing required-field strictness) rather than a structural `allOf` merge — they are genuinely distinct contracts on different endpoints, and `UpdateEventAgendaConfigRequest` is a hand-written backend DTO, so an `allOf` merge would risk a live feature's generated types for no real gain. **Phase 4 COMPLETE.** |
 | **5 Partner consolidation 5→2** | ✅ **DONE** | Folded `partner-notes-api` + `partner-analytics-api` + `partner-topics-api` into the generator-wired `partners-api.openapi.yml` (5→2; `partner-meetings-api` kept separate + brought to parity: shared `$ref` `ErrorResponse`, documented `GET /partner-meetings/{id}/rsvps` + the internal RSVP callback, bounded-list note). `/attendees/topics` relocated under a dedicated **Attendee Topics** tag (documented alias). **Spec made truthful**: added the live-but-undocumented `PATCH`/`DELETE /partners/topics/{topicId}` (updateTopic/deleteTopic) and `eventTitle` on `AttendanceSummaryRecord`; clarified `getPartnerStatistics` (portfolio summary) vs `analytics/dashboard` (attendance) boundary; normalized tags + relative `/api/v1` server + global `bearerAuth`. **Controllers rewired** to implement the generated interfaces: `PartnerNoteController`→`PartnerNotesApi`, `PartnerAnalyticsController`→`PartnerAnalyticsApi` (export now returns `Resource`), `TopicController`→`PartnerTopicsApi` (role resolved from `SecurityContextHolder`, no injected `Authentication`), `AttendeeTopicController`→`AttendeeTopicsApi`. Hand-written record/Lombok DTOs (PartnerNoteDTO, CreateNoteRequest, UpdateNoteRequest, TopicDTO, TopicSuggestionRequest, TopicStatusUpdateRequest, PartnerDashboardDTO) deleted — generated DTOs thread through the service layer (Instant→OffsetDateTime, String→inner enums). FE: deleted `partner-notes/partner-topics` generate scripts + stale `.types.ts`, repointed `partnerNotesApi.ts` to `partner-api.types`. Full BE partner-coordination suite + full FE vitest (5334) + FE type-check green. |
 | **6 events-api decomposition** | ✅ **DONE** | Carved the 10.3k-line `events-api.openapi.yml` (94 paths / 122 ops / 131 schemas / 16 tags) into **9 per-domain specs** — `events-core` + `event-{sessions,speakers,registrations,newsletter,media,ai,analytics,watch}-api` — driven by a deterministic carve script (path→domain map + computed schema ownership; report-only validated first). **Paths preserved verbatim** (122/122 ops, 0 dangling refs, no dup ops). Only cross-spec coupling is `core → sessions` (Event embeds `List<Session>`); every other spec depends only on shared-kernel. **Full per-domain Java + TS packages** (owner's explicit choice): 9 `openApiGenerate<Domain>` Gradle tasks (each → `ch.batbern.events.<domain>.{api,dto}.generated`), 9 FE `event*-api.types.ts`. **165 Java FQN re-points** across 102 files (`dto.generated.X` → `<domain>.dto.generated.X`) + 4 controller interface re-points (EventTypes→core, SpeakerOutreach→speakers, AiPrompts→ai, EmailTemplates→newsletter). **54 FE files re-pointed** (51 single-domain swap + 3 multi-domain aliased imports). **🐛 openapi-generator bug #17647 worked around:** `schemaMappings` to a cross-package type emits illegal `List<@Valid <FQN>>`; switched core's Session/SessionSpeaker to `importMappings` (import + simple name) + a `doLast` that deletes the dead duplicate copy. 2 defined-but-unreachable schemas (`Speaker`, `RegistrationAdminResponse`) **removed** as dead-code cleanup (follow-up): `Speaker` was an ADR-004-violating User-field duplicate with only a dead `SpeakerUI` alias; `RegistrationAdminResponse` had no path/code use. Updated: security-scan matrix (1→9 entries), BATbern-watch `generate-types.sh` (loops 9 specs), FE generated README. Clean Java compile (main+test) + FE type-check (0 errors) + EMS suite + FE vitest green. Single PR.
@@ -99,10 +99,23 @@ existing `batbern-dev-postgres` container (`docker start` it); refresh tokens wi
 (`npx vitest run`) before pushing — a targeted run missed `partnerApi.test.ts` once and the
 pre-push hook rejected the push.
 
-### Phase 3 — list-query collapse ✅ DONE
+### Phase 3 — list-query collapse ✅ DONE (one open bug, see below)
 **Landed** (see status table above): `listUsers` + `listNewsletterSubscribers` collapsed to `filter`/`sort`,
 5 live `?role=` callers migrated, shared `SortParser` adopted, and the dead users-list server-side
 sort (hardcoded JPQL `ORDER BY`) fixed. Original notes retained below for context.
+
+> 🐛 **Open bug — `listUsers` role filter not applied (found 2026-06-27 during Phase 7 verification).**
+> Bruno `users-api` `19-list-users-combined-filters` + `20-list-users-filter-by-role-organizer` fail
+> on local dev: `GET /api/v1/users?filter={"roles":"ORGANIZER"}` (and the combined `roles+active+search`
+> filter) returns users whose roles do NOT match the requested role — i.e. the `roles` key in the
+> JSON:API `filter` is parsed but not translated into a query predicate, so the result set is
+> unfiltered by role. The returned `roles` arrays serialize correctly (so it is the **filter
+> predicate**, not the projection/DTO). Confirmed independent of the Phase 9a generator upgrade and
+> the Phase 7 wiring (no `UserController`/`UserService`/list-users code was touched on
+> `api-consolidation-phase7`). **Fix:** make the `filter` parser map `roles` (and verify `active`,
+> `company`, `search`) to the corresponding `UserRepository`/Specification predicate, then re-run the
+> two Bruno tests. Likely the same gap exists for any `filter` key that was an ad-hoc param before
+> the collapse — audit each documented filter key has a backing predicate.
 
 Goal (ADR-013 §3): list endpoints expose **one** vocabulary (`filter`/`sort`), not ad-hoc
 `role`/`company`/`search`/`status`/`sortBy`/`sortDir`. Lowest-risk approach: **keep the
@@ -445,10 +458,34 @@ Do it in **one PR** so the repo never sits in a half-carved state.
 
 ---
 
-## Phase 7 — Contract-first completion (controllers → generated interfaces) — ⏳ TODO
+## Phase 7 — Contract-first completion (controllers → generated interfaces) — 🚧 IN PROGRESS
 
 Surfaced during Phase 6 but **platform-wide, not EMS-only** (verified 2026-06-27). The single
 most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that Phase 6 had to fix.
+
+> **Progress (2026-06-27, branch `api-consolidation-phase7`, after Phase 9a):**
+> - ✅ **Wired:** `PresentationSettingsController`→`PresentationSettingsApi` (`cbade6c4`),
+>   `PublicUserController`→`PublicApi` (`707ecfdc`) — both with hand-written→generated DTO
+>   consolidation; `PartnerContactController`→`PartnerContactsApi` (`2abe6b38`, no DTO change).
+>   Each verified by its integration test + the owning service's full suite; PublicUser also via
+>   Bruno `users-api`, PartnerContact via Bruno `partners-api`, PresentationSettings via Playwright
+>   `presentation.spec.ts`.
+> - ⏸️ **Deferred (documented):** Watch controllers (`WatchAuthController.pair` returns
+>   `ResponseEntity<?>` + ad-hoc `{"message":...}` body → typed-contract clash affecting the external
+>   watch app; record→class DTO migration; method renames) — needs an owner decision + watch-app
+>   coordination. `PublicOrganizerController` + `LogoController` are **undocumented** (no spec
+>   operation / generated interface) → require a spec addition first (Phase-2-style).
+> - ⏳ **Next:** `CompanyController` (must MERGE `CompanyGetOrCreateController`; spans
+>   Companies/Search/Verification APIs; ~14-file DTO migration — DTOs built inline in
+>   CompanyService/QueryService/SearchService, no mapper — incl. nested `CompanyStatistics`/
+>   `CompanyLogo` and field renames `verified`→`isVerified`, `Instant`→`OffsetDateTime`,
+>   `String`→`URI`), then `UserController` (30 ops / ~8 interfaces).
+> - 🐛 **Found during verification (pre-existing, NOT this work):** Bruno `users-api` tests
+>   `19-list-users-combined-filters` + `20-list-users-filter-by-role-organizer` fail on local dev —
+>   the `filter={roles:…}` query returns users whose roles don't match (role filter not applied).
+>   Confirmed unrelated to Phase 7/9a (no `UserController`/`UserService`/list-users code touched on
+>   this branch; the returned `roles` serialize correctly — it is the filter predicate). Belongs to
+>   the Phase 3 list-query collapse; flag for that owner.
 
 **Problem:** most controllers only *consume* the generated DTOs — they hand-roll
 `@RequestMapping`/`@PostMapping`/`@GetMapping` instead of `implements`-ing the generated `*Api`
