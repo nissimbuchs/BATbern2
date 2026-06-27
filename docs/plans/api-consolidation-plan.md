@@ -48,8 +48,8 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
 > regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
 > service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 6/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
-> EventWorkflow, Analytics), Partner 5/10.
+> prod controllers); EMS is 7/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
+> EventWorkflow, Analytics, Deregistration), Partner 5/10.
 
 | Phase | Status | Notes |
 |---|---|---|
@@ -605,8 +605,26 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   `GlobalExceptionHandler` (no real input <2000, no test breakage). **Verified:** EMS main+test compile;
 >   `AnalyticsControllerIntegrationTest` 18/18 green (Testcontainers), incl. the unauthenticated-403 and
 >   per-event-distribution cases. FE unaffected (re-tag doesn't change paths/schemas; `openapi-typescript`
->   generates by path). ⏳ **Next EMS:** continue per-controller re-tag+wire (e.g. Sessions, Registrations,
->   Newsletter), splitting each domain tag as its controller is wired.
+>   generates by path).
+> - ✅ **Wired (3rd EMS via re-tag):** `DeregistrationController` → `DeregistrationApi` (event-registrations
+>   spec, 3 public ops: verifyDeregistrationToken / deregisterByToken / requestDeregistrationByEmail). Split
+>   the 3 `/registrations/deregister/*` ops out of the shared `Registrations` tag into a new **Deregistration**
+>   tag (the rest stay `Registrations` → still the unimplemented `RegistrationsApi`). Class `@RequestMapping`
+>   `/api/v1/registrations/deregister`→`/api/v1`; methods renamed to operationIds (verifyToken→verifyDeregistrationToken,
+>   deregisterByEmail→requestDeregistrationByEmail); bare override params. No DTO consolidation (already used
+>   `registrations.dto.generated.*`). **🐛 Two contract-drift fixes on the verify `token` query param, both
+>   required to preserve the deployed 2026-06-16 truncated-link fix** (a mail client truncating the link at
+>   `?token=` must yield 404, never 400/500): (1) spec had `required: true` → generated `@RequestParam(required=true)`
+>   would throw `MissingServletRequestParameterException`→500 on an absent token; changed to `required: false`.
+>   (2) spec had `format: uuid` → generated a `UUID` param → a malformed value fails Spring conversion
+>   (`MethodArgumentTypeMismatchException`, not 404); dropped to plain `string` so the controller's defensive
+>   `parseTokenOrNotFound` (absent/blank/non-UUID → `NoSuchElementException` → 404) stays the gate. Spec
+>   description updated to document the defensive contract. **Verified:** EMS main+test compile;
+>   `DeregistrationControllerIntegrationTest` 13/13 green (Testcontainers) incl. the NO-token / empty-token /
+>   malformed-token → 404 regression cases + anti-enumeration + waitlist-promotion. **FE types regenerated**
+>   (`event-registrations`: token→optional; also picked up pre-existing `events-core` drift — commit `081d43fd`
+>   changed that spec but never regenerated FE types); FE type-check green. ⏳ **Next EMS:** continue
+>   per-controller re-tag+wire (e.g. Sessions, Participants, Newsletter), splitting each domain tag as wired.
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
 >   `UserControllerIntegrationTest.should_filterByRole_when_roleFilterProvided`). The tests still sent
