@@ -48,7 +48,8 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
 > regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
 > service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 5/49, Partner 5/10.
+> prod controllers); EMS is 6/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
+> EventWorkflow, Analytics), Partner 5/10.
 
 | Phase | Status | Notes |
 |---|---|---|
@@ -589,8 +590,23 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   `@Pattern ^BATbern[0-9]+$` (pre-existing in the spec, now enforced via the interface) rejected the stale test
 >   fixture `BAT-2024-Q4` → updated to `BATbern142` (real codes are all `BATbern{n}`); same for the not-found
 >   probe `NON-EXISTENT`→`BATbern999`. **Verified:** full EMS suite green (10m, Testcontainers);
->   `EventWorkflowControllerIntegrationTest` 12/12. ⏳ **Next EMS:** continue per-controller re-tag+wire (e.g.
->   Sessions, Registrations, Analytics, Newsletter), splitting each domain tag as its controller is wired.
+>   `EventWorkflowControllerIntegrationTest` 12/12.
+> - ✅ **Wired (2nd EMS via re-tag):** `AnalyticsController` → `AnalyticsApi` (event-analytics spec, 5 ops:
+>   getAnalyticsOverview/Attendance/Topics/Companies + getCompanyDistribution). The `Analytics` tag was
+>   shared with EventController's 2 event-scoped ops (`getAttendanceSummary`, `getEventAnalytics`); split
+>   those out into a new **Event Reporting** tag (→ unimplemented `EventReportingApi`, wired when EventController
+>   is) so `AnalyticsApi` == AnalyticsController exactly. Class `@RequestMapping` `/api/v1/analytics`→`/api/v1`
+>   (interface carries `/analytics/...`); controller methods renamed to the operationIds; override params made
+>   **bare** (inherit the interface's `@RequestParam`/`@Valid`/`@Min`/`@NotNull` — declaring them on the impl
+>   would stop Spring inheriting the interface binding annotations, the UserController gotcha). **No DTO
+>   consolidation** — the controller already consumed the generated `analytics.dto.generated.*` DTOs.
+>   New spec-enforced validation now fires via method-validation: `fromYear` `@Min(2000)` + `eventCode`
+>   `@NotNull`/`required=true` → `ConstraintViolationException`, already mapped → 400 by the EMS
+>   `GlobalExceptionHandler` (no real input <2000, no test breakage). **Verified:** EMS main+test compile;
+>   `AnalyticsControllerIntegrationTest` 18/18 green (Testcontainers), incl. the unauthenticated-403 and
+>   per-event-distribution cases. FE unaffected (re-tag doesn't change paths/schemas; `openapi-typescript`
+>   generates by path). ⏳ **Next EMS:** continue per-controller re-tag+wire (e.g. Sessions, Registrations,
+>   Newsletter), splitting each domain tag as its controller is wired.
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
 >   `UserControllerIntegrationTest.should_filterByRole_when_roleFilterProvided`). The tests still sent
