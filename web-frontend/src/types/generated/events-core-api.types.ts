@@ -474,6 +474,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/teaser-images': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List teaser images for an event (or the global set via _global)
+     * @description Returns the teaser images configured for the event, ordered for the moderator presentation. Use eventCode "_global" for images shown on all events.
+     */
+    get: operations['listTeaserImages'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/teaser-images/upload-url': {
     parameters: {
       query?: never;
@@ -2378,6 +2398,31 @@ export interface operations {
       };
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
+    };
+  };
+  listTeaserImages: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of teaser images */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TeaserImageItem'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
   generateTeaserImageUploadUrl: {

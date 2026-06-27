@@ -31,6 +31,9 @@ tags:
   description: Event workflow state transitions and status (EventWorkflowController)
 - name: Event Types
   description: Event type configuration management (Story 5.1)
+- name: Teaser Images
+  description: Event-specific and global teaser image management (EventTeaserImageController).
+    eventCode "_global" maps to images shown on all event presentations.
 paths:
   /events:
     get:
@@ -1281,10 +1284,40 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
       - BearerAuth: []
+  /events/{eventCode}/teaser-images:
+    get:
+      tags:
+      - Teaser Images
+      operationId: listTeaserImages
+      summary: List teaser images for an event (or the global set via _global)
+      description: 'Returns the teaser images configured for the event, ordered for the
+        moderator presentation. Use eventCode "_global" for images shown on all events.'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern57
+      responses:
+        '200':
+          description: List of teaser images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeaserImageItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /events/{eventCode}/teaser-images/upload-url:
     post:
       tags:
-      - Events
+      - Teaser Images
       operationId: generateTeaserImageUploadUrl
       summary: Get presigned S3 PUT URL for teaser image upload (organizer-only)
       security:
@@ -1316,7 +1349,7 @@ paths:
   /events/{eventCode}/teaser-images/confirm:
     post:
       tags:
-      - Events
+      - Teaser Images
       operationId: confirmTeaserImageUpload
       summary: Confirm upload and persist new teaser image
       security:
@@ -1354,7 +1387,7 @@ paths:
   /events/{eventCode}/teaser-images/{imageId}:
     patch:
       tags:
-      - Events
+      - Teaser Images
       operationId: updateTeaserImage
       summary: Update presentation position of a teaser image
       security:
@@ -1393,7 +1426,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
     delete:
       tags:
-      - Events
+      - Teaser Images
       operationId: deleteTeaserImage
       summary: Delete a specific teaser image by ID
       security:
