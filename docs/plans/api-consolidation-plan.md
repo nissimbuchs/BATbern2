@@ -48,8 +48,8 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
 > regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
 > service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 10/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
-> EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist, AgendaConfig), Partner 5/10.
+> prod controllers); EMS is 11/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
+> EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist, AgendaConfig, Participants), Partner 5/10.
 
 | Phase | Status | Notes |
 |---|---|---|
@@ -662,8 +662,22 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   (`@JsonValue`) — verified live: GET returns `source=TEMPLATE`, `aperitifPosition=end` exactly as before.
 >   **Verified (full live cycle):** `AgendaConfigControllerIntegrationTest` 10/10 green; EMS restarted + gateway
 >   smoke (GET auth 200 w/ correct enum serialization, GET/PUT no-auth 401); no spec schema change → no FE regen.
->   ⏳ **Next EMS:** continue per-controller wire (e.g. Sessions, Participants, Newsletter, GlobalSession — the
->   last needs a spec addition since `/sessions` search is undocumented).
+> - ✅ **Wired (7th EMS, heterogeneous returns + DTO consolidation):** `ParticipantsController` → `ParticipantsApi`
+>   (event-registrations spec, 4 ops: getEventDistributionList / addParticipant / exportParticipantsXlsx /
+>   exportParticipantsDocx). Split the 4 ops out of the broad `Registrations` tag into a new **Participants** tag.
+>   Methods renamed to operationIds; bare params; `@PreAuthorize` kept (none on the anonymous-reachable
+>   distribution-list route used by the in-VPC forwarder Lambda). **DTO consolidation:** `Map<String,Object>` →
+>   generated `DistributionListResponse` (Set→List, `kind` String → inner `KindEnum`) + `AddParticipant201Response`;
+>   deleted hand-written `dto.AddParticipantRequest`, threaded the generated twin (nullable `Boolean` force/notify
+>   null-guarded to preserve spec defaults false/true). **`byte[]` exports → `ResponseEntity<Resource>`**
+>   (`ByteArrayResource`) keeping the Content-Disposition/Content-Length headers. **🐛 Drift fix:**
+>   `DistributionListResponse.kind` enum was missing `participants` (had only speakers/moderator) though it's a
+>   valid path-param kind the controller resolves → added it (FE `kind` union gains `participants`). eventCode
+>   `@Pattern` now enforced via the interface. **Verified (full live cycle):** `ParticipantsControllerIntegrationTest`
+>   19/19 green; EMS restarted + gateway smoke — distribution-list participants/speakers 200 (kind=participants now
+>   serializes), bogus kind 404, export.xlsx 200 valid ZIP (504b0304) via Resource, POST no-auth 401; FE type-check
+>   green. ⏳ **Next EMS:** continue per-controller wire (e.g. Sessions, Newsletter, GlobalSession — the last needs
+>   a spec addition since `/sessions` search is undocumented).
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
 >   `UserControllerIntegrationTest.should_filterByRole_when_roleFilterProvided`). The tests still sent
