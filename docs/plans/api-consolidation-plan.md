@@ -120,6 +120,17 @@ sort (hardcoded JPQL `ORDER BY`) fixed. Original notes retained below for contex
 > filter key. **Fix applied:** migrated the 3 Bruno tests to `?filter={"role":…}` (combined test
 > folds `active` into the same JSON object). No production/code change. (The other documented
 > filter keys — `company`, `active`, `search` — already have backing predicates and pass.)
+>
+> ⚠️ **Encoding gotcha (2026-06-27, cost a failed PR re-run).** A JSON `filter` with raw `{ } "`
+> in a Bruno `.bru` URL is rejected by the **API gateway with 400** (RFC 3986 disallows unencoded
+> braces), and Bruno also silently DROPS a `params:query` value containing raw braces (→ `filter=null`
+> → unfiltered → role-mismatch). Neither the parse-only check nor a `params:query` block catches this.
+> **Working form:** percent-encode the filter in the `url:` line
+> (`?filter=%7B%22role%22%3A%22ATTENDEE%22%7D`) and disable the readable `params:query` twin with
+> `~filter:`. **Always run filter-based Bruno tests against a LIVE service, not just `--env unreach`
+> parse checks.** Validated live: full Bruno suite **14/14** on both `api-consolidation` and
+> `api-consolidation-phase7`; `listUsers` ATTENDEE→20, ORGANIZER→6, combined→12/13 (role predicate
+> confirmed applied). Same encoding fix landed on both branches.
 
 Goal (ADR-013 §3): list endpoints expose **one** vocabulary (`filter`/`sort`), not ad-hoc
 `role`/`company`/`search`/`status`/`sortBy`/`sortDir`. Lowest-risk approach: **keep the
@@ -499,7 +510,12 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   `GlobalExceptionHandler` mapping it → 400. Full CUMS suite green (730 tests). `@WebMvcTest`
 >   `CompanyControllerTest` removed — SB4 slice doesn't register interface-inherited `@RequestMapping`; its
 >   unique validate-uid/verify coverage moved into `CompanyControllerIntegrationTest` (full context), matching
->   the PublicUser/PresentationSettings convention. ⏳ **Next:** `UserController` (30 ops / ~8 interfaces).
+>   the PublicUser/PresentationSettings convention. **Validated live against local dev:** full CUMS
+>   suite 730 green; full Bruno suite 14/14 green (incl. companies-api); manual smoke of list /
+>   validate-uid (`INVALID-UID`→200 `valid:false`) / search all correct. Playwright @smoke gate (incl.
+>   `company-creation.spec.ts`) deferred to CI/staging — local Playwright is blocked by a pre-existing
+>   dev-native frontend-port quirk (Vite serves :3000, config/status expect :8100) + documented
+>   local-dev divergence. ⏳ **Next:** `UserController` (30 ops / ~8 interfaces).
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
 >   `UserControllerIntegrationTest.should_filterByRole_when_roleFilterProvided`). The tests still sent
