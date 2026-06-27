@@ -14,7 +14,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { eventTypeService } from './eventTypeService';
 import apiClient from './api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 // Extract generated types
 type EventSlotConfigurationResponse = components['schemas']['EventSlotConfigurationResponse'];

@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -130,7 +130,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         String companyName = "Test Company";
 
         // When/Then
-        mockMvc.perform(put("/api/v1/companies/" + companyName)
+        mockMvc.perform(patch("/api/v1/companies/" + companyName)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
             .andExpect(status().isForbidden());
@@ -160,7 +160,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
         // Then update it
         // Story 1.16.2: use company name instead of UUID
-        mockMvc.perform(put("/api/v1/companies/" + created.getName())
+        mockMvc.perform(patch("/api/v1/companies/" + created.getName())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"displayName\": \"Updated Display Name\"}"))
             .andExpect(status().isOk());

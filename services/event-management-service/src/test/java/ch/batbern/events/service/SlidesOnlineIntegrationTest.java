@@ -280,7 +280,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .venueName("Test Venue")
                 .venueAddress("Test Address")
                 .venueCapacity(100)
-                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .eventType(ch.batbern.events.core.dto.generated.EventType.EVENING)
                 .workflowState(EventWorkflowState.EVENT_COMPLETED)
                 .organizerUsername("org.user")
                 .createdAt(Instant.now())

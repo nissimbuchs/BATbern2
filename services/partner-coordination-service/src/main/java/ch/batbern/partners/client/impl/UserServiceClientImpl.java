@@ -22,6 +22,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
@@ -162,27 +163,32 @@ public class UserServiceClientImpl implements UserServiceClient {
 
     /**
      * List all users with the given role across all companies.
-     * Calls GET /users?role={role}&limit=100 with caller's JWT (ORGANIZER-only endpoint).
+     * Calls GET /users?filter={"role":"{role}"}&limit=100 with caller's JWT (ORGANIZER-only endpoint).
+     * ADR-013 §3: role is expressed via the JSON `filter` vocabulary, not an ad-hoc ?role= param.
      */
     @Override
     @Cacheable(value = "usersByRoleCache", key = "#role")
     public List<UserResponse> getUsersByRole(String role) {
         log.debug("Fetching all users with role={}", role);
 
-        String url = UriComponentsBuilder
+        // Build a fully-encoded URI (the JSON filter contains {,},",: which must be percent-encoded
+        // and must NOT be re-expanded by RestTemplate's String-URL template handling).
+        URI uri = UriComponentsBuilder
                 .fromUriString(userServiceBaseUrl + "/api/v1/users")
-                .queryParam("role", role)
+                .queryParam("filter", "{\"role\":\"" + role + "\"}")
                 .queryParam("limit", 100)
-                .toUriString();
+                .build()
+                .encode()
+                .toUri();
 
-        return fetchUserList(url, "role=" + role);
+        return fetchUserList(uri, "role=" + role);
     }
 
     /**
      * Fetch a user list forwarding the caller's JWT.
      * Used for ORGANIZER-only endpoints (e.g. list all users by role).
      */
-    private List<UserResponse> fetchUserList(String url, String context) {
+    private List<UserResponse> fetchUserList(URI url, String context) {
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);

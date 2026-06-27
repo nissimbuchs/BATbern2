@@ -88,7 +88,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 .venueAddress("123 Test Street, Bern")
                 .venueCapacity(100)
                 .organizerUsername(ORGANIZER_USERNAME)
-                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .eventType(ch.batbern.events.core.dto.generated.EventType.EVENING)
                 .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         testEvent = eventRepository.save(testEvent);

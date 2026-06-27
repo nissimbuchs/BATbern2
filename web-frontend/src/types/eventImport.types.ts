@@ -7,7 +7,7 @@
  * Used by EventBatchImportModal and useEventBatchImport hook.
  */
 
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 type CreateEventRequest = components['schemas']['CreateEventRequest'];
 

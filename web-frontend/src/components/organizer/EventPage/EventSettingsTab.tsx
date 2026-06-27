@@ -50,7 +50,7 @@ import {
   useUpdateTeaserImagePosition,
 } from '@/hooks/useEventTeaserImages';
 import type { Event, EventDetailUI } from '@/types/event.types';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect/OrganizerSelect';
 
 type TeaserImageItem = components['schemas']['TeaserImageItem'];

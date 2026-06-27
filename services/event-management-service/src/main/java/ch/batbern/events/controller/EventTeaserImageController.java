@@ -1,11 +1,11 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
-import ch.batbern.events.dto.generated.TeaserImageConfirmRequest;
-import ch.batbern.events.dto.generated.TeaserImageItem;
-import ch.batbern.events.dto.generated.TeaserImageUpdateRequest;
-import ch.batbern.events.dto.generated.TeaserImageUploadUrlRequest;
-import ch.batbern.events.dto.generated.TeaserImageUploadUrlResponse;
+import ch.batbern.events.core.dto.generated.TeaserImageConfirmRequest;
+import ch.batbern.events.core.dto.generated.TeaserImageItem;
+import ch.batbern.events.core.dto.generated.TeaserImageUpdateRequest;
+import ch.batbern.events.core.dto.generated.TeaserImageUploadUrlRequest;
+import ch.batbern.events.core.dto.generated.TeaserImageUploadUrlResponse;
 import ch.batbern.events.service.EventTeaserImageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,6 @@
 package ch.batbern.events.converter;
 
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

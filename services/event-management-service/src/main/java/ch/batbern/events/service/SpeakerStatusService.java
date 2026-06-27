@@ -10,7 +10,7 @@ import ch.batbern.events.dto.SpeakerStatusResponse;
 import ch.batbern.events.dto.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.UpdateStatusRequest;
-import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;

@@ -1,0 +1,725 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event Watch API
+  version: 1.0.0
+  description: 'Live timetable timing controls and speaker-arrival tracking for the on-site watch view.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: Watch
+  description: Watch app organizer endpoints (Epic W2)
+paths:
+  /api/v1/watch/organizers/me/active-events:
+    get:
+      tags:
+      - Watch
+      summary: Get active events for authenticated organizer
+      description: 'Returns active events assigned to the authenticated organizer.
+
+        Events within ±3 days with workflow state AGENDA_PUBLISHED or EVENT_LIVE.
+
+
+        **Story W2.3**: Event Join & Schedule Sync
+
+        - AC#1: Full schedule including sessions and speaker metadata
+
+        - AC#4: Empty list when no active events
+
+        - AC#5: Event preview data when event is >1h away
+
+
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+
+        '
+      operationId: getActiveEventsForOrganizer
+      responses:
+        '200':
+          description: Active events list (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveEventsResponse'
+              examples:
+                withEvent:
+                  summary: Organizer has an active event
+                  value:
+                    activeEvents:
+                    - eventCode: BATbern57
+                      title: BATbern 57 - Cloud Native Architectures
+                      eventDate: '2026-03-01'
+                      venueName: Kultur Casino Bern
+                      typicalStartTime: '18:00'
+                      typicalEndTime: '22:00'
+                      themeImageUrl: null
+                      currentPublishedPhase: AGENDA
+                      eventStatus: SCHEDULED
+                      sessions:
+                      - sessionSlug: cloud-keynote
+                        title: Cloud Architecture Keynote
+                        abstract: Opening keynote about cloud-native patterns
+                        sessionType: talk
+                        scheduledStartTime: '2026-03-01T17:00:00Z'
+                        scheduledEndTime: '2026-03-01T17:45:00Z'
+                        durationMinutes: 45
+                        speakers:
+                        - username: john.doe
+                          firstName: John
+                          lastName: Doe
+                          company: null
+                          companyLogoUrl: null
+                          profilePictureUrl: https://cdn.example.com/portrait/john.doe.jpg
+                          bio: Cloud architect with 10 years experience
+                          speakerRole: panelist
+                        status: SCHEDULED
+                        actualStartTime: null
+                        actualEndTime: null
+                        overrunMinutes: 0
+                        completedBy: null
+                noEvents:
+                  summary: No active events
+                  value:
+                    activeEvents: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+  /api/v1/watch/events/{eventCode}/arrivals:
+    get:
+      tags:
+      - Watch
+      summary: Get speaker arrival status for an event
+      description: 'Returns all confirmed speaker arrivals for the given event.
+
+        Used by Watch clients on initial load when WebSocket is not yet connected (REST fallback).
+
+
+        **Story W2.4**: Speaker Arrival Tracking — FR38, FR39
+
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+
+        '
+      operationId: getArrivalStatus
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern56
+      responses:
+        '200':
+          description: Arrival status list (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrivalStatusList'
+              examples:
+                withArrivals:
+                  value:
+                    arrivals:
+                    - speakerUsername: anna.meier
+                      confirmedBy: marco.muster
+                      arrivedAt: '2026-02-16T17:15:00Z'
+                empty:
+                  value:
+                    arrivals: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+    post:
+      tags:
+      - Watch
+      summary: Confirm a speaker's arrival
+      description: 'Confirms a speaker''s arrival for the given event.
+
+        Idempotent: confirming an already-arrived speaker is a no-op (UNIQUE DB constraint).
+
+        Also triggers real-time WebSocket broadcast to all organizer watches.
+
+
+        **REST Fallback**: Used when WebSocket is offline/reconnecting.
+
+        **Story W2.4**: Speaker Arrival Tracking — FR38 (sync within 3 seconds).
+
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+
+        '
+      operationId: confirmSpeakerArrival
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmArrivalRequest'
+      responses:
+        '201':
+          description: Arrival confirmed — includes broadcast payload with server-authoritative counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerArrivalBroadcast'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+  /api/v1/events/{eventCode}/live-timing:
+    get:
+      tags:
+      - Watch
+      summary: Poll the live agenda timing snapshot for an event
+      description: 'Returns the current live-timing snapshot for an event: every session''s
+
+        scheduled-vs-actual times, the currently-active session, an organizer-presence
+
+        flag, a speaker-arrival summary, and a monotonic `version`.
+
+
+        **Story 15.1**: Replaces the STOMP `/topic/events/{eventCode}/state` broadcast
+
+        with REST polling. Consumers (presenter, organizer live-control, watch app) poll
+
+        this endpoint adaptively (~3–5 s while a session is active, backing off when
+
+        hidden/idle) and send `If-None-Match` so unchanged polls cost a `304`.
+
+
+        The snapshot is assembled entirely from persistent storage (the `sessions` table +
+
+        `events.live_timing_version` + `live_timing_presence`), so successive polls that
+
+        land on different Fargate tasks return byte-identical results (no per-task
+
+        in-memory state).
+
+
+        **ETag**: derived from the monotonic `version` (`"evt-<eventCode>-<version>"`).
+
+        Send it back as `If-None-Match` to get a `304 Not Modified` when nothing changed.
+
+
+        **Authorization**: anonymous-readable (the presenter screen is public), mirroring
+
+        the previous anonymous visibility of the `/topic/events/{eventCode}/state` topic.
+
+        '
+      operationId: getLiveTiming
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern56
+      - name: If-None-Match
+        in: header
+        required: false
+        description: ETag from a previous poll; returns 304 when the version is unchanged.
+        schema:
+          type: string
+        example: '"evt-BATbern56-42"'
+      responses:
+        '200':
+          description: Current live-timing snapshot.
+          headers:
+            ETag:
+              description: Version-derived entity tag; echo back as If-None-Match.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveTimingResponse'
+        '304':
+          description: Not modified — the version is unchanged since the supplied ETag.
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/events/{eventCode}/live-timing/actions:
+    post:
+      tags:
+      - Watch
+      summary: Apply a live agenda timing action (end / extend / delay)
+      description: "Applies a session-control action during a LIVE event and returns the new\nlive-timing snapshot with a bumped `version`.\n\n**Story 15.1**: the REST replacement for the STOMP\n`/app/watch/events/{eventCode}/action` publish. Runs the same cascade as the\nprevious WebSocket path (recompute downstream scheduled offsets, set actual\ntimes, detect event completion) — `END_SESSION`, `EXTEND_SESSION`,\n`DELAY_TO_PREVIOUS` — then atomically increments `events.live_timing_version`.\n\n- `END_SESSION` — `minutes` ignored; marks the session done and auto-starts the next.\n- `EXTEND_SESSION` — `minutes` adds (or, if negative, reduces) the current session\n  end time; downstream sessions cascade by the same delta.\n- `DELAY_TO_PREVIOUS` — re-activates the previous session by `minutes` and shifts\n  the current session + downstream forward.\n\nIdempotent per the underlying cascade service (a repeat on an already-completed\nsession re-returns state without a second write).\n\n**Authorization**: requires an authenticated organizer (`ROLE_ORGANIZER`).\n"
+      operationId: applyLiveTimingAction
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveTimingActionRequest'
+      responses:
+        '200':
+          description: Action applied — post-cascade snapshot with the bumped version.
+          headers:
+            ETag:
+              description: New version-derived entity tag.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveTimingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+components:
+  schemas:
+    ConfirmArrivalRequest:
+      type: object
+      description: Request body to confirm a speaker's arrival.
+      required:
+      - speakerUsername
+      properties:
+        speakerUsername:
+          type: string
+          example: anna.meier
+    ArrivalStatusList:
+      type: object
+      description: List of confirmed speaker arrivals for an event.
+      required:
+      - arrivals
+      properties:
+        arrivals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrivalStatus'
+    ArrivalStatus:
+      type: object
+      description: A single speaker arrival record.
+      required:
+      - speakerUsername
+      - confirmedBy
+      - arrivedAt
+      properties:
+        speakerUsername:
+          type: string
+          example: anna.meier
+        confirmedBy:
+          type: string
+          example: marco.muster
+        arrivedAt:
+          type: string
+          format: date-time
+          example: '2026-02-16T17:15:00Z'
+    ArrivalCount:
+      type: object
+      description: Server-authoritative arrived/total counts for real-time counter sync.
+      required:
+      - arrived
+      - total
+      properties:
+        arrived:
+          type: integer
+          example: 2
+        total:
+          type: integer
+          example: 4
+    SpeakerArrivalBroadcast:
+      type: object
+      description: 'WebSocket broadcast payload sent to `/topic/events/{eventCode}/arrivals`.
+
+        Also returned as REST response body for the POST endpoint.
+
+        Carries individual arrival details plus server-authoritative counts (FR39).
+
+        '
+      required:
+      - type
+      - eventCode
+      - speakerUsername
+      - confirmedBy
+      - arrivedAt
+      - arrivalCount
+      properties:
+        type:
+          type: string
+          enum:
+          - SPEAKER_ARRIVED
+          example: SPEAKER_ARRIVED
+        eventCode:
+          type: string
+          example: BATbern56
+        speakerUsername:
+          type: string
+          example: anna.meier
+        speakerFirstName:
+          type: string
+          example: Anna
+        speakerLastName:
+          type: string
+          example: Meier
+        confirmedBy:
+          type: string
+          example: marco.muster
+        arrivedAt:
+          type: string
+          format: date-time
+          example: '2026-02-16T17:15:00Z'
+        arrivalCount:
+          $ref: '#/components/schemas/ArrivalCount'
+    ActiveEventsResponse:
+      type: object
+      description: Response wrapper for the organizer's active events (W2.3).
+      required:
+      - activeEvents
+      properties:
+        activeEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveEventDetail'
+    ActiveEventDetail:
+      type: object
+      description: Full event detail for Watch organizer sync, including sessions and speakers.
+      required:
+      - eventCode
+      - title
+      - eventDate
+      - venueName
+      - eventStatus
+      - sessions
+      properties:
+        eventCode:
+          type: string
+          example: BATbern57
+        title:
+          type: string
+          example: BATbern 57 - Cloud Native Architectures
+        eventDate:
+          type: string
+          format: date
+          example: '2026-03-01'
+        venueName:
+          type: string
+          example: Kultur Casino Bern
+        typicalStartTime:
+          type: string
+          nullable: true
+          description: HH:mm in Europe/Zurich timezone, derived from first session
+          example: '18:00'
+        typicalEndTime:
+          type: string
+          nullable: true
+          description: HH:mm in Europe/Zurich timezone, derived from last session
+          example: '22:00'
+        themeImageUrl:
+          type: string
+          nullable: true
+          example: https://cdn.example.com/theme/batbern57.jpg
+        currentPublishedPhase:
+          type: string
+          nullable: true
+          example: AGENDA
+        eventStatus:
+          type: string
+          enum:
+          - SCHEDULED
+          - LIVE
+          - COMPLETED
+          example: SCHEDULED
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchSessionDetail'
+    WatchSessionDetail:
+      type: object
+      description: Session detail for Watch organizer sync.
+      required:
+      - sessionSlug
+      - title
+      - speakers
+      properties:
+        sessionSlug:
+          type: string
+          example: cloud-keynote
+        title:
+          type: string
+          example: Cloud Architecture Keynote
+        abstract:
+          type: string
+          nullable: true
+        sessionType:
+          type: string
+          nullable: true
+          example: talk
+        scheduledStartTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-01T17:00:00Z'
+        scheduledEndTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-01T17:45:00Z'
+        durationMinutes:
+          type: integer
+          nullable: true
+          example: 45
+        speakers:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchSpeakerDetail'
+        status:
+          type: string
+          nullable: true
+          enum:
+          - SCHEDULED
+          - ACTIVE
+          - COMPLETED
+          description: Derived from timing relative to now; W4 adds real-time override.
+          example: SCHEDULED
+        actualStartTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Populated in W4 (session control). Always null in W2.3.
+        actualEndTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Populated in W4 (session control). Always null in W2.3.
+        overrunMinutes:
+          type: integer
+          description: Populated in W4. Always 0 in W2.3.
+          example: 0
+        completedBy:
+          type: string
+          nullable: true
+          description: Populated in W4. Always null in W2.3.
+    WatchSpeakerDetail:
+      type: object
+      description: Speaker detail for Watch organizer sync.
+      required:
+      - username
+      properties:
+        username:
+          type: string
+          example: john.doe
+        firstName:
+          type: string
+          nullable: true
+          example: John
+        lastName:
+          type: string
+          nullable: true
+          example: Doe
+        company:
+          type: string
+          nullable: true
+          description: Speaker's company display name (Story 15.5). Resolved at read time from the speaker's user profile; null when the speaker has no company.
+          example: ACME Corp
+        companyLogoUrl:
+          type: string
+          nullable: true
+          description: CloudFront URL of the speaker's company logo (Story 15.5), shown on the presenter + live-control surfaces. Null when the company has no logo.
+          example: https://cdn.batbern.ch/logos/acme.png
+        profilePictureUrl:
+          type: string
+          nullable: true
+          example: https://cdn.example.com/portrait/john.doe.jpg
+        bio:
+          type: string
+          nullable: true
+          example: Cloud architect with 10 years experience
+        speakerRole:
+          type: string
+          nullable: true
+          example: panelist
+    LiveTimingResponse:
+      type: object
+      description: Live agenda timing snapshot for an event (Story 15.1). Assembled from persistent storage only, so it is identical across Fargate tasks. Polled over REST in place of the retired STOMP `/topic/events/{eventCode}/state` broadcast.
+      required:
+      - eventCode
+      - version
+      - organizerPresent
+      - arrivedSpeakerCount
+      - totalSpeakerCount
+      - sessions
+      properties:
+        eventCode:
+          type: string
+          example: BATbern56
+        version:
+          type: integer
+          format: int64
+          description: 'Monotonic per-event version, bumped on every timing action (END/EXTEND/DELAY). Drives the ETag; a higher value means newer timing state. NOTE: the version reflects timing-action state only — the advisory fields `organizerPresent` (TTL-based), `arrivedSpeakerCount` (authoritative source: the arrivals endpoint), and the clock-derived `currentSessionSlug`/session `status` are NOT covered, so a consumer using `If-None-Match` may see those lag behind a 304.'
+          example: 42
+        organizerPresent:
+          type: boolean
+          description: True when at least one authenticated organizer has polled within the presence TTL (~30 s). Anonymous presenter polls do not count.
+          example: true
+        currentSessionSlug:
+          type: string
+          nullable: true
+          description: Slug of the session currently active (now within scheduled start/end), or null.
+          example: cloud-keynote
+        arrivedSpeakerCount:
+          type: integer
+          description: Number of distinct speakers confirmed arrived.
+          example: 3
+        totalSpeakerCount:
+          type: integer
+          description: Total distinct speakers expected across the event's sessions.
+          example: 8
+        sessions:
+          type: array
+          description: Every session with scheduled-vs-actual timing (same shape the Watch sync uses).
+          items:
+            $ref: '#/components/schemas/WatchSessionDetail'
+    LiveTimingActionRequest:
+      type: object
+      description: A live agenda timing action applied by an organizer during a LIVE event (Story 15.1).
+      required:
+      - type
+      - sessionSlug
+      properties:
+        type:
+          type: string
+          enum:
+          - END_SESSION
+          - EXTEND_SESSION
+          - DELAY_TO_PREVIOUS
+          description: The action to apply.
+          example: EXTEND_SESSION
+        sessionSlug:
+          type: string
+          description: Slug of the session the action targets (the current session for EXTEND/DELAY).
+          example: cloud-keynote
+        minutes:
+          type: integer
+          nullable: true
+          description: Minutes to add. Required for EXTEND_SESSION (negative reduces) and DELAY_TO_PREVIOUS; ignored for END_SESSION.
+          example: 10
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

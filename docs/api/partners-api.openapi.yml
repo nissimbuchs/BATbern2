@@ -5,10 +5,19 @@ info:
   description: |
     Partner Coordination API for BATbern Event Management Platform.
 
-    This API provides partner management capabilities with:
+    Single source of truth for everything under the `/partners/*` tree (Phase 5
+    consolidation — folds in the former `partner-notes-api`, `partner-analytics-api`
+    and `partner-topics-api` specs):
     - **Partner Relationship Management**: Partnership tiers and benefits
-    - **Topic Voting & Suggestions**: Strategic topic influence
-    - **Contact Management**: Multiple contact persons per partner
+    - **Partner Contacts**: Multiple contact persons per partner (derived from PARTNER-role users)
+    - **Partner Notes**: ORGANIZER-only internal notes about a partner (Story 8.4)
+    - **Partner Analytics**: Per-event attendance dashboard + XLSX export (Story 8.1)
+    - **Partner Topics**: Topic suggestions + idempotent vote toggle (Story 8.2)
+    - **Attendee Topics**: "Topics from the floor" — attendee-facing alias into the same
+      topic pool (Story 7.1), served by partner-coordination-service
+
+    Note: `/partner-meetings/*` is an aggregate top-level resource and lives in its own
+    `partner-meetings-api` spec by design.
 
     **Important (ADR-003 + ADR-004)**: Partner is company-centric.
     - Partner entity stores companyName (meaningful ID), NOT companyId UUID
@@ -26,20 +35,25 @@ info:
     identifier: Proprietary
 
 servers:
-  - url: https://api.batbern.ch/api/v1
-    description: Production
-  - url: https://api.batbern.ch/api/v1
-    description: Staging
-  - url: http://localhost:8080/api/v1
-    description: Development
+  - url: /api/v1
+    description: API Gateway base URL
+
+security:
+  - bearerAuth: []
 
 tags:
   - name: Partners
     description: Partner relationship management
   - name: Partner Contacts
     description: Partner contact person management
-  - name: Topic Voting
-    description: Topic voting and suggestions
+  - name: Partner Notes
+    description: ORGANIZER-only internal notes about a partner (Story 8.4)
+  - name: Partner Analytics
+    description: Per-event attendance analytics + XLSX export (Story 8.1)
+  - name: Partner Topics
+    description: Partner topic suggestions and idempotent vote toggle (Story 8.2)
+  - name: Attendee Topics
+    description: Attendee-facing topic suggestions into the shared topic pool (Story 7.1)
 
 paths:
   /partners:
@@ -226,152 +240,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /partners/{companyName}/votes:
-    parameters:
-      - name: companyName
-        in: path
-        required: true
-        schema:
-          type: string
-          maxLength: 12
-        description: Company name (meaningful ID per ADR-003)
-
-    get:
-      tags: [Topic Voting]
-      operationId: getPartnerVotes
-      summary: List partner votes
-      description: Get all votes cast by a partner on topics
-      responses:
-        '200':
-          description: List of votes
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TopicVoteResponse'
-        '404':
-          description: Partner not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    post:
-      tags: [Topic Voting]
-      operationId: castVote
-      summary: Cast vote on topic
-      description: |
-        Cast a vote on a topic with weighted influence based on partnership tier.
-        Vote weight: BRONZE=1, SILVER=2, GOLD=3, PLATINUM=4, STRATEGIC=5.
-        One vote per partner per topic.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CastVoteRequest'
-      responses:
-        '201':
-          description: Vote cast
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TopicVoteResponse'
-        '400':
-          description: Invalid vote value (must be 1-5)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Partner not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Partner already voted on this topic
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /partners/{companyName}/suggestions:
-    parameters:
-      - name: companyName
-        in: path
-        required: true
-        schema:
-          type: string
-          maxLength: 12
-        description: Company name (meaningful ID per ADR-003)
-
-    get:
-      tags: [Topic Voting]
-      operationId: getPartnerSuggestions
-      summary: List partner topic suggestions
-      description: Get all topic suggestions submitted by a partner
-      responses:
-        '200':
-          description: List of suggestions
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TopicSuggestionResponse'
-        '404':
-          description: Partner not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    post:
-      tags: [Topic Voting]
-      operationId: submitSuggestion
-      summary: Submit topic suggestion
-      description: |
-        Submit a new topic suggestion for consideration.
-        Initial status: SUBMITTED.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubmitSuggestionRequest'
-      responses:
-        '201':
-          description: Suggestion submitted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TopicSuggestionResponse'
-        '400':
-          description: Validation error (title/description too long)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Partner not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /partners/statistics:
     get:
       tags: [Partners]
       operationId: getPartnerStatistics
-      summary: Get partner statistics
+      summary: Get partner portfolio summary
       description: |
-        Get aggregate statistics across all partners including:
-        - Total active partners count
+        Aggregate **partnership portfolio** statistics across all partners — the relationship
+        side of the house, distinct from attendance `Partner Analytics`:
+        - Total / active partner counts
         - Partners by tier breakdown
-        - Recently added partners
-        - Expiring partnerships
+        - Recently added partners (last 30 days)
+        - Expiring partnerships (next 90 days)
+
+        For per-event *attendance* metrics of a single partner, see
+        `GET /partners/{companyName}/analytics/dashboard` (Partner Analytics).
       responses:
         '200':
           description: Partner statistics
@@ -380,7 +263,542 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartnerStatistics'
 
+  /partners/{companyName}/notes:
+    parameters:
+      - name: companyName
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Company name (meaningful ID per ADR-003)
+
+    get:
+      tags: [Partner Notes]
+      operationId: listPartnerNotes
+      summary: List all notes for a partner
+      description: |
+        Returns all notes for the specified partner sorted by created_at descending.
+        ORGANIZER role required (AC1, AC2).
+      responses:
+        '200':
+          description: List of partner notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PartnerNoteDTO'
+        '403':
+          description: Forbidden — ORGANIZER role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Partner Notes]
+      operationId: createPartnerNote
+      summary: Create a note for a partner
+      description: |
+        Creates a note for the specified partner. title and content are required.
+        authorUsername is captured from the authenticated user's JWT.
+        ORGANIZER role required (AC1, AC3).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoteRequest'
+      responses:
+        '201':
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerNoteDTO'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden — ORGANIZER role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/{companyName}/notes/{noteId}:
+    parameters:
+      - name: companyName
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Company name (meaningful ID per ADR-003)
+      - name: noteId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    patch:
+      tags: [Partner Notes]
+      operationId: updatePartnerNote
+      summary: Update a partner note
+      description: |
+        Partial update — only provided non-null fields are changed.
+        ORGANIZER role required (AC1, AC4).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNoteRequest'
+      responses:
+        '200':
+          description: Note updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerNoteDTO'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden — ORGANIZER role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Partner Notes]
+      operationId: deletePartnerNote
+      summary: Delete a partner note
+      description: |
+        Deletes the specified note. ORGANIZER role required (AC1, AC5).
+      responses:
+        '204':
+          description: Note deleted
+        '403':
+          description: Forbidden — ORGANIZER role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/{companyName}/analytics/dashboard:
+    get:
+      tags: [Partner Analytics]
+      operationId: getAttendanceDashboard
+      summary: Get partner attendance dashboard
+      description: |
+        Returns per-event attendance summary and cost-per-attendee KPI for a partner company.
+        Results are cached for 15 minutes (Caffeine cache in partner-coordination-service).
+
+        Access (AC6): ORGANIZER may access any company; PARTNER only their own company.
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Partner company name (ADR-003 meaningful identifier)
+          example: GoogleZH
+        - name: fromYear
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+          description: Earliest year to include. Defaults to current year minus 5 (last 5 years).
+          example: 2020
+      responses:
+        '200':
+          description: Attendance dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerDashboardResponse'
+        '403':
+          description: Forbidden — PARTNER may only access their own company's analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partner not found for the given companyName
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/{companyName}/analytics/export:
+    get:
+      tags: [Partner Analytics]
+      operationId: exportAttendance
+      summary: Export attendance data as Excel (XLSX)
+      description: |
+        Returns the attendance table as an XLSX file download.
+        Columns: Event, Date, Your Attendees, Total Attendees, Percentage.
+        Footer includes totals and cost-per-attendee.
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Partner company name (ADR-003 meaningful identifier)
+          example: GoogleZH
+        - name: fromYear
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+          description: Earliest year to include. Defaults to current year minus 5.
+          example: 2020
+      responses:
+        '200':
+          description: XLSX file download
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: 'attachment; filename="attendance-GoogleZH.xlsx"'
+        '403':
+          description: Forbidden — PARTNER may only export their own company's data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partner not found for the given companyName
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/topics:
+    get:
+      tags: [Partner Topics]
+      operationId: listTopics
+      summary: List all topic suggestions with vote counts
+      description: |
+        Returns all topic suggestions, sorted by vote count descending.
+        For PARTNER callers, the `currentPartnerHasVoted` flag reflects whether
+        the caller's company has voted on each topic.
+        For ORGANIZER callers, `currentPartnerHasVoted` is always false.
+      responses:
+        '200':
+          description: List of topics sorted by vote count descending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicDTO'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Partner Topics]
+      operationId: suggestTopic
+      summary: Suggest a new topic
+      description: |
+        Partner or Organizer submits a new topic suggestion.
+
+        - **PARTNER**: `companyName` is resolved from the JWT principal; any `companyName` field in
+          the request body is ignored (security: partners cannot spoof their company).
+        - **ORGANIZER**: must supply `companyName` in the request body to record the suggestion on
+          behalf of the specified partner company (e.g. during a partner meeting). Returns 400 if
+          `companyName` is missing or blank.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicSuggestionRequest'
+      responses:
+        '201':
+          description: Topic suggestion created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicDTO'
+        '400':
+          description: Validation error or missing companyName (organizer path)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden — requires PARTNER or ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/topics/{topicId}:
+    patch:
+      tags: [Partner Topics]
+      operationId: updateTopic
+      summary: Edit a topic's title/description
+      description: |
+        Edit a topic suggestion's title/description. A PARTNER may only edit topics suggested by
+        their own company; an ORGANIZER may edit any topic.
+      parameters:
+        - $ref: '#/components/parameters/topicId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicSuggestionRequest'
+      responses:
+        '200':
+          description: Topic updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden — only the submitting company (or an organizer) may edit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Partner Topics]
+      operationId: deleteTopic
+      summary: Delete a topic suggestion
+      description: |
+        Delete a topic suggestion. A PARTNER may only delete topics suggested by their own
+        company; an ORGANIZER may delete any topic.
+      parameters:
+        - $ref: '#/components/parameters/topicId'
+      responses:
+        '204':
+          description: Topic deleted
+        '403':
+          description: Forbidden — only the submitting company (or an organizer) may delete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/topics/{topicId}/vote:
+    post:
+      tags: [Partner Topics]
+      operationId: castVote
+      summary: Cast a vote on a topic (toggle on)
+      description: |
+        Adds the caller's company vote to the specified topic.
+        Idempotent — if the company already voted, the request succeeds with no change.
+      parameters:
+        - $ref: '#/components/parameters/topicId'
+      responses:
+        '204':
+          description: Vote registered (or already existed)
+        '403':
+          description: Forbidden — only PARTNER role may vote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Partner Topics]
+      operationId: removeVote
+      summary: Remove a vote from a topic (toggle off)
+      description: |
+        Removes the caller's company vote from the specified topic.
+        Idempotent — if no vote exists, the request succeeds with no change.
+      parameters:
+        - $ref: '#/components/parameters/topicId'
+      responses:
+        '204':
+          description: Vote removed (or did not exist)
+        '403':
+          description: Forbidden — only PARTNER role may vote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/topics/{topicId}/status:
+    patch:
+      tags: [Partner Topics]
+      operationId: updateTopicStatus
+      summary: Update topic status (Organizer only)
+      description: |
+        Organizer sets a topic status to SELECTED or DECLINED.
+        When setting SELECTED, `plannedEvent` may be provided (e.g. "BATbern58").
+      parameters:
+        - $ref: '#/components/parameters/topicId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicStatusUpdateRequest'
+      responses:
+        '200':
+          description: Topic status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicDTO'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden — only ORGANIZER role may update status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /attendees/topics:
+    post:
+      tags: [Attendee Topics]
+      operationId: suggestCommunityTopic
+      summary: Suggest a topic as an attendee (Topics From the Floor)
+      description: |
+        Story 7.1 — a logged-in ATTENDEE suggests a future event topic. The suggestion flows
+        into the same topic pool as partner suggestions, tagged `source=COMMUNITY` with no
+        company. Submit-only: there is intentionally no attendee read/list endpoint.
+
+        The `/attendees` prefix is an intentional attendee-facing alias; the request is routed
+        to partner-coordination-service by the gateway (the topic pool lives there).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicSuggestionRequest'
+      responses:
+        '201':
+          description: Community topic suggestion created (source=COMMUNITY)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicDTO'
+        '400':
+          description: Validation error (title 5–255 chars, description ≤ 500 chars)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden — requires ATTENDEE role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
+  parameters:
+    topicId:
+      name: topicId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Topic suggestion UUID
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     PartnerResponse:
       type: object
@@ -434,14 +852,16 @@ components:
 
     UpdatePartnerRequest:
       type: object
+      description: |
+        Partial partner update. Deactivation is NOT done here — use
+        DELETE /partners/{companyName} (soft-deactivate, sets the partnership end date).
+        Reactivation: PATCH partnershipEndDate to a future date.
       properties:
         partnershipLevel:
           $ref: '#/components/schemas/PartnershipLevel'
         partnershipEndDate:
           type: string
           format: date
-        isActive:
-          type: boolean
 
     PartnerListResponse:
       type: object
@@ -509,102 +929,6 @@ components:
           type: string
           description: Company headquarters location
 
-    CastVoteRequest:
-      type: object
-      required:
-        - topicId
-        - voteValue
-      properties:
-        topicId:
-          type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
-          description: Topic slug identifier from Event Management Service (meaningful ID per ADR-003)
-          example: cloud-native-architecture
-        voteValue:
-          type: integer
-          minimum: 1
-          maximum: 5
-          description: Vote value (1=low interest, 5=high interest)
-
-    TopicVoteResponse:
-      type: object
-      required:
-        - topicId
-        - voteValue
-        - voteWeight
-        - votedAt
-      properties:
-        topicId:
-          type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
-          description: Topic slug identifier (meaningful ID per ADR-003)
-          example: cloud-native-architecture
-        voteValue:
-          type: integer
-          description: Vote value (1-5)
-        voteWeight:
-          type: integer
-          description: Weighted vote based on partnership tier
-        votedAt:
-          type: string
-          format: date-time
-
-    SubmitSuggestionRequest:
-      type: object
-      required:
-        - suggestedTopic
-        - description
-      properties:
-        suggestedTopic:
-          type: string
-          maxLength: 500
-          description: Suggested topic title
-        description:
-          type: string
-          maxLength: 2000
-          description: Detailed description of the topic
-        businessJustification:
-          type: string
-          maxLength: 1000
-          description: Business rationale for the suggestion
-
-    TopicSuggestionResponse:
-      type: object
-      required:
-        - suggestedTopic
-        - description
-        - status
-        - suggestedAt
-      properties:
-        suggestedTopic:
-          type: string
-        description:
-          type: string
-        businessJustification:
-          type: string
-        status:
-          $ref: '#/components/schemas/SuggestionStatus'
-        suggestedAt:
-          type: string
-          format: date-time
-        reviewedAt:
-          type: string
-          format: date-time
-        reviewedBy:
-          type: string
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-          description: Username of the reviewer (meaningful ID per ADR-003)
-          example: john.doe
-
-    SuggestionStatus:
-      type: string
-      enum:
-        - SUBMITTED
-        - UNDER_REVIEW
-        - ACCEPTED
-        - REJECTED
-        - IMPLEMENTED
-
     PartnerStatistics:
       type: object
       required:
@@ -659,13 +983,184 @@ components:
                 type: string
                 format: date
 
+    PartnerNoteDTO:
+      type: object
+      description: Partner note (Story 8.4)
+      required:
+        - id
+        - title
+        - content
+        - authorUsername
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Note ID
+        title:
+          type: string
+          description: Note title
+        content:
+          type: string
+          description: Note content (HTML supported)
+        authorUsername:
+          type: string
+          description: Organizer username (ADR-003)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateNoteRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          description: Note title (required)
+        content:
+          type: string
+          description: Note content (required)
+
+    UpdateNoteRequest:
+      type: object
+      description: All fields optional — only provided non-null fields are changed
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          description: Note title
+        content:
+          type: string
+          description: Note content
+
+    PartnerDashboardResponse:
+      type: object
+      description: Partner attendance dashboard (Story 8.1)
+      properties:
+        attendanceSummary:
+          type: array
+          description: Per-event attendance records, sorted by date descending
+          items:
+            $ref: '#/components/schemas/AttendanceSummaryRecord'
+        costPerAttendee:
+          type: number
+          format: decimal
+          nullable: true
+          description: Total partnership cost divided by total company attendees. Null if no attendees or no cost configured.
+          example: 555.56
+
+    AttendanceSummaryRecord:
+      type: object
+      properties:
+        eventCode:
+          type: string
+          description: Event code (ADR-003)
+          example: BATbern57
+        eventTitle:
+          type: string
+          description: Event title
+          example: Cloud Native Architecture
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date (ISO-8601)
+          example: '2024-06-01T00:00:00Z'
+        totalAttendees:
+          type: integer
+          format: int64
+          description: Total confirmed registrations for this event
+          example: 120
+        companyAttendees:
+          type: integer
+          format: int64
+          description: Confirmed registrations from the partner company
+          example: 12
+
+    TopicDTO:
+      type: object
+      description: A topic suggestion with vote counts (Story 8.2 / 7.1)
+      required: [id, title, voteCount, currentPartnerHasVoted, status, createdAt, source]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Topic UUID
+        title:
+          type: string
+          description: Topic title
+        description:
+          type: string
+          nullable: true
+          description: Topic description
+        suggestedByCompany:
+          type: string
+          nullable: true
+          description: Company that suggested this topic (ADR-003 identifier). Null for COMMUNITY (attendee) suggestions — Story 7.1.
+        voteCount:
+          type: integer
+          description: Total number of votes
+        currentPartnerHasVoted:
+          type: boolean
+          description: True if the calling partner's company has voted for this topic
+        status:
+          type: string
+          enum: [PROPOSED, SELECTED, DECLINED]
+          description: Topic lifecycle status
+        plannedEvent:
+          type: string
+          nullable: true
+          description: Event code when topic is selected (e.g. BATbern58)
+        createdAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [PARTNER, COMMUNITY]
+          description: 'Origin of the suggestion: PARTNER (Story 8.2) or COMMUNITY/attendee (Story 7.1)'
+
+    TopicSuggestionRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 255
+          description: Topic title (required)
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Short description (optional, max 500 chars)
+        companyName:
+          type: string
+          nullable: true
+          description: |
+            Organizer-only: the partner company on whose behalf the topic is submitted.
+            Required when caller has ORGANIZER role; ignored for PARTNER callers.
+
+    TopicStatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [SELECTED, DECLINED]
+          description: New status — only SELECTED or DECLINED allowed
+        plannedEvent:
+          type: string
+          nullable: true
+          description: Event code to associate with the selected topic (e.g. BATbern58)
+
     # Shared-kernel types (imported, not generated)
     ErrorResponse:
-      type: object
-      x-java-class: ch.batbern.shared.dto.ErrorResponse
-      description: Imported from shared-kernel
-
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
     PaginationMetadata:
-      type: object
-      x-java-class: ch.batbern.shared.api.PaginationMetadata
-      description: Imported from shared-kernel
+      $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'

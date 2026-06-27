@@ -7,7 +7,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;

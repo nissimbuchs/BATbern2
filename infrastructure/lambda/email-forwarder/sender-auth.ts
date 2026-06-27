@@ -93,7 +93,9 @@ async function getOrganizerEmails(): Promise<string[]> {
     let totalPages = 1;
 
     while (page < totalPages) {
-      const url = `${API_GATEWAY_URL}/api/v1/users?role=ORGANIZER&limit=100&page=${page}`;
+      // ADR-013 §3: role is expressed via the JSON `filter` vocabulary, not an ad-hoc ?role= param.
+      const filter = encodeURIComponent(JSON.stringify({ role: 'ORGANIZER' }));
+      const url = `${API_GATEWAY_URL}/api/v1/users?filter=${filter}&limit=100&page=${page}`;
       const response = await fetch(url);
 
       if (!response.ok) {

@@ -5,7 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

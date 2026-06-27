@@ -28,7 +28,7 @@ import { useEventType } from '@/hooks/useEventTypes';
 import { useAgendaConfig } from '@/hooks/useAgendaConfig/useAgendaConfig';
 import { SchedulePreview } from './SchedulePreview';
 import { computeScheduleEndTime } from './scheduleTimeline';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 // Import generated types from OpenAPI spec (ADR-006 compliance)
 type EventType = components['schemas']['EventType'];

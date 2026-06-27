@@ -25,7 +25,7 @@ import {
 import type { SelectChangeEvent } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useEventTypes } from '@/hooks/useEventTypes';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 // Import generated types from OpenAPI spec (ADR-006 compliance)
 type EventType = components['schemas']['EventType'];

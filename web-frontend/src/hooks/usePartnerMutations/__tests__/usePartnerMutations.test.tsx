@@ -202,7 +202,6 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       const updateRequest: UpdatePartnerRequest = {
         partnershipLevel: 'STRATEGIC',
         partnershipEndDate: '2026-12-31',
-        isActive: true,
       };
 
       const updatedPartner: PartnerResponse = {

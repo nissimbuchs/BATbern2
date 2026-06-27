@@ -3,7 +3,6 @@ package ch.batbern.events.mapper;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.CreateSessionRequest;
 import ch.batbern.events.dto.SessionResponse;
-import ch.batbern.events.dto.UpdateSessionRequest;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -85,27 +84,6 @@ public class SessionMapper {
                 .capacity(request.getCapacity())
                 .language(request.getLanguage())
                 .build();
-    }
-
-    /**
-     * Apply UpdateSessionRequest to an existing Session entity (full replacement).
-     *
-     * @param entity the existing Session entity to update
-     * @param request the UpdateSessionRequest DTO
-     */
-    public void applyUpdateRequest(Session entity, UpdateSessionRequest request) {
-        if (entity == null || request == null) {
-            return;
-        }
-
-        entity.setTitle(request.getTitle());
-        entity.setDescription(request.getDescription());
-        entity.setSessionType(request.getSessionType());
-        entity.setStartTime(parseInstant(request.getStartTime()));
-        entity.setEndTime(parseInstant(request.getEndTime()));
-        entity.setRoom(request.getRoom());
-        entity.setCapacity(request.getCapacity());
-        entity.setLanguage(request.getLanguage());
     }
 
     // ==================== Private Helper Methods ====================

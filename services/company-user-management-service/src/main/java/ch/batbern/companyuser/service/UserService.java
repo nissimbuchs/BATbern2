@@ -367,7 +367,9 @@ public class UserService {
                 roleFilter, companyFilter, search, jsonFilter,
                 page, limit, sortBy, sortDir);
 
-        String safeSortBy = ALLOWED_USER_SORT_FIELDS.contains(sortBy)
+        // Note: ALLOWED_USER_SORT_FIELDS is an immutable Set.of(...) which throws NPE on contains(null),
+        // so the null check must come first (sortBy is null when the `sort` query param is absent).
+        String safeSortBy = (sortBy != null && ALLOWED_USER_SORT_FIELDS.contains(sortBy))
                 ? sortBy : "name";
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir)
                 ? Sort.Direction.DESC : Sort.Direction.ASC;

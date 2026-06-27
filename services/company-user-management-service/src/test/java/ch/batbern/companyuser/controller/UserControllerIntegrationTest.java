@@ -30,6 +30,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -147,7 +148,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequest))
                 .andExpect(status().isOk())
@@ -167,7 +168,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidEmailRequest))
                 .andExpect(status().isBadRequest())
@@ -184,7 +185,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidRequest))
                 .andExpect(status().isBadRequest());
@@ -233,7 +234,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         userRepository.save(organizer);
 
         mockMvc.perform(get("/api/v1/users")
-                        .param("role", "ORGANIZER")
+                        .param("filter", "{\"role\":\"ORGANIZER\"}")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
@@ -258,11 +259,44 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         userRepository.save(user2);
 
         mockMvc.perform(get("/api/v1/users")
-                        .param("company", "GoogleZH")
+                        .param("filter", "{\"company\":\"GoogleZH\"}")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[*].companyId", everyItem(is("GoogleZH"))));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_sortDescendingByName_when_sortParameterWithMinusSign")
+    void should_sortDescendingByName_when_sortParameterWithMinusSign() throws Exception {
+        // ADR-013 §3: server-side ordering via the `sort` vocabulary (-name → lastName DESC).
+        User zoe = User.builder()
+                .username("zoe.zimmer")
+                .email("zoe.zimmer@example.com")
+                .firstName("Zoe")
+                .lastName("Zimmer")
+                .cognitoUserId("cognito-zoe")
+                .companyId("GoogleZH")
+                .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
+                .build();
+        userRepository.save(zoe);
+        User amy = User.builder()
+                .username("amy.adams")
+                .email("amy.adams@example.com")
+                .firstName("Amy")
+                .lastName("Adams")
+                .cognitoUserId("cognito-amy")
+                .companyId("GoogleZH")
+                .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
+                .build();
+        userRepository.save(amy);
+
+        mockMvc.perform(get("/api/v1/users")
+                        .param("sort", "-name")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].lastName", is("Zimmer")));
     }
 
     @Test

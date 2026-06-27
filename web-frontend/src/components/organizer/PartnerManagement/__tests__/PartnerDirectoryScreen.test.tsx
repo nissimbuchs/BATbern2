@@ -60,7 +60,7 @@ describe('PartnerDirectoryScreen - Main Screen Component', () => {
   const mockPagination = {
     page: 0,
     size: 20,
-    totalElements: 1,
+    totalItems: 1,
     totalPages: 1,
   };
 

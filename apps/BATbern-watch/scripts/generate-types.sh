@@ -15,19 +15,27 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR/.."
-API_SPEC="$PROJECT_ROOT/../../docs/api/events-api.openapi.yml"
+API_DIR="$PROJECT_ROOT/../../docs/api"
+# The events API was split into per-domain specs (API consolidation Phase 6); the
+# watch app's curated models are sourced from the union of all of them.
+API_SPECS=(
+    "events-core-api.openapi.yml"
+    "event-sessions-api.openapi.yml"
+    "event-speakers-api.openapi.yml"
+    "event-registrations-api.openapi.yml"
+    "event-newsletter-api.openapi.yml"
+    "event-media-api.openapi.yml"
+    "event-ai-api.openapi.yml"
+    "event-analytics-api.openapi.yml"
+    "event-watch-api.openapi.yml"
+)
 MODELS_DIR="$PROJECT_ROOT/BATbern-watch Watch App/Generated/Models"
 TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
-echo "🔄 Refreshing Swift API models from OpenAPI spec..."
-echo "   Spec:   $API_SPEC"
+echo "🔄 Refreshing Swift API models from OpenAPI specs..."
+echo "   Specs:  $API_DIR/event*-api.openapi.yml (${#API_SPECS[@]} per-domain specs)"
 echo "   Models: $MODELS_DIR"
-
-if [ ! -f "$API_SPEC" ]; then
-    echo "❌ OpenAPI spec not found: $API_SPEC" >&2
-    exit 1
-fi
 
 # Install openapi-generator if needed
 if ! command -v openapi-generator &> /dev/null; then
@@ -35,21 +43,35 @@ if ! command -v openapi-generator &> /dev/null; then
     brew install openapi-generator
 fi
 
-# Generate Swift 5 models into an isolated temp dir (Generated/ is untouched
-# until generation succeeds).
-openapi-generator generate \
-    -i "$API_SPEC" \
-    -g swift5 \
-    -o "$TEMP_DIR" \
-    --additional-properties=\
+# Generate Swift 5 models for each per-domain spec into an isolated temp dir, then
+# accumulate the union of all generated models into one directory. Generated/ is
+# untouched until generation succeeds. Shared models (e.g. ErrorResponse) regenerate
+# identically across specs — overwriting is harmless.
+SRC_MODELS="$TEMP_DIR/all-models"
+mkdir -p "$SRC_MODELS"
+for spec in "${API_SPECS[@]}"; do
+    spec_path="$API_DIR/$spec"
+    if [ ! -f "$spec_path" ]; then
+        echo "❌ OpenAPI spec not found: $spec_path" >&2
+        exit 1
+    fi
+    out="$TEMP_DIR/$spec"
+    openapi-generator generate \
+        -i "$spec_path" \
+        -g swift5 \
+        -o "$out" \
+        --additional-properties=\
 library=urlsession,\
 projectName=BATbernAPI,\
 responseAs=Codable,\
 useSPMFileStructure=false \
-    --global-property=models
+        --global-property=models >/dev/null
+    if [ -d "$out/Sources/BATbernAPI/Models" ]; then
+        cp -f "$out/Sources/BATbernAPI/Models"/*.swift "$SRC_MODELS"/ 2>/dev/null || true
+    fi
+done
 
-SRC_MODELS="$TEMP_DIR/Sources/BATbernAPI/Models"
-if [ ! -d "$SRC_MODELS" ]; then
+if [ -z "$(ls -A "$SRC_MODELS" 2>/dev/null)" ]; then
     echo "❌ Generation produced no models at: $SRC_MODELS" >&2
     exit 1
 fi

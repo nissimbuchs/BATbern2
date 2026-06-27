@@ -3,7 +3,7 @@ package ch.batbern.events.controller;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.EventWorkflowState;

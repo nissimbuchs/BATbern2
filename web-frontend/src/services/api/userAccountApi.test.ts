@@ -38,11 +38,11 @@ import {
   confirmUpload,
   requestPresignedUrlForUser,
   confirmUploadForUser,
-  associateProfilePicture,
 } from './userAccountApi';
 
 const mockGet = vi.mocked(apiClient.get);
 const mockPut = vi.mocked(apiClient.put);
+const mockPatch = vi.mocked(apiClient.patch);
 const mockPost = vi.mocked(apiClient.post);
 const mockDelete = vi.mocked(apiClient.delete);
 
@@ -234,8 +234,8 @@ describe('getUserProfile', () => {
 // ── updateUserProfile ─────────────────────────────────────────────────────────
 
 describe('updateUserProfile', () => {
-  it('should PUT /users/me with only allowed fields', async () => {
-    mockPut.mockResolvedValue({
+  it('should PATCH /users/me with only allowed fields', async () => {
+    mockPatch.mockResolvedValue({
       data: { id: 'u1', createdAt: '2024-01-01', firstName: 'Alice' },
     });
 
@@ -247,7 +247,7 @@ describe('updateUserProfile', () => {
       companyId: 'comp-1',
     });
 
-    expect(mockPut).toHaveBeenCalledWith('/users/me', {
+    expect(mockPatch).toHaveBeenCalledWith('/users/me', {
       firstName: 'Alice',
       lastName: 'Smith',
       email: 'alice@example.com',
@@ -257,7 +257,7 @@ describe('updateUserProfile', () => {
   });
 
   it('should strip disallowed fields from update payload', async () => {
-    mockPut.mockResolvedValue({
+    mockPatch.mockResolvedValue({
       data: { id: 'u1', createdAt: '2024-01-01', firstName: 'Alice' },
     });
 
@@ -267,13 +267,13 @@ describe('updateUserProfile', () => {
       memberSince: 'should-be-stripped' as never,
     } as never);
 
-    const calledWith = mockPut.mock.calls[0][1] as Record<string, unknown>;
+    const calledWith = mockPatch.mock.calls[0][1] as Record<string, unknown>;
     expect(calledWith).not.toHaveProperty('username');
     expect(calledWith).not.toHaveProperty('memberSince');
   });
 
   it('should transform response: map id→username, createdAt→memberSince', async () => {
-    mockPut.mockResolvedValue({
+    mockPatch.mockResolvedValue({
       data: { id: 'user-99', createdAt: '2025-01-01', firstName: 'Bob' },
     });
 
@@ -284,11 +284,11 @@ describe('updateUserProfile', () => {
   });
 
   it('should only send fields that are defined', async () => {
-    mockPut.mockResolvedValue({ data: { id: 'u1', createdAt: '2024-01-01' } });
+    mockPatch.mockResolvedValue({ data: { id: 'u1', createdAt: '2024-01-01' } });
 
     await updateUserProfile({ firstName: 'Alice' });
 
-    const calledWith = mockPut.mock.calls[0][1] as Record<string, unknown>;
+    const calledWith = mockPatch.mock.calls[0][1] as Record<string, unknown>;
     expect(Object.keys(calledWith)).toEqual(['firstName']);
   });
 });
@@ -555,17 +555,5 @@ describe('confirmUploadForUser', () => {
     });
     expect(result.cloudFrontUrl).toBe('https://cdn.x.com/pic.jpg');
     expect(result.status).toBe('CONFIRMED');
-  });
-});
-
-// ── associateProfilePicture ───────────────────────────────────────────────────
-
-describe('associateProfilePicture', () => {
-  it('should PUT /users/me with profilePictureFileId', async () => {
-    mockPut.mockResolvedValue({ data: { id: 'u1', createdAt: '2025-01-01' } });
-
-    await associateProfilePicture('upload-55');
-
-    expect(mockPut).toHaveBeenCalledWith('/users/me', { profilePictureFileId: 'upload-55' });
   });
 });

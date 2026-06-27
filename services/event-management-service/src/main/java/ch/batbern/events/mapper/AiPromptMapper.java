@@ -1,7 +1,7 @@
 package ch.batbern.events.mapper;
 
 import ch.batbern.events.domain.AiPrompt;
-import ch.batbern.events.dto.generated.AiPromptResponse;
+import ch.batbern.events.ai.dto.generated.AiPromptResponse;
 import org.springframework.stereotype.Component;
 
 /**

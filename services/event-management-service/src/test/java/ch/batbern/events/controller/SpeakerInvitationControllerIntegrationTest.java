@@ -98,7 +98,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .venueName("Kornhausforum")
                 .venueAddress("Kornhausplatz 18, 3011 Bern")
                 .venueCapacity(200)
-                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .eventType(ch.batbern.events.core.dto.generated.EventType.EVENING)
                 .workflowState(EventWorkflowState.SPEAKER_IDENTIFICATION)
                 .organizerUsername("organizer.test")
                 .createdAt(Instant.now())

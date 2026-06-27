@@ -1,10 +1,10 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.api.generated.EmailTemplatesApi;
+import ch.batbern.events.newsletter.api.generated.EmailTemplatesApi;
 import ch.batbern.events.domain.EmailTemplate;
-import ch.batbern.events.dto.generated.CreateEmailTemplateRequest;
-import ch.batbern.events.dto.generated.EmailTemplateResponse;
-import ch.batbern.events.dto.generated.UpdateEmailTemplateRequest;
+import ch.batbern.events.newsletter.dto.generated.CreateEmailTemplateRequest;
+import ch.batbern.events.newsletter.dto.generated.EmailTemplateResponse;
+import ch.batbern.events.newsletter.dto.generated.UpdateEmailTemplateRequest;
 import ch.batbern.events.mapper.EmailTemplateMapper;
 import ch.batbern.events.service.EmailTemplateService;
 import jakarta.persistence.EntityNotFoundException;

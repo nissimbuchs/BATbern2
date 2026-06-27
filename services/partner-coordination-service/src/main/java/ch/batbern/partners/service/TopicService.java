@@ -4,9 +4,9 @@ import ch.batbern.partners.domain.TopicSource;
 import ch.batbern.partners.domain.TopicStatus;
 import ch.batbern.partners.domain.TopicSuggestion;
 import ch.batbern.partners.domain.TopicVote;
-import ch.batbern.partners.dto.TopicDTO;
-import ch.batbern.partners.dto.TopicSuggestionRequest;
-import ch.batbern.partners.dto.TopicStatusUpdateRequest;
+import ch.batbern.partners.dto.generated.TopicDTO;
+import ch.batbern.partners.dto.generated.TopicSuggestionRequest;
+import ch.batbern.partners.dto.generated.TopicStatusUpdateRequest;
 import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.repository.TopicRepository;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,14 +84,14 @@ public class TopicService {
         TopicSuggestion suggestion = TopicSuggestion.builder()
                 .companyName(companyName)
                 .suggestedBy(username)
-                .title(request.title().strip())
-                .description(request.description())
+                .title(request.getTitle().strip())
+                .description(request.getDescription())
                 .status(TopicStatus.PROPOSED)
                 .build();
 
         TopicSuggestion saved = topicRepository.save(suggestion);
         log.info("Topic suggested: id={} company={} title={} suggestedBy={}",
-                saved.getId(), companyName, request.title(), username);
+                saved.getId(), companyName, request.getTitle(), username);
         return toDTO(saved, 0L, 0L);
     }
 
@@ -110,15 +111,15 @@ public class TopicService {
         TopicSuggestion suggestion = TopicSuggestion.builder()
                 .companyName(null)
                 .suggestedBy(username)
-                .title(request.title().strip())
-                .description(request.description())
+                .title(request.getTitle().strip())
+                .description(request.getDescription())
                 .status(TopicStatus.PROPOSED)
                 .source(TopicSource.COMMUNITY)
                 .build();
 
         TopicSuggestion saved = topicRepository.save(suggestion);
         log.info("Community topic suggested: id={} title={} suggestedBy={}",
-                saved.getId(), request.title(), username);
+                saved.getId(), request.getTitle(), username);
         return toDTO(saved, 0L, 0L);
     }
 
@@ -162,8 +163,8 @@ public class TopicService {
         if (callerCompanyName != null && !callerCompanyName.equals(topic.getCompanyName())) {
             throw new AccessDeniedException("Cannot edit a topic from another company");
         }
-        topic.setTitle(request.title().strip());
-        topic.setDescription(request.description());
+        topic.setTitle(request.getTitle().strip());
+        topic.setDescription(request.getDescription());
         // Intentional: createdAt is reused as "last activity" timestamp.
         // When a topic is edited it becomes recent again and should float to the top
         // when the UI sorts by date descending.  A separate updatedAt column was
@@ -194,18 +195,19 @@ public class TopicService {
      * Update topic status (organizer only, enforced by @PreAuthorize on controller).
      */
     public TopicDTO updateStatus(UUID topicId, TopicStatusUpdateRequest request) {
-        if (request.status() == null || request.status().isBlank()) {
+        if (request.getStatus() == null) {
             throw new IllegalArgumentException("Status is required and must be SELECTED or DECLINED.");
         }
+        String statusValue = request.getStatus().getValue();
 
         TopicSuggestion topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
 
         TopicStatus newStatus;
         try {
-            newStatus = TopicStatus.valueOf(request.status().toUpperCase());
+            newStatus = TopicStatus.valueOf(statusValue.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid status: " + request.status()
+            throw new IllegalArgumentException("Invalid status: " + statusValue
                     + ". Must be SELECTED or DECLINED.");
         }
         if (newStatus == TopicStatus.PROPOSED) {
@@ -213,13 +215,14 @@ public class TopicService {
         }
 
         topic.setStatus(newStatus);
-        topic.setPlannedEvent(request.plannedEvent());
+        topic.setPlannedEvent(request.getPlannedEvent());
         TopicSuggestion saved = topicRepository.save(topic);
 
         // Targeted count — avoids full-table scan just to get one vote count
         long voteCount = topicVoteRepository.countByTopicId(topicId);
 
-        log.info("Topic status updated: id={} status={} plannedEvent={}", topicId, newStatus, request.plannedEvent());
+        log.info("Topic status updated: id={} status={} plannedEvent={}",
+                topicId, newStatus, request.getPlannedEvent());
         return toDTO(saved, voteCount, 0L);
     }
 
@@ -251,33 +254,33 @@ public class TopicService {
     }
 
     private void validate(TopicSuggestionRequest request) {
-        if (request.title() == null || request.title().isBlank()) {
+        if (request.getTitle() == null || request.getTitle().isBlank()) {
             throw new IllegalArgumentException("Title is required");
         }
-        String trimmed = request.title().strip();
+        String trimmed = request.getTitle().strip();
         if (trimmed.length() < 5) {
             throw new IllegalArgumentException("Title must be at least 5 characters");
         }
         if (trimmed.length() > 255) {
             throw new IllegalArgumentException("Title must not exceed 255 characters");
         }
-        if (request.description() != null && request.description().length() > 500) {
+        if (request.getDescription() != null && request.getDescription().length() > 500) {
             throw new IllegalArgumentException("Description must not exceed 500 characters");
         }
     }
 
     private TopicDTO toDTO(TopicSuggestion topic, Long voteCount, Long callerVoteCount) {
-        return new TopicDTO(
-                topic.getId(),
-                topic.getTitle(),
-                topic.getDescription(),
-                topic.getCompanyName(),
-                voteCount != null ? voteCount.intValue() : 0,
-                callerVoteCount != null && callerVoteCount > 0,
-                topic.getStatus().name(),
-                topic.getPlannedEvent(),
-                topic.getCreatedAt(),
-                topic.getSource() != null ? topic.getSource().name() : TopicSource.PARTNER.name()
-        );
+        String source = topic.getSource() != null ? topic.getSource().name() : TopicSource.PARTNER.name();
+        return new TopicDTO()
+                .id(topic.getId())
+                .title(topic.getTitle())
+                .description(topic.getDescription())
+                .suggestedByCompany(topic.getCompanyName())
+                .voteCount(voteCount != null ? voteCount.intValue() : 0)
+                .currentPartnerHasVoted(callerVoteCount != null && callerVoteCount > 0)
+                .status(TopicDTO.StatusEnum.fromValue(topic.getStatus().name()))
+                .plannedEvent(topic.getPlannedEvent())
+                .createdAt(topic.getCreatedAt() != null ? topic.getCreatedAt().atOffset(ZoneOffset.UTC) : null)
+                .source(TopicDTO.SourceEnum.fromValue(source));
     }
 }

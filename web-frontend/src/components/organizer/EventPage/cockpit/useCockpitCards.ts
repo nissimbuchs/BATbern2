@@ -15,7 +15,7 @@
 
 import { useMemo } from 'react';
 import type { Event, EventDetailUI } from '@/types/event.types';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 import { useEventTasks } from '@/hooks/useEventTasks';
 import { useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useEventType } from '@/hooks/useEventTypes';

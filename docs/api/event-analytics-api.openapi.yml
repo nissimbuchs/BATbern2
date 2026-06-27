@@ -1,0 +1,756 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event Analytics API
+  version: 1.0.0
+  description: 'Attendance, company, topic and overview analytics plus per-event analytics and attendance summaries.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: Analytics
+  description: Event analytics and metrics
+paths:
+  /events/attendance-summary:
+    get:
+      tags:
+      - Analytics
+      summary: Get attendance summary per event for a company
+      description: 'Returns per-event attendee counts (total and company-specific).
+
+        Called server-to-server by partner-coordination-service.
+
+
+        **Story**: 8.1 - Partner Attendance Dashboard (AC1, AC2, AC5, AC6)
+
+
+        **Authorization**: PARTNER or ORGANIZER role required.
+
+        Data isolation enforced at partner-coordination-service level.
+
+        '
+      operationId: getAttendanceSummary
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: companyName
+        in: query
+        required: true
+        description: Company identifier (ADR-003 meaningful ID, e.g. 'GoogleZH')
+        schema:
+          type: string
+      - name: fromYear
+        in: query
+        required: false
+        description: 'Earliest year to include (default: current year minus 5)'
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: List of per-event attendance summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttendanceSummaryDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — requires PARTNER or ORGANIZER role
+  /events/{eventCode}/analytics:
+    get:
+      tags:
+      - Analytics
+      summary: Get event analytics
+      description: 'Retrieve analytics data for a specific event.
+
+
+        **Acceptance Criteria**: AC13
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+
+        **Metrics Available**:
+
+        - attendance: Attendance counts and trends
+
+        - registrations: Registration statistics
+
+        - engagement: User engagement metrics
+
+        - revenue: Revenue and ticket sales
+
+
+        **Timeframe Options**: day, week, month, all
+
+        '
+      operationId: getEventAnalytics
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      - name: metrics
+        in: query
+        description: Comma-separated list of metrics
+        required: false
+        schema:
+          type: string
+          example: attendance,registrations,engagement
+      - name: timeframe
+        in: query
+        description: Time period for analytics
+        required: false
+        schema:
+          type: string
+          enum:
+          - day
+          - week
+          - month
+          - all
+          default: all
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAnalytics'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /analytics/overview:
+    get:
+      tags:
+      - Analytics
+      summary: Get analytics overview (KPI totals + event timeline)
+      description: 'Returns all-time KPI totals and the full event history timeline.
+
+        Neither KPIs nor timeline are filtered by time range — they always show all-time data.
+
+
+        **Story**: 10.5 - Analytics Dashboard (AC2, AC6)
+
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+
+        Returns aggregate data only — no individual attendee data.
+
+        '
+      operationId: getAnalyticsOverview
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Analytics overview data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /analytics/attendance:
+    get:
+      tags:
+      - Analytics
+      summary: Get per-event attendance with returning/new breakdown
+      description: 'Returns attendance data per event including returning vs. new attendee breakdown.
+
+        Uses in-memory Java algorithm for returning/new classification (see Dev Notes).
+
+
+        **Story**: 10.5 - Analytics Dashboard (AC3, AC6)
+
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+
+        '
+      operationId: getAnalyticsAttendance
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: fromYear
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 2000
+          example: 2020
+        description: Earliest year to include (inclusive). Omit for all-time data.
+      responses:
+        '200':
+          description: Per-event attendance data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsAttendanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /analytics/topics:
+    get:
+      tags:
+      - Analytics
+      summary: Get topic analytics (events per category + scatter data)
+      description: 'Returns two datasets: events grouped by category for the bar chart,
+
+        and per-topic scatter data (event count vs. avg attendees).
+
+
+        **Story**: 10.5 - Analytics Dashboard (AC4, AC6)
+
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+
+        '
+      operationId: getAnalyticsTopics
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: fromYear
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 2000
+          example: 2020
+        description: Earliest year to include (inclusive). Omit for all-time data.
+      responses:
+        '200':
+          description: Topic analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsTopicsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /analytics/companies:
+    get:
+      tags:
+      - Analytics
+      summary: Get company analytics (attendance over time, sessions per company, distribution)
+      description: 'Returns three datasets for the Companies tab:
+
+        - Flat year+company attendance for stacked-bar chart (frontend groups by year)
+
+        - Sessions and unique speakers per company
+
+        - All-time attendee distribution (for default pie chart view)
+
+
+        **Story**: 10.5 - Analytics Dashboard (AC5, AC6)
+
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+
+        '
+      operationId: getAnalyticsCompanies
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: fromYear
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 2000
+          example: 2020
+        description: Earliest year to include (inclusive). Omit for all-time data.
+      responses:
+        '200':
+          description: Company analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsCompaniesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /analytics/companies/distribution:
+    get:
+      tags:
+      - Analytics
+      summary: Get attendee company distribution for a single event
+      description: 'Returns the per-company attendee breakdown for a specific event.
+
+        Used by the Companies tab pie chart when the user selects an event from the dropdown.
+
+
+        **Story**: 10.5 - Analytics Dashboard (AC5, AC6)
+
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+
+        '
+      operationId: getCompanyDistribution
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: query
+        required: true
+        schema:
+          type: string
+          example: BATbern57
+        description: Event code to scope the distribution query
+      responses:
+        '200':
+          description: Per-event company distribution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyDistributionResponse'
+        '400':
+          description: Missing or invalid eventCode parameter
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found for the given eventCode
+components:
+  schemas:
+    AnalyticsOverviewResponse:
+      type: object
+      description: All-time KPI totals and full event timeline (not filtered by time range)
+      required:
+      - totalEvents
+      - totalAttendees
+      - companiesRepresented
+      - totalSessions
+      - totalSpeakers
+      - timeline
+      properties:
+        totalEvents:
+          type: integer
+          description: Total number of events held
+          example: 58
+        totalAttendees:
+          type: integer
+          description: Total confirmed/attended registrations across all events
+          example: 3240
+        companiesRepresented:
+          type: integer
+          description: Number of distinct companies that have attended at least one event
+          example: 145
+        totalSessions:
+          type: integer
+          description: Total speaker session contributions (rows in session_users)
+          example: 312
+        totalSpeakers:
+          type: integer
+          description: Total distinct confirmed speakers across all events
+          example: 213
+        timeline:
+          type: array
+          description: All events ordered chronologically for the cadence timeline chart
+          items:
+            $ref: '#/components/schemas/EventTimelineItem'
+    EventTimelineItem:
+      type: object
+      description: Single event entry in the cadence timeline
+      required:
+      - eventCode
+      - eventNumber
+      - title
+      - eventDate
+      - attendeeCount
+      properties:
+        eventCode:
+          type: string
+          example: BATbern57
+        eventNumber:
+          type: integer
+          example: 57
+        title:
+          type: string
+          example: Architecture Patterns in Practice
+        eventDate:
+          type: string
+          format: date-time
+          example: '2024-06-01T00:00:00Z'
+        category:
+          type: string
+          nullable: true
+          description: Topic category; null if no topic assigned
+          example: ARCHITECTURE
+        attendeeCount:
+          type: integer
+          example: 78
+    AnalyticsAttendanceResponse:
+      type: object
+      description: Per-event attendance with returning/new attendee breakdown
+      required:
+      - events
+      properties:
+        events:
+          type: array
+          description: Events ordered chronologically
+          items:
+            $ref: '#/components/schemas/AttendanceEventItem'
+    AttendanceEventItem:
+      type: object
+      description: Attendance data for a single event
+      required:
+      - eventCode
+      - eventNumber
+      - title
+      - eventDate
+      - totalAttendees
+      - returningAttendees
+      - newAttendees
+      properties:
+        eventCode:
+          type: string
+          example: BATbern57
+        eventNumber:
+          type: integer
+          example: 57
+        title:
+          type: string
+          example: Architecture Patterns in Practice
+        eventDate:
+          type: string
+          format: date-time
+          example: '2024-06-01T00:00:00Z'
+        category:
+          type: string
+          nullable: true
+          example: ARCHITECTURE
+        totalAttendees:
+          type: integer
+          example: 78
+        returningAttendees:
+          type: integer
+          description: Attendees who have attended at least one previous event
+          example: 45
+        newAttendees:
+          type: integer
+          description: First-time attendees at this event
+          example: 33
+    AnalyticsTopicsResponse:
+      type: object
+      description: Topic analytics — events per category and topic scatter data
+      required:
+      - eventsPerCategory
+      - topicScatter
+      properties:
+        eventsPerCategory:
+          type: array
+          description: Event count grouped by topic category, sorted descending
+          items:
+            $ref: '#/components/schemas/CategoryEventCount'
+        topicScatter:
+          type: array
+          description: Per-topic scatter data (event count vs avg attendees)
+          items:
+            $ref: '#/components/schemas/TopicScatterItem'
+    CategoryEventCount:
+      type: object
+      description: Number of events for a given topic category
+      required:
+      - category
+      - eventCount
+      properties:
+        category:
+          type: string
+          example: ARCHITECTURE
+        eventCount:
+          type: integer
+          example: 18
+    TopicScatterItem:
+      type: object
+      description: Topic data point for the scatter chart
+      required:
+      - topicCode
+      - topicTitle
+      - category
+      - eventCount
+      - avgAttendees
+      properties:
+        topicCode:
+          type: string
+          example: ARCH-DDD
+        topicTitle:
+          type: string
+          example: Domain-Driven Design
+        category:
+          type: string
+          example: ARCHITECTURE
+        eventCount:
+          type: integer
+          description: Number of events held on this topic
+          example: 4
+        avgAttendees:
+          type: number
+          format: double
+          description: Average attendee count across events with this topic
+          example: 82.5
+    AnalyticsCompaniesResponse:
+      type: object
+      description: Company analytics — attendance over time, sessions, and distribution
+      required:
+      - attendanceOverTime
+      - sessionsPerCompany
+      - distribution
+      properties:
+        attendanceOverTime:
+          type: array
+          description: Flat list of year+company attendance records; frontend groups by year for stacked chart
+          items:
+            $ref: '#/components/schemas/CompanyYearAttendanceItem'
+        sessionsPerCompany:
+          type: array
+          description: Sessions and unique speakers per company, sorted descending by sessionCount
+          items:
+            $ref: '#/components/schemas/CompanySessionItem'
+        distribution:
+          type: array
+          description: All-time attendee share per company (respects fromYear filter)
+          items:
+            $ref: '#/components/schemas/CompanyAttendanceShare'
+    CompanyYearAttendanceItem:
+      type: object
+      description: Attendee count for a specific company in a specific year
+      required:
+      - year
+      - companyName
+      - attendeeCount
+      properties:
+        year:
+          type: integer
+          example: 2024
+        companyName:
+          type: string
+          example: sbb
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: SBB AG
+        attendeeCount:
+          type: integer
+          example: 12
+    CompanySessionItem:
+      type: object
+      description: Speaker session count and unique speaker count for a company
+      required:
+      - companyName
+      - sessionCount
+      - uniqueSpeakers
+      properties:
+        companyName:
+          type: string
+          example: sbb
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: SBB AG
+        sessionCount:
+          type: integer
+          description: Total confirmed speaker session appearances
+          example: 8
+        uniqueSpeakers:
+          type: integer
+          description: Number of distinct speakers from this company
+          example: 5
+    CompanyAttendanceShare:
+      type: object
+      description: A company's total attendee count (used in pie/distribution charts)
+      required:
+      - companyName
+      - attendeeCount
+      properties:
+        companyName:
+          type: string
+          example: sbb
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: SBB AG
+        attendeeCount:
+          type: integer
+          example: 67
+    CompanyDistributionResponse:
+      type: object
+      description: Per-event company attendee distribution (for pie chart event filter)
+      required:
+      - eventCode
+      - distribution
+      properties:
+        eventCode:
+          type: string
+          example: BATbern57
+        distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyAttendanceShare'
+    AttendanceSummaryDTO:
+      type: object
+      description: Per-event attendance summary for a given company (Story 8.1)
+      required:
+      - eventCode
+      - eventDate
+      - totalAttendees
+      - companyAttendees
+      properties:
+        eventCode:
+          type: string
+          description: Event code (e.g. 'BATbern142')
+          example: BATbern142
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date (ISO-8601)
+        totalAttendees:
+          type: integer
+          format: int64
+          description: Total confirmed attendees for this event
+        companyAttendees:
+          type: integer
+          format: int64
+          description: Confirmed attendees from the queried company
+    EventAnalytics:
+      type: object
+      properties:
+        eventCode:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+          description: Event code in format BATbern{number} (Story 1.16.2)
+        totalRegistrations:
+          type: integer
+        confirmedAttendees:
+          type: integer
+        cancellations:
+          type: integer
+        waitlist:
+          type: integer
+        registrationTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              count:
+                type: integer
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

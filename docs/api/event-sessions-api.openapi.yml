@@ -1,0 +1,2076 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event Sessions API
+  version: 1.0.0
+  description: 'Session CRUD, agenda configuration, timetable, slot assignment, session-speaker assignment/confirm/decline, batch import, and per-session Q&A.
+
+
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: Event Actions
+  description: Event publishing and workflow operations
+- name: Sessions
+  description: Event session management
+- name: Bulk Operations
+  description: Batch operations on multiple events
+paths:
+  /events/{eventCode}/sessions/{sessionSlug}/qna:
+    get:
+      tags:
+      - Event Actions
+      summary: Get a session's Q&A thread ("The Apéro Continues")
+      description: 'Returns the open or frozen Q&A thread for a session. PUBLIC — anonymous may read the
+
+        frozen archive thread (AC3). Posts are returned oldest-first; the client nests answers
+
+        under their `parentPostId`. Removed posts are tombstones (`removed: true`, body/author null).
+
+
+        **Story**: 7.5 - "The Apéro Continues"
+
+        '
+      operationId: getSessionQna
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cloud-native-foundations
+      responses:
+        '200':
+          description: The Q&A thread (open or frozen).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QnaWindowResponse'
+        '404':
+          description: No Q&A window for this session (event not completed, or unknown session).
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+    patch:
+      tags:
+      - Event Actions
+      summary: Extend or close a session's Q&A window (organizer)
+      description: 'Organizer-only (AC4). Extend by sending a new `closesAt` (reopens to that time) or close
+
+        early with `close: true` (freezes immediately). Changes take effect immediately.
+
+
+        **Story**: 7.5 - "The Apéro Continues"
+
+        '
+      operationId: patchSessionQnaWindow
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cloud-native-foundations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QnaWindowPatchRequest'
+      responses:
+        '200':
+          description: Updated window.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QnaWindowResponse'
+        '400':
+          description: Neither closesAt nor close provided.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No Q&A window for this session.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/sessions/{sessionSlug}/qna/posts:
+    post:
+      tags:
+      - Event Actions
+      summary: Post a Q&A question or answer (logged-in)
+      description: 'Any logged-in user may post within an open window (AC2). `parentPostId` set = an answer to
+
+        that question; omitted = a top-level question. Anonymous → 401 (rejected at the gateway).
+
+        Posting to a frozen window → 409 `QNA_WINDOW_FROZEN` (AC5).
+
+
+        **Story**: 7.5 - "The Apéro Continues"
+
+        '
+      operationId: postSessionQna
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cloud-native-foundations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QnaPostRequest'
+      responses:
+        '201':
+          description: Post created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QnaPostResponse'
+        '400':
+          description: Validation error (empty/too-long body or unknown field).
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          description: Not authenticated (anonymous caller — rejected at the API gateway).
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '404':
+          description: No Q&A window for this session.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: '`QNA_WINDOW_FROZEN` — the Q&A for this session has closed.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                message: The Q&A for this session has closed — no further posts are accepted.
+                status: 409
+                error: Conflict
+                details:
+                  code: QNA_WINDOW_FROZEN
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/sessions/{sessionSlug}/qna/posts/{postId}:
+    delete:
+      tags:
+      - Event Actions
+      summary: Take down a Q&A post (organizer)
+      description: 'Organizer-only soft-delete (AC4): the post becomes a "removed by organizer" tombstone
+
+        (never hard-deleted), preserving thread coherence in the frozen archive.
+
+
+        **Story**: 7.5 - "The Apéro Continues"
+
+        '
+      operationId: removeSessionQnaPost
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern57
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cloud-native-foundations
+      - name: postId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Post removed (tombstoned).
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Post or Q&A window not found.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/sessions:
+    get:
+      tags:
+      - Sessions
+      summary: List event sessions
+      description: 'Retrieve all sessions for a specific event with optional filtering.
+
+
+        **Acceptance Criteria**: AC9
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+
+        **Filter Examples**:
+
+        - By type: `{"type":"keynote"}`
+
+        - By time range: `{"startTime":{"$gte":"2025-05-15T09:00:00Z"}}`
+
+        '
+      operationId: listSessions
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      - name: filter
+        in: query
+        description: JSON filter criteria
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+          maximum: 100
+      responses:
+        '200':
+          description: Sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+                  pagination:
+                    $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Sessions
+      summary: Create session
+      description: 'Create a new session for the event.
+
+
+        **Acceptance Criteria**: AC10
+
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        '
+      operationId: createSession
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/timetable:
+    get:
+      tags:
+      - Sessions
+      summary: Get the authoritative timetable for an event
+      description: 'Returns the complete chronological slot grid for the event, including both
+
+        structural slots (MODERATION, BREAK, LUNCH) and droppable speaker slots
+
+        (SPEAKER_SLOT).  Structural slots are enriched with DB session slugs when
+
+        structural sessions have been generated.  Speaker slots show which speaker
+
+        session (if any) has been assigned to each position.
+
+
+        This endpoint is the single source of truth for the slot-assignment UI —
+
+        both the grid display and the auto-assign algorithm use these positions.
+
+
+        **Access**: ORGANIZER role required.
+
+        '
+      operationId: getEventTimetable
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      responses:
+        '200':
+          description: Timetable successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimetableResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /events/{eventCode}/sessions/{sessionSlug}/slot:
+    post:
+      tags:
+      - Sessions
+      summary: Assign / insert / swap a speaker session by stable slot key (Story 15.3)
+      description: "Places a speaker session onto a `SPEAKER_SLOT` addressed by its deterministic\n`slotKey` (see `TimetableSlot.slotKey`). One path covers three modes:\n\n- `ASSIGN` — target slot is empty: the session takes that slot's computed times.\n- `INSERT` — target slot is occupied: the session takes the target ordinal and\n  every already-assigned session at that ordinal or later shifts one slot later;\n  all affected sessions' times are recomputed and saved in a single transaction.\n  Rejected with **409** if the shift would exceed the last computed speaker slot\n  (agenda full).\n- `SWAP` — target slot is occupied: the dragged (already-assigned) session and the\n  occupant exchange slots (and times).\n\nSession time persistence is unchanged — `startTime`/`endTime` remain the stored\nauthority; this endpoint only recomputes and saves them for the affected sessions.\n\n**Access**: ORGANIZER role required.\n"
+      operationId: assignSessionToSlot
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: speaker-xyz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SlotAssignmentRequest'
+      responses:
+        '200':
+          description: Assignment applied; returns the updated timetable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimetableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Agenda is full (no free slot to insert into) or a timing conflict was detected
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+  /events/{eventCode}/agenda-config:
+    get:
+      tags:
+      - Sessions
+      summary: Get the resolved agenda config for an event (Story 15.2)
+      description: 'Returns the effective agenda/slot configuration for the event: the per-event
+
+        copy-on-edit override (`event_agenda_config`) if one exists, otherwise the shared
+
+        event-type template (`event_types`). The `source` field indicates which was returned.
+
+
+        **Access**: ORGANIZER role required.
+
+        '
+      operationId: getEventAgendaConfig
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      responses:
+        '200':
+          description: Resolved agenda config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAgendaConfigResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - Sessions
+      summary: Upsert the per-event agenda config override (Story 15.2)
+      description: 'Copy-on-edit: creates or updates the per-event `event_agenda_config` row from the
+
+        provided knobs. The shared event-type template is never modified. Returns the saved
+
+        per-event config (with `source = EVENT_OVERRIDE`).
+
+
+        **Access**: ORGANIZER role required.
+
+        '
+      operationId: updateEventAgendaConfig
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventAgendaConfigRequest'
+      responses:
+        '200':
+          description: Per-event agenda config saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAgendaConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /events/{eventCode}/sessions/structural:
+    post:
+      tags:
+      - Sessions
+      - Organizer
+      summary: Generate structural sessions for an event
+      description: 'Generates structural sessions (moderation start, breaks, lunch, moderation end)
+
+        with computed start/end times based on the event type configuration.
+
+
+        The organizer is automatically assigned as MODERATOR on both moderation sessions.
+
+
+        **Requires ORGANIZER role.**
+
+
+        If `overwrite=false` (default) and structural sessions already exist, returns 409.
+
+        If `overwrite=true`, deletes existing structural sessions and recreates them.
+
+        '
+      operationId: generateStructuralSessions
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateStructuralSessionsRequest'
+      responses:
+        '201':
+          description: Structural sessions created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionResponse'
+        '409':
+          description: Structural sessions already exist (use overwrite=true to replace)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+  /events/{eventCode}/sessions/batch-import:
+    post:
+      tags:
+      - Sessions
+      - Bulk Operations
+      summary: Batch import sessions from legacy JSON
+      description: 'Import multiple sessions from sessions.json with speaker assignments.
+
+
+        **Features**:
+
+        - Duplicate detection by (event_id, title)
+
+        - Automatic speaker assignment via speakerId → username matching
+
+        - Sequential 45-minute time slot calculation
+
+        - Graceful error handling for missing speakers
+
+
+        **Note**: This endpoint is designed for historical data migration from
+
+        the legacy BATspa application. For normal session creation, use the
+
+        POST /events/{eventCode}/sessions endpoint.
+
+        '
+      operationId: batchImportSessions
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BatchImportSessionRequest'
+            example:
+            - bat: 142
+              title: User Interface Design
+              abstract: Discussion on modern UI patterns
+              pdf: BAT142_UI_Design.pdf
+              referenten:
+              - name: Thomas Goetz, Die Mobiliar
+                bio: Expert in UI design
+                company: mobiliar
+                portrait: thomas.goetz.jpg
+                speakerId: thomas.goetz
+      responses:
+        '200':
+          description: Import completed (may include skipped/failed sessions)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchImportSessionResult'
+              example:
+                totalProcessed: 3
+                successfullyCreated: 2
+                skipped: 1
+                failed: 0
+                details:
+                - title: User Interface Design
+                  status: success
+                  message: Session created successfully
+                  sessionSlug: user-interface-design-abc123
+                - title: Backend Architecture
+                  status: skipped
+                  message: Session already exists with title 'Backend Architecture'
+                - title: Database Design
+                  status: success
+                  message: Session created successfully
+                  sessionSlug: database-design-def456
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+      - BearerAuth: []
+  /events/{eventCode}/sessions/{sessionSlug}:
+    get:
+      tags:
+      - Sessions
+      summary: Get session details
+      description: 'Retrieve detailed information about a specific session including speakers.
+
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+
+        **Story**: 4.1.3 - Public event discovery endpoints
+
+
+        Returns session information including:
+
+        - Session details (title, description, time, room)
+
+        - Speaker list with enriched User data
+
+        - Confirmation status for each speaker
+
+
+        **Public Endpoint**: No authentication required for GET requests
+
+        '
+      operationId: getSession
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      - name: sessionSlug
+        in: path
+        description: URL-friendly slug generated from session title
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          example: opening-keynote
+      - name: expand
+        in: query
+        description: Optional expand parameter (currently speakers are always included)
+        required: false
+        schema:
+          type: string
+          example: speakers
+      responses:
+        '200':
+          description: Session details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+      - Sessions
+      summary: Partially update a session
+      description: 'Partially update an existing session. Only the provided fields are changed.
+
+
+        Supported fields: title, description, durationMinutes (recomputes endTime from startTime).
+
+        Slot timing (startTime/endTime/room) is managed via the dedicated `/slot` endpoint.
+
+
+        **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs.
+
+        Replaces the removed full-replace `PUT` (ADR-013: PATCH-partial is the single mutation).
+
+        '
+      operationId: patchSession
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      - name: sessionSlug
+        in: path
+        description: URL-friendly slug generated from session title
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          example: keynote-opening-session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchSessionRequest'
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Sessions
+      summary: Delete session
+      description: 'Delete a session from the event.
+
+
+        **Acceptance Criteria**: AC10
+
+        **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
+
+        '
+      operationId: deleteSession
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      - name: sessionSlug
+        in: path
+        description: URL-friendly slug generated from session title
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          example: keynote-opening-session
+      responses:
+        '204':
+          description: Session deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/speakers:
+    get:
+      tags:
+      - Sessions
+      summary: List session speakers
+      description: 'Retrieve all speakers assigned to a specific session with enriched User data.
+
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+
+
+        Returns speaker information including:
+
+        - User profile data (name, company, photo)
+
+        - Speaker role (primary, co-speaker, moderator, panelist)
+
+        - Confirmation status
+
+        '
+      operationId: listSessionSpeakers
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          example: blockchain-security
+      responses:
+        '200':
+          description: List of session speakers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionSpeaker'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Sessions
+      summary: Assign speaker to session
+      description: 'Assign a user as a speaker to a session with a specific role.
+
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+
+        **Authorization**: Requires ORGANIZER role
+
+
+        **Speaker Roles**:
+
+        - PRIMARY_SPEAKER: Main presenter
+
+        - CO_SPEAKER: Co-presenter
+
+        - MODERATOR: Panel moderator
+
+        - PANELIST: Panel participant
+
+        '
+      operationId: assignSpeakerToSession
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignSpeakerToSessionRequest'
+      responses:
+        '201':
+          description: Speaker assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionSpeaker'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Speaker already assigned to session
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}:
+    delete:
+      tags:
+      - Sessions
+      summary: Remove speaker from session
+      description: 'Remove a speaker assignment from a session.
+
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+
+        **Authorization**: Requires ORGANIZER role
+
+        '
+      operationId: removeSpeakerFromSession
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          example: john.doe
+      responses:
+        '204':
+          description: Speaker removed successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/confirm:
+    post:
+      tags:
+      - Sessions
+      summary: Confirm speaker participation
+      description: 'Mark a speaker as confirmed for the session.
+
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+
+        **Authorization**: Requires ORGANIZER role
+
+        '
+      operationId: confirmSpeaker
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Speaker confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionSpeaker'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/decline:
+    post:
+      tags:
+      - Sessions
+      summary: Decline speaker participation
+      description: 'Mark a speaker as declined for the session with an optional reason.
+
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+
+        **Authorization**: Requires ORGANIZER role
+
+        '
+      operationId: declineSpeaker
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeclineSpeakerRequest'
+      responses:
+        '200':
+          description: Speaker declined successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionSpeaker'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    SlotAssignmentRequest:
+      type: object
+      description: 'Request to place a speaker session onto a slot addressed by its stable `slotKey`
+
+        (Story 15.3). `mode` selects assign / insert-and-reflow / swap behaviour.
+
+        '
+      required:
+      - targetSlotKey
+      - mode
+      properties:
+        targetSlotKey:
+          type: string
+          description: The `slotKey` of the target SPEAKER_SLOT (e.g. "SPEAKER_SLOT-3").
+          example: SPEAKER_SLOT-3
+        mode:
+          type: string
+          enum:
+          - ASSIGN
+          - INSERT
+          - SWAP
+          description: 'ASSIGN onto an empty slot, INSERT before an occupied slot (shifts later sessions + reflows times), or SWAP with the occupant of an occupied slot.
+
+            '
+          example: INSERT
+    TimetableSlot:
+      type: object
+      description: 'A single slot in the event timetable. SPEAKER_SLOT entries represent droppable
+
+        speaker positions (the implicit gaps between structural sessions). All other types
+
+        map to persisted structural sessions (moderation, break, lunch).
+
+        '
+      required:
+      - type
+      - startTime
+      - endTime
+      properties:
+        type:
+          type: string
+          enum:
+          - MODERATION
+          - BREAK
+          - LUNCH
+          - APERITIF
+          - SPEAKER_SLOT
+          description: Slot type — determines rendering and whether the slot is droppable
+          example: SPEAKER_SLOT
+        slotKey:
+          type: string
+          description: 'Deterministic, computed slot identity: segment type + 1-based ordinal among that type, in computed order (e.g. "MODERATION-1", "APERITIF-1", "SPEAKER_SLOT-3", "BREAK-2"). Stable across timing/config edits — the UI and the slot-assign endpoint address slots by this key rather than by wall-clock time. Computed/transient (Story 15.3); never persisted on a session.
+
+            '
+          example: SPEAKER_SLOT-3
+        startTime:
+          type: string
+          format: date-time
+          description: Slot start time (UTC ISO-8601)
+          example: '2025-06-15T07:05:00Z'
+        endTime:
+          type: string
+          format: date-time
+          description: Slot end time (UTC ISO-8601)
+          example: '2025-06-15T07:50:00Z'
+        title:
+          type: string
+          nullable: true
+          description: Human-readable label for structural slots; null for SPEAKER_SLOT
+          example: Kaffee-Pause
+        slotIndex:
+          type: integer
+          nullable: true
+          description: '1-based global index for SPEAKER_SLOT entries across the full event day (never reset when switching AM → PM block). Null for structural slots.
+
+            '
+          example: 1
+        sessionSlug:
+          type: string
+          nullable: true
+          description: 'Session slug of the structural DB session occupying this slot. Null when no structural sessions have been generated yet, or for SPEAKER_SLOT.
+
+            '
+          example: moderation-start-abc
+        assignedSessionSlug:
+          type: string
+          nullable: true
+          description: 'Session slug of the speaker session assigned to this SPEAKER_SLOT. Null if the slot is free, or for structural slots.
+
+            '
+          example: speaker-xyz
+    TimetableResponse:
+      type: object
+      description: Full timetable for an event including slot grid and unassigned sessions.
+      required:
+      - slots
+      - unassignedSessions
+      properties:
+        slots:
+          type: array
+          description: All slots in chronological order (structural and speaker slots interleaved)
+          items:
+            $ref: '#/components/schemas/TimetableSlot'
+        unassignedSessions:
+          type: array
+          description: Speaker sessions (non-structural) with no startTime assigned yet
+          items:
+            $ref: '#/components/schemas/SessionResponse'
+    Session:
+      type: object
+      description: 'Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs
+
+
+        **Placeholder Session Pattern (V21):**
+
+        Sessions can be created as placeholders when speakers accept invitations.
+
+        Placeholder sessions have title but null sessionType/startTime/endTime.
+
+        Timing is assigned later during slot assignment workflow (Story 5.7).
+
+        '
+      required:
+      - sessionSlug
+      - eventCode
+      - title
+      properties:
+        sessionSlug:
+          type: string
+          description: URL-friendly slug generated from session title
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          example: keynote-opening-session
+          maxLength: 200
+        eventCode:
+          type: string
+          description: Event code this session belongs to
+          pattern: ^BATbern[0-9]+$
+          example: BATbern142
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        sessionType:
+          type: string
+          nullable: true
+          description: Session type - null for placeholder sessions, assigned during agenda planning
+          enum:
+          - keynote
+          - presentation
+          - workshop
+          - panel_discussion
+          - networking
+          - break
+          - lunch
+          - moderation
+          example: keynote
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session start time - null for placeholder sessions, assigned during slot assignment
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session end time - null for placeholder sessions, assigned during slot assignment
+        room:
+          type: string
+          maxLength: 100
+          example: Main Hall
+        capacity:
+          type: integer
+          example: 200
+        language:
+          type: string
+          maxLength: 10
+          example: de
+          default: de
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        speakers:
+          type: array
+          description: 'Story 1.15a.1b: Session speakers with enriched User data
+
+            List of speakers assigned to this session with their roles
+
+            '
+          items:
+            $ref: '#/components/schemas/SessionSpeaker'
+        materialsStatus:
+          type: string
+          description: 'Material submission workflow status
+
+            - NONE: No materials submitted yet (initial state)
+
+            - pending: Materials submitted, awaiting review
+
+            - in_review: Materials under review
+
+            - approved: Materials approved
+
+            - requires_changes: Materials need changes
+
+            - rejected: Materials rejected
+
+            - revision_submitted: Revised materials submitted
+
+            - COMPLETE: Materials finalized and approved (final state)
+
+            '
+          enum:
+          - NONE
+          - pending
+          - in_review
+          - approved
+          - requires_changes
+          - rejected
+          - revision_submitted
+          - COMPLETE
+          example: pending
+    SessionSpeaker:
+      type: object
+      description: 'Story 1.15a.1b: Session speaker with enriched User data
+
+        Combines SessionUser entity (role, confirmation) with User entity (name, company, photo)
+
+        '
+      required:
+      - username
+      - firstName
+      - lastName
+      - speakerRole
+      - isConfirmed
+      properties:
+        username:
+          type: string
+          description: User's username (public identifier from User entity)
+          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          example: john.doe
+          maxLength: 100
+        firstName:
+          type: string
+          description: Speaker's first name (from User entity)
+          example: John
+          maxLength: 100
+        lastName:
+          type: string
+          description: Speaker's last name (from User entity)
+          example: Doe
+          maxLength: 100
+        company:
+          type: string
+          description: Speaker's company identifier/slug (from User.companyId). Stable key used for logo lookup — NOT for display.
+          example: GoogleZH
+          maxLength: 12
+        companyDisplayName:
+          type: string
+          description: 'Human-readable company name (companies.display_name, falling back to
+
+            companies.name, then the company slug). Prefer this over `company` for
+
+            display. Null when the speaker has no associated company.
+
+            '
+          example: Google Zürich
+          maxLength: 255
+        profilePictureUrl:
+          type: string
+          format: uri
+          description: Speaker's profile picture URL (from User entity)
+          example: https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
+        companyLogoUrl:
+          type: string
+          format: uri
+          description: 'Company logo CloudFront URL (cross-service DB join: logos table).
+
+            Populated on archive list responses to avoid a separate useCompany API call.
+
+            '
+          example: https://cdn.batbern.ch/logos/2025/companies/sbb/logo.jpeg
+        bio:
+          type: string
+          description: Speaker's biography (from User entity)
+          maxLength: 5000
+          example: Software engineer passionate about cloud architecture and security
+        speakerRole:
+          type: string
+          enum:
+          - PRIMARY_SPEAKER
+          - CO_SPEAKER
+          - MODERATOR
+          - PANELIST
+          description: 'Speaker''s role in the session:
+
+            - PRIMARY_SPEAKER: Main presenter
+
+            - CO_SPEAKER: Co-presenter
+
+            - MODERATOR: Panel moderator
+
+            - PANELIST: Panel participant
+
+            '
+          example: PRIMARY_SPEAKER
+        presentationTitle:
+          type: string
+          description: Optional speaker-specific presentation title (if different from session title)
+          maxLength: 255
+          example: Security Auditing Tools Deep Dive
+        isConfirmed:
+          type: boolean
+          description: Whether speaker has confirmed participation
+          example: true
+    SessionResponse:
+      description: 'Story 1.15a.1b: Session response with embedded speakers
+
+        Same as Session schema but used specifically for API responses
+
+        '
+      allOf:
+      - $ref: '#/components/schemas/Session'
+    BatchImportSessionRequest:
+      type: object
+      description: 'Request payload for batch import from legacy sessions.json.
+
+        Designed for historical data migration from BATspa application.
+
+        '
+      required:
+      - bat
+      - title
+      properties:
+        bat:
+          type: integer
+          description: Event number (links to BATbern{bat})
+          example: 142
+        title:
+          type: string
+          description: Session title
+          maxLength: 255
+          example: User Interface Design
+        abstract:
+          type: string
+          description: Session abstract/description
+          example: Discussion on modern UI patterns
+        pdf:
+          type: string
+          description: PDF filename for reference (appended to description)
+          example: BAT142_UI_Design.pdf
+        authoren:
+          type: string
+          description: Moderator name (for Moderation sessions)
+          example: Thomas Goetz
+        referenten:
+          type: array
+          description: List of speakers for this session
+          items:
+            $ref: '#/components/schemas/LegacySpeaker'
+    LegacySpeaker:
+      type: object
+      description: 'Speaker data from legacy sessions.json.
+
+        speakerId is mapped to username for user lookup.
+
+        '
+      properties:
+        name:
+          type: string
+          description: Speaker full name
+          example: Thomas Goetz, Die Mobiliar
+        bio:
+          type: string
+          description: Speaker biography
+        company:
+          type: string
+          description: Company identifier
+          example: mobiliar
+        portrait:
+          type: string
+          description: Portrait filename
+          example: thomas.goetz.jpg
+        speakerId:
+          type: string
+          description: Speaker ID (maps to username in user_profiles)
+          example: thomas.goetz
+    BatchImportSessionResult:
+      type: object
+      description: 'Result of batch import operation with success/skip/fail counts.
+
+        '
+      required:
+      - totalProcessed
+      - successfullyCreated
+      - skipped
+      - failed
+      - details
+      properties:
+        totalProcessed:
+          type: integer
+          description: Total sessions processed
+          example: 3
+        successfullyCreated:
+          type: integer
+          description: Successfully created sessions
+          example: 2
+        skipped:
+          type: integer
+          description: Skipped sessions (duplicates)
+          example: 1
+        failed:
+          type: integer
+          description: Failed imports
+          example: 0
+        details:
+          type: array
+          description: Detailed results per session
+          items:
+            $ref: '#/components/schemas/SessionImportDetail'
+    SessionImportDetail:
+      type: object
+      description: 'Detail for a single session import result.
+
+        '
+      required:
+      - title
+      - status
+      - message
+      properties:
+        title:
+          type: string
+          description: Session title
+          example: User Interface Design
+        status:
+          type: string
+          enum:
+          - success
+          - skipped
+          - failed
+          description: Import status
+          example: success
+        message:
+          type: string
+          description: Status message
+          example: Session created successfully
+        sessionSlug:
+          type: string
+          description: Generated session slug (null if failed)
+          nullable: true
+          example: user-interface-design-abc123
+    CreateSessionRequest:
+      type: object
+      description: 'Create session request - supports creating placeholder sessions.
+
+
+        **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
+
+        Timing will be assigned later during slot assignment workflow (Story 5.7).
+
+
+        **Full Sessions**: Provide all fields to create a fully-defined session.
+
+        '
+      required:
+      - title
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        sessionType:
+          type: string
+          nullable: true
+          description: Session type - omit for placeholder sessions
+          enum:
+          - keynote
+          - presentation
+          - workshop
+          - panel_discussion
+          - networking
+          - break
+          - lunch
+          - moderation
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session start time - omit for placeholder sessions
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session end time - omit for placeholder sessions
+        room:
+          type: string
+          maxLength: 100
+        capacity:
+          type: integer
+        language:
+          type: string
+          maxLength: 10
+          default: de
+    PatchSessionRequest:
+      type: object
+      description: 'Partial session update (PATCH). Only the provided fields are changed.
+
+        Slot timing (startTime/endTime/room) is managed via the dedicated `/slot` endpoint.
+
+        '
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          minimum: 1
+          description: When provided (>0), recomputes endTime as startTime + durationMinutes.
+    AssignSpeakerToSessionRequest:
+      type: object
+      required:
+      - username
+      - speakerRole
+      properties:
+        username:
+          type: string
+          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          example: john.doe
+        speakerRole:
+          type: string
+          enum:
+          - PRIMARY_SPEAKER
+          - CO_SPEAKER
+          - MODERATOR
+          - PANELIST
+          example: PRIMARY_SPEAKER
+        presentationTitle:
+          type: string
+          maxLength: 255
+          example: Security Auditing Tools Deep Dive
+    DeclineSpeakerRequest:
+      type: object
+      properties:
+        declineReason:
+          type: string
+          example: Schedule conflict
+    AgendaConfigSource:
+      type: string
+      description: Whether the resolved config came from the shared template or a per-event override (Story 15.2).
+      enum:
+      - TEMPLATE
+      - EVENT_OVERRIDE
+      example: TEMPLATE
+    EventAgendaConfigResponse:
+      type: object
+      description: 'Resolved agenda/slot config for an event (Story 15.2). Same knobs as the event-type
+
+        template plus the apéro knobs, with a `source` flag indicating template vs per-event override.
+
+        '
+      required:
+      - source
+      - minSlots
+      - maxSlots
+      - slotDuration
+      - theoreticalSlotsAM
+      - breakSlots
+      - lunchSlots
+      - defaultCapacity
+      - moderationStartDuration
+      - moderationEndDuration
+      - breakDuration
+      - lunchDuration
+      - aperitifSlots
+      - aperitifDuration
+      - aperitifPosition
+      properties:
+        source:
+          $ref: '#/components/schemas/AgendaConfigSource'
+        minSlots:
+          type: integer
+          minimum: 1
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          example: false
+        breakSlots:
+          type: integer
+          minimum: 0
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          example: 0
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          example: 200
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          example: 5
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          example: 5
+        breakDuration:
+          type: integer
+          minimum: 1
+          example: 20
+        lunchDuration:
+          type: integer
+          minimum: 1
+          example: 60
+        aperitifSlots:
+          type: integer
+          minimum: 0
+          description: Apéro on/off count (0 = off, ≥1 = on)
+          example: 1
+        aperitifDuration:
+          type: integer
+          minimum: 1
+          description: Apéro duration in minutes
+          example: 90
+        aperitifPosition:
+          type: string
+          enum:
+          - start
+          - end
+          description: Apéro placement relative to the moderation segments
+          example: end
+        typicalStartTime:
+          type: string
+          format: time
+          nullable: true
+          example: '13:00'
+        typicalEndTime:
+          type: string
+          format: time
+          nullable: true
+          example: '19:00'
+    UpdateEventAgendaConfigRequest:
+      type: object
+      description: 'Copy-on-edit payload for the PER-EVENT agenda config (Story 15.2). Writes only the
+
+        per-event `event_agenda_config` row — never the shared template.
+
+
+        Shares the slot-configuration field vocabulary with `UpdateEventSlotConfigurationRequest`
+
+        but is a DISTINCT contract: this one targets a single event''s agenda row and requires the
+
+        full slot shape (all timing/slot fields mandatory) so the per-event override is complete.
+
+        Use `UpdateEventSlotConfigurationRequest` instead to edit the event-TYPE-level defaults
+
+        (fewer required fields; timing fields optional/nullable).
+
+        '
+      required:
+      - minSlots
+      - maxSlots
+      - slotDuration
+      - theoreticalSlotsAM
+      - breakSlots
+      - lunchSlots
+      - defaultCapacity
+      - moderationStartDuration
+      - moderationEndDuration
+      - breakDuration
+      - lunchDuration
+      - aperitifSlots
+      - aperitifDuration
+      - aperitifPosition
+      properties:
+        minSlots:
+          type: integer
+          minimum: 1
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          example: false
+        breakSlots:
+          type: integer
+          minimum: 0
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          example: 0
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          example: 200
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          example: 5
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          example: 5
+        breakDuration:
+          type: integer
+          minimum: 1
+          example: 20
+        lunchDuration:
+          type: integer
+          minimum: 1
+          example: 60
+        aperitifSlots:
+          type: integer
+          minimum: 0
+          example: 1
+        aperitifDuration:
+          type: integer
+          minimum: 1
+          example: 90
+        aperitifPosition:
+          type: string
+          enum:
+          - start
+          - end
+          example: end
+        typicalStartTime:
+          type: string
+          format: time
+          nullable: true
+          example: '13:00'
+        typicalEndTime:
+          type: string
+          format: time
+          nullable: true
+          example: '19:00'
+    GenerateStructuralSessionsRequest:
+      type: object
+      description: Request to generate structural sessions (moderation, break, lunch) for an event.
+      properties:
+        overwrite:
+          type: boolean
+          default: false
+          description: 'If false (default), returns 409 if structural sessions already exist.
+
+            If true, deletes existing structural sessions and recreates them.
+
+            '
+    QnaPostRequest:
+      type: object
+      description: 'Story 7.5: post a Q&A question or answer. `parentPostId` set = an answer to that question;
+
+        omitted = a top-level question. Identity comes from the JWT, never the body.
+
+        `additionalProperties: false`: unexpected fields are rejected with 400.
+
+        '
+      additionalProperties: false
+      required:
+      - body
+      properties:
+        body:
+          type: string
+          maxLength: 5000
+          description: The question or answer text.
+          example: How did you handle schema migration during the cutover?
+        parentPostId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The question being answered; omit for a top-level question.
+    QnaWindowPatchRequest:
+      type: object
+      description: 'Story 7.5: organizer adjustment of a Q&A window. Provide a new `closesAt` to extend
+
+        (reopens to that time) OR `close: true` to close early (freeze now). At least one required.
+
+        '
+      additionalProperties: false
+      properties:
+        closesAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: New close time (extends/reopens the window).
+        close:
+          type: boolean
+          nullable: true
+          description: When true, freeze the window immediately (close early).
+    QnaPostResponse:
+      type: object
+      description: 'Story 7.5: a single Q&A post. A removed post is a tombstone — `removed: true` and
+
+        `body`/`postedByUsername` are null (the archive shows "removed by organizer").
+
+        '
+      required:
+      - id
+      - removed
+      - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentPostId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent question id; null for a top-level question.
+        postedByUsername:
+          type: string
+          nullable: true
+          description: Poster username (stable id / takedown target); null if removed.
+        postedByFirstName:
+          type: string
+          nullable: true
+          description: Poster first name (enriched from the user profile); null if removed/unknown.
+        postedByLastName:
+          type: string
+          nullable: true
+          description: Poster last name (enriched from the user profile); null if removed/unknown.
+        postedByCompanyName:
+          type: string
+          nullable: true
+          description: Poster company display name; null if removed, unknown, or hidden by preference.
+        postedByCompanyLogoUrl:
+          type: string
+          nullable: true
+          description: Poster company logo CDN URL; null if removed, unknown, or hidden by preference.
+        body:
+          type: string
+          nullable: true
+          description: Post text; null if removed.
+        removed:
+          type: boolean
+          description: True if the post was taken down by an organizer.
+        createdAt:
+          type: string
+          format: date-time
+    QnaWindowResponse:
+      type: object
+      description: 'Story 7.5: the Q&A thread for a session. `status` is OPEN or FROZEN. Posts are oldest-first;
+
+        the client nests answers under `parentPostId`.
+
+        '
+      required:
+      - status
+      - posts
+      properties:
+        status:
+          type: string
+          enum:
+          - OPEN
+          - FROZEN
+          description: OPEN = accepting posts; FROZEN = read-only.
+        opensAt:
+          type: string
+          format: date-time
+        closesAt:
+          type: string
+          format: date-time
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/QnaPostResponse'
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15 10:30:00+00:00
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15 10:30:00+00:00
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15 10:30:00+00:00
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15 10:30:00+00:00
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions to perform this action
+                timestamp: '2025-01-15T10:30:00Z'
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Authentication token is missing or invalid
+                timestamp: '2025-01-15T10:30:00Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

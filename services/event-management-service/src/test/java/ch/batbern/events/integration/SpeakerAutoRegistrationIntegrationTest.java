@@ -8,7 +8,7 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.repository.EventRepository;

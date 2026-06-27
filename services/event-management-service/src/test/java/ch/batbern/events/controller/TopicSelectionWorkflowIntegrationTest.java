@@ -270,7 +270,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         event.setVenueAddress("Test Address");
         event.setVenueCapacity(200);
         event.setOrganizerUsername("john.doe");
-        event.setEventType(ch.batbern.events.dto.generated.EventType.FULL_DAY); // Required field!
+        event.setEventType(ch.batbern.events.core.dto.generated.EventType.FULL_DAY); // Required field!
         event.setWorkflowState(workflowState);
         event.setCreatedAt(Instant.now());
         event.setUpdatedAt(Instant.now());

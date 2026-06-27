@@ -11,7 +11,7 @@
  * - onChange callback when event type selected
  * - Disabled state support
  * - i18n compliance (all text uses react-i18next)
- * - Generated types usage from events-api.types.ts
+ * - Generated types usage from events-core-api.types.ts
  */
 
 import React from 'react';
@@ -21,7 +21,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventTypeSelector } from './EventTypeSelector';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 type EventType = components['schemas']['EventType'];
 type EventSlotConfigurationResponse = components['schemas']['EventSlotConfigurationResponse'];
@@ -158,7 +158,7 @@ describe('EventTypeSelector Component', () => {
 
   /**
    * Test 7.7: should_useGeneratedTypes_when_componentRendered
-   * ADR-006: Component uses generated types from events-api.types.ts
+   * ADR-006: Component uses generated types from events-core-api.types.ts
    * (This is a TypeScript compile-time check - if types are wrong, component won't compile)
    */
   it('should_useGeneratedTypes_when_componentRendered', async () => {

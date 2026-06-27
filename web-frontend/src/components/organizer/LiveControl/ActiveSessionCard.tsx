@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/public/ui/card';
 import { cn } from '@/lib/utils';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-watch-api.types';
 import { ExtendSessionSheet } from './ExtendSessionSheet';
 import { DelaySessionSheet } from './DelaySessionSheet';
 import { LogoBadge } from '@/components/shared/LogoBadge/LogoBadge';

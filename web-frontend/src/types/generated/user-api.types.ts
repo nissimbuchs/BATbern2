@@ -99,24 +99,7 @@ export interface paths {
      *     **Performance**: <100ms (P95)
      */
     get: operations['getCurrentUser'];
-    /**
-     * Update current user profile
-     * @description Update the profile of the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC2
-     *
-     *     **Validation Rules**:
-     *     - Email must be valid and unique
-     *     - Names: 2-100 characters
-     *     - Bio: max 5000 characters
-     *
-     *     **Cognito Sync**: Updates synchronize with AWS Cognito
-     *
-     *     **Events Published**: UserUpdatedEvent to EventBridge
-     *
-     *     **Cache Invalidation**: All user caches cleared on update
-     */
-    put: operations['updateCurrentUser'];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -532,23 +515,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /**
-     * Upload profile picture
-     * @description Generate presigned S3 upload URL for profile picture.
-     *
-     *     **Acceptance Criteria**: AC10
-     *
-     *     **File Constraints**:
-     *     - Max size: 5 MB
-     *     - Allowed formats: PNG, JPG, JPEG
-     *     - Recommended dimensions: 400x400 to 1000x1000 pixels
-     *
-     *     **Upload Process**:
-     *     1. Client calls this endpoint to get presigned URL
-     *     2. Client uploads directly to S3 using presigned URL
-     *     3. Client calls confirm endpoint with file ID
-     */
-    post: operations['uploadProfilePicture'];
+    post?: never;
     /**
      * Remove own profile picture
      * @description Remove the authenticated user's own profile picture.
@@ -1542,52 +1509,83 @@ export interface components {
        */
       profilePictureUrl: string;
     };
+    /**
+     * @description Page-based pagination metadata returned with every paginated list response.
+     *     Backed by `ch.batbern.shared.api.PaginationMetadata`. Page-based — NOT
+     *     offset/cursor.
+     */
     PaginationMetadata: {
       /**
-       * @description Current page (1-indexed)
-       * @example 1
+       * @description Zero-based (or one-based per spec) current page index.
+       * @example 0
        */
       page: number;
       /**
-       * @description Items per page
+       * @description Page size — items per page.
        * @example 20
        */
       limit: number;
       /**
-       * @description Total number of items
+       * Format: int64
+       * @description Total number of items across all pages.
        * @example 150
        */
       totalItems: number;
       /**
-       * @description Total number of pages
+       * @description Total number of pages.
        * @example 8
        */
       totalPages: number;
-      /**
-       * @description Whether there is a next page
-       * @example true
-       */
+      /** @description Whether a next page exists. */
       hasNext: boolean;
-      /**
-       * @description Whether there is a previous page
-       * @example false
-       */
+      /** @description Whether a previous page exists. */
       hasPrev: boolean;
     };
+    /**
+     * @description Standard error envelope returned on every 4xx/5xx response across all services.
+     *     Flat shape (NOT nested under `error`). Backed by
+     *     `ch.batbern.shared.dto.ErrorResponse`. `@JsonInclude(NON_NULL)` — absent fields
+     *     are omitted from the wire.
+     */
     ErrorResponse: {
-      /** @example VALIDATION_ERROR */
-      error: string;
-      /** @example BAD_REQUEST */
-      errorCode?: string;
-      /** @example Invalid request data */
-      message: string;
       /**
        * Format: date-time
-       * @example 2025-01-15T10:30:00Z
+       * @description When the error occurred (ISO-8601 / Instant).
        */
-      timestamp: string;
-      /** @description Additional error details */
-      details?: Record<string, never>;
+      timestamp?: string;
+      /** @description Request path that generated the error. */
+      path?: string;
+      /**
+       * @description HTTP status code.
+       * @example 400
+       */
+      status?: number;
+      /** @description Short HTTP reason phrase (e.g. "Bad Request"). */
+      error?: string;
+      /**
+       * @description Stable machine-readable error code for typed client handling
+       *     (e.g. `ADDITIONAL_EMAIL_DUPLICATE`, `ERR_VALIDATION`).
+       * @example ERR_VALIDATION
+       */
+      errorCode?: string;
+      /** @description Human-readable error message. */
+      message?: string;
+      /** @description Correlation ID for tracing this request across services. */
+      correlationId?: string;
+      /**
+       * @description Operational severity classification.
+       * @enum {string}
+       */
+      severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      /**
+       * @description Additional structured context (e.g. per-field validation errors keyed by
+       *     field name). Free-form object.
+       */
+      details?: {
+        [key: string]: unknown;
+      };
+      /** @description Present only in dev/staging diagnostics — never in production. */
+      stackTrace?: string;
     };
     PairingCodeResponse: {
       /** @example 482910 */
@@ -1861,34 +1859,6 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  updateCurrentUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateUserRequest'];
-      };
-    };
-    responses: {
-      /** @description User updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      409: components['responses']['Conflict'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
   patchCurrentUser: {
     parameters: {
       query?: never;
@@ -1932,14 +1902,8 @@ export interface operations {
         fields?: string;
         /** @description Comma-separated list of resources to include */
         include?: string;
-        /** @description Filter by specific role (deprecated, use filter parameter) */
-        role?: 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
-        /** @description Filter by company name (deprecated, use filter parameter) */
-        company?: string;
-        /** @description Field to sort by (whitelisted server-side) */
-        sortBy?: 'name' | 'email' | 'company';
-        /** @description Sort direction */
-        sortDir?: 'asc' | 'desc';
+        /** @description Free-text search across name and email */
+        search?: string;
       };
       header?: never;
       path?: never;
@@ -2494,51 +2458,6 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  uploadProfilePicture: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          filename: string;
-          fileSizeBytes: number;
-          /** @enum {string} */
-          mimeType: 'image/png' | 'image/jpeg' | 'image/svg+xml';
-        };
-      };
-    };
-    responses: {
-      /** @description Presigned upload URL generated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /**
-             * Format: uri
-             * @description Presigned S3 upload URL (valid for 15 minutes)
-             */
-            uploadUrl?: string;
-            /** @description File identifier for confirmation */
-            fileId?: string;
-            /**
-             * @description URL expiration time in seconds
-             * @example 900
-             */
-            expiresIn?: number;
-          };
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
       500: components['responses']['InternalServerError'];
     };
   };

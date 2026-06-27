@@ -16,12 +16,9 @@ import type { components } from '@/types/generated/partner-api.types';
 export type PartnerResponse = components['schemas']['PartnerResponse'];
 export type PartnerListResponse = components['schemas']['PartnerListResponse'];
 export type PartnershipLevel = components['schemas']['PartnershipLevel'];
-export type TopicVoteResponse = components['schemas']['TopicVoteResponse'];
 export type CreatePartnerRequest = components['schemas']['CreatePartnerRequest'];
 export type UpdatePartnerRequest = components['schemas']['UpdatePartnerRequest'];
 export type PartnerContactResponse = components['schemas']['PartnerContactResponse'];
-export type TopicSuggestionResponse = components['schemas']['TopicSuggestionResponse'];
-export type SubmitSuggestionRequest = components['schemas']['SubmitSuggestionRequest'];
 export type PartnerStatistics = components['schemas']['PartnerStatistics'];
 
 // API base path for partner endpoints
@@ -134,17 +131,6 @@ export const getPartnerDetail = async (
     params.include = include;
   }
   const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}`, { params });
-  return response.data;
-};
-
-/**
- * Get partner topic votes
- * Story 2.8.2
- * @param companyName - Company name (meaningful ID)
- * @returns Array of TopicVoteResponse
- */
-export const getPartnerVotes = async (companyName: string): Promise<TopicVoteResponse[]> => {
-  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/votes`);
   return response.data;
 };
 

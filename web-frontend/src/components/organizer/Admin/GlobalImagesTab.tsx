@@ -34,7 +34,7 @@ import {
   useDeleteTeaserImage,
   useUpdateTeaserImagePosition,
 } from '@/hooks/useEventTeaserImages';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/events-core-api.types';
 
 type TeaserImageItem = components['schemas']['TeaserImageItem'];
 

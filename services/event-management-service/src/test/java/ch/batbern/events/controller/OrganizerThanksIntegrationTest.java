@@ -246,7 +246,7 @@ class OrganizerThanksIntegrationTest extends AbstractIntegrationTest {
         event.setVenueAddress("Test Address");
         event.setVenueCapacity(150);
         event.setOrganizerUsername(ORGANIZER);
-        event.setEventType(ch.batbern.events.dto.generated.EventType.EVENING);
+        event.setEventType(ch.batbern.events.core.dto.generated.EventType.EVENING);
         event.setWorkflowState(workflowState);
         event.setCreatedAt(Instant.now());
         event.setUpdatedAt(Instant.now());

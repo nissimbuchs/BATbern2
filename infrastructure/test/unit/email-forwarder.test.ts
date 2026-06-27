@@ -136,7 +136,8 @@ describe('T7 — Address resolution', () => {
 
   function mockFetch(responses: Record<string, { status: number; body: unknown }>): void {
     global.fetch = jest.fn(async (url: string | URL | Request) => {
-      const urlStr = typeof url === 'string' ? url : url.toString();
+      // Decode so JSON `filter` query values (e.g. {"role":"ORGANIZER"}) are matchable as readable patterns.
+      const urlStr = decodeURIComponent(typeof url === 'string' ? url : url.toString());
       for (const [pattern, resp] of Object.entries(responses)) {
         if (urlStr.includes(pattern)) {
           return {
@@ -152,7 +153,7 @@ describe('T7 — Address resolution', () => {
 
   test('should_resolveOrganizerEmails_when_okAddress', async () => {
     mockFetch({
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: { data: [{ email: 'org1@test.ch' }, { email: 'org2@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
@@ -164,7 +165,7 @@ describe('T7 — Address resolution', () => {
 
   test('should_resolveOrganizerEmails_when_infoAddress', async () => {
     mockFetch({
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
@@ -176,7 +177,7 @@ describe('T7 — Address resolution', () => {
 
   test('should_resolveOrganizerEmails_when_eventsAddress', async () => {
     mockFetch({
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
@@ -188,7 +189,7 @@ describe('T7 — Address resolution', () => {
 
   test('should_resolvePartnerEmails_when_partnerAddress', async () => {
     mockFetch({
-      'role=PARTNER': {
+      '"role":"PARTNER"': {
         status: 200,
         body: { data: [{ email: 'partner@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
@@ -216,7 +217,7 @@ describe('T7 — Address resolution', () => {
         status: 200,
         body: { key: 'email-forwarding.support-contacts', value: '' },
       },
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
@@ -282,11 +283,11 @@ describe('T7 — Address resolution', () => {
 
   test('should_resolveMultipleAddresses_when_calledForEach', async () => {
     mockFetch({
-      'role=PARTNER': {
+      '"role":"PARTNER"': {
         status: 200,
         body: { data: [{ email: 'partner@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
@@ -300,7 +301,7 @@ describe('T7 — Address resolution', () => {
 
   test('should_deduplicateRecipients_when_overlappingLists', async () => {
     mockFetch({
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
@@ -317,7 +318,7 @@ describe('T7 — Address resolution', () => {
 
   test('should_fanOutToAdditionalEmails_when_organizerHasAdditional_10_32', async () => {
     mockFetch({
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: {
           data: [
@@ -342,7 +343,7 @@ describe('T7 — Address resolution', () => {
 
   test('should_dedupCaseInsensitively_when_additionalEmailsFlattened_10_32', async () => {
     mockFetch({
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: {
           data: [
@@ -366,7 +367,7 @@ describe('T7 — Address resolution', () => {
   test('should_handleMissingAdditionalEmails_when_oldApiResponse_10_32', async () => {
     // Backwards-compat: old CUMS API without the additionalEmails field
     mockFetch({
-      'role=ORGANIZER': {
+      '"role":"ORGANIZER"': {
         status: 200,
         body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
       },
@@ -1099,10 +1100,10 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
 
   function mockFetch(): void {
     global.fetch = jest.fn(async (url: string | URL | Request) => {
-      const u = url.toString();
+      const u = decodeURIComponent(url.toString());
       const json = (body: unknown) =>
         ({ ok: true, status: 200, json: async () => body }) as Response;
-      if (u.includes('role=ORGANIZER')) {
+      if (u.includes('"role":"ORGANIZER"')) {
         return json({ data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } });
       }
       if (u.includes('/distribution-list/speakers')) {
@@ -1220,8 +1221,8 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
     );
     // ok@ resolves to organizers (one in this mock) → existing individual-send path
     global.fetch = jest.fn(async (url: string | URL | Request) => {
-      const u = url.toString();
-      if (u.includes('role=ORGANIZER')) {
+      const u = decodeURIComponent(url.toString());
+      if (u.includes('"role":"ORGANIZER"')) {
         return {
           ok: true, status: 200,
           json: async () => ({ data: [{ email: 'org@test.ch' }, { email: 'org2@test.ch' }], pagination: { totalPages: 1, page: 0 } }),

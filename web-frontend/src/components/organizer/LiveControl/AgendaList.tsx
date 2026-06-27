@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-watch-api.types';
 
 type WatchSessionDetail = components['schemas']['WatchSessionDetail'];
 

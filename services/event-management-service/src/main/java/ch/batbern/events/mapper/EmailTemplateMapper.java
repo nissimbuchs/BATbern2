@@ -1,7 +1,7 @@
 package ch.batbern.events.mapper;
 
 import ch.batbern.events.domain.EmailTemplate;
-import ch.batbern.events.dto.generated.EmailTemplateResponse;
+import ch.batbern.events.newsletter.dto.generated.EmailTemplateResponse;
 import org.springframework.stereotype.Component;
 
 /**

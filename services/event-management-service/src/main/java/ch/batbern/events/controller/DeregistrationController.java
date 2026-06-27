@@ -1,10 +1,10 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.dto.generated.DeregistrationByEmailRequest;
-import ch.batbern.events.dto.generated.DeregistrationRequest;
-import ch.batbern.events.dto.generated.DeregisterByToken200Response;
-import ch.batbern.events.dto.generated.DeregistrationVerifyResponse;
-import ch.batbern.events.dto.generated.RequestDeregistrationByEmail200Response;
+import ch.batbern.events.registrations.dto.generated.DeregistrationByEmailRequest;
+import ch.batbern.events.registrations.dto.generated.DeregistrationRequest;
+import ch.batbern.events.registrations.dto.generated.DeregisterByToken200Response;
+import ch.batbern.events.registrations.dto.generated.DeregistrationVerifyResponse;
+import ch.batbern.events.registrations.dto.generated.RequestDeregistrationByEmail200Response;
 import ch.batbern.events.service.DeregistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

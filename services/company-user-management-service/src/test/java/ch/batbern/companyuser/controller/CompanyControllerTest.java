@@ -34,7 +34,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -189,7 +188,7 @@ class CompanyControllerTest {
         when(companyService.updateCompany(eq(testCompanyName), any(UpdateCompanyRequest.class)))
                 .thenReturn(updatedResponse);
 
-        mockMvc.perform(put("/api/v1/companies/{name}", testCompanyName)
+        mockMvc.perform(patch("/api/v1/companies/{name}", testCompanyName)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))

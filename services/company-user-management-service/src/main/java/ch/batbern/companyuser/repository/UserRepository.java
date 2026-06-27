@@ -207,7 +207,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @param pageable Pagination parameters
      * @return Page of users with roles loaded
      */
-    @Query("SELECT u FROM User u ORDER BY u.lastName ASC, u.firstName ASC")
+    @Query("SELECT u FROM User u")
     Page<User> findAllWithRoles(Pageable pageable);
 
     /**
@@ -218,7 +218,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @param pageable Pagination parameters
      * @return Page of users with the specified role and roles loaded
      */
-    @Query("SELECT u FROM User u WHERE :role MEMBER OF u.roles ORDER BY u.lastName ASC, u.firstName ASC")
+    @Query("SELECT u FROM User u WHERE :role MEMBER OF u.roles")
     Page<User> findByRolesContainingWithRoles(@Param("role") Role role, Pageable pageable);
 
     /**
@@ -229,7 +229,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @param pageable Pagination parameters
      * @return Page of users in the specified company with roles loaded
      */
-    @Query("SELECT u FROM User u WHERE u.companyId = :companyId ORDER BY u.lastName ASC, u.firstName ASC")
+    @Query("SELECT u FROM User u WHERE u.companyId = :companyId")
     Page<User> findByCompanyIdWithRoles(@Param("companyId") String companyId, Pageable pageable);
 
     /**
@@ -245,7 +245,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         SELECT u FROM User u
         WHERE :role MEMBER OF u.roles
         AND u.companyId = :companyId
-        ORDER BY u.lastName ASC, u.firstName ASC
         """)
     Page<User> findByRoleAndCompanyWithRoles(
             @Param("role") Role role,
@@ -268,7 +267,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.companyId) LIKE LOWER(CONCAT('%', :search, '%'))
-        ORDER BY u.lastName ASC, u.firstName ASC
         """)
     Page<User> searchUsersWithRoles(@Param("search") String search, Pageable pageable);
 
@@ -290,7 +288,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.companyId) LIKE LOWER(CONCAT('%', :search, '%')))
         AND :role MEMBER OF u.roles
-        ORDER BY u.lastName ASC, u.firstName ASC
         """)
     Page<User> searchUsersByRoleWithRoles(
             @Param("search") String search,
@@ -315,7 +312,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.companyId) LIKE LOWER(CONCAT('%', :search, '%')))
         AND u.companyId = :companyId
-        ORDER BY u.lastName ASC, u.firstName ASC
         """)
     Page<User> searchUsersByCompanyWithRoles(
             @Param("search") String search,
@@ -342,7 +338,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         OR LOWER(u.companyId) LIKE LOWER(CONCAT('%', :search, '%')))
         AND :role MEMBER OF u.roles
         AND u.companyId = :companyId
-        ORDER BY u.lastName ASC, u.firstName ASC
         """)
     Page<User> searchUsersByRoleAndCompanyWithRoles(
             @Param("search") String search,

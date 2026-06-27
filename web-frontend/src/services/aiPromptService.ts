@@ -10,7 +10,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/events-api.types';
+import type { components } from '@/types/generated/event-ai-api.types';
 
 export type AiPromptResponse = components['schemas']['AiPromptResponse'];
 export type UpdateAiPromptRequest = components['schemas']['UpdateAiPromptRequest'];

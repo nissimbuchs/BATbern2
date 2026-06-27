@@ -32,6 +32,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
 
 /**
  * Implementation of UserApiClient using Spring RestTemplate.
@@ -451,7 +454,14 @@ public class UserApiClientImpl implements UserApiClient {
     public java.util.List<String> getOrganizerUsernames() {
         log.debug("Fetching organizer usernames");
 
-        String url = userServiceBaseUrl + "/api/v1/users?role=ORGANIZER";
+        // ADR-013 §3: role is expressed via the JSON `filter` vocabulary (not an ad-hoc ?role= param).
+        // A fully-encoded URI keeps RestTemplate from re-expanding the {,},",: in the filter value.
+        URI url = UriComponentsBuilder
+                .fromUriString(userServiceBaseUrl + "/api/v1/users")
+                .queryParam("filter", "{\"role\":\"ORGANIZER\"}")
+                .build()
+                .encode()
+                .toUri();
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
@@ -765,7 +775,14 @@ public class UserApiClientImpl implements UserApiClient {
     public java.util.List<String> getPartnerUsernames() {
         log.debug("Fetching partner usernames");
 
-        String url = userServiceBaseUrl + "/api/v1/users?role=PARTNER&limit=1000";
+        // ADR-013 §3: role is expressed via the JSON `filter` vocabulary (not an ad-hoc ?role= param).
+        URI url = UriComponentsBuilder
+                .fromUriString(userServiceBaseUrl + "/api/v1/users")
+                .queryParam("filter", "{\"role\":\"PARTNER\"}")
+                .queryParam("limit", 1000)
+                .build()
+                .encode()
+                .toUri();
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();

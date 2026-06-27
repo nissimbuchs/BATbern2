@@ -1,6 +1,6 @@
 package ch.batbern.events.dto;
 
-import ch.batbern.events.dto.generated.TeaserImageItem;
+import ch.batbern.events.core.dto.generated.TeaserImageItem;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

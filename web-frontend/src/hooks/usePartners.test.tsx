@@ -85,7 +85,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       metadata: {
         page: 0,
         size: 20,
-        totalElements: 1,
+        totalItems: 1,
         totalPages: 1,
       },
     };
@@ -150,7 +150,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
     it('should use correct query key with filters, sort, and pagination', async () => {
       const mockResponse: PartnerListResponse = {
         data: [],
-        metadata: { page: 0, size: 20, totalElements: 0, totalPages: 0 },
+        metadata: { page: 0, size: 20, totalItems: 0, totalPages: 0 },
       };
       vi.mocked(partnerApi.listPartners).mockResolvedValue(mockResponse);
 
@@ -176,7 +176,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       // The actual staleTime validation happens in the implementation
       const mockResponse: PartnerListResponse = {
         data: [],
-        metadata: { page: 0, size: 20, totalElements: 0, totalPages: 0 },
+        metadata: { page: 0, size: 20, totalItems: 0, totalPages: 0 },
       };
       vi.mocked(partnerApi.listPartners).mockResolvedValue(mockResponse);
 
@@ -208,7 +208,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
             isActive: true,
           },
         ],
-        metadata: { page: 0, size: 20, totalElements: 1, totalPages: 1 },
+        metadata: { page: 0, size: 20, totalItems: 1, totalPages: 1 },
       };
 
       const mockResponse2: PartnerListResponse = {
@@ -221,7 +221,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
             isActive: true,
           },
         ],
-        metadata: { page: 0, size: 20, totalElements: 1, totalPages: 1 },
+        metadata: { page: 0, size: 20, totalItems: 1, totalPages: 1 },
       };
 
       vi.mocked(partnerApi.listPartners)

@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -228,55 +227,6 @@ public class CompanyController {
                 : searchService.searchCompanies(query, limit);
 
         return ResponseEntity.ok(results);
-    }
-
-    /**
-     * Update company (full replacement)
-     * Requires ORGANIZER role
-     * AC4: Company update endpoint
-     * Story 1.16.2: Use company name as identifier instead of UUID
-     */
-    @PutMapping("/{name}")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Update company (full replacement)",
-            description = "Fully replaces an existing company. Requires ORGANIZER role. "
-                    + "Publishes CompanyUpdated event. Story 1.16.2: Uses company name instead of UUID."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Company updated successfully",
-                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid request data (validation failed)"
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "403",
-                description = "Forbidden - requires ORGANIZER role"
-            ),
-        @ApiResponse(
-                responseCode = "404",
-                description = "Company not found"
-            ),
-        @ApiResponse(
-                responseCode = "409",
-                description = "Conflict - company name already exists"
-            )
-    })
-    public ResponseEntity<CompanyResponse> updateCompany(
-            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
-            @PathVariable String name,
-            @Valid @RequestBody UpdateCompanyRequest request) {
-        log.info("Updating company: {}", name);
-        CompanyResponse response = companyService.updateCompany(name, request);
-        return ResponseEntity.ok(response);
     }
 
     /**

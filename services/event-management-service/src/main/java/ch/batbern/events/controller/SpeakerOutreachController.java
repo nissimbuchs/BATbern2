@@ -1,9 +1,9 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.api.generated.SpeakerOutreachApi;
+import ch.batbern.events.speakers.api.generated.SpeakerOutreachApi;
 import ch.batbern.events.domain.OutreachHistory;
-import ch.batbern.events.dto.generated.OutreachHistoryResponse;
-import ch.batbern.events.dto.generated.RecordOutreachRequest;
+import ch.batbern.events.speakers.dto.generated.OutreachHistoryResponse;
+import ch.batbern.events.speakers.dto.generated.RecordOutreachRequest;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SpeakerOutreachService;
 import lombok.RequiredArgsConstructor;

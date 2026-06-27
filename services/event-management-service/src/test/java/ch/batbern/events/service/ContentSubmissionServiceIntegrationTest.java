@@ -9,7 +9,7 @@ import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.ContentSubmitResponse;
-import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
 import ch.batbern.events.repository.SessionContentHistoryRepository;

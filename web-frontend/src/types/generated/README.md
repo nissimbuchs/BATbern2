@@ -14,15 +14,23 @@ npm run generate:api-types
 
 This will generate TypeScript types from:
 
-| OpenAPI Spec                         | Generated File           |
-| ------------------------------------ | ------------------------ |
-| `docs/api/companies-api.openapi.yml` | `company-api.types.ts`   |
-| `docs/api/users-api.openapi.yml`     | `user-api.types.ts`      |
-| `docs/api/events-api.openapi.yml`    | `events-api.types.ts`    |
-| `docs/api/speakers-api.openapi.yml`  | `speakers-api.types.ts`  |
-| `docs/api/topics-api.openapi.yml`    | `topics-api.types.ts`    |
-| `docs/api/partners-api.openapi.yml`  | `partner-api.types.ts`   |
-| `docs/api/attendees-api.openapi.yml` | `attendees-api.types.ts` |
+| OpenAPI Spec                                   | Generated File                     |
+| ---------------------------------------------- | ---------------------------------- |
+| `docs/api/companies-api.openapi.yml`           | `company-api.types.ts`             |
+| `docs/api/users-api.openapi.yml`               | `user-api.types.ts`                |
+| `docs/api/events-core-api.openapi.yml`         | `events-core-api.types.ts`         |
+| `docs/api/event-sessions-api.openapi.yml`      | `event-sessions-api.types.ts`      |
+| `docs/api/event-speakers-api.openapi.yml`      | `event-speakers-api.types.ts`      |
+| `docs/api/event-registrations-api.openapi.yml` | `event-registrations-api.types.ts` |
+| `docs/api/event-newsletter-api.openapi.yml`    | `event-newsletter-api.types.ts`    |
+| `docs/api/event-media-api.openapi.yml`         | `event-media-api.types.ts`         |
+| `docs/api/event-ai-api.openapi.yml`            | `event-ai-api.types.ts`            |
+| `docs/api/event-analytics-api.openapi.yml`     | `event-analytics-api.types.ts`     |
+| `docs/api/event-watch-api.openapi.yml`         | `event-watch-api.types.ts`         |
+| `docs/api/speakers-api.openapi.yml`            | `speakers-api.types.ts`            |
+| `docs/api/topics-api.openapi.yml`              | `topics-api.types.ts`              |
+| `docs/api/partners-api.openapi.yml`            | `partner-api.types.ts`             |
+| `docs/api/attendees-api.openapi.yml`           | `attendees-api.types.ts`           |
 
 ### Usage
 
@@ -45,7 +53,7 @@ type ListCompaniesResponse =
 Domain type files in `src/types/` re-export generated types and add UI-specific extensions:
 
 - `company.types.ts` - imports from `generated/company-api.types.ts`
-- `event.types.ts` - imports from `generated/events-api.types.ts`
+- `event.types.ts` - imports from the per-domain `generated/event*-api.types.ts` files (events-api was split in API consolidation Phase 6)
 - `user.types.ts` - imports from `generated/user-api.types.ts`
 - `topic.types.ts` - imports from `generated/topics-api.types.ts`
 - `speakerPool.types.ts` - imports from `generated/speakers-api.types.ts`

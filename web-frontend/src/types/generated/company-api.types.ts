@@ -84,23 +84,7 @@ export interface paths {
      *     **Performance**: <150ms (P95)
      */
     get: operations['getCompany'];
-    /**
-     * Update company (full replacement)
-     * @description Replace all company data with new data.
-     *
-     *     **Acceptance Criteria**: AC4
-     *
-     *     **Story 1.16.2**: Uses company name as identifier instead of UUID
-     *
-     *     **Validation Rules**:
-     *     - Company name must be unique
-     *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
-     *
-     *     **Events Published**: CompanyUpdatedEvent to EventBridge
-     *
-     *     **Cache Invalidation**: All company caches cleared on update
-     */
-    put: operations['updateCompany'];
+    put?: never;
     post?: never;
     /**
      * Delete company
@@ -522,52 +506,83 @@ export interface components {
       data: components['schemas']['CompanyResponse'][];
       pagination: components['schemas']['PaginationMetadata'];
     };
+    /**
+     * @description Page-based pagination metadata returned with every paginated list response.
+     *     Backed by `ch.batbern.shared.api.PaginationMetadata`. Page-based — NOT
+     *     offset/cursor.
+     */
     PaginationMetadata: {
       /**
-       * @description Current page (1-indexed)
-       * @example 1
+       * @description Zero-based (or one-based per spec) current page index.
+       * @example 0
        */
       page: number;
       /**
-       * @description Items per page
+       * @description Page size — items per page.
        * @example 20
        */
       limit: number;
       /**
-       * @description Total number of items
-       * @example 100
+       * Format: int64
+       * @description Total number of items across all pages.
+       * @example 150
        */
       totalItems: number;
       /**
-       * @description Total number of pages
-       * @example 5
+       * @description Total number of pages.
+       * @example 8
        */
       totalPages: number;
-      /**
-       * @description Whether there is a next page
-       * @example true
-       */
+      /** @description Whether a next page exists. */
       hasNext: boolean;
-      /**
-       * @description Whether there is a previous page
-       * @example false
-       */
+      /** @description Whether a previous page exists. */
       hasPrev: boolean;
     };
+    /**
+     * @description Standard error envelope returned on every 4xx/5xx response across all services.
+     *     Flat shape (NOT nested under `error`). Backed by
+     *     `ch.batbern.shared.dto.ErrorResponse`. `@JsonInclude(NON_NULL)` — absent fields
+     *     are omitted from the wire.
+     */
     ErrorResponse: {
-      /** @example VALIDATION_ERROR */
-      error: string;
-      /** @example BAD_REQUEST */
-      errorCode?: string;
-      /** @example Invalid filter syntax */
-      message: string;
       /**
        * Format: date-time
-       * @example 2025-01-15T10:30:00Z
+       * @description When the error occurred (ISO-8601 / Instant).
        */
-      timestamp: string;
-      /** @description Additional error details */
-      details?: Record<string, never>;
+      timestamp?: string;
+      /** @description Request path that generated the error. */
+      path?: string;
+      /**
+       * @description HTTP status code.
+       * @example 400
+       */
+      status?: number;
+      /** @description Short HTTP reason phrase (e.g. "Bad Request"). */
+      error?: string;
+      /**
+       * @description Stable machine-readable error code for typed client handling
+       *     (e.g. `ADDITIONAL_EMAIL_DUPLICATE`, `ERR_VALIDATION`).
+       * @example ERR_VALIDATION
+       */
+      errorCode?: string;
+      /** @description Human-readable error message. */
+      message?: string;
+      /** @description Correlation ID for tracing this request across services. */
+      correlationId?: string;
+      /**
+       * @description Operational severity classification.
+       * @enum {string}
+       */
+      severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      /**
+       * @description Additional structured context (e.g. per-field validation errors keyed by
+       *     field name). Free-form object.
+       */
+      details?: {
+        [key: string]: unknown;
+      };
+      /** @description Present only in dev/staging diagnostics — never in production. */
+      stackTrace?: string;
     };
   };
   responses: {
@@ -723,39 +738,6 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  updateCompany: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Company name (unique identifier) */
-        name: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateCompanyRequest'];
-      };
-    };
-    responses: {
-      /** @description Company updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CompanyResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
     };
   };
