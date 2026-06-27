@@ -22,12 +22,15 @@ security:
 - BearerAuth: []
 tags:
 - name: Analytics
-  description: Event analytics and metrics
+  description: Aggregate analytics dashboard (org-wide overview, attendance, topics, companies)
+- name: Event Reporting
+  description: Event-scoped reporting endpoints served by EventController (per-event analytics,
+    partner attendance summary)
 paths:
   /events/attendance-summary:
     get:
       tags:
-      - Analytics
+      - Event Reporting
       summary: Get attendance summary per event for a company
       description: 'Returns per-event attendee counts (total and company-specific).
 
@@ -74,7 +77,7 @@ paths:
   /events/{eventCode}/analytics:
     get:
       tags:
-      - Analytics
+      - Event Reporting
       summary: Get event analytics
       description: 'Retrieve analytics data for a specific event.
 
