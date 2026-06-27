@@ -25,6 +25,9 @@ tags:
   description: Event publishing and workflow operations
 - name: Sessions
   description: Event session management
+- name: Agenda Config
+  description: Per-event agenda/slot configuration with copy-on-edit override (Story 15.2,
+    AgendaConfigController)
 - name: Bulk Operations
   description: Batch operations on multiple events
 paths:
@@ -465,7 +468,7 @@ paths:
   /events/{eventCode}/agenda-config:
     get:
       tags:
-      - Sessions
+      - Agenda Config
       summary: Get the resolved agenda config for an event (Story 15.2)
       description: 'Returns the effective agenda/slot configuration for the event: the per-event
 
@@ -502,7 +505,7 @@ paths:
           $ref: '#/components/responses/NotFound'
     put:
       tags:
-      - Sessions
+      - Agenda Config
       summary: Upsert the per-event agenda config override (Story 15.2)
       description: 'Copy-on-edit: creates or updates the per-event `event_agenda_config` row from the
 
