@@ -228,6 +228,41 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > deleted. **EMS contract-first +1 (21 wired).** Note: `SlotAssignmentApi` (1 op) now exists, unimplemented until
 > SlotAssignmentController is wired.
 >
+> ✅ **DONE (2026-06-28): `NewsletterController` (16 ops) → `NewsletterApi`** (event-newsletter). The
+> meatiest EMS wire so far. **Re-tagged** the 3 foreign ops sharing the `Newsletter` tag —
+> `sendSlidesOnline` → **Slides Online**, `previewRegistrantNotice`+`sendRegistrantNotice` → **Registrant
+> Notice** — so `NewsletterApi` == NewsletterController's 16 ops 1:1 (SlidesOnlineApi + RegistrantNoticeApi
+> created, unimplemented until those controllers wire). **Authored the previously-undocumented
+> `getSubscriberCount` op** (`GET /newsletter/subscribers/count`) + `SubscriberCountResponse` schema.
+> `implements NewsletterApi`; bare override params; methods renamed to operationIds; `@PreAuthorize` kept.
+> **Consolidated 9 hand DTOs** (NewsletterPreviewResponse, NewsletterSendRequest, NewsletterSendResponse,
+> NewsletterSendStatusResponse, NewsletterSubscribeRequest, NewsletterSubscriptionStatusResponse,
+> NewsletterUnsubscribeRequest, PatchMySubscriptionRequest, SubscriberResponse) → generated twins threaded
+> through `NewsletterSubscriberService` + `NewsletterEmailService`; deleted all 9. **Typed the 2 ad-hoc
+> Maps:** verifyUnsubscribe `Map<String,String>` → `VerifyUnsubscribeToken200Response`; subscribers/count
+> `Map<String,Long>` → `SubscriberCountResponse`; list `PaginatedResponse` → `ListNewsletterSubscribers200Response`
+> (identical `{data,pagination}` wire). **🐛 Spec drift-fixes (truthful-to-deployed):** (1) **added `testMode`
+> to NewsletterSendRequest** — the FE sends it and the controller reads it to gate whether real recipient
+> emails go out; the spec omitted it, so the generated request would have **silently dropped testMode → a
+> "test" send would have mailed all active subscribers**. Live-verified: a `testMode:true` preview now reports
+> `recipientCount:1` (organizer only) vs the full active count. (2) added `language` to
+> `PatchNewsletterSubscriptionRequest` (controller reads it). (3) response `reminder`→`isReminder` — the
+> deployed hand DTO emitted `reminder` (Lombok `boolean reminder`→Jackson strips `is`), but the spec/FE types
+> declare `isReminder`; consolidating **aligns the wire to the spec** (no FE reads the old key). The unused
+> response `testMode` field drops (no consumer). Conversions: `Instant`→`OffsetDateTime` (sentAt/startedAt/
+> completedAt/subscribedAt/…, `…Z` byte-identical), status `String`→`StatusEnum.fromValue`, request `locale`
+> `LocaleEnum`→`.getValue()` (kept the de/en enum — newsletter is DE+EN only per the localization rule).
+> **Verified (local dev):** 73 newsletter tests (`NewsletterControllerIntegrationTest` 36 / `NewsletterSubscriberServiceTest`
+> 3 / `NewsletterEmailServiceTest` 34); EMS restart + live gateway smoke — getSubscriberCount 200 {totalActive},
+> list {data,pagination}, verify-bogus 404, my-subscription no-auth 401, preview testMode 200 (recipientCount 1),
+> **full `testMode:true` SEND cycle → PENDING→COMPLETED sent=1/failed=0 to /dev/mails** (EMS log confirmed), status
+> poll + history; **full Bruno suite 14/14** (incl. the email-sending `speaker-portal-api`, run because local dev
+> sandboxes mail to /dev/mails); FE regen (additive: count op, testMode, language) + type-check; Playwright harness
+> ran against local dev (3 roles authed) + smoke 2/2 — the one newsletter-touching spec (`progressive-publishing`)
+> is `describe.skip`-disabled in the repo so it asserts nothing. Full EMS suite deferred to the pre-push gate (the
+> agent runner's wall-clock killed it at 107/0-fail; this change is newsletter-confined — no shared @Pattern/enum/
+> schema, no cross-controller path overlap). **EMS contract-first +1 (22 wired).**
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
