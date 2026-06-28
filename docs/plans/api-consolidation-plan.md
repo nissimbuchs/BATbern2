@@ -279,21 +279,48 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > send deliberately NOT triggered (would blast 168 real registrant mails to /dev/mails; the integration test
 > exercises the send path instead). **EMS contract-first +2 (24 wired).**
 >
-> ⛔ **BLOCKED — needs a dedicated FE-coordinated design story, NOT a Phase-7 wire: `EventController`**
-> (investigated 2026-06-28). The 2,573-line central controller spans 5 domains and 4 implementable interfaces
-> (EventsApi 7 CRUD / EventActionsApi 4 pool / EventReportingApi 2 / BulkOperationsApi 1) plus ~15 registration/
-> topic/publish ops whose tags are shared across controllers (so they'd stay hand-rolled). The blocker is the
-> **core response model**: the deployed hand `EventResponse` uses `Map<String,Object>` topic/venue + `List<Map>`
-> sessions (dynamic `?include=` expansion), `String` eventType/workflowState/phase, `Instant` dates, `String`
-> themeImageUrl — whereas the generated EventsApi returns **typed** `EventDetail` (getEvent) vs `Event`
-> (create/update/patch): typed `EventTopic`/`Venue`/`EventType`/enums, `OffsetDateTime`, `URI`, and a
-> **per-verb response-model split**. Wiring EventsApi therefore means rebuilding the include-expansion to emit
-> typed sub-objects + splitting the response by verb + Instant→OffsetDateTime/String→enum — across **every event
-> consumer** (public website, archive, organizer event page). This is the high-blast-radius reconciliation the
-> events-core decomposition (Phase 6) deliberately left hand-written. **Recommendation:** file as its own
-> FE-coordinated story (typed event response + `?include=` typing + verb split); do NOT bundle into the
-> incremental Phase-7 sweep. The peripheral subset (EventActions/EventReporting/BulkOps, 7 ops) is wireable in
-> isolation but forces re-pathing the whole class for low value — defer with the rest.
+> ✅ **PARTIAL DONE (2026-06-28): `EventController` speaker-pool ops → new `EventSpeakerPoolController` →
+> `EventActionsApi`** (4 ops: getSpeakerPool / addSpeakerToPool / deleteSpeakerFromPool / patchSpeakerPoolEntry).
+> Rather than re-path the 2,573-line public-facing EventController to wire 4 self-contained ops, **extracted**
+> them into a dedicated `EventSpeakerPoolController implements EventActionsApi` (class `/api/v1`), leaving
+> EventController's CRUD/registration/EventDetail paths 100% untouched (zero public-site risk). Consolidated the
+> 2 hand request DTOs (AddSpeakerToPoolRequest, PatchSpeakerPoolRequest) → generated twins (perfect field parity;
+> threaded through `SpeakerPoolService`, both methods only called from here); deleted both. **Preserved the
+> unknown-field→400 guard** (`additionalProperties:false`) by adding `x-class-extra-annotation`
+> `@JsonIgnoreProperties(ignoreUnknown=false)` to both schemas in event-speakers-api (the SelfNomination pattern)
+> — verified the `email`→400 tests still pass. `speakerId` path param is now `UUID` (interface) →
+> `.toString()` for the service. Removed `speakerPoolService` from EventController. **🐛 `@Pattern` fixture fix:**
+> `SpeakerPoolWorkflowIntegrationTest` not-found probe `INVALID999`→`BATbern888` (eventCode `@Pattern` now enforced).
+> **Verified (local dev):** `SpeakerPoolWorkflowIntegrationTest` 12 + `SpeakerPoolServiceTest` green; EMS restart +
+> live smoke (GET pool 200, malformed eventCode→400, add-with-email→400 guard, patch ORGANIZER-gated; GET-nonexistent
+> →400 is pre-existing service behavior, not a regression); FE regen empty (x-class-extra is Java-only). **EMS
+> contract-first +1 (25 wired).**
+>
+> ⛔ **REMAINDER STILL DEFERRED — needs a dedicated FE-coordinated design story: `EventController` CRUD/EventDetail.**
+> The 2,573-line central controller still owns `EventsApi` (7 CRUD), `EventReportingApi` (2), `BulkOperationsApi`
+> (1) plus ~15 registration/topic/publish ops whose tags are shared across controllers (so they'd stay
+> hand-rolled). **Two independent blockers found 2026-06-28:**
+> 1. **EventsApi core response model** — the deployed hand `EventResponse` uses `Map<String,Object>` topic/venue
+>    + `List<Map>` sessions (dynamic `?include=` expansion) and embeds a RICH session/speaker shape carrying
+>    `materials`, session `id`, and speaker `bio`/`company`/`companyDisplayName`/portraits that the FE reads
+>    (e.g. `SessionEditModal` reads `session.materials`). The generated `EventDetail.sessions` is the lean typed
+>    `Session` (no materials/id) + `SessionSpeaker` (no bio/company). Live verification showed the rest is
+>    ALREADY wire-compatible (`EventType`/`EventWorkflowState` are enums serialising to the deployed strings;
+>    `topic`/`venue` Maps already emit the typed `EventTopic`/`Venue` shape; `Instant`→`OffsetDateTime` is
+>    `…Z`-identical) — so the ONLY real divergence is the rich embedded session/speaker/materials shape + the
+>    per-verb `Event`(mutations) vs `EventDetail`(getEvent) split.
+>    **▶ Owner-chosen approach (Nissim, 2026-06-28): slim the embedded sessions to the base typed `Session` and
+>    have the FE LAZY-LOAD materials + speaker company/portrait details from the dedicated APIs**
+>    (SessionMaterialsApi, the user/company clients) on demand (e.g. when opening `SessionEditModal`), instead of
+>    fat-embedding them in every event GET. That makes `EventDetail.sessions = Session` clean AND shrinks the
+>    event payload. Needs the FE drawer/modal refactor (fetch-on-open) → its own FE-coordinated story.
+> 2. **BulkOperationsApi.batchUpdateEvents** — generated `BatchUpdateResponse` is `{successful:int, failed:int}`
+>    but the deployed batchUpdate emits `{successful:[…], failed:[…], summary}` (lists + summary). Wiring as-is
+>    would break the FE; needs the spec response schema made truthful first (or the FE adjusted). **EventReportingApi**
+>    `getEventAnalytics` returns a freeform `Map` → typing to `EventAnalytics` is a separate ad-hoc-shape mapping
+>    (`getAttendanceSummary` is fine — just needs the hand→generated `AttendanceSummaryDTO` swap).
+> **Recommendation:** file the EventsApi piece as the lazy-load FE story above; do BulkOps/EventReporting as small
+> follow-ups once their response schemas are made truthful. Do NOT bundle into the incremental Phase-7 sweep.
 >
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
