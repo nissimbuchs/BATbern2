@@ -263,6 +263,22 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > agent runner's wall-clock killed it at 107/0-fail; this change is newsletter-confined — no shared @Pattern/enum/
 > schema, no cross-controller path overlap). **EMS contract-first +1 (22 wired).**
 >
+> ✅ **DONE (2026-06-28): `SlidesOnlineController` (1 op) + `RegistrantNoticeController` (2 ops)** → their
+> generated `SlidesOnlineApi` / `RegistrantNoticeApi`. Fast follow-ups to the Newsletter wire — both tags
+> (`Slides Online`, `Registrant Notice`) were already split out there, and the interfaces already existed.
+> `SlidesOnlineController` was a trivial wire (already returned the generated `SlidesOnlineSendResponse`):
+> `implements SlidesOnlineApi`, bare param, drop `@PostMapping`, keep `@PreAuthorize`. `RegistrantNoticeController`
+> renamed `preview`→`previewRegistrantNotice` / `send`→`sendRegistrantNotice`; **consolidated 3 hand DTOs**
+> (RegistrantNoticePreviewRequest, RegistrantNoticePreviewResponse, RegistrantNoticeSendRequest) → generated
+> twins (threaded `RegistrantNoticePreviewResponse` through `SlidesOnlineEmailService`); deleted all 3. Only
+> conversion: preview `locale` `LocaleEnum`→`.getValue()` (de/en). No spec edit (the re-tag landed with Newsletter)
+> → no FE regen. **Verified (local dev):** `SlidesOnlineIntegrationTest` 8 + `SlidesOnlineEmailServiceTest` 7
+> green (the integ test covers both controllers' send paths end-to-end incl. the 409 double-send guard); EMS
+> restart + live gateway smoke — slides-online/registrant send no-auth 401, registrant preview (organizer, de)
+> 200 {subject,htmlPreview,recipientCount=168}, non-REGISTRANT_NOTICE template → 400 (category guard). Live
+> send deliberately NOT triggered (would blast 168 real registrant mails to /dev/mails; the integration test
+> exercises the send path instead). **EMS contract-first +2 (24 wired).**
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
