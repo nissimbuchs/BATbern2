@@ -2,10 +2,12 @@ package ch.batbern.events.mapper;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.CreateSessionRequest;
-import ch.batbern.events.dto.SessionResponse;
+import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Pure mapper for converting between Session entities and DTOs.
@@ -48,13 +50,13 @@ public class SessionMapper {
                 .title(entity.getTitle())
                 .description(entity.getDescription())
                 .sessionType(entity.getSessionType())
-                .startTime(formatInstant(entity.getStartTime()))
-                .endTime(formatInstant(entity.getEndTime()))
+                .startTime(toOffset(entity.getStartTime()))
+                .endTime(toOffset(entity.getEndTime()))
                 .room(entity.getRoom())
                 .capacity(entity.getCapacity())
                 .language(entity.getLanguage())
-                .createdAt(formatInstant(entity.getCreatedAt()))
-                .updatedAt(formatInstant(entity.getUpdatedAt()))
+                .createdAt(toOffset(entity.getCreatedAt()))
+                .updatedAt(toOffset(entity.getUpdatedAt()))
                 .materialsCount(entity.getMaterialsCount())
                 .materialsStatus(entity.getMaterialsStatus())
                 // speakers and materials are populated by service layer
@@ -89,16 +91,17 @@ public class SessionMapper {
     // ==================== Private Helper Methods ====================
 
     /**
-     * Format Instant to ISO-8601 string.
+     * Convert a stored {@link Instant} to a UTC {@link OffsetDateTime} for the wire DTO.
+     * Serialises to the same ISO-8601 {@code …Z} string the previous String field produced.
      *
-     * @param instant the Instant to format
-     * @return ISO-8601 formatted string, or null if input is null
+     * @param instant the Instant to convert
+     * @return UTC OffsetDateTime, or null if input is null
      */
-    private String formatInstant(Instant instant) {
+    private OffsetDateTime toOffset(Instant instant) {
         if (instant == null) {
             return null;
         }
-        return instant.toString();
+        return instant.atOffset(ZoneOffset.UTC);
     }
 
     /**

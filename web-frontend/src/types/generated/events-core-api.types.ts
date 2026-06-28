@@ -1422,20 +1422,10 @@ export interface components {
       title: string;
       description?: string;
       /**
-       * @description Session type - null for placeholder sessions, assigned during agenda planning
+       * @description Session type — null for placeholder sessions, assigned during agenda planning. Free-form string (NOT a closed enum): the deployed contract returns additional values such as `aperitif`, so callers must tolerate unknown types. Known values: keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif.
        * @example keynote
-       * @enum {string|null}
        */
-      sessionType?:
-        | 'keynote'
-        | 'presentation'
-        | 'workshop'
-        | 'panel_discussion'
-        | 'networking'
-        | 'break'
-        | 'lunch'
-        | 'moderation'
-        | null;
+      sessionType?: string | null;
       /**
        * Format: date-time
        * @description Session start time - null for placeholder sessions, assigned during slot assignment
@@ -1465,27 +1455,10 @@ export interface components {
        */
       speakers?: components['schemas']['SessionSpeaker'][];
       /**
-       * @description Material submission workflow status
-       *     - NONE: No materials submitted yet (initial state)
-       *     - pending: Materials submitted, awaiting review
-       *     - in_review: Materials under review
-       *     - approved: Materials approved
-       *     - requires_changes: Materials need changes
-       *     - rejected: Materials rejected
-       *     - revision_submitted: Revised materials submitted
-       *     - COMPLETE: Materials finalized and approved (final state)
-       * @example pending
-       * @enum {string}
+       * @description Material submission workflow status. Free-form string (NOT a closed enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the review-workflow values below, so callers must tolerate unknown values. Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved, requires_changes, rejected, revision_submitted.
+       * @example COMPLETE
        */
-      materialsStatus?:
-        | 'NONE'
-        | 'pending'
-        | 'in_review'
-        | 'approved'
-        | 'requires_changes'
-        | 'rejected'
-        | 'revision_submitted'
-        | 'COMPLETE';
+      materialsStatus?: string;
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.

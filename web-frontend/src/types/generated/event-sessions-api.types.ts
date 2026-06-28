@@ -526,20 +526,10 @@ export interface components {
       title: string;
       description?: string;
       /**
-       * @description Session type - null for placeholder sessions, assigned during agenda planning
+       * @description Session type — null for placeholder sessions, assigned during agenda planning. Free-form string (NOT a closed enum): the deployed contract returns additional values such as `aperitif`, so callers must tolerate unknown types. Known values: keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif.
        * @example keynote
-       * @enum {string|null}
        */
-      sessionType?:
-        | 'keynote'
-        | 'presentation'
-        | 'workshop'
-        | 'panel_discussion'
-        | 'networking'
-        | 'break'
-        | 'lunch'
-        | 'moderation'
-        | null;
+      sessionType?: string | null;
       /**
        * Format: date-time
        * @description Session start time - null for placeholder sessions, assigned during slot assignment
@@ -569,27 +559,10 @@ export interface components {
        */
       speakers?: components['schemas']['SessionSpeaker'][];
       /**
-       * @description Material submission workflow status
-       *     - NONE: No materials submitted yet (initial state)
-       *     - pending: Materials submitted, awaiting review
-       *     - in_review: Materials under review
-       *     - approved: Materials approved
-       *     - requires_changes: Materials need changes
-       *     - rejected: Materials rejected
-       *     - revision_submitted: Revised materials submitted
-       *     - COMPLETE: Materials finalized and approved (final state)
-       * @example pending
-       * @enum {string}
+       * @description Material submission workflow status. Free-form string (NOT a closed enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the review-workflow values below, so callers must tolerate unknown values. Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved, requires_changes, rejected, revision_submitted.
+       * @example COMPLETE
        */
-      materialsStatus?:
-        | 'NONE'
-        | 'pending'
-        | 'in_review'
-        | 'approved'
-        | 'requires_changes'
-        | 'rejected'
-        | 'revision_submitted'
-        | 'COMPLETE';
+      materialsStatus?: string;
     };
     /**
      * @description Story 1.15a.1b: Session speaker with enriched User data
@@ -663,10 +636,18 @@ export interface components {
       isConfirmed: boolean;
     };
     /**
-     * @description Story 1.15a.1b: Session response with embedded speakers
-     *     Same as Session schema but used specifically for API responses
+     * @description Story 1.15a.1b: Session response with embedded speakers + materials.
+     *     Session schema plus the service-enriched materials list/count (Story 5.9).
      */
-    SessionResponse: components['schemas']['Session'];
+    SessionResponse: components['schemas']['Session'] & {
+      /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
+      materials?: components['schemas']['SessionMaterialResponse'][];
+      /**
+       * @description Story 5.9: Number of uploaded materials (for overview displays)
+       * @example 3
+       */
+      materialsCount?: number;
+    };
     /**
      * @description Story 5.9: Session material (uploaded slide deck / document).
      *     Returned by GET /sessions/{sessionSlug}/materials and embedded in Session responses. Maps the SessionMaterial entity; createdAt/updatedAt are UTC.

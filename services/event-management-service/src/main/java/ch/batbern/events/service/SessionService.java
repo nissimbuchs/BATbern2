@@ -1,9 +1,9 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.mapper.SessionMapper;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
+import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +44,7 @@ public class SessionService {
         SessionResponse baseResponse = sessionMapper.toDto(session);
 
         // Build enriched response with speakers and materials
-        SessionResponse.SessionResponseBuilder builder = SessionResponse.builder()
+        SessionResponse.Builder builder = SessionResponse.builder()
                 .sessionSlug(baseResponse.getSessionSlug())
                 .eventCode(eventCode) // Override with provided eventCode
                 .title(baseResponse.getTitle())

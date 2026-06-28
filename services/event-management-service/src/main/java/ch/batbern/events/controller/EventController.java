@@ -658,7 +658,7 @@ public class EventController {
         return sessions.stream()
                 .map(session -> {
                     // Use SessionService.toSessionResponse() to get materials included
-                    ch.batbern.events.dto.SessionResponse sessionResponse =
+                    ch.batbern.events.sessions.dto.generated.SessionResponse sessionResponse =
                             sessionService.toSessionResponse(session, event.getEventCode());
 
                     // Convert SessionResponse to Map for backward compatibility

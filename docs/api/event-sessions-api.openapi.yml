@@ -1248,16 +1248,11 @@ components:
         sessionType:
           type: string
           nullable: true
-          description: Session type - null for placeholder sessions, assigned during agenda planning
-          enum:
-          - keynote
-          - presentation
-          - workshop
-          - panel_discussion
-          - networking
-          - break
-          - lunch
-          - moderation
+          description: 'Session type — null for placeholder sessions, assigned during agenda
+            planning. Free-form string (NOT a closed enum): the deployed contract returns
+            additional values such as `aperitif`, so callers must tolerate unknown types.
+            Known values: keynote, presentation, workshop, panel_discussion, networking,
+            break, lunch, moderation, aperitif.'
           example: keynote
         startTime:
           type: string
@@ -1298,35 +1293,13 @@ components:
             $ref: '#/components/schemas/SessionSpeaker'
         materialsStatus:
           type: string
-          description: 'Material submission workflow status
-
-            - NONE: No materials submitted yet (initial state)
-
-            - pending: Materials submitted, awaiting review
-
-            - in_review: Materials under review
-
-            - approved: Materials approved
-
-            - requires_changes: Materials need changes
-
-            - rejected: Materials rejected
-
-            - revision_submitted: Revised materials submitted
-
-            - COMPLETE: Materials finalized and approved (final state)
-
-            '
-          enum:
-          - NONE
-          - pending
-          - in_review
-          - approved
-          - requires_changes
-          - rejected
-          - revision_submitted
-          - COMPLETE
-          example: pending
+          description: 'Material submission workflow status. Free-form string (NOT a closed
+            enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and
+            `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the
+            review-workflow values below, so callers must tolerate unknown values.
+            Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved,
+            requires_changes, rejected, revision_submitted.'
+          example: COMPLETE
     SessionSpeaker:
       type: object
       description: 'Story 1.15a.1b: Session speaker with enriched User data
@@ -1421,13 +1394,24 @@ components:
           description: Whether speaker has confirmed participation
           example: true
     SessionResponse:
-      description: 'Story 1.15a.1b: Session response with embedded speakers
+      description: 'Story 1.15a.1b: Session response with embedded speakers + materials.
 
-        Same as Session schema but used specifically for API responses
+        Session schema plus the service-enriched materials list/count (Story 5.9).
 
         '
       allOf:
       - $ref: '#/components/schemas/Session'
+      - type: object
+        properties:
+          materials:
+            type: array
+            description: 'Story 5.9: Uploaded session materials (populated by the service layer)'
+            items:
+              $ref: '#/components/schemas/SessionMaterialResponse'
+          materialsCount:
+            type: integer
+            description: 'Story 5.9: Number of uploaded materials (for overview displays)'
+            example: 3
     SessionMaterialResponse:
       type: object
       description: 'Story 5.9: Session material (uploaded slide deck / document).

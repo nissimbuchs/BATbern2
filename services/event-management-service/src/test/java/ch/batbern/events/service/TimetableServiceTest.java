@@ -556,7 +556,8 @@ class TimetableServiceTest {
         when(sessionService.toSessionResponse(any(Session.class), any(String.class)))
                 .thenAnswer(inv -> {
                     Session s = inv.getArgument(0);
-                    ch.batbern.events.dto.SessionResponse r = new ch.batbern.events.dto.SessionResponse();
+                    ch.batbern.events.sessions.dto.generated.SessionResponse r =
+                            new ch.batbern.events.sessions.dto.generated.SessionResponse();
                     r.setSessionSlug(s.getSessionSlug());
                     return r;
                 });

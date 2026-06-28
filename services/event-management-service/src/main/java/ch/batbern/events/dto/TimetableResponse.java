@@ -1,5 +1,6 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import lombok.Builder;
 import lombok.Value;
 
