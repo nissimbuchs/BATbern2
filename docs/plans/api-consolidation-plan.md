@@ -133,6 +133,24 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > (mutations exercised, emails→/dev/mails); FE type-check + 283 FE tests (status/content/drawer). **EMS contract-first
 > +1.** Note: tests run against **local dev** (staging = old code); single-editor repo → no backward-compat shims (the
 > review-queue shape changed outright).
+>
+> ✅ **DONE (2026-06-28): `SessionSpeakerController` (5 ops) → `SessionSpeakersApi`** (commit `ef80da69`).
+> First clean per-controller wire **unblocked by the now-complete shared-DTO cluster** — it returns the
+> already-consolidated generated `SessionSpeaker`/`List<SessionSpeaker>`, no ad-hoc `Map`. **Re-tagged**
+> the 5 ops (listSessionSpeakers / assignSpeakerToSession / removeSpeakerFromSession / confirmSpeaker /
+> declineSpeaker) out of the broad `Sessions` tag into a new **Session Speakers** tag → 1:1 interface.
+> Class `@RequestMapping` `/api/v1/events/.../speakers`→`/api/v1`; methods renamed to operationIds; bare
+> override params (inherit `@Valid`/`@RequestBody`/`@PathVariable`/`@Pattern`); `@PreAuthorize('ORGANIZER')`
+> kept on mutations. **Consolidated 2 hand DTOs** (`AssignSpeakerRequest`, `SpeakerConfirmationRequest`) →
+> generated `AssignSpeakerToSessionRequest` + `DeclineSpeakerRequest`; deleted both. Conversions: generated
+> `SpeakerRoleEnum`→domain `SpeakerRole` via `valueOf(name())` (identical UPPER constants); declineSpeaker
+> body is `@Nullable required=false` → null-guard `getDeclineReason()`. **No FE change** — re-tag preserves
+> all paths/schemas (`generate:api-types` diff empty). eventCode/sessionSlug/username `@Pattern` now enforced
+> via method-validation (malformed eventCode → 400; consistent w/ prior EMS wirings). **Verified (local dev):**
+> `SessionSpeakerControllerIntegrationTest` 9/9; EMS restart + live gateway smoke (GET speakers 200 w/ full
+> `SessionSpeaker` shape, assign no-auth 401, bad-role 400, malformed-eventCode 400); **Bruno sessions-api
+> 20 req / 62 tests / 24 assertions PASS** incl. assign/confirm/decline/remove/duplicate/multiple live
+> mutations (no emails — controller triggers no comms); FE type-check clean. **EMS contract-first +1 (18 wired).**
 
 ## Shared-DTO consolidation (design + progress — 2026-06-28)
 
