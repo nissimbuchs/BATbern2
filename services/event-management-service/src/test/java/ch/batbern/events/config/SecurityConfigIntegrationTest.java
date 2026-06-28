@@ -96,8 +96,12 @@ class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
     void should_allowAnonymousAccess_when_viewingSpeakers() throws Exception {
         // When: GET session speakers without authentication
         // Then: Should not require authentication (404 is OK, means security passed)
-        mockMvc.perform(get("/api/v1/events/NON_EXISTENT_EVENT/sessions/NON_EXISTENT_SESSION/speakers"))
-                .andExpect(status().isNotFound()); // Event doesn't exist, but security passed
+        // Path params must satisfy the spec @Pattern now enforced via the wired
+        // SessionSpeakersApi interface (Phase 7): eventCode ^BATbern[0-9]+$,
+        // sessionSlug ^[a-z0-9]+(-[a-z0-9]+)*$. A non-conforming value would 400
+        // (validation) before reaching the handler, masking the security check.
+        mockMvc.perform(get("/api/v1/events/BATbern999/sessions/non-existent-session/speakers"))
+                .andExpect(status().isNotFound()); // Session doesn't exist, but security passed
     }
 
     @Test
