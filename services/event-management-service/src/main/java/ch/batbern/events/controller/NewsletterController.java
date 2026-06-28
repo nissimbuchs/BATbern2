@@ -2,15 +2,19 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
-import ch.batbern.events.dto.NewsletterPreviewResponse;
-import ch.batbern.events.dto.NewsletterSendRequest;
-import ch.batbern.events.dto.NewsletterSendResponse;
-import ch.batbern.events.dto.NewsletterSendStatusResponse;
-import ch.batbern.events.dto.NewsletterSubscribeRequest;
-import ch.batbern.events.dto.NewsletterSubscriptionStatusResponse;
-import ch.batbern.events.dto.NewsletterUnsubscribeRequest;
-import ch.batbern.events.dto.PatchMySubscriptionRequest;
-import ch.batbern.events.dto.SubscriberResponse;
+import ch.batbern.events.newsletter.api.generated.NewsletterApi;
+import ch.batbern.events.newsletter.dto.generated.ListNewsletterSubscribers200Response;
+import ch.batbern.events.newsletter.dto.generated.NewsletterPreviewResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSendRequest;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSendResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSendStatusResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSubscribeRequest;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterUnsubscribeRequest;
+import ch.batbern.events.newsletter.dto.generated.PatchNewsletterSubscriptionRequest;
+import ch.batbern.events.newsletter.dto.generated.SubscriberCountResponse;
+import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
+import ch.batbern.events.newsletter.dto.generated.VerifyUnsubscribeToken200Response;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.security.SecurityContextHelper;
@@ -22,52 +26,33 @@ import ch.batbern.shared.api.PaginationUtils;
 import ch.batbern.shared.api.SortCriteria;
 import ch.batbern.shared.api.SortDirection;
 import ch.batbern.shared.api.SortParser;
-import ch.batbern.shared.dto.PaginatedResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
- * Controller for Newsletter Subscription & Sending endpoints (Story 10.7).
+ * Controller for Newsletter Subscription &amp; Sending endpoints (Story 10.7).
+ * Implements the generated {@link NewsletterApi} contract (event-newsletter-api.openapi.yml),
+ * so verb/path/validation annotations are inherited from the interface (Phase 7 — ADR-006).
  *
- * <p>Public endpoints (no auth):
- * - POST /api/v1/newsletter/subscribe
- * - GET  /api/v1/newsletter/unsubscribe/verify?token=...
- * - POST /api/v1/newsletter/unsubscribe
- *
- * <p>Authenticated user endpoints:
- * - GET   /api/v1/newsletter/my-subscription
- * - PATCH /api/v1/newsletter/my-subscription
- *
- * <p>ORGANIZER-only endpoints:
- * - GET  /api/v1/newsletter/subscribers
- * - POST /api/v1/events/{eventCode}/newsletter/send
- * - POST /api/v1/events/{eventCode}/newsletter/preview
- * - GET  /api/v1/events/{eventCode}/newsletter/history
+ * <p>Public endpoints (no auth): subscribe, unsubscribe verify/confirm.
+ * Authenticated: my-subscription get/patch.
+ * ORGANIZER-only: subscriber management, preview, send, history.
  */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class NewsletterController {
+public class NewsletterController implements NewsletterApi {
 
     private final NewsletterSubscriberService subscriberService;
     private final NewsletterEmailService emailService;
@@ -77,41 +62,32 @@ public class NewsletterController {
 
     // ── Public endpoints ──────────────────────────────────────────────────────
 
-    /**
-     * AC2: Subscribe to the newsletter (no auth required).
-     * Returns 200 on success, 409 if already subscribed (handled by @ResponseStatus on exception).
-     */
-    @PostMapping("/newsletter/subscribe")
-    public ResponseEntity<Void> subscribe(@Valid @RequestBody NewsletterSubscribeRequest request) {
+    /** AC2: Subscribe to the newsletter (no auth). 200 on success, 409 if already subscribed. */
+    @Override
+    public ResponseEntity<Void> subscribeNewsletter(NewsletterSubscribeRequest request) {
         log.info("Newsletter subscribe request for email: {}", request.getEmail());
         subscriberService.subscribe(
                 request.getEmail(),
                 request.getFirstName(),
-                request.getLanguage(),
+                request.getLanguage() != null ? request.getLanguage().getValue() : null,
                 "explicit",
                 null
         );
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * AC3: Verify an unsubscribe token (no auth required).
-     * Returns 200 with {email} on valid token, 404 if not found or already unsubscribed.
-     */
-    @GetMapping("/newsletter/unsubscribe/verify")
-    public ResponseEntity<Map<String, String>> verifyUnsubscribe(@RequestParam String token) {
+    /** AC3: Verify an unsubscribe token (no auth). 200 with {email} on valid token, 404 otherwise. */
+    @Override
+    public ResponseEntity<VerifyUnsubscribeToken200Response> verifyUnsubscribeToken(String token) {
         log.debug("Newsletter unsubscribe verify for token: {}", token);
         Optional<String> email = subscriberService.verifyToken(token);
-        return email.map(e -> ResponseEntity.ok(Map.of("email", e)))
+        return email.map(e -> ResponseEntity.ok(new VerifyUnsubscribeToken200Response().email(e)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * AC3: Unsubscribe via token (no auth required).
-     * Returns 200 on success, 404 if token not found.
-     */
-    @PostMapping("/newsletter/unsubscribe")
-    public ResponseEntity<Void> unsubscribe(@Valid @RequestBody NewsletterUnsubscribeRequest request) {
+    /** AC3: Unsubscribe via token (no auth). 200 on success, 404 if token not found. */
+    @Override
+    public ResponseEntity<Void> unsubscribeNewsletter(NewsletterUnsubscribeRequest request) {
         log.info("Newsletter unsubscribe via token");
         try {
             subscriberService.unsubscribeByToken(request.getToken());
@@ -123,24 +99,20 @@ public class NewsletterController {
 
     // ── Authenticated user endpoints ──────────────────────────────────────────
 
-    /**
-     * AC7: Get authenticated user's subscription status.
-     */
-    @GetMapping("/newsletter/my-subscription")
+    /** AC7: Get authenticated user's subscription status. */
+    @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<NewsletterSubscriptionStatusResponse> getMySubscription() {
+    public ResponseEntity<NewsletterSubscriptionStatusResponse> getMyNewsletterSubscription() {
         String username = securityContextHelper.getCurrentUsername();
         String email = securityContextHelper.getCurrentUserEmail();
         return ResponseEntity.ok(subscriberService.getMySubscription(username, email));
     }
 
-    /**
-     * AC7: Update authenticated user's subscription status.
-     */
-    @PatchMapping("/newsletter/my-subscription")
+    /** AC7: Update authenticated user's subscription status. */
+    @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<NewsletterSubscriptionStatusResponse> patchMySubscription(
-            @Valid @RequestBody PatchMySubscriptionRequest request) {
+    public ResponseEntity<NewsletterSubscriptionStatusResponse> patchMyNewsletterSubscription(
+            PatchNewsletterSubscriptionRequest request) {
         String username = securityContextHelper.getCurrentUsername();
         String email = securityContextHelper.getCurrentUserEmail();
         boolean subscribed = Boolean.TRUE.equals(request.getSubscribed());
@@ -150,30 +122,25 @@ public class NewsletterController {
 
     // ── Organizer endpoints ───────────────────────────────────────────────────
 
-    /**
-     * AC10: Active subscriber count only (ORGANIZER only).
-     * Cheap COUNT query — used by the newsletter tab to display subscriber totals.
-     */
-    @GetMapping("/newsletter/subscribers/count")
+    /** AC10: Active subscriber count only (ORGANIZER). Cheap COUNT query for the newsletter tab. */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Map<String, Long>> getSubscriberCount() {
-        return ResponseEntity.ok(Map.of("totalActive", subscriberService.getActiveCount()));
+    public ResponseEntity<SubscriberCountResponse> getSubscriberCount() {
+        return ResponseEntity.ok(new SubscriberCountResponse().totalActive(subscriberService.getActiveCount()));
     }
 
-    /**
-     * Story 10.28: Paginated, searchable, sortable subscriber list (ORGANIZER only).
-     */
-    @GetMapping("/newsletter/subscribers")
+    /** Story 10.28: Paginated, searchable, sortable subscriber list (ORGANIZER). */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<PaginatedResponse<SubscriberResponse>> listSubscribers(
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer limit,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false, defaultValue = "all") String status,
-            @RequestParam(required = false, defaultValue = "-subscribedAt") String sort) {
+    public ResponseEntity<ListNewsletterSubscribers200Response> listNewsletterSubscribers(
+            Integer page,
+            Integer limit,
+            String search,
+            String status,
+            String sort) {
 
-        // ADR-013 §3: single `sort` vocabulary (replaces sortBy+sortDir). Default -subscribedAt = newest first.
-        // `status` (enum: all/active/unsubscribed) and `search` stay as typed params per the consolidation plan.
+        // ADR-013 §3: single `sort` vocabulary. Default -subscribedAt = newest first.
+        // `status` (all/active/unsubscribed) and `search` stay as typed params per the consolidation plan.
         List<SortCriteria> sortCriteria = SortParser.parse(sort);
         SortCriteria primary = sortCriteria.isEmpty()
                 ? new SortCriteria("subscribedAt", SortDirection.DESC) : sortCriteria.get(0);
@@ -186,81 +153,70 @@ public class NewsletterController {
                 .stream().map(subscriberService::toResponse).toList();
         long total = subscriberService.countSubscribers(search, status);
         PaginationMetadata meta = PaginationUtils.generateMetadata(params, total);
-        return ResponseEntity.ok(new PaginatedResponse<>(data, meta));
+        return ResponseEntity.ok(new ListNewsletterSubscribers200Response().data(data).pagination(meta));
     }
 
-    /**
-     * Story 10.28: Unsubscribe a subscriber by ID (ORGANIZER only).
-     */
-    @PostMapping("/newsletter/subscribers/{id}/unsubscribe")
+    /** Story 10.28: Unsubscribe a subscriber by ID (ORGANIZER). */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SubscriberResponse> unsubscribeSubscriber(@PathVariable UUID id) {
+    public ResponseEntity<SubscriberResponse> unsubscribeSubscriberById(UUID id) {
         return ResponseEntity.ok(subscriberService.toResponse(subscriberService.unsubscribeById(id)));
     }
 
-    /**
-     * Story 10.28: Re-subscribe a subscriber by ID (ORGANIZER only).
-     */
-    @PostMapping("/newsletter/subscribers/{id}/resubscribe")
+    /** Story 10.28: Re-subscribe a subscriber by ID (ORGANIZER). */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SubscriberResponse> resubscribeSubscriber(@PathVariable UUID id) {
+    public ResponseEntity<SubscriberResponse> resubscribeSubscriberById(UUID id) {
         return ResponseEntity.ok(subscriberService.toResponse(subscriberService.resubscribeById(id)));
     }
 
     /**
-     * Story 10.29 AC8: Unsuppress a subscriber by ID (ORGANIZER only).
-     * Clears suppressed_at, resets bounce_count to 0, clears bounce_type.
-     * Returns 404 if not found, 409 if not suppressed.
+     * Story 10.29 AC8: Unsuppress a subscriber by ID (ORGANIZER).
+     * Clears suppressed_at, resets bounce_count, clears bounce_type. 404 if not found, 409 if not suppressed.
      */
-    @PostMapping("/newsletter/subscribers/{id}/unsuppress")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SubscriberResponse> unsuppressSubscriber(@PathVariable UUID id) {
+    public ResponseEntity<SubscriberResponse> unsuppressSubscriberById(UUID id) {
         return ResponseEntity.ok(subscriberService.toResponse(subscriberService.unsuppressById(id)));
     }
 
-    /**
-     * Story 10.28: Delete a subscriber by ID (ORGANIZER only).
-     */
-    @DeleteMapping("/newsletter/subscribers/{id}")
+    /** Story 10.28: Delete a subscriber by ID (ORGANIZER). */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Void> deleteSubscriber(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteSubscriberById(UUID id) {
         subscriberService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * AC10: Preview newsletter for an event (ORGANIZER only, no sending).
-     */
-    @PostMapping("/events/{eventCode}/newsletter/preview")
+    /** AC10: Preview newsletter for an event (ORGANIZER, no sending). */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<NewsletterPreviewResponse> previewNewsletter(
-            @PathVariable String eventCode,
-            @Valid @RequestBody NewsletterSendRequest request) {
+    public ResponseEntity<NewsletterPreviewResponse> previewEventNewsletter(
+            String eventCode,
+            NewsletterSendRequest request) {
         Event event = findEventOrThrow(eventCode);
         NewsletterPreviewResponse preview = emailService.preview(
                 event,
                 Boolean.TRUE.equals(request.getIsReminder()),
-                request.getLocale(),
+                localeOf(request),
                 request.getTemplateKey(),
                 Boolean.TRUE.equals(request.getTestMode())
         );
         return ResponseEntity.ok(preview);
     }
 
-    /**
-     * AC10: Send newsletter for an event (ORGANIZER only).
-     */
-    @PostMapping("/events/{eventCode}/newsletter/send")
+    /** AC10: Send newsletter for an event (ORGANIZER). */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<NewsletterSendResponse> sendNewsletter(
-            @PathVariable String eventCode,
-            @Valid @RequestBody NewsletterSendRequest request) {
+    public ResponseEntity<NewsletterSendResponse> sendEventNewsletter(
+            String eventCode,
+            NewsletterSendRequest request) {
         Event event = findEventOrThrow(eventCode);
         String sentByUsername = securityContextHelper.getCurrentUsername();
         NewsletterSendResponse response = emailService.sendNewsletter(
                 event,
                 Boolean.TRUE.equals(request.getIsReminder()),
-                request.getLocale(),
+                localeOf(request),
                 sentByUsername,
                 request.getTemplateKey(),
                 request.getMaxRecipients(),
@@ -269,12 +225,10 @@ public class NewsletterController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * AC9: Get send history for an event (ORGANIZER only).
-     */
-    @GetMapping("/events/{eventCode}/newsletter/history")
+    /** AC9: Get send history for an event (ORGANIZER). */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<NewsletterSendResponse>> getHistory(@PathVariable String eventCode) {
+    public ResponseEntity<List<NewsletterSendResponse>> getNewsletterHistory(String eventCode) {
         Event event = findEventOrThrow(eventCode);
         List<NewsletterSend> sends = sendRepository.findByEventIdOrderBySentAtDesc(event.getId());
         List<NewsletterSendResponse> responses = sends.stream()
@@ -284,14 +238,13 @@ public class NewsletterController {
     }
 
     /**
-     * Poll send-job progress (ORGANIZER only).
-     * Frontend calls this every 3 seconds while status is PENDING or IN_PROGRESS.
+     * Poll send-job progress (ORGANIZER). Frontend calls this every 3s while PENDING or IN_PROGRESS.
      */
-    @GetMapping("/events/{eventCode}/newsletter/sends/{sendId}/status")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<NewsletterSendStatusResponse> getSendStatus(
-            @PathVariable String eventCode,
-            @PathVariable UUID sendId) {
+    public ResponseEntity<NewsletterSendStatusResponse> getNewsletterSendStatus(
+            String eventCode,
+            UUID sendId) {
         Event event = findEventOrThrow(eventCode);
         NewsletterSend send = sendRepository.findByIdAndEventId(sendId, event.getId())
                 .orElseThrow(() -> new NoSuchElementException(
@@ -299,14 +252,12 @@ public class NewsletterController {
         return ResponseEntity.ok(emailService.toStatusResponse(send));
     }
 
-    /**
-     * Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER only).
-     */
-    @PostMapping("/events/{eventCode}/newsletter/sends/{sendId}/retry")
+    /** Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER). */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<NewsletterSendResponse> retryFailedRecipients(
-            @PathVariable String eventCode,
-            @PathVariable UUID sendId) {
+    public ResponseEntity<NewsletterSendResponse> retryNewsletterSend(
+            String eventCode,
+            UUID sendId) {
         Event event = findEventOrThrow(eventCode);
         NewsletterSend send = sendRepository.findByIdAndEventId(sendId, event.getId())
                 .orElseThrow(() -> new NoSuchElementException(
@@ -325,5 +276,10 @@ public class NewsletterController {
     private Event findEventOrThrow(String eventCode) {
         return eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+    }
+
+    /** Generated locale is the de/en LocaleEnum; the email service operates on the wire string. */
+    private static String localeOf(NewsletterSendRequest request) {
+        return request.getLocale() != null ? request.getLocale().getValue() : null;
     }
 }

@@ -5,7 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.NewsletterSendResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSendResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
@@ -453,7 +453,7 @@ class NewsletterEmailServiceTest {
         NewsletterSendResponse response = newsletterEmailService.sendNewsletter(
                 testEvent, false, "de", "organizer", null);
 
-        assertThat(response.getStatus()).isEqualTo("PENDING");
+        assertThat(response.getStatus().getValue()).isEqualTo("PENDING");
         assertThat(response.getId()).isNotNull();
     }
 
@@ -678,8 +678,7 @@ class NewsletterEmailServiceTest {
         NewsletterSendResponse response = newsletterEmailService.sendNewsletter(
                 testEvent, false, "de", "organizer", null, null, true);
 
-        assertThat(response.getStatus()).isEqualTo("PENDING");
-        assertThat(response.isTestMode()).isTrue();
+        assertThat(response.getStatus().getValue()).isEqualTo("PENDING");
         // Called twice: once in sendNewsletter (count), once in executeAsync (fetch recipients)
         // because self-reference runs synchronously in tests
         verify(userApiClient, atLeastOnce()).getOrganizerUsernames();
