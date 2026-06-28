@@ -178,6 +178,130 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/speakers/{speakerId}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update speaker status (Story 5.4 / 11.B.3 8-state model)
+     * @description Update the workflow status of a speaker. Per ADR-009 §0.7 the legal transitions are IDENTIFIED→CONTACTED/DECLINED, CONTACTED→DECLINED (READY needs POST /promote), INVITED→ACCEPTED/DECLINED, ACCEPTED→CONTENT_SUBMITTED/DECLINED, CONTENT_SUBMITTED→QUALITY_REVIEWED/DECLINED, QUALITY_REVIEWED→DECLINED; DECLINED is terminal. newStatus=READY → 400 READY_REQUIRES_PROMOTE_ENDPOINT; a removed legacy value → 400 INVALID_SPEAKER_WORKFLOW_STATE.
+     */
+    put: operations['updateSpeakerStatus'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/{speakerId}/status/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get speaker status history (Story 5.4 AC3-4, AC15)
+     * @description Retrieve the complete status-change + content-review timeline for a speaker.
+     */
+    get: operations['getSpeakerStatusHistory'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/status-summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get status dashboard summary (Story 5.4 AC5-6, AC13)
+     * @description Aggregated speaker status counts, acceptance rate, slot thresholds + overflow.
+     */
+    get: operations['getStatusSummary'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/{speakerId}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get speaker content (Story 5.5 AC34)
+     * @description Retrieve existing presentation content + material info for a speaker.
+     */
+    get: operations['getSpeakerContent'];
+    put?: never;
+    /**
+     * Submit speaker content on behalf (Story 5.5 AC6-10, Story 11.C.2)
+     * @description Organizer-on-behalf content submission. Creates/updates the session and transitions the speaker to CONTENT_SUBMITTED via the consolidated ContentSubmissionService. Unknown body fields are rejected (400).
+     */
+    post: operations['submitSpeakerContent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/review-queue': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get quality-review queue (Story 5.5 AC11)
+     * @description Speakers with CONTENT_SUBMITTED status, oldest submission first. Returns the same SpeakerPoolResponse shape as GET /speakers/pool (API-consolidation Phase 7: replaced the prior raw-entity return).
+     */
+    get: operations['getReviewQueue'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/{speakerId}/review': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve or reject speaker content (Story 5.5 AC13-14, AC17)
+     * @description APPROVE → status QUALITY_REVIEWED. REJECT → requires feedback, notifies the speaker with a link to the Cognito-secured portal for revisions. Content rejection is NOT a state transition (ADR-009).
+     */
+    post: operations['reviewSpeakerContent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/speakers/invite': {
     parameters: {
       query?: never;
@@ -495,6 +619,178 @@ export interface components {
        * @example Smith
        */
       lastName: string;
+    };
+    /**
+     * @description The 8 ADR-009 §0.1 speaker workflow states, serialized as the UPPER_CASE enum name (the legacy SLOT_ASSIGNED/CONFIRMED/WITHDREW/OVERFLOW were removed per §0.7).
+     * @example IDENTIFIED
+     * @enum {string}
+     */
+    SpeakerWorkflowState:
+      | 'IDENTIFIED'
+      | 'CONTACTED'
+      | 'READY'
+      | 'INVITED'
+      | 'ACCEPTED'
+      | 'CONTENT_SUBMITTED'
+      | 'QUALITY_REVIEWED'
+      | 'DECLINED';
+    /** @description Request to update speaker status (Story 5.4 AC1-4). */
+    UpdateStatusRequest: {
+      newStatus: components['schemas']['SpeakerWorkflowState'];
+      /**
+       * @description Optional reason for the status change (max 2000 chars).
+       * @example Speaker confirmed availability via email
+       */
+      reason?: string;
+    };
+    /** @description Response after a speaker status update (Story 5.4). */
+    SpeakerStatusResponse: {
+      /**
+       * Format: uuid
+       * @description Speaker pool ID
+       */
+      speakerId?: string;
+      /**
+       * @description Event code (ADR-003)
+       * @example BATbern56
+       */
+      eventCode?: string;
+      currentStatus?: components['schemas']['SpeakerWorkflowState'];
+      previousStatus?: components['schemas']['SpeakerWorkflowState'];
+      /**
+       * @description Organizer who made the change
+       * @example john.doe
+       */
+      changedByUsername?: string;
+      /** @description Reason for the change */
+      changeReason?: string;
+      /**
+       * Format: date-time
+       * @description When the change occurred
+       */
+      changedAt?: string;
+      /** @description Derived (ADR-009 §0.1): true when the speaker has a sessionId assigned. */
+      isSlotAssigned?: boolean;
+      /** @description Derived: currentStatus == QUALITY_REVIEWED AND isSlotAssigned. */
+      isPublishable?: boolean;
+    };
+    /** @description Single timeline entry — a workflow state change (speaker_status_history) or a synthesised content-rejection event (session_content_history with reviewer feedback). */
+    StatusHistoryItem: {
+      /**
+       * Format: uuid
+       * @description History record ID
+       */
+      id?: string;
+      /**
+       * @description STATUS_CHANGE = speaker_status_history row; CONTENT_REJECTED = a content-rejection event (not a state transition, surfaced for the History tab).
+       * @default STATUS_CHANGE
+       * @enum {string}
+       */
+      kind: 'STATUS_CHANGE' | 'CONTENT_REJECTED';
+      previousStatus?: components['schemas']['SpeakerWorkflowState'];
+      newStatus?: components['schemas']['SpeakerWorkflowState'];
+      /** @example john.doe */
+      changedByUsername?: string;
+      changeReason?: string;
+      /** Format: date-time */
+      changedAt?: string;
+    };
+    /** @description Status dashboard summary (Story 5.4 AC5-6, AC13). */
+    StatusSummaryResponse: {
+      /** @example BATbern56 */
+      eventCode?: string;
+      /**
+       * @description Count of speakers per workflow state (keys are SpeakerWorkflowState names).
+       * @example {
+       *       "IDENTIFIED": 3,
+       *       "CONTACTED": 5,
+       *       "ACCEPTED": 6
+       *     }
+       */
+      statusCounts?: {
+        [key: string]: number;
+      };
+      /** Format: int64 */
+      totalSpeakers?: number;
+      /** Format: int64 */
+      acceptedCount?: number;
+      /** Format: int64 */
+      declinedCount?: number;
+      /** Format: int64 */
+      pendingCount?: number;
+      /** Format: double */
+      acceptanceRate?: number;
+      minSlotsRequired?: number;
+      maxSlotsAllowed?: number;
+      thresholdMet?: boolean;
+      overflowDetected?: boolean;
+    };
+    /** @description Organizer-on-behalf content submission (Story 5.5 / 11.C.2). Unknown body fields are rejected (400). */
+    SubmitContentRequest: {
+      /**
+       * @description Presentation title (becomes session.title).
+       * @example Zero Trust Security in Enterprise Environments
+       */
+      presentationTitle: string;
+      /**
+       * @description Presentation abstract (becomes session.description).
+       * @example A field report on implementing Zero Trust in large enterprises.
+       */
+      presentationAbstract: string;
+      /** @description Optional speaker bio, patched onto the User profile. */
+      bio?: string;
+      /**
+       * @description Optional speaker portrait URL, patched onto the User profile.
+       * @example https://cdn.batbern.ch/users/jane.smith.jpg
+       */
+      profilePictureUrl?: string;
+      /**
+       * @description Optional upload ID from a presigned-URL upload, linked to the session.
+       * @example upload-abc-123
+       */
+      presentationUploadId?: string;
+    };
+    /** @description Response for speaker content get/submit operations (Story 5.5). */
+    SpeakerContentResponse: {
+      /** Format: uuid */
+      speakerPoolId?: string;
+      /** Format: uuid */
+      eventId?: string;
+      /** Format: uuid */
+      sessionId?: string;
+      presentationTitle?: string;
+      presentationAbstract?: string;
+      /** @example john.doe */
+      username?: string;
+      /** @example John Doe */
+      speakerName?: string;
+      company?: string;
+      status?: components['schemas']['SpeakerWorkflowState'];
+      /** @description False if the session was deleted (AC34). */
+      hasContent?: boolean;
+      /** @description Warning message if issues detected (AC34). */
+      warning?: string;
+      /** Format: date-time */
+      submittedAt?: string;
+      hasMaterial?: boolean;
+      /**
+       * @description Material download URL (CloudFront CDN).
+       * @example https://cdn.batbern.ch/materials/presentation.pdf
+       */
+      materialUrl?: string;
+      /** @example zero-trust-presentation.pdf */
+      materialFileName?: string;
+    };
+    /**
+     * @description Quality-review action: APPROVE → QUALITY_REVIEWED; REJECT → requires feedback.
+     * @enum {string}
+     */
+    ReviewAction: 'APPROVE' | 'REJECT';
+    /** @description Request for a quality-review action (Story 5.5 AC13-14). */
+    ReviewRequest: {
+      action: components['schemas']['ReviewAction'];
+      /** @description Feedback for rejection (required when action is REJECT). */
+      feedback?: string;
     };
     /**
      * @description Response representing a speaker pool entry.
@@ -1447,6 +1743,360 @@ export interface operations {
         };
       };
       500: components['responses']['InternalServerError'];
+    };
+  };
+  updateSpeakerStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateStatusRequest'];
+      };
+    };
+    responses: {
+      /** @description Status updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerStatusResponse'];
+        };
+      };
+      /** @description Invalid status (removed legacy value or READY) or reason too long */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description No authentication token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Illegal state-machine transition or workflow validation failure */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getSpeakerStatusHistory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Status history retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StatusHistoryItem'][];
+        };
+      };
+      /** @description No authentication token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getStatusSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Status summary retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StatusSummaryResponse'];
+        };
+      };
+      /** @description No authentication token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getSpeakerContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker content retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerContentResponse'];
+        };
+      };
+      /** @description No authentication token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  submitSpeakerContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubmitContentRequest'];
+      };
+    };
+    responses: {
+      /** @description Content submitted successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContentSubmitResponse'];
+        };
+      };
+      /** @description Validation error (e.g. unknown field, title/abstract too long) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description No authentication token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Invalid state — speaker must be in ACCEPTED */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getReviewQueue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Review queue retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerPoolResponse'][];
+        };
+      };
+      /** @description No authentication token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  reviewSpeakerContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReviewRequest'];
+      };
+    };
+    responses: {
+      /** @description Review action completed successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error (e.g. feedback required for rejection) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description No authentication token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Invalid state — speaker must be in CONTENT_SUBMITTED */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   inviteSpeaker: {

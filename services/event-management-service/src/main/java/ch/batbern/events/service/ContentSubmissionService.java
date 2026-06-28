@@ -9,7 +9,7 @@ import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
 import ch.batbern.events.dto.SpeakerContentInfo;
-import ch.batbern.events.dto.SpeakerContentResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerContentResponse;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
 import ch.batbern.events.repository.EventRepository;
@@ -28,6 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -542,7 +544,7 @@ public class ContentSubmissionService {
                 .company(speaker.getCompany())
                 .status(speaker.getStatus())
                 .hasContent(true)
-                .submittedAt(session.getCreatedAt())
+                .submittedAt(toOffset(session.getCreatedAt()))
                 .hasMaterial(hasMaterial)
                 .materialUrl(materialUrl)
                 .materialFileName(materialFileName)
@@ -558,5 +560,9 @@ public class ContentSubmissionService {
             return null;
         }
         return value.length() > maxLength ? value.substring(0, maxLength) : value;
+    }
+
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 }

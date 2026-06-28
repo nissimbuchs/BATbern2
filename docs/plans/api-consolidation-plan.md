@@ -108,6 +108,31 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > lands on the generated class). **Verified:** compile; SelfNominationIntegrationTest 13/13 (incl. unknown-field→400,
 > wrong-role→403, not-found→404, happy-path create); EMS restart + safe-path live smokes (401/403); FE type-check +
 > SpeakerSelfNominatePanel 7/7; Bruno speaker-pool-api 34/34 (regression). Hand DTO deleted.
+>
+> ✅ **DONE (2026-06-28): `SpeakerStatusController` (8 ops) → `SpeakerStatusApi`** — the big one; retires the
+> last speaker grab-bag. **Only `promoteSpeakerToReady` was documented**; the other 7 ops were undocumented, so
+> **authored 7 ops + 9 schemas in event-speakers** by porting the proven, FE-validated definitions from the dormant
+> `speakers-api` spec (ADR-014 copy pattern) under a 1:1 **Speaker Status** tag (re-tagged promote into it). Ops:
+> updateSpeakerStatus, getSpeakerStatusHistory, getStatusSummary, getSpeakerContent, submitSpeakerContent,
+> getReviewQueue, reviewSpeakerContent. **🎯 review-queue cleaned up (owner-approved Option A):** it returned the RAW
+> SpeakerPool JPA entity (ADR-violating leak); now maps entity→`SpeakerPoolResponse` via `SpeakerPoolMapper` (same
+> shape as GET /pool) — safe because the FE is cache-only on it and only id+status were asserted. **🔑 Mapped the spec
+> `SpeakerWorkflowState` → `ch.batbern.shared.types.SpeakerWorkflowState`** via the generator import/schemaMappings, so
+> the generated DTOs use the DOMAIN enum directly (zero status conversion in the services). **Consolidated 8 hand DTOs**
+> (SpeakerStatusResponse, StatusHistoryItem, StatusSummaryResponse, SpeakerContentResponse, UpdateStatusRequest,
+> SubmitContentRequest, ReviewRequest, PromoteSpeakerRequest) → generated, threaded through SpeakerStatusService +
+> ContentSubmissionService + the controller; deleted the 8 hand DTOs. submitContent keeps returning the
+> already-generated `ContentSubmitResponse` (deployed reality; the dormant spec's SpeakerContentResponse there was
+> stale). SubmitContentRequest got the same `x-class-extra-annotation` unknown-field guard. Conversions:
+> `Instant`→`OffsetDateTime` (changedAt/submittedAt), `StatusHistoryItem.Kind`→`KindEnum`,
+> `ReviewRequest.ReviewAction`→top-level `ReviewAction`, statusCounts `Map<enum,Long>`→`Map<String,Long>` (keys = enum
+> name). Controller: `implements SpeakerStatusApi`, class `@RequestMapping /api/v1`, bare override params, methods
+> renamed to operationIds, `@PreAuthorize` + cache-evict kept. **Verified:** compile; SpeakerStatusServiceTest +
+> SpeakerStatusControllerIntegrationTest (24) + QualityReviewServiceIntegrationTest (42 green); EMS restart + live read
+> smokes (status-summary 11 fields, review-queue=SpeakerPoolResponse 34-field shape); full Bruno **dev** 14/14
+> (mutations exercised, emails→/dev/mails); FE type-check + 283 FE tests (status/content/drawer). **EMS contract-first
+> +1.** Note: tests run against **local dev** (staging = old code); single-editor repo → no backward-compat shims (the
+> review-queue shape changed outright).
 
 ## Shared-DTO consolidation (design + progress — 2026-06-28)
 

@@ -6,10 +6,10 @@ import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.dto.SpeakerStatusResponse;
-import ch.batbern.events.dto.StatusHistoryItem;
-import ch.batbern.events.dto.StatusSummaryResponse;
-import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.speakers.dto.generated.SpeakerStatusResponse;
+import ch.batbern.events.speakers.dto.generated.StatusHistoryItem;
+import ch.batbern.events.speakers.dto.generated.StatusSummaryResponse;
+import ch.batbern.events.speakers.dto.generated.UpdateStatusRequest;
 import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.repository.EventRepository;
@@ -29,6 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 import static ch.batbern.events.config.CacheConfig.STATUS_HISTORY_CACHE;
 import static ch.batbern.events.config.CacheConfig.STATUS_SUMMARY_CACHE;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -211,9 +214,14 @@ public class SpeakerStatusService {
         boolean thresholdMet = acceptedCount >= minSlots;
         boolean overflowDetected = acceptedCount > maxSlots;
 
+        // Generated DTO keys statusCounts by String (the enum name) — convert from the
+        // domain-enum-keyed map. Wire is identical ({"IDENTIFIED": 3, ...}).
+        Map<String, Long> statusCountsByName = statusCounts.entrySet().stream()
+            .collect(Collectors.toMap(e -> e.getKey().name(), Map.Entry::getValue));
+
         StatusSummaryResponse response = new StatusSummaryResponse();
         response.setEventCode(eventCode);
-        response.setStatusCounts(statusCounts);
+        response.setStatusCounts(statusCountsByName);
         response.setTotalSpeakers(totalSpeakers);
         response.setAcceptedCount(acceptedCount);
         response.setDeclinedCount(declinedCount);
@@ -248,7 +256,7 @@ public class SpeakerStatusService {
         response.setPreviousStatus(history.getPreviousStatus());
         response.setChangedByUsername(history.getChangedByUsername());
         response.setChangeReason(history.getChangeReason());
-        response.setChangedAt(history.getChangedAt());
+        response.setChangedAt(toOffset(history.getChangedAt()));
         boolean slotAssigned = speakerPool.getSessionId() != null;
         response.setIsSlotAssigned(slotAssigned);
         response.setIsPublishable(speakerPool.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED && slotAssigned);
@@ -261,12 +269,12 @@ public class SpeakerStatusService {
     private StatusHistoryItem mapToHistoryItem(SpeakerStatusHistory history) {
         StatusHistoryItem item = new StatusHistoryItem();
         item.setId(history.getId());
-        item.setKind(StatusHistoryItem.Kind.STATUS_CHANGE);
+        item.setKind(StatusHistoryItem.KindEnum.STATUS_CHANGE);
         item.setPreviousStatus(history.getPreviousStatus());
         item.setNewStatus(history.getNewStatus());
         item.setChangedByUsername(history.getChangedByUsername());
         item.setChangeReason(history.getChangeReason());
-        item.setChangedAt(history.getChangedAt());
+        item.setChangedAt(toOffset(history.getChangedAt()));
         return item;
     }
 
@@ -279,10 +287,14 @@ public class SpeakerStatusService {
     private StatusHistoryItem mapContentRejectionToHistoryItem(SessionContentVersion version) {
         StatusHistoryItem item = new StatusHistoryItem();
         item.setId(version.getId());
-        item.setKind(StatusHistoryItem.Kind.CONTENT_REJECTED);
+        item.setKind(StatusHistoryItem.KindEnum.CONTENT_REJECTED);
         item.setChangedByUsername(version.getReviewedBy());
         item.setChangeReason(version.getReviewerFeedback());
-        item.setChangedAt(version.getReviewedAt());
+        item.setChangedAt(toOffset(version.getReviewedAt()));
         return item;
+    }
+
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 }
