@@ -4,7 +4,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.dto.RegistrantNoticePreviewRequest;
 import ch.batbern.events.dto.RegistrantNoticePreviewResponse;
 import ch.batbern.events.dto.RegistrantNoticeSendRequest;
-import ch.batbern.events.dto.SlidesOnlineSendResponse;
+import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SlidesOnlineEmailService;

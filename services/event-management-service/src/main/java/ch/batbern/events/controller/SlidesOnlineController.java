@@ -1,7 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.SlidesOnlineSendResponse;
+import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SlidesOnlineEmailService;

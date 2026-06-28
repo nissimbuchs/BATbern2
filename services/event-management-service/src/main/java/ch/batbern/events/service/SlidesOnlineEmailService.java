@@ -7,7 +7,7 @@ import ch.batbern.events.domain.NewsletterRecipientId;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.RegistrantNoticePreviewResponse;
-import ch.batbern.events.dto.SlidesOnlineSendResponse;
+import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
@@ -186,7 +186,7 @@ public class SlidesOnlineEmailService {
 
         return SlidesOnlineSendResponse.builder()
                 .sendId(saved.getId())
-                .status(STATUS_PENDING)
+                .status(SlidesOnlineSendResponse.StatusEnum.PENDING)
                 .recipientCount(registrants.size())
                 .build();
     }
