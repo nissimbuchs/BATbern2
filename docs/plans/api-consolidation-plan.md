@@ -151,6 +151,27 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > `SessionSpeaker` shape, assign no-auth 401, bad-role 400, malformed-eventCode 400); **Bruno sessions-api
 > 20 req / 62 tests / 24 assertions PASS** incl. assign/confirm/decline/remove/duplicate/multiple live
 > mutations (no emails — controller triggers no comms); FE type-check clean. **EMS contract-first +1 (18 wired).**
+>
+> ✅ **DONE (2026-06-28): `SessionMaterialsController` (5 ops) → `SessionMaterialsApi`** (commit `10ae292a`).
+> Heaviest category so far — the 5 material ops were **entirely undocumented** AND returned ad-hoc `Map`s.
+> **Authored 5 ops + 4 schemas** in event-sessions under a new **Session Materials** tag (associateMaterials,
+> getSessionMaterials, deleteSessionMaterial, getMaterialDownloadUrl, uploadMaterialFromUrl; schemas
+> MaterialUploadItem, SessionMaterialAssociationRequest, SessionMaterialsResponse, MaterialDownloadUrlResponse,
+> UploadMaterialFromUrlRequest). **Path params kept permissive** (eventCode decorative → NO `@Pattern`; the
+> controller looks up by sessionSlug only; materialId uuid) — deliberately avoids the cross-controller
+> `@Pattern` fixture trap (the test uses non-conforming `bat-bern-2026-spring`). **Typed the 3 ad-hoc shapes:**
+> `Map<String,Object>{"materials":[]}` → `SessionMaterialsResponse`, `Map<String,String>{"downloadUrl"}` →
+> `MaterialDownloadUrlResponse`, `Map<String,String>` request → `UploadMaterialFromUrlRequest` (controller keeps
+> its defensive blank-url/filename→400 guard + DOCUMENT default). **Consolidated 2 hand DTOs**
+> (SessionMaterialAssociationRequest, MaterialUploadItem) → generated twins through `SessionMaterialsService`
+> (identical getters, `fileSize` Long) + both tests (import swap only — generated `builder()` API matches Lombok);
+> deleted the hand DTOs. **🐛 Spec-truth fix surfaced by the live smoke:** `getSessionMaterials` (list) actually
+> **requires auth** (SecurityConfig permits anonymous only on `.../materials/{id}/download`) → marked it
+> `bearerAuth`, kept download public. **Verified (local dev):** full EMS suite **1750/0/0** (confirms the permissive
+> params caused zero cross-controller breakage); SessionMaterials controller+service+**schema-validation 33/33**;
+> EMS restart + live gateway smoke (list authed 200 typed wrapper / anon 401, associate anon 401 + empty-list 400
+> via `@Size`, download bogus-uuid 404, upload anon 401); Bruno sessions-api 20/20 (0 skipped); FE regen + type-check
+> clean. **EMS contract-first +1 (19 wired).**
 
 ## Shared-DTO consolidation (design + progress — 2026-06-28)
 
