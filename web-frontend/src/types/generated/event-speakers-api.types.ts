@@ -844,22 +844,19 @@ export interface components {
        */
       speakerName: string;
       /**
-       * @description Current workflow status
-       * @example identified
+       * @description Current workflow status — the 8 ADR-009 §0.1 states, serialized as the UPPER_CASE SpeakerWorkflowState enum name.
+       * @example IDENTIFIED
        * @enum {string}
        */
       status:
-        | 'identified'
-        | 'contacted'
-        | 'ready'
-        | 'accepted'
-        | 'declined'
-        | 'content_submitted'
-        | 'quality_reviewed'
-        | 'slot_assigned'
-        | 'confirmed'
-        | 'withdrew'
-        | 'overflow';
+        | 'IDENTIFIED'
+        | 'CONTACTED'
+        | 'READY'
+        | 'INVITED'
+        | 'ACCEPTED'
+        | 'CONTENT_SUBMITTED'
+        | 'QUALITY_REVIEWED'
+        | 'DECLINED';
       /**
        * @description True if newly created, false if existing (idempotent return)
        * @example true
@@ -951,11 +948,10 @@ export interface components {
        */
       contentDeadline?: string | null;
       /**
-       * @description Preferred language for the email (defaults to 'de')
+       * @description Preferred language for the email (defaults to 'de'). Email templates exist for de + en; any other value falls back to English at render time (free string, not enum-constrained, to preserve the deployed pass-through behaviour).
        * @example de
-       * @enum {string|null}
        */
-      locale?: 'de' | 'en' | null;
+      locale?: string | null;
       /**
        * Format: email
        * @description Override email address (for speakers without email in database)
@@ -986,11 +982,11 @@ export interface components {
        */
       email?: string;
       /**
-       * @description Updated status (always INVITED after sending)
-       * @example invited
+       * @description Updated status — always INVITED after sending (UPPER_CASE SpeakerWorkflowState enum name).
+       * @example INVITED
        * @enum {string}
        */
-      status: 'invited';
+      status: 'INVITED';
       /**
        * Format: date-time
        * @description When the invitation was sent

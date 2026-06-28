@@ -75,14 +75,25 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > times). **Action:** run `git push origin api-consolidation-phase7` from a normal interactive terminal (not the
 > agent's background runner) — it will complete uninterrupted. Do NOT `--no-verify`. The gate genuinely passes.
 >
-> ▶ **NEXT-CLEAN wire (analyzed, ready):** `SpeakerInvitationController` → `SpeakerInvitationApi` (event-speakers,
-> 3 ops inviteSpeaker/inviteSpeakerBatch/sendSpeakerInvitation; tag already 1:1, NO re-tag). Consolidation: 6 local
+> ✅ **DONE (2026-06-28): `SpeakerInvitationController` → `SpeakerInvitationApi`** (event-speakers, 3 ops
+> inviteSpeaker/inviteSpeakerBatch/sendSpeakerInvitation; tag was already 1:1, NO re-tag). Consolidated 6 hand
 > DTOs (InviteSpeaker{Request,Response}, BatchInvite{Request,Response}+BatchInviteResponseErrorsInner,
-> SendInvitation{Request,Response}) → generated speakers.dto.generated twins through `SpeakerInvitationService`.
-> Type conversions: status String→StatusEnum, Instant→OffsetDateTime (invitedAt), LocalDate (responseDeadline)
-> stays, nested results/errors lists. record accessors (`response.created()`/`failedCount()`) → getters. ALL 3 ops
-> are email-SENDS → verify via `SpeakerInvitationControllerIntegrationTest` only (mocked mail); do NOT live-smoke
-> a send (staging=prod). RegistrantNotice is NOT clean (returns the shared `SlidesOnlineSendResponse`).
+> SendInvitation{Request,Response}) → generated `speakers.dto.generated` twins threaded through
+> `SpeakerInvitationService` (record accessors→getters, builder-build responses); hand DTOs deleted. Class
+> `@RequestMapping /api/v1`, bare override params, methods renamed to operationIds. Conversions: status
+> `SpeakerWorkflowState`→`StatusEnum.fromValue(name())`, `Instant`→`OffsetDateTime`, `LocalDate` stays.
+> **🐛 Same UPPER_CASE status-enum correction as SpeakerPoolResponse** — the spec enums were lowercase
+> (`InviteSpeakerResponse.status` 11-value, `SendInvitationResponse.status` 'invited'); the wire is `.name()`
+> UPPER_CASE (`SpeakerWorkflowState` has no `@JsonValue`) and the integration test asserts `IDENTIFIED`/`INVITED`
+> → fixed both spec enums to UPPER_CASE (8-state / INVITED). **🐛 `@Future` lost:** the hand `SendInvitationRequest`
+> had `@Future` on responseDeadline; OpenAPI can't express future-date, so restored the past-deadline 400 with a
+> service-side guard. **Drift fix:** `SendInvitationRequest.locale` relaxed from a `de/en` enum back to free string
+> (deployed behaviour accepts any locale, falls back to EN — avoids a contract narrowing). **Verified:** compile;
+> SpeakerInvitationServiceTest + SpeakerInvitationControllerIntegrationTest (18 green, incl. send path w/ mocked
+> mail + past-deadline 400); EMS restart + 5 safe-path live smokes (400/401 validation+auth — NO email sent);
+> FE type-check + targeted FE invite tests (38). **Live send + `speaker-portal-api` Bruno deliberately NOT run**
+> (those send real invitation emails; staging=prod → no-comms rule). RegistrantNotice is NOT clean (returns the
+> shared `SlidesOnlineSendResponse`).
 
 ## Shared-DTO consolidation (design + progress — 2026-06-28)
 

@@ -4,12 +4,13 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.BatchInviteRequest;
-import ch.batbern.events.dto.BatchInviteResponse;
-import ch.batbern.events.dto.InviteSpeakerRequest;
-import ch.batbern.events.dto.InviteSpeakerResponse;
-import ch.batbern.events.dto.SendInvitationRequest;
-import ch.batbern.events.dto.SendInvitationResponse;
+import ch.batbern.events.speakers.dto.generated.BatchInviteRequest;
+import ch.batbern.events.speakers.dto.generated.BatchInviteResponse;
+import ch.batbern.events.speakers.dto.generated.BatchInviteResponseErrorsInner;
+import ch.batbern.events.speakers.dto.generated.InviteSpeakerRequest;
+import ch.batbern.events.speakers.dto.generated.InviteSpeakerResponse;
+import ch.batbern.events.speakers.dto.generated.SendInvitationRequest;
+import ch.batbern.events.speakers.dto.generated.SendInvitationResponse;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
@@ -29,6 +30,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +73,7 @@ public class SpeakerInvitationService {
      */
     @Transactional
     public InviteSpeakerResponse inviteSpeaker(String eventCode, InviteSpeakerRequest request) {
-        log.info("Inviting speaker {} to event {}", LoggingUtils.maskEmail(request.email()), eventCode);
+        log.info("Inviting speaker {} to event {}", LoggingUtils.maskEmail(request.getEmail()), eventCode);
 
         // 1. Find the event
         Event event = eventRepository.findByEventCode(eventCode)
@@ -80,17 +84,17 @@ public class SpeakerInvitationService {
         // and there's no session_users row yet at IDENTIFIED to dedupe against. Multiple
         // pool rows per User for the same event are acceptable in the brainstorm UX.
         GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
-        userRequest.setEmail(request.email());
-        userRequest.setFirstName(request.firstName());
-        userRequest.setLastName(request.lastName());
-        userRequest.setCompanyId(request.company());
+        userRequest.setEmail(request.getEmail());
+        userRequest.setFirstName(request.getFirstName());
+        userRequest.setLastName(request.getLastName());
+        userRequest.setCompanyId(request.getCompany());
         userRequest.setCognitoSync(false); // Speakers don't need Cognito accounts initially
 
         GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
         boolean userCreated = userResponse.getCreated();
 
         log.debug("User {} for speaker {}, username: {}",
-                userCreated ? "created" : "found", request.email(), userResponse.getUsername());
+                userCreated ? "created" : "found", request.getEmail(), userResponse.getUsername());
 
         // 3. Create SpeakerPool entry (AC1) — initial status assignment on INSERT bypasses
         // transition() by design (ADR-009: speakers enter the workflow at IDENTIFIED).
@@ -98,27 +102,47 @@ public class SpeakerInvitationService {
         // in CUMS (just provisioned above) and on session_users (created at READY).
         SpeakerPool speakerPool = SpeakerPool.builder()
                 .eventId(event.getId())
-                .speakerName(request.getDisplayName())
-                .company(request.company())
-                .sessionId(request.sessionId())
-                .notes(request.notes())
+                .speakerName(displayName(request))
+                .company(request.getCompany())
+                .sessionId(request.getSessionId())
+                .notes(request.getNotes())
                 .status(SpeakerWorkflowState.IDENTIFIED)
                 .build();
 
         SpeakerPool saved = speakerPoolRepository.save(speakerPool);
 
         log.info("Created SpeakerPool entry {} for speaker {} in event {}",
-                saved.getId(), LoggingUtils.maskEmail(request.email()), eventCode);
+                saved.getId(), LoggingUtils.maskEmail(request.getEmail()), eventCode);
 
         // Response carries the just-provisioned CUMS identity for the FE to display.
-        return InviteSpeakerResponse.created(
-                saved.getId(),
-                userResponse.getUsername(),
-                request.email(),
-                saved.getSpeakerName(),
-                userCreated,
-                saved.getCreatedAt()
-        );
+        return new InviteSpeakerResponse()
+                .speakerPoolId(saved.getId())
+                .username(userResponse.getUsername())
+                .email(request.getEmail())
+                .speakerName(saved.getSpeakerName())
+                .status(InviteSpeakerResponse.StatusEnum.IDENTIFIED)
+                .created(true)
+                .userCreated(userCreated)
+                .createdAt(toOffset(saved.getCreatedAt()));
+    }
+
+    /**
+     * Display name for a speaker, falling back to email when no name is given
+     * (replaces the hand DTO's getDisplayName() helper after the generated-DTO swap).
+     */
+    private static String displayName(InviteSpeakerRequest r) {
+        if (r.getFirstName() != null && r.getLastName() != null) {
+            return r.getFirstName() + " " + r.getLastName();
+        } else if (r.getFirstName() != null) {
+            return r.getFirstName();
+        } else if (r.getLastName() != null) {
+            return r.getLastName();
+        }
+        return r.getEmail();
+    }
+
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 
     /**
@@ -137,8 +161,16 @@ public class SpeakerInvitationService {
     public SendInvitationResponse sendInvitation(String eventCode, String username, SendInvitationRequest request) {
         log.info("Sending invitation to speaker {} for event {}", username, eventCode);
 
+        // Validate response deadline is in the future. The hand DTO enforced this with
+        // @Future; OpenAPI has no future-date keyword, so the generated DTO can't carry it
+        // and the check moves here (preserves the deployed 400 on a past deadline).
+        if (request.getResponseDeadline() == null
+                || !request.getResponseDeadline().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Response deadline must be in the future");
+        }
+
         // Validate content deadline if provided
-        if (request.contentDeadline() != null && !request.areDeadlinesValid()) {
+        if (request.getContentDeadline() != null && !deadlinesValid(request)) {
             throw new IllegalArgumentException("Content deadline must be after response deadline");
         }
 
@@ -168,16 +200,16 @@ public class SpeakerInvitationService {
         // lets the organizer send to a one-shot address (e.g. a forwarder) without
         // changing CUMS; the override does NOT persist anywhere — it flows through the
         // TransitionPayload to the INVITED hook's email service only.
-        String resolvedEmail = request.email() != null && !request.email().isBlank()
-                ? request.email()
+        String resolvedEmail = request.getEmail() != null && !request.getEmail().isBlank()
+                ? request.getEmail()
                 : primarySpeakerResolver.resolveEmail(speaker).orElse(null);
         if (resolvedEmail == null) {
             throw new IllegalArgumentException("Speaker email is required to send invitation");
         }
 
         // 4. Pre-mutate invitation params on the speaker (organizer-supplied; not state changes).
-        speaker.setResponseDeadline(request.responseDeadline());
-        speaker.setContentDeadline(request.contentDeadline());
+        speaker.setResponseDeadline(request.getResponseDeadline());
+        speaker.setContentDeadline(request.getContentDeadline());
 
         // 5. Delegate to SpeakerWorkflowService.transition() — sole writer per ADR-009.
         //    The INVITED side-effect hook generates magic-link tokens, sends the invitation
@@ -189,7 +221,7 @@ public class SpeakerInvitationService {
         TransitionPayload payload = TransitionPayload.builder()
                 .email(resolvedEmail)
                 .reason("Invitation email sent")
-                .inviteContext(Map.of("locale", request.locale() != null ? request.locale() : "de"))
+                .inviteContext(Map.of("locale", request.getLocale() != null ? request.getLocale() : "de"))
                 .build();
 
         speakerWorkflowService.transition(speaker.getId(), SpeakerWorkflowState.INVITED, auditActor, payload);
@@ -227,15 +259,25 @@ public class SpeakerInvitationService {
         // differ from resolvedEmail if the organizer used a one-shot override.
         PrimarySpeakerResolver.PrimarySpeakerProfile profile =
                 primarySpeakerResolver.resolve(updated).orElse(null);
-        return new SendInvitationResponse(
-                updated.getId(),
-                profile != null ? profile.username() : username,
-                profile != null && profile.email() != null ? profile.email() : resolvedEmail,
-                updated.getStatus(),
-                updated.getInvitedAt(),
-                updated.getResponseDeadline(),
-                updated.getContentDeadline()
-        );
+        return new SendInvitationResponse()
+                .speakerPoolId(updated.getId())
+                .username(profile != null ? profile.username() : username)
+                .email(profile != null && profile.email() != null ? profile.email() : resolvedEmail)
+                .status(SendInvitationResponse.StatusEnum.fromValue(updated.getStatus().name()))
+                .invitedAt(toOffset(updated.getInvitedAt()))
+                .responseDeadline(updated.getResponseDeadline())
+                .contentDeadline(updated.getContentDeadline());
+    }
+
+    /**
+     * Content deadline must be after the response deadline when both are present
+     * (replaces the hand DTO's areDeadlinesValid() helper after the generated-DTO swap).
+     */
+    private static boolean deadlinesValid(SendInvitationRequest r) {
+        if (r.getContentDeadline() == null) {
+            return true;
+        }
+        return r.getContentDeadline().isAfter(r.getResponseDeadline());
     }
 
     /**
@@ -248,7 +290,7 @@ public class SpeakerInvitationService {
      */
     @Transactional
     public BatchInviteResponse inviteBatch(String eventCode, BatchInviteRequest request) {
-        log.info("Batch inviting {} speakers to event {}", request.speakers().size(), eventCode);
+        log.info("Batch inviting {} speakers to event {}", request.getSpeakers().size(), eventCode);
 
         // Verify event exists first
         if (!eventRepository.existsByEventCode(eventCode)) {
@@ -256,41 +298,45 @@ public class SpeakerInvitationService {
         }
 
         List<InviteSpeakerResponse> results = new ArrayList<>();
-        List<BatchInviteResponse.BatchInviteError> errors = new ArrayList<>();
+        List<BatchInviteResponseErrorsInner> errors = new ArrayList<>();
 
-        for (InviteSpeakerRequest speakerRequest : request.speakers()) {
+        for (InviteSpeakerRequest speakerRequest : request.getSpeakers()) {
             try {
                 InviteSpeakerResponse response = inviteSpeaker(eventCode, speakerRequest);
                 results.add(response);
             } catch (Exception e) {
                 log.warn("Failed to invite speaker {}: {}",
-                        LoggingUtils.maskEmail(speakerRequest.email()), e.getMessage());
-                errors.add(new BatchInviteResponse.BatchInviteError(
-                        speakerRequest.email(),
-                        getErrorCode(e),
-                        e.getMessage()
-                ));
+                        LoggingUtils.maskEmail(speakerRequest.getEmail()), e.getMessage());
+                errors.add(new BatchInviteResponseErrorsInner()
+                        .email(speakerRequest.getEmail())
+                        .errorCode(getErrorCode(e))
+                        .errorMessage(e.getMessage()));
             }
         }
 
         log.info("Batch invitation complete for event {}: {} success, {} failed",
                 eventCode, results.size(), errors.size());
 
-        return BatchInviteResponse.partial(request.speakers().size(), results, errors);
+        return new BatchInviteResponse()
+                .totalRequested(request.getSpeakers().size())
+                .successCount(results.size())
+                .failedCount(errors.size())
+                .results(results)
+                .errors(errors);
     }
 
     /**
      * Map exception to error code for batch processing.
      */
-    private String getErrorCode(Exception e) {
+    private BatchInviteResponseErrorsInner.ErrorCodeEnum getErrorCode(Exception e) {
         if (e instanceof IllegalArgumentException) {
-            return "INVALID_REQUEST";
+            return BatchInviteResponseErrorsInner.ErrorCodeEnum.INVALID_REQUEST;
         } else if (e instanceof EventNotFoundException) {
-            return "EVENT_NOT_FOUND";
+            return BatchInviteResponseErrorsInner.ErrorCodeEnum.EVENT_NOT_FOUND;
         } else if (isUserServiceException(e)) {
-            return "USER_SERVICE_ERROR";
+            return BatchInviteResponseErrorsInner.ErrorCodeEnum.USER_SERVICE_ERROR;
         } else {
-            return "INTERNAL_ERROR";
+            return BatchInviteResponseErrorsInner.ErrorCodeEnum.INTERNAL_ERROR;
         }
     }
 

@@ -1532,19 +1532,17 @@ components:
         status:
           type: string
           enum:
-          - identified
-          - contacted
-          - ready
-          - accepted
-          - declined
-          - content_submitted
-          - quality_reviewed
-          - slot_assigned
-          - confirmed
-          - withdrew
-          - overflow
-          description: Current workflow status
-          example: identified
+          - IDENTIFIED
+          - CONTACTED
+          - READY
+          - INVITED
+          - ACCEPTED
+          - CONTENT_SUBMITTED
+          - QUALITY_REVIEWED
+          - DECLINED
+          description: 'Current workflow status — the 8 ADR-009 §0.1 states, serialized as the
+            UPPER_CASE SpeakerWorkflowState enum name.'
+          example: IDENTIFIED
         created:
           type: boolean
           description: True if newly created, false if existing (idempotent return)
@@ -1654,10 +1652,9 @@ components:
         locale:
           type: string
           nullable: true
-          description: Preferred language for the email (defaults to 'de')
-          enum:
-          - de
-          - en
+          description: 'Preferred language for the email (defaults to ''de''). Email templates
+            exist for de + en; any other value falls back to English at render time (free
+            string, not enum-constrained, to preserve the deployed pass-through behaviour).'
           example: de
         email:
           type: string
@@ -1696,9 +1693,10 @@ components:
         status:
           type: string
           enum:
-          - invited
-          description: Updated status (always INVITED after sending)
-          example: invited
+          - INVITED
+          description: Updated status — always INVITED after sending (UPPER_CASE
+            SpeakerWorkflowState enum name).
+          example: INVITED
         invitedAt:
           type: string
           format: date-time
