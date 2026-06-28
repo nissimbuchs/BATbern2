@@ -66,8 +66,9 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > staging → a broken version got committed; use `git rm`/`git add -A`, and don't trust pre-commit checkstyle when the
 > index diverged from the working tree).
 >
-> ⚠️ **PENDING PUSH (2026-06-27 night):** the 8 newest phase7 commits (AgendaConfig → OrganizerThanks,
-> local HEAD `1c9125c0`; remote tip stuck at `cf039e9c` = AiAssist) are **committed + individually verified**
+> ⚠️ **PENDING PUSH (updated 2026-06-28):** the newest phase7 commits (AgendaConfig → OrganizerThanks →
+> SlidesOnline + ContentSubmit consolidations + this plan note; remote tip stuck at `cf039e9c` = AiAssist) are
+> **committed + individually verified**
 > (each: its integration test + EMS restart + live gateway smoke + full Bruno 14/14 + FE type-check) but **NOT
 > pushed** — the `.githooks/pre-push` gate (full backend integration + frontend vitest, ~12 min) was repeatedly
 > **killed by a background-task wall-clock limit** in the agent runner before it could finish (it was PASSING both
@@ -82,6 +83,42 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > stays, nested results/errors lists. record accessors (`response.created()`/`failedCount()`) → getters. ALL 3 ops
 > are email-SENDS → verify via `SpeakerInvitationControllerIntegrationTest` only (mocked mail); do NOT live-smoke
 > a send (staging=prod). RegistrantNotice is NOT clean (returns the shared `SlidesOnlineSendResponse`).
+
+## Shared-DTO consolidation (design + progress — 2026-06-28)
+
+**Goal:** the ~7 hand DTOs returned by multiple controllers block per-controller `implements`-wiring.
+Consolidate each to its generated twin (delete the hand DTO), then the consumers can be wired.
+**Strategy:** mapper-centric, dependency-ordered (leaves first), ONE DTO per commit, each verified
+(compile + affected integration tests + FE regen/type-check + smoke + Bruno), committed LOCALLY
+(push gate is unusable in the agent runner — see PENDING PUSH above).
+
+**Dependency graph:** `SessionMaterial + SessionSpeaker + TimetableSlot → SessionResponse → TimetableResponse`;
+`SpeakerPoolResponse`, `ContentSubmitResponse`, `SlidesOnlineSendResponse` independent.
+
+| Shared DTO | Status | Notes |
+|---|---|---|
+| **SlidesOnlineSendResponse** | ✅ DONE | generated (newsletter); `STATUS_PENDING`→`StatusEnum.PENDING`; service + SlidesOnline/RegistrantNotice ctrls + test; hand DTO deleted. 18/18. |
+| **ContentSubmitResponse** | ✅ DONE | schema COPIED from dormant speakers-api → event-speakers-api (ADR-014); ContentSubmissionService + SpeakerStatus/SpeakerPortalContent + integ test (record accessors→getters); hand DTO deleted. 40/40. |
+| **SpeakerPoolResponse** | ⏳ ANALYZED, NOT STARTED — **needs design review first** | See ⚠️ below. |
+| SessionSpeakerResponse → `SessionSpeaker` | ⏳ TODO | generated twin renamed `SessionSpeaker` (sessions). Leaf — before SessionResponse. |
+| SessionMaterialResponse | ⏳ TODO | NO twin → author `SessionMaterial` schema in event-sessions. Leaf — before SessionResponse. |
+| SessionResponse | ⏳ TODO | twin exists (sessions) but DROPPED the always-present `materials` list → add `materials: array<SessionMaterial>` to spec. After the 2 leaves. |
+| TimetableResponse (+TimetableSlot) | ⏳ TODO | twin (sessions), embeds SessionResponse+TimetableSlot. Last in chain. |
+
+> ⚠️ **NEXT-SESSION — investigate SpeakerPoolResponse BEFORE consolidating it.** The generated
+> `SpeakerPoolResponse` spec schema has **15 fields** but the deployed hand DTO has **39** (24 missing:
+> sessionId, sessionSlug, username, email, invitedAt, response/contentDeadline, accepted/declinedAt,
+> declineReason, preferredTimeSlot, travel/technicalRequirements, initialPresentationTitle,
+> preferenceComments, isSlotAssigned, isPublishable, remindersDisabled, contentStatus, contentSubmittedAt,
+> submitted{Title,Abstract}, material{FileName,CloudFrontUrl}). **Owner question (Nissim, 2026-06-28): do we
+> actually NEED all 39 fields?** This 39-field grab-bag DTO smells like a poorly-designed structure (one fat
+> response serving many different views — pool list, portal dashboard, status detail, content). BEFORE
+> expanding the spec to 39 fields, evaluate: (a) which fields each consumer (SpeakerStatus / SelfNomination /
+> EventController / FE) actually reads; (b) whether to split into smaller purpose-specific responses or trim
+> dead fields; (c) only then add the genuinely-needed fields to the spec + consolidate. Also note its mapping
+> is EMBEDDED as static `fromEntity`/`fromEntityWithContent` factories on the hand DTO + `PrimarySpeakerResolver
+> .applyOverlay` + `SpeakerPoolService.enrichWith` — extract to a mapper. Conversions: status/source→enum,
+> 6 `Instant`→`OffsetDateTime`, 2 `LocalDate`. The session-chain DTOs are likely similarly embedded — check each.
 
 | Phase | Status | Notes |
 |---|---|---|
