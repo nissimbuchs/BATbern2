@@ -25,6 +25,9 @@ tags:
   description: Event publishing and workflow operations
 - name: Sessions
   description: Event session management
+- name: Session Speakers
+  description: Session-user speaker assignments — assign/list/remove/confirm/decline (SessionSpeakerController,
+    Story 1.15a.1b)
 - name: Agenda Config
   description: Per-event agenda/slot configuration with copy-on-edit override (Story 15.2,
     AgendaConfigController)
@@ -866,7 +869,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/speakers:
     get:
       tags:
-      - Sessions
+      - Session Speakers
       summary: List session speakers
       description: 'Retrieve all speakers assigned to a specific session with enriched User data.
 
@@ -914,7 +917,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     post:
       tags:
-      - Sessions
+      - Session Speakers
       summary: Assign speaker to session
       description: 'Assign a user as a speaker to a session with a specific role.
 
@@ -973,7 +976,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}:
     delete:
       tags:
-      - Sessions
+      - Session Speakers
       summary: Remove speaker from session
       description: 'Remove a speaker assignment from a session.
 
@@ -1014,7 +1017,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/confirm:
     post:
       tags:
-      - Sessions
+      - Session Speakers
       summary: Confirm speaker participation
       description: 'Mark a speaker as confirmed for the session.
 
@@ -1057,7 +1060,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/decline:
     post:
       tags:
-      - Sessions
+      - Session Speakers
       summary: Decline speaker participation
       description: 'Mark a speaker as declined for the session with an optional reason.
 
