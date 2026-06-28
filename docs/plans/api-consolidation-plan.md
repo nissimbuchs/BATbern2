@@ -279,6 +279,22 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > send deliberately NOT triggered (would blast 168 real registrant mails to /dev/mails; the integration test
 > exercises the send path instead). **EMS contract-first +2 (24 wired).**
 >
+> ⛔ **BLOCKED — needs a dedicated FE-coordinated design story, NOT a Phase-7 wire: `EventController`**
+> (investigated 2026-06-28). The 2,573-line central controller spans 5 domains and 4 implementable interfaces
+> (EventsApi 7 CRUD / EventActionsApi 4 pool / EventReportingApi 2 / BulkOperationsApi 1) plus ~15 registration/
+> topic/publish ops whose tags are shared across controllers (so they'd stay hand-rolled). The blocker is the
+> **core response model**: the deployed hand `EventResponse` uses `Map<String,Object>` topic/venue + `List<Map>`
+> sessions (dynamic `?include=` expansion), `String` eventType/workflowState/phase, `Instant` dates, `String`
+> themeImageUrl — whereas the generated EventsApi returns **typed** `EventDetail` (getEvent) vs `Event`
+> (create/update/patch): typed `EventTopic`/`Venue`/`EventType`/enums, `OffsetDateTime`, `URI`, and a
+> **per-verb response-model split**. Wiring EventsApi therefore means rebuilding the include-expansion to emit
+> typed sub-objects + splitting the response by verb + Instant→OffsetDateTime/String→enum — across **every event
+> consumer** (public website, archive, organizer event page). This is the high-blast-radius reconciliation the
+> events-core decomposition (Phase 6) deliberately left hand-written. **Recommendation:** file as its own
+> FE-coordinated story (typed event response + `?include=` typing + verb split); do NOT bundle into the
+> incremental Phase-7 sweep. The peripheral subset (EventActions/EventReporting/BulkOps, 7 ops) is wireable in
+> isolation but forces re-pathing the whole class for low value — defer with the rest.
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
