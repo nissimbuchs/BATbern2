@@ -2,12 +2,13 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
-import ch.batbern.events.dto.SessionMaterialAssociationRequest;
 import ch.batbern.events.event.SessionMaterialsUploadedEvent;
 import ch.batbern.events.exception.MaterialNotFoundException;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.sessions.dto.generated.MaterialUploadItem;
+import ch.batbern.events.sessions.dto.generated.SessionMaterialAssociationRequest;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.utils.CloudFrontUrlBuilder;
@@ -82,7 +83,7 @@ public class SessionMaterialsService {
 
         // Create SessionMaterial entities and move files to final S3 location
         List<SessionMaterial> materials = new ArrayList<>();
-        for (ch.batbern.events.dto.MaterialUploadItem item : request.getMaterials()) {
+        for (MaterialUploadItem item : request.getMaterials()) {
             // Generate final S3 key
             String finalS3Key = generateFinalS3Key(session, item.getUploadId(), item.getFileExtension());
 
@@ -120,10 +121,10 @@ public class SessionMaterialsService {
 
         // Emit domain event
         List<String> uploadIds = request.getMaterials().stream()
-                .map(ch.batbern.events.dto.MaterialUploadItem::getUploadId)
+                .map(MaterialUploadItem::getUploadId)
                 .collect(Collectors.toList());
         List<String> materialTypes = request.getMaterials().stream()
-                .map(ch.batbern.events.dto.MaterialUploadItem::getMaterialType)
+                .map(MaterialUploadItem::getMaterialType)
                 .collect(Collectors.toList());
 
         SessionMaterialsUploadedEvent event = new SessionMaterialsUploadedEvent(

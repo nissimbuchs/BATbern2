@@ -426,6 +426,96 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/sessions/{sessionSlug}/materials': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List session materials
+     * @description Retrieve all materials associated with a session (Story 5.9). Requires authentication (organizer/speaker materials-management view); anonymous archive visitors download individual materials via the public {materialId}/download endpoint instead.
+     */
+    get: operations['getSessionMaterials'];
+    put?: never;
+    /**
+     * Associate uploaded materials with a session
+     * @description Associate 1-10 already-uploaded materials with a session (Story 5.9).
+     *
+     *     **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).
+     */
+    post: operations['associateMaterials'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a session material
+     * @description Remove a material from a session (Story 5.9).
+     *
+     *     **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).
+     */
+    delete: operations['deleteSessionMaterial'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a presigned download URL for a material
+     * @description Generate a time-limited presigned download URL for a single material (Story 5.9). Public endpoint.
+     */
+    get: operations['getMaterialDownloadUrl'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/materials/upload-from-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import a material from a URL
+     * @description Batch-import helper — fetch a material from a source URL and associate it with a session (Story 5.9). Used by historical-data import.
+     *
+     *     **Authorization**: ORGANIZER only.
+     */
+    post: operations['uploadMaterialFromUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -727,6 +817,74 @@ export interface components {
        * @example PENDING
        */
       extractionStatus?: string;
+    };
+    /** @description Story 5.9: one already-uploaded material to associate with a session. Carries the upload correlation id from the presigned-URL step plus the file metadata. */
+    MaterialUploadItem: {
+      /**
+       * @description Upload correlation id from MaterialsUploadService presigned-URL generation
+       * @example upload-2026-0001
+       */
+      uploadId: string;
+      /**
+       * @description Material classification (PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER)
+       * @example PRESENTATION
+       */
+      materialType: string;
+      /**
+       * @description Original uploaded file name
+       * @example slides.pdf
+       */
+      fileName: string;
+      /**
+       * @description File extension without the dot
+       * @example pdf
+       */
+      fileExtension: string;
+      /**
+       * Format: int64
+       * @description File size in bytes
+       * @example 2097152
+       */
+      fileSize: number;
+      /**
+       * @description MIME type of the material
+       * @example application/pdf
+       */
+      mimeType: string;
+    };
+    /** @description Story 5.9: associate 1-10 already-uploaded materials with a session. */
+    SessionMaterialAssociationRequest: {
+      materials: components['schemas']['MaterialUploadItem'][];
+    };
+    /** @description Story 5.9: wrapper for the materials associated with a session (returned by associate + list). */
+    SessionMaterialsResponse: {
+      materials: components['schemas']['SessionMaterialResponse'][];
+    };
+    /** @description Story 5.9: time-limited presigned download URL for a single session material. */
+    MaterialDownloadUrlResponse: {
+      /**
+       * @description Presigned URL to download the material
+       * @example https://s3.eu-central-1.amazonaws.com/batbern-materials/...&X-Amz-Signature=...
+       */
+      downloadUrl: string;
+    };
+    /** @description Batch-import helper: fetch a material from a source URL and associate it with a session (organizer-only). Used by historical-data import. */
+    UploadMaterialFromUrlRequest: {
+      /**
+       * @description Source URL to fetch the material from
+       * @example https://cdn.batbern.ch/legacy/BAT142_UI_Design.pdf
+       */
+      url: string;
+      /**
+       * @description Target file name
+       * @example BAT142_UI_Design.pdf
+       */
+      filename: string;
+      /**
+       * @description Material classification; defaults to DOCUMENT when omitted
+       * @example DOCUMENT
+       */
+      materialType?: string;
     };
     /**
      * @description Request payload for batch import from legacy sessions.json.
@@ -1980,6 +2138,166 @@ export interface operations {
         };
       };
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getSessionMaterials: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of session materials */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionMaterialsResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  associateMaterials: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SessionMaterialAssociationRequest'];
+      };
+    };
+    responses: {
+      /** @description Materials associated successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionMaterialsResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Speaker may only upload to their own sessions */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  deleteSessionMaterial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+        /** @example 3fa85f64-5717-4562-b3fc-2c963f66afa6 */
+        materialId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Material deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Speaker may only delete materials from their own sessions */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getMaterialDownloadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+        /** @example 3fa85f64-5717-4562-b3fc-2c963f66afa6 */
+        materialId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Presigned download URL */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MaterialDownloadUrlResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  uploadMaterialFromUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UploadMaterialFromUrlRequest'];
+      };
+    };
+    responses: {
+      /** @description Material imported successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionMaterialResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
       500: components['responses']['InternalServerError'];
     };
   };

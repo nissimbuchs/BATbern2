@@ -28,6 +28,9 @@ tags:
 - name: Session Speakers
   description: Session-user speaker assignments — assign/list/remove/confirm/decline (SessionSpeakerController,
     Story 1.15a.1b)
+- name: Session Materials
+  description: Per-session uploaded materials (slide decks / documents) — associate/list/download/delete
+    + batch-import-from-URL (SessionMaterialsController, Story 5.9)
 - name: Agenda Config
   description: Per-event agenda/slot configuration with copy-on-edit override (Story 15.2,
     AgendaConfigController)
@@ -1105,6 +1108,209 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/materials:
+    post:
+      tags:
+      - Session Materials
+      summary: Associate uploaded materials with a session
+      description: 'Associate 1-10 already-uploaded materials with a session (Story 5.9).
+
+
+        **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).'
+      operationId: associateMaterials
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionMaterialAssociationRequest'
+      responses:
+        '201':
+          description: Materials associated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMaterialsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Speaker may only upload to their own sessions
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+      - Session Materials
+      summary: List session materials
+      description: 'Retrieve all materials associated with a session (Story 5.9). Requires
+        authentication (organizer/speaker materials-management view); anonymous archive visitors
+        download individual materials via the public {materialId}/download endpoint instead.'
+      operationId: getSessionMaterials
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      responses:
+        '200':
+          description: List of session materials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMaterialsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}:
+    delete:
+      tags:
+      - Session Materials
+      summary: Delete a session material
+      description: 'Remove a material from a session (Story 5.9).
+
+
+        **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).'
+      operationId: deleteSessionMaterial
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      - name: materialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '204':
+          description: Material deleted successfully
+        '403':
+          description: Speaker may only delete materials from their own sessions
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download:
+    get:
+      tags:
+      - Session Materials
+      summary: Get a presigned download URL for a material
+      description: 'Generate a time-limited presigned download URL for a single material (Story 5.9).
+        Public endpoint.'
+      operationId: getMaterialDownloadUrl
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      - name: materialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Presigned download URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialDownloadUrlResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/materials/upload-from-url:
+    post:
+      tags:
+      - Session Materials
+      summary: Import a material from a URL
+      description: 'Batch-import helper — fetch a material from a source URL and associate it with
+        a session (Story 5.9). Used by historical-data import.
+
+
+        **Authorization**: ORGANIZER only.'
+      operationId: uploadMaterialFromUrl
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadMaterialFromUrlRequest'
+      responses:
+        '201':
+          description: Material imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMaterialResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
     SlotAssignmentRequest:
@@ -1498,6 +1704,103 @@ components:
           type: string
           description: 'Story 5.10 forward-compat: content-extraction status'
           example: PENDING
+    MaterialUploadItem:
+      type: object
+      description: 'Story 5.9: one already-uploaded material to associate with a session. Carries
+        the upload correlation id from the presigned-URL step plus the file metadata.'
+      required:
+      - uploadId
+      - materialType
+      - fileName
+      - fileExtension
+      - fileSize
+      - mimeType
+      properties:
+        uploadId:
+          type: string
+          minLength: 1
+          description: Upload correlation id from MaterialsUploadService presigned-URL generation
+          example: upload-2026-0001
+        materialType:
+          type: string
+          minLength: 1
+          description: Material classification (PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER)
+          example: PRESENTATION
+        fileName:
+          type: string
+          minLength: 1
+          description: Original uploaded file name
+          example: slides.pdf
+        fileExtension:
+          type: string
+          minLength: 1
+          description: File extension without the dot
+          example: pdf
+        fileSize:
+          type: integer
+          format: int64
+          description: File size in bytes
+          example: 2097152
+        mimeType:
+          type: string
+          minLength: 1
+          description: MIME type of the material
+          example: application/pdf
+    SessionMaterialAssociationRequest:
+      type: object
+      description: 'Story 5.9: associate 1-10 already-uploaded materials with a session.'
+      required:
+      - materials
+      properties:
+        materials:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/MaterialUploadItem'
+    SessionMaterialsResponse:
+      type: object
+      description: 'Story 5.9: wrapper for the materials associated with a session (returned by
+        associate + list).'
+      required:
+      - materials
+      properties:
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionMaterialResponse'
+    MaterialDownloadUrlResponse:
+      type: object
+      description: 'Story 5.9: time-limited presigned download URL for a single session material.'
+      required:
+      - downloadUrl
+      properties:
+        downloadUrl:
+          type: string
+          description: Presigned URL to download the material
+          example: https://s3.eu-central-1.amazonaws.com/batbern-materials/...&X-Amz-Signature=...
+    UploadMaterialFromUrlRequest:
+      type: object
+      description: 'Batch-import helper: fetch a material from a source URL and associate it with
+        a session (organizer-only). Used by historical-data import.'
+      required:
+      - url
+      - filename
+      properties:
+        url:
+          type: string
+          minLength: 1
+          description: Source URL to fetch the material from
+          example: https://cdn.batbern.ch/legacy/BAT142_UI_Design.pdf
+        filename:
+          type: string
+          minLength: 1
+          description: Target file name
+          example: BAT142_UI_Design.pdf
+        materialType:
+          type: string
+          description: Material classification; defaults to DOCUMENT when omitted
+          example: DOCUMENT
     BatchImportSessionRequest:
       type: object
       description: 'Request payload for batch import from legacy sessions.json.
