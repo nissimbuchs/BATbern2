@@ -1,5 +1,6 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

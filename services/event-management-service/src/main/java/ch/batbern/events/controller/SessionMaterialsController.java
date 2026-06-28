@@ -2,12 +2,12 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.SessionMaterialAssociationRequest;
-import ch.batbern.events.dto.SessionMaterialResponse;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SessionMaterialsService;
+import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

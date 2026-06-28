@@ -584,7 +584,7 @@ public class EventController {
                 .filter(session -> !structuralTypes.contains(session.getSessionType()))
                 .filter(session -> {
                     // Count sessions with materialsStatus = COMPLETE
-                    List<ch.batbern.events.dto.SessionMaterialResponse> materials =
+                    List<ch.batbern.events.sessions.dto.generated.SessionMaterialResponse> materials =
                             sessionService.toSessionResponse(session, event.getEventCode(), false)
                                     .getMaterials();
                     return materials != null && !materials.isEmpty();

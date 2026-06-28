@@ -668,6 +668,86 @@ export interface components {
      */
     SessionResponse: components['schemas']['Session'];
     /**
+     * @description Story 5.9: Session material (uploaded slide deck / document).
+     *     Returned by GET /sessions/{sessionSlug}/materials and embedded in Session responses. Maps the SessionMaterial entity; createdAt/updatedAt are UTC.
+     */
+    SessionMaterialResponse: {
+      /**
+       * Format: uuid
+       * @description Material identifier (same-service UUID)
+       * @example 3fa85f64-5717-4562-b3fc-2c963f66afa6
+       */
+      id: string;
+      /**
+       * @description Client-supplied upload correlation id
+       * @example upload-2026-0001
+       */
+      uploadId: string;
+      /**
+       * @description S3 object key of the stored material
+       * @example materials/2026/batbern142/ui-design/slides.pdf
+       */
+      s3Key: string;
+      /**
+       * @description CloudFront delivery URL for the material (null until CDN-published)
+       * @example https://cdn.batbern.ch/materials/2026/batbern142/ui-design/slides.pdf
+       */
+      cloudFrontUrl?: string;
+      /**
+       * @description Original uploaded file name
+       * @example slides.pdf
+       */
+      fileName: string;
+      /**
+       * @description File extension (without the dot)
+       * @example pdf
+       */
+      fileExtension: string;
+      /**
+       * Format: int64
+       * @description File size in bytes
+       * @example 2097152
+       */
+      fileSize: number;
+      /**
+       * @description MIME type of the material
+       * @example application/pdf
+       */
+      mimeType: string;
+      /**
+       * @description Material classification (e.g. slides, document)
+       * @example slides
+       */
+      materialType: string;
+      /**
+       * @description Username of the uploader (public identifier per ADR-003)
+       * @example john.doe
+       */
+      uploadedBy: string;
+      /**
+       * Format: date-time
+       * @description Creation timestamp (UTC)
+       * @example 2026-06-28T08:28:30.440Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Last-update timestamp (UTC)
+       * @example 2026-06-28T08:28:30.440Z
+       */
+      updatedAt: string;
+      /**
+       * @description Story 5.10 forward-compat: whether text content has been extracted for RAG search
+       * @example false
+       */
+      contentExtracted?: boolean;
+      /**
+       * @description Story 5.10 forward-compat: content-extraction status
+       * @example PENDING
+       */
+      extractionStatus?: string;
+    };
+    /**
      * @description Request payload for batch import from legacy sessions.json.
      *     Designed for historical data migration from BATspa application.
      */

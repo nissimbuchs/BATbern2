@@ -1,9 +1,9 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.SessionMaterialResponse;
 import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.mapper.SessionMapper;
+import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1428,6 +1428,87 @@ components:
         '
       allOf:
       - $ref: '#/components/schemas/Session'
+    SessionMaterialResponse:
+      type: object
+      description: 'Story 5.9: Session material (uploaded slide deck / document).
+
+        Returned by GET /sessions/{sessionSlug}/materials and embedded in Session
+        responses. Maps the SessionMaterial entity; createdAt/updatedAt are UTC.
+
+        '
+      required:
+      - id
+      - uploadId
+      - s3Key
+      - fileName
+      - fileExtension
+      - fileSize
+      - mimeType
+      - materialType
+      - uploadedBy
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Material identifier (same-service UUID)
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        uploadId:
+          type: string
+          description: Client-supplied upload correlation id
+          example: upload-2026-0001
+        s3Key:
+          type: string
+          description: S3 object key of the stored material
+          example: materials/2026/batbern142/ui-design/slides.pdf
+        cloudFrontUrl:
+          type: string
+          description: CloudFront delivery URL for the material (null until CDN-published)
+          example: https://cdn.batbern.ch/materials/2026/batbern142/ui-design/slides.pdf
+        fileName:
+          type: string
+          description: Original uploaded file name
+          example: slides.pdf
+        fileExtension:
+          type: string
+          description: File extension (without the dot)
+          example: pdf
+        fileSize:
+          type: integer
+          format: int64
+          description: File size in bytes
+          example: 2097152
+        mimeType:
+          type: string
+          description: MIME type of the material
+          example: application/pdf
+        materialType:
+          type: string
+          description: Material classification (e.g. slides, document)
+          example: slides
+        uploadedBy:
+          type: string
+          description: Username of the uploader (public identifier per ADR-003)
+          example: john.doe
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC)
+          example: 2026-06-28T08:28:30.440Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last-update timestamp (UTC)
+          example: 2026-06-28T08:28:30.440Z
+        contentExtracted:
+          type: boolean
+          description: 'Story 5.10 forward-compat: whether text content has been extracted for RAG search'
+          example: false
+        extractionStatus:
+          type: string
+          description: 'Story 5.10 forward-compat: content-extraction status'
+          example: PENDING
     BatchImportSessionRequest:
       type: object
       description: 'Request payload for batch import from legacy sessions.json.

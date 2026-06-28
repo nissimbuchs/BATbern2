@@ -99,26 +99,99 @@ Consolidate each to its generated twin (delete the hand DTO), then the consumers
 |---|---|---|
 | **SlidesOnlineSendResponse** | ✅ DONE | generated (newsletter); `STATUS_PENDING`→`StatusEnum.PENDING`; service + SlidesOnline/RegistrantNotice ctrls + test; hand DTO deleted. 18/18. |
 | **ContentSubmitResponse** | ✅ DONE | schema COPIED from dormant speakers-api → event-speakers-api (ADR-014); ContentSubmissionService + SpeakerStatus/SpeakerPortalContent + integ test (record accessors→getters); hand DTO deleted. 40/40. |
-| **SpeakerPoolResponse** | ⏳ ANALYZED, NOT STARTED — **needs design review first** | See ⚠️ below. |
+| **SpeakerPoolResponse** | 🎨 **DESIGNED (2026-06-28) — ready to implement (Option A)** | Consolidate-whole to a ~35-field generated DTO + trim 4 dead fields + fix the stale 11-value status enum to the 8 ADR-009 states. Independent (no chain dep). Full design + Option-A mechanics in ⚠️ below. |
 | **SessionSpeakerResponse → `SessionSpeaker`** | ✅ DONE | generated twin `SessionSpeaker` (sessions). Single ctor site = `SessionUserService.enrichWithUserData` (×2) → builds generated; conversions `profilePictureUrl` String→`URI` (pass `user.getProfilePictureUrl()` directly), domain `SpeakerRole`→`SpeakerRoleEnum` via `fromValue(name())` (extracted `toSpeakerRoleEnum` helper), `isConfirmed` boolean→Boolean. Consumers re-typed: `SessionResponse`/`CompanySessionResponse` embed `List<SessionSpeaker>`, `SessionService`/`GlobalSessionController`/`SessionSpeakerController`/`NewsletterEmailService` + 2 tests. Wire byte-stable (all `@JsonProperty` identical, `@JsonValue` enum; additive `companyLogoUrl:null`). Test getter shift `isConfirmed()`→`getIsConfirmed()`, response enum asserts→`SessionSpeaker.SpeakerRoleEnum.*` (kept entity `captured`/`sessionUser` on domain `SpeakerRole`). Verified: compile + SessionUserServiceTest/NewsletterEmailServiceTest + SessionSpeaker/StructuralSession integ + EMS restart + live smoke (real BATbern1 speaker) + Bruno 14/14 + FE type-check. Hand DTO deleted. |
-| SessionMaterialResponse | ⏳ TODO | NO twin → author `SessionMaterial` schema in event-sessions. Leaf — before SessionResponse. |
-| SessionResponse | ⏳ TODO | twin exists (sessions) but DROPPED the always-present `materials` list → add `materials: array<SessionMaterial>` to spec. After the 2 leaves. |
+| **SessionMaterialResponse** | ✅ DONE | NO twin existed → authored a `SessionMaterialResponse` schema in event-sessions (NOT `SessionMaterial` as first planned — collides with domain entity `domain.SessionMaterial` in the `toResponse` mapper; `*Response` also matches ContentSubmit/SlidesOnline naming). 14 fields; `cloudFrontUrl` plain string, `id` string/uuid→`UUID`, only conversion `createdAt`/`updatedAt` Instant→`OffsetDateTime` via `.atOffset(UTC)` (byte-identical wire `…Z`, verified live). Single ctor site `SessionMaterialsService.toResponse`; consumers re-pointed import/FQN only — name unchanged (`SessionResponse` needed an explicit import — was same-package; `SessionService`, `SessionMaterialsController`, `EventController` FQN, + test). `globalProperties models:''` generates the unreferenced schema. Verified: regen+compile main+test; SessionMaterialsServiceTest + Controller/SchemaValidation integ; FE regen+type-check; EMS restart + live smoke (BATbern36 material); Bruno 14/14. Hand DTO deleted. |
+| SessionResponse | ⏳ TODO — **next** | twin exists (sessions) but DROPPED the always-present `materials` list → add `materials: array<SessionMaterialResponse>` to spec. After the 2 leaves (both now done). |
 | TimetableResponse (+TimetableSlot) | ⏳ TODO | twin (sessions), embeds SessionResponse+TimetableSlot. Last in chain. |
 
-> ⚠️ **NEXT-SESSION — investigate SpeakerPoolResponse BEFORE consolidating it.** The generated
-> `SpeakerPoolResponse` spec schema has **15 fields** but the deployed hand DTO has **39** (24 missing:
-> sessionId, sessionSlug, username, email, invitedAt, response/contentDeadline, accepted/declinedAt,
-> declineReason, preferredTimeSlot, travel/technicalRequirements, initialPresentationTitle,
-> preferenceComments, isSlotAssigned, isPublishable, remindersDisabled, contentStatus, contentSubmittedAt,
-> submitted{Title,Abstract}, material{FileName,CloudFrontUrl}). **Owner question (Nissim, 2026-06-28): do we
-> actually NEED all 39 fields?** This 39-field grab-bag DTO smells like a poorly-designed structure (one fat
-> response serving many different views — pool list, portal dashboard, status detail, content). BEFORE
-> expanding the spec to 39 fields, evaluate: (a) which fields each consumer (SpeakerStatus / SelfNomination /
-> EventController / FE) actually reads; (b) whether to split into smaller purpose-specific responses or trim
-> dead fields; (c) only then add the genuinely-needed fields to the spec + consolidate. Also note its mapping
-> is EMBEDDED as static `fromEntity`/`fromEntityWithContent` factories on the hand DTO + `PrimarySpeakerResolver
-> .applyOverlay` + `SpeakerPoolService.enrichWith` — extract to a mapper. Conversions: status/source→enum,
-> 6 `Instant`→`OffsetDateTime`, 2 `LocalDate`. The session-chain DTOs are likely similarly embedded — check each.
+> ⚠️ **SpeakerPoolResponse — DESIGN RESOLVED (Winston/Nissim, 2026-06-28).** The generated
+> `SpeakerPoolResponse` spec schema has **15 fields**; the deployed hand DTO has **39**. **Owner question
+> answered: yes, keep ~35 of them — this is NOT a dead-field grab-bag.** Field-level FE consumption analysis
+> (every reader traced across `web-frontend/src`, non-test) shows **~35 of 39 fields are live**, and the
+> "fatness" is structural, not accidental: the organizer **kanban board** (`SpeakerStatusLanes.tsx`) is one
+> LIST endpoint whose cards **expand into an inline drawer that reads off the already-loaded board entry**
+> (`DetailsTabPanel`, `ContentSubmissionSubView`, `QualityReviewSubView`, `PromoteSpeaker*` all read
+> `speaker.*` off the list item — no per-card refetch). That is a legitimate "collection + inline detail"
+> read model. The 24 hand-DTO-only fields have exactly **one** consumer — the FE's hand-written
+> `SpeakerPoolEntry` (`web-frontend/src/types/speakerPool.types.ts`); the Swift watch app carries only the
+> 15-field generated model and never reads it; no other backend/Bruno consumer.
+>
+> **Field verdicts (verified, not from the subagent's first pass — it under-counted by 6):**
+> - **LIVE (~35)** — core/identity (id, eventId, speakerName, company, companyDisplayName, expertise,
+>   assignedOrganizerId, status, notes, createdAt, updatedAt, username), session (sessionId, sessionSlug),
+>   brainstorm provenance (source, proposedByUsername, proposedSessionTitle, proposedAbstract), invitation
+>   (email, invitedAt, responseDeadline, contentDeadline), response-prefs (acceptedAt, declinedAt,
+>   declineReason, preferredTimeSlot, travelRequirements, technicalRequirements, initialPresentationTitle,
+>   preferenceComments — all read in `SpeakerStatusLanes.tsx:1043-1091`), content/derived (contentSubmittedAt,
+>   submittedTitle, submittedAbstract, isSlotAssigned).
+> - **DEAD in FE → TRIM (4)** — `isPublishable` (FE derives from `isSlotAssigned`+`status` in
+>   `getPrimaryAction.ts:160`; backend still computes per ADR-009 §0.5), `contentStatus` (derived server-side,
+>   never read off the pool entry), `materialCloudFrontUrl` (pool copy unread), `remindersDisabled` (no reader).
+> - **BORDERLINE → verify then likely trim (1)** — `materialFileName`: read on the speaker-portal's *own*
+>   `SpeakerEventContent` type and on `QualityReviewSubView`'s `content.*`, but **not** off the pool entry.
+>
+> **⚠️ Ride-along correctness fix (do NOT skip):** the generated `SpeakerPoolResponse.StatusEnum` still
+> carries **11 status values** including the four ADR-009 §0.1 DELETED (`SLOT_ASSIGNED`, `CONFIRMED`,
+> `WITHDREW`, `OVERFLOW`) + `INVITED`. The spec is stale vs the 8-state ADR; the FE already moved to the
+> 8-state union (`speakerPool.types.ts:9-13`, "legacy widenings dropped per Story 11.E.4"). **Author the
+> consolidated schema with the 8 ADR-009 states — do not copy the stale 11 forward.**
+>
+> **Decision: Option A (consolidate-whole + trim dead), NOT a split.** A board-summary / item-detail split
+> (Option B — lean list + `GET …/speakers/{id}` detail fetched on drawer-open) is the "cleaner REST" design
+> and a real improvement, but it is **orthogonal to and heavier than** the Phase-7 consolidation: it forces an
+> FE data-flow change (drawer must fetch-on-open instead of reading the loaded entry) across 4 sub-views, a
+> new endpoint, all under staging=prod. Bundling it would make the consolidation commit un-reviewable.
+> **→ File Option B as its own FE-coordinated follow-up story; do Option A now to unblock per-controller wiring.**
+>
+> **▶ Option A mechanics (ready to implement):**
+> 1. **Spec** — in `docs/api/event-speakers-api.openapi.yml`, expand the `SpeakerPoolResponse` schema to the
+>    ~35 live fields (drop `isPublishable`, `contentStatus`, `materialCloudFrontUrl`, `remindersDisabled`;
+>    confirm `materialFileName` unused off the entry then drop). Set `status` to the **8-state** enum
+>    (`identified, contacted, ready, invited, accepted, content_submitted, quality_reviewed, declined`) and
+>    keep `source` as the 2-value enum. Mark only the 6 always-present fields required (id, eventId,
+>    speakerName, status, createdAt, updatedAt); everything else nullable. Regen FE types
+>    (`npm run generate:api-types`) → `event-speakers-api.types.ts`, then repoint
+>    `web-frontend/src/types/speakerPool.types.ts` `SpeakerPoolEntry` to the generated `components['schemas']
+>    ['SpeakerPoolResponse']` (it already imports the workflow-state from generated — collapse the hand-written
+>    interface onto the generated type, keeping `SpeakerPoolUI extends` for the resolved `assignedOrganizerName`).
+> 2. **Mapper extraction** — the mapping is embedded as static `fromEntity(SpeakerPool)` /
+>    `fromEntity(SpeakerPool, Session)` / `fromEntityWithContent(SpeakerPool, Session, SessionContentVersion)`
+>    + instance `applyProposal(SessionProposal)` on the hand DTO, PLUS **two** identity-overlay paths that
+>    must both be preserved: `PrimarySpeakerResolver.applyOverlay(response, pool)` (single-entry paths) and
+>    `SpeakerPoolService.applySessionIdentityOverlay(response, primarySessionUser, userResponse)` (the batch
+>    list path, `SpeakerPoolService.java:356-379`). Extract the 3 factories + `applyProposal` into a
+>    `SpeakerPoolMapper` (`@Component`, returns the generated DTO via its `builder()`); leave the two overlay
+>    methods where they are but re-type them to mutate the generated DTO (their setters are byte-identical).
+> 3. **Type conversions** (hand → generated):
+>    - `status`: `SpeakerWorkflowState` (Java enum) → `SpeakerPoolResponse.StatusEnum` via
+>      `StatusEnum.fromValue(state.name().toLowerCase())` (wire values are lowercase_snake — see §Enum flow).
+>    - `source`: `String` ('organizer_added'/'self_nomination') → `SourceEnum.fromValue(source)` (null-safe).
+>    - **6× `Instant` → `OffsetDateTime`**: createdAt, updatedAt, invitedAt, acceptedAt, declinedAt,
+>      contentSubmittedAt → `instant.atOffset(ZoneOffset.UTC)` (null-guard each).
+>    - **2× `LocalDate` stays `LocalDate`**: responseDeadline, contentDeadline (generated emits `LocalDate`).
+>    - Derived flags `isSlotAssigned` (and the trimmed `isPublishable`) computed exactly as today
+>      (ADR-009 §0.5: `session.startTime != null`; `isPublishable = QUALITY_REVIEWED ∧ isSlotAssigned`).
+> 4. **Call sites (5 builders)** — `SpeakerStatusController:156` (promote → `fromEntity` + `applyOverlay`),
+>    `SelfNominationController` (self-nominate → `fromEntity` + `applyOverlay` + `applyProposal`),
+>    `SpeakerPoolService:136/263/459/509` (add/self-nominate/patch/× → `fromEntity` + overlay) and `:364`
+>    (the list, `fromEntityWithContent` + `applyProposal` + `applySessionIdentityOverlay`). After the mapper
+>    swap these call `speakerPoolMapper.toResponse(...)`; record accessors → generated getters/builders.
+>    `EventController` only imports/embeds — no SpeakerPoolResponse build there (its `enrichWith*` are for
+>    `EventResponse`).
+> 5. **Wire `SpeakerStatusController` + `SelfNominationController` `implements <Ctrl>Api`** once the DTO is the
+>    generated type (the actual Phase-7 unblock this consolidation exists to enable).
+> 6. **Verify** (per §Strategy): compile; `SpeakerPoolServiceTest` + `SpeakerStatusControllerIntegrationTest`
+>    + `SelfNominationControllerIntegrationTest`; EMS restart + **live gateway smoke of the kanban LIST**
+>    (`GET /events/{code}/speakers`, real BATbern event — read-only, no email) confirming all ~35 fields
+>    serialize with the 8-state enum; full Bruno 14/14; FE `npm run generate:api-types` + type-check + full
+>    vitest (the `SpeakerStatusLanes`/drawer suites exercise the trimmed fields). Commit LOCALLY (push gate
+>    unusable in agent runner — see PENDING PUSH).
+>
+> **Follow-up (separate story): Option B board/detail split** — lean `SpeakerPoolSummary` for the board +
+> `GET /events/{eventCode}/speakers/{id}` → `SpeakerPoolDetail`; drawer fetches on open. Real ADR-013
+> collection/item improvement + smaller list payload, but needs the FE drawer-fetch refactor; do not couple
+> to the consolidation above.
 
 | Phase | Status | Notes |
 |---|---|---|
