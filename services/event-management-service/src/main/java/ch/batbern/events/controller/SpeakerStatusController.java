@@ -7,8 +7,9 @@ import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
 import ch.batbern.events.dto.PromoteSpeakerRequest;
 import ch.batbern.events.dto.ReviewRequest;
 import ch.batbern.events.dto.SpeakerContentResponse;
-import ch.batbern.events.dto.SpeakerPoolResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse;
 import ch.batbern.events.dto.SpeakerStatusResponse;
+import ch.batbern.events.mapper.SpeakerPoolMapper;
 import ch.batbern.events.dto.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.SubmitContentRequest;
@@ -73,6 +74,7 @@ public class SpeakerStatusController {
     private final EventRepository eventRepository;
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
     private final ch.batbern.events.service.PrimarySpeakerResolver primarySpeakerResolver;
+    private final SpeakerPoolMapper speakerPoolMapper;
 
     /**
      * Promote a CONTACTED speaker to READY (Story 11.D.1).
@@ -153,7 +155,7 @@ public class SpeakerStatusController {
         // Story 11.E.9: PROMOTE_TO_READY just provisioned the session_users primary
         // speaker row inside the workflow transition; apply the overlay so the response
         // carries the live username/email instead of nulls from the now-dropped columns.
-        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(promoted);
+        SpeakerPoolResponse response = speakerPoolMapper.toResponse(promoted);
         primarySpeakerResolver.applyOverlay(response, promoted);
         return ResponseEntity.ok(response);
     }

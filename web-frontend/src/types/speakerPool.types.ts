@@ -4,76 +4,27 @@
  * Types for Speaker Brainstorming and Pool Management.
  */
 
-import type { components } from '@/types/generated/speakers-api.types';
+import type { components } from '@/types/generated/event-speakers-api.types';
 
-// Use OpenAPI-generated workflow state type — the 8 ADR-009 §0.1 states.
+// Use OpenAPI-generated workflow state type — the 8 ADR-009 §0.1 states (UPPER_CASE,
+// matching the SpeakerWorkflowState enum name serialized on the wire).
 // Legacy widenings ('SLOT_ASSIGNED' | 'WITHDREW' | 'OVERFLOW') dropped per Story 11.E.4 AC1
 // (Phase B residue from Story 11.B.1 that 11.D.2 / 11.D.4 reviews flagged for cleanup).
-// 'INVITED' is already part of the generated union; the local widening was redundant.
-export type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
+// Derived from SpeakerPoolResponse.status: event-speakers-api does not define a standalone
+// SpeakerWorkflowState schema, and this is its single source of truth on this surface.
+export type SpeakerWorkflowState = components['schemas']['SpeakerPoolResponse']['status'];
 
 // ============================================================================
 // Speaker Pool Types
 // ============================================================================
 
-export interface SpeakerPoolEntry {
-  id: string;
-  eventId: string;
-  speakerName: string;
-  company?: string;
-  // The list endpoint resolves the company slug to its display name (SpeakerPoolService
-  // companyDisplayName overlay). Self-nominations store the raw slug in `company`, so prefer
-  // this when rendering (Story 7.2 review).
-  companyDisplayName?: string | null;
-  expertise?: string;
-  email?: string; // Speaker email - required for sending invitations (Story 6.1c)
-  assignedOrganizerId?: string | null;
-  status: SpeakerWorkflowState;
-  sessionId?: string; // Session UUID - set when speaker submits content (Story 5.5)
-  // 2026-05-20 — sessionSlug, populated by the list endpoint (fromEntityWithContent →
-  // fromEntity(SpeakerPool, Session)). Used by the organizer drawer's content tab to
-  // PATCH /events/{code}/sessions/{slug} when saving title/abstract drafts in READY
-  // (no state transition; canonical sessions.title/.description per plan §2.9).
-  sessionSlug?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt?: string;
-
-  // Story 7.2 "I Could Speak on That": provenance + the attendee's proposed talk, so the
-  // organizer pool/brainstorming UI can flag self-nominations and show the pitch.
-  source?: 'organizer_added' | 'self_nomination';
-  proposedByUsername?: string | null;
-  proposedSessionTitle?: string | null;
-  proposedAbstract?: string | null;
-
-  // Story 6.1b: Speaker Invitation System fields
-  username?: string;
-  invitedAt?: string;
-  responseDeadline?: string;
-  contentDeadline?: string;
-
-  // Story 6.2a: Speaker Response Portal fields
-  acceptedAt?: string;
-  declinedAt?: string;
-  declineReason?: string;
-  preferredTimeSlot?: string;
-  travelRequirements?: string;
-  technicalRequirements?: string;
-  initialPresentationTitle?: string;
-  preferenceComments?: string;
-
-  // Story 11.B.3: Derived flags (ADR-009 §0.1) — computed at read time, NOT persisted
-  isSlotAssigned?: boolean;
-  isPublishable?: boolean;
-
-  // Story 6.3: Speaker Content Submission Portal fields
-  contentStatus?: string; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED
-  contentSubmittedAt?: string;
-  submittedTitle?: string;
-  submittedAbstract?: string;
-  materialFileName?: string;
-  materialCloudFrontUrl?: string;
-}
+// API-consolidation Phase 7 (2026-06-28): SpeakerPoolEntry is now the OpenAPI-generated
+// SpeakerPoolResponse (event-speakers-api). The former hand-written interface and the
+// generated schema had drifted: 4 dead fields (isPublishable, contentStatus,
+// materialCloudFrontUrl, remindersDisabled) + the borderline materialFileName were trimmed
+// (FE reads materialFileName off content/speaker-portal types, never off the pool entry),
+// and the status enum was corrected from the stale 11-value set to the 8 ADR-009 states.
+export type SpeakerPoolEntry = components['schemas']['SpeakerPoolResponse'];
 
 // ============================================================================
 // Request/Response DTOs

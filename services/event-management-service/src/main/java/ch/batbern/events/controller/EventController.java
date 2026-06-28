@@ -11,6 +11,7 @@ import ch.batbern.events.registrations.dto.generated.BatchRegistrationRequest;
 import ch.batbern.events.registrations.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
 import ch.batbern.events.dto.EventResponse;
@@ -2444,13 +2445,13 @@ public class EventController {
     @GetMapping("/{eventCode}/speakers/pool")
     @Operation(summary = "Get speaker pool",
             description = "Get list of potential speakers in the event speaker pool")
-    public ResponseEntity<java.util.List<ch.batbern.events.dto.SpeakerPoolResponse>> getSpeakerPool(
+    public ResponseEntity<java.util.List<SpeakerPoolResponse>> getSpeakerPool(
             @PathVariable String eventCode) {
 
         // Get speaker pool
         // Exceptions are handled by GlobalExceptionHandler:
         // - EventNotFoundException → HTTP 404
-        java.util.List<ch.batbern.events.dto.SpeakerPoolResponse> speakerPool =
+        java.util.List<SpeakerPoolResponse> speakerPool =
                 speakerPoolService.getSpeakerPoolForEvent(eventCode);
 
         return ResponseEntity.ok(speakerPool);
@@ -2466,7 +2467,7 @@ public class EventController {
     @PostMapping("/{eventCode}/speakers/pool")
     @Operation(summary = "Add speaker to pool",
             description = "Add a potential speaker to the event speaker pool during brainstorming phase")
-    public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> addSpeakerToPool(
+    public ResponseEntity<SpeakerPoolResponse> addSpeakerToPool(
             @PathVariable String eventCode,
             @RequestBody ch.batbern.events.dto.AddSpeakerToPoolRequest request) {
 
@@ -2474,7 +2475,7 @@ public class EventController {
         // Exceptions are handled by GlobalExceptionHandler:
         // - EventNotFoundException → HTTP 404
         // - IllegalArgumentException → HTTP 400
-        ch.batbern.events.dto.SpeakerPoolResponse response = speakerPoolService.addSpeakerToPool(eventCode, request);
+        SpeakerPoolResponse response = speakerPoolService.addSpeakerToPool(eventCode, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -2513,12 +2514,12 @@ public class EventController {
             description = "Partial update of a speaker pool entry (assigned organizer, notes). "
                     + "Story 11.D.1 (AR23): email may NOT be updated through this endpoint — "
                     + "use POST /speakers/{speakerId}/promote. Unknown fields return HTTP 400.")
-    public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> patchSpeakerPoolEntry(
+    public ResponseEntity<SpeakerPoolResponse> patchSpeakerPoolEntry(
             @PathVariable String eventCode,
             @PathVariable String speakerId,
             @RequestBody ch.batbern.events.dto.PatchSpeakerPoolRequest request) {
 
-        ch.batbern.events.dto.SpeakerPoolResponse response = speakerPoolService.patchEntry(
+        SpeakerPoolResponse response = speakerPoolService.patchEntry(
                 eventCode, speakerId, request);
         return ResponseEntity.ok(response);
     }

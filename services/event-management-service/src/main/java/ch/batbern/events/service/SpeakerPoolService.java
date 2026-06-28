@@ -4,17 +4,16 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionContentVersion;
-import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
-import ch.batbern.events.dto.SpeakerPoolResponse;
+import ch.batbern.events.mapper.SpeakerPoolMapper;
+import ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
-import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionProposalRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
@@ -47,36 +46,36 @@ public class SpeakerPoolService {
     private final EventRepository eventRepository;
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SessionRepository sessionRepository;
-    private final SessionMaterialsRepository sessionMaterialsRepository;
     private final SessionUserRepository sessionUserRepository;
     private final SessionProposalRepository sessionProposalRepository;
     private final UserApiClient userApiClient;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
     private final PrimarySpeakerResolver primarySpeakerResolver;
+    private final SpeakerPoolMapper speakerPoolMapper;
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
                               EventRepository eventRepository,
                               SessionContentHistoryRepository sessionContentHistoryRepository,
                               SessionRepository sessionRepository,
-                              SessionMaterialsRepository sessionMaterialsRepository,
                               SessionUserRepository sessionUserRepository,
                               SessionProposalRepository sessionProposalRepository,
                               UserApiClient userApiClient,
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper,
-                              PrimarySpeakerResolver primarySpeakerResolver) {
+                              PrimarySpeakerResolver primarySpeakerResolver,
+                              SpeakerPoolMapper speakerPoolMapper) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionContentHistoryRepository = sessionContentHistoryRepository;
         this.sessionRepository = sessionRepository;
-        this.sessionMaterialsRepository = sessionMaterialsRepository;
         this.sessionUserRepository = sessionUserRepository;
         this.sessionProposalRepository = sessionProposalRepository;
         this.userApiClient = userApiClient;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
         this.primarySpeakerResolver = primarySpeakerResolver;
+        this.speakerPoolMapper = speakerPoolMapper;
     }
 
     /**
@@ -133,7 +132,7 @@ public class SpeakerPoolService {
 
         // Story 11.E.9: IDENTIFIED pool rows have no session yet, so the overlay is a
         // no-op here. Kept for symmetry with the other single-entity response paths.
-        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(saved);
+        SpeakerPoolResponse response = speakerPoolMapper.toResponse(saved);
         primarySpeakerResolver.applyOverlay(response, saved);
         return response;
     }
@@ -260,11 +259,11 @@ public class SpeakerPoolService {
                 .build();
         eventPublisher.publishEvent(speakerAddedEvent);
 
-        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(saved);
+        SpeakerPoolResponse response = speakerPoolMapper.toResponse(saved);
         primarySpeakerResolver.applyOverlay(response, saved);
         // ADR-012: layer the just-created pitch onto the 201 (proposed talk lives in
         // session_proposals, not on the pool row).
-        response.applyProposal(proposal);
+        speakerPoolMapper.applyProposal(response, proposal);
         return response;
     }
 
@@ -361,11 +360,11 @@ public class SpeakerPoolService {
                     SessionContentVersion latestVersion = session != null
                             ? latestVersionBySession.get(session.getId())
                             : null;
-                    SpeakerPoolResponse response = SpeakerPoolResponse.fromEntityWithContent(
+                    SpeakerPoolResponse response = speakerPoolMapper.toResponseWithContent(
                             speaker, session, latestVersion);
                     // ADR-012: layer the self-nomination pitch (from session_proposals) onto the
                     // card. No-op for organizer-added rows (no proposal).
-                    response.applyProposal(proposalByPoolId.get(speaker.getId()));
+                    speakerPoolMapper.applyProposal(response, proposalByPoolId.get(speaker.getId()));
                     // Phase A: session-derived identity overlay. The primary SessionUser
                     // gives us the canonical username; the UserApiClient profile gives us
                     // the live email + full name + company. When the profile is missing
@@ -384,16 +383,6 @@ public class SpeakerPoolService {
                                 userApiClient.getCompanyDisplayName(response.getCompany());
                         response.setCompanyDisplayName(companyDisplayName != null
                                 ? companyDisplayName : response.getCompany());
-                    }
-                    // Enrich with material info if session exists
-                    if (speaker.getSessionId() != null) {
-                        List<SessionMaterial> materials = sessionMaterialsRepository
-                                .findBySession_IdOrderByCreatedAtAsc(speaker.getSessionId());
-                        if (!materials.isEmpty()) {
-                            SessionMaterial latest = materials.get(materials.size() - 1);
-                            response.setMaterialFileName(latest.getFileName());
-                            response.setMaterialCloudFrontUrl(latest.getCloudFrontUrl());
-                        }
                     }
                     return response;
                 })
@@ -456,7 +445,7 @@ public class SpeakerPoolService {
 
         // Story 11.E.9: apply overlay so PATCH responses carry live username/email
         // when a session_users primary speaker exists.
-        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(updated);
+        SpeakerPoolResponse response = speakerPoolMapper.toResponse(updated);
         primarySpeakerResolver.applyOverlay(response, updated);
         return response;
     }
@@ -506,7 +495,7 @@ public class SpeakerPoolService {
         SpeakerPool updated = speakerPoolRepository.save(speakerPool);
         // Story 11.E.9: apply overlay so PATCH responses carry live username/email
         // when a session_users primary speaker exists.
-        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(updated);
+        SpeakerPoolResponse response = speakerPoolMapper.toResponse(updated);
         primarySpeakerResolver.applyOverlay(response, updated);
         return response;
     }

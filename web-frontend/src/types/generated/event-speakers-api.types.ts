@@ -540,23 +540,20 @@ export interface components {
        */
       assignedOrganizerId?: string | null;
       /**
-       * @description Current status of the speaker in the pool workflow.
-       *     Story 5.2 - AC13: Initial status = 'identified'
-       * @example identified
+       * @description Current status of the speaker in the pool workflow — the 8 ADR-009 §0.1 states, serialized as the UPPER_CASE SpeakerWorkflowState enum name (legacy SLOT_ASSIGNED/CONFIRMED/WITHDREW/OVERFLOW were removed per ADR-009 §0.7; slot assignment is now the derived isSlotAssigned flag).
+       *     Story 5.2 - AC13: Initial status = 'IDENTIFIED'
+       * @example IDENTIFIED
        * @enum {string}
        */
       status:
-        | 'identified'
-        | 'contacted'
-        | 'ready'
-        | 'accepted'
-        | 'declined'
-        | 'content_submitted'
-        | 'quality_reviewed'
-        | 'slot_assigned'
-        | 'confirmed'
-        | 'withdrew'
-        | 'overflow';
+        | 'IDENTIFIED'
+        | 'CONTACTED'
+        | 'READY'
+        | 'INVITED'
+        | 'ACCEPTED'
+        | 'CONTENT_SUBMITTED'
+        | 'QUALITY_REVIEWED'
+        | 'DECLINED';
       /**
        * @description Free-text notes about the speaker
        * @example Met at KubeCon 2024. Very enthusiastic about BATbern.
@@ -597,6 +594,108 @@ export interface components {
        * @example 2025-12-13 10:15:00+00:00
        */
       updatedAt: string;
+      /**
+       * Format: uuid
+       * @description Session UUID — set once a session is assigned to the speaker (Story 5.5).
+       * @example 456e4567-e89b-12d3-a456-426614174222
+       */
+      sessionId?: string | null;
+      /**
+       * @description Addressable session slug, surfaced alongside sessionId so the organizer drawer's content tab can PATCH /events/{code}/sessions/{slug} directly (2026-05-20).
+       * @example event-driven-architecture
+       */
+      sessionSlug?: string | null;
+      /**
+       * @description Canonical primary-speaker username, resolved from session_users → CUMS at read time (Story 11.E.9). Null for pre-READY pool rows (no User yet).
+       * @example jane.smith
+       */
+      username?: string | null;
+      /**
+       * @description Primary-speaker email, resolved live from CUMS (Story 6.1c / 11.E.9). Null for pre-READY rows or when CUMS is degraded.
+       * @example jane.smith@example.com
+       */
+      email?: string | null;
+      /**
+       * Format: date-time
+       * @description Timestamp the invitation was sent (Story 6.1b).
+       * @example 2025-12-14 09:00:00+00:00
+       */
+      invitedAt?: string | null;
+      /**
+       * Format: date
+       * @description Date by which the speaker must respond to the invitation (Story 6.1b).
+       * @example 2025-12-21
+       */
+      responseDeadline?: string | null;
+      /**
+       * Format: date
+       * @description Date by which the speaker must submit content (Story 6.1b).
+       * @example 2026-01-15
+       */
+      contentDeadline?: string | null;
+      /**
+       * Format: date-time
+       * @description Timestamp the speaker accepted the invitation (Story 6.2a).
+       * @example 2025-12-16 11:30:00+00:00
+       */
+      acceptedAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Timestamp the speaker declined (Story 6.2a).
+       * @example 2025-12-16 11:30:00+00:00
+       */
+      declinedAt?: string | null;
+      /**
+       * @description Free-text reason given when the speaker declined (Story 6.2a).
+       * @example Scheduling conflict with another conference.
+       */
+      declineReason?: string | null;
+      /**
+       * @description Speaker-stated time-slot preference (Story 6.2a).
+       * @example Morning
+       */
+      preferredTimeSlot?: string | null;
+      /**
+       * @description Speaker-stated travel requirements (Story 6.2a).
+       * @example Needs hotel booking for the night before.
+       */
+      travelRequirements?: string | null;
+      /**
+       * @description Speaker-stated technical/AV requirements (Story 6.2a).
+       * @example HDMI adapter for MacBook; clicker.
+       */
+      technicalRequirements?: string | null;
+      /**
+       * @description Initial working title captured at response time (Story 6.2a). sessions.title is canonical post-content; this stays null after Story 11.E.8.
+       * @example Scaling event-driven systems
+       */
+      initialPresentationTitle?: string | null;
+      /**
+       * @description Free-text comments accompanying the speaker''s preferences (Story 6.2a).
+       * @example Happy to do a workshop instead of a talk if useful.
+       */
+      preferenceComments?: string | null;
+      /**
+       * Format: date-time
+       * @description Timestamp of the latest content submission, derived from session_content_history at read time (Story 6.3 / 11.E.8).
+       * @example 2026-01-10 14:00:00+00:00
+       */
+      contentSubmittedAt?: string | null;
+      /**
+       * @description Current presentation title (mirrors sessions.title, the canonical source per Story 11.E.8 §2.9).
+       * @example Event-driven architecture in practice
+       */
+      submittedTitle?: string | null;
+      /**
+       * @description Current presentation abstract (mirrors sessions.description, canonical per Story 11.E.8 §2.9).
+       * @example A field report on migrating a monolith to an event-driven core.
+       */
+      submittedAbstract?: string | null;
+      /**
+       * @description Derived flag (ADR-009 §0.1, computed at read time — NOT persisted): true when the speaker's session has a start_time set.
+       * @example true
+       */
+      isSlotAssigned?: boolean | null;
     };
     /**
      * @description Request to record a speaker outreach attempt.

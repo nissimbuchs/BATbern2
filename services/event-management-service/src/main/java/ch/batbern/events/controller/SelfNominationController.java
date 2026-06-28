@@ -1,7 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.dto.SelfNominateSpeakerRequest;
-import ch.batbern.events.dto.SpeakerPoolResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse;
 import ch.batbern.events.service.SpeakerPoolService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
