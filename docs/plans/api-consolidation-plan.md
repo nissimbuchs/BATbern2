@@ -172,6 +172,37 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > EMS restart + live gateway smoke (list authed 200 typed wrapper / anon 401, associate anon 401 + empty-list 400
 > via `@Size`, download bogus-uuid 404, upload anon 401); Bruno sessions-api 20/20 (0 skipped); FE regen + type-check
 > clean. **EMS contract-first +1 (19 wired).**
+>
+> ✅ **DONE (2026-06-28): `EventPhotoController` (5 ops) → `EventPhotosApi`** (commit `6b15affa`).
+> Clean wire — event-media-api is photos-only so the `Event Photos` tag is already 1:1 (NO re-tag),
+> ops fully documented, typed returns (no ad-hoc `Map`). Methods→operationIds; bare params; dropped
+> the unused `Authentication` param; `@PreAuthorize` kept. **Consolidated 4 hand `EventPhoto*Dto`** →
+> generated twins through `EventPhotoService` + both tests (type-name swap; generated `builder()`
+> matches Lombok); deleted. Only conversion: `EventPhotoResponse.uploadedAt` Instant→OffsetDateTime
+> (`.atOffset(UTC)`, wire stays `…Z`). **🐛 Spec drift-fix:** `EventPhotoUploadRequest.contentType`
+> enum(jpeg/png/webp)→plain string — the deployed contract validates content-type **server-side**
+> (`ALLOWED_TYPES`→`InvalidFileTypeException`→**422 + friendly message**); a wire enum would change
+> that to a Jackson 400 (losing the message) and make the service's `image/gif`/`null`→422 unit tests
+> impossible to construct. Keeping it a string preserves behaviour + keeps the service the single
+> validation authority. **Verified (local dev):** full EMS suite **1750/0/0**; EventPhoto controller+
+> service tests 23/23; EMS restart + live smoke (recent-photos/list 200 w/ `uploadedAt …Z`, upload-url
+> no-auth 401, invalid-type 422 w/ friendly msg, valid jpeg 200 w/ presigned url + s3Key); FE regen +
+> type-check clean. No Bruno photos collection (FE consumes via eventApiClient). **EMS contract-first
+> +1 (20 wired).**
+>
+> ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
+> Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
+> Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
+> Phase-7 wire. Returns the shared `PaginatedResponse<CompanySessionResponse>` (hand DTO, only consumer is this
+> controller).
+>
+> 🗒️ **Verification cadence (Nissim, 2026-06-28):** per-controller wire → run the **targeted slice**
+> (`--tests <Ctrl>IntegrationTest [+ServiceTest]`) + live gateway smoke + FE type-check, commit; the
+> `.githooks/pre-push` gate runs the **full** `:ems:test` (~10 min) on Nissim's machine as the authoritative
+> cross-controller check (the agent runner's ~10-min background limit kills it ~half the time). Run the full
+> suite locally myself only for cross-controller-risky changes (added/changed path `@Pattern` or a shared
+> schema/enum). `maxParallelForks` is NOT an option — already tried, OOMs on the multiplied Spring context-cache
+> (hence single fork + `maxHeapSize=2g`).
 
 ## Shared-DTO consolidation (design + progress — 2026-06-28)
 
