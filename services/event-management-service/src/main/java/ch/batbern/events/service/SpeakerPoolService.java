@@ -163,7 +163,7 @@ public class SpeakerPoolService {
      */
     @Transactional
     public SpeakerPoolResponse selfNominate(
-            String eventCode, ch.batbern.events.dto.SelfNominateSpeakerRequest request) {
+            String eventCode, ch.batbern.events.speakers.dto.generated.SelfNominateSpeakerRequest request) {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
 
@@ -231,7 +231,7 @@ public class SpeakerPoolService {
                         .eventId(event.getId())
                         .proposedByUsername(username)
                         .proposedTitle(request.getSessionTitle())
-                        .proposedAbstract(request.getAbstractText())
+                        .proposedAbstract(request.getAbstract())
                         .build();
         try {
             proposal = sessionProposalRepository.saveAndFlush(proposal);

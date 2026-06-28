@@ -23,6 +23,8 @@ security:
 tags:
 - name: Event Actions
   description: Event publishing and workflow operations
+- name: Speaker Self-Nomination
+  description: Attendee speaker self-nomination — "I Could Speak on That" (Story 7.2)
 - name: Speaker Outreach
   description: Speaker outreach tracking and history (Story 5.3)
 paths:
@@ -157,7 +159,7 @@ paths:
   /events/{eventCode}/speakers/self-nominate:
     post:
       tags:
-      - Event Actions
+      - Speaker Self-Nomination
       summary: Attendee self-nominates as a speaker ("I Could Speak on That")
       description: "A logged-in attendee raises their hand with a proposed talk once the event's topic\nis set + published, feeding the speaker pipeline from the floor.\n\n**Story**: 7.2 - \"I Could Speak on That\"\n**Authorization**: Requires ATTENDEE role (login-gated end-to-end)\n**Rate Limiting**: Applied at API Gateway level\n\n**Business Rules**:\n- The event's topic must be set (`topicCode != null`) AND the event must be\n  published (`publishedAt != null` or `currentPublishedPhase != 'none'`) — else 409.\n- The nomination lands as a `speaker_pool` row at the `IDENTIFIED` default, tagged\n  `source = 'self_nomination'` with `proposedByUsername` = the caller's username.\n  **No** Cognito user, SPEAKER role, or session is created here — provisioning stays\n  organizer-only at promote-to-READY.\n- Identity (speaker name + company) is auto-filled from the attendee's profile; the\n  body carries only the proposed talk. Unknown body fields are rejected (400).\n- At most **one** self-nomination per attendee per event — a second attempt returns 409.\n"
       operationId: selfNominateSpeaker
@@ -942,6 +944,7 @@ components:
 
         '
       additionalProperties: false
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
       required:
       - sessionTitle
       - abstract

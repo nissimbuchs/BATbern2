@@ -94,6 +94,20 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > FE type-check + targeted FE invite tests (38). **Live send + `speaker-portal-api` Bruno deliberately NOT run**
 > (those send real invitation emails; staging=prod → no-comms rule). RegistrantNotice is NOT clean (returns the
 > shared `SlidesOnlineSendResponse`).
+>
+> ✅ **DONE (2026-06-28): `SelfNominationController` → `SpeakerSelfNominationApi`** (clean 1-op). **Re-tagged**
+> `selfNominateSpeaker` out of the `Event Actions` grab-bag into a new `Speaker Self-Nomination` tag → 1:1
+> interface (the rest of `EventActionsApi` — pool CRUD + promote — stays unimplemented until EventController/
+> SpeakerStatusController are wired). Consolidated the hand `SelfNominateSpeakerRequest` → generated twin
+> (`getAbstractText()`→`getAbstract()`, JSON field `abstract` via `@JsonProperty`); controller `implements`,
+> class `@RequestMapping /api/v1`, bare param, `@PreAuthorize('ATTENDEE')` kept; returns the already-generated
+> `SpeakerPoolResponse`. **🐛 `additionalProperties:false` → 400-on-unknown-field:** the hand DTO enforced it via
+> `@JsonIgnoreProperties(ignoreUnknown=false)` (there is NO global FAIL_ON_UNKNOWN_PROPERTIES in EMS); openapi-gen
+> doesn't translate `additionalProperties:false` to that annotation, so added it surgically via
+> **`x-class-extra-annotation`** on just this schema (first use of that vendor extension in the repo — verified it
+> lands on the generated class). **Verified:** compile; SelfNominationIntegrationTest 13/13 (incl. unknown-field→400,
+> wrong-role→403, not-found→404, happy-path create); EMS restart + safe-path live smokes (401/403); FE type-check +
+> SpeakerSelfNominatePanel 7/7; Bruno speaker-pool-api 34/34 (regression). Hand DTO deleted.
 
 ## Shared-DTO consolidation (design + progress — 2026-06-28)
 
