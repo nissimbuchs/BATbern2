@@ -190,6 +190,44 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > type-check clean. No Bruno photos collection (FE consumes via eventApiClient). **EMS contract-first
 > +1 (20 wired).**
 >
+> ✅ **DONE (2026-06-28): `SessionController` (7 ops) → `SessionsApi`** (event-sessions). The core session
+> CRUD controller. **Re-tagged** the lone `assignSessionToSlot` op (SlotAssignmentController) out of the broad
+> `Sessions` tag into a new **Slot Assignment** tag → `SessionsApi` == SessionController's 7 ops exactly 1:1
+> (listSessions / getSession / createSession / patchSession / deleteSession / batchImportSessions /
+> generateStructuralSessions). Class `@RequestMapping /api/v1/events/{eventCode}/sessions`→`/api/v1`; bare
+> override params; methods already matched operationIds; `@PreAuthorize`/`@CacheEvict`/`@Transactional` kept.
+> **Consolidated 4 hand DTOs** (CreateSessionRequest, BatchImportSessionRequest, BatchImportSessionResult,
+> SessionImportDetail) → generated twins through SessionController + SessionBatchImportService; deleted all 4 +
+> the dead `SessionMapper.toEntity` (prod-unused, only tested). **Typed the 2 ad-hoc shapes:** list
+> `Map<String,Object>{data,pagination}` → generated `ListSessions200Response` (data mapped via the **pure**
+> `SessionMapper.toDto` — no speaker enrichment / N+1, list stays lean; replaces a raw-JPA-entity leak); patch
+> `Map<String,Object>` request → generated `PatchSessionRequest`. Conversions: `OffsetDateTime`→`Instant` on
+> create (`.toInstant()`), `request.getSessionAbstract()`→`getAbstract()`, `SessionImportDetail.status`
+> String→`StatusEnum`, nested `BatchImportSessionRequest.LegacySpeaker`→top-level generated `LegacySpeaker`;
+> the 4 hand static factories (`success/updated/skipped/failed`) → private builder helpers in the service.
+> **5 spec drift-fixes (all truthful-to-deployed):** (1) `createSession` 201 `Session`→`SessionResponse`
+> (controller has always returned the full SessionResponse w/ speakers/materials). (2) list `data` items
+> `Session`→`SessionResponse` + `page` default `0`→`1` (**the deployed `PaginationUtils.parseParams` throws on
+> page≤0** — a `0` default would 400 every default list call). (3) `generateStructuralSessions` request-**body**
+> `GenerateStructuralSessionsRequest`→**query param** `overwrite` (the FE `slotAssignmentService` + the integ
+> test both send `?overwrite=`; the body schema was never real — schema dropped). (4) `CreateSessionRequest`:
+> marked `sessionType`/`startTime`/`endTime` **required** (the deployed hand DTO `@NotBlank`/`@NotNull` rejected
+> them missing; the spec falsely advertised placeholder support that never worked) and `sessionType` enum→**string**
+> (DB has `aperitif`; mirrors the `Session.sessionType` decision, avoids narrowing). (5) batch: added
+> `BatchImportSessionRequest.materialUrl` + `BatchImportSessionResult.updated` + `SessionImportDetail.status`
+> enum value `updated` (all live in the deployed hand DTOs but absent from the spec → generated twins would have
+> dropped them). **🐛 `@Pattern` fixture trap (3 cross-controller tests):** the now-enforced eventCode
+> `^BATbern[0-9]+$` turns malformed not-found probes into 400 — fixed `StructuralSession` (`BATbernXXX`→`BATbern888`,
+> not `999` which IS the fixture), `SecurityConfig` (`NON_EXISTENT_EVENT`→`BATbern888`), `EventController`
+> (`non-existent-id`→`BATbern888`). **Verified (local dev):** full EMS suite green (1747 run / 0 fail after the 3
+> fixture fixes; SessionBatchImport + Structural + SessionMapper targeted green); EMS restart + live gateway smoke
+> (list real BATbern55 → `{data:[SessionResponse],pagination}` 1-indexed, no `id`, `…Z` timestamps; single-get w/
+> 1 enriched speaker; malformed eventCode→400, valid-absent→404, malformed slug→400, structural/create no-auth→401);
+> **Bruno sessions-api 20 req / 62 tests / 24 assertions PASS** (live create/update/delete on fixture event + speaker
+> sub-resources, with cleanup); FE regen (only event-sessions types) + type-check + session vitest 50/50. Hand DTOs
+> deleted. **EMS contract-first +1 (21 wired).** Note: `SlotAssignmentApi` (1 op) now exists, unimplemented until
+> SlotAssignmentController is wired.
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
