@@ -24,7 +24,10 @@ tags:
 - name: Event Actions
   description: Event publishing and workflow operations
 - name: Sessions
-  description: Event session management
+  description: Event session CRUD, structural generation and batch import (SessionController)
+- name: Slot Assignment
+  description: Place a speaker session onto a stable timetable slot key — assign/insert/swap
+    (SlotAssignmentController, Story 15.3)
 - name: Session Speakers
   description: Session-user speaker assignments — assign/list/remove/confirm/decline (SessionSpeakerController,
     Story 1.15a.1b)
@@ -311,9 +314,11 @@ paths:
           type: string
       - name: page
         in: query
+        description: 1-indexed page number
         schema:
           type: integer
-          default: 0
+          default: 1
+          minimum: 1
       - name: limit
         in: query
         schema:
@@ -331,7 +336,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Session'
+                      $ref: '#/components/schemas/SessionResponse'
                   pagination:
                     $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
         '404':
@@ -372,7 +377,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
+                $ref: '#/components/schemas/SessionResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -429,7 +434,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/slot:
     post:
       tags:
-      - Sessions
+      - Slot Assignment
       summary: Assign / insert / swap a speaker session by stable slot key (Story 15.3)
       description: "Places a speaker session onto a `SPEAKER_SLOT` addressed by its deterministic\n`slotKey` (see `TimetableSlot.slotKey`). One path covers three modes:\n\n- `ASSIGN` — target slot is empty: the session takes that slot's computed times.\n- `INSERT` — target slot is occupied: the session takes the target ordinal and\n  every already-assigned session at that ordinal or later shifts one slot later;\n  all affected sessions' times are recomputed and saved in a single transaction.\n  Rejected with **409** if the shift would exceed the last computed speaker slot\n  (agenda full).\n- `SWAP` — target slot is occupied: the dragged (already-assigned) session and the\n  occupant exchange slots (and times).\n\nSession time persistence is unchanged — `startTime`/`endTime` remain the stored\nauthority; this endpoint only recomputes and saves them for the affected sessions.\n\n**Access**: ORGANIZER role required.\n"
       operationId: assignSessionToSlot
@@ -592,12 +597,14 @@ paths:
           type: string
           pattern: ^BATbern[0-9]+$
           example: BATbern142
-      requestBody:
+      - name: overwrite
+        in: query
+        description: When true, delete existing structural sessions before regenerating
+          (otherwise 409 if they already exist).
         required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GenerateStructuralSessionsRequest'
+        schema:
+          type: boolean
+          default: false
       responses:
         '201':
           description: Structural sessions created
@@ -1827,8 +1834,14 @@ components:
           example: Discussion on modern UI patterns
         pdf:
           type: string
-          description: PDF filename for reference (appended to description)
+          description: 'Legacy PDF filename for reference (appended to description). Deprecated
+            — use materialUrl (Story 5.9).'
           example: BAT142_UI_Design.pdf
+        materialUrl:
+          type: string
+          description: 'CDN URL for a PDF/PPTX material. When provided, the backend fetches it
+            and associates it as a session material (Story 5.9).'
+          example: https://cdn.batbern.ch/materials/BAT142_UI_Design.pdf
         authoren:
           type: string
           description: Moderator name (for Moderation sessions)
@@ -1873,6 +1886,7 @@ components:
       required:
       - totalProcessed
       - successfullyCreated
+      - updated
       - skipped
       - failed
       - details
@@ -1885,6 +1899,10 @@ components:
           type: integer
           description: Successfully created sessions
           example: 2
+        updated:
+          type: integer
+          description: Existing sessions updated (e.g. materials added to a duplicate)
+          example: 0
         skipped:
           type: integer
           description: Skipped sessions (duplicates)
@@ -1916,6 +1934,7 @@ components:
           type: string
           enum:
           - success
+          - updated
           - skipped
           - failed
           description: Import status
@@ -1931,19 +1950,15 @@ components:
           example: user-interface-design-abc123
     CreateSessionRequest:
       type: object
-      description: 'Create session request - supports creating placeholder sessions.
-
-
-        **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
-
-        Timing will be assigned later during slot assignment workflow (Story 5.7).
-
-
-        **Full Sessions**: Provide all fields to create a fully-defined session.
-
-        '
+      description: 'Create a fully-defined session. title, sessionType, startTime and
+        endTime are all required (the deployed controller rejects a request missing any
+        of them with 400). sessionType is a free string rather than an enum so structural
+        types such as `aperitif` can be created without a contract change.'
       required:
       - title
+      - sessionType
+      - startTime
+      - endTime
       properties:
         title:
           type: string
@@ -1952,27 +1967,16 @@ components:
           type: string
         sessionType:
           type: string
-          nullable: true
-          description: Session type - omit for placeholder sessions
-          enum:
-          - keynote
-          - presentation
-          - workshop
-          - panel_discussion
-          - networking
-          - break
-          - lunch
-          - moderation
+          description: 'Session type, e.g. keynote, presentation, workshop, panel_discussion,
+            networking, break, lunch, moderation, aperitif.'
         startTime:
           type: string
           format: date-time
-          nullable: true
-          description: Session start time - omit for placeholder sessions
+          description: Session start time (ISO-8601).
         endTime:
           type: string
           format: date-time
-          nullable: true
-          description: Session end time - omit for placeholder sessions
+          description: Session end time (ISO-8601).
         room:
           type: string
           maxLength: 100
@@ -2231,18 +2235,6 @@ components:
           format: time
           nullable: true
           example: '19:00'
-    GenerateStructuralSessionsRequest:
-      type: object
-      description: Request to generate structural sessions (moderation, break, lunch) for an event.
-      properties:
-        overwrite:
-          type: boolean
-          default: false
-          description: 'If false (default), returns 409 if structural sessions already exist.
-
-            If true, deletes existing structural sessions and recreates them.
-
-            '
     QnaPostRequest:
       type: object
       description: 'Story 7.5: post a Q&A question or answer. `parentPostId` set = an answer to that question;

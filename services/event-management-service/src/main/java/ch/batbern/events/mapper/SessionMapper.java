@@ -1,7 +1,6 @@
 package ch.batbern.events.mapper;
 
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.CreateSessionRequest;
 import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import org.springframework.stereotype.Component;
 
@@ -63,31 +62,6 @@ public class SessionMapper {
                 .build();
     }
 
-    /**
-     * Convert CreateSessionRequest DTO to Session entity.
-     *
-     * Note: eventId and eventCode must be set by the caller.
-     *
-     * @param request the CreateSessionRequest DTO
-     * @return a new Session entity (not yet persisted)
-     */
-    public Session toEntity(CreateSessionRequest request) {
-        if (request == null) {
-            return null;
-        }
-
-        return Session.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .sessionType(request.getSessionType())
-                .startTime(parseInstant(request.getStartTime()))
-                .endTime(parseInstant(request.getEndTime()))
-                .room(request.getRoom())
-                .capacity(request.getCapacity())
-                .language(request.getLanguage())
-                .build();
-    }
-
     // ==================== Private Helper Methods ====================
 
     /**
@@ -102,18 +76,5 @@ public class SessionMapper {
             return null;
         }
         return instant.atOffset(ZoneOffset.UTC);
-    }
-
-    /**
-     * Parse ISO-8601 date string to Instant.
-     *
-     * @param dateString ISO-8601 formatted date string
-     * @return Instant, or null if input is null or blank
-     */
-    private Instant parseInstant(String dateString) {
-        if (dateString == null || dateString.isBlank()) {
-            return null;
-        }
-        return Instant.parse(dateString);
     }
 }

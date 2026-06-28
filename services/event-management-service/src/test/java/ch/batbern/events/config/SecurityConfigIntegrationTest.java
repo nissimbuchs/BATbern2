@@ -85,9 +85,10 @@ class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_allowAnonymousAccess_when_viewingSessions")
     void should_allowAnonymousAccess_when_viewingSessions() throws Exception {
-        // When: GET event sessions without authentication
+        // When: GET event sessions without authentication (pattern-conforming but non-existent
+        // code — a malformed code now 400s on the listSessions eventCode @Pattern; Phase 7 wiring)
         // Then: Should not require authentication (404 is OK, means security passed)
-        mockMvc.perform(get("/api/v1/events/NON_EXISTENT_EVENT/sessions"))
+        mockMvc.perform(get("/api/v1/events/BATbern888/sessions"))
                 .andExpect(status().isNotFound()); // Event doesn't exist, but security passed
     }
 

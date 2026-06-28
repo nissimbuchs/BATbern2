@@ -1012,7 +1012,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return404_when_listingSessionsForNonExistentEvent")
     void should_return404_when_listingSessionsForNonExistentEvent() throws Exception {
-        mockMvc.perform(get("/api/v1/events/non-existent-id/sessions")
+        // Pattern-conforming but non-existent code: a malformed code now fails the
+        // listSessions eventCode @Pattern → 400 before the handler (Phase 7 wiring).
+        mockMvc.perform(get("/api/v1/events/BATbern888/sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }

@@ -907,10 +907,15 @@ export interface components {
        */
       abstract?: string;
       /**
-       * @description PDF filename for reference (appended to description)
+       * @description Legacy PDF filename for reference (appended to description). Deprecated — use materialUrl (Story 5.9).
        * @example BAT142_UI_Design.pdf
        */
       pdf?: string;
+      /**
+       * @description CDN URL for a PDF/PPTX material. When provided, the backend fetches it and associates it as a session material (Story 5.9).
+       * @example https://cdn.batbern.ch/materials/BAT142_UI_Design.pdf
+       */
+      materialUrl?: string;
       /**
        * @description Moderator name (for Moderation sessions)
        * @example Thomas Goetz
@@ -960,6 +965,11 @@ export interface components {
        */
       successfullyCreated: number;
       /**
+       * @description Existing sessions updated (e.g. materials added to a duplicate)
+       * @example 0
+       */
+      updated: number;
+      /**
        * @description Skipped sessions (duplicates)
        * @example 1
        */
@@ -984,7 +994,7 @@ export interface components {
        * @example success
        * @enum {string}
        */
-      status: 'success' | 'skipped' | 'failed';
+      status: 'success' | 'updated' | 'skipped' | 'failed';
       /**
        * @description Status message
        * @example Session created successfully
@@ -996,41 +1006,22 @@ export interface components {
        */
       sessionSlug?: string | null;
     };
-    /**
-     * @description Create session request - supports creating placeholder sessions.
-     *
-     *     **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
-     *     Timing will be assigned later during slot assignment workflow (Story 5.7).
-     *
-     *     **Full Sessions**: Provide all fields to create a fully-defined session.
-     */
+    /** @description Create a fully-defined session. title, sessionType, startTime and endTime are all required (the deployed controller rejects a request missing any of them with 400). sessionType is a free string rather than an enum so structural types such as `aperitif` can be created without a contract change. */
     CreateSessionRequest: {
       title: string;
       description?: string;
-      /**
-       * @description Session type - omit for placeholder sessions
-       * @enum {string|null}
-       */
-      sessionType?:
-        | 'keynote'
-        | 'presentation'
-        | 'workshop'
-        | 'panel_discussion'
-        | 'networking'
-        | 'break'
-        | 'lunch'
-        | 'moderation'
-        | null;
+      /** @description Session type, e.g. keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif. */
+      sessionType: string;
       /**
        * Format: date-time
-       * @description Session start time - omit for placeholder sessions
+       * @description Session start time (ISO-8601).
        */
-      startTime?: string | null;
+      startTime: string;
       /**
        * Format: date-time
-       * @description Session end time - omit for placeholder sessions
+       * @description Session end time (ISO-8601).
        */
-      endTime?: string | null;
+      endTime: string;
       room?: string;
       capacity?: number;
       /** @default de */
@@ -1174,15 +1165,6 @@ export interface components {
        * @example 19:00
        */
       typicalEndTime?: string | null;
-    };
-    /** @description Request to generate structural sessions (moderation, break, lunch) for an event. */
-    GenerateStructuralSessionsRequest: {
-      /**
-       * @description If false (default), returns 409 if structural sessions already exist.
-       *     If true, deletes existing structural sessions and recreates them.
-       * @default false
-       */
-      overwrite: boolean;
     };
     /**
      * @description Story 7.5: post a Q&A question or answer. `parentPostId` set = an answer to that question;
@@ -1597,6 +1579,7 @@ export interface operations {
       query?: {
         /** @description JSON filter criteria */
         filter?: string;
+        /** @description 1-indexed page number */
         page?: number;
         limit?: number;
       };
@@ -1616,7 +1599,7 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['Session'][];
+            data?: components['schemas']['SessionResponse'][];
             pagination?: components['schemas']['PaginationMetadata'];
           };
         };
@@ -1647,7 +1630,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['Session'];
+          'application/json': components['schemas']['SessionResponse'];
         };
       };
       400: components['responses']['BadRequest'];
@@ -1782,7 +1765,10 @@ export interface operations {
   };
   generateStructuralSessions: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description When true, delete existing structural sessions before regenerating (otherwise 409 if they already exist). */
+        overwrite?: boolean;
+      };
       header?: never;
       path: {
         /** @description Event code in format BATbern{number} */
@@ -1790,11 +1776,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['GenerateStructuralSessionsRequest'];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Structural sessions created */
       201: {
