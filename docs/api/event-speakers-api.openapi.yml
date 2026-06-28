@@ -1307,6 +1307,7 @@ components:
 
         '
       additionalProperties: false
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
       required:
       - speakerName
       properties:
@@ -1349,6 +1350,7 @@ components:
 
         '
       additionalProperties: false
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
       properties:
         speakerName:
           type: string

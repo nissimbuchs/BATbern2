@@ -11,7 +11,6 @@ import ch.batbern.events.registrations.dto.generated.BatchRegistrationRequest;
 import ch.batbern.events.registrations.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
-import ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
 import ch.batbern.events.dto.EventResponse;
@@ -112,7 +111,6 @@ public class EventController {
     private final ch.batbern.events.repository.TopicRepository topicRepository;
     private final ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
     private final ch.batbern.events.repository.SessionMaterialsRepository sessionMaterialsRepository;
-    private final ch.batbern.events.service.SpeakerPoolService speakerPoolService;
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.repository.EventTypeRepository eventTypeRepository;
     private final ch.batbern.events.service.SessionService sessionService;
@@ -2435,94 +2433,8 @@ public class EventController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get speaker pool for event (Story 5.2 AC9-13).
-     *
-     * GET /api/v1/events/{eventCode}/speakers/pool
-     *
-     * Returns list of potential speakers being brainstormed for the event.
-     */
-    @GetMapping("/{eventCode}/speakers/pool")
-    @Operation(summary = "Get speaker pool",
-            description = "Get list of potential speakers in the event speaker pool")
-    public ResponseEntity<java.util.List<SpeakerPoolResponse>> getSpeakerPool(
-            @PathVariable String eventCode) {
-
-        // Get speaker pool
-        // Exceptions are handled by GlobalExceptionHandler:
-        // - EventNotFoundException → HTTP 404
-        java.util.List<SpeakerPoolResponse> speakerPool =
-                speakerPoolService.getSpeakerPoolForEvent(eventCode);
-
-        return ResponseEntity.ok(speakerPool);
-    }
-
-    /**
-     * Add speaker to event speaker pool (Story 5.2 AC9-13).
-     *
-     * POST /api/v1/events/{eventCode}/speakers/pool
-     *
-     * Allows organizers to brainstorm and add potential speakers during event planning.
-     */
-    @PostMapping("/{eventCode}/speakers/pool")
-    @Operation(summary = "Add speaker to pool",
-            description = "Add a potential speaker to the event speaker pool during brainstorming phase")
-    public ResponseEntity<SpeakerPoolResponse> addSpeakerToPool(
-            @PathVariable String eventCode,
-            @RequestBody ch.batbern.events.dto.AddSpeakerToPoolRequest request) {
-
-        // Add speaker to pool
-        // Exceptions are handled by GlobalExceptionHandler:
-        // - EventNotFoundException → HTTP 404
-        // - IllegalArgumentException → HTTP 400
-        SpeakerPoolResponse response = speakerPoolService.addSpeakerToPool(eventCode, request);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    /**
-     * Delete speaker from event speaker pool.
-     *
-     * DELETE /api/v1/events/{eventCode}/speakers/pool/{speakerId}
-     *
-     * Removes a speaker from the event speaker pool.
-     */
-    @DeleteMapping("/{eventCode}/speakers/pool/{speakerId}")
-    @Operation(summary = "Delete speaker from pool",
-            description = "Remove a speaker from the event speaker pool")
-    public ResponseEntity<Void> deleteSpeakerFromPool(
-            @PathVariable String eventCode,
-            @PathVariable String speakerId) {
-
-        // Delete speaker from pool
-        // Exceptions are handled by GlobalExceptionHandler:
-        // - EventNotFoundException → HTTP 404
-        // - IllegalArgumentException → HTTP 404 (speaker not found)
-        speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId);
-
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Partial update of a speaker pool entry (e.g. reassign organizer).
-     *
-     * PATCH /api/v1/events/{eventCode}/speakers/pool/{speakerId}
-     */
-    @PatchMapping("/{eventCode}/speakers/pool/{speakerId}")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(summary = "Patch speaker pool entry",
-            description = "Partial update of a speaker pool entry (assigned organizer, notes). "
-                    + "Story 11.D.1 (AR23): email may NOT be updated through this endpoint — "
-                    + "use POST /speakers/{speakerId}/promote. Unknown fields return HTTP 400.")
-    public ResponseEntity<SpeakerPoolResponse> patchSpeakerPoolEntry(
-            @PathVariable String eventCode,
-            @PathVariable String speakerId,
-            @RequestBody ch.batbern.events.dto.PatchSpeakerPoolRequest request) {
-
-        SpeakerPoolResponse response = speakerPoolService.patchEntry(
-                eventCode, speakerId, request);
-        return ResponseEntity.ok(response);
-    }
+    // Speaker-pool (brainstorming) endpoints moved to EventSpeakerPoolController (Phase 7:
+    // implements the generated EventActionsApi). See that class + the api-consolidation plan.
 
     // ================================
     // Partner Analytics Endpoints (Story 8.1: Partner Attendance Dashboard)

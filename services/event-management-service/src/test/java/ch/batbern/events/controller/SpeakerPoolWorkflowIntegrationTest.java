@@ -291,8 +291,9 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request.put("company", "Tech Corp");
         request.put("expertise", "Cloud Architecture");
 
-        // Then: Returns 404 Not Found
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", "INVALID999")
+        // Then: Returns 404 Not Found. Pattern-conforming but non-existent code — a malformed
+        // code (e.g. INVALID999) now fails the interface eventCode @Pattern → 400 (Phase 7 wiring).
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", "BATbern888")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());

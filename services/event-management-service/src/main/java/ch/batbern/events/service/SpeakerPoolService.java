@@ -6,7 +6,8 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.AddSpeakerToPoolRequest;
+import ch.batbern.events.speakers.dto.generated.AddSpeakerToPoolRequest;
+import ch.batbern.events.speakers.dto.generated.PatchSpeakerPoolRequest;
 import ch.batbern.events.mapper.SpeakerPoolMapper;
 import ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
@@ -460,7 +461,7 @@ public class SpeakerPoolService {
      */
     @Transactional
     public SpeakerPoolResponse patchEntry(String eventCode, String speakerId,
-                                          ch.batbern.events.dto.PatchSpeakerPoolRequest request) {
+                                          PatchSpeakerPoolRequest request) {
         ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new ch.batbern.events.exception.EventNotFoundException(
                         "Event not found: " + eventCode));
