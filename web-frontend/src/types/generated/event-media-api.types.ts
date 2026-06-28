@@ -106,8 +106,11 @@ export interface components {
     };
     EventPhotoUploadRequest: {
       filename: string;
-      /** @enum {string} */
-      contentType: 'image/jpeg' | 'image/png' | 'image/webp';
+      /**
+       * @description MIME type of the photo. Validated server-side against the allowed set (image/jpeg, image/png, image/webp) with a friendly 400 message; kept as a free string (not a wire enum) so the service stays the single validation authority.
+       * @example image/jpeg
+       */
+      contentType: string;
       /** Format: int64 */
       fileSize: number;
     };

@@ -198,10 +198,10 @@ components:
           type: string
         contentType:
           type: string
-          enum:
-          - image/jpeg
-          - image/png
-          - image/webp
+          description: 'MIME type of the photo. Validated server-side against the allowed set
+            (image/jpeg, image/png, image/webp) with a friendly 400 message; kept as a free
+            string (not a wire enum) so the service stays the single validation authority.'
+          example: image/jpeg
         fileSize:
           type: integer
           format: int64

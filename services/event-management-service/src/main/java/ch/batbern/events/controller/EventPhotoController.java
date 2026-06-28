@@ -1,24 +1,17 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.dto.EventPhotoConfirmRequestDto;
-import ch.batbern.events.dto.EventPhotoResponseDto;
-import ch.batbern.events.dto.EventPhotoUploadRequestDto;
-import ch.batbern.events.dto.EventPhotoUploadResponseDto;
+import ch.batbern.events.media.api.generated.EventPhotosApi;
+import ch.batbern.events.media.dto.generated.EventPhotoConfirmRequest;
+import ch.batbern.events.media.dto.generated.EventPhotoResponse;
+import ch.batbern.events.media.dto.generated.EventPhotoUploadRequest;
+import ch.batbern.events.media.dto.generated.EventPhotoUploadResponse;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventPhotoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -29,6 +22,11 @@ import java.util.UUID;
  * <p>
  * Story 10.21: Event Photos Gallery
  * <p>
+ * Implements the generated {@link EventPhotosApi} contract (Phase 7 contract-first
+ * wiring) — the interface carries the {@code @RequestMapping} annotations, paths, and
+ * bean-validation, so this class only supplies {@code /api/v1} as the prefix and the
+ * method bodies.
+ * <p>
  * Mixed auth: public GET endpoints + ORGANIZER-only write endpoints.
  * Note: /events/recent-photos (static) is registered before /events/{eventCode}/photos
  * (path variable) — Spring MVC resolves static segments first, so no conflict.
@@ -37,72 +35,59 @@ import java.util.UUID;
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class EventPhotoController {
+public class EventPhotoController implements EventPhotosApi {
 
     private final EventPhotoService photoService;
     private final SecurityContextHelper securityContextHelper;
 
     /**
-     * Public: recent photos from last N events (homepage marquee).
-     * Static path /events/recent-photos takes precedence over /events/{eventCode}/photos.
-     * AC5
+     * Public: recent photos from last N events (homepage marquee). AC5.
      */
-    @GetMapping("/events/recent-photos")
-    public ResponseEntity<List<EventPhotoResponseDto>> getRecentPhotos(
-            @RequestParam(defaultValue = "20") int limit,
-            @RequestParam(defaultValue = "5") int lastNEvents) {
-        limit = Math.min(Math.max(limit, 1), 100);
-        lastNEvents = Math.min(Math.max(lastNEvents, 1), 20);
-        return ResponseEntity.ok(photoService.getRecentPhotos(limit, lastNEvents));
+    @Override
+    public ResponseEntity<List<EventPhotoResponse>> getRecentEventPhotos(Integer limit, Integer lastNEvents) {
+        int clampedLimit = Math.min(Math.max(limit, 1), 100);
+        int clampedLastNEvents = Math.min(Math.max(lastNEvents, 1), 20);
+        return ResponseEntity.ok(photoService.getRecentPhotos(clampedLimit, clampedLastNEvents));
     }
 
     /**
-     * Public: list photos for an event (archive detail page).
-     * AC4
+     * Public: list photos for an event (archive detail page). AC4.
      */
-    @GetMapping("/events/{eventCode}/photos")
-    public ResponseEntity<List<EventPhotoResponseDto>> listPhotos(
-            @PathVariable String eventCode) {
+    @Override
+    public ResponseEntity<List<EventPhotoResponse>> listEventPhotos(String eventCode) {
         return ResponseEntity.ok(photoService.listPhotos(eventCode));
     }
 
     /**
-     * Organizer: request presigned PUT URL for photo upload (phase 1 of 3).
-     * AC2
+     * Organizer: request presigned PUT URL for photo upload (phase 1 of 3). AC2.
      */
-    @PostMapping("/events/{eventCode}/photos/upload-url")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<EventPhotoUploadResponseDto> requestUploadUrl(
-            @PathVariable String eventCode,
-            @Valid @RequestBody EventPhotoUploadRequestDto request,
-            Authentication authentication) {
+    public ResponseEntity<EventPhotoUploadResponse> requestEventPhotoUploadUrl(
+            String eventCode,
+            EventPhotoUploadRequest eventPhotoUploadRequest) {
         String username = resolveUsername();
-        return ResponseEntity.ok(photoService.requestUploadUrl(eventCode, request, username));
+        return ResponseEntity.ok(photoService.requestUploadUrl(eventCode, eventPhotoUploadRequest, username));
     }
 
     /**
-     * Organizer: confirm upload — verify S3 presence and persist record (phase 3 of 3).
-     * AC2
+     * Organizer: confirm upload — verify S3 presence and persist record (phase 3 of 3). AC2.
      */
-    @PostMapping("/events/{eventCode}/photos/confirm")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<EventPhotoResponseDto> confirmUpload(
-            @PathVariable String eventCode,
-            @Valid @RequestBody EventPhotoConfirmRequestDto request,
-            Authentication authentication) {
+    public ResponseEntity<EventPhotoResponse> confirmEventPhotoUpload(
+            String eventCode,
+            EventPhotoConfirmRequest eventPhotoConfirmRequest) {
         String username = resolveUsername();
-        return ResponseEntity.ok(photoService.confirmUpload(eventCode, request, username));
+        return ResponseEntity.ok(photoService.confirmUpload(eventCode, eventPhotoConfirmRequest, username));
     }
 
     /**
-     * Organizer: delete a photo (DB record + S3 object, best-effort).
-     * AC3
+     * Organizer: delete a photo (DB record + S3 object, best-effort). AC3.
      */
-    @DeleteMapping("/events/{eventCode}/photos/{photoId}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Void> deletePhoto(
-            @PathVariable String eventCode,
-            @PathVariable UUID photoId) {
+    public ResponseEntity<Void> deleteEventPhoto(String eventCode, UUID photoId) {
         photoService.deletePhoto(eventCode, photoId);
         return ResponseEntity.noContent().build();
     }
