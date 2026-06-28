@@ -1,21 +1,18 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.RegistrantNoticePreviewRequest;
-import ch.batbern.events.dto.RegistrantNoticePreviewResponse;
-import ch.batbern.events.dto.RegistrantNoticeSendRequest;
+import ch.batbern.events.newsletter.api.generated.RegistrantNoticeApi;
+import ch.batbern.events.newsletter.dto.generated.RegistrantNoticePreviewRequest;
+import ch.batbern.events.newsletter.dto.generated.RegistrantNoticePreviewResponse;
+import ch.batbern.events.newsletter.dto.generated.RegistrantNoticeSendRequest;
 import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SlidesOnlineEmailService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,7 +32,7 @@ import java.util.NoSuchElementException;
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class RegistrantNoticeController {
+public class RegistrantNoticeController implements RegistrantNoticeApi {
 
     private final SlidesOnlineEmailService registrantNoticeEmailService;
     private final EventRepository eventRepository;
@@ -44,14 +41,15 @@ public class RegistrantNoticeController {
     /**
      * Preview a registrant-notice template in a chosen language and report the recipient count.
      */
-    @PostMapping("/events/{eventCode}/registrant-notices/preview")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<RegistrantNoticePreviewResponse> preview(
-            @PathVariable String eventCode,
-            @Valid @RequestBody RegistrantNoticePreviewRequest request) {
+    public ResponseEntity<RegistrantNoticePreviewResponse> previewRegistrantNotice(
+            String eventCode,
+            RegistrantNoticePreviewRequest request) {
         Event event = findEventOrThrow(eventCode);
+        String locale = request.getLocale() != null ? request.getLocale().getValue() : null;
         RegistrantNoticePreviewResponse preview = registrantNoticeEmailService
-                .previewRegistrantNotice(event, request.getTemplateKey(), request.getLocale());
+                .previewRegistrantNotice(event, request.getTemplateKey(), locale);
         return ResponseEntity.ok(preview);
     }
 
@@ -60,11 +58,11 @@ public class RegistrantNoticeController {
      *
      * @return 200 with the send id + PENDING status (the send runs asynchronously)
      */
-    @PostMapping("/events/{eventCode}/registrant-notices/send")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SlidesOnlineSendResponse> send(
-            @PathVariable String eventCode,
-            @Valid @RequestBody RegistrantNoticeSendRequest request) {
+    public ResponseEntity<SlidesOnlineSendResponse> sendRegistrantNotice(
+            String eventCode,
+            RegistrantNoticeSendRequest request) {
         Event event = findEventOrThrow(eventCode);
         String sentByUsername = securityContextHelper.getCurrentUsername();
         SlidesOnlineSendResponse response = registrantNoticeEmailService

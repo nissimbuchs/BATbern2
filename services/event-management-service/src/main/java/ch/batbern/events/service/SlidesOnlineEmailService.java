@@ -6,7 +6,7 @@ import ch.batbern.events.domain.NewsletterRecipient;
 import ch.batbern.events.domain.NewsletterRecipientId;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.RegistrantNoticePreviewResponse;
+import ch.batbern.events.newsletter.dto.generated.RegistrantNoticePreviewResponse;
 import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
