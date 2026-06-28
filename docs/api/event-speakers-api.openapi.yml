@@ -899,6 +899,35 @@ paths:
       - BearerAuth: []
 components:
   schemas:
+    ContentSubmitResponse:
+      type: object
+      description: 'Response after a successful speaker-portal content submission.
+        (Copied from the dormant speakers-api per ADR-014 so EMS — which serves the
+        speaker-portal content submit — generates the DTO; the speaker-portal submit
+        operations are not yet documented as paths here.)'
+      required:
+        - submissionId
+        - version
+        - status
+        - sessionTitle
+      properties:
+        submissionId:
+          type: string
+          format: uuid
+          description: The content submission record ID.
+        version:
+          type: integer
+          format: int32
+          description: Submission version (1 for first, increments on resubmission).
+          example: 1
+        status:
+          type: string
+          description: Submission status — always "SUBMITTED" after a successful submit.
+          example: SUBMITTED
+        sessionTitle:
+          type: string
+          description: Session title (for confirmation display).
+          example: Zero Trust Security in Enterprise Environments
     SelfNominateSpeakerRequest:
       type: object
       description: 'Story 7.2 "I Could Speak on That": an attendee''s speaker self-nomination body. The

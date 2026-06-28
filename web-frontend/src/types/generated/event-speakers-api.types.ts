@@ -341,6 +341,30 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Response after a successful speaker-portal content submission. (Copied from the dormant speakers-api per ADR-014 so EMS — which serves the speaker-portal content submit — generates the DTO; the speaker-portal submit operations are not yet documented as paths here.) */
+    ContentSubmitResponse: {
+      /**
+       * Format: uuid
+       * @description The content submission record ID.
+       */
+      submissionId: string;
+      /**
+       * Format: int32
+       * @description Submission version (1 for first, increments on resubmission).
+       * @example 1
+       */
+      version: number;
+      /**
+       * @description Submission status — always "SUBMITTED" after a successful submit.
+       * @example SUBMITTED
+       */
+      status: string;
+      /**
+       * @description Session title (for confirmation display).
+       * @example Zero Trust Security in Enterprise Environments
+       */
+      sessionTitle: string;
+    };
     /**
      * @description Story 7.2 "I Could Speak on That": an attendee's speaker self-nomination body. The
      *     attendee supplies only the proposed talk — their name + company are auto-filled from

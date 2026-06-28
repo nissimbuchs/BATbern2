@@ -3,7 +3,7 @@ package ch.batbern.events.controller;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.ContentSubmitResponse;
+import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
 import ch.batbern.events.dto.PromoteSpeakerRequest;
 import ch.batbern.events.dto.ReviewRequest;
 import ch.batbern.events.dto.SpeakerContentResponse;

@@ -7,7 +7,7 @@ import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.ContentSubmitResponse;
+import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
 import ch.batbern.events.dto.SpeakerContentInfo;
 import ch.batbern.events.dto.SpeakerContentResponse;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;

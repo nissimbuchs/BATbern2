@@ -3,7 +3,7 @@ package ch.batbern.events.controller;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.ContentSubmitRequest;
-import ch.batbern.events.dto.ContentSubmitResponse;
+import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
 import ch.batbern.events.dto.SpeakerContentInfo;
 import ch.batbern.events.dto.SpeakerMaterialConfirmRequest;
 import ch.batbern.events.dto.SpeakerMaterialConfirmResponse;
@@ -132,7 +132,7 @@ public class SpeakerPortalContentController {
                     speaker.getId(), eventCode, payload, username);
 
             LOG.info("Content submitted - submissionId: {} version: {} eventCode={}",
-                    response.submissionId(), response.version(), eventCode);
+                    response.getSubmissionId(), response.getVersion(), eventCode);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
