@@ -10,13 +10,13 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.NewsletterPreviewResponse;
 import ch.batbern.events.dto.NewsletterSendResponse;
 import ch.batbern.events.dto.NewsletterSendStatusResponse;
-import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -852,14 +852,14 @@ public class NewsletterEmailService {
                 continue;
             }
 
-            List<SessionSpeakerResponse> speakers =
+            List<SessionSpeaker> speakers =
                     sessionUserService.getSessionSpeakers(session.getId());
             if (speakers.isEmpty()) {
                 continue;
             }
 
             String title = speakers.stream()
-                    .map(SessionSpeakerResponse::getPresentationTitle)
+                    .map(SessionSpeaker::getPresentationTitle)
                     .filter(t -> t != null && !t.isBlank())
                     .findFirst()
                     .orElse(session.getTitle());

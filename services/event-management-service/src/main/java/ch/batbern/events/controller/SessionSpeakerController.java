@@ -2,11 +2,11 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.AssignSpeakerRequest;
-import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.dto.SpeakerConfirmationRequest;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionUserService;
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,11 +50,11 @@ public class SessionSpeakerController {
      * @param eventCode Event code (e.g., "BATbern56")
      * @param sessionSlug Session slug
      * @param request AssignSpeakerRequest with username and role
-     * @return 201 Created with SessionSpeakerResponse
+     * @return 201 Created with SessionSpeaker
      */
     @PostMapping
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SessionSpeakerResponse> assignSpeaker(
+    public ResponseEntity<SessionSpeaker> assignSpeaker(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
             @Valid @RequestBody AssignSpeakerRequest request
@@ -64,7 +64,7 @@ public class SessionSpeakerController {
 
         Session session = findSessionBySlug(eventCode, sessionSlug);
 
-        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+        SessionSpeaker response = sessionUserService.assignSpeakerToSession(
                 session.getId(),
                 request.getUsername(),
                 request.getSpeakerRole(),
@@ -80,10 +80,10 @@ public class SessionSpeakerController {
      *
      * @param eventCode Event code
      * @param sessionSlug Session slug
-     * @return 200 OK with list of SessionSpeakerResponse
+     * @return 200 OK with list of SessionSpeaker
      */
     @GetMapping
-    public ResponseEntity<List<SessionSpeakerResponse>> listSpeakers(
+    public ResponseEntity<List<SessionSpeaker>> listSpeakers(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug
     ) {
@@ -91,7 +91,7 @@ public class SessionSpeakerController {
 
         Session session = findSessionBySlug(eventCode, sessionSlug);
 
-        List<SessionSpeakerResponse> speakers = sessionUserService.getSessionSpeakers(session.getId());
+        List<SessionSpeaker> speakers = sessionUserService.getSessionSpeakers(session.getId());
 
         return ResponseEntity.ok(speakers);
     }
@@ -128,11 +128,11 @@ public class SessionSpeakerController {
      * @param eventCode Event code
      * @param sessionSlug Session slug
      * @param username Speaker's username
-     * @return 200 OK with updated SessionSpeakerResponse
+     * @return 200 OK with updated SessionSpeaker
      */
     @PostMapping("/{username}/confirm")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SessionSpeakerResponse> confirmSpeaker(
+    public ResponseEntity<SessionSpeaker> confirmSpeaker(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
             @PathVariable String username
@@ -141,7 +141,7 @@ public class SessionSpeakerController {
 
         Session session = findSessionBySlug(eventCode, sessionSlug);
 
-        SessionSpeakerResponse response = sessionUserService.confirmSpeaker(session.getId(), username);
+        SessionSpeaker response = sessionUserService.confirmSpeaker(session.getId(), username);
 
         return ResponseEntity.ok(response);
     }
@@ -154,11 +154,11 @@ public class SessionSpeakerController {
      * @param sessionSlug Session slug
      * @param username Speaker's username
      * @param request SpeakerConfirmationRequest with optional decline reason
-     * @return 200 OK with updated SessionSpeakerResponse
+     * @return 200 OK with updated SessionSpeaker
      */
     @PostMapping("/{username}/decline")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SessionSpeakerResponse> declineSpeaker(
+    public ResponseEntity<SessionSpeaker> declineSpeaker(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
             @PathVariable String username,
@@ -168,7 +168,7 @@ public class SessionSpeakerController {
 
         Session session = findSessionBySlug(eventCode, sessionSlug);
 
-        SessionSpeakerResponse response = sessionUserService.declineSpeaker(
+        SessionSpeaker response = sessionUserService.declineSpeaker(
                 session.getId(),
                 username,
                 request.getDeclineReason()

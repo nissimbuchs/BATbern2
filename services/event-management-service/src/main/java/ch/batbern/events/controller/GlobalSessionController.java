@@ -3,10 +3,10 @@ package ch.batbern.events.controller;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.CompanySessionResponse;
-import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionUserService;
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.api.PaginationMetadata;
 import ch.batbern.shared.dto.PaginatedResponse;
 import lombok.RequiredArgsConstructor;
@@ -90,7 +90,7 @@ public class GlobalSessionController {
         List<CompanySessionResponse> responses = sessionsPage.getContent().stream()
                 .map(session -> {
                     Event event = eventsById.get(session.getEventId());
-                    List<SessionSpeakerResponse> speakers =
+                    List<SessionSpeaker> speakers =
                             sessionUserService.getSessionSpeakers(session.getId());
                     return CompanySessionResponse.builder()
                             .sessionSlug(session.getSessionSlug())

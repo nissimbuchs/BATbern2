@@ -1,5 +1,6 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,7 +38,7 @@ public class SessionResponse {
     private String updatedAt; // ISO-8601 format
 
     // Story 1.15a.1b: Speakers array (enriched with User data)
-    private List<SessionSpeakerResponse> speakers;
+    private List<SessionSpeaker> speakers;
 
     // Story 5.9: Session materials
     private List<SessionMaterialResponse> materials;

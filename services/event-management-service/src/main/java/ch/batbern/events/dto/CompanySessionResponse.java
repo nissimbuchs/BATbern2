@@ -1,5 +1,6 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,5 +33,5 @@ public class CompanySessionResponse {
     private String room;
 
     /** All speakers of this session (includes speakers from other companies too). */
-    private List<SessionSpeakerResponse> speakers;
+    private List<SessionSpeaker> speakers;
 }

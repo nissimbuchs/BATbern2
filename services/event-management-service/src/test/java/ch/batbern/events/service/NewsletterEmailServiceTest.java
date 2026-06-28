@@ -6,13 +6,13 @@ import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.NewsletterSendResponse;
-import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import org.springframework.data.domain.Page;
@@ -275,13 +275,13 @@ class NewsletterEmailServiceTest {
         session.setSessionType("presentation");
         session.setTitle("Zero Trust at PostFinance");
 
-        SessionSpeakerResponse sp1 = SessionSpeakerResponse.builder()
+        SessionSpeaker sp1 = SessionSpeaker.builder()
                 .username("mustapha.bouaaoud")
                 .firstName("Mustapha")
                 .lastName("Bouaaoud")
                 .company("postfinance")
                 .build();
-        SessionSpeakerResponse sp2 = SessionSpeakerResponse.builder()
+        SessionSpeaker sp2 = SessionSpeaker.builder()
                 .username("philippe.halbeisen")
                 .firstName("Philippe")
                 .lastName("Halbeisen")
@@ -312,7 +312,7 @@ class NewsletterEmailServiceTest {
         session.setSessionType("presentation");
         session.setTitle("Agentic AI in Swisscom");
 
-        SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
+        SessionSpeaker sp = SessionSpeaker.builder()
                 .username("anna.meier")
                 .firstName("Anna")
                 .lastName("Meier")
@@ -339,7 +339,7 @@ class NewsletterEmailServiceTest {
         session.setSessionType("presentation");
         session.setTitle("Zero Trust");
 
-        SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
+        SessionSpeaker sp = SessionSpeaker.builder()
                 .username("bob.huber")
                 .firstName("Bob")
                 .lastName("Huber")
@@ -533,7 +533,7 @@ class NewsletterEmailServiceTest {
         session.setSessionType("presentation");
         session.setTitle("Zero Trust at SBB");
 
-        SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
+        SessionSpeaker sp = SessionSpeaker.builder()
                 .username("igor.masen")
                 .firstName("Igor")
                 .lastName("Masen")
