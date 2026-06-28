@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.dto.TimetableResponse;
+import ch.batbern.events.mapper.TimetableMapper;
 import ch.batbern.events.service.slotassignment.ConflictAnalysisResponse;
 import ch.batbern.events.service.slotassignment.ConflictDetectionService;
 import ch.batbern.events.service.slotassignment.SessionTimingService;
@@ -54,6 +55,7 @@ public class SlotAssignmentController {
     private final ConflictDetectionService conflictDetectionService;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
+    private final TimetableMapper timetableMapper;
 
     /**
      * Get unassigned sessions (placeholder sessions without timing)
@@ -226,7 +228,7 @@ public class SlotAssignmentController {
     @PostMapping("/{sessionSlug}/slot")
     @PreAuthorize("hasRole('ORGANIZER')")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<TimetableResponse> assignSessionToSlot(
+    public ResponseEntity<ch.batbern.events.sessions.dto.generated.TimetableResponse> assignSessionToSlot(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
             @RequestBody SlotAssignmentRequest request) {
@@ -242,7 +244,7 @@ public class SlotAssignmentController {
                 "organizer" // TODO: Get from security context
         );
 
-        return ResponseEntity.ok(timetable);
+        return ResponseEntity.ok(timetableMapper.toWire(timetable));
     }
 
     /**

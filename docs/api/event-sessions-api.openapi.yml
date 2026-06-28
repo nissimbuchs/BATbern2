@@ -30,6 +30,8 @@ tags:
     AgendaConfigController)
 - name: Session QnA
   description: Per-session Q&A thread — public read, authenticated post, organizer takedown (SessionQnaController)
+- name: Timetable
+  description: Authoritative per-event timetable / slot grid (TimetableController)
 - name: Bulk Operations
   description: Batch operations on multiple events
 paths:
@@ -374,7 +376,7 @@ paths:
   /events/{eventCode}/timetable:
     get:
       tags:
-      - Sessions
+      - Timetable
       summary: Get the authoritative timetable for an event
       description: 'Returns the complete chronological slot grid for the event, including both
 
