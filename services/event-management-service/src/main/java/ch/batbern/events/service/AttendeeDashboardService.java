@@ -3,8 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.AttendeeDashboardResponse;
-import ch.batbern.events.dto.AttendeeEventCardResponse;
+import ch.batbern.events.core.dto.generated.AttendeeDashboardResponse;
+import ch.batbern.events.core.dto.generated.AttendeeEventCardResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -62,13 +63,14 @@ public class AttendeeDashboardService {
             if (event == null) {
                 continue;
             }
-            AttendeeEventCardResponse card = new AttendeeEventCardResponse(
-                    event.getEventCode(),
-                    event.getTitle(),
-                    event.getDate(),
-                    event.getVenueName(),
-                    event.getWorkflowState() != null ? event.getWorkflowState().name() : null,
-                    reg.getStatus());
+            AttendeeEventCardResponse card = AttendeeEventCardResponse.builder()
+                    .eventCode(event.getEventCode())
+                    .eventTitle(event.getTitle())
+                    .eventDate(event.getDate() != null ? event.getDate().atOffset(ZoneOffset.UTC) : null)
+                    .eventLocation(event.getVenueName())
+                    .workflowState(event.getWorkflowState() != null ? event.getWorkflowState().name() : null)
+                    .registrationStatus(reg.getStatus())
+                    .build();
             if (event.getDate() != null && event.getDate().isAfter(now)) {
                 upcoming.add(card);
             } else {
@@ -76,14 +78,18 @@ public class AttendeeDashboardService {
             }
         }
 
-        upcoming.sort(Comparator.comparing(AttendeeEventCardResponse::eventDate,
+        upcoming.sort(Comparator.comparing(AttendeeEventCardResponse::getEventDate,
                 Comparator.nullsLast(Comparator.naturalOrder())));
-        past.sort(Comparator.comparing(AttendeeEventCardResponse::eventDate,
+        past.sort(Comparator.comparing(AttendeeEventCardResponse::getEventDate,
                 Comparator.nullsLast(Comparator.reverseOrder())));
 
         String name = resolveGreetingName(registrations, username);
         log.info("Attendee dashboard for {}: {} upcoming, {} past", username, upcoming.size(), past.size());
-        return new AttendeeDashboardResponse(name, upcoming, past);
+        return AttendeeDashboardResponse.builder()
+                .attendeeName(name)
+                .upcomingEvents(upcoming)
+                .pastEvents(past)
+                .build();
     }
 
     /**

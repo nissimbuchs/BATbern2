@@ -1072,7 +1072,7 @@ paths:
   /attendee-portal/dashboard:
     get:
       tags:
-      - Event Actions
+      - Attendee Portal
       summary: Attendee dashboard — events I participated in (Story 7.6)
       description: 'Returns every event the authenticated attendee participated in (each non-cancelled
 
