@@ -381,6 +381,26 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > skipped; Playwright `admin-task-templates-crud` @smoke 1/1 (full UI CRUD). **EMS contract-first +1 (29 wired).**
 > Follow-up unblocked: `EventTaskController` (10 ops, Story 5.5) can now extend this same `event-tasks-api` spec.
 >
+> ✅ **DONE (2026-06-29): `EventTaskController` (10 ops) → `EventTasksApi`** (commit `cfa2a684`, EMS 30 wired).
+> Extended the just-created `event-tasks-api` with the 10 event-task ops under a 1:1 `Event Tasks` tag
+> (listEventTasks/createAdHocTask/createTasksFromTemplates/getMyTasks/getAllTasks/completeTask/reassignTask/
+> updateTaskStatus/updateTask/deleteTask) + 7 schemas (EventTaskResponse + the 5 request DTOs +
+> CreateTasksFromTemplatesRequest with nested TemplateConfig), ported from the FE-validated hand DTOs. All ops
+> return typed `EventTaskResponse`/`List`/`Void` — **no ad-hoc Maps**. eventCode kept permissive (controller
+> resolves by code → 404 via EntityNotFoundException); status validated via @Pattern
+> (pending|todo|in_progress|completed); `critical` query defaults false. Controller `implements EventTasksApi`:
+> class @RequestMapping /api/v1 (replaced the per-method full `/api/v1/...` paths), bare override params,
+> @PreAuthorize(ORGANIZER) kept. Consolidated 7 hand DTOs → generated twins; replaced the
+> `EventTaskResponse.fromEntity` factory with a private `toResponse` mapper; deleted all 7. Conversions: request
+> `dueDate` OffsetDateTime→Instant (`.toInstant()`) at the service boundary; response Instant→OffsetDateTime
+> (`.atOffset(UTC)`, `…Z` byte-identical) on dueDate/completedDate/createdAt/updatedAt. **Verified (local dev):**
+> EventTaskController + Service + fixture-cleanup tests 21/21; EMS restart + live gateway smoke (my-tasks/
+> all-tasks 200, event-scoped list 200 w/ 6 tasks + `…Z`, missing event→404, no-auth→401, invalid status→400
+> @Pattern); FE type-check clean (taskService hand types byte-identical, event-tasks not in FE generate list);
+> Bruno tasks-api 16 req / 39 tests / 0 skipped; Playwright test-task-creation-from-templates 2/2. **The
+> Configurable Task System (Story 5.5) is now fully contract-first — event-tasks-api owns both controllers.**
+> **EMS contract-first +1 (30 wired).**
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
