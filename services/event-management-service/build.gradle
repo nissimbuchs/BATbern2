@@ -223,7 +223,9 @@ task openApiGenerateSpeakers(type: org.openapitools.generator.gradle.plugin.task
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
         'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse',
-        'SpeakerWorkflowState': 'ch.batbern.shared.types.SpeakerWorkflowState'
+        'SpeakerWorkflowState': 'ch.batbern.shared.types.SpeakerWorkflowState',
+        'SpeakerResponseType': 'ch.batbern.shared.types.SpeakerResponseType',
+        'SpeakerResponsePreferences': 'ch.batbern.events.dto.SpeakerResponsePreferences'
     ]
 
     typeMappings = [
@@ -258,7 +260,9 @@ task openApiGenerateSpeakers(type: org.openapitools.generator.gradle.plugin.task
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
-        'SpeakerWorkflowState': 'ch.batbern.shared.types.SpeakerWorkflowState'
+        'SpeakerWorkflowState': 'ch.batbern.shared.types.SpeakerWorkflowState',
+        'SpeakerResponseType': 'ch.batbern.shared.types.SpeakerResponseType',
+        'SpeakerResponsePreferences': 'ch.batbern.events.dto.SpeakerResponsePreferences'
     ]
 }
 

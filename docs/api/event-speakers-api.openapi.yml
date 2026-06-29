@@ -1257,6 +1257,51 @@ paths:
       security:
       - BearerAuth: []
 
+  /speaker-portal/events/{eventCode}/respond:
+    post:
+      tags:
+        - Speaker Portal Response
+      summary: Submit a speaker's response to an invitation
+      description: |
+        The authenticated speaker accepts or declines an invitation for the given event
+        (Story 6.2a). DECLINE requires a reason. ACCEPT may carry optional preferences.
+
+        **Authorization**: SPEAKER role required (pool ownership enforced server-side).
+      operationId: respond
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event the speaker is responding to
+          schema:
+            type: string
+            example: 'BATbern58'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeakerResponseRequest'
+      responses:
+        '200':
+          description: Response processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerResponseResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      security:
+      - BearerAuth: []
+
 components:
   schemas:
     ContentSubmitResponse:
@@ -2376,7 +2421,84 @@ components:
           type: boolean
         materialFileName:
           type: string
+    SpeakerResponseType:
+      type: string
+      description: Speaker's response to an invitation
+      enum:
+        - ACCEPT
+        - DECLINE
+    SpeakerResponsePreferences:
+      type: object
+      description: Optional logistics preferences captured on ACCEPT (Story 6.2a)
+      properties:
+        timeSlot:
+          type: string
+          description: 'Preferred presentation time slot: morning, afternoon, no_preference'
+        travelRequirements:
+          type: string
+          description: 'Travel requirements: local, accommodation, virtual'
+        technicalRequirements:
+          type: array
+          items:
+            type: string
+          description: 'Technical requirements: mac_adapter, remote_option, special_av'
+        initialTitle:
+          type: string
+          description: Preliminary presentation title
+        comments:
+          type: string
+          description: Additional comments for the organizer
+    SpeakerResponseRequest:
+      type: object
+      description: A speaker's accept/decline response to an invitation (Story 6.2a)
+      required:
+        - response
+      properties:
+        response:
+          $ref: '#/components/schemas/SpeakerResponseType'
+        reason:
+          type: string
+          description: Reason for decline (required for DECLINE)
+        constraints:
+          type: string
+          description: Optional constraints or notes (e.g. travel, schedule)
+        preferences:
+          $ref: '#/components/schemas/SpeakerResponsePreferences'
+    SpeakerResponseResult:
+      type: object
+      description: Outcome of processing a speaker's invitation response (Story 6.2a)
+      properties:
+        success:
+          type: boolean
+        speakerName:
+          type: string
+        eventName:
+          type: string
+        eventDate:
+          type: string
+          description: Formatted event date (e.g. "20. November 2025")
+        sessionTitle:
+          type: string
+        nextSteps:
+          type: array
+          items:
+            type: string
+          description: Next steps for the speaker after responding
+        contentDeadline:
+          type: string
+          format: date
+          description: Content submission deadline (if accepted)
+        dashboardUrl:
+          type: string
+        errorMessage:
+          type: string
   responses:
+    Conflict:
+      description: Conflict - the speaker has already responded
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
     BadRequest:
       description: Bad request - validation error
       content:

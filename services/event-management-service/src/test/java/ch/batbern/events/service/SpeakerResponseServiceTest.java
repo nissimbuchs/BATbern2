@@ -3,8 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.dto.SpeakerResponseRequest;
-import ch.batbern.events.dto.SpeakerResponseResult;
+import ch.batbern.events.speakers.dto.generated.SpeakerResponseRequest;
+import ch.batbern.events.speakers.dto.generated.SpeakerResponseResult;
 import ch.batbern.events.exception.AlreadyRespondedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -112,7 +112,7 @@ class SpeakerResponseServiceTest {
                 actorCaptor.capture(), any(TransitionPayload.class));
         assertThat(actorCaptor.getValue()).isEqualTo("speaker.user");
 
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.getSuccess()).isTrue();
         // Code review 2026-05-18 (D1): profileUrl was dropped from SpeakerResponseResult.
         // Profile editing now uses CUMS /users/me endpoints — the speaker portal no longer
         // returns a per-event profile URL.
