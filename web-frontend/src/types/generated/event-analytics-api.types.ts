@@ -395,21 +395,46 @@ export interface components {
        */
       companyAttendees: number;
     };
+    /** @description Per-event analytics. Truthful to EventAnalyticsService.generateAnalytics: a dynamic envelope whose `metrics` sub-objects are present only when requested via the `?metrics=` query param (registrations, attendance, engagement), and `timeframe` only when `?timeframe=` is supplied. The 2026-06-29 rewrite dropped the previously-documented flat fields (totalRegistrations/confirmedAttendees/cancellations/waitlist/registrationTrend) — no implementation ever produced them and the frontend reads none of them. */
     EventAnalytics: {
       /**
-       * @description Event code in format BATbern{number} (Story 1.16.2)
+       * @description Event code in format BATbern{number} (Story 1.16.2).
        * @example BATbern142
        */
       eventCode?: string;
-      totalRegistrations?: number;
-      confirmedAttendees?: number;
-      cancellations?: number;
-      waitlist?: number;
-      registrationTrend?: {
-        /** Format: date */
-        date?: string;
-        count?: number;
-      }[];
+      /** @description Echoed back only when the `?timeframe=start,end` query param is supplied. */
+      timeframe?: {
+        /** @description ISO-8601 timestamp (start of the requested window). */
+        start?: string;
+        /** @description ISO-8601 timestamp (end of the requested window). */
+        end?: string;
+      };
+      /** @description Computed metric blocks. Each key is present only when named in `?metrics=`. */
+      metrics?: {
+        registrations?: {
+          total?: number;
+          byStatus?: {
+            confirmed?: number;
+            pending?: number;
+            cancelled?: number;
+          };
+        };
+        attendance?: {
+          expected?: number;
+          actual?: number;
+          /**
+           * Format: double
+           * @description Attendance percentage (currently a stub — equals 100 or 0).
+           */
+          rate?: number;
+        };
+        engagement?: {
+          totalSessions?: number;
+          totalParticipants?: number;
+          /** Format: double */
+          averageSessionsPerParticipant?: number;
+        };
+      };
     };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.

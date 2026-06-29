@@ -642,30 +642,67 @@ components:
           description: Confirmed attendees from the queried company
     EventAnalytics:
       type: object
+      description: 'Per-event analytics. Truthful to EventAnalyticsService.generateAnalytics:
+        a dynamic envelope whose `metrics` sub-objects are present only when requested via the
+        `?metrics=` query param (registrations, attendance, engagement), and `timeframe` only when
+        `?timeframe=` is supplied. The 2026-06-29 rewrite dropped the previously-documented flat
+        fields (totalRegistrations/confirmedAttendees/cancellations/waitlist/registrationTrend) —
+        no implementation ever produced them and the frontend reads none of them.'
       properties:
         eventCode:
           type: string
           pattern: ^BATbern[0-9]+$
           example: BATbern142
-          description: Event code in format BATbern{number} (Story 1.16.2)
-        totalRegistrations:
-          type: integer
-        confirmedAttendees:
-          type: integer
-        cancellations:
-          type: integer
-        waitlist:
-          type: integer
-        registrationTrend:
-          type: array
-          items:
-            type: object
-            properties:
-              date:
-                type: string
-                format: date
-              count:
-                type: integer
+          description: Event code in format BATbern{number} (Story 1.16.2).
+        timeframe:
+          type: object
+          description: 'Echoed back only when the `?timeframe=start,end` query param is supplied.'
+          properties:
+            start:
+              type: string
+              description: ISO-8601 timestamp (start of the requested window).
+            end:
+              type: string
+              description: ISO-8601 timestamp (end of the requested window).
+        metrics:
+          type: object
+          description: 'Computed metric blocks. Each key is present only when named in `?metrics=`.'
+          properties:
+            registrations:
+              type: object
+              properties:
+                total:
+                  type: integer
+                byStatus:
+                  type: object
+                  properties:
+                    confirmed:
+                      type: integer
+                    pending:
+                      type: integer
+                    cancelled:
+                      type: integer
+            attendance:
+              type: object
+              properties:
+                expected:
+                  type: integer
+                actual:
+                  type: integer
+                rate:
+                  type: number
+                  format: double
+                  description: Attendance percentage (currently a stub — equals 100 or 0).
+            engagement:
+              type: object
+              properties:
+                totalSessions:
+                  type: integer
+                totalParticipants:
+                  type: integer
+                averageSessionsPerParticipant:
+                  type: number
+                  format: double
   responses:
     BadRequest:
       description: Bad request - validation error
