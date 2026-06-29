@@ -23,8 +23,6 @@ security:
 tags:
 - name: Events
   description: Event CRUD and listing operations
-- name: Bulk Operations
-  description: Batch operations on multiple events
 - name: Event Actions
   description: Event publishing and workflow operations
 - name: Event Workflow
@@ -221,37 +219,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      tags:
-      - Bulk Operations
-      summary: Batch update multiple events
-      description: 'Update multiple events in a single request.
-
-
-        **Acceptance Criteria**: AC14
-
-
-        **Performance**: <1000ms for 50 events (P95)
-
-        '
-      operationId: batchUpdateEvents
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BatchUpdateRequest'
-      responses:
-        '200':
-          description: Batch update completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchUpdateResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -2682,60 +2649,6 @@ components:
           type: string
           nullable: true
           description: "Organizer's free-text note on topic selection (Story 5.2)."
-    BatchUpdateRequest:
-      type: object
-      required:
-      - updates
-      properties:
-        updates:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              fields:
-                type: object
-    BatchUpdateResponse:
-      type: object
-      description: 'Result of a batch event update. Truthful to the deployed controller
-        (EventController.batchUpdateEvents): successful/failed are arrays of per-event
-        results, plus a summary with counts.'
-      properties:
-        successful:
-          type: array
-          items:
-            type: object
-            properties:
-              eventCode:
-                type: string
-                example: BATbern142
-              status:
-                type: string
-                example: updated
-        failed:
-          type: array
-          items:
-            type: object
-            properties:
-              eventCode:
-                type: string
-                example: BATbern999
-              error:
-                type: string
-                example: Event not found
-        summary:
-          type: object
-          properties:
-            total:
-              type: integer
-              example: 50
-            successful:
-              type: integer
-              example: 45
-            failed:
-              type: integer
-              example: 5
     EventType:
       type: string
       description: 'Event type identifier (Story 5.1 - Event Type Definition).

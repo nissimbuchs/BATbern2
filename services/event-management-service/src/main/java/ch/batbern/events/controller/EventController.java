@@ -4,7 +4,6 @@ import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.BatchRegistrationRequest;
@@ -69,7 +68,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1159,88 +1157,6 @@ public class EventController implements EventsApi, EventActionsApi {
         enrichWithEventTimes(response, patchedEvent);
 
         return ResponseEntity.ok(eventGeneratedMapper.toEvent(response));
-    }
-
-    /**
-     * Bulk Update Events (AC14 + AC15 cache invalidation)
-     *
-     * PATCH /api/v1/events
-     *
-     * Performs batch updates on multiple events. Returns success/failure status for each update.
-     *
-     * @param requests List of event updates to apply
-     * @return Batch operation results with successful and failed updates
-     */
-    // NOTE: BulkOperationsApi wiring deferred (generated body is a {updates:[…]} wrapper vs the
-    // deployed bare array; needs a spec request-body reconciliation). Stays hand-rolled at /events.
-    @PatchMapping("/events")
-    @Operation(
-            summary = "Batch Update Events",
-            description = "Update multiple events in a single request. Returns partial success if some updates fail."
-    )
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> batchUpdateEvents(
-            @Valid @RequestBody List<BatchUpdateRequest> requests) {
-        log.debug("PATCH /api/v1/events - batch update {} events", requests.size());
-
-        List<Map<String, Object>> successful = new ArrayList<>();
-        List<Map<String, Object>> failed = new ArrayList<>();
-
-        // Process each update request
-        for (BatchUpdateRequest request : requests) {
-            try {
-                // Find existing event by eventCode (Story 1.16.2)
-                Event event = eventRepository.findByEventCode(request.getEventCode())
-                        .orElseThrow(() -> new EventNotFoundException(
-                            "Event not found with code: " + request.getEventCode()));
-
-                // Apply updates (similar to PATCH)
-                if (request.getTitle() != null) {
-                    event.setTitle(request.getTitle());
-                }
-                if (request.getDate() != null) {
-                    event.setDate(parseDate(request.getDate()));
-                }
-                if (request.getDescription() != null) {
-                    event.setDescription(request.getDescription());
-                }
-
-                // Save updated event
-                Event updatedEvent = eventRepository.save(event);
-
-                // Add to successful list (Story 1.16.2: use eventCode)
-                Map<String, Object> successResult = new HashMap<>();
-                successResult.put("eventCode", updatedEvent.getEventCode());
-                successResult.put("status", "updated");
-                successful.add(successResult);
-
-            } catch (EventNotFoundException e) {
-                // Add to failed list
-                Map<String, Object> failureResult = new HashMap<>();
-                failureResult.put("eventCode", request.getEventCode());
-                failureResult.put("error", "Event not found");
-                failed.add(failureResult);
-            } catch (Exception e) {
-                // Add to failed list
-                Map<String, Object> failureResult = new HashMap<>();
-                failureResult.put("eventCode", request.getEventCode());
-                failureResult.put("error", e.getMessage());
-                failed.add(failureResult);
-            }
-        }
-
-        // Build response
-        Map<String, Object> response = new HashMap<>();
-        response.put("successful", successful);
-        response.put("failed", failed);
-
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("total", requests.size());
-        summary.put("successful", successful.size());
-        summary.put("failed", failed.size());
-        response.put("summary", summary);
-
-        return ResponseEntity.ok(response);
     }
 
     /**

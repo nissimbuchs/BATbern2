@@ -54,15 +54,7 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Batch update multiple events
-     * @description Update multiple events in a single request.
-     *
-     *     **Acceptance Criteria**: AC14
-     *
-     *     **Performance**: <1000ms for 50 events (P95)
-     */
-    patch: operations['batchUpdateEvents'];
+    patch?: never;
     trace?: never;
   };
   '/events/current': {
@@ -1273,35 +1265,6 @@ export interface components {
       /** @description Organizer's free-text note on topic selection (Story 5.2). */
       topicSelectionNote?: string | null;
     };
-    BatchUpdateRequest: {
-      updates: {
-        id?: string;
-        fields?: Record<string, never>;
-      }[];
-    };
-    /** @description Result of a batch event update. Truthful to the deployed controller (EventController.batchUpdateEvents): successful/failed are arrays of per-event results, plus a summary with counts. */
-    BatchUpdateResponse: {
-      successful?: {
-        /** @example BATbern142 */
-        eventCode?: string;
-        /** @example updated */
-        status?: string;
-      }[];
-      failed?: {
-        /** @example BATbern999 */
-        eventCode?: string;
-        /** @example Event not found */
-        error?: string;
-      }[];
-      summary?: {
-        /** @example 50 */
-        total?: number;
-        /** @example 45 */
-        successful?: number;
-        /** @example 5 */
-        failed?: number;
-      };
-    };
     /**
      * @description Event type identifier (Story 5.1 - Event Type Definition).
      *     Matches EventType enum from architecture (03-data-architecture.md:547-551).
@@ -2120,32 +2083,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['Event'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  batchUpdateEvents: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['BatchUpdateRequest'];
-      };
-    };
-    responses: {
-      /** @description Batch update completed */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BatchUpdateResponse'];
         };
       };
       400: components['responses']['BadRequest'];

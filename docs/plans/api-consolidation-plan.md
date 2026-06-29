@@ -667,9 +667,19 @@ with the consolidated events-* specs. **It is a single backend story — there i
 > materials + rich SessionSpeaker, `@Pattern`→400, BATbern888→404, current→200, limit 500→clamp 100); FE type-check clean.
 > `@Pattern` fixture sweep: `BATbern888` (404 probes), `BATbern9999` (CapTest). The `archive-filtering` topic→URL test is a
 > **pre-existing local-dev flake** (identical-steps test 43 flakes 2/3; documented divergence) — not a regression.
-> **DEFERRED (small follow-ups, each a clean spec-truth task):** `BulkOperationsApi.batchUpdateEvents` (generated `{updates:[…]}`
-> wrapper vs deployed bare array — stays hand-rolled at `@PatchMapping("/events")`); `EventReportingApi` (getEventAnalytics
-> bound to a fictional `EventAnalytics` schema; getAttendanceSummary can't wire alone). **EMS = 43 wired.** Authoritative full
+> **Follow-ups resolved 2026-06-29:**
+> - ✅ **`BulkOperationsApi.batchUpdateEvents` REMOVED** (not wired). Repo-wide sweep proved it dead: no FE caller (the
+>   FE `apiClient.patch('/events/{eventCode}')` is single `patchEvent`), no backend caller — only a self-test exercised it.
+>   Deleted the events-core `PATCH /events` op + `BatchUpdateRequest`/`BatchUpdateResponse` schemas + the events-core
+>   `Bulk Operations` tag, `EventController.batchUpdateEvents` + the hand `BatchUpdateRequest` DTO, the 2 integration tests,
+>   and `bruno-tests/events-crud-api/19-batch-update.bru`. Verified: authed `PATCH /events`→**405** (handler gone), GET/POST/
+>   single-PATCH intact; EventControllerIntegrationTest green; Bruno events-crud-api 32/32. (`event-sessions` keeps its own
+>   `Bulk Operations` tag for `batchImportSessions` — untouched. The watch-app's stale monolith spec copy is separate.)
+> - ✅ **`EventAnalytics` schema made truthful** (commit `8b269b1a`): the fictional flat fields dropped, replaced with the real
+>   `{eventCode, timeframe?, metrics{registrations?,attendance?,engagement?}}` shape. **getEventAnalytics is now wireable**
+>   (unblocked); only the `EventReportingApi` controller wire remains (getEventAnalytics Map→typed + getAttendanceSummary
+>   hand→generated `AttendanceSummaryDTO` consolidation) — a clean follow-up. **EMS = 43 wired; no `BulkOperationsApi`.**
+> Authoritative full
 > EMS suite + push pending on an interactive terminal (agent runner can't run the pre-push gate).
 >
 > ▶ **(historical) contract foundation + boundary mapper landed first** (EMS `compileJava` green, additive):
