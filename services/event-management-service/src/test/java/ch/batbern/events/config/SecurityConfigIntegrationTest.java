@@ -69,7 +69,7 @@ class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
     void should_allowAnonymousAccess_when_viewingEventDetails() throws Exception {
         // When: GET event details without authentication
         // Then: Should not require authentication (404 is OK, means security passed)
-        mockMvc.perform(get("/api/v1/events/NON_EXISTENT_EVENT"))
+        mockMvc.perform(get("/api/v1/events/BATbern888"))
                 .andExpect(status().isNotFound()); // Event doesn't exist, but security passed
     }
 
