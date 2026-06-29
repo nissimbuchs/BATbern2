@@ -1134,10 +1134,29 @@ export interface components {
        *     Story BAT-109: Archive browsing with session expansion
        */
       sessions?: components['schemas']['Session'][] | null;
+      /** @description Organizer's free-text note on topic selection (Story 5.2). */
+      topicSelectionNote?: string;
+      /** @description Username of the creator (audit). */
+      createdBy?: string;
+      /** @description Username of the last updater (audit). */
+      updatedBy?: string;
+      /** @description Speakers who accepted their invitation. Only present when ?include=metrics. */
+      confirmedSpeakersCount?: number;
+      /** @description Speakers who submitted complete materials. Only present when ?include=metrics. */
+      speakersWithCompleteInfoCount?: number;
+      /** @description Speakers with materials still pending. Only present when ?include=metrics. */
+      pendingMaterialsCount?: number;
+      /** @description Maximum speaker slots for this event type. Only present when ?include=metrics. */
+      maxSpeakerSlots?: number;
+      /** @description Sessions that have at least one material. Only present when ?include=metrics. */
+      sessionsWithMaterialsCount?: number;
+      /** @description Total sessions for this event. Only present when ?include=metrics. */
+      totalSessionsCount?: number;
     };
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];
-      sessions?: components['schemas']['Session'][];
+      /** @description Expanded sessions for the single-event detail view — carries the full SessionResponse shape (materials + enriched speakers). The list endpoint embeds the leaner Session instead (materialsStatus only, no materials array). */
+      sessions?: components['schemas']['SessionResponse'][];
       /**
        * @description Progressive publishing phase for watch app (Story W1.2)
        *     - TOPIC: Event topic selected, speakers TBA
@@ -1155,14 +1174,14 @@ export interface components {
     };
     CreateEventRequest: {
       title: string;
-      eventNumber: number;
+      eventNumber?: number;
       /** Format: date-time */
       date: string;
       /** Format: date-time */
-      registrationDeadline: string;
-      venueName: string;
-      venueAddress: string;
-      venueCapacity: number;
+      registrationDeadline?: string;
+      venueName?: string;
+      venueAddress?: string;
+      venueCapacity?: number;
       /** @description Story 10.11 — Optional registration limit. Null = unlimited. */
       registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
@@ -1171,7 +1190,7 @@ export interface components {
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
        */
-      organizerUsername: string;
+      organizerUsername?: string;
       /** @default 0 */
       currentAttendeeCount: number;
       /** Format: date-time */
@@ -1188,14 +1207,14 @@ export interface components {
     };
     UpdateEventRequest: {
       title: string;
-      eventNumber: number;
+      eventNumber?: number;
       /** Format: date-time */
       date: string;
       /** Format: date-time */
-      registrationDeadline: string;
-      venueName: string;
-      venueAddress: string;
-      venueCapacity: number;
+      registrationDeadline?: string;
+      venueName?: string;
+      venueAddress?: string;
+      venueCapacity?: number;
       /** @description Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
       registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
@@ -1204,13 +1223,13 @@ export interface components {
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
        */
-      organizerUsername: string;
+      organizerUsername?: string;
       currentAttendeeCount?: number;
       /** Format: date-time */
       publishedAt?: string;
       metadata?: string;
       description?: string;
-      eventType: components['schemas']['EventType'];
+      eventType?: components['schemas']['EventType'];
       /** @description Upload ID from /logos/presigned-url for event theme image */
       themeImageUploadId?: string | null;
     };
@@ -1249,6 +1268,10 @@ export interface components {
       qnaOpenTrigger?: 'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED';
       /** @description Story 7.5 rework: window length in days (close = event date + this). */
       qnaWindowDays?: number;
+      /** @description Topic code to associate with the event (Story 5.2). Null leaves it unchanged unless explicitly cleared by the controller. */
+      topicCode?: string | null;
+      /** @description Organizer's free-text note on topic selection (Story 5.2). */
+      topicSelectionNote?: string | null;
     };
     BatchUpdateRequest: {
       updates: {
@@ -1256,15 +1279,28 @@ export interface components {
         fields?: Record<string, never>;
       }[];
     };
+    /** @description Result of a batch event update. Truthful to the deployed controller (EventController.batchUpdateEvents): successful/failed are arrays of per-event results, plus a summary with counts. */
     BatchUpdateResponse: {
-      /** @example 45 */
-      successful?: number;
-      /** @example 5 */
-      failed?: number;
-      errors?: {
-        id?: string;
+      successful?: {
+        /** @example BATbern142 */
+        eventCode?: string;
+        /** @example updated */
+        status?: string;
+      }[];
+      failed?: {
+        /** @example BATbern999 */
+        eventCode?: string;
+        /** @example Event not found */
         error?: string;
       }[];
+      summary?: {
+        /** @example 50 */
+        total?: number;
+        /** @example 45 */
+        successful?: number;
+        /** @example 5 */
+        failed?: number;
+      };
     };
     /**
      * @description Event type identifier (Story 5.1 - Event Type Definition).
@@ -1869,6 +1905,99 @@ export interface components {
       /** @description Present only in dev/staging diagnostics — never in production. */
       stackTrace?: string;
     };
+    /**
+     * @description Story 5.9: Session material (uploaded slide deck / document).
+     *     Returned by GET /sessions/{sessionSlug}/materials and embedded in Session responses. Maps the SessionMaterial entity; createdAt/updatedAt are UTC.
+     */
+    SessionMaterialResponse: {
+      /**
+       * Format: uuid
+       * @description Material identifier (same-service UUID)
+       * @example 3fa85f64-5717-4562-b3fc-2c963f66afa6
+       */
+      id: string;
+      /**
+       * @description Client-supplied upload correlation id
+       * @example upload-2026-0001
+       */
+      uploadId: string;
+      /**
+       * @description S3 object key of the stored material
+       * @example materials/2026/batbern142/ui-design/slides.pdf
+       */
+      s3Key: string;
+      /**
+       * @description CloudFront delivery URL for the material (null until CDN-published)
+       * @example https://cdn.batbern.ch/materials/2026/batbern142/ui-design/slides.pdf
+       */
+      cloudFrontUrl?: string;
+      /**
+       * @description Original uploaded file name
+       * @example slides.pdf
+       */
+      fileName: string;
+      /**
+       * @description File extension (without the dot)
+       * @example pdf
+       */
+      fileExtension: string;
+      /**
+       * Format: int64
+       * @description File size in bytes
+       * @example 2097152
+       */
+      fileSize: number;
+      /**
+       * @description MIME type of the material
+       * @example application/pdf
+       */
+      mimeType: string;
+      /**
+       * @description Material classification (e.g. slides, document)
+       * @example slides
+       */
+      materialType: string;
+      /**
+       * @description Username of the uploader (public identifier per ADR-003)
+       * @example john.doe
+       */
+      uploadedBy: string;
+      /**
+       * Format: date-time
+       * @description Creation timestamp (UTC)
+       * @example 2026-06-28T08:28:30.440Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Last-update timestamp (UTC)
+       * @example 2026-06-28T08:28:30.440Z
+       */
+      updatedAt: string;
+      /**
+       * @description Story 5.10 forward-compat: whether text content has been extracted for RAG search
+       * @example false
+       */
+      contentExtracted?: boolean;
+      /**
+       * @description Story 5.10 forward-compat: content-extraction status
+       * @example PENDING
+       */
+      extractionStatus?: string;
+    };
+    /**
+     * @description Story 1.15a.1b: Session response with embedded speakers + materials.
+     *     Session schema plus the service-enriched materials list/count (Story 5.9).
+     */
+    SessionResponse: components['schemas']['Session'] & {
+      /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
+      materials?: components['schemas']['SessionMaterialResponse'][];
+      /**
+       * @description Story 5.9: Number of uploaded materials (for overview displays)
+       * @example 3
+       */
+      materialsCount?: number;
+    };
   };
   responses: {
     /** @description Bad request - validation error */
@@ -1940,10 +2069,12 @@ export interface operations {
         filter?: string;
         /** @description Sort field (prefix with - for descending) */
         sort?: string;
-        /** @description Page number (0-indexed) */
+        /** @description Page number (1-indexed). Default 1. The deployed PaginationUtils.parseParams rejects page <= 0 with 400, so the default must be 1. */
         page?: number;
-        /** @description Items per page (max 100) */
+        /** @description Items per page. The deployed PaginationUtils clamps values above 100 down to 100 (it does NOT reject them), so no maximum is enforced at the contract layer. */
         limit?: number;
+        /** @description Include archived events in the result set (default false). The public archive index sets this true to list past events. */
+        includeArchived?: boolean;
         /** @description Comma-separated list of resources to include */
         include?: string;
       };

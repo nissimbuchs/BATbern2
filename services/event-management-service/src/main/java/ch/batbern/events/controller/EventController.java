@@ -18,6 +18,11 @@ import ch.batbern.events.dto.PatchEventRequest;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.dto.UpdateEventRequest;
 import ch.batbern.events.mapper.EventMapper;
+import ch.batbern.events.mapper.EventGeneratedMapper;
+import ch.batbern.events.core.api.generated.EventsApi;
+import ch.batbern.events.core.api.generated.EventActionsApi;
+import ch.batbern.events.core.dto.generated.EventDetail;
+import ch.batbern.events.core.dto.generated.ListEvents200Response;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
@@ -57,7 +62,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -85,15 +89,16 @@ import java.util.stream.Collectors;
  * - Field selection (?fields=id,title,date)
  */
 @RestController
-@RequestMapping("/api/v1/events")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Events", description = "Event management API - consolidated endpoints")
-public class EventController {
+public class EventController implements EventsApi, EventActionsApi {
 
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
+    private final EventGeneratedMapper eventGeneratedMapper;
     private final LogoRepository logoRepository;
     private final EventWorkflowStateMachine eventWorkflowStateMachine;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
@@ -135,32 +140,14 @@ public class EventController {
      * - Paginate: GET /api/v1/events?page=2&limit=10
      * - Combined: GET /api/v1/events?filter={"workflowState":"PUBLISHED"}&sort=-date&page=1&limit=20
      */
-    @GetMapping
-    @Operation(
-            summary = "List/Search Events",
-            description = "Retrieve events with optional filtering, sorting, and pagination. "
-                    + "Uses MongoDB-style filter syntax for rich querying. "
-                    + "Supports resource expansion via ?include parameter (e.g., ?include=topics,sessions,speakers)"
-    )
-    public ResponseEntity<PaginatedResponse<EventResponse>> listEvents(
-            @Parameter(description = "JSON filter object (e.g., {\"status\":\"published\"})")
-            @RequestParam(required = false) String filter,
-
-            @Parameter(description = "Sort specification (e.g., -date for descending, +title for ascending)")
-            @RequestParam(required = false) String sort,
-
-            @Parameter(description = "Page number (1-indexed, default: 1)")
-            @RequestParam(required = false) Integer page,
-
-            @Parameter(description = "Items per page (default: 20, max: 100)")
-            @RequestParam(required = false) Integer limit,
-
-            @Parameter(description = "Include archived events (default: false)")
-            @RequestParam(required = false, defaultValue = "false") boolean includeArchived,
-
-            @Parameter(description = "Comma-separated list of resources to include "
-                               + "(e.g., topics,sessions,speakers,registrations)")
-            @RequestParam(required = false) String include
+    @Override
+    public ResponseEntity<ListEvents200Response> listEvents(
+            String filter,
+            String sort,
+            Integer page,
+            Integer limit,
+            Boolean includeArchived,
+            String include
     ) {
         log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}, includeArchived: {}, include: {}",
                 filter, sort, page, limit, includeArchived, include);
@@ -179,13 +166,12 @@ public class EventController {
                     .collect(Collectors.toList());
         }
 
-        // Build response
-        PaginatedResponse<EventResponse> response = PaginatedResponse.<EventResponse>builder()
-                .data(eventResponses)
-                .pagination(result.getPagination())
-                .build();
-
-        return ResponseEntity.ok(response);
+        // Map to the generated wire type (lean Session list items — no embedded materials)
+        return ResponseEntity.ok(new ListEvents200Response()
+                .data(eventResponses.stream()
+                        .map(eventGeneratedMapper::toEvent)
+                        .collect(Collectors.toList()))
+                .pagination(result.getPagination()));
     }
 
     /**
@@ -204,16 +190,10 @@ public class EventController {
      *
      * Story 1.16.2: Uses eventCode (String) instead of UUID
      */
-    @GetMapping("/{eventCode}")
-    @Operation(
-            summary = "Get Event Detail",
-            description = "Retrieve a single event by event code with optional resource expansion "
-                + "using ?include parameter. Cached for 15 minutes."
-    )
-    public ResponseEntity<EventResponse> getEvent(
-            @PathVariable String eventCode,
-            @Parameter(description = "Comma-separated list of resources to include (e.g., venue,speakers,sessions)")
-            @RequestParam(required = false) String include
+    @Override
+    public ResponseEntity<EventDetail> getEvent(
+            String eventCode,
+            String include
     ) {
         log.debug("GET /api/v1/events/{} - include: {}", eventCode, include);
 
@@ -263,7 +243,7 @@ public class EventController {
         HttpHeaders headers = new HttpHeaders();
         headers.add("X-Cache-Status", cacheStatus);
 
-        return ResponseEntity.ok().headers(headers).body(response);
+        return ResponseEntity.ok().headers(headers).body(eventGeneratedMapper.toEventDetail(response));
     }
 
     /**
@@ -758,17 +738,9 @@ public class EventController {
      * @param include Comma-separated list of resources to expand
      * @return Current event or 404 if none exists
      */
-    @GetMapping("/current")
-    @Operation(
-            summary = "Get Current Event",
-            description = "Retrieve the event the public homepage should feature: the recently "
-                + "completed event within its 14-day post-event window if one exists, otherwise "
-                + "the next upcoming published event. No authentication required."
-    )
-    public ResponseEntity<EventResponse> getCurrentEvent(
-            @Parameter(description = "Comma-separated list of resources to include "
-                + "(e.g., topics,venue,speakers,sessions)")
-            @RequestParam(required = false) String include
+    @Override
+    public ResponseEntity<EventDetail> getCurrentEvent(
+            String include
     ) {
         log.debug("GET /api/v1/events/current - include: {}", include);
 
@@ -837,7 +809,7 @@ public class EventController {
             applyResourceExpansionsToDTO(currentEvent, include, response);
         }
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(eventGeneratedMapper.toEventDetail(response));
     }
 
     /**
@@ -850,9 +822,10 @@ public class EventController {
      *
      * Story 1.16.2: Generates eventCode in format "BATbern{number}"
      */
-    @PostMapping
-    @Operation(summary = "Create Event", description = "Create a new event")
-    public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody CreateEventRequest request) {
+    @Override
+    public ResponseEntity<ch.batbern.events.core.dto.generated.Event> createEvent(
+            ch.batbern.events.core.dto.generated.CreateEventRequest gen) {
+        CreateEventRequest request = toHandCreate(gen);
         log.debug("POST /api/v1/events - title: {}", request.getTitle());
 
         // Generate eventCode from event number (format: "BATbern{number}")
@@ -930,7 +903,7 @@ public class EventController {
         enrichWithTeaserImages(response);
         enrichWithEventTimes(response, savedEvent);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(eventGeneratedMapper.toEvent(response));
     }
 
     /**
@@ -957,15 +930,15 @@ public class EventController {
      *
      * Story 1.16.2: Uses eventCode instead of UUID
      */
-    @PutMapping("/{eventCode}")
-    @Operation(summary = "Update Event", description = "Fully replace an existing event")
+    @Override
     @org.springframework.cache.annotation.Caching(evict = {
         @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true),
         @CacheEvict(value = CacheConfig.ARCHIVE_EVENTS_CACHE, allEntries = true)
     })
-    public ResponseEntity<EventResponse> updateEvent(
-            @PathVariable String eventCode,
-            @Valid @RequestBody UpdateEventRequest request) {
+    public ResponseEntity<ch.batbern.events.core.dto.generated.Event> updateEvent(
+            String eventCode,
+            ch.batbern.events.core.dto.generated.UpdateEventRequest gen) {
+        UpdateEventRequest request = toHandUpdate(gen);
         log.debug("PUT /api/v1/events/{} - title: {}", eventCode, request.getTitle());
 
         // Find existing event by event code
@@ -1081,7 +1054,7 @@ public class EventController {
         enrichWithTeaserImages(response);
         enrichWithEventTimes(response, updatedEvent);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(eventGeneratedMapper.toEvent(response));
     }
 
     /**
@@ -1095,12 +1068,12 @@ public class EventController {
      *
      * Story 1.16.2: Uses eventCode instead of UUID
      */
-    @PatchMapping("/{eventCode}")
-    @Operation(summary = "Patch Event", description = "Partially update an existing event")
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<EventResponse> patchEvent(
-            @PathVariable String eventCode,
-            @Valid @RequestBody PatchEventRequest request) {
+    public ResponseEntity<ch.batbern.events.core.dto.generated.Event> patchEvent(
+            String eventCode,
+            ch.batbern.events.core.dto.generated.PatchEventRequest gen) {
+        PatchEventRequest request = toHandPatch(gen);
         log.debug("PATCH /api/v1/events/{}", eventCode);
 
         // Find existing event by event code
@@ -1185,7 +1158,7 @@ public class EventController {
         enrichWithTeaserImages(response);
         enrichWithEventTimes(response, patchedEvent);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(eventGeneratedMapper.toEvent(response));
     }
 
     /**
@@ -1198,7 +1171,9 @@ public class EventController {
      * @param requests List of event updates to apply
      * @return Batch operation results with successful and failed updates
      */
-    @PatchMapping
+    // NOTE: BulkOperationsApi wiring deferred (generated body is a {updates:[…]} wrapper vs the
+    // deployed bare array; needs a spec request-body reconciliation). Stays hand-rolled at /events.
+    @PatchMapping("/events")
     @Operation(
             summary = "Batch Update Events",
             description = "Update multiple events in a single request. Returns partial success if some updates fail."
@@ -1274,10 +1249,9 @@ public class EventController {
      *
      * DELETE /api/v1/events/{eventCode}
      */
-    @DeleteMapping("/{eventCode}")
-    @Operation(summary = "Delete Event", description = "Delete an event by eventCode (Story 1.16.2)")
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Void> deleteEvent(@PathVariable String eventCode) {
+    public ResponseEntity<Void> deleteEvent(String eventCode) {
         log.debug("DELETE /api/v1/events/{}", eventCode);
 
         // Find event by eventCode
@@ -1308,10 +1282,9 @@ public class EventController {
      *
      * Validates event meets publication requirements and changes status to "published"
      */
-    @PostMapping("/{eventCode}/publish")
-    @Operation(summary = "Publish Event", description = "Publish an event after validation (Story 1.16.2)")
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<EventResponse> publishEvent(@PathVariable String eventCode) {
+    public ResponseEntity<ch.batbern.events.core.dto.generated.Event> publishEvent(String eventCode) {
         log.debug("POST /api/v1/events/{}/publish", eventCode);
 
         // Find event by eventCode
@@ -1362,7 +1335,7 @@ public class EventController {
         enrichWithTeaserImages(response);
         enrichWithEventTimes(response, publishedEvent);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(eventGeneratedMapper.toEvent(response));
     }
 
     /**
@@ -1394,6 +1367,88 @@ public class EventController {
      */
     private Instant parseDate(String dateString) {
         return Instant.parse(dateString);
+    }
+
+    // ---- generated → hand request adapters (Phase 7 EventController wiring) -------------------
+    // The generated request DTOs use OffsetDateTime + the generated EventType/EventWorkflowState
+    // enums; the proven mutation bodies use the hand DTOs (String dates, generated EventType,
+    // shared EventWorkflowState). Adapt at the method boundary so the bodies stay byte-identical.
+
+    private static String toIso(java.time.OffsetDateTime odt) {
+        return odt == null ? null : odt.toInstant().toString();
+    }
+
+    private static ch.batbern.shared.types.EventWorkflowState toSharedWorkflowState(
+            ch.batbern.events.core.dto.generated.EventWorkflowState ws) {
+        return ws == null ? null : ch.batbern.shared.types.EventWorkflowState.valueOf(ws.name());
+    }
+
+    private CreateEventRequest toHandCreate(ch.batbern.events.core.dto.generated.CreateEventRequest g) {
+        return CreateEventRequest.builder()
+                .title(g.getTitle())
+                .eventNumber(g.getEventNumber())
+                .date(toIso(g.getDate()))
+                .registrationDeadline(toIso(g.getRegistrationDeadline()))
+                .venueName(g.getVenueName())
+                .venueAddress(g.getVenueAddress())
+                .venueCapacity(g.getVenueCapacity())
+                .organizerUsername(g.getOrganizerUsername())
+                .currentAttendeeCount(g.getCurrentAttendeeCount())
+                .publishedAt(toIso(g.getPublishedAt()))
+                .metadata(g.getMetadata())
+                .description(g.getDescription())
+                .eventType(g.getEventType())
+                .themeImageUploadId(g.getThemeImageUploadId())
+                .workflowState(toSharedWorkflowState(g.getWorkflowState()))
+                .registrationCapacity(g.getRegistrationCapacity())
+                .build();
+    }
+
+    private UpdateEventRequest toHandUpdate(ch.batbern.events.core.dto.generated.UpdateEventRequest g) {
+        return UpdateEventRequest.builder()
+                .title(g.getTitle())
+                .eventNumber(g.getEventNumber())
+                .date(toIso(g.getDate()))
+                .registrationDeadline(toIso(g.getRegistrationDeadline()))
+                .venueName(g.getVenueName())
+                .venueAddress(g.getVenueAddress())
+                .venueCapacity(g.getVenueCapacity())
+                .organizerUsername(g.getOrganizerUsername())
+                .currentAttendeeCount(g.getCurrentAttendeeCount())
+                .publishedAt(toIso(g.getPublishedAt()))
+                .metadata(g.getMetadata())
+                .description(g.getDescription())
+                .themeImageUploadId(g.getThemeImageUploadId())
+                .eventType(g.getEventType() == null ? null : g.getEventType().getValue())
+                .workflowState(toSharedWorkflowState(g.getWorkflowState()))
+                .registrationCapacity(g.getRegistrationCapacity())
+                .build();
+    }
+
+    private PatchEventRequest toHandPatch(ch.batbern.events.core.dto.generated.PatchEventRequest g) {
+        return PatchEventRequest.builder()
+                .title(g.getTitle())
+                .eventNumber(g.getEventNumber())
+                .date(toIso(g.getDate()))
+                .registrationDeadline(toIso(g.getRegistrationDeadline()))
+                .venueName(g.getVenueName())
+                .venueAddress(g.getVenueAddress())
+                .venueCapacity(g.getVenueCapacity())
+                .organizerUsername(g.getOrganizerUsername())
+                .currentAttendeeCount(g.getCurrentAttendeeCount())
+                .publishedAt(toIso(g.getPublishedAt()))
+                .metadata(g.getMetadata())
+                .description(g.getDescription())
+                .themeImageUploadId(g.getThemeImageUploadId())
+                .workflowState(toSharedWorkflowState(g.getWorkflowState()))
+                .topicCode(g.getTopicCode())
+                .topicSelectionNote(g.getTopicSelectionNote())
+                .registrationCapacity(g.getRegistrationCapacity())
+                .qnaEnabled(g.getQnaEnabled())
+                .qnaOpenTrigger(g.getQnaOpenTrigger() == null ? null
+                        : ch.batbern.events.domain.QnaOpenTrigger.valueOf(g.getQnaOpenTrigger().name()))
+                .qnaWindowDays(g.getQnaWindowDays())
+                .build();
     }
 
     /**
@@ -1545,7 +1600,7 @@ public class EventController {
      * Organizer-only: promotes the specified waitlisted registration to status=registered.
      * Returns 204 on success, 404 if registration not found, 409 if not on waitlist.
      */
-    @PostMapping("/{eventCode}/registrations/{registrationCode}/promote")
+    @PostMapping("/events/{eventCode}/registrations/{registrationCode}/promote")
     @Operation(summary = "Promote Waitlisted Registration",
             description = "Organizer-only: promote a waitlisted registration to registered status")
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -1574,7 +1629,7 @@ public class EventController {
      * Organizer-only: generates fresh JWT tokens and re-sends the confirmation email
      * to the attendee. Only valid for registrations in "registered" (pending) status.
      */
-    @PostMapping("/{eventCode}/registrations/{registrationCode}/resend-confirmation")
+    @PostMapping("/events/{eventCode}/registrations/{registrationCode}/resend-confirmation")
     @Operation(
             summary = "Resend Registration Confirmation Email",
             description = "Organizer-only: resend the confirmation email to an attendee whose "
@@ -1635,7 +1690,7 @@ public class EventController {
      * Idempotent: already-registered users are counted as skipped, not re-enrolled.
      * Returns counts of enrolled and skipped users.
      */
-    @PostMapping("/{eventCode}/enroll-stakeholders")
+    @PostMapping("/events/{eventCode}/enroll-stakeholders")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Enroll Stakeholders",
@@ -1666,7 +1721,7 @@ public class EventController {
      * @param timeframe Optional timeframe as "startTime,endTime" in ISO-8601 format
      * @return Analytics data for the event
      */
-    @GetMapping("/{eventCode}/analytics")
+    @GetMapping("/events/{eventCode}/analytics")
     @Operation(
             summary = "Get Event Analytics",
             description = "Retrieve analytics data for an event with optional metrics and timeframe "
@@ -1716,7 +1771,7 @@ public class EventController {
      * @param eventCode Event code to check registration for
      * @return 200 always — registered=true with full data if found, registered=false if not
      */
-    @GetMapping("/{eventCode}/my-registration")
+    @GetMapping("/events/{eventCode}/my-registration")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get my registration status for an event",
@@ -1745,7 +1800,7 @@ public class EventController {
      * @param eventCode Event code to register for
      * @return 201 Created with minimal response
      */
-    @PostMapping("/{eventCode}/my-registration")
+    @PostMapping("/events/{eventCode}/my-registration")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Quick Registration for Authenticated Attendee",
@@ -1789,7 +1844,7 @@ public class EventController {
      * @param eventCode Event code whose registration to cancel
      * @return 204 No Content on success
      */
-    @DeleteMapping("/{eventCode}/my-registration")
+    @DeleteMapping("/events/{eventCode}/my-registration")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Cancel My Registration",
@@ -1829,7 +1884,7 @@ public class EventController {
      * @param request Registration request with attendee details
      * @return Created registration with enriched user data
      */
-    @PostMapping("/{eventCode}/registrations")
+    @PostMapping("/events/{eventCode}/registrations")
     @Operation(
             summary = "Create Event Registration (Anonymous)",
             description = "Register for an event without requiring authentication. "
@@ -1931,7 +1986,7 @@ public class EventController {
      * @param limit Items per page (default: 25, max: 100)
      * @return Paginated list of registrations enriched with user data
      */
-    @GetMapping("/{eventCode}/registrations")
+    @GetMapping("/events/{eventCode}/registrations")
     @Operation(
             summary = "List Event Registrations",
             description = "Retrieve registrations for a specific event with "
@@ -2019,7 +2074,7 @@ public class EventController {
      * @param attendeeUsername Username to list registrations for (passed as header to avoid URL exposure)
      * @return List of registrations enriched with event data
      */
-    @GetMapping("/registrations")
+    @GetMapping("/events/registrations")
     @Operation(
             summary = "List User Registrations",
             description = "Retrieve all registrations for a specific user across all events"
@@ -2085,7 +2140,7 @@ public class EventController {
      * @param request Batch registration request with participant data and event list
      * @return Batch registration response with detailed success/failure information
      */
-    @PostMapping("/batch_registrations")
+    @PostMapping("/events/batch_registrations")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Create Batch Event Registrations",
@@ -2118,7 +2173,7 @@ public class EventController {
      * @param registrationCode Registration code (e.g., BATbern142-reg-A3X9K2)
      * @return Registration detail enriched with user data
      */
-    @GetMapping("/{eventCode}/registrations/{registrationCode}")
+    @GetMapping("/events/{eventCode}/registrations/{registrationCode}")
     @Operation(
             summary = "Get Registration Detail",
             description = "Retrieve a specific registration by registration code with enriched user data"
@@ -2161,7 +2216,7 @@ public class EventController {
      * @param token JWT confirmation token from email
      * @return Success message
      */
-    @PostMapping("/{eventCode}/registrations/confirm")
+    @PostMapping("/events/{eventCode}/registrations/confirm")
     @Operation(
             summary = "Confirm Registration",
             description = "Confirm a pending registration using the token from the confirmation "
@@ -2240,7 +2295,7 @@ public class EventController {
      * @param updates Map of fields to update
      * @return Updated registration with enriched user data
      */
-    @PatchMapping("/{eventCode}/registrations/{registrationCode}")
+    @PatchMapping("/events/{eventCode}/registrations/{registrationCode}")
     @Operation(
             summary = "Update Event Registration",
             description = "Partially update a registration (e.g., change status)"
@@ -2302,7 +2357,7 @@ public class EventController {
      * @param registrationCode Registration code
      * @return 204 No Content
      */
-    @DeleteMapping("/{eventCode}/registrations/{registrationCode}")
+    @DeleteMapping("/events/{eventCode}/registrations/{registrationCode}")
     @Operation(
             summary = "Delete Event Registration",
             description = "Delete a registration from the event"
@@ -2401,7 +2456,7 @@ public class EventController {
      * @param request Request body with topicCode (ADR-003 compliant, generated DTO)
      * @return TopicSelectionResponse with event and topic details
      */
-    @PostMapping("/{eventCode}/topics")
+    @PostMapping("/events/{eventCode}/topics")
     @Operation(summary = "Select topic for event",
             description = "Assign a topic to an event and transition to TOPIC_SELECTION state")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
@@ -2454,7 +2509,7 @@ public class EventController {
      * @param fromYear    Earliest year to include (defaults to current year - 5)
      * @return List of attendance summaries ordered by event date descending
      */
-    @GetMapping("/attendance-summary")
+    @GetMapping("/events/attendance-summary")
     @PreAuthorize("hasRole('PARTNER') or hasRole('ORGANIZER')")
     @Operation(
             summary = "Get attendance summary per event for a company",

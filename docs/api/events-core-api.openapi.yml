@@ -108,21 +108,30 @@ paths:
           example: -date
       - name: page
         in: query
-        description: Page number (0-indexed)
-        required: false
-        schema:
-          type: integer
-          minimum: 0
-          default: 0
-      - name: limit
-        in: query
-        description: Items per page (max 100)
+        description: 'Page number (1-indexed). Default 1. The deployed PaginationUtils.parseParams
+          rejects page <= 0 with 400, so the default must be 1.'
         required: false
         schema:
           type: integer
           minimum: 1
-          maximum: 100
+          default: 1
+      - name: limit
+        in: query
+        description: 'Items per page. The deployed PaginationUtils clamps values above 100 down
+          to 100 (it does NOT reject them), so no maximum is enforced at the contract layer.'
+        required: false
+        schema:
+          type: integer
+          minimum: 1
           default: 20
+      - name: includeArchived
+        in: query
+        description: 'Include archived events in the result set (default false). The public
+          archive index sets this true to list past events.'
+        required: false
+        schema:
+          type: boolean
+          default: false
       - name: include
         in: query
         description: Comma-separated list of resources to include
@@ -2149,6 +2158,7 @@ components:
           example: events/BATbern57/teaser/abc123-def456.jpg
     Event:
       type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
       required:
       - eventCode
       - title
@@ -2405,7 +2415,35 @@ components:
             '
           items:
             $ref: ./event-sessions-api.openapi.yml#/components/schemas/Session
+        topicSelectionNote:
+          type: string
+          description: "Organizer's free-text note on topic selection (Story 5.2)."
+        createdBy:
+          type: string
+          description: Username of the creator (audit).
+        updatedBy:
+          type: string
+          description: Username of the last updater (audit).
+        confirmedSpeakersCount:
+          type: integer
+          description: 'Speakers who accepted their invitation. Only present when ?include=metrics.'
+        speakersWithCompleteInfoCount:
+          type: integer
+          description: 'Speakers who submitted complete materials. Only present when ?include=metrics.'
+        pendingMaterialsCount:
+          type: integer
+          description: 'Speakers with materials still pending. Only present when ?include=metrics.'
+        maxSpeakerSlots:
+          type: integer
+          description: 'Maximum speaker slots for this event type. Only present when ?include=metrics.'
+        sessionsWithMaterialsCount:
+          type: integer
+          description: 'Sessions that have at least one material. Only present when ?include=metrics.'
+        totalSessionsCount:
+          type: integer
+          description: 'Total sessions for this event. Only present when ?include=metrics.'
     EventDetail:
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
       allOf:
       - $ref: '#/components/schemas/Event'
       - type: object
@@ -2414,8 +2452,11 @@ components:
             $ref: '#/components/schemas/Venue'
           sessions:
             type: array
+            description: 'Expanded sessions for the single-event detail view — carries the full
+              SessionResponse shape (materials + enriched speakers). The list endpoint embeds the
+              leaner Session instead (materialsStatus only, no materials array).'
             items:
-              $ref: ./event-sessions-api.openapi.yml#/components/schemas/Session
+              $ref: ./event-sessions-api.openapi.yml#/components/schemas/SessionResponse
           currentPublishedPhase:
             type: string
             nullable: true
@@ -2447,13 +2488,7 @@ components:
       type: object
       required:
       - title
-      - eventNumber
       - date
-      - registrationDeadline
-      - venueName
-      - venueAddress
-      - venueCapacity
-      - organizerUsername
       - eventType
       properties:
         title:
@@ -2519,14 +2554,7 @@ components:
       type: object
       required:
       - title
-      - eventNumber
       - date
-      - registrationDeadline
-      - venueName
-      - venueAddress
-      - venueCapacity
-      - organizerUsername
-      - eventType
       properties:
         title:
           type: string
@@ -2645,6 +2673,15 @@ components:
           minimum: 1
           maximum: 365
           description: 'Story 7.5 rework: window length in days (close = event date + this).'
+        topicCode:
+          type: string
+          nullable: true
+          description: 'Topic code to associate with the event (Story 5.2). Null leaves it unchanged
+            unless explicitly cleared by the controller.'
+        topicSelectionNote:
+          type: string
+          nullable: true
+          description: "Organizer's free-text note on topic selection (Story 5.2)."
     BatchUpdateRequest:
       type: object
       required:
@@ -2661,22 +2698,44 @@ components:
                 type: object
     BatchUpdateResponse:
       type: object
+      description: 'Result of a batch event update. Truthful to the deployed controller
+        (EventController.batchUpdateEvents): successful/failed are arrays of per-event
+        results, plus a summary with counts.'
       properties:
         successful:
-          type: integer
-          example: 45
-        failed:
-          type: integer
-          example: 5
-        errors:
           type: array
           items:
             type: object
             properties:
-              id:
+              eventCode:
                 type: string
+                example: BATbern142
+              status:
+                type: string
+                example: updated
+        failed:
+          type: array
+          items:
+            type: object
+            properties:
+              eventCode:
+                type: string
+                example: BATbern999
               error:
                 type: string
+                example: Event not found
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 50
+            successful:
+              type: integer
+              example: 45
+            failed:
+              type: integer
+              example: 5
     EventType:
       type: string
       description: 'Event type identifier (Story 5.1 - Event Type Definition).

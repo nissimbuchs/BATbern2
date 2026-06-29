@@ -596,7 +596,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return404_when_eventNotFound")
     void should_return404_when_eventNotFound() throws Exception {
-        mockMvc.perform(get("/api/v1/events/999999")
+        mockMvc.perform(get("/api/v1/events/BATbern888")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Not Found"));
@@ -827,7 +827,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return404_when_deletingNonExistentEvent")
     void should_return404_when_deletingNonExistentEvent() throws Exception {
-        mockMvc.perform(delete("/api/v1/events/non-existent-id")
+        mockMvc.perform(delete("/api/v1/events/BATbern888")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -2543,7 +2543,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Given: event with registrationCapacity=5, 3 attended + 1 confirmed = 4 confirmed total
         eventRepository.deleteAll();
         Event event = Event.builder()
-                .eventCode("BATbernCapTest")
+                .eventCode("BATbern9999")
                 .title("Capacity Test")
                 .eventNumber(9999)
                 .date(Instant.parse("2023-05-15T09:00:00Z"))

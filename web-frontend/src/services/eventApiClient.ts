@@ -648,7 +648,11 @@ class EventApiClient {
   /**
    * Client-side validation: Registration deadline must be before event date
    */
-  private validateRegistrationDeadline(eventDate: string, deadline: string): void {
+  private validateRegistrationDeadline(eventDate: string, deadline: string | undefined): void {
+    // registrationDeadline is optional on create/update — skip validation when absent.
+    if (!deadline) {
+      return;
+    }
     const eventDateTime = new Date(eventDate);
     const deadlineDateTime = new Date(deadline);
 
@@ -660,7 +664,11 @@ class EventApiClient {
   /**
    * Client-side validation: Venue capacity must be positive
    */
-  private validateVenueCapacity(capacity: number): void {
+  private validateVenueCapacity(capacity: number | undefined): void {
+    // venueCapacity is optional on create/update — skip validation when absent.
+    if (capacity == null) {
+      return;
+    }
     if (capacity <= 0) {
       throw new Error('Venue capacity must be positive');
     }

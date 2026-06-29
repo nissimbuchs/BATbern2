@@ -56,11 +56,14 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > Full EMS suite green after SlotAssignment (1728 passed / 0 failed).
 >
 > **What's left in EMS (NOT per-controller wires):**
-> 1. **`EventController` CRUD** — DEFERRED, needs a dedicated FE-coordinated story (lazy-load materials +
->    speaker company/portrait from the dedicated APIs so `EventDetail.sessions` can be the lean typed `Session`;
->    + `BulkOperationsApi.batchUpdateEvents` / `EventReportingApi.getEventAnalytics` response schemas made
->    truthful first). See the EventController blocker note further down. The speaker-pool ops were already
->    extracted to `EventSpeakerPoolController` (EMS 25).
+> 1. **`EventController` CRUD** — **PLANNED 2026-06-29** as a **single backend story** (wire `EventsApi` +
+>    truthful BulkOps/EventReporting; **no FE lazy-load**). Re-verification corrected the 2026-06-28 blocker: the
+>    generated `SessionSpeaker` is **already rich** and session `id`/speaker `bio` are unread, so the **only** real
+>    gap is the `materials` array — and "materials exist?" is already answered by `materialsStatus` on the lean
+>    `Session`. Owner-chosen design: **`Event.sessions` (list) stays lean `Session`; `EventDetail.sessions` (single
+>    GET) → `SessionResponse`** (carries `materials`). Both file-needing views already load `getEvent`, so zero
+>    extra fetches / zero FE refactor. **See the dedicated section `## EventController CRUD wiring` below.** The
+>    speaker-pool ops were already extracted to `EventSpeakerPoolController` (EMS 25).
 > 2. **`GlobalSessionController`** — orphan (no FE consumer / Bruno / test); flag for **removal**, not wiring.
 > 3. **`Watch*`** (LiveTiming/WatchEvent/WatchWebSocket) — external watch-app contract, **Phase 8**.
 > 4. **`DevEmail` / `TestFixtureCleanup`** — dev/test-only, **skip**.
@@ -302,7 +305,20 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > →400 is pre-existing service behavior, not a regression); FE regen empty (x-class-extra is Java-only). **EMS
 > contract-first +1 (25 wired).**
 >
-> ⛔ **REMAINDER STILL DEFERRED — needs a dedicated FE-coordinated design story: `EventController` CRUD/EventDetail.**
+> 📐 **PLANNED (2026-06-29) — SEE the dedicated section `## EventController CRUD wiring` below.** The 2026-06-28
+> blocker note below is partly **STALE** and is kept only for history. Re-verification on 2026-06-29 (grep of the
+> live spec + every FE reader) corrected it: the generated `SessionSpeaker` is **already fully rich** (`company`,
+> `companyDisplayName`, `profilePictureUrl`, `companyLogoUrl`, `bio` — spec `event-sessions-api.yml:1943-1977`),
+> session `id` is **never read** by the FE off event sessions, and `speaker.bio` is **never read** off sessions
+> either. The **only** rich field the lean `Session` drops that the FE genuinely consumes is the session
+> **`materials`** array (`SessionEditModal:221`, public archive `SessionCards:284` / `EventProgram:280`) — and
+> "materials exist?" is already answered by `materialsStatus` on the lean `Session`. So "lazy-load speaker
+> company/portrait" was a non-goal, and the materials lazy-load was dropped too: **owner-chosen design (Nissim,
+> 2026-06-29) = embed `materials` on the single-event `EventDetail` (→ `SessionResponse`), keep the list lean.**
+> Both file-needing views already load `getEvent`, so it's zero extra fetches / **no FE lazy-load refactor** — a
+> single backend story. Full plan + the BulkOps/EventReporting truthful-schema follow-ups are in the new section.
+>
+> ⛔ **[HISTORICAL — superseded by the section below] REMAINDER STILL DEFERRED — `EventController` CRUD/EventDetail.**
 > The 2,573-line central controller still owns `EventsApi` (7 CRUD), `EventReportingApi` (2), `BulkOperationsApi`
 > (1) plus ~15 registration/topic/publish ops whose tags are shared across controllers (so they'd stay
 > hand-rolled). **Two independent blockers found 2026-06-28:**
@@ -483,7 +499,7 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > byte-compatible); **full EMS suite 1728 passed / 0 failed**; live gateway smoke; FE regen + type-check + slot unit
 > 66/66 + Playwright `slot-assignment-workflow` + golden-path auto-assign-to-slots 13/13. **EMS contract-first +1
 > (42 wired) — every wireable EMS controller is now contract-first.** Remaining unwired: EventController CRUD
-> (deferred — FE lazy-load story), GlobalSession (orphan — remove), Watch* (Phase 8), DevEmail/TestFixtureCleanup (skip).
+> (planned — single backend wiring story, see §EventController CRUD wiring), GlobalSession (orphan — remove), Watch* (Phase 8), DevEmail/TestFixtureCleanup (skip).
 >
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
@@ -617,10 +633,188 @@ Consolidate each to its generated twin (delete the hand DTO), then the consumers
 | **4 Mutation-model fixes** | ✅ **DONE** | ✅ **CUMS removals DONE** (`fb44bc5d`). ✅ **EMS lifecycle DONE** (`7f761a31`). ✅ **Session PUT removed** (`ed59fa0b`): dead full-replace PUT twin (no caller; field-nulling footgun) deleted + dead `UpdateSessionRequest` DTO/`SessionMapper.applyUpdateRequest`; spec now documents the live `patch:` (`PatchSessionRequest`). ✅ **Partner deactivation DONE** (`d6fdc5b0`): dropped dead `isActive` from `UpdatePartnerRequest` (backend ignored it; FE toggle unwired) — DELETE is the canonical soft-deactivate. ✅ **Registration-cancel resolved** — NOT a merge (the two are distinct flows). Investigated the legacy JWT `/cancel`: confirmed **dead** (no email template renders `cancellationUrl`; all use the Story-10.12 `/deregister` UUID flow) and **removed** it end-to-end — endpoint, `generate/validateCancellationToken`, the dead `cancellationToken`/`cancellationUrl` threaded through the registration-confirmation email path, spec path, FE `CancelRegistrationPage` + route + `eventApiClient.cancelRegistration`, and all tests. The shared `RegistrationService.cancelRegistration(Registration)` (used by `/deregister` + waitlist) stays. ✅ **Spec polish DONE:** named the inline `object` request bodies as `AssignSpeakerToSessionRequest`/`DeclineSpeakerRequest`/`PatchNewsletterSubscriptionRequest` (batchImportSessions already used a named items schema). Reconciled `UpdateEventSlotConfigurationRequest` ⟷ `UpdateEventAgendaConfigRequest` by **documenting the distinction** (cross-referenced descriptions: event-type-level defaults vs per-event copy-on-edit, differing required-field strictness) rather than a structural `allOf` merge — they are genuinely distinct contracts on different endpoints, and `UpdateEventAgendaConfigRequest` is a hand-written backend DTO, so an `allOf` merge would risk a live feature's generated types for no real gain. **Phase 4 COMPLETE.** |
 | **5 Partner consolidation 5→2** | ✅ **DONE** | Folded `partner-notes-api` + `partner-analytics-api` + `partner-topics-api` into the generator-wired `partners-api.openapi.yml` (5→2; `partner-meetings-api` kept separate + brought to parity: shared `$ref` `ErrorResponse`, documented `GET /partner-meetings/{id}/rsvps` + the internal RSVP callback, bounded-list note). `/attendees/topics` relocated under a dedicated **Attendee Topics** tag (documented alias). **Spec made truthful**: added the live-but-undocumented `PATCH`/`DELETE /partners/topics/{topicId}` (updateTopic/deleteTopic) and `eventTitle` on `AttendanceSummaryRecord`; clarified `getPartnerStatistics` (portfolio summary) vs `analytics/dashboard` (attendance) boundary; normalized tags + relative `/api/v1` server + global `bearerAuth`. **Controllers rewired** to implement the generated interfaces: `PartnerNoteController`→`PartnerNotesApi`, `PartnerAnalyticsController`→`PartnerAnalyticsApi` (export now returns `Resource`), `TopicController`→`PartnerTopicsApi` (role resolved from `SecurityContextHolder`, no injected `Authentication`), `AttendeeTopicController`→`AttendeeTopicsApi`. Hand-written record/Lombok DTOs (PartnerNoteDTO, CreateNoteRequest, UpdateNoteRequest, TopicDTO, TopicSuggestionRequest, TopicStatusUpdateRequest, PartnerDashboardDTO) deleted — generated DTOs thread through the service layer (Instant→OffsetDateTime, String→inner enums). FE: deleted `partner-notes/partner-topics` generate scripts + stale `.types.ts`, repointed `partnerNotesApi.ts` to `partner-api.types`. Full BE partner-coordination suite + full FE vitest (5334) + FE type-check green. |
 | **6 events-api decomposition** | ✅ **DONE** | Carved the 10.3k-line `events-api.openapi.yml` (94 paths / 122 ops / 131 schemas / 16 tags) into **9 per-domain specs** — `events-core` + `event-{sessions,speakers,registrations,newsletter,media,ai,analytics,watch}-api` — driven by a deterministic carve script (path→domain map + computed schema ownership; report-only validated first). **Paths preserved verbatim** (122/122 ops, 0 dangling refs, no dup ops). Only cross-spec coupling is `core → sessions` (Event embeds `List<Session>`); every other spec depends only on shared-kernel. **Full per-domain Java + TS packages** (owner's explicit choice): 9 `openApiGenerate<Domain>` Gradle tasks (each → `ch.batbern.events.<domain>.{api,dto}.generated`), 9 FE `event*-api.types.ts`. **165 Java FQN re-points** across 102 files (`dto.generated.X` → `<domain>.dto.generated.X`) + 4 controller interface re-points (EventTypes→core, SpeakerOutreach→speakers, AiPrompts→ai, EmailTemplates→newsletter). **54 FE files re-pointed** (51 single-domain swap + 3 multi-domain aliased imports). **🐛 openapi-generator bug #17647 worked around:** `schemaMappings` to a cross-package type emits illegal `List<@Valid <FQN>>`; switched core's Session/SessionSpeaker to `importMappings` (import + simple name) + a `doLast` that deletes the dead duplicate copy. 2 defined-but-unreachable schemas (`Speaker`, `RegistrationAdminResponse`) **removed** as dead-code cleanup (follow-up): `Speaker` was an ADR-004-violating User-field duplicate with only a dead `SpeakerUI` alias; `RegistrationAdminResponse` had no path/code use. Updated: security-scan matrix (1→9 entries), BATbern-watch `generate-types.sh` (loops 9 specs), FE generated README. Clean Java compile (main+test) + FE type-check (0 errors) + EMS suite + FE vitest green. Single PR.
-| **7 Contract-first completion** | ✅ **EMS DONE / CUMS+Partner advanced** (branch `api-consolidation-phase7`) | **EMS: 42 controllers wired — every wireable EMS controller is contract-first** (only `EventController` CRUD deferred to an FE-coordinated lazy-load story; `GlobalSession` = orphan-remove; `Watch*` = Phase 8; `DevEmail`/`TestFixtureCleanup` = skip). Full per-controller record in the ▶ STATUS block + ✅ DONE notes. CUMS: 6/6 documented prod controllers. Partner: 5/10 (PartnerMeeting/Rsvp need the partner-meetings-api generator wired first). Generator on 7.14.0 (9a). All hand DTOs shadowing generated schemas consolidated for the wired controllers; ad-hoc `Map`/`?` returns typed; 409s via `@ExceptionHandler`. **~25 commits committed+verified, UNPUSHED** (pre-push gate killed by the agent-runner wall-clock; push from an interactive terminal). |
+| **7 Contract-first completion** | ✅ **EMS DONE / CUMS+Partner advanced** (branch `api-consolidation-phase7`) | **EMS: 42 controllers wired — every wireable EMS controller is contract-first** (only `EventController` CRUD planned as a single backend wiring story — see §EventController CRUD wiring; `GlobalSession` = orphan-remove; `Watch*` = Phase 8; `DevEmail`/`TestFixtureCleanup` = skip). Full per-controller record in the ▶ STATUS block + ✅ DONE notes. CUMS: 6/6 documented prod controllers. Partner: 5/10 (PartnerMeeting/Rsvp need the partner-meetings-api generator wired first). Generator on 7.14.0 (9a). All hand DTOs shadowing generated schemas consolidated for the wired controllers; ad-hoc `Map`/`?` returns typed; 409s via `@ExceptionHandler`. **~25 commits committed+verified, UNPUSHED** (pre-push gate killed by the agent-runner wall-clock; push from an interactive terminal). |
 | **8 Domain-boundary corrections** | ⏳ **TODO** | Relocate misfiled endpoints (`/public/settings/features` off `AiAssistController`; `/attendee-portal/dashboard` → attendee domain) + normalize Watch paths that hard-code `/api/v1/`. Client-affecting (watch app); see §Phase 8. |
 | **9a Generator upgrade** | ✅ **DONE** (branch `api-consolidation-phase7`) | Upgraded openapi-generator **7.2.0 → 7.14.0** (both pins: `settings.gradle` + root `build.gradle`). **#17647 is fixed** → removed the EMS `core→sessions` workaround (`importMappings`+`doLast`); `Session`/`SessionSpeaker` now use plain `schemaMappings` and `Event.java` emits the legal `pkg.@Valid Session`. Did this **before Phase 7** so controllers wire against the final interface shape once. Churn was tiny: param type `Optional<X>`→`@Nullable X` (fixed `EmailTemplateController`); enum prefix no longer stripped, `WELCOME`→`AFTER_WELCOME` (wire values unchanged; fixed 4 refs in `EventTeaserImageServiceTest`); Java-client models-only now injects an unsatisfied `ApiClient` import → switched partner's `generateCompanyClientDtos`/`generateUserClientDtos` to the `spring` generator (consistent w/ EMS). **🐛 Wire-behaviour fix:** 7.14 default-initialises collection fields (`= new ArrayList<>()`) instead of leaving them null, so an unset list serialised as `[]` instead of being absent — broke the `?include=` sparse-fieldset contract (`TopicControllerIntegrationTest` saw `usageHistory: []` when not embedded). Fixed by adding `containerDefaultToNull: 'true'` to **every** generator `configOptions` block (CUMS ×2, EMS ×11, partner ×3) → restores pre-7.14 null-default. All other changes additive (per-DTO inner `Builder`, `@Nullable` field annots). Whole Java monorepo compiles main+test; FE unaffected (its types come from `openapi-typescript`, not this plugin). See §Phase 9. |
 | **9 Tooling & spec hygiene (rest)** | ⏳ **TODO** | Generator upgrade done (→ 9a). Remaining: declare top-level `tags`; fix stale `workflowService.ts` PUT comments. Low risk; see §Phase 9. |
+
+---
+
+## EventController CRUD wiring (planned 2026-06-29)
+
+The last EMS wiring gap. `EventController` (2,573 lines, `services/event-management-service/.../controller/EventController.java`)
+owns the hand-built `EventResponse` and stays unwired. This section is the actionable, **owner-approved**
+(Nissim, 2026-06-29: **embed-on-detail, lean list, no FE lazy-load**) plan to make it contract-first and aligned
+with the consolidated events-* specs. **It is a single backend story — there is no FE lazy-load story.**
+
+> ✅ **DONE (2026-06-29) — `EventController` core CRUD wired to `EventsApi` (7) + `EventActionsApi.publishEvent` (1).**
+> Class flipped `@RequestMapping("/api/v1/events")→"/api/v1"`, `implements EventsApi, EventActionsApi`; the 8 ops are
+> bare-param overrides returning the generated `Event` (lean list)/`EventDetail` (materials on detail)/`ListEvents200Response`
+> via the pure `EventGeneratedMapper`; the ~16 hand-rolled registration/workflow/topic/reporting ops were path-absolutized
+> to `/events/…` and stay hand-rolled. Mutation request-side handled by generated→hand adapters (`toHandCreate/Update/Patch`:
+> OffsetDateTime→ISO String, generated EventType→String/`getValue()`, generated→shared `EventWorkflowState`, generated→domain
+> `QnaOpenTrigger`) so the proven bodies stayed byte-identical. **`@JsonInclude(NON_NULL)`** added to `Event`+`EventDetail`
+> (via `x-class-extra-annotation`) to restore the hand DTO's null-omission (list went from 43 keys w/ 22 nulls → 21 keys, 0 nulls).
+> **Spec-truth fixes surfaced during wiring:** `Event` +9 live fields (6 metrics + `topicSelectionNote`/`createdBy`/`updatedBy`,
+> non-nullable optional); `EventDetail.sessions Session→SessionResponse`; `BatchUpdateResponse` truthful; `PatchEventRequest`
+> +`topicCode`/`topicSelectionNote`; `listEvents` +`includeArchived`, `page` default 0→1 (parseParams rejects ≤0), `limit`
+> `maximum:100` dropped (deployed clamps, not rejects); `CreateEventRequest.required`→[title,date,eventType],
+> `UpdateEventRequest.required`→[title,date] (deployed only `@NotBlank` title/date + `@NotNull` eventType; venue/deadline/
+> organizer/eventNumber optional). FE: regen events types + `validateRegistrationDeadline`/`validateVenueCapacity` guard the
+> now-optional fields; `EventDetailUI` re-declarations unchanged (fields non-nullable → match). **Verified (local dev):**
+> `EventControllerIntegrationTest` 103/0; full **Bruno 14/14** (twice); **Playwright** event-surface 26/26 (archive detail/
+> sessions/speakers/not-found, registration, event-type, topic-selection); live gateway smoke (lean list 0-null, detail w/
+> materials + rich SessionSpeaker, `@Pattern`→400, BATbern888→404, current→200, limit 500→clamp 100); FE type-check clean.
+> `@Pattern` fixture sweep: `BATbern888` (404 probes), `BATbern9999` (CapTest). The `archive-filtering` topic→URL test is a
+> **pre-existing local-dev flake** (identical-steps test 43 flakes 2/3; documented divergence) — not a regression.
+> **DEFERRED (small follow-ups, each a clean spec-truth task):** `BulkOperationsApi.batchUpdateEvents` (generated `{updates:[…]}`
+> wrapper vs deployed bare array — stays hand-rolled at `@PatchMapping("/events")`); `EventReportingApi` (getEventAnalytics
+> bound to a fictional `EventAnalytics` schema; getAttendanceSummary can't wire alone). **EMS = 43 wired.** Authoritative full
+> EMS suite + push pending on an interactive terminal (agent runner can't run the pre-push gate).
+>
+> ▶ **(historical) contract foundation + boundary mapper landed first** (EMS `compileJava` green, additive):
+> 1. **Spec (`events-core`)**: `Event` gained the 9 live-but-undocumented fields (6 metrics + `topicSelectionNote`/
+>    `createdBy`/`updatedBy` — verified read by the organizer cockpit `MetricTiles`/`cockpitCards`); `EventDetail.sessions`
+>    `Session → SessionResponse` (materials on detail); `BatchUpdateResponse` made truthful (typed `successful[]`/`failed[]`/
+>    `summary`); `PatchEventRequest` gained `topicCode`/`topicSelectionNote`.
+> 2. **`build.gradle`**: `SessionResponse` added to the events-core generator mappings (uses the sessions-package class).
+> 3. **`mapper/EventGeneratedMapper.java`** (NEW, `@Component`, pure, compiles): boundary mapper `EventResponse → Event`
+>    (lean `Session`, no materials) / `EventResponse → EventDetail` (rich `SessionResponse` + materials). Tolerates both the
+>    list-path (nested-`Map` speakers, `Instant` times) and detail-path (typed `SessionSpeaker`/`SessionMaterialResponse`,
+>    `OffsetDateTime`) shapes. Safe enum coercions (drift → null, not 500). **Chosen over "delete EventResponse"** — the
+>    enrichment (batch portrait join, `?include=` sparse-fieldset) stays byte-identical (TimetableResponse precedent).
+>
+> **Scope refined during implementation — two ops DEFERRED (each a clean small follow-up, both surfaced as spec-truth gaps):**
+> - **`BulkOperationsApi.batchUpdateEvents`** — generated body is a `{updates:[…]}` wrapper but the deployed endpoint takes
+>   a **bare `List<BatchUpdateRequest>`**; needs the spec request body made a bare array + hand→generated `BatchUpdateRequest`
+>   consolidation. No FE consumer. (Response schema already made truthful above.) Stays hand-rolled (`@PatchMapping("/events")`).
+> - **`EventReportingApi`** (getEventAnalytics + getAttendanceSummary) — `getEventAnalytics` is bound to a **fictional**
+>   `EventAnalytics` schema (the service returns a dynamic `{timeframe, metrics}` Map, nothing like the schema); needs its
+>   own spec-truth pass, and `getAttendanceSummary` (already typed) can't be wired alone (shared interface). Both stay hand-rolled.
+>
+> **Remaining wiring (enumerated, no unknowns) — `EventsApi` (7) + `EventActionsApi.publishEvent` (1):**
+> - Flip class `@RequestMapping("/api/v1/events") → "/api/v1"`; `implements EventsApi, EventActionsApi`.
+> - Override the 8 ops: drop `@*Mapping`, rename to operationIds, bare params, return `eventGeneratedMapper.toEvent(...)`
+>   / `.toEventDetail(...)` / `ListEvents200Response`. `getEvent`/`getCurrentEvent` → `EventDetail`; `listEvents` →
+>   `ListEvents200Response`; create/update/patch/publish → `Event`; `deleteEvent` → `Void`.
+> - **Mutation request-side surgery** (create/update/patch): swap hand `ch.batbern.events.dto.{Create,Update,Patch}EventRequest`
+>   → generated `core.dto.generated.*`; the bodies need conversions — `getDate()`/`getRegistrationDeadline()`/`getPublishedAt()`
+>   are now `OffsetDateTime` (was `String` via `parseDate`) → `.toInstant()`; `getEventType()`/`getWorkflowState()` are now
+>   enums → `.getValue()`; `applyPatchUpdates` retyped to the generated `PatchEventRequest`.
+> - **Absolutize the ~15 hand-rolled paths** (registration/workflow/topic/enroll + the 2 deferred reporting ops + deferred
+>   batchUpdate): prepend `/events` (class is now `/api/v1`).
+> - `@Pattern` fixture sweep (`BATbern888`); fix `EventControllerIntegrationTest`; FE regen + drop the redundant
+>   `SessionUI.materials` augmentation.
+> - **Verify:** full EMS suite + live smoke + Bruno + Playwright + push on an interactive terminal (the agent runner can't
+>   run the authoritative full suite / pre-push gate).
+
+
+### Corrected findings (re-verified 2026-06-29 — supersede the 2026-06-28 blocker note)
+
+The 2026-06-28 deferral assumed a fat, irreducible embedded session/speaker shape. A fresh grep of the live
+specs + **every** FE reader narrowed it sharply:
+
+| Field the lean `Session` drops vs. the hand session-map | FE reads it? | Verdict |
+|---|---|---|
+| speaker `company`/`companyDisplayName`/`profilePictureUrl`/`companyLogoUrl` | yes — but **already on generated `SessionSpeaker`** (`event-sessions-api.openapi.yml:1943-1972`) | ✅ non-issue (wire-identical) |
+| speaker `bio` | **never** read off sessions (`grep .bio` → only `User` views + import); backend sets it `null` in the list path anyway | ✅ non-issue |
+| session `id` (UUID) | **never** read in `components/public/Event` or `components/organizer/EventManagement` (matches the SlotAssignment finding) | ✅ non-issue |
+| `materialsStatus` | on lean `Session` already (`event-sessions-api.openapi.yml:1904`) | ✅ non-issue |
+| **`materials` (array)** + `materialsCount` | **`materials` IS read** — `SessionEditModal.tsx:221`, `SessionCards.tsx:284`, `EventProgram.tsx:280`; `materialsCount` only typed, not rendered | ⚠️ **the one real gap** |
+
+The hand-map speaker fields (`EventController.java:472-497`) are a **1:1 superset-free match** for the generated
+`SessionSpeaker` properties — confirming the speaker embed is already representable by the generated `SessionSpeaker`.
+
+The rest of `EventResponse` was already live-verified wire-compatible on 2026-06-28: `EventType`/`EventWorkflowState`
+enums serialise to the deployed strings, the `topic`/`venue` `Map`s already emit the typed `EventTopic`/`Venue`
+shape, `Instant`→`OffsetDateTime` is `…Z`-identical.
+
+### The design decision (resolved 2026-06-29) — embed on detail, lean list
+
+The owner's materials insight settled it: there are **two distinct "materials" needs**, and they're served by two
+different fields:
+
+| Need | Consumers | Served by |
+|---|---|---|
+| **"Does this session have materials?"** (badge / yes-no) | ~all session views (cards, lists, agenda) | **`materialsStatus`** (`NONE`/`PARTIAL`/`COMPLETE`) — **already on the lean `Session`** (`event-sessions-api.openapi.yml:1904`). Free, no array. |
+| **The actual material files** (filename/type/download) | **only 2 views** — public archive program (`SessionCards`/`EventProgram`, on `HomePage`) + organizer `SessionEditModal` | the `materials` **array** |
+
+Both file-needing views load a **single-event detail** (`getEvent`) — the archive via `HomePage`'s
+`getEvent(expand: sessions)`, the modal via the organizer event-management detail. `GET /api/v1/events/*` is
+**`permitAll`** (EMS `SecurityConfig.java:86`), so the anonymous archive reads it fine. ⇒ if the `materials` array
+rides along on the **single-event `EventDetail`** (and **not** on the list), both views get it in the call they
+already make — **zero extra fetches, zero FE refactor.** Lazy-loading would only *add* N calls on the archive for
+no benefit. **Rejected: the FE lazy-load approach** (and the speaker-detail lazy-load, which was moot from the start).
+
+### Single story — wire `EventController` core CRUD → `EventsApi`
+
+**Goal:** `EventController implements EventsApi`, returning the generated `Event` (list items / mutations) and
+`EventDetail` (single `getEvent`/`getCurrentEvent`); delete the hand `EventResponse`. List sessions stay lean;
+detail sessions carry materials + rich speakers.
+
+**Scope = the 8 core CRUD ops only** (`listEvents`, `createEvent`, `getEvent`, `getCurrentEvent`, `updateEvent`,
+`patchEvent`, `deleteEvent`, `batchUpdateEvents`) + the 2 `EventReportingApi` + 1 `BulkOperationsApi` ops. The ~13
+registration ops + workflow/topic/publish ops on this controller share tags across controllers and **stay
+hand-rolled** for now — leave them on `EventController` alongside `implements EventsApi` (a class may serve generated
++ hand routes); a `RegistrationController` extraction (the `EventSpeakerPoolController` precedent) is an optional
+follow-up. Prefer leaving-in-place to keep this story tight.
+
+**Spec changes (`docs/api/events-core-api.openapi.yml`):**
+- `Event.sessions` (list) → **keep lean `Session`** (line ~2407). Carries `materialsStatus` for the yes/no badge; no
+  array. List payload stays small. ⚠️ Verify no LIST consumer reads the `materials` array (grep on 2026-06-29 found
+  `session.materials` read **only** in the 2 detail views — `SessionEditModal`, `SessionCards`/`EventProgram` — so
+  going lean on the list is safe; re-confirm at implementation).
+- `EventDetail.sessions` → **change lean `Session` → `SessionResponse`** (currently line ~2418 refs `Session`).
+  `SessionResponse` = `Session` + `materials` + `materialsCount` (`event-sessions-api.openapi.yml:2006-2024`), with
+  speakers already the rich `SessionSpeaker`. This is the only sessions-shape spec change. (`SessionResponse ⊇ Session`,
+  the SlotAssignment precedent — wire-compatible, fixes the ADR-013 raw-`Map` leak.)
+- **BulkOperationsApi.batchUpdateEvents** — make `BatchUpdateResponse` truthful to the deployed shape
+  (`EventController.java:1207-1269`): `{ successful: [{eventCode, status}], failed: [{eventCode, error}],
+  summary: {total, successful, failed} }`. Author the nested item schemas; regen.
+- **EventReportingApi.getEventAnalytics** — type the freeform `Map` (`EventController.java:1675-1696`) to a named
+  `EventAnalytics` schema (superset + `@JsonInclude(NON_NULL)` for the metric-dependent fields).
+  `getAttendanceSummary` already returns the typed `AttendanceSummaryDTO` (`:2465`) — just swap hand→generated DTO.
+
+**Backend changes:**
+- `EventController implements EventsApi` (+ `EventReportingApi`, `BulkOperationsApi`); class `@RequestMapping`
+  `/api/v1/events` → `/api/v1` per the wiring convention; bare override params; methods renamed to operationIds.
+- Replace the hand `EventResponse` with the generated `Event` (list items / mutations) / `EventDetail`
+  (`getEvent`/`getCurrentEvent`). Map raw entity → generated via a mapper. For **detail** sessions, **reuse
+  `sessionService.toSessionResponse`** (already emits `SessionResponse` with materials + `SessionSpeaker` — the
+  SlotAssignment/SessionController precedent) instead of the hand `expandSessions` Map (`EventController.java:505-690`).
+  For **list** sessions, emit lean `Session` via the pure `SessionMapper.toDto` (no enrichment / no N+1, as
+  `listSessions` already does) — i.e. retire the `buildSessionMapBatch` materials/speaker Map block
+  (`EventController.java:428-498`).
+- `batchUpdateEvents` → typed `BatchUpdateResponse` (build the lists/summary as today, via the generated builder).
+- `getEventAnalytics` → typed `EventAnalytics`; `getAttendanceSummary` → generated `AttendanceSummaryDTO`.
+- Delete the hand `EventResponse` DTO once all call sites use the generated types; consolidate any other hand DTOs
+  shadowing generated schemas.
+- `@Pattern` fixture trap: enabling the generated `eventCode ^BATbern[0-9]+$` validation turns malformed not-found
+  probes into 400 — sweep the EMS tests for non-conforming eventCodes (the `BATbern888` fix pattern used throughout
+  Phase 7) before running the suite.
+
+**FE changes (minimal — no lazy-load):**
+- `npm run generate:api-types:events` → the generated `EventDetail.sessions` now exposes `materials` (via
+  `SessionResponse`). The 2 views already read `session.materials`, so they keep working.
+- `web-frontend/src/types/event.types.ts` — the `SessionUI.materials?` augmentation likely becomes redundant once
+  the generated `EventDetail` session type carries `materials`; collapse it onto the generated type (keep `SessionUI`
+  only for genuinely FE-local fields). Re-confirm list-view consumers don't expect `materials` (they shouldn't —
+  list is lean by design).
+
+**Verify (local dev):** `EventControllerIntegrationTest` + the registration/analytics integration tests; **full EMS
+suite** (cross-controller-risky — shared `@Pattern` + the central controller — run it locally, not just the targeted
+slice); EMS restart + live gateway smoke (`GET /events` list → lean `Session.sessions` with `materialsStatus` but no
+`materials` array; `GET /events/{code}` → `EventDetail` with `SessionResponse` sessions carrying `materials` + rich
+`SessionSpeaker`; `batchUpdate` typed shape; analytics typed); `npm run generate:api-types:events` + commit the
+regenerated `events-core`/`event-sessions` FE types + FE type-check + targeted vitest (`SessionEditModal`,
+`SessionCards`, `EventProgram`); full Bruno 14/14; Playwright organizer event-management + public archive (materials
+still render). Commit; push from an interactive terminal (the `.githooks/pre-push` full-integration gate is killed by
+the agent-runner wall-clock — see PENDING PUSH).
+
+### After this: EMS is 100% contract-first
+
+Remaining EMS non-wires are intentional: `GlobalSessionController` (orphan → remove), `Watch*` (Phase 8),
+`DevEmail`/`TestFixtureCleanup` (skip). With EventController wired, every wireable EMS controller is contract-first.
 
 ---
 

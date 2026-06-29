@@ -119,7 +119,8 @@ openApiGenerate {
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
         'Session': 'ch.batbern.events.sessions.dto.generated.Session',
-        'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker'
+        'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
+        'SessionResponse': 'ch.batbern.events.sessions.dto.generated.SessionResponse'
     ]
 
     configOptions = [
@@ -151,6 +152,7 @@ openApiGenerate {
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
         'Session': 'ch.batbern.events.sessions.dto.generated.Session',
         'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
+        'SessionResponse': 'ch.batbern.events.sessions.dto.generated.SessionResponse',
         'VenueRole': 'ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role'
     ]
 }
