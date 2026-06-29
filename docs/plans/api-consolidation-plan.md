@@ -346,6 +346,23 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > type-check + `topicService` 29/29; Playwright organizer `topic-selection` + `blob-topic-selector` **11/11**
 > (incl. the create-topic @smoke). **EMS contract-first +1 (26 wired).**
 >
+> ✅ **DONE (2026-06-29): `TopicSimilarityController` (1 op) + `TopicSessionDataController` (1 op)** → generated
+> `TopicSimilarityApi` / `TopicSessionDataApi` (commits `1c3b0f76`, `10b90009`; EMS 27 then 28 wired). Both are
+> the blob-topic-selector canvas endpoints (Story 10.4), previously **undocumented**. **Authored the ops +
+> schemas in topics-api** under two new 1:1 tags (`Topic Similarity`, `Topic Session Data`), ported from the
+> FE-validated hand DTOs. **eventCode kept permissive (NO @Pattern)** on both — it is contextual only (the
+> services ignore it: similarity classifies on topic text, session-data aggregates globally). Consolidated all
+> hand DTOs → generated topics twins: TopicSimilarity{Request,Response} (2); TopicSessionDataResponse + its 4
+> static nested types → top-level `PartnerTopicGroup`/`TopicEntry`/`BacklogItem`/`PastEventEntry` (builder API
+> identical, nested refs flattened to imports); deleted all. Conversions: similarity `topic` @NotBlank→@Size(min=1)
+> (blank ""→400; whitespace-only untested); session-data `TopicEntry.createdAt` Instant→OffsetDateTime
+> (`.atOffset(UTC)`, wire `…Z` byte-identical). **Verified (local dev):** TopicSimilarity 6/6 + TopicSessionData
+> 4/4 integration; EMS restart + live gateway smoke (similarity AI→AI_ML 0.85+events, blank→400, no-auth→401;
+> session-data full nested payload w/ `createdAt …Z`, no-auth→401); FE regen (additive only — blob hand-types
+> unchanged, wire byte-identical) + type-check; Playwright `blob-topic-selector` 8/8 (exercises both ops). The
+> **topics-api spec is now fully contract-first** — only `selectTopicForEvent` (Event Topics) remains, owned by
+> the deferred EventController. **EMS contract-first +2 (28 wired).**
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
