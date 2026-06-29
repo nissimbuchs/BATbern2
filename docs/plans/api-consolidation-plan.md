@@ -434,6 +434,41 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > content/materials happy paths, mail→/dev/mails); FE type-check clean (FE portal types come from the dormant
 > speakers-api spec — wire byte-identical). **EMS contract-first +2 (33 wired).**
 >
+> ✅ **DONE (2026-06-29): remaining-controller sweep — 7 wired (EMS 34→41).** Per-controller commits:
+> - **AttendeeDashboard(1)** → re-tagged the already-documented `getAttendeeDashboard` out of the `Event Actions`
+>   grab-bag into `Attendee Portal` → `AttendeePortalApi`; consolidated AttendeeDashboardResponse + nested card
+>   (positional→builder, eventDate Instant→OffsetDateTime). 5/5 integ.
+> - **MaterialsUpload(2)** → new `Materials Upload` tag in event-media-api (operationIds generateMaterialPresignedUrl/
+>   confirmMaterialUpload to avoid the SpeakerPortal clash); consolidated PresignedMaterialUploadUrl + 2 inner-class
+>   request DTOs → generated.
+> - **VenueCoordination(2)** → `Venue Coordination` tag in events-core; **mapped the nested `VenueRole` enum →
+>   VenueCoordinationConfig.Role** so the service stayed untouched; 4 hand DTOs consolidated. 5/5 integ.
+> - **PublishingEngine(6)** → `Publishing Engine` tag in events-core; 11 schemas (6 op DTOs + 5 formerly-nested
+>   types now top-level); Instant→OffsetDateTime on publishedAt/unpublishedAt/trigger dates; @ExceptionHandler +
+>   hand PublishValidationError kept. 24/24 integ.
+> - **Admin(1)+AdminSettings(2)+EventQna(1)** → events-core (`Admin`/`Admin Settings`/`Event Qna` tags); typed
+>   response DTOs replacing inline Map.of(...); `@JsonInclude(NON_NULL)` superset for the Admin success/error
+>   shape; QnaWindowPatchRequest consolidated w/ the unknown-field guard + closesAt OffsetDateTime→Instant. 24/24 integ.
+> - **SpeakerReminder(2)** → `Speaker Reminders` tag in event-speakers; SendReminderResponse success+error superset
+>   w/ `@JsonInclude(NON_NULL)`; typed UpdateRemindersDisabledRequest. 36/36 service tests. (email-triggering;
+>   live-send only on local dev /dev/mails.)
+> Pattern that kept these clean: typed superset DTOs + `x-class-extra-annotation @JsonInclude(NON_NULL)` to preserve
+> the exact wire for varying success/error Map shapes; nested-enum schemaMappings to avoid service churn. Live
+> gateway smoke + Bruno deferred to a batched pass (the integration tests already exercise each controller→wire via
+> MockMvc).
+>
+> ⛔ **DEFERRED (needs a dedicated FE-coordinated typed-contract design story — NOT a sweep wire): `SlotAssignmentController`** (8 ops).
+> Wiring `implements` is all-or-nothing (one `Slot Assignment` tag must cover all 8 ops 1:1), but **3 ops return the
+> raw `Session` JPA entity** (`assignTiming`/`unassignTiming`/`bulkAssignTiming` → `ResponseEntity<?> … ok(updatedSession)`,
+> an ADR-013 leak) and **`getUnassignedSessions` returns a rich dynamic enriched-Map** (raw Session fields + per-speaker
+> UserApiClient enrichment). Typing these correctly means designing DTOs that exactly match what the FE drag-drop
+> timetable reads — and there's a real FE surface on it (`slotAssignmentService`, `useSlotAssignment`,
+> `DragDropSlotAssignment`, `timetableService`). Same blocker class as the deferred EventController CRUD. The clean
+> ops (`assignSessionToSlot`→generated TimetableResponse already; `analyzeConflicts`→ConflictAnalysisResponse;
+> clearAllTimings/autoAssignTimings→uniform `{message,count}` Maps) can't be wired in isolation because the tag is
+> shared. **Recommendation:** file a dedicated story to (1) design SessionTiming response DTOs matched to the FE,
+> (2) replace the raw-entity returns, (3) type the enriched-unassigned shape, then wire all 8 at once.
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
