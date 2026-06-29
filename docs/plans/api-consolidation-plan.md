@@ -322,6 +322,30 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > **Recommendation:** file the EventsApi piece as the lazy-load FE story above; do BulkOps/EventReporting as small
 > follow-ups once their response schemas are made truthful. Do NOT bundle into the incremental Phase-7 sweep.
 >
+> ✅ **DONE (2026-06-29): `TopicController` (8 ops) → `TopicsApi`** (commit `fb426795`, EMS 26 wired).
+> Clean wire — the controller already returned generated `dto.generated.topics.*` types. **Merged** the
+> single-controller `Topic Analysis` tag (getSimilarTopics / getTopicUsageHistory / calculateSimilarities)
+> **into `Topics`** so `TopicsApi` == TopicController's 8 ops 1:1 (`selectTopicForEvent` stays under the
+> `Event Topics` tag → generated `EventTopicsApi`, unimplemented until the deferred EventController wires).
+> **Enabled api-interface generation for the topics spec** (build.gradle `openApiGenerateTopics`:
+> `interfaceOnly false→true`, `useTags false→true`, `apis false→''`) — it was previously models-only.
+> Controller: `implements TopicsApi`, class `@RequestMapping /api/v1/topics`→`/api/v1`, bare override params,
+> `getAllTopics`→`listTopics`, `getUsageHistory`→`getTopicUsageHistory`; `@PreAuthorize` kept (listTopics stays
+> public for archive filtering). **🐛 calculateSimilarities clean-up:** controller returned a bare JSON
+> string (`ResponseEntity<String>` "Similarity scores…") but the spec/FE generated type already declared
+> `{message}` (latent mismatch) → now returns the generated `CalculateSimilarities200Response{message}`; FE
+> `topicService.calculateSimilarities()` reads `.message` (no FE callers beyond the service+test, so safe).
+> **Spec drift-fix:** `listTopics` `limit` default `20`→`50` (truthful to the deployed controller default);
+> the generated interface now enforces `@Max(100)` on limit + `@Pattern ^[a-z0-9-]+$` on topicCode via
+> method-validation (the not-found UUID probe `123e4567-…` is all-lowercase-hex so it still passes the pattern
+> → 404, not 400). No FE type diff (re-tag is tags-only; the calc-sim type was already `{message}`).
+> **Verified (local dev):** `TopicControllerIntegrationTest` + `TopicServiceTest`/`StalenessScoreServiceTest`/
+> `TopicMapperTest` green; EMS restart + live gateway smoke (list typed `{data,pagination}` w/ UPPER status
+> enum, limit>100→400, getTopicByCode no-auth→401, malformed code→400, calc-sim `{message}`, usage-history
+> 404 probe, create→delete cycle); full Bruno **14/14** (no EMS topics collection — regression only); FE
+> type-check + `topicService` 29/29; Playwright organizer `topic-selection` + `blob-topic-selector` **11/11**
+> (incl. the create-topic @smoke). **EMS contract-first +1 (26 wired).**
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
