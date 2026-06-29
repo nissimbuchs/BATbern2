@@ -1426,6 +1426,100 @@ paths:
       security:
       - BearerAuth: []
 
+  /events/{eventCode}/speaker-pool/{speakerPoolId}/send-reminder:
+    post:
+      tags:
+        - Speaker Reminders
+      summary: Manually send a deadline reminder to a speaker (Story 6.5 AC8)
+      description: 'Bypasses dedup but respects the reminders-disabled flag. ORGANIZER role.'
+      operationId: sendSpeakerReminder
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: speakerPoolId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendReminderRequest'
+      responses:
+        '200':
+          description: Reminder sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendReminderResponse'
+        '400':
+          description: Invalid reminder type or speaker state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendReminderResponse'
+        '409':
+          description: Reminders disabled for this speaker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendReminderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+
+  /events/{eventCode}/speaker-pool/{speakerPoolId}/reminders:
+    patch:
+      tags:
+        - Speaker Reminders
+      summary: Toggle the reminders-disabled flag for a speaker (Story 6.5 AC6)
+      description: 'ORGANIZER role.'
+      operationId: updateRemindersDisabled
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: speakerPoolId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRemindersDisabledRequest'
+      responses:
+        '200':
+          description: Flag updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemindersDisabledResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
 components:
   parameters:
     SpeakerPortalEventCode:
@@ -2768,6 +2862,43 @@ components:
         uploadedAt:
           type: string
           format: date-time
+    SendReminderRequest:
+      type: object
+      description: Manual speaker reminder request (Story 6.5)
+      properties:
+        reminderType:
+          type: string
+          description: 'RESPONSE or CONTENT'
+        tier:
+          type: string
+          description: 'Optional: TIER_1/TIER_2/TIER_3 (auto-detected if omitted)'
+    SendReminderResponse:
+      type: object
+      description: Manual reminder result; error fields populated on the 400/409 paths
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+      properties:
+        message:
+          type: string
+        tier:
+          type: string
+        emailAddress:
+          type: string
+        error:
+          type: string
+    UpdateRemindersDisabledRequest:
+      type: object
+      required:
+        - remindersDisabled
+      properties:
+        remindersDisabled:
+          type: boolean
+    RemindersDisabledResponse:
+      type: object
+      properties:
+        speakerPoolId:
+          type: string
+        remindersDisabled:
+          type: boolean
   responses:
     Conflict:
       description: Conflict - the speaker has already responded
