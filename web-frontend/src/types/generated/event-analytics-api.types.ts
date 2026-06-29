@@ -380,6 +380,11 @@ export interface components {
        */
       eventCode: string;
       /**
+       * @description Event title (used by the partner attendance XLSX export)
+       * @example BATbern 142 - Cloud Native
+       */
+      eventTitle: string;
+      /**
        * Format: date-time
        * @description Event date (ISO-8601)
        */
@@ -588,10 +593,10 @@ export interface operations {
   getEventAnalytics: {
     parameters: {
       query?: {
-        /** @description Comma-separated list of metrics */
+        /** @description Comma-separated list of metrics (any of attendance, registrations, engagement). */
         metrics?: string;
-        /** @description Time period for analytics */
-        timeframe?: 'day' | 'week' | 'month' | 'all';
+        /** @description Optional time window as 'startTime,endTime' in ISO-8601 (e.g. '2025-04-01T00:00:00Z,2025-05-31T23:59:59Z'). When omitted, all data is included. */
+        timeframe?: string;
       };
       header?: never;
       path: {

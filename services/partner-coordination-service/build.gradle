@@ -98,6 +98,49 @@ openApiGenerate {
     ]
 }
 
+// OpenAPI Generator - Partner Meetings API (Story 8.3 / 10.27) — carved into its own spec.
+// Distinct api/model packages so its DTOs don't collide with the partners-api generator.
+task openApiGenerateMeetings(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = "spring"
+    inputSpec = "$rootDir/docs/api/partner-meetings-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-meetings".toString()
+    apiPackage = "ch.batbern.partners.meetings.api.generated"
+    modelPackage = "ch.batbern.partners.meetings.dto.generated"
+    invokerPackage = "ch.batbern.partners.meetings.api.invoker"
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        interfaceOnly: "true",
+        useTags: "true",
+        useSpringBoot3: "true",
+        useBeanValidation: "true",
+        useJakartaEe: "true",
+        dateLibrary: "java8",
+        generateBuilders: "true",
+        skipDefaultInterface: "true",
+        // Plain @Nullable fields (not JsonNullable) — mirrors the hand DTOs' semantics:
+        // PATCH reads `getX() != null`, and PartnerMeetingDTO's @JsonInclude(NON_NULL) omits nulls.
+        openApiNullable: "false",
+        containerDefaultToNull: "true"  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
+    ]
+}
+
 // Generate Company Service Client DTOs
 task generateCompanyClientDtos(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
     // Models-only cross-service client DTOs. Uses the `spring` generator (not `java`/`native`)
@@ -171,11 +214,12 @@ task generateUserClientDtos(type: org.openapitools.generator.gradle.plugin.tasks
 
 // Add generated sources to compile
 sourceSets.main.java.srcDirs += "$buildDir/generated/src/main/java"
+sourceSets.main.java.srcDirs += "$buildDir/generated-meetings/src/main/java"
 sourceSets.main.java.srcDirs += "$buildDir/generated-client-company/src/main/java"
 sourceSets.main.java.srcDirs += "$buildDir/generated-client-user/src/main/java"
 
 // Generate before compile
-compileJava.dependsOn tasks.openApiGenerate, generateCompanyClientDtos, generateUserClientDtos
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateMeetings, generateCompanyClientDtos, generateUserClientDtos
 
 // Override Flyway config for this service (different from default)
 flyway {

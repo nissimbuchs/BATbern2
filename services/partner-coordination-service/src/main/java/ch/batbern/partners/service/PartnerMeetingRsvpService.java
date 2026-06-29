@@ -3,9 +3,9 @@ package ch.batbern.partners.service;
 import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.domain.PartnerMeetingRsvp;
 import ch.batbern.partners.domain.RsvpStatus;
-import ch.batbern.partners.dto.MeetingRsvpListResponse;
-import ch.batbern.partners.dto.RsvpDTO;
-import ch.batbern.partners.dto.RsvpSummary;
+import ch.batbern.partners.meetings.dto.generated.MeetingRsvpListResponse;
+import ch.batbern.partners.meetings.dto.generated.RsvpDTO;
+import ch.batbern.partners.meetings.dto.generated.RsvpSummary;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerMeetingRsvpRepository;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -99,25 +100,29 @@ public class PartnerMeetingRsvpService {
         List<PartnerMeetingRsvp> rsvps = rsvpRepository.findByMeetingId(meetingId);
 
         List<RsvpDTO> rsvpDTOs = rsvps.stream()
-                .map(r -> RsvpDTO.builder()
-                        .attendeeEmail(r.getAttendeeEmail())
-                        .status(r.getStatus().name())
-                        .respondedAt(r.getRespondedAt())
-                        .build())
+                .map(PartnerMeetingRsvpService::toRsvpDTO)
                 .collect(Collectors.toList());
 
-        RsvpSummary summary = RsvpSummary.builder()
+        RsvpSummary summary = new RsvpSummary()
                 .accepted((int) rsvps.stream().filter(r -> r.getStatus() == RsvpStatus.ACCEPTED).count())
                 .declined((int) rsvps.stream().filter(r -> r.getStatus() == RsvpStatus.DECLINED).count())
-                .tentative((int) rsvps.stream().filter(r -> r.getStatus() == RsvpStatus.TENTATIVE).count())
-                .build();
+                .tentative((int) rsvps.stream().filter(r -> r.getStatus() == RsvpStatus.TENTATIVE).count());
 
-        return MeetingRsvpListResponse.builder()
+        return new MeetingRsvpListResponse()
                 .meetingId(meetingId)
-                .inviteSentAt(meeting.getInviteSentAt())
+                .inviteSentAt(meeting.getInviteSentAt() != null
+                        ? meeting.getInviteSentAt().atOffset(ZoneOffset.UTC) : null)
                 .rsvps(rsvpDTOs)
-                .summary(summary)
-                .build();
+                .summary(summary);
+    }
+
+    /** Map a domain RSVP record → the generated wire DTO (status enum, Instant → OffsetDateTime @ UTC). */
+    public static RsvpDTO toRsvpDTO(PartnerMeetingRsvp rsvp) {
+        return new RsvpDTO()
+                .attendeeEmail(rsvp.getAttendeeEmail())
+                .status(RsvpDTO.StatusEnum.fromValue(rsvp.getStatus().name()))
+                .respondedAt(rsvp.getRespondedAt() != null
+                        ? rsvp.getRespondedAt().atOffset(ZoneOffset.UTC) : null);
     }
 
     private String emailPrefix(String email) {

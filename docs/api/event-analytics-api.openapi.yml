@@ -113,23 +113,19 @@ paths:
           example: BATbern142
       - name: metrics
         in: query
-        description: Comma-separated list of metrics
+        description: Comma-separated list of metrics (any of attendance, registrations, engagement).
         required: false
         schema:
           type: string
+          default: attendance,registrations,engagement
           example: attendance,registrations,engagement
       - name: timeframe
         in: query
-        description: Time period for analytics
+        description: 'Optional time window as ''startTime,endTime'' in ISO-8601 (e.g.
+          ''2025-04-01T00:00:00Z,2025-05-31T23:59:59Z''). When omitted, all data is included.'
         required: false
         schema:
           type: string
-          enum:
-          - day
-          - week
-          - month
-          - all
-          default: all
       responses:
         '200':
           description: Analytics data retrieved successfully
@@ -620,6 +616,7 @@ components:
       description: Per-event attendance summary for a given company (Story 8.1)
       required:
       - eventCode
+      - eventTitle
       - eventDate
       - totalAttendees
       - companyAttendees
@@ -628,6 +625,10 @@ components:
           type: string
           description: Event code (e.g. 'BATbern142')
           example: BATbern142
+        eventTitle:
+          type: string
+          description: Event title (used by the partner attendance XLSX export)
+          example: BATbern 142 - Cloud Native
         eventDate:
           type: string
           format: date-time
@@ -642,6 +643,7 @@ components:
           description: Confirmed attendees from the queried company
     EventAnalytics:
       type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
       description: 'Per-event analytics. Truthful to EventAnalyticsService.generateAnalytics:
         a dynamic envelope whose `metrics` sub-objects are present only when requested via the
         `?metrics=` query param (registrations, attendance, engagement), and `timeframe` only when
@@ -666,6 +668,7 @@ components:
               description: ISO-8601 timestamp (end of the requested window).
         metrics:
           type: object
+          x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
           description: 'Computed metric blocks. Each key is present only when named in `?metrics=`.'
           properties:
             registrations:

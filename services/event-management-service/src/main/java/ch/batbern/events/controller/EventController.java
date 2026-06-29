@@ -22,6 +22,10 @@ import ch.batbern.events.core.api.generated.EventsApi;
 import ch.batbern.events.core.api.generated.EventActionsApi;
 import ch.batbern.events.core.dto.generated.EventDetail;
 import ch.batbern.events.core.dto.generated.ListEvents200Response;
+import ch.batbern.events.analytics.api.generated.EventReportingApi;
+import ch.batbern.events.analytics.dto.generated.AttendanceSummaryDTO;
+import ch.batbern.events.analytics.dto.generated.EventAnalytics;
+import ch.batbern.events.dto.AttendanceSummaryProjection;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
@@ -43,6 +47,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
@@ -91,7 +96,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Events", description = "Event management API - consolidated endpoints")
-public class EventController implements EventsApi, EventActionsApi {
+public class EventController implements EventsApi, EventActionsApi, EventReportingApi {
 
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
@@ -1637,18 +1642,11 @@ public class EventController implements EventsApi, EventActionsApi {
      * @param timeframe Optional timeframe as "startTime,endTime" in ISO-8601 format
      * @return Analytics data for the event
      */
-    @GetMapping("/events/{eventCode}/analytics")
-    @Operation(
-            summary = "Get Event Analytics",
-            description = "Retrieve analytics data for an event with optional metrics and timeframe "
-                + "filtering (Story 1.16.2)"
-    )
-    public ResponseEntity<Map<String, Object>> getEventAnalytics(
-            @PathVariable String eventCode,
-            @Parameter(description = "Comma-separated list of metrics (attendance, registrations, engagement)")
-            @RequestParam(required = false, defaultValue = "attendance,registrations,engagement") String metrics,
-            @Parameter(description = "Timeframe as 'startTime,endTime' in ISO-8601 format")
-            @RequestParam(required = false) String timeframe
+    @Override
+    public ResponseEntity<EventAnalytics> getEventAnalytics(
+            String eventCode,
+            String metrics,
+            String timeframe
     ) {
         log.debug("GET /api/v1/events/{}/analytics - metrics: {}, timeframe: {}", eventCode, metrics, timeframe);
 
@@ -1657,11 +1655,10 @@ public class EventController implements EventsApi, EventActionsApi {
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         // Generate analytics using EventAnalyticsService (still uses internal UUID)
-        Map<String, Object> analytics = eventAnalyticsService.generateAnalytics(event.getId(), metrics, timeframe);
+        EventAnalytics analytics = eventAnalyticsService.generateAnalytics(event.getId(), metrics, timeframe);
 
-        // Story 1.16.2: Replace eventId (UUID) with eventCode in response
-        analytics.remove("eventId");
-        analytics.put("eventCode", eventCode);
+        // Story 1.16.2: expose eventCode (meaningful ID) instead of the internal UUID
+        analytics.setEventCode(eventCode);
 
         return ResponseEntity.ok(analytics);
     }
@@ -2425,20 +2422,11 @@ public class EventController implements EventsApi, EventActionsApi {
      * @param fromYear    Earliest year to include (defaults to current year - 5)
      * @return List of attendance summaries ordered by event date descending
      */
-    @GetMapping("/events/attendance-summary")
+    @Override
     @PreAuthorize("hasRole('PARTNER') or hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Get attendance summary per event for a company",
-            description = "Returns per-event attendee counts (total and company-specific). "
-                    + "Called server-to-server by partner-coordination-service. "
-                    + "Requires PARTNER or ORGANIZER role."
-    )
-    public ResponseEntity<List<ch.batbern.events.dto.AttendanceSummaryDTO>> getAttendanceSummary(
-            @Parameter(description = "Company identifier (ADR-003 meaningful ID, e.g. 'GoogleZH')",
-                       required = true)
-            @RequestParam String companyName,
-            @Parameter(description = "Earliest year to include (default: current year - 5)")
-            @RequestParam(required = false) Integer fromYear) {
+    public ResponseEntity<List<AttendanceSummaryDTO>> getAttendanceSummary(
+            String companyName,
+            Integer fromYear) {
 
         log.debug("GET /api/v1/events/attendance-summary - companyName: {}, fromYear: {}",
                 companyName, fromYear);
@@ -2448,9 +2436,20 @@ public class EventController implements EventsApi, EventActionsApi {
                 .atStartOfDay(ZoneId.of("UTC"))
                 .toInstant();
 
-        List<ch.batbern.events.dto.AttendanceSummaryDTO> result =
-                registrationRepository.findAttendanceSummary(companyName, fromDate);
+        List<AttendanceSummaryDTO> result = registrationRepository.findAttendanceSummary(companyName, fromDate)
+                .stream()
+                .map(EventController::toAttendanceSummaryDTO)
+                .toList();
 
         return ResponseEntity.ok(result);
+    }
+
+    private static AttendanceSummaryDTO toAttendanceSummaryDTO(AttendanceSummaryProjection p) {
+        return new AttendanceSummaryDTO()
+                .eventCode(p.eventCode())
+                .eventTitle(p.eventTitle())
+                .eventDate(p.eventDate() != null ? p.eventDate().atOffset(ZoneOffset.UTC) : null)
+                .totalAttendees(p.totalAttendees())
+                .companyAttendees(p.companyAttendees());
     }
 }

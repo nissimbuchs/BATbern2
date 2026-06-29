@@ -1,9 +1,11 @@
 # API Consolidation Plan
 
 **Status:** Phases 0–6 + 9a landed (`api-consolidation` merged as squash PR #815 → `develop`).
-**Phase 7 (contract-first) on branch `api-consolidation-phase7`: EMS wiring COMPLETE — including EventController
-CRUD (EventsApi + EventActionsApi) wired and `BulkOperationsApi` removed. Branch PUSHED 2026-06-29; full EMS suite
-green. Phases 8 & 9 = TODO.**
+**Phase 7 (contract-first) on branch `api-consolidation-phase7`: EMS 100% contract-first — including EventController
+CRUD (EventsApi + EventActionsApi) AND `EventReportingApi` (getEventAnalytics + getAttendanceSummary) wired,
+`BulkOperationsApi` removed. **Partner meetings wired** (PartnerMeeting + PartnerMeetingRsvp → new `partner-meetings-api`
+generator); the only remaining hand-rolled partner controllers are dev/test-only (DevEmail, TestFixtureCleanup → skip).
+Phases 8 & 9 = TODO.**
 **Date:** 2026-06-25 (last status update: 2026-06-29)
 **Governing standard:** [ADR-013 — REST API CRUD Conventions](../architecture/ADR-013-rest-api-crud-conventions.md)
 **Scope:** CUMS (companies, users), EMS (events, topics), Partner (partners + 4 sub-specs),
@@ -46,8 +48,47 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > post-rebase: CUMS + EMS compile, `UserControllerIntegrationTest` + `EventWorkflowControllerIntegrationTest`
 > green. Backup: `backup/phase7-pre-rebase-3b43fe17`.
 >
-> ▶ **STATUS (2026-06-29): EMS Phase-7 wiring is COMPLETE — every wireable EMS controller is contract-first
-> (42 wired).** CUMS 6/6 done; Partner 5/10. There is **no remaining per-controller EMS wiring** to pick up.
+> ▶ **STATUS (2026-06-29): EMS Phase-7 wiring is 100% COMPLETE — every wireable EMS controller is contract-first,
+> incl. `EventController` CRUD AND `EventReportingApi`.** CUMS 6/6 done; **Partner meetings now wired too**
+> (PartnerMeeting + PartnerMeetingRsvp → new `partner-meetings-api` generator) so the only remaining hand-rolled
+> partner controllers are dev/test-only (DevEmail, TestFixtureCleanup → skip). There is **no remaining
+> per-controller wiring** to pick up in any service.
+>
+> ✅ **DONE (2026-06-29): `EventController` → `EventReportingApi` (2 ops: getEventAnalytics + getAttendanceSummary).**
+> The last EMS follow-up — EMS is now 100% contract-first. `getEventAnalytics` returns the typed `EventAnalytics`
+> (refactored `EventAnalyticsService.generateAnalytics` Map→typed; `@JsonInclude(NON_NULL)` on `EventAnalytics` +
+> its inline `metrics` object via `x-class-extra-annotation`, so unrequested metric blocks / absent `timeframe` are
+> OMITTED — byte-identical to the historical dynamic-Map wire). Spec made truthful: `metrics` param default set to
+> `attendance,registrations,engagement` (deployed default; interface otherwise had none), fictional `timeframe`
+> enum `[day,week,month,all]` replaced with the real free-string `startTime,endTime` ISO window. `getAttendanceSummary`
+> returns the generated `AttendanceSummaryDTO`; **spec gained the missing `eventTitle`** (consumed by the partner
+> attendance XLSX export — `PartnerAnalyticsService.toRecord`); the hand `events.dto.AttendanceSummaryDTO` shadow was
+> renamed to the repo-internal `AttendanceSummaryProjection` (JPQL projects `Instant`/primitive counts → mapped to
+> the wire `OffsetDateTime`/`Long` in the controller). **Verified (local dev):** EventControllerIntegrationTest 103/0
+> + AnalyticsControllerIntegrationTest + EventAttendanceSummaryIntegrationTest green; EMS restart + live gateway
+> smoke (typed analytics w/ NON_NULL omission, malformed eventCode→400, attendance-summary `eventTitle` present);
+> FE regen (event-analytics: +`eventTitle`, timeframe→string) + type-check; full Bruno 14/14.
+>
+> ✅ **DONE (2026-06-29): Partner meetings — `PartnerMeetingController` (6 ops) → `PartnerMeetingsApi` +
+> `PartnerMeetingRsvpController` (getMeetingRsvps) → `PartnerMeetingRsvpsApi`.** **Bootstrapped the
+> `partner-meetings-api` generator** (`openApiGenerateMeetings` → `ch.batbern.partners.meetings.{api,dto}.generated`,
+> distinct packages, `openApiNullable:false` to match the hand DTOs' plain-`@Nullable` semantics; wired into
+> sourceSets + compileJava.dependsOn). Re-tagged `getMeetingRsvps` into a `Partner Meeting Rsvps` tag so each
+> controller gets a 1:1 interface. **Extracted the VPC-internal `POST /internal/partner-meetings/rsvps`** (no JWT,
+> not in the public contract) into a dedicated `InternalRsvpController` so `PartnerMeetingRsvpController` can carry
+> the `/api/v1` class prefix the interface paths need (EventSpeakerPool precedent). **Consolidated 7 hand DTOs** →
+> generated twins (PartnerMeetingDTO/CreateMeetingRequest/UpdateMeetingRequest/SendInviteResponse/
+> MeetingRsvpListResponse/RsvpDTO/RsvpSummary; threaded through PartnerMeetingService + PartnerMeetingRsvpService),
+> kept the internal `RecordRsvpRequest`. Conversions: domain `MeetingType`→generated `MeetingTypeEnum`; `LocalTime`
+> startTime/endTime → String `"HH:mm:ss"` (preserves the deployed wire — tests assert `"12:00:00"`); `Instant`→
+> `OffsetDateTime` @ UTC (`…Z`); `RsvpStatus`→`RsvpDTO.StatusEnum`; `@JsonInclude(NON_NULL)` on PartnerMeetingDTO
+> (matches the hand DTO's null-omission). **Verified (local dev):** PartnerMeetingControllerIntegrationTest 20/0 +
+> PartnerMeetingRsvpControllerIntegrationTest 7/0; partner restart + live gateway smoke (list/get/rsvps typed shape,
+> `startTime "12:00:00"`, `@Pattern`/auth 400/401/404); FE type-check + partnerMeetingsApi vitest 14/14; full Bruno
+> 14/14 (partner-meetings-api 16/16); Playwright organizer `partner-meetings` 4/4 + partner `analytics-dashboard`
+> 4/4. **No per-controller wiring remains in any service.**
+>
+> _(historical) prior status: 42 wired; CUMS 6/6; Partner 5/10._ There is **no remaining per-controller EMS wiring** to pick up.
 > The full per-controller record is in the ✅ DONE notes below (each: spec authored/re-tagged → regenerated →
 > `implements <Ctrl>Api` → hand DTOs consolidated → integration tests + EMS restart + live gateway smoke +
 > Bruno/Playwright on local dev → commit + a `docs(plans)` note). This session (2026-06-29) finished the tail:
