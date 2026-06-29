@@ -23,6 +23,8 @@ servers:
 tags:
   - name: Task Templates
     description: Reusable task template management (Story 5.5)
+  - name: Event Tasks
+    description: Event-planning task instances — creation, assignment, status, completion (Story 5.5)
 
 paths:
   /tasks/templates:
@@ -145,7 +147,310 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /events/{eventCode}/tasks:
+    get:
+      tags:
+        - Event Tasks
+      summary: List all tasks for an event
+      description: 'Story 5.5 AC24. ORGANIZER role required.'
+      operationId: listEventTasks
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+      responses:
+        '200':
+          description: Event tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Event Tasks
+      summary: Create an ad-hoc task for an event
+      description: 'Story 5.5 AC22. ORGANIZER role required.'
+      operationId: createAdHocTask
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventTaskRequest'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/tasks/from-templates:
+    post:
+      tags:
+        - Event Tasks
+      summary: Create event tasks from templates
+      description: 'Story 5.5 AC21. ORGANIZER role required.'
+      operationId: createTasksFromTemplates
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTasksFromTemplatesRequest'
+      responses:
+        '201':
+          description: Tasks created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/my-tasks:
+    get:
+      tags:
+        - Event Tasks
+      summary: List tasks assigned to the current organizer
+      description: 'Story 5.5 AC24. ORGANIZER role required.'
+      operationId: getMyTasks
+      parameters:
+        - name: critical
+          in: query
+          required: false
+          description: When true, return only critical (overdue + due-soon) tasks
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Tasks for the current organizer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /tasks/all-tasks:
+    get:
+      tags:
+        - Event Tasks
+      summary: List all tasks across all organizers
+      description: 'Story 5.5. ORGANIZER role required.'
+      operationId: getAllTasks
+      parameters:
+        - name: critical
+          in: query
+          required: false
+          description: When true, return only critical (overdue + due-soon) tasks
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: All tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /tasks/{taskId}/complete:
+    put:
+      tags:
+        - Event Tasks
+      summary: Mark a task complete
+      description: 'Story 5.5 AC25. ORGANIZER role required.'
+      operationId: completeTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteTaskRequest'
+      responses:
+        '200':
+          description: Task completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/reassign:
+    put:
+      tags:
+        - Event Tasks
+      summary: Reassign a task to a different organizer
+      description: 'Story 5.5 AC27. ORGANIZER role required.'
+      operationId: reassignTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReassignTaskRequest'
+      responses:
+        '200':
+          description: Task reassigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/status:
+    put:
+      tags:
+        - Event Tasks
+      summary: Update a task's status (drag-and-drop)
+      description: 'Story 5.5. ORGANIZER role required.'
+      operationId: updateTaskStatus
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskStatusRequest'
+      responses:
+        '200':
+          description: Task status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}:
+    patch:
+      tags:
+        - Event Tasks
+      summary: Update task details (notes, due date, assignee)
+      description: 'Patch semantics — only provided fields are updated. ORGANIZER role required.'
+      operationId: updateTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventTaskRequest'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Event Tasks
+      summary: Delete a task
+      description: 'Story 5.5. ORGANIZER role required.'
+      operationId: deleteTask
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '204':
+          description: Task deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
+  parameters:
+    EventCode:
+      name: eventCode
+      in: path
+      required: true
+      description: Event code (e.g. BATbern58)
+      schema:
+        type: string
+        example: 'BATbern58'
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      description: Task ID
+      schema:
+        type: string
+        format: uuid
   schemas:
     TaskTemplateResponse:
       type: object
@@ -232,6 +537,135 @@ components:
         dueDateOffsetDays:
           type: integer
           description: Offset days for relative due dates
+    EventTaskResponse:
+      type: object
+      description: An event-planning task instance (Story 5.5)
+      required:
+        - id
+        - taskName
+        - triggerState
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        eventCode:
+          type: string
+          description: Event code (null for tasks without an event)
+        templateId:
+          type: string
+          format: uuid
+          description: Source template ID (null for ad-hoc tasks)
+        taskName:
+          type: string
+        triggerState:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        assignedOrganizerUsername:
+          type: string
+        status:
+          type: string
+          description: 'Task status: pending, todo, in_progress, or completed'
+        notes:
+          type: string
+        completedDate:
+          type: string
+          format: date-time
+        completedByUsername:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateEventTaskRequest:
+      type: object
+      description: Request to create an ad-hoc event task (Story 5.5 AC22)
+      required:
+        - taskName
+        - triggerState
+      properties:
+        taskName:
+          type: string
+          minLength: 1
+        triggerState:
+          type: string
+          minLength: 1
+          description: The workflow state associated with this task
+        dueDate:
+          type: string
+          format: date-time
+        assignedOrganizerUsername:
+          type: string
+        notes:
+          type: string
+    CreateTasksFromTemplatesRequest:
+      type: object
+      description: Request to instantiate event tasks from templates (Story 5.5 AC21)
+      required:
+        - templates
+      properties:
+        templates:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TemplateConfig'
+    TemplateConfig:
+      type: object
+      description: Template instantiation entry (template ID + optional assignee)
+      required:
+        - templateId
+      properties:
+        templateId:
+          type: string
+          format: uuid
+        assignedOrganizerUsername:
+          type: string
+          description: Optional organizer username to assign the created task to
+    CompleteTaskRequest:
+      type: object
+      description: Request to complete a task (Story 5.5 AC25)
+      properties:
+        notes:
+          type: string
+          description: Optional completion notes
+    ReassignTaskRequest:
+      type: object
+      description: Request to reassign a task (Story 5.5 AC27)
+      required:
+        - newOrganizerUsername
+      properties:
+        newOrganizerUsername:
+          type: string
+          minLength: 1
+    UpdateTaskStatusRequest:
+      type: object
+      description: Request to update a task's status (drag-and-drop)
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          pattern: '^(pending|todo|in_progress|completed)$'
+          description: 'New task status: pending, todo, in_progress, or completed'
+    UpdateEventTaskRequest:
+      type: object
+      description: Patch request for task details — only provided fields are updated
+      properties:
+        notes:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        assignedOrganizerUsername:
+          type: string
+          description: New assignee (empty string = unassign)
     ErrorResponse:
       $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
 

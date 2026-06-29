@@ -2,33 +2,29 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventTask;
-import ch.batbern.events.dto.CompleteTaskRequest;
-import ch.batbern.events.dto.CreateEventTaskRequest;
-import ch.batbern.events.dto.CreateTasksFromTemplatesRequest;
-import ch.batbern.events.dto.EventTaskResponse;
-import ch.batbern.events.dto.ReassignTaskRequest;
-import ch.batbern.events.dto.UpdateEventTaskRequest;
-import ch.batbern.events.dto.UpdateTaskStatusRequest;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventTaskService;
+import ch.batbern.events.tasks.api.generated.EventTasksApi;
+import ch.batbern.events.tasks.dto.generated.CompleteTaskRequest;
+import ch.batbern.events.tasks.dto.generated.CreateEventTaskRequest;
+import ch.batbern.events.tasks.dto.generated.CreateTasksFromTemplatesRequest;
+import ch.batbern.events.tasks.dto.generated.EventTaskResponse;
+import ch.batbern.events.tasks.dto.generated.ReassignTaskRequest;
+import ch.batbern.events.tasks.dto.generated.UpdateEventTaskRequest;
+import ch.batbern.events.tasks.dto.generated.UpdateTaskStatusRequest;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,9 +45,10 @@ import java.util.stream.Collectors;
  * Security: All endpoints require ORGANIZER role
  */
 @RestController
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class EventTaskController {
+public class EventTaskController implements EventTasksApi {
 
     private final EventTaskService eventTaskService;
     private final EventRepository eventRepository;
@@ -64,9 +61,9 @@ public class EventTaskController {
      * @param eventCode event code
      * @return list of tasks
      */
-    @GetMapping("/api/v1/events/{eventCode}/tasks")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<EventTaskResponse>> listEventTasks(@PathVariable String eventCode) {
+    public ResponseEntity<List<EventTaskResponse>> listEventTasks(String eventCode) {
         log.info("GET /api/v1/events/{}/tasks", eventCode);
 
         // Find event by code
@@ -75,7 +72,7 @@ public class EventTaskController {
 
         List<EventTask> tasks = eventTaskService.getEventTasks(event.getId());
         List<EventTaskResponse> response = tasks.stream()
-                .map(task -> EventTaskResponse.fromEntity(task, event.getEventCode()))
+                .map(task -> toResponse(task, event.getEventCode()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
@@ -89,11 +86,11 @@ public class EventTaskController {
      * @param request create task request
      * @return created task
      */
-    @PostMapping("/api/v1/events/{eventCode}/tasks")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<EventTaskResponse> createAdHocTask(
-            @PathVariable String eventCode,
-            @Valid @RequestBody CreateEventTaskRequest request) {
+            String eventCode,
+            CreateEventTaskRequest request) {
 
         log.info("POST /api/v1/events/{}/tasks - taskName: {}", eventCode, request.getTaskName());
 
@@ -105,12 +102,12 @@ public class EventTaskController {
                 event.getId(),
                 request.getTaskName(),
                 request.getTriggerState(),
-                request.getDueDate(),
+                toInstant(request.getDueDate()),
                 request.getAssignedOrganizerUsername(),
                 request.getNotes()
         );
 
-        EventTaskResponse response = EventTaskResponse.fromEntity(task, event.getEventCode());
+        EventTaskResponse response = toResponse(task, event.getEventCode());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -122,11 +119,11 @@ public class EventTaskController {
      * @param request request containing template IDs and assignees
      * @return list of created tasks
      */
-    @PostMapping("/api/v1/events/{eventCode}/tasks/from-templates")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<List<EventTaskResponse>> createTasksFromTemplates(
-            @PathVariable String eventCode,
-            @Valid @RequestBody CreateTasksFromTemplatesRequest request) {
+            String eventCode,
+            CreateTasksFromTemplatesRequest request) {
 
         log.info("POST /api/v1/events/{}/tasks/from-templates - {} templates",
                 eventCode, request.getTemplates().size());
@@ -151,7 +148,7 @@ public class EventTaskController {
 
         String evtCode = event.getEventCode();
         List<EventTaskResponse> response = tasks.stream()
-                .map(task -> EventTaskResponse.fromEntity(task, evtCode))
+                .map(task -> toResponse(task, evtCode))
                 .collect(Collectors.toList());
 
         log.info("Created {} tasks from templates for event {}", response.size(), eventCode);
@@ -165,10 +162,9 @@ public class EventTaskController {
      * @param critical if true, return only critical tasks (overdue + due soon)
      * @return list of tasks
      */
-    @GetMapping("/api/v1/tasks/my-tasks")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<EventTaskResponse>> getMyTasks(
-            @RequestParam(required = false, defaultValue = "false") boolean critical) {
+    public ResponseEntity<List<EventTaskResponse>> getMyTasks(Boolean critical) {
 
         String username = securityContextHelper.getCurrentUsername();
         log.info("GET /api/v1/tasks/my-tasks - username: {}, critical: {}", username, critical);
@@ -189,7 +185,7 @@ public class EventTaskController {
                 ));
 
         List<EventTaskResponse> response = tasks.stream()
-                .map(task -> EventTaskResponse.fromEntity(task, eventCodeMap.get(task.getEventId())))
+                .map(task -> toResponse(task, eventCodeMap.get(task.getEventId())))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
@@ -202,10 +198,9 @@ public class EventTaskController {
      * @param critical if true, return only critical tasks (overdue + due soon)
      * @return list of all tasks
      */
-    @GetMapping("/api/v1/tasks/all-tasks")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<EventTaskResponse>> getAllTasks(
-            @RequestParam(required = false, defaultValue = "false") boolean critical) {
+    public ResponseEntity<List<EventTaskResponse>> getAllTasks(Boolean critical) {
 
         log.info("GET /api/v1/tasks/all-tasks - critical: {}", critical);
 
@@ -224,7 +219,7 @@ public class EventTaskController {
                 ));
 
         List<EventTaskResponse> response = tasks.stream()
-                .map(task -> EventTaskResponse.fromEntity(task, eventCodeMap.get(task.getEventId())))
+                .map(task -> toResponse(task, eventCodeMap.get(task.getEventId())))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
@@ -238,11 +233,11 @@ public class EventTaskController {
      * @param request completion request with optional notes
      * @return updated task
      */
-    @PutMapping("/api/v1/tasks/{taskId}/complete")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<EventTaskResponse> completeTask(
-            @PathVariable UUID taskId,
-            @Valid @RequestBody CompleteTaskRequest request) {
+            UUID taskId,
+            CompleteTaskRequest request) {
 
         String completedByUsername = securityContextHelper.getCurrentUsername();
         log.info("PUT /api/v1/tasks/{}/complete - completedBy: {}", taskId, completedByUsername);
@@ -251,7 +246,7 @@ public class EventTaskController {
         String eventCode = eventRepository.findById(task.getEventId())
                 .map(Event::getEventCode)
                 .orElse(null);
-        EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
+        EventTaskResponse response = toResponse(task, eventCode);
 
         return ResponseEntity.ok(response);
     }
@@ -264,11 +259,11 @@ public class EventTaskController {
      * @param request reassignment request
      * @return updated task
      */
-    @PutMapping("/api/v1/tasks/{taskId}/reassign")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<EventTaskResponse> reassignTask(
-            @PathVariable UUID taskId,
-            @Valid @RequestBody ReassignTaskRequest request) {
+            UUID taskId,
+            ReassignTaskRequest request) {
 
         log.info("PUT /api/v1/tasks/{}/reassign - newOrganizer: {}",
                 taskId, request.getNewOrganizerUsername());
@@ -277,7 +272,7 @@ public class EventTaskController {
         String eventCode = eventRepository.findById(task.getEventId())
                 .map(Event::getEventCode)
                 .orElse(null);
-        EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
+        EventTaskResponse response = toResponse(task, eventCode);
 
         return ResponseEntity.ok(response);
     }
@@ -292,11 +287,11 @@ public class EventTaskController {
      * @param request status update request
      * @return updated task
      */
-    @PutMapping("/api/v1/tasks/{taskId}/status")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<EventTaskResponse> updateTaskStatus(
-            @PathVariable UUID taskId,
-            @Valid @RequestBody UpdateTaskStatusRequest request) {
+            UUID taskId,
+            UpdateTaskStatusRequest request) {
 
         log.info("PUT /api/v1/tasks/{}/status - newStatus: {}", taskId, request.getStatus());
 
@@ -304,7 +299,7 @@ public class EventTaskController {
         String eventCode = eventRepository.findById(task.getEventId())
                 .map(Event::getEventCode)
                 .orElse(null);
-        EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
+        EventTaskResponse response = toResponse(task, eventCode);
 
         return ResponseEntity.ok(response);
     }
@@ -317,35 +312,69 @@ public class EventTaskController {
      * @param request update request (all fields optional)
      * @return updated task
      */
-    @PatchMapping("/api/v1/tasks/{taskId}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<EventTaskResponse> updateTask(
-            @PathVariable UUID taskId,
-            @RequestBody UpdateEventTaskRequest request) {
+            UUID taskId,
+            UpdateEventTaskRequest request) {
 
         log.info("PATCH /api/v1/tasks/{}", taskId);
 
         EventTask task = eventTaskService.updateTask(
                 taskId,
                 request.getNotes(),
-                request.getDueDate(),
+                toInstant(request.getDueDate()),
                 request.getAssignedOrganizerUsername()
         );
         String eventCode = eventRepository.findById(task.getEventId())
                 .map(Event::getEventCode)
                 .orElse(null);
-        EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
+        EventTaskResponse response = toResponse(task, eventCode);
 
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/api/v1/tasks/{taskId}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Void> deleteTask(@PathVariable UUID taskId) {
+    public ResponseEntity<Void> deleteTask(UUID taskId) {
         log.info("DELETE /api/v1/tasks/{}", taskId);
         eventTaskService.deleteTask(taskId);
         return ResponseEntity.noContent().build();
     }
 
     // === Helper Methods ===
+
+    /**
+     * Map an EventTask entity to the generated response DTO.
+     * Instant timestamps are surfaced as UTC OffsetDateTime (wire stays {@code …Z}).
+     *
+     * @param task      the entity
+     * @param eventCode resolved event code (may be null for tasks without an event)
+     */
+    private static EventTaskResponse toResponse(EventTask task, String eventCode) {
+        return EventTaskResponse.builder()
+                .id(task.getId())
+                .eventId(task.getEventId())
+                .eventCode(eventCode)
+                .templateId(task.getTemplateId())
+                .taskName(task.getTaskName())
+                .triggerState(task.getTriggerState())
+                .dueDate(toOffset(task.getDueDate()))
+                .assignedOrganizerUsername(task.getAssignedOrganizerUsername())
+                .status(task.getStatus())
+                .notes(task.getNotes())
+                .completedDate(toOffset(task.getCompletedDate()))
+                .completedByUsername(task.getCompletedByUsername())
+                .createdAt(toOffset(task.getCreatedAt()))
+                .updatedAt(toOffset(task.getUpdatedAt()))
+                .build();
+    }
+
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
+    }
+
+    private static Instant toInstant(OffsetDateTime offsetDateTime) {
+        return offsetDateTime != null ? offsetDateTime.toInstant() : null;
+    }
 }
