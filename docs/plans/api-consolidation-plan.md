@@ -363,6 +363,24 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > **topics-api spec is now fully contract-first** — only `selectTopicForEvent` (Event Topics) remains, owned by
 > the deferred EventController. **EMS contract-first +2 (28 wired).**
 >
+> ✅ **DONE (2026-06-29): `TaskTemplateController` (4 ops) → `TaskTemplatesApi`** (commit `0aea4fac`, EMS 29 wired).
+> **Bootstrapped a new `event-tasks-api` spec + generator task** (`openApiGenerateTasks` →
+> `ch.batbern.events.tasks.{api,dto}.generated`, wired into compileJava/sourceSets/clean — modelled on the
+> sessions task) for the previously-undocumented Configurable Task System (Story 5.5). Authored 4 ops under a
+> 1:1 `Task Templates` tag (listAllTemplates/createTemplate/updateTemplate/deleteTemplate) + the 3 schemas,
+> ported from the FE-validated hand DTOs. **triggerState/dueDateType kept as free strings (NOT enums)** to match
+> the deployed contract (the service validates them). Controller `implements TaskTemplatesApi`: class
+> @RequestMapping /api/v1, bare override params, @PreAuthorize(ORGANIZER) + the IllegalState→403 default-template
+> guards kept. Consolidated the 3 hand DTOs → generated twins; **replaced the `TaskTemplateResponse.fromEntity`
+> static factory with a private `toResponse` mapper** (Instant→OffsetDateTime `.atOffset(UTC)`, wire `…Z`); deleted
+> all 3. name/triggerState/dueDateType @NotBlank → required + @Size(min=1). **Verified (local dev):**
+> TaskTemplateController + Service + TestFixtureCleanup template tests 24/24; EMS restart + live gateway smoke
+> (list 9 w/ full shape + `…Z`, no-auth→401, missing-name→400, create→201, delete→204); FE type-check clean (the
+> FE `taskService` uses hand types matching the wire byte-for-byte — `event-tasks` is NOT in the FE generate list,
+> consistent with the other EMS-internal specs, so no FE-types regen); Bruno tasks-api 16 req / 39 tests / 0
+> skipped; Playwright `admin-task-templates-crud` @smoke 1/1 (full UI CRUD). **EMS contract-first +1 (29 wired).**
+> Follow-up unblocked: `EventTaskController` (10 ops, Story 5.5) can now extend this same `event-tasks-api` spec.
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
