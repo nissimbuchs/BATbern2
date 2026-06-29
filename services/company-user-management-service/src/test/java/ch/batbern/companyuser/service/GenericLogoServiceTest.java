@@ -2,7 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Logo;
 import ch.batbern.companyuser.domain.LogoStatus;
-import ch.batbern.companyuser.dto.PresignedUploadUrl;
+import ch.batbern.companyuser.dto.generated.LogoPresignedUploadUrl;
 import ch.batbern.companyuser.exception.FileSizeExceededException;
 import ch.batbern.companyuser.exception.InvalidFileTypeException;
 import ch.batbern.companyuser.exception.LogoNotFoundException;
@@ -86,7 +86,7 @@ class GenericLogoServiceTest {
         when(logoRepository.save(any(Logo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        PresignedUploadUrl result = genericLogoService.generatePresignedUrl(fileName, fileSize, mimeType);
+        LogoPresignedUploadUrl result = genericLogoService.generatePresignedUrl(fileName, fileSize, mimeType);
 
         // Assert
         assertThat(result).isNotNull();

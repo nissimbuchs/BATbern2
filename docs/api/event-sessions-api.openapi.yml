@@ -43,7 +43,59 @@ tags:
   description: Authoritative per-event timetable / slot grid (TimetableController)
 - name: Bulk Operations
   description: Batch operations on multiple events
+- name: Company Sessions
+  description: Cross-event session search by company — sessions with at least one speaker
+    from the given company, enriched with event + full speaker context (GlobalSessionController,
+    organizer Company-detail Sessions tab)
 paths:
+  /sessions:
+    get:
+      tags:
+      - Company Sessions
+      summary: Search sessions across all events by company
+      description: 'Returns sessions where at least one speaker belongs to the given company,
+        enriched with event metadata and the full speaker list per session (so the frontend can
+        highlight the company''s speakers). ORGANIZER role required. A blank/absent `companyName`
+        yields an empty page.'
+      operationId: searchSessionsByCompany
+      parameters:
+      - name: companyName
+        in: query
+        description: Company name (ADR-003 meaningful ID). Blank/absent → empty result.
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        description: 1-indexed page number
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 50
+      responses:
+        '200':
+          description: Paginated company sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompanySessionResponse'
+                  pagination:
+                    $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - bearerAuth: []
   /events/{eventCode}/sessions/{sessionSlug}/qna:
     get:
       tags:
@@ -1562,6 +1614,44 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
+    CompanySessionResponse:
+      type: object
+      description: 'A session that has at least one speaker from the queried company, combined
+        with event + full-speaker context (GlobalSessionController / Company-detail Sessions tab).'
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+      properties:
+        sessionSlug:
+          type: string
+          description: Session slug (event-scoped identifier)
+        eventCode:
+          type: string
+          example: BATbern57
+        eventTitle:
+          type: string
+          description: Title of the event this session belongs to
+        eventDate:
+          type: string
+          description: Event date (ISO-8601)
+        title:
+          type: string
+          description: Session title
+        sessionType:
+          type: string
+          description: Session type (e.g. talk, aperitif)
+        startTime:
+          type: string
+          description: Session start time (ISO-8601)
+        endTime:
+          type: string
+          description: Session end time (ISO-8601)
+        room:
+          type: string
+          description: Room / location
+        speakers:
+          type: array
+          description: All speakers of this session (includes speakers from other companies)
+          items:
+            $ref: '#/components/schemas/SessionSpeaker'
     SessionTimingRequest:
       type: object
       description: Assign timing (start/end/room) to a session — Story 5.7 drag-and-drop

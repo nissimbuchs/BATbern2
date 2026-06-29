@@ -47,8 +47,190 @@ tags:
     description: Company verification and UID validation
   - name: Presentation Settings
     description: Moderator presentation page settings (Story 10.8a)
+  - name: Logos
+    description: Generic logo/image upload (presigned-URL flow, URL proxy/import, admin cleanup) — LogoController, Story 1.16.3
 
 paths:
+  /logos/presigned-url:
+    post:
+      tags:
+        - Logos
+      summary: Generate a presigned URL for a logo upload
+      description: |
+        Phase 1 of the three-phase upload flow. Returns a presigned S3 URL (15-min expiry) plus
+        upload metadata. Supports PNG/JPEG/SVG up to 5MB. No authentication required.
+      operationId: requestLogoUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoUploadRequest'
+      responses:
+        '200':
+          description: Presigned URL generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoPresignedUploadUrl'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /logos/{uploadId}/confirm:
+    post:
+      tags:
+        - Logos
+      summary: Confirm a logo upload completion
+      description: |
+        Phase 2 — confirms the file was uploaded to S3 (PENDING → CONFIRMED). No authentication required.
+      operationId: confirmLogoUpload
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoUploadConfirmRequest'
+      responses:
+        '200':
+          description: Upload confirmed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /logos/{uploadId}:
+    delete:
+      tags:
+        - Logos
+      summary: Delete an unused logo
+      description: |
+        Deletes a logo in PENDING or CONFIRMED status (ASSOCIATED logos cannot be deleted).
+        Requires authentication.
+      operationId: deleteUnusedLogo
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Logo deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+  /logos/cleanup/statistics:
+    get:
+      tags:
+        - Logos
+      summary: Get logo-upload cleanup statistics (Admin)
+      description: Counts of logo uploads by state, for monitoring orphaned uploads. Requires ORGANIZER role.
+      operationId: getLogoCleanupStatistics
+      responses:
+        '200':
+          description: Cleanup statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoCleanupStatistics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /logos/cleanup/trigger:
+    post:
+      tags:
+        - Logos
+      summary: Manually trigger the logo cleanup job (Admin)
+      description: Triggers the orphaned-upload cleanup job (normally runs daily at 02:00). Requires ORGANIZER role.
+      operationId: triggerLogoCleanup
+      responses:
+        '202':
+          description: Cleanup job triggered
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /logos/fetch-from-url:
+    post:
+      tags:
+        - Logos
+      summary: Fetch an image from an external URL (CORS proxy)
+      description: |
+        Fetches an image from an external URL and returns the raw bytes with the appropriate
+        content type. Proxies around CORS for logo import. Up to 10MB; validates the content is
+        an image. No authentication required.
+      operationId: fetchImageFromUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchImageFromUrlRequest'
+      responses:
+        '200':
+          description: Image bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /logos/upload-from-url:
+    post:
+      tags:
+        - Logos
+      summary: Fetch an image from a URL and upload it to S3 (server-side)
+      description: |
+        Fetches an image from a URL and uploads it directly to S3 (bypasses the browser to avoid
+        binary corruption), returning the upload ID. Up to 10MB. No authentication required.
+      operationId: uploadImageFromUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadImageFromUrlRequest'
+      responses:
+        '200':
+          description: Image uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadImageFromUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: Image exceeds the 10MB limit
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /companies:
     get:
       tags:
@@ -753,6 +935,107 @@ paths:
 
 components:
   schemas:
+    LogoUploadRequest:
+      type: object
+      required:
+        - fileName
+        - fileSize
+        - mimeType
+      properties:
+        fileName:
+          type: string
+          description: Original filename with extension (e.g. "company-logo.png")
+        fileSize:
+          type: integer
+          format: int64
+          description: File size in bytes (max 5,242,880 = 5MB)
+        mimeType:
+          type: string
+          description: MIME type (e.g. "image/png", "image/jpeg", "image/svg+xml")
+    LogoPresignedUploadUrl:
+      type: object
+      description: Presigned S3 upload URL + metadata for a logo upload
+      properties:
+        uploadUrl:
+          type: string
+          description: The presigned S3 URL to PUT the file to
+        fileId:
+          type: string
+          description: Unique file identifier for tracking the upload
+        s3Key:
+          type: string
+          description: S3 key where the file will be stored
+        fileExtension:
+          type: string
+          description: File extension (used to reconstruct the S3 key on confirm)
+        expiresInMinutes:
+          type: integer
+          description: URL expiry in minutes (typically 15)
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
+          description: Headers the client must send with the S3 PUT
+    LogoUploadConfirmRequest:
+      type: object
+      required:
+        - fileId
+        - fileExtension
+      properties:
+        fileId:
+          type: string
+          description: File ID returned from the presigned-URL request
+        fileExtension:
+          type: string
+          description: File extension (used to reconstruct the S3 key)
+        checksum:
+          type: string
+          description: Optional SHA-256 checksum for integrity verification
+    LogoCleanupStatistics:
+      type: object
+      description: Counts of logo uploads by state (admin monitoring)
+      properties:
+        pendingCount:
+          type: integer
+          format: int64
+        confirmedCount:
+          type: integer
+          format: int64
+        associatedCount:
+          type: integer
+          format: int64
+        expiredPendingCount:
+          type: integer
+          format: int64
+        expiredConfirmedCount:
+          type: integer
+          format: int64
+    FetchImageFromUrlRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: External image URL to fetch
+    UploadImageFromUrlRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: External image URL to fetch and upload
+        filename:
+          type: string
+          description: Suggested base filename (extension derived from content type)
+          default: logo
+    UploadImageFromUrlResponse:
+      type: object
+      properties:
+        uploadId:
+          type: string
+          description: Upload ID for use in subsequent company creation
     PresentationSettingsResponse:
       type: object
       description: Moderator presentation page settings (Story 10.8a)

@@ -7,11 +7,12 @@ import ch.batbern.companyuser.api.generated.RoleManagementApi;
 import ch.batbern.companyuser.api.generated.UserAccountApi;
 import ch.batbern.companyuser.api.generated.UserManagementApi;
 import ch.batbern.companyuser.api.generated.UserSearchApi;
+import ch.batbern.companyuser.api.generated.UserAdministrationApi;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.ReconciliationReportDTO;
-import ch.batbern.companyuser.dto.SyncStatusDTO;
 import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;
+import ch.batbern.companyuser.dto.generated.AdminUploadProfilePictureFromUrlRequest;
+import ch.batbern.companyuser.dto.generated.AdminUploadProfilePictureFromUrlResponse;
 import ch.batbern.companyuser.dto.generated.AdditionalEmail;
 import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationCheckResponse;
 import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationConfirmResponse;
@@ -33,6 +34,8 @@ import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.dto.generated.UserRolesResponse;
 import ch.batbern.companyuser.dto.generated.UserSearchResponse;
+import ch.batbern.companyuser.dto.generated.UserReconciliationReport;
+import ch.batbern.companyuser.dto.generated.UserSyncStatus;
 import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
@@ -46,7 +49,6 @@ import ch.batbern.shared.api.SortParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -54,18 +56,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 /**
  * REST Controller for User Management.
@@ -74,26 +69,26 @@ import java.util.Map;
  * {@code implements} the generated {@code users-api.openapi.yml} interfaces
  * ({@code UserManagementApi}, {@code UserAccountApi}, {@code ProfilePictureApi},
  * {@code RoleManagementApi}, {@code UserSearchApi}, {@code DomainIntegrationApi},
- * {@code GdprComplianceApi}), which carry the HTTP method/path mappings and request/response
- * DTO types. The class-level {@code @RequestMapping("/api/v1")} supplies the version prefix the
- * interface paths omit (e.g. interface {@code /users/me} → {@code /api/v1/users/me}).
+ * {@code GdprComplianceApi}, {@code UserAdministrationApi}), which carry the HTTP method/path
+ * mappings and request/response DTO types. The class-level {@code @RequestMapping("/api/v1")}
+ * supplies the version prefix the interface paths omit (e.g. interface {@code /users/me} →
+ * {@code /api/v1/users/me}).
  *
  * <p>Method-level {@code @PreAuthorize} / {@code @Timed} stay on the implementation (the generated
  * interfaces carry neither); behaviour matches the pre-wiring controller exactly.
  *
- * <p>Five endpoints have no generated interface counterpart (no {@code users-api} operation) and
- * remain hand-rolled below with explicit {@code @…Mapping}: the service-to-service
- * {@code GET /users/by-company}, the admin {@code PUT /users/{username}},
- * {@code POST /users/{username}/profile-picture/upload-from-url},
- * {@code POST /users/admin/reconcile}, and {@code GET /users/admin/sync-status}. They are flagged
- * for a spec addition as a follow-up (Phase 2-style).
+ * <p>The formerly-undocumented endpoints — service-to-service {@code GET /users/by-company},
+ * admin {@code PUT /users/{username}}, {@code POST /users/{username}/profile-picture/upload-from-url},
+ * {@code POST /users/admin/reconcile}, {@code GET /users/admin/sync-status} — are now contract-first
+ * too (spec ops added under User Management / Profile Picture / User Administration tags).
  */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
 public class UserController implements UserManagementApi, UserAccountApi, ProfilePictureApi,
-        RoleManagementApi, UserSearchApi, DomainIntegrationApi, GdprComplianceApi {
+        RoleManagementApi, UserSearchApi, DomainIntegrationApi, GdprComplianceApi,
+        UserAdministrationApi {
 
     private final UserService userService;
     private final UserSearchService userSearchService;
@@ -637,14 +632,14 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      * enforced at the filter chain ({@code VpcInternalAuthorizationManager}).
      * GET /api/v1/users/by-company?company={companyName}&role={role}
      */
-    @GetMapping("/users/by-company")
+    @Override
     @Timed(value = "users.listUsersByCompany",
             description = "Time to list users by company (service-to-service)")
     public ResponseEntity<PaginatedUserResponse> listUsersByCompany(
-            @RequestParam String company,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "100") int limit) {
+            String company,
+            String role,
+            Integer page,
+            Integer limit) {
         log.debug("Service-to-service: listing users by company={}, role={}", company, role);
 
         int pageIndex = Math.max(0, page - 1);
@@ -657,17 +652,17 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      * Update user profile by username (Organizer/Admin only). Allows organizers/admins to update
      * any user's profile. PUT /api/v1/users/{username}.
      */
-    @PutMapping("/users/{username}")
+    @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @Timed(value = "users.updateUserByUsername",
             description = "Time to update user by username (admin/organizer)",
             percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserResponse> updateUserByUsername(
-            @PathVariable String username,
-            @Valid @RequestBody UpdateUserRequest request) {
+            String username,
+            UpdateUserRequest updateUserRequest) {
         log.info("Updating user {} by organizer/admin", username);
 
-        UserResponse response = userService.updateUserByUsername(username, request);
+        UserResponse response = userService.updateUserByUsername(username, updateUserRequest);
 
         return ResponseEntity.ok(response);
     }
@@ -677,17 +672,17 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      * uploads it directly to S3, bypassing the frontend (avoids binary corruption). Used for batch
      * imports of speaker portraits. POST /api/v1/users/{username}/profile-picture/upload-from-url.
      */
-    @PostMapping("/users/{username}/profile-picture/upload-from-url")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     @Timed(value = "users.profilePicture.admin.uploadFromUrl",
             description = "Time to upload profile picture from URL for user (admin)",
             percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<Map<String, String>> uploadProfilePictureFromUrl(
-            @PathVariable String username,
-            @RequestBody Map<String, String> requestBody) {
+    public ResponseEntity<AdminUploadProfilePictureFromUrlResponse> uploadProfilePictureFromUrl(
+            String username,
+            AdminUploadProfilePictureFromUrlRequest request) {
 
-        String url = requestBody.get("url");
-        String suggestedFilename = requestBody.getOrDefault("filename", "profile");
+        String url = request.getUrl();
+        String suggestedFilename = request.getFilename() != null ? request.getFilename() : "profile";
 
         if (url == null || url.isBlank()) {
             return ResponseEntity.badRequest().build();
@@ -706,7 +701,8 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
 
             log.info("Successfully uploaded profile picture for user: {}, URL: {}", username, profilePictureUrl);
 
-            return ResponseEntity.ok(Map.of("profilePictureUrl", profilePictureUrl));
+            return ResponseEntity.ok(new AdminUploadProfilePictureFromUrlResponse()
+                    .profilePictureUrl(profilePictureUrl));
 
         } catch (ImageUrlFetcher.ImageFetchException e) {
             log.error("Error fetching profile picture from URL for user: {}: {}", username, e.getMessage());
@@ -723,25 +719,24 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      * Story 1.2.5: Manual user reconciliation (Admin only). Triggers manual sync from Cognito to
      * Database. POST /api/v1/users/admin/reconcile.
      */
-    @PostMapping("/users/admin/reconcile")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     @Timed(value = "users.admin.reconcile",
             description = "Time to reconcile users (Cognito to DB)",
             percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<ReconciliationReportDTO> reconcileUsers() {
+    public ResponseEntity<UserReconciliationReport> reconcileUsers() {
         log.info("Manual user reconciliation triggered by admin");
 
         ch.batbern.companyuser.service.UserReconciliationService.ReconciliationReport report =
             reconciliationService.reconcileUsers();
 
-        ReconciliationReportDTO response = ReconciliationReportDTO.builder()
+        UserReconciliationReport response = new UserReconciliationReport()
             .orphanedUsersDeactivated(report.getOrphanedUsers())
             .missingUsersCreated(report.getMissingUsers())
             .durationMs(report.getDurationMs())
             .errors(report.getErrors())
             .success(report.getErrors().isEmpty())
-            .message(buildReconciliationMessage(report))
-            .build();
+            .message(buildReconciliationMessage(report));
 
         log.info("User reconciliation completed: created={}, deactivated={}, duration={}ms",
             report.getMissingUsers(), report.getOrphanedUsers(), report.getDurationMs());
@@ -753,26 +748,25 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      * Story 1.2.5: Check sync status (Admin only). Compares Cognito and Database.
      * GET /api/v1/users/admin/sync-status.
      */
-    @GetMapping("/users/admin/sync-status")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     @Timed(value = "users.admin.syncStatus",
             description = "Time to check sync status",
             percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<SyncStatusDTO> getSyncStatus() {
+    public ResponseEntity<UserSyncStatus> getSyncStatus() {
         log.debug("Checking Cognito-Database sync status");
 
         ch.batbern.companyuser.service.UserReconciliationService.SyncStatus status =
             reconciliationService.checkSyncStatus();
 
-        SyncStatusDTO response = SyncStatusDTO.builder()
+        UserSyncStatus response = new UserSyncStatus()
             .cognitoUserCount(status.getCognitoUserCount())
             .databaseUserCount(status.getDatabaseUserCount())
             .missingInDatabase(status.getMissingInDatabase())
             .orphanedInDatabase(status.getOrphanedInDatabase())
             .missingCognitoIds(status.getMissingCognitoIds())
             .inSync(status.isInSync())
-            .message(buildSyncStatusMessage(status))
-            .build();
+            .message(buildSyncStatusMessage(status));
 
         log.debug("Sync status: cognito={}, db={}, missing={}, orphaned={}, inSync={}",
             status.getCognitoUserCount(), status.getDatabaseUserCount(),

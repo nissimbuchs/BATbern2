@@ -2,13 +2,14 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.CompanySessionResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionUserService;
+import ch.batbern.events.sessions.api.generated.CompanySessionsApi;
+import ch.batbern.events.sessions.dto.generated.CompanySessionResponse;
+import ch.batbern.events.sessions.dto.generated.SearchSessionsByCompany200Response;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.api.PaginationMetadata;
-import ch.batbern.shared.dto.PaginatedResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,9 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -29,41 +28,30 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Top-level sessions search across all events.
+ * Top-level sessions search across all events — implements the generated {@link CompanySessionsApi}.
  *
- * GET /api/v1/sessions?companyName={name}&page={n}&limit={n}
+ * <p>GET /api/v1/sessions?companyName={name}&amp;page={n}&amp;limit={n}
  *
- * Returns sessions where at least one speaker belongs to the given company,
- * enriched with event metadata and full speaker list per session.
+ * <p>Returns sessions where at least one speaker belongs to the given company, enriched with event
+ * metadata and the full speaker list per session. Consumed by the organizer Company-detail
+ * Sessions tab (web-frontend {@code CompanyDetailView}).
  */
 @RestController
-@RequestMapping("/api/v1/sessions")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class GlobalSessionController {
+public class GlobalSessionController implements CompanySessionsApi {
 
     private final SessionRepository sessionRepository;
     private final EventRepository eventRepository;
     private final SessionUserService sessionUserService;
 
-    /**
-     * List sessions filtered by company name.
-     *
-     * Returns sessions where at least one speaker (session_user) belongs to the company
-     * (matched via user_profiles.company_id). Each result includes all speakers so the
-     * frontend can highlight the company's speakers.
-     *
-     * @param companyName Company name (ADR-003 meaningful ID)
-     * @param page        1-based page number
-     * @param limit       Page size (default 50)
-     * @return Paginated list of CompanySessionResponse
-     */
-    @GetMapping
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<PaginatedResponse<CompanySessionResponse>> searchSessions(
-            @RequestParam(required = false) String companyName,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "50") int limit) {
+    public ResponseEntity<SearchSessionsByCompany200Response> searchSessionsByCompany(
+            String companyName,
+            Integer page,
+            Integer limit) {
 
         log.debug("GET /api/v1/sessions - companyName={}, page={}, limit={}", companyName, page, limit);
 
@@ -71,10 +59,9 @@ public class GlobalSessionController {
             PaginationMetadata emptyPagination = PaginationMetadata.builder()
                     .page(page).limit(limit).totalItems(0).totalPages(0)
                     .hasNext(false).hasPrev(false).build();
-            return ResponseEntity.ok(PaginatedResponse.<CompanySessionResponse>builder()
+            return ResponseEntity.ok(new SearchSessionsByCompany200Response()
                     .data(List.of())
-                    .pagination(emptyPagination)
-                    .build());
+                    .pagination(emptyPagination));
         }
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.unsorted());
@@ -92,7 +79,7 @@ public class GlobalSessionController {
                     Event event = eventsById.get(session.getEventId());
                     List<SessionSpeaker> speakers =
                             sessionUserService.getSessionSpeakers(session.getId());
-                    return CompanySessionResponse.builder()
+                    return new CompanySessionResponse()
                             .sessionSlug(session.getSessionSlug())
                             .eventCode(session.getEventCode())
                             .eventTitle(event != null ? event.getTitle() : null)
@@ -104,8 +91,7 @@ public class GlobalSessionController {
                             .endTime(session.getEndTime() != null
                                     ? session.getEndTime().toString() : null)
                             .room(session.getRoom())
-                            .speakers(speakers)
-                            .build();
+                            .speakers(speakers);
                 })
                 .collect(Collectors.toList());
 
@@ -118,9 +104,8 @@ public class GlobalSessionController {
                 .hasPrev(sessionsPage.hasPrevious())
                 .build();
 
-        return ResponseEntity.ok(PaginatedResponse.<CompanySessionResponse>builder()
+        return ResponseEntity.ok(new SearchSessionsByCompany200Response()
                 .data(responses)
-                .pagination(pagination)
-                .build());
+                .pagination(pagination));
     }
 }
