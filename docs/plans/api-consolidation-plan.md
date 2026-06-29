@@ -401,6 +401,38 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > Configurable Task System (Story 5.5) is now fully contract-first — event-tasks-api owns both controllers.**
 > **EMS contract-first +1 (30 wired).**
 >
+> ✅ **DONE (2026-06-29): `SpeakerPortalDashboardController` (1 op) → `SpeakerPortalDashboardApi`** (EMS 31 wired).
+> First of the 3 speaker-portal controllers. Authored the undocumented GET /speaker-portal/dashboard op in
+> **event-speakers-api** (reuses that spec — submitContent already returns its generated `ContentSubmitResponse`)
+> under a 1:1 `Speaker Portal Dashboard` tag + 3 schemas (SpeakerDashboardDto + nested DashboardUpcoming/Past,
+> all string/boolean/int — no dates/enums). Controller `implements`: class @RequestMapping /api/v1 (was
+> /api/v1/speaker-portal), class @PreAuthorize(SPEAKER) kept. **Dropped the HttpServletRequest method param**
+> (not in the generated signature) — IP-for-audit-logging now via a new package-private
+> `SpeakerPortalHttp.clientIp()` (RequestContextHolder), shared by the 2 follow-up portal controllers, so the
+> log lines stay unchanged. Consolidated 3 hand DTOs → generated (builder API identical; sort comparators
+> `::eventDate`→`::getEventDate`); updated SpeakerDashboardServiceTest accessors→getters; deleted all 3.
+> **Verified (local dev):** SpeakerDashboardServiceTest 5/5; EMS restart + live smoke (speaker 200 shape,
+> no-auth→401, organizer→403); FE type-check clean (FE speakers types come from the DORMANT speakers-api spec,
+> not event-speakers — wire byte-identical); Bruno speaker-portal-api 24/24. **EMS contract-first +1 (31 wired).**
+>
+> ⏳ **REMAINING speaker-portal (2 controllers, deeper than Dashboard — needs careful work, NOT a quick wire):**
+> - **`SpeakerPortalResponseController`** (1 op, POST /speaker-portal/events/{eventCode}/respond). Blast radius
+>   beyond the controller: the request's nested **`SpeakerResponsePreferences`** propagates into the **workflow
+>   layer** — `TransitionPayload.responsePreferences` (field type), `SpeakerResponseService.storePreferences`,
+>   and `SpeakerResponseReceivedEvent` — and consolidating it changes `technicalRequirements` `String[]`→
+>   `List<String>`. The `response` field is the shared `SpeakerResponseType` enum (ACCEPT/DECLINE) → map via
+>   importMappings+schemaMappings (mirror the `SpeakerWorkflowState` precedent in the speakers generator). 2 test
+>   files touch these DTOs (SpeakerResponseServiceTest, SpeakerPortalAuthIntegrationTest). The respond path
+>   triggers acceptance/decline emails — exercise only on local dev (mail → /dev/mails).
+> - **`SpeakerPortalContentController`** (4 ops: getContentInfo / submitContent / materials presigned-url +
+>   confirm). Most complex: record DTOs (ContentSubmitRequest has `@JsonIgnoreProperties(ignoreUnknown=false)` →
+>   needs `x-class-extra-annotation`; consumed via record accessors `.title()`/`.contentAbstract()` → getters),
+>   SpeakerContentInfo has a `noSession(...)` static factory to relocate, material DTOs (SpeakerMaterial{Upload,
+>   Confirm}{Request,Response}) with `Map<String,String> requiredHeaders` + `Instant uploadedAt`→OffsetDateTime,
+>   and submitContent already returns the generated `ContentSubmitResponse` (reuse, no re-author). Touches
+>   ContentSubmissionService + SpeakerPortalMaterialsService. All 3 controllers share the new `SpeakerPortalHttp`
+>   IP helper. Bruno speaker-portal-api already covers all of these for regression.
+>
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
 > Candidate for Phase-1-style dead-endpoint removal (or a deliberate decision to keep+document+test), NOT a
