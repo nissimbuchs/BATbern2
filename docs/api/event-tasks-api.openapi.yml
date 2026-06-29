@@ -1,0 +1,272 @@
+openapi: 3.1.0
+info:
+  title: BATbern Event Tasks API
+  version: 1.0.0
+  description: |
+    Task system API for the BATbern Event Management Platform.
+
+    **Story 5.5**: Configurable Task System. Covers reusable task templates
+    (default + organizer-authored custom) that drive event-planning task generation.
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+    identifier: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: Task Templates
+    description: Reusable task template management (Story 5.5)
+
+paths:
+  /tasks/templates:
+    get:
+      tags:
+        - Task Templates
+      summary: List all task templates
+      description: |
+        List all task templates (default + custom).
+
+        **Acceptance Criteria**: AC26 (Story 5.5). ORGANIZER role required.
+      operationId: listAllTemplates
+      responses:
+        '200':
+          description: All task templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskTemplateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Task Templates
+      summary: Create a custom task template
+      description: |
+        Create a new custom task template.
+
+        **Acceptance Criteria**: AC22 (Story 5.5). ORGANIZER role required.
+      operationId: createTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskTemplateRequest'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskTemplateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /tasks/templates/{templateId}:
+    put:
+      tags:
+        - Task Templates
+      summary: Update a custom task template
+      description: |
+        Update an existing custom task template. Default templates cannot be modified (403).
+
+        **Acceptance Criteria**: AC26 (Story 5.5). ORGANIZER role required.
+      operationId: updateTemplate
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          description: Task template ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskTemplateRequest'
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskTemplateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Task Templates
+      summary: Delete a custom task template
+      description: |
+        Delete a custom task template. Default templates cannot be deleted (403).
+
+        **Acceptance Criteria**: AC26 (Story 5.5). ORGANIZER role required.
+      operationId: deleteTemplate
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          description: Task template ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Template deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    TaskTemplateResponse:
+      type: object
+      description: A task template (default or custom)
+      required:
+        - id
+        - name
+        - triggerState
+        - dueDateType
+        - isDefault
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        triggerState:
+          type: string
+          description: Event workflow state that triggers this task (e.g. topic_selection)
+        dueDateType:
+          type: string
+          description: 'Due date type: immediate, relative_to_event, or absolute'
+        dueDateOffsetDays:
+          type: integer
+          description: Offset days for relative due dates (negative = before event, positive = after)
+        isDefault:
+          type: boolean
+          description: Whether this is a default (non-editable) template
+        createdByUsername:
+          type: string
+          description: Canonical username of the organizer who created the template (null for defaults)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateTaskTemplateRequest:
+      type: object
+      description: Request to create a custom task template (Story 5.5 AC22)
+      required:
+        - name
+        - triggerState
+        - dueDateType
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Template name
+        triggerState:
+          type: string
+          minLength: 1
+          description: Event workflow state that triggers this task
+        dueDateType:
+          type: string
+          minLength: 1
+          description: 'Due date type: immediate, relative_to_event, or absolute'
+        dueDateOffsetDays:
+          type: integer
+          description: Offset days for relative due dates (required when dueDateType is relative_to_event)
+        saveAsTemplate:
+          type: boolean
+          description: '"Save as template" flag (AC22)'
+    UpdateTaskTemplateRequest:
+      type: object
+      description: Request to update a custom task template (Story 5.5 AC26)
+      required:
+        - name
+        - triggerState
+        - dueDateType
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Template name
+        triggerState:
+          type: string
+          minLength: 1
+          description: Event workflow state that triggers this task
+        dueDateType:
+          type: string
+          minLength: 1
+          description: 'Due date type: immediate, relative_to_event, or absolute'
+        dueDateOffsetDays:
+          type: integer
+          description: Offset days for relative due dates
+    ErrorResponse:
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized - missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from AWS Cognito
+
+security:
+  - bearerAuth: []

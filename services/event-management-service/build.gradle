@@ -623,6 +623,56 @@ task openApiGenerateTopics(type: org.openapitools.generator.gradle.plugin.tasks.
     ]
 }
 
+// OpenAPI Generator - Generate Event Tasks API (Phase 7: Configurable Task System, Story 5.5)
+task openApiGenerateTasks(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-tasks-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-tasks".toString()
+    apiPackage = 'ch.batbern.events.tasks.api.generated'
+    modelPackage = 'ch.batbern.events.tasks.dto.generated'
+    invokerPackage = 'ch.batbern.events.tasks.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
 // OpenAPI Generator - Generate User API client DTOs (Story 2.2a: Cross-service types)
 task openApiGenerateUsersClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
     generatorName = 'spring'
@@ -688,7 +738,7 @@ tasks.register('aiSecurityTest', Test) {
 }
 
 // Make compileJava depend on all OpenAPI generation tasks
-compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics, tasks.openApiGenerateTasks
 
 // Add generated sources to source sets
 sourceSets {
@@ -705,6 +755,7 @@ sourceSets {
             srcDir "$buildDir/generated-watch/src/main/java"
             srcDir "$buildDir/generated-users-client/src/main/java"
             srcDir "$buildDir/generated-topics/src/main/java"
+            srcDir "$buildDir/generated-tasks/src/main/java"
         }
     }
 }
@@ -722,4 +773,5 @@ clean {
     delete "$buildDir/generated-watch"
     delete "$buildDir/generated-users-client"
     delete "$buildDir/generated-topics"
+    delete "$buildDir/generated-tasks"
 }
