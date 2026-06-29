@@ -1454,8 +1454,142 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/venue-coordination/preview:
+    post:
+      tags:
+        - Venue Coordination
+      summary: Preview a venue/catering coordination mail
+      description: 'Event Detail → Venue tab (Story). ORGANIZER role.'
+      operationId: previewVenueCoordination
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueCoordinationPreviewRequest'
+      responses:
+        '200':
+          description: Rendered preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueCoordinationPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/venue-coordination/send:
+    post:
+      tags:
+        - Venue Coordination
+      summary: Send a venue/catering coordination mail
+      description: 'Event Detail → Venue tab (Story). ORGANIZER role.'
+      operationId: sendVenueCoordination
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueCoordinationSendRequest'
+      responses:
+        '200':
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueCoordinationSendResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+    VenueRole:
+      type: string
+      description: Venue-coordination recipient role
+      enum:
+        - VENUE
+        - CATERING
+    VenueCoordinationPreviewRequest:
+      type: object
+      required:
+        - templateKey
+        - recipients
+      properties:
+        templateKey:
+          type: string
+        recipients:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/VenueRole'
+        locale:
+          type: string
+          description: Locale (de | en); falls back to de
+        notes:
+          type: string
+    VenueCoordinationPreviewResponse:
+      type: object
+      properties:
+        subject:
+          type: string
+        htmlBody:
+          type: string
+        toEmail:
+          type: string
+        ccEmails:
+          type: array
+          items:
+            type: string
+        replyToEmail:
+          type: string
+    VenueCoordinationSendRequest:
+      type: object
+      required:
+        - templateKey
+        - recipients
+      properties:
+        templateKey:
+          type: string
+        locale:
+          type: string
+        notes:
+          type: string
+        recipients:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/VenueRole'
+    VenueCoordinationSendResponse:
+      type: object
+      properties:
+        sentTo:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueRole'
     TeaserImagePresentationPosition:
       type: string
       description: Controls which slide the image appears after in the moderator presentation.
