@@ -161,8 +161,113 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /materials/presigned-url:
+    post:
+      tags:
+        - Materials Upload
+      summary: Generate a presigned URL for a session-material upload
+      description: 'Story 5.9 (3-phase upload, phase 1). ORGANIZER or SPEAKER role.'
+      operationId: generateMaterialPresignedUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialUploadRequest'
+      responses:
+        '200':
+          description: Presigned upload URL + metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedMaterialUploadUrl'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /materials/{uploadId}/confirm:
+    post:
+      tags:
+        - Materials Upload
+      summary: Confirm a completed material upload
+      description: 'Story 5.9 (3-phase upload, phase 2). ORGANIZER or SPEAKER role.'
+      operationId: confirmMaterialUpload
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          description: Upload ID returned from the presigned-url step
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialUploadConfirmRequest'
+      responses:
+        '204':
+          description: Upload confirmed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+    MaterialUploadRequest:
+      type: object
+      description: Request a presigned URL for a material upload (Story 5.9)
+      required:
+        - fileName
+        - fileSize
+        - mimeType
+      properties:
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+    MaterialUploadConfirmRequest:
+      type: object
+      description: Confirm a completed material upload (Story 5.9)
+      properties:
+        fileId:
+          type: string
+        fileExtension:
+          type: string
+        checksum:
+          type: string
+    PresignedMaterialUploadUrl:
+      type: object
+      description: Presigned material upload URL + metadata (Story 5.9)
+      properties:
+        uploadUrl:
+          type: string
+        fileId:
+          type: string
+        s3Key:
+          type: string
+        fileExtension:
+          type: string
+        expiresInMinutes:
+          type: integer
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
     EventPhotoResponse:
       type: object
       required:
