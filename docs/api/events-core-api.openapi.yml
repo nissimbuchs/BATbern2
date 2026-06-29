@@ -1707,8 +1707,159 @@ paths:
       security:
         - BearerAuth: []
 
+  /admin/backfill-speaker-names:
+    post:
+      tags:
+        - Admin
+      summary: Backfill speaker names for full-text search (maintenance)
+      description: 'Temporary maintenance endpoint (Story archive search).'
+      operationId: backfillSpeakerNames
+      responses:
+        '200':
+          description: Backfill result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackfillSpeakerNamesResponse'
+        '500':
+          description: Backfill failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackfillSpeakerNamesResponse'
+
+  /admin/settings/{key}:
+    get:
+      tags:
+        - Admin Settings
+      summary: Get an admin setting by key
+      description: 'Open GET for VPC-internal callers (Story 10.26); HTTP-level security gates access.'
+      operationId: getAdminSetting
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettingResponse'
+    put:
+      tags:
+        - Admin Settings
+      summary: Set an admin setting by key
+      description: 'ORGANIZER role.'
+      operationId: setAdminSetting
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAdminSettingRequest'
+      responses:
+        '200':
+          description: The updated setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/qna:
+    patch:
+      tags:
+        - Event Qna
+      summary: Adjust all of an event's session Q&A windows (Story 7.5)
+      description: 'Open/extend/close all session Q&A windows at once. ORGANIZER role.'
+      operationId: adjustQnaWindows
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QnaWindowPatchRequest'
+      responses:
+        '200':
+          description: Windows adjusted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QnaWindowAdjustResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+    BackfillSpeakerNamesResponse:
+      type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        updatedCount:
+          type: integer
+    AdminSettingResponse:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+          nullable: true
+    SetAdminSettingRequest:
+      type: object
+      properties:
+        value:
+          type: string
+    QnaWindowPatchRequest:
+      type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
+      properties:
+        closesAt:
+          type: string
+          format: date-time
+        close:
+          type: boolean
+        open:
+          type: boolean
+    QnaWindowAdjustResponse:
+      type: object
+      properties:
+        eventCode:
+          type: string
+        windowsAdjusted:
+          type: integer
+        status:
+          type: string
     PublishPhaseResponse:
       type: object
       properties:
