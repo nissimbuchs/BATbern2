@@ -1525,8 +1525,333 @@ paths:
       security:
         - BearerAuth: []
 
+  /events/{eventCode}/publish/{phase}:
+    post:
+      tags:
+        - Publishing Engine
+      summary: Publish a progressive-publishing phase (topic/speakers/agenda)
+      description: 'Story progressive publishing (AC14-16). ORGANIZER role.'
+      operationId: publishPhase
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: phase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Phase published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishPhaseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/unpublish/{phase}:
+    post:
+      tags:
+        - Publishing Engine
+      summary: Unpublish a progressive-publishing phase
+      description: 'Story progressive publishing (AC18). ORGANIZER role.'
+      operationId: unpublishPhase
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: phase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Phase unpublished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnpublishPhaseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/publish/status:
+    get:
+      tags:
+        - Publishing Engine
+      summary: Get publishing status + per-phase validation
+      description: 'ORGANIZER role.'
+      operationId: getPublishingStatus
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Publishing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishingStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/publish/preview:
+    get:
+      tags:
+        - Publishing Engine
+      summary: Preview the public appearance before publishing
+      description: 'Story progressive publishing (AC20, AC29). ORGANIZER role.'
+      operationId: getPublishPreview
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishPreviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/publish/schedule:
+    post:
+      tags:
+        - Publishing Engine
+      summary: Configure the auto-publish schedule
+      description: 'Story progressive publishing (AC19). ORGANIZER role.'
+      operationId: configureAutoPublish
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoPublishScheduleRequest'
+      responses:
+        '200':
+          description: Schedule configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoPublishScheduleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+    get:
+      tags:
+        - Publishing Engine
+      summary: Get the auto-publish schedule
+      description: 'ORGANIZER role.'
+      operationId: getAutoPublishSchedule
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoPublishScheduleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+    PublishPhaseResponse:
+      type: object
+      properties:
+        phase:
+          type: string
+        published:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+        cdnInvalidated:
+          type: boolean
+    UnpublishPhaseResponse:
+      type: object
+      properties:
+        phase:
+          type: string
+        published:
+          type: boolean
+        unpublishedAt:
+          type: string
+          format: date-time
+        cdnInvalidated:
+          type: boolean
+    ValidationStatus:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+    UnassignedSession:
+      type: object
+      properties:
+        sessionSlug:
+          type: string
+        title:
+          type: string
+    SessionValidationStatus:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+        assignedCount:
+          type: integer
+        totalCount:
+          type: integer
+        unassignedSessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnassignedSession'
+    PublishingStatusResponse:
+      type: object
+      properties:
+        currentPhase:
+          type: string
+        publishedPhases:
+          type: array
+          items:
+            type: string
+        topic:
+          $ref: '#/components/schemas/ValidationStatus'
+        speakers:
+          $ref: '#/components/schemas/ValidationStatus'
+        sessions:
+          $ref: '#/components/schemas/SessionValidationStatus'
+    SpeakerPreview:
+      type: object
+      properties:
+        name:
+          type: string
+        company:
+          type: string
+    SessionPreview:
+      type: object
+      properties:
+        title:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        room:
+          type: string
+    PublishPreviewResponse:
+      type: object
+      properties:
+        eventCode:
+          type: string
+        currentPhase:
+          type: string
+        topicPublished:
+          type: boolean
+        speakersPublished:
+          type: boolean
+        agendaPublished:
+          type: boolean
+        speakers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpeakerPreview'
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionPreview'
+    AutoPublishScheduleRequest:
+      type: object
+      properties:
+        phase2Enabled:
+          type: boolean
+        phase2DaysBeforeEvent:
+          type: integer
+          minimum: 1
+        phase3Enabled:
+          type: boolean
+        phase3DaysBeforeEvent:
+          type: integer
+          minimum: 1
+    AutoPublishScheduleResponse:
+      type: object
+      properties:
+        scheduled:
+          type: boolean
+        phase2Enabled:
+          type: boolean
+        phase2DaysBeforeEvent:
+          type: integer
+        phase2TriggerDate:
+          type: string
+          format: date-time
+        phase3Enabled:
+          type: boolean
+        phase3DaysBeforeEvent:
+          type: integer
+        phase3TriggerDate:
+          type: string
+          format: date-time
     VenueRole:
       type: string
       description: Venue-coordination recipient role
