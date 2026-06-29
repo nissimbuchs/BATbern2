@@ -5,9 +5,9 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.DashboardPastEventDto;
-import ch.batbern.events.dto.DashboardUpcomingEventDto;
-import ch.batbern.events.dto.SpeakerDashboardDto;
+import ch.batbern.events.speakers.dto.generated.DashboardPastEventDto;
+import ch.batbern.events.speakers.dto.generated.DashboardUpcomingEventDto;
+import ch.batbern.events.speakers.dto.generated.SpeakerDashboardDto;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
@@ -253,10 +253,10 @@ public class SpeakerDashboardService {
         }
 
         // AC2: Sort upcoming by event date ascending (soonest first)
-        upcomingEvents.sort(Comparator.comparing(DashboardUpcomingEventDto::eventDate));
+        upcomingEvents.sort(Comparator.comparing(DashboardUpcomingEventDto::getEventDate));
 
         // AC3: Sort past by event date descending (most recent first)
-        pastEvents.sort(Comparator.comparing(DashboardPastEventDto::eventDate).reversed());
+        pastEvents.sort(Comparator.comparing(DashboardPastEventDto::getEventDate).reversed());
 
         DashboardHeader header = resolveDashboardHeader(memberships, poolById, username);
 

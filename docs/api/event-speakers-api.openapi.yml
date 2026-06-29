@@ -1231,6 +1231,32 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
       - BearerAuth: []
+
+  /speaker-portal/dashboard:
+    get:
+      tags:
+        - Speaker Portal Dashboard
+      summary: Get the authenticated speaker's dashboard
+      description: |
+        Aggregate dashboard across every event the authenticated speaker has a pool row in
+        (Story 6.4). The one speaker-portal endpoint that does not take an eventCode.
+
+        **Authorization**: SPEAKER role required.
+      operationId: getDashboard
+      responses:
+        '200':
+          description: Speaker dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerDashboardDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+
 components:
   schemas:
     ContentSubmitResponse:
@@ -2275,6 +2301,81 @@ components:
           nullable: true
           description: Deadline for content submission
           example: '2026-03-10'
+    SpeakerDashboardDto:
+      type: object
+      description: Speaker portal dashboard summary across all of the speaker's events (Story 6.4)
+      properties:
+        speakerName:
+          type: string
+        profilePictureUrl:
+          type: string
+        profileCompleteness:
+          type: integer
+          description: Profile completeness percentage (0–100)
+        upcomingEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardUpcomingEventDto'
+        pastEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardPastEventDto'
+    DashboardUpcomingEventDto:
+      type: object
+      description: An upcoming event the speaker is involved in
+      properties:
+        eventCode:
+          type: string
+        eventTitle:
+          type: string
+        eventDate:
+          type: string
+        eventLocation:
+          type: string
+        sessionTitle:
+          type: string
+        workflowState:
+          type: string
+        workflowStateLabel:
+          type: string
+        hasTitle:
+          type: boolean
+        hasAbstract:
+          type: boolean
+        hasMaterial:
+          type: boolean
+        materialFileName:
+          type: string
+        responseDeadline:
+          type: string
+        contentDeadline:
+          type: string
+        reviewerFeedback:
+          type: string
+        organizerName:
+          type: string
+        organizerEmail:
+          type: string
+        respondUrl:
+          type: string
+        contentUrl:
+          type: string
+    DashboardPastEventDto:
+      type: object
+      description: A past event the speaker presented at
+      properties:
+        eventCode:
+          type: string
+        eventTitle:
+          type: string
+        eventDate:
+          type: string
+        sessionTitle:
+          type: string
+        hasMaterial:
+          type: boolean
+        materialFileName:
+          type: string
   responses:
     BadRequest:
       description: Bad request - validation error
