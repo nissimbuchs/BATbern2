@@ -480,6 +480,248 @@ paths:
             application/json:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+
+  /events/{eventCode}/sessions/unassigned:
+    get:
+      tags:
+      - Slot Assignment
+      summary: List unassigned (placeholder) sessions for an event (Story 5.7)
+      description: 'Placeholder sessions without timing, enriched with speaker data. ORGANIZER role.'
+      operationId: getUnassignedSessions
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Unassigned sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/{sessionSlug}/timing:
+    patch:
+      tags:
+      - Slot Assignment
+      summary: Assign timing to a session (drag-and-drop) (Story 5.7)
+      description: 'Detects room/speaker conflicts before assigning. ORGANIZER role.'
+      operationId: assignTiming
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionTimingRequest'
+      responses:
+        '200':
+          description: Timing assigned; returns the updated session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Timing conflict (room overlap or speaker double-booking)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingConflictError'
+    delete:
+      tags:
+      - Slot Assignment
+      summary: Unassign a single session's timing (Story 15.3)
+      description: 'Clears startTime/endTime/room (back to the unassigned pool). ORGANIZER role.'
+      operationId: unassignTiming
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Timing cleared; returns the updated session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/bulk-timing:
+    post:
+      tags:
+      - Slot Assignment
+      summary: Bulk-assign timing to multiple sessions (Story 5.7 AC13)
+      description: 'All-or-nothing: any cross-assignment conflict applies no changes. ORGANIZER role.'
+      operationId: bulkAssignTiming
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTimingRequest'
+      responses:
+        '200':
+          description: Bulk assignment applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkTimingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Bulk timing conflicts detected — no changes applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkTimingConflictError'
+
+  /events/{eventCode}/sessions/conflicts:
+    get:
+      tags:
+      - Slot Assignment
+      summary: Comprehensive scheduling-conflict analysis (Story 5.7 AC9)
+      description: 'Detects all room/speaker conflicts across the event. ORGANIZER role.'
+      operationId: analyzeConflicts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Conflict analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictAnalysisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/timing:
+    delete:
+      tags:
+      - Slot Assignment
+      summary: Clear all session timings for an event (Clear All)
+      description: 'Resets every session to unassigned. ORGANIZER role.'
+      operationId: clearAllTimings
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: All timings cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClearTimingsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/auto-assign:
+    post:
+      tags:
+      - Slot Assignment
+      summary: Auto-assign all unassigned sessions to available slots (Auto Assign)
+      description: 'Assigns sessions sequentially to available time slots. ORGANIZER role.'
+      operationId: autoAssignTimings
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Sessions auto-assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoAssignResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /events/{eventCode}/agenda-config:
     get:
       tags:
@@ -1320,6 +1562,156 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
+    SessionTimingRequest:
+      type: object
+      description: Assign timing (start/end/room) to a session — Story 5.7 drag-and-drop
+      required:
+      - startTime
+      - endTime
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        room:
+          type: string
+        sessionType:
+          type: string
+        changeReason:
+          type: string
+        notes:
+          type: string
+    BulkTimingAssignment:
+      type: object
+      required:
+      - sessionSlug
+      - startTime
+      - endTime
+      properties:
+        sessionSlug:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        room:
+          type: string
+    BulkTimingRequest:
+      type: object
+      required:
+      - assignments
+      properties:
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/BulkTimingAssignment'
+        changeReason:
+          type: string
+    BulkTimingResponse:
+      type: object
+      properties:
+        assignedCount:
+          type: integer
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionResponse'
+    ConflictType:
+      type: string
+      description: Scheduling-conflict type (lowercase wire values)
+      enum:
+      - room_overlap
+      - speaker_double_booked
+      - speaker_unavailable
+      - preference_mismatch
+    ConflictSeverity:
+      type: string
+      enum:
+      - error
+      - warning
+    ConflictTimeRange:
+      type: object
+      properties:
+        start:
+          type: string
+        end:
+          type: string
+    ConflictDetail:
+      type: object
+      properties:
+        sessionSlug:
+          type: string
+        conflictType:
+          $ref: '#/components/schemas/ConflictType'
+        severity:
+          $ref: '#/components/schemas/ConflictSeverity'
+        affectedSessions:
+          type: array
+          items:
+            type: string
+        timeRange:
+          $ref: '#/components/schemas/ConflictTimeRange'
+        resolution:
+          type: string
+    ConflictAnalysisResponse:
+      type: object
+      description: Comprehensive scheduling-conflict analysis (Story 5.7 AC9)
+      properties:
+        hasConflicts:
+          type: boolean
+        conflictCount:
+          type: integer
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflictDetail'
+    TimingConflictItem:
+      type: object
+      properties:
+        type:
+          type: string
+        conflictingSessionSlug:
+          type: string
+    TimingConflictError:
+      type: object
+      description: 409 body when a single-session timing assignment conflicts
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimingConflictItem'
+    BulkTimingConflictError:
+      type: object
+      description: 409 body when a bulk timing assignment has cross-conflicts (no changes applied)
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        conflictCount:
+          type: integer
+    ClearTimingsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        clearedCount:
+          type: integer
+    AutoAssignResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        assignedCount:
+          type: integer
     SlotAssignmentRequest:
       type: object
       description: 'Request to place a speaker session onto a slot addressed by its stable `slotKey`

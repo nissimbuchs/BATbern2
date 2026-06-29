@@ -173,7 +173,9 @@ task openApiGenerateSessions(type: org.openapitools.generator.gradle.plugin.task
     importMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
-        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse',
+        'ConflictType': 'ch.batbern.events.service.slotassignment.ConflictType',
+        'ConflictSeverity': 'ch.batbern.events.service.slotassignment.ConflictSeverity'
     ]
 
     typeMappings = [
@@ -207,7 +209,9 @@ task openApiGenerateSessions(type: org.openapitools.generator.gradle.plugin.task
 
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'ConflictType': 'ch.batbern.events.service.slotassignment.ConflictType',
+        'ConflictSeverity': 'ch.batbern.events.service.slotassignment.ConflictSeverity'
     ]
 }
 

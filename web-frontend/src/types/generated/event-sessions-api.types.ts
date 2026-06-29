@@ -180,6 +180,130 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/sessions/unassigned': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List unassigned (placeholder) sessions for an event (Story 5.7)
+     * @description Placeholder sessions without timing, enriched with speaker data. ORGANIZER role.
+     */
+    get: operations['getUnassignedSessions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/timing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Unassign a single session's timing (Story 15.3)
+     * @description Clears startTime/endTime/room (back to the unassigned pool). ORGANIZER role.
+     */
+    delete: operations['unassignTiming'];
+    options?: never;
+    head?: never;
+    /**
+     * Assign timing to a session (drag-and-drop) (Story 5.7)
+     * @description Detects room/speaker conflicts before assigning. ORGANIZER role.
+     */
+    patch: operations['assignTiming'];
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/bulk-timing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Bulk-assign timing to multiple sessions (Story 5.7 AC13)
+     * @description All-or-nothing: any cross-assignment conflict applies no changes. ORGANIZER role.
+     */
+    post: operations['bulkAssignTiming'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/conflicts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Comprehensive scheduling-conflict analysis (Story 5.7 AC9)
+     * @description Detects all room/speaker conflicts across the event. ORGANIZER role.
+     */
+    get: operations['analyzeConflicts'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/timing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Clear all session timings for an event (Clear All)
+     * @description Resets every session to unassigned. ORGANIZER role.
+     */
+    delete: operations['clearAllTimings'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/auto-assign': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Auto-assign all unassigned sessions to available slots (Auto Assign)
+     * @description Assigns sessions sequentially to available time slots. ORGANIZER role.
+     */
+    post: operations['autoAssignTimings'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/agenda-config': {
     parameters: {
       query?: never;
@@ -520,6 +644,86 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Assign timing (start/end/room) to a session — Story 5.7 drag-and-drop */
+    SessionTimingRequest: {
+      /** Format: date-time */
+      startTime: string;
+      /** Format: date-time */
+      endTime: string;
+      room?: string;
+      sessionType?: string;
+      changeReason?: string;
+      notes?: string;
+    };
+    BulkTimingAssignment: {
+      sessionSlug: string;
+      /** Format: date-time */
+      startTime: string;
+      /** Format: date-time */
+      endTime: string;
+      room?: string;
+    };
+    BulkTimingRequest: {
+      assignments: components['schemas']['BulkTimingAssignment'][];
+      changeReason?: string;
+    };
+    BulkTimingResponse: {
+      assignedCount?: number;
+      sessions?: components['schemas']['SessionResponse'][];
+    };
+    /**
+     * @description Scheduling-conflict type (lowercase wire values)
+     * @enum {string}
+     */
+    ConflictType:
+      | 'room_overlap'
+      | 'speaker_double_booked'
+      | 'speaker_unavailable'
+      | 'preference_mismatch';
+    /** @enum {string} */
+    ConflictSeverity: 'error' | 'warning';
+    ConflictTimeRange: {
+      start?: string;
+      end?: string;
+    };
+    ConflictDetail: {
+      sessionSlug?: string;
+      conflictType?: components['schemas']['ConflictType'];
+      severity?: components['schemas']['ConflictSeverity'];
+      affectedSessions?: string[];
+      timeRange?: components['schemas']['ConflictTimeRange'];
+      resolution?: string;
+    };
+    /** @description Comprehensive scheduling-conflict analysis (Story 5.7 AC9) */
+    ConflictAnalysisResponse: {
+      hasConflicts?: boolean;
+      conflictCount?: number;
+      conflicts?: components['schemas']['ConflictDetail'][];
+    };
+    TimingConflictItem: {
+      type?: string;
+      conflictingSessionSlug?: string;
+    };
+    /** @description 409 body when a single-session timing assignment conflicts */
+    TimingConflictError: {
+      error?: string;
+      message?: string;
+      conflicts?: components['schemas']['TimingConflictItem'][];
+    };
+    /** @description 409 body when a bulk timing assignment has cross-conflicts (no changes applied) */
+    BulkTimingConflictError: {
+      error?: string;
+      message?: string;
+      conflictCount?: number;
+    };
+    ClearTimingsResponse: {
+      message?: string;
+      clearedCount?: number;
+    };
+    AutoAssignResponse: {
+      message?: string;
+      assignedCount?: number;
+    };
     /**
      * @description Request to place a speaker session onto a slot addressed by its stable `slotKey`
      *     (Story 15.3). `mode` selects assign / insert-and-reflow / swap behaviour.
@@ -1704,6 +1908,211 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+    };
+  };
+  getUnassignedSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Unassigned sessions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  unassignTiming: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Timing cleared; returns the updated session */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  assignTiming: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SessionTimingRequest'];
+      };
+    };
+    responses: {
+      /** @description Timing assigned; returns the updated session */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /** @description Timing conflict (room overlap or speaker double-booking) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TimingConflictError'];
+        };
+      };
+    };
+  };
+  bulkAssignTiming: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BulkTimingRequest'];
+      };
+    };
+    responses: {
+      /** @description Bulk assignment applied */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BulkTimingResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /** @description Bulk timing conflicts detected — no changes applied */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BulkTimingConflictError'];
+        };
+      };
+    };
+  };
+  analyzeConflicts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Conflict analysis */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConflictAnalysisResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  clearAllTimings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All timings cleared */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ClearTimingsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  autoAssignTimings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Sessions auto-assigned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AutoAssignResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
     };
   };
   getEventAgendaConfig: {
