@@ -457,17 +457,27 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > gateway smoke + Bruno deferred to a batched pass (the integration tests already exercise each controller→wire via
 > MockMvc).
 >
-> ⛔ **DEFERRED (needs a dedicated FE-coordinated typed-contract design story — NOT a sweep wire): `SlotAssignmentController`** (8 ops).
-> Wiring `implements` is all-or-nothing (one `Slot Assignment` tag must cover all 8 ops 1:1), but **3 ops return the
-> raw `Session` JPA entity** (`assignTiming`/`unassignTiming`/`bulkAssignTiming` → `ResponseEntity<?> … ok(updatedSession)`,
-> an ADR-013 leak) and **`getUnassignedSessions` returns a rich dynamic enriched-Map** (raw Session fields + per-speaker
-> UserApiClient enrichment). Typing these correctly means designing DTOs that exactly match what the FE drag-drop
-> timetable reads — and there's a real FE surface on it (`slotAssignmentService`, `useSlotAssignment`,
-> `DragDropSlotAssignment`, `timetableService`). Same blocker class as the deferred EventController CRUD. The clean
-> ops (`assignSessionToSlot`→generated TimetableResponse already; `analyzeConflicts`→ConflictAnalysisResponse;
-> clearAllTimings/autoAssignTimings→uniform `{message,count}` Maps) can't be wired in isolation because the tag is
-> shared. **Recommendation:** file a dedicated story to (1) design SessionTiming response DTOs matched to the FE,
-> (2) replace the raw-entity returns, (3) type the enriched-unassigned shape, then wire all 8 at once.
+> ✅ **DONE (2026-06-29): `SlotAssignmentController` (8 ops) → `SlotAssignmentApi`** (commit `e0ca4ebf`, EMS 42 wired).
+> The previously-deferred controller — wired in one pass after verifying the FE contract. **Key de-risking finding:**
+> the FE already types every session-returning slot response as the generated `event-sessions` `Session`
+> (`type Session = sessionsComponents['schemas']['Session']`) and never reads `session.id`; the generated
+> `SessionSpeaker` already carries every enriched field — so mapping the raw JPA `Session` → enriched generated
+> `SessionResponse` (via the existing `sessionService.toSessionResponse`) is wire-compatible AND fixes the ADR-013
+> raw-entity leak (`SessionResponse ⊇ Session`; the extra `materials*` fields are additive/ignored). Authored the 7
+> ad-hoc ops into event-sessions-api under the existing 1:1 `Slot Assignment` tag (joining `assignSessionToSlot`).
+> **The two 409 conflict paths** (`assignTiming`, `bulkAssignTiming`) were `ResponseEntity<?>` returning inline Maps;
+> now they throw `TimingConflictException`/`BulkTimingConflictException` rendered to typed `TimingConflictError`/
+> `BulkTimingConflictError` by `@ExceptionHandler`s (PublishingEngine precedent), so the op signatures are cleanly
+> typed. Consolidated the hand `ConflictAnalysisResponse` (+ nested) → generated; **mapped `ConflictType`/
+> `ConflictSeverity`** (importMappings+schemaMappings) so `ConflictDetectionService` is untouched (its `@JsonValue`
+> keeps the lowercase wire). Consolidated the inner-record request DTOs → generated; OffsetDateTime→Instant at the
+> service boundary; `SlotAssignmentRequest.ModeEnum`→domain `SlotAssignmentMode`. Replaced the bespoke
+> `enrichSessionWithSpeakers` Map-builder with `toSessionResponse`. **Verified:** SlotAssignmentControllerIntegrationTest
+> (40 jsonPath asserts) + ConflictDetection/SessionTiming/SlotReorder 34/34 — **PASSED UNCHANGED** (typed responses
+> byte-compatible); **full EMS suite 1728 passed / 0 failed**; live gateway smoke; FE regen + type-check + slot unit
+> 66/66 + Playwright `slot-assignment-workflow` + golden-path auto-assign-to-slots 13/13. **EMS contract-first +1
+> (42 wired) — every wireable EMS controller is now contract-first.** Remaining unwired: EventController CRUD
+> (deferred — FE lazy-load story), GlobalSession (orphan — remove), Watch* (Phase 8), DevEmail/TestFixtureCleanup (skip).
 >
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
