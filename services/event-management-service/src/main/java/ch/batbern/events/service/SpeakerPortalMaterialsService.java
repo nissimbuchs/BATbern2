@@ -3,10 +3,10 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.SpeakerMaterialConfirmRequest;
-import ch.batbern.events.dto.SpeakerMaterialConfirmResponse;
-import ch.batbern.events.dto.SpeakerMaterialUploadRequest;
-import ch.batbern.events.dto.SpeakerMaterialUploadResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialConfirmRequest;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialConfirmResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialUploadRequest;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialUploadResponse;
 import ch.batbern.events.exception.FileSizeExceededException;
 import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.repository.SessionMaterialsRepository;
@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 import java.time.Duration;
 import java.time.Year;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -92,15 +93,15 @@ public class SpeakerPortalMaterialsService {
     public SpeakerMaterialUploadResponse generatePresignedUrl(
             SpeakerPool speaker, SpeakerMaterialUploadRequest request) {
         log.info("Generating presigned URL for speaker material upload: {} (speakerPoolId={})",
-                request.fileName(), speaker.getId());
+                request.getFileName(), speaker.getId());
 
         // Validate file size (max 50MB - AC7)
-        if (request.fileSize() > MAX_FILE_SIZE_BYTES) {
+        if (request.getFileSize() > MAX_FILE_SIZE_BYTES) {
             throw new FileSizeExceededException("File size exceeds 50MB limit");
         }
 
         // Validate file extension
-        String fileExtension = getFileExtension(request.fileName());
+        String fileExtension = getFileExtension(request.getFileName());
         if (!ALLOWED_FILE_EXTENSIONS.contains(fileExtension.toLowerCase())) {
             throw new InvalidFileTypeException(
                 "Invalid file type. Allowed types: PPTX, PPT, KEY, PDF"
@@ -108,9 +109,9 @@ public class SpeakerPortalMaterialsService {
         }
 
         // Validate MIME type
-        if (!ALLOWED_MIME_TYPES.contains(request.mimeType())) {
+        if (!ALLOWED_MIME_TYPES.contains(request.getMimeType())) {
             throw new InvalidFileTypeException(
-                "Invalid MIME type: " + request.mimeType() + ". File may be corrupted."
+                "Invalid MIME type: " + request.getMimeType() + ". File may be corrupted."
             );
         }
 
@@ -124,7 +125,7 @@ public class SpeakerPortalMaterialsService {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(s3Key)
-                .contentType(request.mimeType())
+                .contentType(request.getMimeType())
                 .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -138,14 +139,14 @@ public class SpeakerPortalMaterialsService {
         log.info("Generated presigned URL for speaker {}, uploadId: {}",
                 speaker.getSpeakerName(), uploadId);
 
-        return new SpeakerMaterialUploadResponse(
-                presignedUrl,
-                uploadId,
-                s3Key,
-                fileExtension,
-                PRESIGNED_URL_EXPIRATION_MINUTES,
-                Map.of("Content-Type", request.mimeType())
-        );
+        return SpeakerMaterialUploadResponse.builder()
+                .uploadUrl(presignedUrl)
+                .uploadId(uploadId)
+                .s3Key(s3Key)
+                .fileExtension(fileExtension)
+                .expiresInMinutes(PRESIGNED_URL_EXPIRATION_MINUTES)
+                .requiredHeaders(Map.of("Content-Type", request.getMimeType()))
+                .build();
     }
 
     /**
@@ -159,7 +160,7 @@ public class SpeakerPortalMaterialsService {
     public SpeakerMaterialConfirmResponse confirmUpload(
             SpeakerPool speaker, SpeakerMaterialConfirmRequest request) {
         log.info("Confirming speaker material upload: {} (speakerPoolId={})",
-                request.uploadId(), speaker.getId());
+                request.getUploadId(), speaker.getId());
 
         // Validate session assignment
         if (speaker.getSessionId() == null) {
@@ -173,11 +174,11 @@ public class SpeakerPortalMaterialsService {
         int year = Year.now().getValue();
         String finalS3Key = String.format("materials/%d/events/%s/sessions/%s/file-%s.%s",
                 year, session.getEventCode(), session.getSessionSlug(),
-                request.uploadId(), request.fileExtension());
+                request.getUploadId(), request.getFileExtension());
 
         // Copy file from temp location to final location in S3
         String tempS3Key = String.format("materials/temp/%s/file-%s.%s",
-                request.uploadId(), request.uploadId(), request.fileExtension());
+                request.getUploadId(), request.getUploadId(), request.getFileExtension());
         copyS3Object(tempS3Key, finalS3Key);
 
         // Build CloudFront URL
@@ -186,14 +187,14 @@ public class SpeakerPortalMaterialsService {
         // Create SessionMaterial entity
         SessionMaterial material = SessionMaterial.builder()
                 .session(session)
-                .uploadId(request.uploadId())
+                .uploadId(request.getUploadId())
                 .s3Key(finalS3Key)
                 .cloudFrontUrl(cloudFrontUrl)
-                .fileName(request.fileName())
-                .fileExtension(request.fileExtension())
-                .fileSize(request.fileSize())
-                .mimeType(request.mimeType())
-                .materialType(request.materialType() != null ? request.materialType() : "PRESENTATION")
+                .fileName(request.getFileName())
+                .fileExtension(request.getFileExtension())
+                .fileSize(request.getFileSize())
+                .mimeType(request.getMimeType())
+                .materialType(request.getMaterialType() != null ? request.getMaterialType() : "PRESENTATION")
                 // Story 11.E.9: username comes from session_users via PrimarySpeakerResolver
                 // (the speaker_pool.username column is gone). Speakers reaching material upload
                 // are CONTENT_SUBMITTED+ and always have a primary session_users row; the
@@ -212,14 +213,15 @@ public class SpeakerPortalMaterialsService {
         log.info("Material confirmed for speaker {}, materialId: {}",
                 speaker.getSpeakerName(), material.getId());
 
-        return new SpeakerMaterialConfirmResponse(
-                material.getId(),
-                request.uploadId(),
-                request.fileName(),
-                cloudFrontUrl,
-                material.getMaterialType(),
-                material.getCreatedAt()
-        );
+        return SpeakerMaterialConfirmResponse.builder()
+                .materialId(material.getId())
+                .uploadId(request.getUploadId())
+                .fileName(request.getFileName())
+                .cloudFrontUrl(cloudFrontUrl)
+                .materialType(material.getMaterialType())
+                .uploadedAt(material.getCreatedAt() != null
+                        ? material.getCreatedAt().atOffset(ZoneOffset.UTC) : null)
+                .build();
     }
 
     /**

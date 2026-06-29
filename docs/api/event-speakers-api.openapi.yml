@@ -1302,7 +1302,140 @@ paths:
       security:
       - BearerAuth: []
 
+  /speaker-portal/events/{eventCode}/content:
+    get:
+      tags:
+        - Speaker Portal Content
+      summary: Get the speaker's content-submission state for an event
+      description: 'Story 6.3 speaker content self-submission. SPEAKER role (pool ownership enforced).'
+      operationId: getContentInfo
+      parameters:
+        - $ref: '#/components/parameters/SpeakerPortalEventCode'
+      responses:
+        '200':
+          description: Content info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerContentInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
+  /speaker-portal/events/{eventCode}/content/submit:
+    post:
+      tags:
+        - Speaker Portal Content
+      summary: Submit title/abstract/bio (and optional presentation upload id)
+      description: 'Story 6.3 / 11.C.2. SPEAKER role (pool ownership enforced).'
+      operationId: submitContent
+      parameters:
+        - $ref: '#/components/parameters/SpeakerPortalEventCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentSubmitRequest'
+      responses:
+        '201':
+          description: Content submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentSubmitResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
+  /speaker-portal/events/{eventCode}/materials/presigned-url:
+    post:
+      tags:
+        - Speaker Portal Content
+      summary: Request a presigned S3 URL for a material upload
+      description: 'Story 6.3 material upload. SPEAKER role (pool ownership enforced).'
+      operationId: generatePresignedUrl
+      parameters:
+        - $ref: '#/components/parameters/SpeakerPortalEventCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeakerMaterialUploadRequest'
+      responses:
+        '200':
+          description: Presigned upload URL + metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerMaterialUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
+  /speaker-portal/events/{eventCode}/materials/confirm:
+    post:
+      tags:
+        - Speaker Portal Content
+      summary: Confirm a completed material upload
+      description: 'Story 6.3 material confirm (moves the object into place). SPEAKER role.'
+      operationId: confirmUpload
+      parameters:
+        - $ref: '#/components/parameters/SpeakerPortalEventCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeakerMaterialConfirmRequest'
+      responses:
+        '201':
+          description: Material confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerMaterialConfirmResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
 components:
+  parameters:
+    SpeakerPortalEventCode:
+      name: eventCode
+      in: path
+      required: true
+      description: Event code the speaker-portal action targets
+      schema:
+        type: string
+        example: 'BATbern58'
   schemas:
     ContentSubmitResponse:
       type: object
@@ -2492,6 +2625,149 @@ components:
           type: string
         errorMessage:
           type: string
+    SpeakerContentInfo:
+      type: object
+      description: The speaker portal's content-submission state for one event (Story 6.3)
+      properties:
+        speakerName:
+          type: string
+        eventCode:
+          type: string
+        eventTitle:
+          type: string
+        hasSessionAssigned:
+          type: boolean
+        sessionTitle:
+          type: string
+        canSubmitContent:
+          type: boolean
+        hasDraft:
+          type: boolean
+        draftTitle:
+          type: string
+        draftAbstract:
+          type: string
+        draftVersion:
+          type: integer
+        lastSavedAt:
+          type: string
+          format: date-time
+        needsRevision:
+          type: boolean
+        reviewerFeedback:
+          type: string
+        reviewedAt:
+          type: string
+          format: date-time
+        reviewedBy:
+          type: string
+        hasMaterial:
+          type: boolean
+        materialUrl:
+          type: string
+        materialFileName:
+          type: string
+    ContentSubmitRequest:
+      type: object
+      description: Speaker content submission (title/abstract/bio + optional presentation upload)
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
+      required:
+        - title
+        - contentAbstract
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        contentAbstract:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        bio:
+          type: string
+          maxLength: 5000
+        profilePictureUrl:
+          type: string
+          maxLength: 2048
+        presentationUploadId:
+          type: string
+          maxLength: 200
+    SpeakerMaterialUploadRequest:
+      type: object
+      description: Request a presigned URL for a material upload
+      required:
+        - fileName
+        - fileSize
+        - mimeType
+      properties:
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+    SpeakerMaterialUploadResponse:
+      type: object
+      description: Presigned upload URL + metadata
+      properties:
+        uploadUrl:
+          type: string
+        uploadId:
+          type: string
+        s3Key:
+          type: string
+        fileExtension:
+          type: string
+        expiresInMinutes:
+          type: integer
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
+          description: Headers the client must send on the presigned PUT
+    SpeakerMaterialConfirmRequest:
+      type: object
+      description: Confirm a completed material upload
+      required:
+        - uploadId
+        - fileName
+        - fileExtension
+        - fileSize
+        - mimeType
+      properties:
+        uploadId:
+          type: string
+        fileName:
+          type: string
+        fileExtension:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+        materialType:
+          type: string
+          description: Defaults to PRESENTATION when omitted
+    SpeakerMaterialConfirmResponse:
+      type: object
+      description: Result of confirming a material upload
+      properties:
+        materialId:
+          type: string
+          format: uuid
+        uploadId:
+          type: string
+        fileName:
+          type: string
+        cloudFrontUrl:
+          type: string
+        materialType:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
   responses:
     Conflict:
       description: Conflict - the speaker has already responded

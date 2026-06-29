@@ -2,13 +2,6 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.ContentSubmitRequest;
-import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
-import ch.batbern.events.dto.SpeakerContentInfo;
-import ch.batbern.events.dto.SpeakerMaterialConfirmRequest;
-import ch.batbern.events.dto.SpeakerMaterialConfirmResponse;
-import ch.batbern.events.dto.SpeakerMaterialUploadRequest;
-import ch.batbern.events.dto.SpeakerMaterialUploadResponse;
 import ch.batbern.events.exception.FileSizeExceededException;
 import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.security.SecurityContextHelper;
@@ -16,19 +9,21 @@ import ch.batbern.events.service.ContentSubmissionService;
 import ch.batbern.events.service.SpeakerPortalAuthorizationService;
 import ch.batbern.events.service.SpeakerPortalMaterialsService;
 import ch.batbern.events.service.content.ContentSubmissionPayload;
+import ch.batbern.events.speakers.api.generated.SpeakerPortalContentApi;
+import ch.batbern.events.speakers.dto.generated.ContentSubmitRequest;
+import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerContentInfo;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialConfirmRequest;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialConfirmResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialUploadRequest;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialUploadResponse;
 import ch.batbern.shared.exception.ValidationException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,19 +36,12 @@ import org.springframework.web.bind.annotation.RestController;
  * replace the previous magic-link token path. Every endpoint takes {@code eventCode} as a
  * path parameter; {@link SpeakerPortalAuthorizationService} gates access by pool ownership.
  *
- * <p>Endpoints (Story 11.E.3):
- * <ul>
- *   <li>{@code GET    /api/v1/speaker-portal/events/{eventCode}/content}</li>
- *   <li>{@code POST   /api/v1/speaker-portal/events/{eventCode}/content/draft}</li>
- *   <li>{@code POST   /api/v1/speaker-portal/events/{eventCode}/content/submit}</li>
- *   <li>{@code POST   /api/v1/speaker-portal/events/{eventCode}/materials/presigned-url}</li>
- *   <li>{@code POST   /api/v1/speaker-portal/events/{eventCode}/materials/confirm}</li>
- * </ul>
+ * <p>API-consolidation Phase 7: implements the generated {@link SpeakerPortalContentApi}.
  */
 @RestController
-@RequestMapping("/api/v1/speaker-portal")
+@RequestMapping("/api/v1")
 @PreAuthorize("hasRole('SPEAKER')")
-public class SpeakerPortalContentController {
+public class SpeakerPortalContentController implements SpeakerPortalContentApi {
 
     private static final Logger LOG = LoggerFactory.getLogger(SpeakerPortalContentController.class);
 
@@ -73,27 +61,17 @@ public class SpeakerPortalContentController {
         this.securityContextHelper = securityContextHelper;
     }
 
-    @GetMapping("/events/{eventCode}/content")
-    public ResponseEntity<SpeakerContentInfo> getContentInfo(
-            @PathVariable String eventCode,
-            HttpServletRequest httpRequest) {
-
+    @Override
+    public ResponseEntity<SpeakerContentInfo> getContentInfo(String eventCode) {
         String username = securityContextHelper.getCurrentUsername();
         SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.info("Content info request: username={} eventCode={} ip={}",
-                username, eventCode, getClientIp(httpRequest));
+                username, eventCode, SpeakerPortalHttp.clientIp());
 
         SpeakerContentInfo contentInfo = contentSubmissionService.getContentInfo(speaker);
         return ResponseEntity.ok(contentInfo);
     }
-
-    // Story 11.E.8 §2.9 — backend draft endpoint removed; drafts live in the speaker
-    // portal's localStorage. The single source of truth for the "current canonical" title
-    // and abstract is sessions.title / sessions.description; the speaker portal reads
-    // that via getContentInfo and auto-saves work-in-progress text to the browser. The
-    // submit endpoint below is the only path that updates the canonical state + appends
-    // a new session_content_history row.
 
     // Story 11.E.8 follow-up — speaker-self submit must evict the eventWithIncludes
     // Caffeine cache (15-min TTL) so the organizer's GET /events/{code}?include=sessions
@@ -101,18 +79,17 @@ public class SpeakerPortalContentController {
     // The organizer-on-behalf submitContent at SpeakerStatusController.java:265 has the
     // same annotation; without this matching one, speaker self-submissions left the
     // cache stale and organizers kept seeing the prior reviewed title until cache TTL.
-    @PostMapping("/events/{eventCode}/content/submit")
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<ContentSubmitResponse> submitContent(
-            @PathVariable String eventCode,
-            @Valid @RequestBody ContentSubmitRequest request,
-            HttpServletRequest httpRequest) {
+            String eventCode,
+            ContentSubmitRequest request) {
 
         String username = securityContextHelper.getCurrentUsername();
         SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.info("Content submission request: username={} eventCode={} ip={}",
-                username, eventCode, getClientIp(httpRequest));
+                username, eventCode, SpeakerPortalHttp.clientIp());
 
         // Code review 2026-05-18 (P1): the redundant per-endpoint username precheck has been
         // lifted into SpeakerPortalAuthorizationService.resolveSpeakerPool, which now throws
@@ -122,11 +99,11 @@ public class SpeakerPortalContentController {
 
         try {
             ContentSubmissionPayload payload = new ContentSubmissionPayload(
-                    request.title(),
-                    request.contentAbstract(),
-                    request.bio(),
-                    request.profilePictureUrl(),
-                    request.presentationUploadId());
+                    request.getTitle(),
+                    request.getContentAbstract(),
+                    request.getBio(),
+                    request.getProfilePictureUrl(),
+                    request.getPresentationUploadId());
 
             ContentSubmitResponse response = contentSubmissionService.submit(
                     speaker.getId(), eventCode, payload, username);
@@ -147,23 +124,22 @@ public class SpeakerPortalContentController {
         }
     }
 
-    @PostMapping("/events/{eventCode}/materials/presigned-url")
+    @Override
     public ResponseEntity<SpeakerMaterialUploadResponse> generatePresignedUrl(
-            @PathVariable String eventCode,
-            @Valid @RequestBody SpeakerMaterialUploadRequest request,
-            HttpServletRequest httpRequest) {
+            String eventCode,
+            SpeakerMaterialUploadRequest request) {
 
         String username = securityContextHelper.getCurrentUsername();
         SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.info("Material presigned URL request: username={} eventCode={} ip={}",
-                username, eventCode, getClientIp(httpRequest));
+                username, eventCode, SpeakerPortalHttp.clientIp());
 
         try {
             SpeakerMaterialUploadResponse response =
                     materialsService.generatePresignedUrl(speaker, request);
             LOG.info("Presigned URL generated - uploadId: {} eventCode={}",
-                    response.uploadId(), eventCode);
+                    response.getUploadId(), eventCode);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             LOG.warn("Material upload failed - {}: eventCode={}", e.getMessage(), eventCode);
@@ -178,24 +154,23 @@ public class SpeakerPortalContentController {
     // (session_materials → materialsCount, materialsStatus, hasPresentation in the
     // event response). Evict the same Caffeine cache so the organizer's Sessions tab
     // reflects new uploads without waiting 15 min for the TTL to expire.
-    @PostMapping("/events/{eventCode}/materials/confirm")
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SpeakerMaterialConfirmResponse> confirmUpload(
-            @PathVariable String eventCode,
-            @Valid @RequestBody SpeakerMaterialConfirmRequest request,
-            HttpServletRequest httpRequest) {
+            String eventCode,
+            SpeakerMaterialConfirmRequest request) {
 
         String username = securityContextHelper.getCurrentUsername();
         SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.info("Material confirm request: username={} eventCode={} uploadId={} ip={}",
-                username, eventCode, request.uploadId(), getClientIp(httpRequest));
+                username, eventCode, request.getUploadId(), SpeakerPortalHttp.clientIp());
 
         try {
             SpeakerMaterialConfirmResponse response =
                     materialsService.confirmUpload(speaker, request);
             LOG.info("Material confirmed - materialId: {} eventCode={}",
-                    response.materialId(), eventCode);
+                    response.getMaterialId(), eventCode);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
             LOG.warn("Material confirm failed - {}: eventCode={}", e.getMessage(), eventCode);
@@ -205,16 +180,5 @@ public class SpeakerPortalContentController {
                     e.getMessage(), eventCode);
             throw new ValidationException(e.getMessage());
         }
-    }
-
-    /**
-     * Extract client IP address from request. Honours {@code X-Forwarded-For} for proxied calls.
-     */
-    private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 }
