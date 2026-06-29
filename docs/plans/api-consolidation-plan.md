@@ -415,23 +415,24 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > no-auth→401, organizer→403); FE type-check clean (FE speakers types come from the DORMANT speakers-api spec,
 > not event-speakers — wire byte-identical); Bruno speaker-portal-api 24/24. **EMS contract-first +1 (31 wired).**
 >
-> ⏳ **REMAINING speaker-portal (2 controllers, deeper than Dashboard — needs careful work, NOT a quick wire):**
-> - **`SpeakerPortalResponseController`** (1 op, POST /speaker-portal/events/{eventCode}/respond). Blast radius
->   beyond the controller: the request's nested **`SpeakerResponsePreferences`** propagates into the **workflow
->   layer** — `TransitionPayload.responsePreferences` (field type), `SpeakerResponseService.storePreferences`,
->   and `SpeakerResponseReceivedEvent` — and consolidating it changes `technicalRequirements` `String[]`→
->   `List<String>`. The `response` field is the shared `SpeakerResponseType` enum (ACCEPT/DECLINE) → map via
->   importMappings+schemaMappings (mirror the `SpeakerWorkflowState` precedent in the speakers generator). 2 test
->   files touch these DTOs (SpeakerResponseServiceTest, SpeakerPortalAuthIntegrationTest). The respond path
->   triggers acceptance/decline emails — exercise only on local dev (mail → /dev/mails).
-> - **`SpeakerPortalContentController`** (4 ops: getContentInfo / submitContent / materials presigned-url +
->   confirm). Most complex: record DTOs (ContentSubmitRequest has `@JsonIgnoreProperties(ignoreUnknown=false)` →
->   needs `x-class-extra-annotation`; consumed via record accessors `.title()`/`.contentAbstract()` → getters),
->   SpeakerContentInfo has a `noSession(...)` static factory to relocate, material DTOs (SpeakerMaterial{Upload,
->   Confirm}{Request,Response}) with `Map<String,String> requiredHeaders` + `Instant uploadedAt`→OffsetDateTime,
->   and submitContent already returns the generated `ContentSubmitResponse` (reuse, no re-author). Touches
->   ContentSubmissionService + SpeakerPortalMaterialsService. All 3 controllers share the new `SpeakerPortalHttp`
->   IP helper. Bruno speaker-portal-api already covers all of these for regression.
+> ✅ **DONE (2026-06-29): `SpeakerPortalResponseController` (1 op) + `SpeakerPortalContentController` (4 ops)** →
+> `SpeakerPortalResponseApi` / `SpeakerPortalContentApi` (commits `6ded207c`, `8389bece`; EMS 32 then 33 wired).
+> **The speaker portal (3 controllers, 6 ops) is now fully contract-first.** Both authored into event-speakers-api
+> under 1:1 tags. **Response:** mapped the nested types (`SpeakerResponseType`→shared enum,
+> `SpeakerResponsePreferences`→kept hand DTO) via importMappings+schemaMappings so the **workflow layer
+> (TransitionPayload/storePreferences/SpeakerResponseReceivedEvent) stayed untouched** — only the
+> request/result envelopes consolidated; dropped unused success()/failure() factories; test `isSuccess()`→
+> `getSuccess()`. **Content:** submitContent reuses the generated ContentSubmitResponse; ContentSubmitRequest got
+> `x-class-extra-annotation @JsonIgnoreProperties(ignoreUnknown=false)` (unknown-field→400 guard); record
+> accessors→getters; SpeakerContentInfo.noSession factory → private `noSessionContentInfo` helper; material
+> positional constructors → builders; `fileSize` long→Long; lastSavedAt/reviewedAt/uploadedAt Instant→
+> OffsetDateTime; `requiredHeaders` Map<String,String> preserved. All 3 portal controllers drop the
+> HttpServletRequest param and read the client IP via a shared `SpeakerPortalHttp.clientIp()`
+> (RequestContextHolder) so the audit-log lines survive. **Verified (local dev):** Response 15/15 +
+> Content/Materials 21/21 targeted tests; EMS restart + live smokes (401/403, @NotBlank→400, unknown-field→400,
+> @NotNull→400; authz precedes validation so uninvited→403); Bruno speaker-portal-api 24/24 (full respond +
+> content/materials happy paths, mail→/dev/mails); FE type-check clean (FE portal types come from the dormant
+> speakers-api spec — wire byte-identical). **EMS contract-first +2 (33 wired).**
 >
 > ℹ️ **Skipped (orphan — flag for removal, not wiring): `GlobalSessionController`** (`GET /api/v1/sessions?companyName`).
 > Investigated 2026-06-28: **no FE consumer, no Bruno coverage, no integration test** — effectively dead.
