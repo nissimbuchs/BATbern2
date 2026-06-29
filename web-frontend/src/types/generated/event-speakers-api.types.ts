@@ -461,6 +461,172 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/speaker-portal/dashboard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the authenticated speaker's dashboard
+     * @description Aggregate dashboard across every event the authenticated speaker has a pool row in
+     *     (Story 6.4). The one speaker-portal endpoint that does not take an eventCode.
+     *
+     *     **Authorization**: SPEAKER role required.
+     */
+    get: operations['getDashboard'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/speaker-portal/events/{eventCode}/respond': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit a speaker's response to an invitation
+     * @description The authenticated speaker accepts or declines an invitation for the given event
+     *     (Story 6.2a). DECLINE requires a reason. ACCEPT may carry optional preferences.
+     *
+     *     **Authorization**: SPEAKER role required (pool ownership enforced server-side).
+     */
+    post: operations['respond'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/speaker-portal/events/{eventCode}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the speaker's content-submission state for an event
+     * @description Story 6.3 speaker content self-submission. SPEAKER role (pool ownership enforced).
+     */
+    get: operations['getContentInfo'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/speaker-portal/events/{eventCode}/content/submit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit title/abstract/bio (and optional presentation upload id)
+     * @description Story 6.3 / 11.C.2. SPEAKER role (pool ownership enforced).
+     */
+    post: operations['submitContent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/speaker-portal/events/{eventCode}/materials/presigned-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request a presigned S3 URL for a material upload
+     * @description Story 6.3 material upload. SPEAKER role (pool ownership enforced).
+     */
+    post: operations['generatePresignedUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/speaker-portal/events/{eventCode}/materials/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm a completed material upload
+     * @description Story 6.3 material confirm (moves the object into place). SPEAKER role.
+     */
+    post: operations['confirmUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speaker-pool/{speakerPoolId}/send-reminder': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Manually send a deadline reminder to a speaker (Story 6.5 AC8)
+     * @description Bypasses dedup but respects the reminders-disabled flag. ORGANIZER role.
+     */
+    post: operations['sendSpeakerReminder'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speaker-pool/{speakerPoolId}/reminders': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Toggle the reminders-disabled flag for a speaker (Story 6.5 AC6)
+     * @description ORGANIZER role.
+     */
+    patch: operations['updateRemindersDisabled'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1302,6 +1468,183 @@ export interface components {
        */
       contentDeadline?: string | null;
     };
+    /** @description Speaker portal dashboard summary across all of the speaker's events (Story 6.4) */
+    SpeakerDashboardDto: {
+      speakerName?: string;
+      profilePictureUrl?: string;
+      /** @description Profile completeness percentage (0–100) */
+      profileCompleteness?: number;
+      upcomingEvents?: components['schemas']['DashboardUpcomingEventDto'][];
+      pastEvents?: components['schemas']['DashboardPastEventDto'][];
+    };
+    /** @description An upcoming event the speaker is involved in */
+    DashboardUpcomingEventDto: {
+      eventCode?: string;
+      eventTitle?: string;
+      eventDate?: string;
+      eventLocation?: string;
+      sessionTitle?: string;
+      workflowState?: string;
+      workflowStateLabel?: string;
+      hasTitle?: boolean;
+      hasAbstract?: boolean;
+      hasMaterial?: boolean;
+      materialFileName?: string;
+      responseDeadline?: string;
+      contentDeadline?: string;
+      reviewerFeedback?: string;
+      organizerName?: string;
+      organizerEmail?: string;
+      respondUrl?: string;
+      contentUrl?: string;
+    };
+    /** @description A past event the speaker presented at */
+    DashboardPastEventDto: {
+      eventCode?: string;
+      eventTitle?: string;
+      eventDate?: string;
+      sessionTitle?: string;
+      hasMaterial?: boolean;
+      materialFileName?: string;
+    };
+    /**
+     * @description Speaker's response to an invitation
+     * @enum {string}
+     */
+    SpeakerResponseType: 'ACCEPT' | 'DECLINE';
+    /** @description Optional logistics preferences captured on ACCEPT (Story 6.2a) */
+    SpeakerResponsePreferences: {
+      /** @description Preferred presentation time slot: morning, afternoon, no_preference */
+      timeSlot?: string;
+      /** @description Travel requirements: local, accommodation, virtual */
+      travelRequirements?: string;
+      /** @description Technical requirements: mac_adapter, remote_option, special_av */
+      technicalRequirements?: string[];
+      /** @description Preliminary presentation title */
+      initialTitle?: string;
+      /** @description Additional comments for the organizer */
+      comments?: string;
+    };
+    /** @description A speaker's accept/decline response to an invitation (Story 6.2a) */
+    SpeakerResponseRequest: {
+      response: components['schemas']['SpeakerResponseType'];
+      /** @description Reason for decline (required for DECLINE) */
+      reason?: string;
+      /** @description Optional constraints or notes (e.g. travel, schedule) */
+      constraints?: string;
+      preferences?: components['schemas']['SpeakerResponsePreferences'];
+    };
+    /** @description Outcome of processing a speaker's invitation response (Story 6.2a) */
+    SpeakerResponseResult: {
+      success?: boolean;
+      speakerName?: string;
+      eventName?: string;
+      /** @description Formatted event date (e.g. "20. November 2025") */
+      eventDate?: string;
+      sessionTitle?: string;
+      /** @description Next steps for the speaker after responding */
+      nextSteps?: string[];
+      /**
+       * Format: date
+       * @description Content submission deadline (if accepted)
+       */
+      contentDeadline?: string;
+      dashboardUrl?: string;
+      errorMessage?: string;
+    };
+    /** @description The speaker portal's content-submission state for one event (Story 6.3) */
+    SpeakerContentInfo: {
+      speakerName?: string;
+      eventCode?: string;
+      eventTitle?: string;
+      hasSessionAssigned?: boolean;
+      sessionTitle?: string;
+      canSubmitContent?: boolean;
+      hasDraft?: boolean;
+      draftTitle?: string;
+      draftAbstract?: string;
+      draftVersion?: number;
+      /** Format: date-time */
+      lastSavedAt?: string;
+      needsRevision?: boolean;
+      reviewerFeedback?: string;
+      /** Format: date-time */
+      reviewedAt?: string;
+      reviewedBy?: string;
+      hasMaterial?: boolean;
+      materialUrl?: string;
+      materialFileName?: string;
+    };
+    /** @description Speaker content submission (title/abstract/bio + optional presentation upload) */
+    ContentSubmitRequest: {
+      title: string;
+      contentAbstract: string;
+      bio?: string;
+      profilePictureUrl?: string;
+      presentationUploadId?: string;
+    };
+    /** @description Request a presigned URL for a material upload */
+    SpeakerMaterialUploadRequest: {
+      fileName: string;
+      /** Format: int64 */
+      fileSize: number;
+      mimeType: string;
+    };
+    /** @description Presigned upload URL + metadata */
+    SpeakerMaterialUploadResponse: {
+      uploadUrl?: string;
+      uploadId?: string;
+      s3Key?: string;
+      fileExtension?: string;
+      expiresInMinutes?: number;
+      /** @description Headers the client must send on the presigned PUT */
+      requiredHeaders?: {
+        [key: string]: string;
+      };
+    };
+    /** @description Confirm a completed material upload */
+    SpeakerMaterialConfirmRequest: {
+      uploadId: string;
+      fileName: string;
+      fileExtension: string;
+      /** Format: int64 */
+      fileSize: number;
+      mimeType: string;
+      /** @description Defaults to PRESENTATION when omitted */
+      materialType?: string;
+    };
+    /** @description Result of confirming a material upload */
+    SpeakerMaterialConfirmResponse: {
+      /** Format: uuid */
+      materialId?: string;
+      uploadId?: string;
+      fileName?: string;
+      cloudFrontUrl?: string;
+      materialType?: string;
+      /** Format: date-time */
+      uploadedAt?: string;
+    };
+    /** @description Manual speaker reminder request (Story 6.5) */
+    SendReminderRequest: {
+      /** @description RESPONSE or CONTENT */
+      reminderType?: string;
+      /** @description Optional: TIER_1/TIER_2/TIER_3 (auto-detected if omitted) */
+      tier?: string;
+    };
+    /** @description Manual reminder result; error fields populated on the 400/409 paths */
+    SendReminderResponse: {
+      message?: string;
+      tier?: string;
+      emailAddress?: string;
+      error?: string;
+    };
+    UpdateRemindersDisabledRequest: {
+      remindersDisabled: boolean;
+    };
+    RemindersDisabledResponse: {
+      speakerPoolId?: string;
+      remindersDisabled?: boolean;
+    };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.
      *     Flat shape (NOT nested under `error`). Backed by
@@ -1350,6 +1693,15 @@ export interface components {
     };
   };
   responses: {
+    /** @description Conflict - the speaker has already responded */
+    Conflict: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
     /** @description Bad request - validation error */
     BadRequest: {
       headers: {
@@ -1405,7 +1757,10 @@ export interface components {
       };
     };
   };
-  parameters: never;
+  parameters: {
+    /** @description Event code the speaker-portal action targets */
+    SpeakerPortalEventCode: string;
+  };
   requestBodies: never;
   headers: never;
   pathItems: never;
@@ -2385,6 +2740,257 @@ export interface operations {
         };
       };
       500: components['responses']['InternalServerError'];
+    };
+  };
+  getDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker dashboard summary */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerDashboardDto'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  respond: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event the speaker is responding to */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SpeakerResponseRequest'];
+      };
+    };
+    responses: {
+      /** @description Response processed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerResponseResult'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
+    };
+  };
+  getContentInfo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code the speaker-portal action targets */
+        eventCode: components['parameters']['SpeakerPortalEventCode'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Content info */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerContentInfo'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  submitContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code the speaker-portal action targets */
+        eventCode: components['parameters']['SpeakerPortalEventCode'];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ContentSubmitRequest'];
+      };
+    };
+    responses: {
+      /** @description Content submitted */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContentSubmitResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  generatePresignedUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code the speaker-portal action targets */
+        eventCode: components['parameters']['SpeakerPortalEventCode'];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SpeakerMaterialUploadRequest'];
+      };
+    };
+    responses: {
+      /** @description Presigned upload URL + metadata */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerMaterialUploadResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  confirmUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code the speaker-portal action targets */
+        eventCode: components['parameters']['SpeakerPortalEventCode'];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SpeakerMaterialConfirmRequest'];
+      };
+    };
+    responses: {
+      /** @description Material confirmed */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerMaterialConfirmResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  sendSpeakerReminder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        speakerPoolId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendReminderRequest'];
+      };
+    };
+    responses: {
+      /** @description Reminder sent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SendReminderResponse'];
+        };
+      };
+      /** @description Invalid reminder type or speaker state */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SendReminderResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Reminders disabled for this speaker */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SendReminderResponse'];
+        };
+      };
+    };
+  };
+  updateRemindersDisabled: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        speakerPoolId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateRemindersDisabledRequest'];
+      };
+    };
+    responses: {
+      /** @description Flag updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RemindersDisabledResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
     };
   };
 }

@@ -546,10 +546,341 @@ export interface paths {
     patch: operations['updateTeaserImage'];
     trace?: never;
   };
+  '/events/{eventCode}/venue-coordination/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Preview a venue/catering coordination mail
+     * @description Event Detail → Venue tab (Story). ORGANIZER role.
+     */
+    post: operations['previewVenueCoordination'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/venue-coordination/send': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a venue/catering coordination mail
+     * @description Event Detail → Venue tab (Story). ORGANIZER role.
+     */
+    post: operations['sendVenueCoordination'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/publish/{phase}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Publish a progressive-publishing phase (topic/speakers/agenda)
+     * @description Story progressive publishing (AC14-16). ORGANIZER role.
+     */
+    post: operations['publishPhase'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/unpublish/{phase}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Unpublish a progressive-publishing phase
+     * @description Story progressive publishing (AC18). ORGANIZER role.
+     */
+    post: operations['unpublishPhase'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/publish/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get publishing status + per-phase validation
+     * @description ORGANIZER role.
+     */
+    get: operations['getPublishingStatus'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/publish/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preview the public appearance before publishing
+     * @description Story progressive publishing (AC20, AC29). ORGANIZER role.
+     */
+    get: operations['getPublishPreview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/publish/schedule': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the auto-publish schedule
+     * @description ORGANIZER role.
+     */
+    get: operations['getAutoPublishSchedule'];
+    put?: never;
+    /**
+     * Configure the auto-publish schedule
+     * @description Story progressive publishing (AC19). ORGANIZER role.
+     */
+    post: operations['configureAutoPublish'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/backfill-speaker-names': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Backfill speaker names for full-text search (maintenance)
+     * @description Temporary maintenance endpoint (Story archive search).
+     */
+    post: operations['backfillSpeakerNames'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/settings/{key}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get an admin setting by key
+     * @description Open GET for VPC-internal callers (Story 10.26); HTTP-level security gates access.
+     */
+    get: operations['getAdminSetting'];
+    /**
+     * Set an admin setting by key
+     * @description ORGANIZER role.
+     */
+    put: operations['setAdminSetting'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/qna': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Adjust all of an event's session Q&A windows (Story 7.5)
+     * @description Open/extend/close all session Q&A windows at once. ORGANIZER role.
+     */
+    patch: operations['adjustQnaWindows'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    BackfillSpeakerNamesResponse: {
+      success?: boolean;
+      message?: string;
+      updatedCount?: number;
+    };
+    AdminSettingResponse: {
+      key?: string;
+      value?: string | null;
+    };
+    SetAdminSettingRequest: {
+      value?: string;
+    };
+    QnaWindowPatchRequest: {
+      /** Format: date-time */
+      closesAt?: string;
+      close?: boolean;
+      open?: boolean;
+    };
+    QnaWindowAdjustResponse: {
+      eventCode?: string;
+      windowsAdjusted?: number;
+      status?: string;
+    };
+    PublishPhaseResponse: {
+      phase?: string;
+      published?: boolean;
+      /** Format: date-time */
+      publishedAt?: string;
+      cdnInvalidated?: boolean;
+    };
+    UnpublishPhaseResponse: {
+      phase?: string;
+      published?: boolean;
+      /** Format: date-time */
+      unpublishedAt?: string;
+      cdnInvalidated?: boolean;
+    };
+    ValidationStatus: {
+      isValid?: boolean;
+      errors?: string[];
+    };
+    UnassignedSession: {
+      sessionSlug?: string;
+      title?: string;
+    };
+    SessionValidationStatus: {
+      isValid?: boolean;
+      errors?: string[];
+      assignedCount?: number;
+      totalCount?: number;
+      unassignedSessions?: components['schemas']['UnassignedSession'][];
+    };
+    PublishingStatusResponse: {
+      currentPhase?: string;
+      publishedPhases?: string[];
+      topic?: components['schemas']['ValidationStatus'];
+      speakers?: components['schemas']['ValidationStatus'];
+      sessions?: components['schemas']['SessionValidationStatus'];
+    };
+    SpeakerPreview: {
+      name?: string;
+      company?: string;
+    };
+    SessionPreview: {
+      title?: string;
+      startTime?: string;
+      endTime?: string;
+      room?: string;
+    };
+    PublishPreviewResponse: {
+      eventCode?: string;
+      currentPhase?: string;
+      topicPublished?: boolean;
+      speakersPublished?: boolean;
+      agendaPublished?: boolean;
+      speakers?: components['schemas']['SpeakerPreview'][];
+      sessions?: components['schemas']['SessionPreview'][];
+    };
+    AutoPublishScheduleRequest: {
+      phase2Enabled?: boolean;
+      phase2DaysBeforeEvent?: number;
+      phase3Enabled?: boolean;
+      phase3DaysBeforeEvent?: number;
+    };
+    AutoPublishScheduleResponse: {
+      scheduled?: boolean;
+      phase2Enabled?: boolean;
+      phase2DaysBeforeEvent?: number;
+      /** Format: date-time */
+      phase2TriggerDate?: string;
+      phase3Enabled?: boolean;
+      phase3DaysBeforeEvent?: number;
+      /** Format: date-time */
+      phase3TriggerDate?: string;
+    };
+    /**
+     * @description Venue-coordination recipient role
+     * @enum {string}
+     */
+    VenueRole: 'VENUE' | 'CATERING';
+    VenueCoordinationPreviewRequest: {
+      templateKey: string;
+      recipients: components['schemas']['VenueRole'][];
+      /** @description Locale (de | en); falls back to de */
+      locale?: string;
+      notes?: string;
+    };
+    VenueCoordinationPreviewResponse: {
+      subject?: string;
+      htmlBody?: string;
+      toEmail?: string;
+      ccEmails?: string[];
+      replyToEmail?: string;
+    };
+    VenueCoordinationSendRequest: {
+      templateKey: string;
+      locale?: string;
+      notes?: string;
+      recipients: components['schemas']['VenueRole'][];
+    };
+    VenueCoordinationSendResponse: {
+      sentTo?: components['schemas']['VenueRole'][];
+    };
     /**
      * @description Controls which slide the image appears after in the moderator presentation.
      * @enum {string}
@@ -2531,6 +2862,325 @@ export interface operations {
         };
         content?: never;
       };
+    };
+  };
+  previewVenueCoordination: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VenueCoordinationPreviewRequest'];
+      };
+    };
+    responses: {
+      /** @description Rendered preview */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VenueCoordinationPreviewResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  sendVenueCoordination: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VenueCoordinationSendRequest'];
+      };
+    };
+    responses: {
+      /** @description Sent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VenueCoordinationSendResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  publishPhase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        phase: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Phase published */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublishPhaseResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  unpublishPhase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        phase: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Phase unpublished */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UnpublishPhaseResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getPublishingStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Publishing status */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublishingStatusResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getPublishPreview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Preview */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublishPreviewResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getAutoPublishSchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Schedule */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AutoPublishScheduleResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  configureAutoPublish: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AutoPublishScheduleRequest'];
+      };
+    };
+    responses: {
+      /** @description Schedule configured */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AutoPublishScheduleResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  backfillSpeakerNames: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Backfill result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BackfillSpeakerNamesResponse'];
+        };
+      };
+      /** @description Backfill failed */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BackfillSpeakerNamesResponse'];
+        };
+      };
+    };
+  };
+  getAdminSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The setting */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminSettingResponse'];
+        };
+      };
+    };
+  };
+  setAdminSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetAdminSettingRequest'];
+      };
+    };
+    responses: {
+      /** @description The updated setting */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminSettingResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  adjustQnaWindows: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['QnaWindowPatchRequest'];
+      };
+    };
+    responses: {
+      /** @description Windows adjusted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QnaWindowAdjustResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
 }
