@@ -34,6 +34,8 @@ tags:
     description: Topic management, staleness, and similarity analysis operations
   - name: Event Topics
     description: Topic selection for events
+  - name: Topic Similarity
+    description: Blob topic selector cluster classification (Story 10.4)
 
 paths:
   /topics:
@@ -380,8 +382,84 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /events/{eventCode}/topic-similarity:
+    post:
+      tags:
+        - Topic Similarity
+      summary: Classify a topic into a BATbern cluster
+      description: |
+        Classify a free-form topic text into a BATbern cluster and return related past event
+        numbers, used by the blob topic selector canvas to place green blobs and ignite red stars.
+
+        **Story 10.4** (AC32). The eventCode path segment is contextual only — classification
+        depends solely on the topic text.
+
+        **Authorization**: ORGANIZER role required
+      operationId: getTopicSimilarity
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code the topic is being evaluated for (contextual only)
+          schema:
+            type: string
+            example: 'BATbern58'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicSimilarityRequest'
+      responses:
+        '200':
+          description: Cluster affinity data for the topic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicSimilarityResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   schemas:
+    TopicSimilarityRequest:
+      type: object
+      description: Request body for topic cluster classification (Story 10.4 AC32)
+      required:
+        - topic
+      properties:
+        topic:
+          type: string
+          minLength: 1
+          description: Free-form topic text to classify
+          example: 'AI Agents in Enterprise'
+    TopicSimilarityResponse:
+      type: object
+      description: Cluster affinity data driving the blob canvas (Story 10.4 AC32)
+      required:
+        - cluster
+        - similarityScore
+        - relatedPastEventNumbers
+      properties:
+        cluster:
+          type: string
+          description: BATbern cluster name (e.g. AI_ML, SECURITY, CLOUD_INFRA, BUSINESS_OTHER)
+          example: 'AI_ML'
+        similarityScore:
+          type: number
+          format: double
+          description: Confidence 0.0–1.0 that the topic belongs to this cluster
+          example: 0.85
+        relatedPastEventNumbers:
+          type: array
+          description: BATbern event numbers in the same cluster (drives red-star ignition)
+          items:
+            type: integer
+          example: [40, 44, 49, 56, 58]
     Topic:
       type: object
       description: Topic entity for event management
