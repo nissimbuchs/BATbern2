@@ -31,9 +31,7 @@ servers:
 
 tags:
   - name: Topics
-    description: Topic management operations
-  - name: Topic Analysis
-    description: Staleness and similarity analysis
+    description: Topic management, staleness, and similarity analysis operations
   - name: Event Topics
     description: Topic selection for events
 
@@ -86,7 +84,7 @@ paths:
           required: false
           schema:
             type: integer
-            default: 20
+            default: 50
             maximum: 100
         - name: include
           in: query
@@ -250,7 +248,7 @@ paths:
   /topics/{topicCode}/similar:
     get:
       tags:
-        - Topic Analysis
+        - Topics
       summary: Get similar topics
       description: |
         Get topics with >70% similarity for duplicate detection.
@@ -283,7 +281,7 @@ paths:
   /topics/{topicCode}/usage-history:
     get:
       tags:
-        - Topic Analysis
+        - Topics
       summary: Get topic usage history
       description: |
         Get usage history for heat map visualization.
@@ -317,7 +315,7 @@ paths:
   /topics/calculate-similarities:
     post:
       tags:
-        - Topic Analysis
+        - Topics
       summary: Calculate similarity scores
       description: |
         Calculate similarity scores for all topics.

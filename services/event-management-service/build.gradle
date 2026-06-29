@@ -592,9 +592,9 @@ task openApiGenerateTopics(type: org.openapitools.generator.gradle.plugin.tasks.
 
     configOptions = [
         dateLibrary: 'java8',
-        interfaceOnly: 'false',             // Generate POJOs for DTOs
+        interfaceOnly: 'true',              // Phase 7: generate interfaces (TopicsApi) for controllers to implement
         skipDefaultInterface: 'true',
-        useTags: 'false',
+        useTags: 'true',                    // Phase 7: one interface per tag (TopicsApi, EventTopicsApi)
         useSpringBoot3: 'true',
         documentationProvider: 'none',
         openApiNullable: 'false',
@@ -609,10 +609,10 @@ task openApiGenerateTopics(type: org.openapitools.generator.gradle.plugin.tasks.
                                             // (required for the ?include= sparse-fieldset/embed contract)
     ]
 
-    // Generate only models (DTOs), no API interfaces
+    // Phase 7: generate both DTO models and API interfaces (per-tag) for controller wiring
     globalProperties = [
         models: '',
-        apis: 'false',
+        apis: '',
         supportingFiles: 'ApiUtil.java'
     ]
 
