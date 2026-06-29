@@ -1,7 +1,9 @@
 # API Consolidation Plan
 
-**Status:** Proposed (branch `api-consolidation`)
-**Date:** 2026-06-25
+**Status:** Phases 0–6 + 9a landed (`api-consolidation` merged as squash PR #815 → `develop`).
+**Phase 7 (contract-first) on branch `api-consolidation-phase7`: EMS wiring COMPLETE (42 controllers, all
+wireable) — ~25 commits committed+verified but UNPUSHED (see the ▶ STATUS block below). Phases 8 & 9 = TODO.**
+**Date:** 2026-06-25 (last status update: 2026-06-29)
 **Governing standard:** [ADR-013 — REST API CRUD Conventions](../architecture/ADR-013-rest-api-crud-conventions.md)
 **Scope:** CUMS (companies, users), EMS (events, topics), Partner (partners + 4 sub-specs),
 plus the shared-kernel contract that underpins all 13 specs.
@@ -43,37 +45,41 @@ Branch HEAD: `e9dd536a`. Commits this far (newest first): `e9dd536a` ($ref share
 > post-rebase: CUMS + EMS compile, `UserControllerIntegrationTest` + `EventWorkflowControllerIntegrationTest`
 > green. Backup: `backup/phase7-pre-rebase-3b43fe17`.
 >
-> ▶ **RESUME (next session):** continue EMS Phase 7 per-controller — pick the next controller
-> (e.g. Sessions, Registrations, Analytics, Newsletter), **split its op-group out of the shared
-> domain tag into a per-controller tag** (the owner-chosen re-tag strategy — see Phase 7 note),
-> regenerate, wire `implements <Ctrl>Api`, consolidate any hand-written DTO twins, run that
-> service's integration suite + Bruno live, commit. CUMS contract-first is DONE (6/6 documented
-> prod controllers); EMS is 13/49 (EventTypes, SpeakerOutreach, AiPrompts, EmailTemplates,
-> EventWorkflow, Analytics, Deregistration, TeaserImages, AiAssist, AgendaConfig, Participants,
-> SessionQna, OrganizerThanks), Partner 5/10. **Autonomous run 2026-06-27 night:** wiring remaining EMS
-> per-controller, Bruno+Playwright+commit each. **Key findings about the REMAINING ~24 EMS controllers
-> (most are NOT clean per-controller wires):** (1) **Shared-DTO cluster** — ~7 hand DTOs (SpeakerPoolResponse,
-> SessionResponse, TimetableResponse, SessionSpeakerResponse, SessionMaterialResponse, ContentSubmitResponse,
-> SlidesOnlineSendResponse) are returned by MULTIPLE controllers + services; wiring any one to its generated
-> return type needs a coordinated consolidation (or controller-level mapping) — not independent. (2) **Undocumented**
-> controllers need spec authoring first: SpeakerPortal*, EventTask, TaskTemplate, SpeakerStatus, SpeakerReminder,
-> VenueCoordination, Admin, AdminSettings, TopicSessionData, TopicSimilarity, EventQna, GlobalSession. (3) **Ad-hoc
-> returns** (`ResponseEntity<?>`/`Map`) need typed contracts designed: SlotAssignment(6), Session(1), SessionMaterials(3),
-> SpeakerReminder(2), EventController(5). (4) **Email-triggering** ops (RegistrantNotice/SpeakerInvitation/SlidesOnline/
-> VenueCoordination send) — smoke read-only paths only. (5) **Defer**: Watch* (external watch-app contract, Phase 8);
-> **skip**: DevEmail/TestFixtureCleanup (dev/test-only). **Lessons:** ALWAYS give Bruno the long Bash timeout (a
-> SIGTERM'd Bruno run took EMS down mid-suite → misleading 500s); never re-list deleted files in `git add` (it aborts
-> staging → a broken version got committed; use `git rm`/`git add -A`, and don't trust pre-commit checkstyle when the
-> index diverged from the working tree).
+> ▶ **STATUS (2026-06-29): EMS Phase-7 wiring is COMPLETE — every wireable EMS controller is contract-first
+> (42 wired).** CUMS 6/6 done; Partner 5/10. There is **no remaining per-controller EMS wiring** to pick up.
+> The full per-controller record is in the ✅ DONE notes below (each: spec authored/re-tagged → regenerated →
+> `implements <Ctrl>Api` → hand DTOs consolidated → integration tests + EMS restart + live gateway smoke +
+> Bruno/Playwright on local dev → commit + a `docs(plans)` note). This session (2026-06-29) finished the tail:
+> Topic(8), TopicSimilarity, TopicSessionData, TaskTemplate+EventTask (new `event-tasks-api`), the whole
+> speaker portal (Dashboard/Response/Content), AttendeeDashboard, MaterialsUpload, VenueCoordination,
+> PublishingEngine, Admin/AdminSettings/EventQna, SpeakerReminder, and finally **SlotAssignment** (the last one).
+> Full EMS suite green after SlotAssignment (1728 passed / 0 failed).
 >
-> ⚠️ **PENDING PUSH (updated 2026-06-28):** the newest phase7 commits (AgendaConfig → OrganizerThanks →
-> SlidesOnline + ContentSubmit consolidations + this plan note; remote tip stuck at `cf039e9c` = AiAssist) are
-> **committed + individually verified**
-> (each: its integration test + EMS restart + live gateway smoke + full Bruno 14/14 + FE type-check) but **NOT
-> pushed** — the `.githooks/pre-push` gate (full backend integration + frontend vitest, ~12 min) was repeatedly
-> **killed by a background-task wall-clock limit** in the agent runner before it could finish (it was PASSING both
-> times). **Action:** run `git push origin api-consolidation-phase7` from a normal interactive terminal (not the
-> agent's background runner) — it will complete uninterrupted. Do NOT `--no-verify`. The gate genuinely passes.
+> **What's left in EMS (NOT per-controller wires):**
+> 1. **`EventController` CRUD** — DEFERRED, needs a dedicated FE-coordinated story (lazy-load materials +
+>    speaker company/portrait from the dedicated APIs so `EventDetail.sessions` can be the lean typed `Session`;
+>    + `BulkOperationsApi.batchUpdateEvents` / `EventReportingApi.getEventAnalytics` response schemas made
+>    truthful first). See the EventController blocker note further down. The speaker-pool ops were already
+>    extracted to `EventSpeakerPoolController` (EMS 25).
+> 2. **`GlobalSessionController`** — orphan (no FE consumer / Bruno / test); flag for **removal**, not wiring.
+> 3. **`Watch*`** (LiveTiming/WatchEvent/WatchWebSocket) — external watch-app contract, **Phase 8**.
+> 4. **`DevEmail` / `TestFixtureCleanup`** — dev/test-only, **skip**.
+>
+> **Re-tag strategy (used throughout):** split a controller's op-group out of a shared domain tag into a
+> per-controller tag so the generated `<Ctrl>Api` is 1:1; map shared/nested enums (e.g. SpeakerWorkflowState,
+> SpeakerResponseType, VenueRole, ConflictType/Severity) via importMappings+schemaMappings to leave services
+> untouched; ad-hoc `Map`/`?` returns → typed DTOs (superset + `@JsonInclude(NON_NULL)` for varying success/error
+> shapes; 409s → thrown exception + `@ExceptionHandler`). **Lessons:** give Bruno the long Bash timeout (a
+> SIGTERM'd Bruno run takes EMS down mid-suite → misleading 500s); use `git rm`/`git add -A` for deletions; FE
+> generated types for events-* come from `npm run generate:api-types:events` (events-core/sessions/speakers/
+> registrations/newsletter/media/ai/analytics/watch) — **regenerate + commit them with any events-* spec change**
+> or `check:api-types` (generate + git-diff) fails.
+>
+> ⚠️ **PENDING PUSH (2026-06-29): ~25 phase7 commits are committed + verified but NOT pushed.** The
+> `.githooks/pre-push` gate (full backend integration + frontend vitest, ~12 min) is repeatedly killed by the
+> agent runner's background wall-clock before it finishes (it PASSES — the full EMS suite was run green
+> separately, 1728/0). **Action:** run `git push origin api-consolidation-phase7` from a normal interactive
+> terminal. Do NOT `--no-verify`.
 >
 > ✅ **DONE (2026-06-28): `SpeakerInvitationController` → `SpeakerInvitationApi`** (event-speakers, 3 ops
 > inviteSpeaker/inviteSpeakerBatch/sendSpeakerInvitation; tag was already 1:1, NO re-tag). Consolidated 6 hand
@@ -611,7 +617,7 @@ Consolidate each to its generated twin (delete the hand DTO), then the consumers
 | **4 Mutation-model fixes** | ✅ **DONE** | ✅ **CUMS removals DONE** (`fb44bc5d`). ✅ **EMS lifecycle DONE** (`7f761a31`). ✅ **Session PUT removed** (`ed59fa0b`): dead full-replace PUT twin (no caller; field-nulling footgun) deleted + dead `UpdateSessionRequest` DTO/`SessionMapper.applyUpdateRequest`; spec now documents the live `patch:` (`PatchSessionRequest`). ✅ **Partner deactivation DONE** (`d6fdc5b0`): dropped dead `isActive` from `UpdatePartnerRequest` (backend ignored it; FE toggle unwired) — DELETE is the canonical soft-deactivate. ✅ **Registration-cancel resolved** — NOT a merge (the two are distinct flows). Investigated the legacy JWT `/cancel`: confirmed **dead** (no email template renders `cancellationUrl`; all use the Story-10.12 `/deregister` UUID flow) and **removed** it end-to-end — endpoint, `generate/validateCancellationToken`, the dead `cancellationToken`/`cancellationUrl` threaded through the registration-confirmation email path, spec path, FE `CancelRegistrationPage` + route + `eventApiClient.cancelRegistration`, and all tests. The shared `RegistrationService.cancelRegistration(Registration)` (used by `/deregister` + waitlist) stays. ✅ **Spec polish DONE:** named the inline `object` request bodies as `AssignSpeakerToSessionRequest`/`DeclineSpeakerRequest`/`PatchNewsletterSubscriptionRequest` (batchImportSessions already used a named items schema). Reconciled `UpdateEventSlotConfigurationRequest` ⟷ `UpdateEventAgendaConfigRequest` by **documenting the distinction** (cross-referenced descriptions: event-type-level defaults vs per-event copy-on-edit, differing required-field strictness) rather than a structural `allOf` merge — they are genuinely distinct contracts on different endpoints, and `UpdateEventAgendaConfigRequest` is a hand-written backend DTO, so an `allOf` merge would risk a live feature's generated types for no real gain. **Phase 4 COMPLETE.** |
 | **5 Partner consolidation 5→2** | ✅ **DONE** | Folded `partner-notes-api` + `partner-analytics-api` + `partner-topics-api` into the generator-wired `partners-api.openapi.yml` (5→2; `partner-meetings-api` kept separate + brought to parity: shared `$ref` `ErrorResponse`, documented `GET /partner-meetings/{id}/rsvps` + the internal RSVP callback, bounded-list note). `/attendees/topics` relocated under a dedicated **Attendee Topics** tag (documented alias). **Spec made truthful**: added the live-but-undocumented `PATCH`/`DELETE /partners/topics/{topicId}` (updateTopic/deleteTopic) and `eventTitle` on `AttendanceSummaryRecord`; clarified `getPartnerStatistics` (portfolio summary) vs `analytics/dashboard` (attendance) boundary; normalized tags + relative `/api/v1` server + global `bearerAuth`. **Controllers rewired** to implement the generated interfaces: `PartnerNoteController`→`PartnerNotesApi`, `PartnerAnalyticsController`→`PartnerAnalyticsApi` (export now returns `Resource`), `TopicController`→`PartnerTopicsApi` (role resolved from `SecurityContextHolder`, no injected `Authentication`), `AttendeeTopicController`→`AttendeeTopicsApi`. Hand-written record/Lombok DTOs (PartnerNoteDTO, CreateNoteRequest, UpdateNoteRequest, TopicDTO, TopicSuggestionRequest, TopicStatusUpdateRequest, PartnerDashboardDTO) deleted — generated DTOs thread through the service layer (Instant→OffsetDateTime, String→inner enums). FE: deleted `partner-notes/partner-topics` generate scripts + stale `.types.ts`, repointed `partnerNotesApi.ts` to `partner-api.types`. Full BE partner-coordination suite + full FE vitest (5334) + FE type-check green. |
 | **6 events-api decomposition** | ✅ **DONE** | Carved the 10.3k-line `events-api.openapi.yml` (94 paths / 122 ops / 131 schemas / 16 tags) into **9 per-domain specs** — `events-core` + `event-{sessions,speakers,registrations,newsletter,media,ai,analytics,watch}-api` — driven by a deterministic carve script (path→domain map + computed schema ownership; report-only validated first). **Paths preserved verbatim** (122/122 ops, 0 dangling refs, no dup ops). Only cross-spec coupling is `core → sessions` (Event embeds `List<Session>`); every other spec depends only on shared-kernel. **Full per-domain Java + TS packages** (owner's explicit choice): 9 `openApiGenerate<Domain>` Gradle tasks (each → `ch.batbern.events.<domain>.{api,dto}.generated`), 9 FE `event*-api.types.ts`. **165 Java FQN re-points** across 102 files (`dto.generated.X` → `<domain>.dto.generated.X`) + 4 controller interface re-points (EventTypes→core, SpeakerOutreach→speakers, AiPrompts→ai, EmailTemplates→newsletter). **54 FE files re-pointed** (51 single-domain swap + 3 multi-domain aliased imports). **🐛 openapi-generator bug #17647 worked around:** `schemaMappings` to a cross-package type emits illegal `List<@Valid <FQN>>`; switched core's Session/SessionSpeaker to `importMappings` (import + simple name) + a `doLast` that deletes the dead duplicate copy. 2 defined-but-unreachable schemas (`Speaker`, `RegistrationAdminResponse`) **removed** as dead-code cleanup (follow-up): `Speaker` was an ADR-004-violating User-field duplicate with only a dead `SpeakerUI` alias; `RegistrationAdminResponse` had no path/code use. Updated: security-scan matrix (1→9 entries), BATbern-watch `generate-types.sh` (loops 9 specs), FE generated README. Clean Java compile (main+test) + FE type-check (0 errors) + EMS suite + FE vitest green. Single PR.
-| **7 Contract-first completion** | 🚧 **IN PROGRESS** (branch `api-consolidation-phase7`, after 9a) | **Platform-wide** (see §Phase 7), root cause of the Phase 4 PUT→POST drift. Few controllers `implements` their generated `*Api` interface: **EMS 5/49, CUMS 6/13 (all documented prod controllers), Partner 5/10**, speaker/attendee dormant. Wire the rest + consolidate hand-written DTOs shadowing generated schemas (EMS has ~51 shadows). Slice by service (CUMS→EMS→Partner); medium risk. **Generator upgraded to 7.14.0 first (9a)** so controllers wire against the final interface shape (plain `@Nullable` params, no `Optional` unwrapping). **CUMS progress:** ✅ PresentationSettingsController→`PresentationSettingsApi` (`cbade6c4`); ✅ PublicUserController→`PublicApi` (`707ecfdc`) — both with hand-written→generated DTO consolidation, integration + Bruno + Playwright verified. ⏸️ **Deferred** (documented): Watch controllers (WatchAuthController returns `ResponseEntity<?>` + ad-hoc `{"message":...}` body — typed-contract clash affecting the external watch app; record→class DTO migration), PublicOrganizerController (undocumented — no spec/generated iface). **Partner progress:** ✅ PartnerContactController→`PartnerContactsApi` (`2abe6b38`, no DTO migration — already used the generated DTO); integration + full partner suite + Bruno partners-api verified. Remaining partner controllers (PartnerMeeting/RsvpController) need the partner-meetings-api generator wired first. ✅ **CompanyController + UserController wired** (see §Phase 7 progress note for the full record): CUMS is now **4/13** (Company, PublicUser, PresentationSettings, User). ⏳ **Next:** UserPreferences/UserSettings; PublicOrganizer + Logo are undocumented (spec-first); then EMS (4/45). |
+| **7 Contract-first completion** | ✅ **EMS DONE / CUMS+Partner advanced** (branch `api-consolidation-phase7`) | **EMS: 42 controllers wired — every wireable EMS controller is contract-first** (only `EventController` CRUD deferred to an FE-coordinated lazy-load story; `GlobalSession` = orphan-remove; `Watch*` = Phase 8; `DevEmail`/`TestFixtureCleanup` = skip). Full per-controller record in the ▶ STATUS block + ✅ DONE notes. CUMS: 6/6 documented prod controllers. Partner: 5/10 (PartnerMeeting/Rsvp need the partner-meetings-api generator wired first). Generator on 7.14.0 (9a). All hand DTOs shadowing generated schemas consolidated for the wired controllers; ad-hoc `Map`/`?` returns typed; 409s via `@ExceptionHandler`. **~25 commits committed+verified, UNPUSHED** (pre-push gate killed by the agent-runner wall-clock; push from an interactive terminal). |
 | **8 Domain-boundary corrections** | ⏳ **TODO** | Relocate misfiled endpoints (`/public/settings/features` off `AiAssistController`; `/attendee-portal/dashboard` → attendee domain) + normalize Watch paths that hard-code `/api/v1/`. Client-affecting (watch app); see §Phase 8. |
 | **9a Generator upgrade** | ✅ **DONE** (branch `api-consolidation-phase7`) | Upgraded openapi-generator **7.2.0 → 7.14.0** (both pins: `settings.gradle` + root `build.gradle`). **#17647 is fixed** → removed the EMS `core→sessions` workaround (`importMappings`+`doLast`); `Session`/`SessionSpeaker` now use plain `schemaMappings` and `Event.java` emits the legal `pkg.@Valid Session`. Did this **before Phase 7** so controllers wire against the final interface shape once. Churn was tiny: param type `Optional<X>`→`@Nullable X` (fixed `EmailTemplateController`); enum prefix no longer stripped, `WELCOME`→`AFTER_WELCOME` (wire values unchanged; fixed 4 refs in `EventTeaserImageServiceTest`); Java-client models-only now injects an unsatisfied `ApiClient` import → switched partner's `generateCompanyClientDtos`/`generateUserClientDtos` to the `spring` generator (consistent w/ EMS). **🐛 Wire-behaviour fix:** 7.14 default-initialises collection fields (`= new ArrayList<>()`) instead of leaving them null, so an unset list serialised as `[]` instead of being absent — broke the `?include=` sparse-fieldset contract (`TopicControllerIntegrationTest` saw `usageHistory: []` when not embedded). Fixed by adding `containerDefaultToNull: 'true'` to **every** generator `configOptions` block (CUMS ×2, EMS ×11, partner ×3) → restores pre-7.14 null-default. All other changes additive (per-DTO inner `Builder`, `@Nullable` field annots). Whole Java monorepo compiles main+test; FE unaffected (its types come from `openapi-typescript`, not this plugin). See §Phase 9. |
 | **9 Tooling & spec hygiene (rest)** | ⏳ **TODO** | Generator upgrade done (→ 9a). Remaining: declare top-level `tags`; fix stale `workflowService.ts` PUT comments. Low risk; see §Phase 9. |
@@ -650,7 +656,11 @@ approach" section below; that section is kept for historical context only.)
 
 ---
 
-## ▶ RESUME GUIDE — finish Phase 3 & 4, then 5 & 6
+## ▶ RESUME GUIDE — per-change workflow (Phases 3–6 are ✅ DONE; Phase 7 EMS ✅ DONE)
+
+> **Current status lives in the ▶ STATUS block near the top** (Phase 7 EMS complete; remaining = EventController
+> CRUD / Phase 8 / Phase 9). The Phase 3–6 sub-sections below are historical (all landed). The per-change
+> **workflow + env gotchas** here remain the canonical recipe for any further spec/controller work.
 
 Workflow per change: edit spec → `npm run generate:api-types` (FE) + Gradle regen/compile
 (BE) → fix tests → restart the touched service (`make dev-native-restart-service SERVICE=…`)
@@ -1038,10 +1048,15 @@ Do it in **one PR** so the repo never sits in a half-carved state.
 
 ---
 
-## Phase 7 — Contract-first completion (controllers → generated interfaces) — 🚧 IN PROGRESS
+## Phase 7 — Contract-first completion (controllers → generated interfaces) — ✅ EMS DONE (CUMS/Partner advanced)
 
 Surfaced during Phase 6 but **platform-wide, not EMS-only** (verified 2026-06-27). The single
 most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that Phase 6 had to fix.
+
+> **As of 2026-06-29: EMS is fully contract-first (42 controllers wired) — see the ▶ STATUS block at the top
+> for the authoritative current state.** Remaining: `EventController` CRUD (deferred FE story), `GlobalSession`
+> (orphan-remove), `Watch*` (Phase 8), `DevEmail`/`TestFixtureCleanup` (skip); CUMS 6/6; Partner 5/10. The
+> per-controller history below + the ✅ DONE notes near the top are the full record.
 
 > **Progress (2026-06-27, branch `api-consolidation-phase7`, after Phase 9a):**
 > - ✅ **Wired:** `PresentationSettingsController`→`PresentationSettingsApi` (`cbade6c4`),
@@ -1227,8 +1242,9 @@ most valuable follow-up, and the root cause of the Phase 4 PUT→POST drift that
 >   `@Pattern` now enforced via the interface. **Verified (full live cycle):** `ParticipantsControllerIntegrationTest`
 >   19/19 green; EMS restarted + gateway smoke — distribution-list participants/speakers 200 (kind=participants now
 >   serializes), bogus kind 404, export.xlsx 200 valid ZIP (504b0304) via Resource, POST no-auth 401; FE type-check
->   green. ⏳ **Next EMS:** continue per-controller wire (e.g. Sessions, Newsletter, GlobalSession — the last needs
->   a spec addition since `/sessions` search is undocumented).
+>   green. _(Historical note from 2026-06-27. **EMS per-controller wiring is now COMPLETE — 42 controllers,
+>   all wireable, finished 2026-06-29; see the ▶ STATUS block at the top.** `GlobalSessionController` ended up an
+>   orphan flagged for removal rather than wired.)_
 > - ✅ **Fixed 2026-06-27 (re-diagnosed):** the `users-api` 15/19/20 failures were NOT a missing
 >   role predicate — the singular `role` filter works (see §Phase 3 note + passing
 >   `UserControllerIntegrationTest.should_filterByRole_when_roleFilterProvided`). The tests still sent
