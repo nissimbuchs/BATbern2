@@ -1644,7 +1644,7 @@ zero client impact.
 
 ---
 
-## Phase 9 — Tooling & spec hygiene — ⏳ TODO
+## Phase 9 — Tooling & spec hygiene — ✅ DONE
 
 Low-risk cleanup; no contract change.
 
