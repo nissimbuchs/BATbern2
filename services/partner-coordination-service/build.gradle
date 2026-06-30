@@ -227,3 +227,11 @@ flyway {
     user = System.getProperty('flyway.user', 'batbern_user')
     password = System.getProperty('flyway.password', 'batbern-dev-password')
 }
+
+// Clean generated sources when running clean (parity with EMS/CUMS)
+clean {
+    delete "$buildDir/generated"
+    delete "$buildDir/generated-meetings"
+    delete "$buildDir/generated-client-company"
+    delete "$buildDir/generated-client-user"
+}

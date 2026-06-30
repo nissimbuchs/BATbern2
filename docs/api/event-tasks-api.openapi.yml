@@ -461,6 +461,8 @@ components:
         - triggerState
         - dueDateType
         - isDefault
+        - createdAt
+        - updatedAt
       properties:
         id:
           type: string
@@ -545,6 +547,8 @@ components:
         - taskName
         - triggerState
         - status
+        - createdAt
+        - updatedAt
       properties:
         id:
           type: string

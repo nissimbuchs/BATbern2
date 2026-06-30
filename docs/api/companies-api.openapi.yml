@@ -1169,8 +1169,8 @@ components:
           description: Internal file identifier
           example: file-123
 
-    # Logo upload schemas removed - Story 1.16.3: Generic File Upload Service
-    # See file-upload-api.openapi.yml for file upload schemas
+    # Logo upload is served by LogoController under the `Logos` tag in this same spec
+    # (consolidated from the retired file-upload-api spec — API consolidation 2026-06-30).
 
     CompanySearchResponse:
       type: object
