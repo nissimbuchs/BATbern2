@@ -8,8 +8,12 @@ import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.BatchRegistrationRequest;
 import ch.batbern.events.registrations.dto.generated.BatchRegistrationResponse;
+import ch.batbern.events.registrations.dto.generated.ConfirmRegistration200Response;
 import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
+import ch.batbern.events.registrations.dto.generated.EnrollStakeholdersResponse;
 import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
+import ch.batbern.events.registrations.dto.generated.ResendConfirmationResponse;
+import ch.batbern.events.registrations.dto.generated.UpdateRegistrationStatusRequest;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
 import ch.batbern.events.dto.EventResponse;
@@ -1557,7 +1561,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
                     + "registration is still pending (status=registered). Generates fresh tokens."
     )
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Map<String, String>> resendConfirmationEmail(
+    public ResponseEntity<ResendConfirmationResponse> resendConfirmationEmail(
             @PathVariable String eventCode,
             @PathVariable String registrationCode) {
         log.info("POST /api/v1/events/{}/registrations/{}/resend-confirmation", eventCode, registrationCode);
@@ -1573,7 +1577,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
         if (!"registered".equalsIgnoreCase(registration.getStatus())) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
-                    .body(Map.of("message", "Confirmation email can only be resent for pending registrations. "
+                    .body(new ResendConfirmationResponse().message(
+                            "Confirmation email can only be resent for pending registrations. "
                             + "Current status: " + registration.getStatus()));
         }
 
@@ -1599,7 +1604,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         log.info("Confirmation email resent for registration {}: attendee={}", registrationCode,
                 userProfile.getEmail());
 
-        return ResponseEntity.ok(Map.of("message", "Confirmation email resent to " + userProfile.getEmail()));
+        return ResponseEntity.ok(new ResendConfirmationResponse().message(
+                "Confirmation email resent to " + userProfile.getEmail()));
     }
 
     /**
@@ -1618,13 +1624,15 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             description = "Bulk-enroll all organizers and partners as confirmed participants. "
                     + "Idempotent — already-registered users are skipped. Requires ORGANIZER role."
     )
-    public ResponseEntity<Map<String, Integer>> enrollStakeholders(@PathVariable String eventCode) {
+    public ResponseEntity<EnrollStakeholdersResponse> enrollStakeholders(@PathVariable String eventCode) {
         log.info("POST /api/v1/events/{}/enroll-stakeholders", eventCode);
         ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
         ch.batbern.events.service.RegistrationService.EnrollmentSummary result =
                 registrationService.enrollStakeholders(event);
-        return ResponseEntity.ok(Map.of("enrolled", result.enrolled(), "skipped", result.skipped()));
+        return ResponseEntity.ok(new EnrollStakeholdersResponse()
+                .enrolled(result.enrolled())
+                .skipped(result.skipped()));
     }
 
     /**
@@ -2135,7 +2143,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             description = "Confirm a pending registration using the token from the confirmation "
                 + "email. Token is valid for 48 hours and event code must match."
     )
-    public ResponseEntity<Map<String, String>> confirmRegistration(
+    public ResponseEntity<ConfirmRegistration200Response> confirmRegistration(
             @PathVariable String eventCode,
             @RequestParam("token") String token) {
         log.debug("POST /api/v1/events/{}/registrations/confirm", eventCode);
@@ -2170,10 +2178,9 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
             // Check if already confirmed
             if ("confirmed".equalsIgnoreCase(registration.getStatus())) {
-                Map<String, String> response = new HashMap<>();
-                response.put("message", "Registration already confirmed");
-                response.put("status", "CONFIRMED");
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(new ConfirmRegistration200Response()
+                        .message("Registration already confirmed")
+                        .status(ConfirmRegistration200Response.StatusEnum.CONFIRMED));
             }
 
             // Update status to confirmed (Story 4.1.5c: registered → confirmed)
@@ -2184,11 +2191,9 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             log.info("Registration confirmed: {} for event: {}", registrationId, eventCode);
 
             // Return success response
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Registration confirmed successfully!");
-            response.put("status", "CONFIRMED");
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(new ConfirmRegistration200Response()
+                    .message("Registration confirmed successfully!")
+                    .status(ConfirmRegistration200Response.StatusEnum.CONFIRMED));
 
         } catch (io.jsonwebtoken.JwtException e) {
             log.warn("Invalid confirmation token: {}", e.getMessage());
@@ -2216,7 +2221,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     public ResponseEntity<RegistrationResponse> updateRegistration(
             @PathVariable String eventCode,
             @PathVariable String registrationCode,
-            @RequestBody Map<String, Object> updates) {
+            @RequestBody UpdateRegistrationStatusRequest updates) {
         log.debug("PATCH /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
 
         // Find registration
@@ -2234,8 +2239,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
         // Apply updates
         boolean becomingCancelled = false;
-        if (updates.containsKey("status")) {
-            String newStatus = (String) updates.get("status");
+        if (updates.getStatus() != null) {
+            String newStatus = updates.getStatus();
             String previousStatus = registration.getStatus();
             registration.setStatus(newStatus);
             // Story 10.12 (CR fix): Trigger waitlist promotion for ANY non-cancelled → cancelled

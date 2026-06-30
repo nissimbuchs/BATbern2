@@ -575,7 +575,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchRegistrationRequest'
+              $ref: '#/components/schemas/UpdateRegistrationStatusRequest'
       responses:
         '200':
           description: Registration updated successfully
@@ -675,6 +675,77 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/registrations/{registrationCode}/resend-confirmation:
+    post:
+      tags:
+      - Registrations
+      summary: Resend the registration confirmation email
+      description: 'Organizer-only: re-send the confirmation email to an attendee whose
+        registration is still pending (status=registered). Generates fresh tokens.
+
+
+        **Security**: ORGANIZER role required.'
+      operationId: resendConfirmationEmail
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      - name: registrationCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Confirmation email resent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendConfirmationResponse'
+        '409':
+          description: Registration is not pending (cannot resend)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendConfirmationResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /events/{eventCode}/enroll-stakeholders:
+    post:
+      tags:
+      - Registrations
+      summary: Bulk-enroll organizers and partners as confirmed participants
+      description: 'Organizer-only action for events that predate auto-enrollment.
+        Idempotent — already-registered users are counted as skipped, not re-enrolled.
+
+
+        **Security**: ORGANIZER role required.'
+      operationId: enrollStakeholders
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      responses:
+        '200':
+          description: Enrollment counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollStakeholdersResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /events/{eventCode}/registrations/confirm:
     post:
       tags:
@@ -1350,6 +1421,35 @@ components:
           type: string
           description: Dietary preferences, accessibility needs, etc.
           example: Vegetarian meal preference
+    UpdateRegistrationStatusRequest:
+      type: object
+      description: 'Organizer status change for a registration (e.g. confirm/cancel).
+        The deployed PATCH handler reads only `status`; a cancel triggers waitlist promotion.'
+      properties:
+        status:
+          type: string
+          description: New registration status (e.g. confirmed, cancelled, registered, waitlist)
+          example: confirmed
+    ResendConfirmationResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          description: Human-readable result message
+    EnrollStakeholdersResponse:
+      type: object
+      required:
+      - enrolled
+      - skipped
+      properties:
+        enrolled:
+          type: integer
+          description: Number of stakeholders newly enrolled as confirmed participants
+        skipped:
+          type: integer
+          description: Number of stakeholders already registered (idempotent skip)
     PatchRegistrationRequest:
       type: object
       description: 'Story 4.1.5a/4.1.6: Update registration details
