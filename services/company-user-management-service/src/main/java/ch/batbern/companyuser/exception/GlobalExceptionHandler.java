@@ -423,6 +423,32 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle Bean Validation constraint violations on controller method parameters
+     * (e.g. {@code @Min(1)} on {@code page}, {@code @Size}/{@code @NotNull}/{@code @Pattern} on query
+     * params declared by the generated {@code *Api} interfaces). Spring's method validation throws
+     * {@link jakarta.validation.ConstraintViolationException} for these; without this handler it would
+     * fall through to the generic {@code Exception} handler and 500. AC14: invalid query params → 400.
+     * Surfaced by the Phase 7 contract-first wiring — the generated interface now enforces param
+     * constraints the hand-rolled controller never declared.
+     */
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(
+            jakarta.validation.ConstraintViolationException ex,
+            HttpServletRequest request) {
+        log.warn("Parameter constraint violation: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("WARNING")
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
      * Handle Spring Security AuthorizationDeniedException
      * AC10: Return 401 for anonymous users, 403 for authenticated users without permission
      */

@@ -71,7 +71,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
 
         // Create test event
         testEvent = Event.builder()
-                .eventCode("BAT2025-FULL-DAY")
+                .eventCode("BATbern2025")
                 .title("BATbern 2025 Full Day Conference")
                 .eventNumber(2025)
                 .date(eventDate)

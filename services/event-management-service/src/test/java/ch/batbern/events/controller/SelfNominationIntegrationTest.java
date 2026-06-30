@@ -424,9 +424,10 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         // the test thread (the @WithMockUser SecurityContext supplies the username).
         saveEvent(EVENT_CODE, "cloud-native", true, "topic", EventWorkflowState.TOPIC_SELECTION);
 
-        speakerPoolService.selfNominate(EVENT_CODE, new ch.batbern.events.dto.SelfNominateSpeakerRequest(
-                "Event-driven architecture in practice",
-                "A field report on migrating a monolith to an event-driven core."));
+        speakerPoolService.selfNominate(EVENT_CODE,
+                new ch.batbern.events.speakers.dto.generated.SelfNominateSpeakerRequest(
+                        "Event-driven architecture in practice",
+                        "A field report on migrating a monolith to an event-driven core."));
 
         // Sanity: selfNominate actually ran (row created at IDENTIFIED).
         assertThat(speakerPoolRepository.count()).as("self-nomination created one pool row").isEqualTo(1);

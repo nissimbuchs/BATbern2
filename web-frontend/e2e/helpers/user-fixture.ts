@@ -57,32 +57,63 @@ async function authedJson(path: string, token: string, init: RequestInit = {}): 
  * server-derived (`bruno.test`(.N)); the email is unique (`factory.email()`). Throws loudly
  * on a non-201 (per the plan's "no empty tests / fail loud, don't skip" bar). Tear down with
  * `cleanupById(token, 'users', handle.username)`.
+ *
+ * Concurrency note: every user-management spec seeds a `Bruno Test` user in its `beforeAll`,
+ * and the suite runs `fullyParallel` with multiple local workers. CUMS derives the username
+ * with a check-then-insert (`ensureUniqueUsername` + save), which is not atomic — two workers
+ * that both observe `bruno.test` as free race to INSERT it and the loser gets a 500
+ * ("A data integrity error occurred", unique constraint `user_profiles_username_key"). We
+ * absorb that here with a bounded retry: on the next attempt the winner's row is committed and
+ * visible, so the server derives `bruno.test.N` and succeeds. (A fresh email per attempt keeps
+ * the email column unique too.) See docs/plans/playwright-staging-hardening.md.
  */
 export async function createTestUser(
   token: string,
   initialRoles: string[] = ['ATTENDEE']
 ): Promise<TestUser> {
-  const email = factory.email();
-  const res = await authedJson('/api/v1/users', token, {
-    method: 'POST',
-    body: JSON.stringify({
-      email,
-      firstName: factory.USER_FIRST_NAME,
-      lastName: factory.USER_LAST_NAME,
-      initialRoles,
-      bio: 'Playwright slice-3 users fixture — auto-deleted by cleanupById/afterAll.',
-    }),
-  });
-  if (res.status !== 201) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`[user-fixture] create user failed: ${res.status} ${res.statusText} ${body}`);
+  const MAX_ATTEMPTS = 5;
+  let lastBody = '';
+  let lastStatus = 0;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const email = factory.email();
+    const res = await authedJson('/api/v1/users', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        firstName: factory.USER_FIRST_NAME,
+        lastName: factory.USER_LAST_NAME,
+        initialRoles,
+        bio: 'Playwright slice-3 users fixture — auto-deleted by cleanupById/afterAll.',
+      }),
+    });
+
+    if (res.status === 201) {
+      const data = (await res.json()) as { id?: string; email?: string };
+      if (!data.id) {
+        throw new Error(`[user-fixture] create user response had no id: ${JSON.stringify(data)}`);
+      }
+      console.log(`[user-fixture] ✓ created user ${data.id} (${email})`);
+      return { username: data.id, email: data.email ?? email };
+    }
+
+    lastStatus = res.status;
+    lastBody = await res.text().catch(() => '');
+
+    // Retry only the username-derivation race (500 data-integrity / 409 conflict); fail fast on
+    // anything else (auth, validation) so genuine errors still surface loudly.
+    const isUsernameRace =
+      (res.status === 500 && lastBody.includes('data integrity')) || res.status === 409;
+    if (!isUsernameRace || attempt === MAX_ATTEMPTS) {
+      break;
+    }
+    // Small jittered backoff so the racing winner commits before we re-derive.
+    await new Promise((r) => setTimeout(r, 100 * attempt + Math.floor(Math.random() * 100)));
+    console.log(
+      `[user-fixture] username-derivation race (HTTP ${res.status}); retry ${attempt}/${MAX_ATTEMPTS - 1}`
+    );
   }
-  const data = (await res.json()) as { id?: string; email?: string };
-  if (!data.id) {
-    throw new Error(`[user-fixture] create user response had no id: ${JSON.stringify(data)}`);
-  }
-  console.log(`[user-fixture] ✓ created user ${data.id} (${email})`);
-  return { username: data.id, email: data.email ?? email };
+
+  throw new Error(`[user-fixture] create user failed: ${lastStatus} ${lastBody}`);
 }
 
 /**

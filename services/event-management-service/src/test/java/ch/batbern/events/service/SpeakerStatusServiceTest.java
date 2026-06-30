@@ -5,10 +5,10 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.dto.SpeakerStatusResponse;
-import ch.batbern.events.dto.StatusHistoryItem;
-import ch.batbern.events.dto.StatusSummaryResponse;
-import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.speakers.dto.generated.SpeakerStatusResponse;
+import ch.batbern.events.speakers.dto.generated.StatusHistoryItem;
+import ch.batbern.events.speakers.dto.generated.StatusSummaryResponse;
+import ch.batbern.events.speakers.dto.generated.UpdateStatusRequest;
 import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
@@ -252,12 +252,12 @@ public class SpeakerStatusServiceTest {
 
         assertThat(result).hasSize(2);
         // Newest first → rejection at 18:21, status change at 18:00
-        assertThat(result.get(0).getKind()).isEqualTo(StatusHistoryItem.Kind.CONTENT_REJECTED);
+        assertThat(result.get(0).getKind()).isEqualTo(StatusHistoryItem.KindEnum.CONTENT_REJECTED);
         assertThat(result.get(0).getChangeReason()).isEqualTo("Please remove vendor pitch from intro");
         assertThat(result.get(0).getChangedByUsername()).isEqualTo("nissim.buchs");
         assertThat(result.get(0).getPreviousStatus()).isNull();
         assertThat(result.get(0).getNewStatus()).isNull();
-        assertThat(result.get(1).getKind()).isEqualTo(StatusHistoryItem.Kind.STATUS_CHANGE);
+        assertThat(result.get(1).getKind()).isEqualTo(StatusHistoryItem.KindEnum.STATUS_CHANGE);
         assertThat(result.get(1).getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
     }
 

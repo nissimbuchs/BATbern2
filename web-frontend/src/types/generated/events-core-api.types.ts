@@ -54,15 +54,7 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Batch update multiple events
-     * @description Update multiple events in a single request.
-     *
-     *     **Acceptance Criteria**: AC14
-     *
-     *     **Performance**: <1000ms for 50 events (P95)
-     */
-    patch: operations['batchUpdateEvents'];
+    patch?: never;
     trace?: never;
   };
   '/events/current': {
@@ -474,6 +466,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/teaser-images': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List teaser images for an event (or the global set via _global)
+     * @description Returns the teaser images configured for the event, ordered for the moderator presentation. Use eventCode "_global" for images shown on all events.
+     */
+    get: operations['listTeaserImages'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/teaser-images/upload-url': {
     parameters: {
       query?: never;
@@ -526,10 +538,341 @@ export interface paths {
     patch: operations['updateTeaserImage'];
     trace?: never;
   };
+  '/events/{eventCode}/venue-coordination/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Preview a venue/catering coordination mail
+     * @description Event Detail → Venue tab (Story). ORGANIZER role.
+     */
+    post: operations['previewVenueCoordination'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/venue-coordination/send': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a venue/catering coordination mail
+     * @description Event Detail → Venue tab (Story). ORGANIZER role.
+     */
+    post: operations['sendVenueCoordination'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/publish/{phase}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Publish a progressive-publishing phase (topic/speakers/agenda)
+     * @description Story progressive publishing (AC14-16). ORGANIZER role.
+     */
+    post: operations['publishPhase'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/unpublish/{phase}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Unpublish a progressive-publishing phase
+     * @description Story progressive publishing (AC18). ORGANIZER role.
+     */
+    post: operations['unpublishPhase'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/publish/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get publishing status + per-phase validation
+     * @description ORGANIZER role.
+     */
+    get: operations['getPublishingStatus'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/publish/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preview the public appearance before publishing
+     * @description Story progressive publishing (AC20, AC29). ORGANIZER role.
+     */
+    get: operations['getPublishPreview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/publish/schedule': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the auto-publish schedule
+     * @description ORGANIZER role.
+     */
+    get: operations['getAutoPublishSchedule'];
+    put?: never;
+    /**
+     * Configure the auto-publish schedule
+     * @description Story progressive publishing (AC19). ORGANIZER role.
+     */
+    post: operations['configureAutoPublish'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/backfill-speaker-names': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Backfill speaker names for full-text search (maintenance)
+     * @description Temporary maintenance endpoint (Story archive search).
+     */
+    post: operations['backfillSpeakerNames'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/settings/{key}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get an admin setting by key
+     * @description Open GET for VPC-internal callers (Story 10.26); HTTP-level security gates access.
+     */
+    get: operations['getAdminSetting'];
+    /**
+     * Set an admin setting by key
+     * @description ORGANIZER role.
+     */
+    put: operations['setAdminSetting'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/qna': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Adjust all of an event's session Q&A windows (Story 7.5)
+     * @description Open/extend/close all session Q&A windows at once. ORGANIZER role.
+     */
+    patch: operations['adjustQnaWindows'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    BackfillSpeakerNamesResponse: {
+      success?: boolean;
+      message?: string;
+      updatedCount?: number;
+    };
+    AdminSettingResponse: {
+      key?: string;
+      value?: string | null;
+    };
+    SetAdminSettingRequest: {
+      value?: string;
+    };
+    QnaWindowPatchRequest: {
+      /** Format: date-time */
+      closesAt?: string;
+      close?: boolean;
+      open?: boolean;
+    };
+    QnaWindowAdjustResponse: {
+      eventCode?: string;
+      windowsAdjusted?: number;
+      status?: string;
+    };
+    PublishPhaseResponse: {
+      phase?: string;
+      published?: boolean;
+      /** Format: date-time */
+      publishedAt?: string;
+      cdnInvalidated?: boolean;
+    };
+    UnpublishPhaseResponse: {
+      phase?: string;
+      published?: boolean;
+      /** Format: date-time */
+      unpublishedAt?: string;
+      cdnInvalidated?: boolean;
+    };
+    ValidationStatus: {
+      isValid?: boolean;
+      errors?: string[];
+    };
+    UnassignedSession: {
+      sessionSlug?: string;
+      title?: string;
+    };
+    SessionValidationStatus: {
+      isValid?: boolean;
+      errors?: string[];
+      assignedCount?: number;
+      totalCount?: number;
+      unassignedSessions?: components['schemas']['UnassignedSession'][];
+    };
+    PublishingStatusResponse: {
+      currentPhase?: string;
+      publishedPhases?: string[];
+      topic?: components['schemas']['ValidationStatus'];
+      speakers?: components['schemas']['ValidationStatus'];
+      sessions?: components['schemas']['SessionValidationStatus'];
+    };
+    SpeakerPreview: {
+      name?: string;
+      company?: string;
+    };
+    SessionPreview: {
+      title?: string;
+      startTime?: string;
+      endTime?: string;
+      room?: string;
+    };
+    PublishPreviewResponse: {
+      eventCode?: string;
+      currentPhase?: string;
+      topicPublished?: boolean;
+      speakersPublished?: boolean;
+      agendaPublished?: boolean;
+      speakers?: components['schemas']['SpeakerPreview'][];
+      sessions?: components['schemas']['SessionPreview'][];
+    };
+    AutoPublishScheduleRequest: {
+      phase2Enabled?: boolean;
+      phase2DaysBeforeEvent?: number;
+      phase3Enabled?: boolean;
+      phase3DaysBeforeEvent?: number;
+    };
+    AutoPublishScheduleResponse: {
+      scheduled?: boolean;
+      phase2Enabled?: boolean;
+      phase2DaysBeforeEvent?: number;
+      /** Format: date-time */
+      phase2TriggerDate?: string;
+      phase3Enabled?: boolean;
+      phase3DaysBeforeEvent?: number;
+      /** Format: date-time */
+      phase3TriggerDate?: string;
+    };
+    /**
+     * @description Venue-coordination recipient role
+     * @enum {string}
+     */
+    VenueRole: 'VENUE' | 'CATERING';
+    VenueCoordinationPreviewRequest: {
+      templateKey: string;
+      recipients: components['schemas']['VenueRole'][];
+      /** @description Locale (de | en); falls back to de */
+      locale?: string;
+      notes?: string;
+    };
+    VenueCoordinationPreviewResponse: {
+      subject?: string;
+      htmlBody?: string;
+      toEmail?: string;
+      ccEmails?: string[];
+      replyToEmail?: string;
+    };
+    VenueCoordinationSendRequest: {
+      templateKey: string;
+      locale?: string;
+      notes?: string;
+      recipients: components['schemas']['VenueRole'][];
+    };
+    VenueCoordinationSendResponse: {
+      sentTo?: components['schemas']['VenueRole'][];
+    };
     /**
      * @description Controls which slide the image appears after in the moderator presentation.
      * @enum {string}
@@ -783,10 +1126,29 @@ export interface components {
        *     Story BAT-109: Archive browsing with session expansion
        */
       sessions?: components['schemas']['Session'][] | null;
+      /** @description Organizer's free-text note on topic selection (Story 5.2). */
+      topicSelectionNote?: string;
+      /** @description Username of the creator (audit). */
+      createdBy?: string;
+      /** @description Username of the last updater (audit). */
+      updatedBy?: string;
+      /** @description Speakers who accepted their invitation. Only present when ?include=metrics. */
+      confirmedSpeakersCount?: number;
+      /** @description Speakers who submitted complete materials. Only present when ?include=metrics. */
+      speakersWithCompleteInfoCount?: number;
+      /** @description Speakers with materials still pending. Only present when ?include=metrics. */
+      pendingMaterialsCount?: number;
+      /** @description Maximum speaker slots for this event type. Only present when ?include=metrics. */
+      maxSpeakerSlots?: number;
+      /** @description Sessions that have at least one material. Only present when ?include=metrics. */
+      sessionsWithMaterialsCount?: number;
+      /** @description Total sessions for this event. Only present when ?include=metrics. */
+      totalSessionsCount?: number;
     };
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];
-      sessions?: components['schemas']['Session'][];
+      /** @description Expanded sessions for the single-event detail view — carries the full SessionResponse shape (materials + enriched speakers). The list endpoint embeds the leaner Session instead (materialsStatus only, no materials array). */
+      sessions?: components['schemas']['SessionResponse'][];
       /**
        * @description Progressive publishing phase for watch app (Story W1.2)
        *     - TOPIC: Event topic selected, speakers TBA
@@ -804,14 +1166,14 @@ export interface components {
     };
     CreateEventRequest: {
       title: string;
-      eventNumber: number;
+      eventNumber?: number;
       /** Format: date-time */
       date: string;
       /** Format: date-time */
-      registrationDeadline: string;
-      venueName: string;
-      venueAddress: string;
-      venueCapacity: number;
+      registrationDeadline?: string;
+      venueName?: string;
+      venueAddress?: string;
+      venueCapacity?: number;
       /** @description Story 10.11 — Optional registration limit. Null = unlimited. */
       registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
@@ -820,7 +1182,7 @@ export interface components {
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
        */
-      organizerUsername: string;
+      organizerUsername?: string;
       /** @default 0 */
       currentAttendeeCount: number;
       /** Format: date-time */
@@ -837,14 +1199,14 @@ export interface components {
     };
     UpdateEventRequest: {
       title: string;
-      eventNumber: number;
+      eventNumber?: number;
       /** Format: date-time */
       date: string;
       /** Format: date-time */
-      registrationDeadline: string;
-      venueName: string;
-      venueAddress: string;
-      venueCapacity: number;
+      registrationDeadline?: string;
+      venueName?: string;
+      venueAddress?: string;
+      venueCapacity?: number;
       /** @description Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
       registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
@@ -853,13 +1215,13 @@ export interface components {
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
        */
-      organizerUsername: string;
+      organizerUsername?: string;
       currentAttendeeCount?: number;
       /** Format: date-time */
       publishedAt?: string;
       metadata?: string;
       description?: string;
-      eventType: components['schemas']['EventType'];
+      eventType?: components['schemas']['EventType'];
       /** @description Upload ID from /logos/presigned-url for event theme image */
       themeImageUploadId?: string | null;
     };
@@ -898,22 +1260,10 @@ export interface components {
       qnaOpenTrigger?: 'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED';
       /** @description Story 7.5 rework: window length in days (close = event date + this). */
       qnaWindowDays?: number;
-    };
-    BatchUpdateRequest: {
-      updates: {
-        id?: string;
-        fields?: Record<string, never>;
-      }[];
-    };
-    BatchUpdateResponse: {
-      /** @example 45 */
-      successful?: number;
-      /** @example 5 */
-      failed?: number;
-      errors?: {
-        id?: string;
-        error?: string;
-      }[];
+      /** @description Topic code to associate with the event (Story 5.2). Null leaves it unchanged unless explicitly cleared by the controller. */
+      topicCode?: string | null;
+      /** @description Organizer's free-text note on topic selection (Story 5.2). */
+      topicSelectionNote?: string | null;
     };
     /**
      * @description Event type identifier (Story 5.1 - Event Type Definition).
@@ -1130,12 +1480,31 @@ export interface components {
       | 'EVENT_LIVE'
       | 'EVENT_COMPLETED'
       | 'ARCHIVED';
+    /** @description Result of a successful workflow state transition. */
+    WorkflowTransitionResponse: {
+      /** @example BATbern142 */
+      eventCode: string;
+      /**
+       * @description The event's workflow state name after the transition.
+       * @example TOPIC_SELECTION
+       */
+      workflowState: string;
+      /** Format: date-time */
+      updatedAt?: string;
+    };
     /**
      * @description Request to transition event to target workflow state (Story 5.1a - AC12).
      *     The target state must be a valid transition from the current state.
      */
     TransitionStateRequest: {
-      targetState: components['schemas']['EventWorkflowState'];
+      /**
+       * @description Target workflow state name (an EventWorkflowState constant, e.g.
+       *     SPEAKER_OUTREACH). Typed as a string — the domain enum carries ~20 states
+       *     and is validated server-side by the workflow state machine; the spec-level
+       *     EventWorkflowState enum is intentionally not used here to avoid an
+       *     incomplete-enum contract.
+       */
+      targetState: string;
       /**
        * @description Override workflow validation flag.
        *     When true, allows any state transition bypassing validation rules.
@@ -1154,21 +1523,25 @@ export interface components {
      *     Provides organizers with visibility into what transitions are possible and why.
      */
     WorkflowStatusDto: {
-      currentState: components['schemas']['EventWorkflowState'];
+      /**
+       * @description Current workflow state name (an EventWorkflowState constant).
+       * @example SPEAKER_BRAINSTORMING
+       */
+      currentState: string;
       /**
        * @description List of states that can be transitioned to from current state
        * @example [
        *       "SPEAKER_OUTREACH"
        *     ]
        */
-      nextAvailableStates: components['schemas']['EventWorkflowState'][];
+      nextAvailableStates: string[];
       /**
        * @description List of states that are blocked due to validation failures
        * @example [
        *       "SPEAKER_OUTREACH"
        *     ]
        */
-      blockedTransitions: components['schemas']['EventWorkflowState'][];
+      blockedTransitions: string[];
       /**
        * @description Validation messages explaining why certain transitions are blocked
        * @example [
@@ -1379,20 +1752,10 @@ export interface components {
       title: string;
       description?: string;
       /**
-       * @description Session type - null for placeholder sessions, assigned during agenda planning
+       * @description Session type — null for placeholder sessions, assigned during agenda planning. Free-form string (NOT a closed enum): the deployed contract returns additional values such as `aperitif`, so callers must tolerate unknown types. Known values: keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif.
        * @example keynote
-       * @enum {string|null}
        */
-      sessionType?:
-        | 'keynote'
-        | 'presentation'
-        | 'workshop'
-        | 'panel_discussion'
-        | 'networking'
-        | 'break'
-        | 'lunch'
-        | 'moderation'
-        | null;
+      sessionType?: string | null;
       /**
        * Format: date-time
        * @description Session start time - null for placeholder sessions, assigned during slot assignment
@@ -1422,27 +1785,10 @@ export interface components {
        */
       speakers?: components['schemas']['SessionSpeaker'][];
       /**
-       * @description Material submission workflow status
-       *     - NONE: No materials submitted yet (initial state)
-       *     - pending: Materials submitted, awaiting review
-       *     - in_review: Materials under review
-       *     - approved: Materials approved
-       *     - requires_changes: Materials need changes
-       *     - rejected: Materials rejected
-       *     - revision_submitted: Revised materials submitted
-       *     - COMPLETE: Materials finalized and approved (final state)
-       * @example pending
-       * @enum {string}
+       * @description Material submission workflow status. Free-form string (NOT a closed enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the review-workflow values below, so callers must tolerate unknown values. Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved, requires_changes, rejected, revision_submitted.
+       * @example COMPLETE
        */
-      materialsStatus?:
-        | 'NONE'
-        | 'pending'
-        | 'in_review'
-        | 'approved'
-        | 'requires_changes'
-        | 'rejected'
-        | 'revision_submitted'
-        | 'COMPLETE';
+      materialsStatus?: string;
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.
@@ -1522,6 +1868,99 @@ export interface components {
       /** @description Present only in dev/staging diagnostics — never in production. */
       stackTrace?: string;
     };
+    /**
+     * @description Story 5.9: Session material (uploaded slide deck / document).
+     *     Returned by GET /sessions/{sessionSlug}/materials and embedded in Session responses. Maps the SessionMaterial entity; createdAt/updatedAt are UTC.
+     */
+    SessionMaterialResponse: {
+      /**
+       * Format: uuid
+       * @description Material identifier (same-service UUID)
+       * @example 3fa85f64-5717-4562-b3fc-2c963f66afa6
+       */
+      id: string;
+      /**
+       * @description Client-supplied upload correlation id
+       * @example upload-2026-0001
+       */
+      uploadId: string;
+      /**
+       * @description S3 object key of the stored material
+       * @example materials/2026/batbern142/ui-design/slides.pdf
+       */
+      s3Key: string;
+      /**
+       * @description CloudFront delivery URL for the material (null until CDN-published)
+       * @example https://cdn.batbern.ch/materials/2026/batbern142/ui-design/slides.pdf
+       */
+      cloudFrontUrl?: string;
+      /**
+       * @description Original uploaded file name
+       * @example slides.pdf
+       */
+      fileName: string;
+      /**
+       * @description File extension (without the dot)
+       * @example pdf
+       */
+      fileExtension: string;
+      /**
+       * Format: int64
+       * @description File size in bytes
+       * @example 2097152
+       */
+      fileSize: number;
+      /**
+       * @description MIME type of the material
+       * @example application/pdf
+       */
+      mimeType: string;
+      /**
+       * @description Material classification (e.g. slides, document)
+       * @example slides
+       */
+      materialType: string;
+      /**
+       * @description Username of the uploader (public identifier per ADR-003)
+       * @example john.doe
+       */
+      uploadedBy: string;
+      /**
+       * Format: date-time
+       * @description Creation timestamp (UTC)
+       * @example 2026-06-28T08:28:30.440Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Last-update timestamp (UTC)
+       * @example 2026-06-28T08:28:30.440Z
+       */
+      updatedAt: string;
+      /**
+       * @description Story 5.10 forward-compat: whether text content has been extracted for RAG search
+       * @example false
+       */
+      contentExtracted?: boolean;
+      /**
+       * @description Story 5.10 forward-compat: content-extraction status
+       * @example PENDING
+       */
+      extractionStatus?: string;
+    };
+    /**
+     * @description Story 1.15a.1b: Session response with embedded speakers + materials.
+     *     Session schema plus the service-enriched materials list/count (Story 5.9).
+     */
+    SessionResponse: components['schemas']['Session'] & {
+      /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
+      materials?: components['schemas']['SessionMaterialResponse'][];
+      /**
+       * @description Story 5.9: Number of uploaded materials (for overview displays)
+       * @example 3
+       */
+      materialsCount?: number;
+    };
   };
   responses: {
     /** @description Bad request - validation error */
@@ -1593,10 +2032,12 @@ export interface operations {
         filter?: string;
         /** @description Sort field (prefix with - for descending) */
         sort?: string;
-        /** @description Page number (0-indexed) */
+        /** @description Page number (1-indexed). Default 1. The deployed PaginationUtils.parseParams rejects page <= 0 with 400, so the default must be 1. */
         page?: number;
-        /** @description Items per page (max 100) */
+        /** @description Items per page. The deployed PaginationUtils clamps values above 100 down to 100 (it does NOT reject them), so no maximum is enforced at the contract layer. */
         limit?: number;
+        /** @description Include archived events in the result set (default false). The public archive index sets this true to list past events. */
+        includeArchived?: boolean;
         /** @description Comma-separated list of resources to include */
         include?: string;
       };
@@ -1642,32 +2083,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['Event'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  batchUpdateEvents: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['BatchUpdateRequest'];
-      };
-    };
-    responses: {
-      /** @description Batch update completed */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BatchUpdateResponse'];
         };
       };
       400: components['responses']['BadRequest'];
@@ -1917,14 +2332,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            /** @example BATbern142 */
-            eventCode?: string;
-            /** @example TOPIC_SELECTION */
-            workflowState?: string;
-            /** Format: date-time */
-            updatedAt?: string;
-          };
+          'application/json': components['schemas']['WorkflowTransitionResponse'];
         };
       };
       /** @description Invalid state transition */
@@ -2169,7 +2577,7 @@ export interface operations {
   getFeaturedThanks: {
     parameters: {
       query?: {
-        /** @description Max notes to return (default 9, hard-capped at 9). */
+        /** @description Max notes to return (default 9). The server soft-clamps to [1, 9] — out-of-range values are accepted (not rejected) and clamped, not a 400. */
         limit?: number;
       };
       header?: never;
@@ -2364,6 +2772,31 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  listTeaserImages: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of teaser images */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TeaserImageItem'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
   generateTeaserImageUploadUrl: {
     parameters: {
       query?: never;
@@ -2497,6 +2930,325 @@ export interface operations {
         };
         content?: never;
       };
+    };
+  };
+  previewVenueCoordination: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VenueCoordinationPreviewRequest'];
+      };
+    };
+    responses: {
+      /** @description Rendered preview */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VenueCoordinationPreviewResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  sendVenueCoordination: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VenueCoordinationSendRequest'];
+      };
+    };
+    responses: {
+      /** @description Sent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VenueCoordinationSendResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  publishPhase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        phase: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Phase published */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublishPhaseResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  unpublishPhase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        phase: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Phase unpublished */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UnpublishPhaseResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getPublishingStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Publishing status */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublishingStatusResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getPublishPreview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Preview */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublishPreviewResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getAutoPublishSchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Schedule */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AutoPublishScheduleResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  configureAutoPublish: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AutoPublishScheduleRequest'];
+      };
+    };
+    responses: {
+      /** @description Schedule configured */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AutoPublishScheduleResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  backfillSpeakerNames: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Backfill result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BackfillSpeakerNamesResponse'];
+        };
+      };
+      /** @description Backfill failed */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BackfillSpeakerNamesResponse'];
+        };
+      };
+    };
+  };
+  getAdminSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The setting */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminSettingResponse'];
+        };
+      };
+    };
+  };
+  setAdminSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetAdminSettingRequest'];
+      };
+    };
+    responses: {
+      /** @description The updated setting */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminSettingResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  adjustQnaWindows: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['QnaWindowPatchRequest'];
+      };
+    };
+    responses: {
+      /** @description Windows adjusted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QnaWindowAdjustResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
 }

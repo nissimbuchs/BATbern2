@@ -190,7 +190,9 @@ class StructuralSessionControllerIntegrationTest extends AbstractIntegrationTest
     @DisplayName("Should return 404 when event code does not exist")
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_return404_when_eventNotFound() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/structural", "BATbernXXX")
+        // Pattern-conforming but non-existent code: a malformed code (e.g. BATbernXXX) now
+        // fails the interface's eventCode @Pattern → 400 before the handler (Phase 7 wiring).
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/structural", "BATbern888")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }

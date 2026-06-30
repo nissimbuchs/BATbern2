@@ -1,21 +1,16 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.dto.QnaPostRequest;
-import ch.batbern.events.dto.QnaPostResponse;
-import ch.batbern.events.dto.QnaWindowResponse;
+import ch.batbern.events.sessions.api.generated.SessionQnAApi;
+import ch.batbern.events.sessions.dto.generated.QnaPostRequest;
+import ch.batbern.events.sessions.dto.generated.QnaPostResponse;
+import ch.batbern.events.sessions.dto.generated.QnaWindowResponse;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SessionQnaService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,7 +21,9 @@ import java.util.UUID;
  * window's lifecycle (open/close/extend) and config live at the EVENT level now — see
  * {@code EventQnaController} + the event Settings tab (Story 7.5 rework).
  *
- * <p>Mixed auth (mirrors {@code SessionMaterialsController}):
+ * <p>{@code implements} the generated {@link SessionQnAApi} interface (event-sessions spec,
+ * ADR-006 contract-first); the class-level {@code @RequestMapping("/api/v1")} supplies the
+ * version prefix. Method-level {@code @PreAuthorize} (mixed auth) stays on the overrides:
  * <ul>
  *   <li>{@code GET .../qna} — PUBLIC: read the open or frozen thread (anonymous can read, AC3).</li>
  *   <li>{@code POST .../qna/posts} — AUTHENTICATED: any logged-in user may post (AC2);
@@ -35,29 +32,27 @@ import java.util.UUID;
  * </ul>
  */
 @RestController
-@RequestMapping("/api/v1/events/{eventCode}/sessions/{sessionSlug}/qna")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class SessionQnaController {
+public class SessionQnaController implements SessionQnAApi {
 
     private final SessionQnaService qnaService;
     private final SecurityContextHelper securityContextHelper;
 
     /** Public: read the Q&A thread for a session (open or frozen). */
-    @GetMapping
-    public ResponseEntity<QnaWindowResponse> getThread(
-            @PathVariable String eventCode,
-            @PathVariable String sessionSlug) {
+    @Override
+    public ResponseEntity<QnaWindowResponse> getSessionQna(String eventCode, String sessionSlug) {
         return ResponseEntity.ok(qnaService.getThread(eventCode, sessionSlug));
     }
 
     /** Authenticated: post a question or answer. */
-    @PostMapping("/posts")
+    @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<QnaPostResponse> addPost(
-            @PathVariable String eventCode,
-            @PathVariable String sessionSlug,
-            @Valid @RequestBody QnaPostRequest request) {
+    public ResponseEntity<QnaPostResponse> postSessionQna(
+            String eventCode,
+            String sessionSlug,
+            QnaPostRequest request) {
         String username = securityContextHelper.getCurrentUsername();
         QnaPostResponse post = qnaService.addPost(
                 eventCode, sessionSlug, request.getBody(), request.getParentPostId(), username);
@@ -65,12 +60,9 @@ public class SessionQnaController {
     }
 
     /** Organizer: take down a post (soft-delete tombstone). */
-    @DeleteMapping("/posts/{postId}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Void> removePost(
-            @PathVariable String eventCode,
-            @PathVariable String sessionSlug,
-            @PathVariable UUID postId) {
+    public ResponseEntity<Void> removeSessionQnaPost(String eventCode, String sessionSlug, UUID postId) {
         qnaService.removePost(eventCode, sessionSlug, postId);
         return ResponseEntity.noContent().build();
     }

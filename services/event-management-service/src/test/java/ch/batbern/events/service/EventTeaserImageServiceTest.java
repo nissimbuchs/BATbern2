@@ -183,7 +183,7 @@ class EventTeaserImageServiceTest {
             verify(teaserImageRepository).save(any(EventTeaserImage.class));
             assertThat(result.getId()).isEqualTo(saved.getId());
             assertThat(result.getDisplayOrder()).isEqualTo(0);
-            assertThat(result.getPresentationPosition()).isEqualTo(TeaserImagePresentationPosition.TOPIC_REVEAL);
+            assertThat(result.getPresentationPosition()).isEqualTo(TeaserImagePresentationPosition.AFTER_TOPIC_REVEAL);
         }
 
         @Test
@@ -293,11 +293,11 @@ class EventTeaserImageServiceTest {
 
             // When
             TeaserImageItem result = service.updatePresentationPosition(EVENT_CODE, imageId,
-                    TeaserImagePresentationPosition.WELCOME);
+                    TeaserImagePresentationPosition.AFTER_WELCOME);
 
             // Then
             verify(teaserImageRepository).save(any(EventTeaserImage.class));
-            assertThat(result.getPresentationPosition()).isEqualTo(TeaserImagePresentationPosition.WELCOME);
+            assertThat(result.getPresentationPosition()).isEqualTo(TeaserImagePresentationPosition.AFTER_WELCOME);
         }
 
         @Test
@@ -310,7 +310,7 @@ class EventTeaserImageServiceTest {
 
             // When / Then
             assertThatThrownBy(() -> service.updatePresentationPosition(EVENT_CODE, imageId,
-                    TeaserImagePresentationPosition.WELCOME))
+                    TeaserImagePresentationPosition.AFTER_WELCOME))
                     .isInstanceOf(TeaserImageNotFoundException.class);
 
             verify(teaserImageRepository, never()).save(any());

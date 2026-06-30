@@ -26,7 +26,6 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -70,13 +69,6 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
         topic.setCategory("DEVOPS");
         topic.setDescription("Cloud native architectures and practices.");
         return topic;
-    }
-
-    @Test
-    void getFeatureFlags_isPublic_returnsAiEnabledFlag() throws Exception {
-        mockMvc.perform(get("/api/v1/public/settings/features"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.aiContentEnabled").isBoolean());
     }
 
     @Test

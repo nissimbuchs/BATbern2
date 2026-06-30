@@ -5,9 +5,11 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
-import ch.batbern.events.dto.BatchImportSessionRequest;
-import ch.batbern.events.dto.BatchImportSessionResult;
-import ch.batbern.events.dto.SessionImportDetail;
+import ch.batbern.events.sessions.dto.generated.BatchImportSessionRequest;
+import ch.batbern.events.sessions.dto.generated.BatchImportSessionResult;
+import ch.batbern.events.sessions.dto.generated.LegacySpeaker;
+import ch.batbern.events.sessions.dto.generated.SessionImportDetail;
+import ch.batbern.events.sessions.dto.generated.SessionImportDetail.StatusEnum;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -84,16 +86,16 @@ public class SessionBatchImportService {
 
                 // Update counters
                 switch (detail.getStatus()) {
-                    case "success":
+                    case SUCCESS:
                         successCount++;
                         break;
-                    case "updated":
+                    case UPDATED:
                         updatedCount++;
                         break;
-                    case "skipped":
+                    case SKIPPED:
                         skippedCount++;
                         break;
-                    case "failed":
+                    case FAILED:
                         failedCount++;
                         break;
                     default:
@@ -103,7 +105,7 @@ public class SessionBatchImportService {
                 }
             } catch (Exception e) {
                 log.error("Error importing session '{}': {}", request.getTitle(), e.getMessage(), e);
-                details.add(SessionImportDetail.failed(request.getTitle(), e.getMessage()));
+                details.add(failedDetail(request.getTitle(), e.getMessage()));
                 failedCount++;
             }
         }
@@ -168,13 +170,13 @@ public class SessionBatchImportService {
                     // Skip placeholder filenames (n/a, N/A, empty, etc.)
                     if (!isValidMaterialFilename(filename)) {
                         log.info("Skipping session with placeholder material filename: {} ({})", title, filename);
-                        return SessionImportDetail.skipped(title, "No valid material file");
+                        return skippedDetail(title, "No valid material file");
                     }
 
                     // Check if material already exists (duplicate prevention)
                     if (sessionMaterialsRepository.existsBySession_IdAndFileName(session.getId(), filename)) {
                         log.info("Material already exists for session {}: {}", title, filename);
-                        return SessionImportDetail.skipped(
+                        return skippedDetail(
                                 title,
                                 "Session already has this material: " + filename
                         );
@@ -189,14 +191,14 @@ public class SessionBatchImportService {
                     );
 
                     log.info("Updated existing session with material from URL: {} ({})", title, filename);
-                    return SessionImportDetail.updated(
+                    return updatedDetail(
                             title,
                             session.getSessionSlug(),
                             "Material uploaded from CDN and associated with session"
                     );
                 } catch (Exception e) {
                     log.error("Failed to upload material for session {}: {}", title, e.getMessage());
-                    return SessionImportDetail.updated(
+                    return updatedDetail(
                             title,
                             session.getSessionSlug(),
                             "Session exists, but material upload failed: " + e.getMessage()
@@ -206,11 +208,11 @@ public class SessionBatchImportService {
 
             // Session exists - skip
             log.info("Skipping duplicate session (no new material): {}", title);
-            return SessionImportDetail.skipped(title, "Session already exists");
+            return skippedDetail(title, "Session already exists");
         }
 
         // Build description (abstract only, no PDF references)
-        String description = buildDescription(request.getSessionAbstract(), null);
+        String description = buildDescription(request.getAbstract(), null);
 
         // Check if session has speakers
         boolean hasSpeakers = request.getReferenten() != null && !request.getReferenten().isEmpty();
@@ -283,7 +285,7 @@ public class SessionBatchImportService {
             }
         }
 
-        return SessionImportDetail.success(title, sessionSlug);
+        return successDetail(title, sessionSlug);
     }
 
     /**
@@ -391,7 +393,7 @@ public class SessionBatchImportService {
      */
     private void assignSpeakers(
             Session session,
-            List<BatchImportSessionRequest.LegacySpeaker> referenten,
+            List<LegacySpeaker> referenten,
             String eventOrganizerUsername,
             Instant eventDate
     ) {
@@ -405,7 +407,7 @@ public class SessionBatchImportService {
 
         // Assign each speaker
         for (int i = 0; i < referenten.size(); i++) {
-            BatchImportSessionRequest.LegacySpeaker legacySpeaker = referenten.get(i);
+            LegacySpeaker legacySpeaker = referenten.get(i);
             String speakerId = legacySpeaker.getSpeakerId();
 
             if (speakerId == null || speakerId.isEmpty()) {
@@ -518,5 +520,41 @@ public class SessionBatchImportService {
                 && !normalized.equals("none")
                 && !normalized.equals("null")
                 && !normalized.equals("-");
+    }
+
+    // ---- SessionImportDetail builders (replacing the deleted hand-DTO static factories) ----
+
+    private static SessionImportDetail successDetail(String title, String sessionSlug) {
+        return SessionImportDetail.builder()
+                .title(title)
+                .status(StatusEnum.SUCCESS)
+                .message("Session created successfully")
+                .sessionSlug(sessionSlug)
+                .build();
+    }
+
+    private static SessionImportDetail updatedDetail(String title, String sessionSlug, String message) {
+        return SessionImportDetail.builder()
+                .title(title)
+                .status(StatusEnum.UPDATED)
+                .message(message)
+                .sessionSlug(sessionSlug)
+                .build();
+    }
+
+    private static SessionImportDetail skippedDetail(String title, String reason) {
+        return SessionImportDetail.builder()
+                .title(title)
+                .status(StatusEnum.SKIPPED)
+                .message(reason)
+                .build();
+    }
+
+    private static SessionImportDetail failedDetail(String title, String errorMessage) {
+        return SessionImportDetail.builder()
+                .title(title)
+                .status(StatusEnum.FAILED)
+                .message(errorMessage)
+                .build();
     }
 }

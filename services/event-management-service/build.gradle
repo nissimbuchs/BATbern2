@@ -112,13 +112,15 @@ openApiGenerate {
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
         'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse',
-        'Session': 'ch.batbern.events.sessions.dto.generated.Session',
-        'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
+        'VenueRole': 'ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role',
     ]
 
     typeMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'Session': 'ch.batbern.events.sessions.dto.generated.Session',
+        'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
+        'SessionResponse': 'ch.batbern.events.sessions.dto.generated.SessionResponse'
     ]
 
     configOptions = [
@@ -135,7 +137,8 @@ openApiGenerate {
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -146,22 +149,18 @@ openApiGenerate {
 
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'Session': 'ch.batbern.events.sessions.dto.generated.Session',
+        'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
+        'SessionResponse': 'ch.batbern.events.sessions.dto.generated.SessionResponse',
+        'VenueRole': 'ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role'
     ]
 }
 
-// The core Event aggregate embeds Session/SessionSpeaker (owned by event-sessions-api).
-// Core references them via importMappings (import + simple name — the only form that
-// compiles; schemaMappings would emit an illegal `@Valid <fully.qualified.Name>`, see
-// openapi-generator bug #17647). importMappings also emits a dead duplicate copy of those
-// two models into the core package; delete them so the sessions-owned classes stay the
-// single source (Event.java imports ch.batbern.events.sessions.dto.generated.Session).
-tasks.named('openApiGenerate').configure {
-    doLast {
-        delete "$buildDir/generated-core/src/main/java/ch/batbern/events/core/dto/generated/Session.java"
-        delete "$buildDir/generated-core/src/main/java/ch/batbern/events/core/dto/generated/SessionSpeaker.java"
-    }
-}
+// The core Event aggregate embeds Session/SessionSpeaker (owned by event-sessions-api),
+// referenced via schemaMappings. (openapi-generator 7.2.0 bug #17647 emitted an illegal
+// `@Valid <fully.qualified.Name>` for this cross-package mapping and required an
+// importMappings + doLast-delete workaround; resolved by the 7.14.0 upgrade.)
 
 // OpenAPI Generator (sessions) — carved from events-api in API consolidation Phase 6
 task openApiGenerateSessions(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
@@ -176,7 +175,9 @@ task openApiGenerateSessions(type: org.openapitools.generator.gradle.plugin.task
     importMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
-        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse',
+        'ConflictType': 'ch.batbern.events.service.slotassignment.ConflictType',
+        'ConflictSeverity': 'ch.batbern.events.service.slotassignment.ConflictSeverity'
     ]
 
     typeMappings = [
@@ -198,7 +199,8 @@ task openApiGenerateSessions(type: org.openapitools.generator.gradle.plugin.task
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -209,7 +211,9 @@ task openApiGenerateSessions(type: org.openapitools.generator.gradle.plugin.task
 
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'ConflictType': 'ch.batbern.events.service.slotassignment.ConflictType',
+        'ConflictSeverity': 'ch.batbern.events.service.slotassignment.ConflictSeverity'
     ]
 }
 
@@ -226,7 +230,10 @@ task openApiGenerateSpeakers(type: org.openapitools.generator.gradle.plugin.task
     importMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
-        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse',
+        'SpeakerWorkflowState': 'ch.batbern.shared.types.SpeakerWorkflowState',
+        'SpeakerResponseType': 'ch.batbern.shared.types.SpeakerResponseType',
+        'SpeakerResponsePreferences': 'ch.batbern.events.dto.SpeakerResponsePreferences'
     ]
 
     typeMappings = [
@@ -248,7 +255,8 @@ task openApiGenerateSpeakers(type: org.openapitools.generator.gradle.plugin.task
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -259,7 +267,10 @@ task openApiGenerateSpeakers(type: org.openapitools.generator.gradle.plugin.task
 
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'SpeakerWorkflowState': 'ch.batbern.shared.types.SpeakerWorkflowState',
+        'SpeakerResponseType': 'ch.batbern.shared.types.SpeakerResponseType',
+        'SpeakerResponsePreferences': 'ch.batbern.events.dto.SpeakerResponsePreferences'
     ]
 }
 
@@ -298,7 +309,8 @@ task openApiGenerateRegistrations(type: org.openapitools.generator.gradle.plugin
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -348,7 +360,8 @@ task openApiGenerateNewsletter(type: org.openapitools.generator.gradle.plugin.ta
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -398,7 +411,8 @@ task openApiGenerateMedia(type: org.openapitools.generator.gradle.plugin.tasks.G
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -448,7 +462,8 @@ task openApiGenerateAi(type: org.openapitools.generator.gradle.plugin.tasks.Gene
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -460,6 +475,100 @@ task openApiGenerateAi(type: org.openapitools.generator.gradle.plugin.tasks.Gene
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator (app-settings) — relocated from event-ai in API consolidation Phase 8
+task openApiGenerateAppSettings(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-app-settings-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-app-settings".toString()
+    apiPackage = 'ch.batbern.events.appsettings.api.generated'
+    modelPackage = 'ch.batbern.events.appsettings.dto.generated'
+    invokerPackage = 'ch.batbern.events.appsettings.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+}
+
+// OpenAPI Generator (notifications) — contract-first wiring of NotificationController (BAT-7, 2026-06-30)
+task openApiGenerateNotifications(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-notifications-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-notifications".toString()
+    apiPackage = 'ch.batbern.events.notifications.api.generated'
+    modelPackage = 'ch.batbern.events.notifications.dto.generated'
+    invokerPackage = 'ch.batbern.events.notifications.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
     ]
 }
 
@@ -498,7 +607,8 @@ task openApiGenerateAnalytics(type: org.openapitools.generator.gradle.plugin.tas
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -548,7 +658,8 @@ task openApiGenerateWatch(type: org.openapitools.generator.gradle.plugin.tasks.G
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -587,9 +698,9 @@ task openApiGenerateTopics(type: org.openapitools.generator.gradle.plugin.tasks.
 
     configOptions = [
         dateLibrary: 'java8',
-        interfaceOnly: 'false',             // Generate POJOs for DTOs
+        interfaceOnly: 'true',              // Phase 7: generate interfaces (TopicsApi) for controllers to implement
         skipDefaultInterface: 'true',
-        useTags: 'false',
+        useTags: 'true',                    // Phase 7: one interface per tag (TopicsApi, EventTopicsApi)
         useSpringBoot3: 'true',
         documentationProvider: 'none',
         openApiNullable: 'false',
@@ -598,17 +709,70 @@ task openApiGenerateTopics(type: org.openapitools.generator.gradle.plugin.tasks.
         performBeanValidation: 'true',
         useOptional: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'            // Generate builder pattern for DTOs (as requested)
+        generateBuilders: 'true',           // Generate builder pattern for DTOs (as requested)
+        containerDefaultToNull: 'true'      // collections default to null (not empty list) — preserves
+                                            // pre-7.14 wire behaviour: an unset list is absent, not `[]`
+                                            // (required for the ?include= sparse-fieldset/embed contract)
     ]
 
-    // Generate only models (DTOs), no API interfaces
+    // Phase 7: generate both DTO models and API interfaces (per-tag) for controller wiring
     globalProperties = [
         models: '',
-        apis: 'false',
+        apis: '',
         supportingFiles: 'ApiUtil.java'
     ]
 
     // Skip generation of shared-kernel types
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// OpenAPI Generator - Generate Event Tasks API (Phase 7: Configurable Task System, Story 5.5)
+task openApiGenerateTasks(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-tasks-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-tasks".toString()
+    apiPackage = 'ch.batbern.events.tasks.api.generated'
+    modelPackage = 'ch.batbern.events.tasks.dto.generated'
+    invokerPackage = 'ch.batbern.events.tasks.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
@@ -648,7 +812,8 @@ task openApiGenerateUsersClient(type: org.openapitools.generator.gradle.plugin.t
         performBeanValidation: 'true',
         useOptional: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [
@@ -679,7 +844,7 @@ tasks.register('aiSecurityTest', Test) {
 }
 
 // Make compileJava depend on all OpenAPI generation tasks
-compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAppSettings, tasks.openApiGenerateNotifications, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics, tasks.openApiGenerateTasks
 
 // Add generated sources to source sets
 sourceSets {
@@ -692,10 +857,13 @@ sourceSets {
             srcDir "$buildDir/generated-newsletter/src/main/java"
             srcDir "$buildDir/generated-media/src/main/java"
             srcDir "$buildDir/generated-ai/src/main/java"
+            srcDir "$buildDir/generated-app-settings/src/main/java"
+            srcDir "$buildDir/generated-notifications/src/main/java"
             srcDir "$buildDir/generated-analytics/src/main/java"
             srcDir "$buildDir/generated-watch/src/main/java"
             srcDir "$buildDir/generated-users-client/src/main/java"
             srcDir "$buildDir/generated-topics/src/main/java"
+            srcDir "$buildDir/generated-tasks/src/main/java"
         }
     }
 }
@@ -709,8 +877,11 @@ clean {
     delete "$buildDir/generated-newsletter"
     delete "$buildDir/generated-media"
     delete "$buildDir/generated-ai"
+    delete "$buildDir/generated-app-settings"
+    delete "$buildDir/generated-notifications"
     delete "$buildDir/generated-analytics"
     delete "$buildDir/generated-watch"
     delete "$buildDir/generated-users-client"
     delete "$buildDir/generated-topics"
+    delete "$buildDir/generated-tasks"
 }

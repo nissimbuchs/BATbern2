@@ -11,120 +11,41 @@
  */
 
 import apiClient from '@/services/api/apiClient';
+import type { components } from '@/types/generated/event-tasks-api.types';
 
 // API base paths
 const TASKS_API_PATH = '/tasks';
 const EVENTS_API_PATH = '/events';
 
-/**
- * Task Template Response DTO (matches backend TaskTemplateResponse.java)
- */
-export interface TaskTemplateResponse {
-  id: string;
-  name: string;
-  triggerState: string;
-  dueDateType: string;
-  dueDateOffsetDays: number | null;
-  isDefault: boolean;
-  createdByUsername: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+type Schemas = components['schemas'];
 
 /**
- * Event Task Response DTO (matches backend EventTaskResponse.java)
+ * Task DTOs are sourced from the generated `event-tasks-api` contract
+ * (`docs/api/event-tasks-api.openapi.yml`) — do NOT hand-redefine them here.
+ *
+ * The spec types task `status` as a free string; the closed set the UI relies
+ * on is captured by the {@link TaskStatus} union and overlaid on the response/
+ * status-update shapes so drag-and-drop columns and status maps stay type-safe.
  */
-export interface EventTaskResponse {
-  id: string;
-  eventId: string;
-  eventCode: string | null;
-  templateId: string | null;
-  taskName: string;
-  triggerState: string;
-  dueDate: string | null;
-  assignedOrganizerUsername: string | null;
-  status: 'pending' | 'todo' | 'in_progress' | 'completed';
-  notes: string | null;
-  completedDate: string | null;
-  completedByUsername: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type TaskStatus = 'pending' | 'todo' | 'in_progress' | 'completed';
 
-/**
- * Create Task Template Request DTO (matches backend CreateTaskTemplateRequest.java)
- */
-export interface CreateTaskTemplateRequest {
-  name: string;
-  triggerState: string;
-  dueDateType: string;
-  dueDateOffsetDays?: number;
-  saveAsTemplate?: boolean;
-}
+export type TaskTemplateResponse = Schemas['TaskTemplateResponse'];
+export type CreateTaskTemplateRequest = Schemas['CreateTaskTemplateRequest'];
+export type UpdateTaskTemplateRequest = Schemas['UpdateTaskTemplateRequest'];
+export type CreateEventTaskRequest = Schemas['CreateEventTaskRequest'];
+export type CreateTasksFromTemplatesRequest = Schemas['CreateTasksFromTemplatesRequest'];
+export type TemplateConfig = Schemas['TemplateConfig'];
+export type CompleteTaskRequest = Schemas['CompleteTaskRequest'];
+export type ReassignTaskRequest = Schemas['ReassignTaskRequest'];
+export type UpdateEventTaskRequest = Schemas['UpdateEventTaskRequest'];
 
-/**
- * Update Task Template Request DTO (matches backend UpdateTaskTemplateRequest.java)
- */
-export interface UpdateTaskTemplateRequest {
-  name?: string;
-  triggerState?: string;
-  dueDateType?: string;
-  dueDateOffsetDays?: number;
-}
+export type EventTaskResponse = Omit<Schemas['EventTaskResponse'], 'status'> & {
+  status: TaskStatus;
+};
 
-/**
- * Create Event Task Request DTO (matches backend CreateEventTaskRequest.java)
- */
-export interface CreateEventTaskRequest {
-  taskName: string;
-  triggerState: string;
-  dueDate?: string;
-  assignedOrganizerUsername?: string;
-  notes?: string;
-}
-
-/**
- * Create Tasks from Templates Request DTO (matches backend CreateTasksFromTemplatesRequest.java)
- */
-export interface CreateTasksFromTemplatesRequest {
-  templates: TemplateConfig[];
-}
-
-export interface TemplateConfig {
-  templateId: string;
-  assignedOrganizerUsername?: string;
-}
-
-/**
- * Complete Task Request DTO (matches backend CompleteTaskRequest.java)
- */
-export interface CompleteTaskRequest {
-  notes?: string;
-}
-
-/**
- * Reassign Task Request DTO (matches backend ReassignTaskRequest.java)
- */
-export interface ReassignTaskRequest {
-  newOrganizerUsername: string;
-}
-
-/**
- * Update Task Status Request DTO (matches backend UpdateTaskStatusRequest.java)
- */
-export interface UpdateTaskStatusRequest {
-  status: 'pending' | 'todo' | 'in_progress' | 'completed';
-}
-
-/**
- * Update Event Task Request DTO (matches backend UpdateEventTaskRequest.java)
- * All fields are optional — null/undefined = keep existing value
- */
-export interface UpdateEventTaskRequest {
-  notes?: string | null;
-  dueDate?: string | null;
-  assignedOrganizerUsername?: string | null;
-}
+export type UpdateTaskStatusRequest = Omit<Schemas['UpdateTaskStatusRequest'], 'status'> & {
+  status: TaskStatus;
+};
 
 /**
  * Task Service

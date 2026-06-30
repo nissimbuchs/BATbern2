@@ -1,15 +1,15 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.config.AiConfig;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.Topic;
+import ch.batbern.events.ai.api.generated.AiAssistApi;
 import ch.batbern.events.ai.dto.generated.AbstractAnalysisResponse;
 import ch.batbern.events.ai.dto.generated.AiDescriptionResponse;
 import ch.batbern.events.ai.dto.generated.AiThemeImageResponse;
-import ch.batbern.events.ai.dto.generated.FeatureFlagsResponse;
+import ch.batbern.events.ai.dto.generated.ApplyThemeImageRequest;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -21,12 +21,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -39,10 +34,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-public class AiAssistController {
+public class AiAssistController implements AiAssistApi {
 
     private final BatbernAiService aiService;
-    private final AiConfig aiConfig;
     private final EventRepository eventRepository;
     private final TopicRepository topicRepository;
     private final SessionRepository sessionRepository;
@@ -51,15 +45,9 @@ public class AiAssistController {
     @org.springframework.beans.factory.annotation.Value("${aws.cloudfront.domain:https://cdn.batbern.ch}")
     private String cloudFrontDomain;
 
-    /** Public: no auth required — used by frontend feature flag check */
-    @GetMapping("/public/settings/features")
-    public ResponseEntity<FeatureFlagsResponse> getFeatureFlags() {
-        return ResponseEntity.ok(new FeatureFlagsResponse().aiContentEnabled(aiConfig.isAiEnabled()));
-    }
-
-    @PostMapping("/events/{eventCode}/ai/description")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AiDescriptionResponse> generateDescription(@PathVariable String eventCode) {
+    public ResponseEntity<AiDescriptionResponse> generateEventDescription(String eventCode) {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
         Topic topic = resolveTopicForEvent(event);
@@ -82,11 +70,11 @@ public class AiAssistController {
                    .orElse(ResponseEntity.status(503).build());
     }
 
-    @PostMapping("/events/{eventCode}/ai/theme-image")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<AiThemeImageResponse> generateThemeImage(
-            @PathVariable String eventCode,
-            @RequestParam(required = false) String seed) {
+            String eventCode,
+            String seed) {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
         Topic topic = resolveTopicForEvent(event);
@@ -105,30 +93,27 @@ public class AiAssistController {
                      .orElse(ResponseEntity.status(503).build());
     }
 
-    /** Simple request body for applying an AI-generated image to an event. */
-    record ApplyThemeImageRequest(String imageUrl) {}
-
-    @PostMapping("/events/{eventCode}/ai/theme-image/apply")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Void> applyThemeImage(
-            @PathVariable String eventCode,
-            @RequestBody ApplyThemeImageRequest request) {
+            String eventCode,
+            ApplyThemeImageRequest request) {
         // Story 15.9 (LLM08): require the path-separator so a look-alike host
         // (e.g. https://cdn.batbern.ch.evil.com/x.png) cannot satisfy a bare startsWith.
-        if (request.imageUrl() == null || !request.imageUrl().startsWith(cloudFrontDomain + "/")) {
+        if (request.getImageUrl() == null || !request.getImageUrl().startsWith(cloudFrontDomain + "/")) {
             return ResponseEntity.badRequest().build();
         }
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
-        event.setThemeImageUrl(request.imageUrl());
+        event.setThemeImageUrl(request.getImageUrl());
         eventRepository.save(event);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/speakers/{speakerId}/ai/analyze-abstract")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AbstractAnalysisResponse> analyzeAbstract(@PathVariable UUID speakerId) {
+    public ResponseEntity<AbstractAnalysisResponse> analyzeAbstract(UUID speakerId) {
         SpeakerPool pool = speakerPoolRepository.findById(speakerId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Speaker pool entry not found: " + speakerId));

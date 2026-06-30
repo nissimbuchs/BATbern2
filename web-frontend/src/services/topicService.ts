@@ -218,9 +218,11 @@ class TopicService {
    * @throws Error if unauthorized (ORGANIZER only)
    */
   async calculateSimilarities(): Promise<string> {
-    const response = await apiClient.post<string>(`${TOPICS_API_PATH}/calculate-similarities`);
+    const response = await apiClient.post<{ message?: string }>(
+      `${TOPICS_API_PATH}/calculate-similarities`
+    );
 
-    return response.data;
+    return response.data.message ?? '';
   }
 }
 

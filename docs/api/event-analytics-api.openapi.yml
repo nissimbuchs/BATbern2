@@ -22,12 +22,15 @@ security:
 - BearerAuth: []
 tags:
 - name: Analytics
-  description: Event analytics and metrics
+  description: Aggregate analytics dashboard (org-wide overview, attendance, topics, companies)
+- name: Event Reporting
+  description: Event-scoped reporting endpoints served by EventController (per-event analytics,
+    partner attendance summary)
 paths:
   /events/attendance-summary:
     get:
       tags:
-      - Analytics
+      - Event Reporting
       summary: Get attendance summary per event for a company
       description: 'Returns per-event attendee counts (total and company-specific).
 
@@ -74,7 +77,7 @@ paths:
   /events/{eventCode}/analytics:
     get:
       tags:
-      - Analytics
+      - Event Reporting
       summary: Get event analytics
       description: 'Retrieve analytics data for a specific event.
 
@@ -110,23 +113,19 @@ paths:
           example: BATbern142
       - name: metrics
         in: query
-        description: Comma-separated list of metrics
+        description: Comma-separated list of metrics (any of attendance, registrations, engagement).
         required: false
         schema:
           type: string
+          default: attendance,registrations,engagement
           example: attendance,registrations,engagement
       - name: timeframe
         in: query
-        description: Time period for analytics
+        description: 'Optional time window as ''startTime,endTime'' in ISO-8601 (e.g.
+          ''2025-04-01T00:00:00Z,2025-05-31T23:59:59Z''). When omitted, all data is included.'
         required: false
         schema:
           type: string
-          enum:
-          - day
-          - week
-          - month
-          - all
-          default: all
       responses:
         '200':
           description: Analytics data retrieved successfully
@@ -617,6 +616,7 @@ components:
       description: Per-event attendance summary for a given company (Story 8.1)
       required:
       - eventCode
+      - eventTitle
       - eventDate
       - totalAttendees
       - companyAttendees
@@ -625,6 +625,10 @@ components:
           type: string
           description: Event code (e.g. 'BATbern142')
           example: BATbern142
+        eventTitle:
+          type: string
+          description: Event title (used by the partner attendance XLSX export)
+          example: BATbern 142 - Cloud Native
         eventDate:
           type: string
           format: date-time
@@ -639,30 +643,69 @@ components:
           description: Confirmed attendees from the queried company
     EventAnalytics:
       type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+      description: 'Per-event analytics. Truthful to EventAnalyticsService.generateAnalytics:
+        a dynamic envelope whose `metrics` sub-objects are present only when requested via the
+        `?metrics=` query param (registrations, attendance, engagement), and `timeframe` only when
+        `?timeframe=` is supplied. The 2026-06-29 rewrite dropped the previously-documented flat
+        fields (totalRegistrations/confirmedAttendees/cancellations/waitlist/registrationTrend) —
+        no implementation ever produced them and the frontend reads none of them.'
       properties:
         eventCode:
           type: string
           pattern: ^BATbern[0-9]+$
           example: BATbern142
-          description: Event code in format BATbern{number} (Story 1.16.2)
-        totalRegistrations:
-          type: integer
-        confirmedAttendees:
-          type: integer
-        cancellations:
-          type: integer
-        waitlist:
-          type: integer
-        registrationTrend:
-          type: array
-          items:
-            type: object
-            properties:
-              date:
-                type: string
-                format: date
-              count:
-                type: integer
+          description: Event code in format BATbern{number} (Story 1.16.2).
+        timeframe:
+          type: object
+          description: 'Echoed back only when the `?timeframe=start,end` query param is supplied.'
+          properties:
+            start:
+              type: string
+              description: ISO-8601 timestamp (start of the requested window).
+            end:
+              type: string
+              description: ISO-8601 timestamp (end of the requested window).
+        metrics:
+          type: object
+          x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+          description: 'Computed metric blocks. Each key is present only when named in `?metrics=`.'
+          properties:
+            registrations:
+              type: object
+              properties:
+                total:
+                  type: integer
+                byStatus:
+                  type: object
+                  properties:
+                    confirmed:
+                      type: integer
+                    pending:
+                      type: integer
+                    cancelled:
+                      type: integer
+            attendance:
+              type: object
+              properties:
+                expected:
+                  type: integer
+                actual:
+                  type: integer
+                rate:
+                  type: number
+                  format: double
+                  description: Attendance percentage (currently a stub — equals 100 or 0).
+            engagement:
+              type: object
+              properties:
+                totalSessions:
+                  type: integer
+                totalParticipants:
+                  type: integer
+                averageSessionsPerParticipant:
+                  type: number
+                  format: double
   responses:
     BadRequest:
       description: Bad request - validation error

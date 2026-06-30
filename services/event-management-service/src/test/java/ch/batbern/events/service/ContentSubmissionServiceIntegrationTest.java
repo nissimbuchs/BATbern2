@@ -8,7 +8,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.dto.ContentSubmitResponse;
+import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
@@ -186,9 +186,9 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         ContentSubmitResponse response = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, payload, ORGANIZER);
 
-        assertThat(response.submissionId()).isNotNull();
-        assertThat(response.version()).isEqualTo(1);
-        assertThat(response.status()).isEqualTo("SUBMITTED");
+        assertThat(response.getSubmissionId()).isNotNull();
+        assertThat(response.getVersion()).isEqualTo(1);
+        assertThat(response.getStatus()).isEqualTo("SUBMITTED");
 
         // Speaker state is CONTENT_SUBMITTED (written by SpeakerWorkflowService.transition).
         SpeakerPool reloaded = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
@@ -272,7 +272,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         ContentSubmitResponse response = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, payload, SPEAKER);
 
-        assertThat(response.status()).isEqualTo("SUBMITTED");
+        assertThat(response.getStatus()).isEqualTo("SUBMITTED");
         SpeakerPool reloaded = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
 
@@ -347,7 +347,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         ContentSubmitResponse response = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, payload, ORGANIZER);
 
-        assertThat(response.status()).isEqualTo("SUBMITTED");
+        assertThat(response.getStatus()).isEqualTo("SUBMITTED");
         verify(userApiClient, never()).patchUserProfile(any(), any());
     }
 
@@ -364,14 +364,14 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
 
         ContentSubmitResponse first = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, v1, SPEAKER);
-        assertThat(first.version()).isEqualTo(1);
+        assertThat(first.getVersion()).isEqualTo(1);
 
         // Resubmit while the speaker is already in CONTENT_SUBMITTED.
         ContentSubmissionPayload v2 = new ContentSubmissionPayload(
                 "Second title", "Second abstract.", null, null, null);
         ContentSubmitResponse second = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, v2, SPEAKER);
-        assertThat(second.version()).isEqualTo(2);
+        assertThat(second.getVersion()).isEqualTo(2);
 
         SpeakerPool reloaded = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
@@ -488,7 +488,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         ContentSubmitResponse response = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, payload, ORGANIZER);
 
-        assertThat(response.status()).isEqualTo("SUBMITTED");
+        assertThat(response.getStatus()).isEqualTo("SUBMITTED");
         SpeakerPool reloaded = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
 
@@ -548,7 +548,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         ContentSubmitResponse response = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, v2, SPEAKER);
 
-        assertThat(response.status()).isEqualTo("SUBMITTED");
+        assertThat(response.getStatus()).isEqualTo("SUBMITTED");
         SpeakerPool reloaded = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
 

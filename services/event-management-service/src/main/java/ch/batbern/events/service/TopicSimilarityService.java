@@ -1,6 +1,6 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.dto.TopicSimilarityResponse;
+import ch.batbern.events.dto.generated.topics.TopicSimilarityResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

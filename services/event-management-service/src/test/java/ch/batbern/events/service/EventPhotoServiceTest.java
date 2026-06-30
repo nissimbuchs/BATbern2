@@ -2,10 +2,10 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventPhoto;
-import ch.batbern.events.dto.EventPhotoConfirmRequestDto;
-import ch.batbern.events.dto.EventPhotoResponseDto;
-import ch.batbern.events.dto.EventPhotoUploadRequestDto;
-import ch.batbern.events.dto.EventPhotoUploadResponseDto;
+import ch.batbern.events.media.dto.generated.EventPhotoConfirmRequest;
+import ch.batbern.events.media.dto.generated.EventPhotoResponse;
+import ch.batbern.events.media.dto.generated.EventPhotoUploadRequest;
+import ch.batbern.events.media.dto.generated.EventPhotoUploadResponse;
 import ch.batbern.events.exception.EventPhotoNotFoundException;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.InvalidFileTypeException;
@@ -99,7 +99,7 @@ class EventPhotoServiceTest {
         @DisplayName("should return uploadUrl, photoId, s3Key with .jpg extension for JPEG - AC2")
         void shouldReturnUploadUrlForJpeg() throws MalformedURLException {
             // Given
-            EventPhotoUploadRequestDto request = EventPhotoUploadRequestDto.builder()
+            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
                     .filename("event-photo.jpg")
                     .contentType("image/jpeg")
                     .fileSize(2L * 1024 * 1024)
@@ -113,7 +113,7 @@ class EventPhotoServiceTest {
             when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
 
             // When
-            EventPhotoUploadResponseDto response = service.requestUploadUrl(EVENT_CODE, request, UPLOADER);
+            EventPhotoUploadResponse response = service.requestUploadUrl(EVENT_CODE, request, UPLOADER);
 
             // Then
             assertThat(response.getPhotoId()).isNotNull();
@@ -127,7 +127,7 @@ class EventPhotoServiceTest {
         @DisplayName("should produce s3Key ending in .png for image/png content type - AC2")
         void shouldProducePngExtensionForPng() throws MalformedURLException {
             // Given
-            EventPhotoUploadRequestDto request = EventPhotoUploadRequestDto.builder()
+            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
                     .filename("photo.png")
                     .contentType("image/png")
                     .fileSize(1024L)
@@ -141,7 +141,7 @@ class EventPhotoServiceTest {
             when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
 
             // When
-            EventPhotoUploadResponseDto response = service.requestUploadUrl(EVENT_CODE, request, UPLOADER);
+            EventPhotoUploadResponse response = service.requestUploadUrl(EVENT_CODE, request, UPLOADER);
 
             // Then
             assertThat(response.getS3Key()).endsWith(".png");
@@ -153,7 +153,7 @@ class EventPhotoServiceTest {
             // Given
             when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.empty());
 
-            EventPhotoUploadRequestDto request = EventPhotoUploadRequestDto.builder()
+            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
                     .filename("photo.jpg")
                     .contentType("image/jpeg")
                     .fileSize(1024L)
@@ -171,7 +171,7 @@ class EventPhotoServiceTest {
             when(eventRepository.findByEventCode(EVENT_CODE))
                     .thenReturn(Optional.of(new Event()));
 
-            EventPhotoUploadRequestDto request = EventPhotoUploadRequestDto.builder()
+            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
                     .filename("file.gif")
                     .contentType("image/gif")
                     .fileSize(1024L)
@@ -189,7 +189,7 @@ class EventPhotoServiceTest {
             when(eventRepository.findByEventCode(EVENT_CODE))
                     .thenReturn(Optional.of(new Event()));
 
-            EventPhotoUploadRequestDto request = EventPhotoUploadRequestDto.builder()
+            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
                     .filename("file.jpg")
                     .contentType(null)
                     .fileSize(1024L)
@@ -208,7 +208,7 @@ class EventPhotoServiceTest {
                     .thenReturn(Optional.of(new Event()));
 
             long oversizedFile = 11L * 1024 * 1024; // 11 MB
-            EventPhotoUploadRequestDto request = EventPhotoUploadRequestDto.builder()
+            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
                     .filename("big-photo.jpg")
                     .contentType("image/jpeg")
                     .fileSize(oversizedFile)
@@ -234,7 +234,7 @@ class EventPhotoServiceTest {
             UUID photoId = UUID.randomUUID();
             String s3Key = "events/" + EVENT_CODE + "/photos/" + photoId + ".jpg";
 
-            EventPhotoConfirmRequestDto request = EventPhotoConfirmRequestDto.builder()
+            EventPhotoConfirmRequest request = EventPhotoConfirmRequest.builder()
                     .photoId(photoId)
                     .s3Key(s3Key)
                     .build();
@@ -254,7 +254,7 @@ class EventPhotoServiceTest {
             when(photoRepository.save(any(EventPhoto.class))).thenReturn(savedPhoto);
 
             // When
-            EventPhotoResponseDto result = service.confirmUpload(EVENT_CODE, request, UPLOADER);
+            EventPhotoResponse result = service.confirmUpload(EVENT_CODE, request, UPLOADER);
 
             // Then
             verify(s3Client).headObject(any(HeadObjectRequest.class));
@@ -271,7 +271,7 @@ class EventPhotoServiceTest {
             UUID photoId = UUID.randomUUID();
             String foreignS3Key = "events/OTHER_EVENT/photos/" + photoId + ".jpg";
 
-            EventPhotoConfirmRequestDto request = EventPhotoConfirmRequestDto.builder()
+            EventPhotoConfirmRequest request = EventPhotoConfirmRequest.builder()
                     .photoId(photoId)
                     .s3Key(foreignS3Key)
                     .build();
@@ -291,7 +291,7 @@ class EventPhotoServiceTest {
             UUID photoId = UUID.randomUUID();
             String s3Key = "events/" + EVENT_CODE + "/photos/" + photoId + ".jpg";
 
-            EventPhotoConfirmRequestDto request = EventPhotoConfirmRequestDto.builder()
+            EventPhotoConfirmRequest request = EventPhotoConfirmRequest.builder()
                     .photoId(photoId)
                     .s3Key(s3Key)
                     .build();
@@ -371,7 +371,7 @@ class EventPhotoServiceTest {
             when(photoRepository.findByEventCodeIn(any())).thenReturn(allPhotos);
 
             // When
-            List<EventPhotoResponseDto> result = service.getRecentPhotos(20, 5);
+            List<EventPhotoResponse> result = service.getRecentPhotos(20, 5);
 
             // Then
             assertThat(result).hasSize(20);
@@ -388,7 +388,7 @@ class EventPhotoServiceTest {
             when(photoRepository.findByEventCodeIn(any())).thenReturn(photos);
 
             // When
-            List<EventPhotoResponseDto> result = service.getRecentPhotos(20, 5);
+            List<EventPhotoResponse> result = service.getRecentPhotos(20, 5);
 
             // Then
             assertThat(result).hasSize(3);
@@ -401,7 +401,7 @@ class EventPhotoServiceTest {
             when(eventRepository.findAllByOrderByDateDesc(any())).thenReturn(List.of());
 
             // When
-            List<EventPhotoResponseDto> result = service.getRecentPhotos(20, 5);
+            List<EventPhotoResponse> result = service.getRecentPhotos(20, 5);
 
             // Then
             assertThat(result).isEmpty();

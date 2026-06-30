@@ -242,7 +242,8 @@ public class NotificationService {
         try {
             String destination = "/topic/notifications/" + notification.getRecipientUsername();
 
-            NotificationResponse response = NotificationResponse.fromEntity(notification);
+            ch.batbern.events.notifications.dto.generated.NotificationResponse response =
+                    NotificationMapper.toResponse(notification);
 
             messagingTemplate.convertAndSend(destination, response);
 

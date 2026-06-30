@@ -273,8 +273,8 @@ class PrimarySpeakerResolverTest {
             when(userApiClient.getUserByUsername("nissim.buchs.3")).thenReturn(user);
             when(userApiClient.getCompanyDisplayName("ELCA")).thenReturn("ELCA Informatique SA");
 
-            ch.batbern.events.dto.SpeakerPoolResponse response =
-                    new ch.batbern.events.dto.SpeakerPoolResponse();
+            ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse response =
+                    new ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse();
             resolver.applyOverlay(response, pool);
 
             assertThat(response.getCompany()).isEqualTo("ELCA");
@@ -307,8 +307,8 @@ class PrimarySpeakerResolverTest {
             when(userApiClient.getUserByUsername("jane.doe")).thenReturn(user);
             when(userApiClient.getCompanyDisplayName("UnknownCo")).thenReturn(null);
 
-            ch.batbern.events.dto.SpeakerPoolResponse response =
-                    new ch.batbern.events.dto.SpeakerPoolResponse();
+            ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse response =
+                    new ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse();
             resolver.applyOverlay(response, pool);
 
             assertThat(response.getCompanyDisplayName()).isEqualTo("UnknownCo");

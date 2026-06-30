@@ -4,11 +4,12 @@ import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.client.dto.EventSummaryDTO;
 import ch.batbern.partners.client.user.dto.UserResponse;
+import ch.batbern.partners.domain.MeetingType;
 import ch.batbern.partners.domain.PartnerMeeting;
-import ch.batbern.partners.dto.CreateMeetingRequest;
-import ch.batbern.partners.dto.PartnerMeetingDTO;
-import ch.batbern.partners.dto.SendInviteResponse;
-import ch.batbern.partners.dto.UpdateMeetingRequest;
+import ch.batbern.partners.meetings.dto.generated.CreateMeetingRequest;
+import ch.batbern.partners.meetings.dto.generated.PartnerMeetingDTO;
+import ch.batbern.partners.meetings.dto.generated.SendInviteResponse;
+import ch.batbern.partners.meetings.dto.generated.UpdateMeetingRequest;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -76,10 +81,10 @@ public class PartnerMeetingService {
 
         PartnerMeeting meeting = PartnerMeeting.builder()
                 .eventCode(request.getEventCode())
-                .meetingType(request.getMeetingType())
+                .meetingType(MeetingType.valueOf(request.getMeetingType().getValue()))
                 .meetingDate(event.eventDate())  // auto-filled from event (AC1)
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+                .startTime(LocalTime.parse(request.getStartTime()))
+                .endTime(LocalTime.parse(request.getEndTime()))
                 .location(request.getLocation())
                 .agenda(request.getAgenda())
                 .createdBy(organizerUsername)
@@ -108,10 +113,10 @@ public class PartnerMeetingService {
             meeting.setLocation(request.getLocation());
         }
         if (request.getStartTime() != null) {
-            meeting.setStartTime(request.getStartTime());
+            meeting.setStartTime(LocalTime.parse(request.getStartTime()));
         }
         if (request.getEndTime() != null) {
-            meeting.setEndTime(request.getEndTime());
+            meeting.setEndTime(LocalTime.parse(request.getEndTime()));
         }
 
         return toDTO(meetingRepository.save(meeting));
@@ -163,11 +168,10 @@ public class PartnerMeetingService {
 
         log.info("Partner meeting invite queued for {} recipients, meetingId={}", emails.size(), meetingId);
 
-        return SendInviteResponse.builder()
+        return new SendInviteResponse()
                 .message("Calendar invite is being sent to all partner contacts")
                 .meetingId(meetingId)
-                .recipientCount(emails.size())
-                .build();
+                .recipientCount(emails.size());
     }
 
     /**
@@ -268,20 +272,33 @@ public class PartnerMeetingService {
     }
 
     private PartnerMeetingDTO toDTO(PartnerMeeting m) {
-        return PartnerMeetingDTO.builder()
+        PartnerMeetingDTO dto = new PartnerMeetingDTO()
                 .id(m.getId())
                 .eventCode(m.getEventCode())
-                .meetingType(m.getMeetingType())
+                .meetingType(PartnerMeetingDTO.MeetingTypeEnum.fromValue(m.getMeetingType().name()))
                 .meetingDate(m.getMeetingDate())
-                .startTime(m.getStartTime())
-                .endTime(m.getEndTime())
+                .startTime(formatTime(m.getStartTime()))
+                .endTime(formatTime(m.getEndTime()))
                 .location(m.getLocation())
                 .agenda(m.getAgenda())
                 .notes(m.getNotes())
-                .inviteSentAt(m.getInviteSentAt())
                 .createdBy(m.getCreatedBy())
-                .createdAt(m.getCreatedAt())
-                .updatedAt(m.getUpdatedAt())
-                .build();
+                .createdAt(toOffset(m.getCreatedAt()))
+                .updatedAt(toOffset(m.getUpdatedAt()));
+        // inviteSentAt omitted (NON_NULL) when the invite has not been sent
+        if (m.getInviteSentAt() != null) {
+            dto.setInviteSentAt(toOffset(m.getInviteSentAt()));
+        }
+        return dto;
+    }
+
+    /** LocalTime → "HH:mm:ss" (preserves the deployed wire shape, e.g. "12:00:00"). */
+    private static String formatTime(LocalTime time) {
+        return time != null ? time.format(DateTimeFormatter.ofPattern("HH:mm:ss")) : null;
+    }
+
+    /** Instant → OffsetDateTime at UTC (serialises as "…Z", byte-identical to the prior Instant wire). */
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
     }
 }

@@ -480,13 +480,13 @@ describe('topicService', () => {
 
   describe('calculateSimilarities', () => {
     it('should trigger similarity calculation for all topics', async () => {
-      const mockResponse = 'Similarity scores calculated for 42 topics';
-      vi.mocked(apiClient.post).mockResolvedValue({ data: mockResponse });
+      const message = 'Similarity scores calculated for 42 topics';
+      vi.mocked(apiClient.post).mockResolvedValue({ data: { message } });
 
       const result = await topicService.calculateSimilarities();
 
       expect(apiClient.post).toHaveBeenCalledWith('/topics/calculate-similarities');
-      expect(result).toBe(mockResponse);
+      expect(result).toBe(message);
     });
 
     it('should require ORGANIZER role', async () => {

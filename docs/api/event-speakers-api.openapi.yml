@@ -23,6 +23,10 @@ security:
 tags:
 - name: Event Actions
   description: Event publishing and workflow operations
+- name: Speaker Status
+  description: Speaker status management, content submission + quality review (Stories 5.4, 5.5, 11.B-D)
+- name: Speaker Self-Nomination
+  description: Attendee speaker self-nomination — "I Could Speak on That" (Story 7.2)
 - name: Speaker Outreach
   description: Speaker outreach tracking and history (Story 5.3)
 paths:
@@ -157,7 +161,7 @@ paths:
   /events/{eventCode}/speakers/self-nominate:
     post:
       tags:
-      - Event Actions
+      - Speaker Self-Nomination
       summary: Attendee self-nominates as a speaker ("I Could Speak on That")
       description: "A logged-in attendee raises their hand with a proposed talk once the event's topic\nis set + published, feeding the speaker pipeline from the floor.\n\n**Story**: 7.2 - \"I Could Speak on That\"\n**Authorization**: Requires ATTENDEE role (login-gated end-to-end)\n**Rate Limiting**: Applied at API Gateway level\n\n**Business Rules**:\n- The event's topic must be set (`topicCode != null`) AND the event must be\n  published (`publishedAt != null` or `currentPublishedPhase != 'none'`) — else 409.\n- The nomination lands as a `speaker_pool` row at the `IDENTIFIED` default, tagged\n  `source = 'self_nomination'` with `proposedByUsername` = the caller's username.\n  **No** Cognito user, SPEAKER role, or session is created here — provisioning stays\n  organizer-only at promote-to-READY.\n- Identity (speaker name + company) is auto-filled from the attendee's profile; the\n  body carries only the proposed talk. Unknown body fields are rejected (400).\n- At most **one** self-nomination per attendee per event — a second attempt returns 409.\n"
       operationId: selfNominateSpeaker
@@ -381,7 +385,7 @@ paths:
   /events/{eventCode}/speakers/{speakerId}/promote:
     post:
       tags:
-      - Event Actions
+      - Speaker Status
       summary: Promote a CONTACTED speaker to READY (provisions User + SPEAKER role)
       description: "Drives the `CONTACTED → READY` workflow transition for a speaker in the event pool.\n\n**Story**: 11.D.1 — Unified Speaker Workflow Refactor / Phase D\n**ADR**: ADR-009 §0.2 — `CONTACTED → READY` is the User-provisioning gate\n**Authorization**: Requires ORGANIZER role\n**Same-state behaviour**: Re-promoting an already-READY speaker returns\n  `409 Conflict` with `details.code = INVALID_PROMOTION_STATE` and\n  `details.currentState = READY`. Promote is only valid from CONTACTED;\n  subsequent identity changes go through a dedicated organizer action\n  (not this endpoint).\n\n**Side effects on success**:\n  - Workflow state transitions `CONTACTED → READY` via\n    `SpeakerWorkflowService.transition(...)` (the sole status writer).\n  - `UserApiClient.provisionUserWithRole(...)` is called: a User row is created if\n    none exists for the email; SPEAKER role is granted (idempotent).\n  - A `Session` + `PRIMARY_SPEAKER` `session_users` row is provisioned with the\n    canonical username (Story 11.E.8). The legacy `speaker_pool.username` and\n    `speaker_pool.email` columns were dropped in Story 11.E.9 (Flyway V103); the\n    response's `username` / `email` are now overlay-derived via\n    `PrimarySpeakerResolver.applyOverlay(...)`.\n  - `speaker_status_history` row is inserted (previous_status=contacted,\n    new_status=ready, changed_by_username=organizer).\n  - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published.\n\n**Why a dedicated endpoint?** `POST /speakers/pool` rejects `email` (AR23); the\nonly path that attaches an email + provisions an identity is this endpoint.\n`PUT /speakers/{speakerId}/status` with `newStatus=READY` also returns 400 with\ncode `READY_REQUIRES_PROMOTE_ENDPOINT` — promotion MUST go through this path.\n"
       operationId: promoteSpeakerToReady
@@ -510,6 +514,336 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
       - BearerAuth: []
+  /events/{eventCode}/speakers/{speakerId}/status:
+    put:
+      tags:
+      - Speaker Status
+      summary: Update speaker status (Story 5.4 / 11.B.3 8-state model)
+      description: "Update the workflow status of a speaker. Per ADR-009 §0.7 the legal
+        transitions are IDENTIFIED→CONTACTED/DECLINED, CONTACTED→DECLINED (READY needs
+        POST /promote), INVITED→ACCEPTED/DECLINED, ACCEPTED→CONTENT_SUBMITTED/DECLINED,
+        CONTENT_SUBMITTED→QUALITY_REVIEWED/DECLINED, QUALITY_REVIEWED→DECLINED; DECLINED is
+        terminal. newStatus=READY → 400 READY_REQUIRES_PROMOTE_ENDPOINT; a removed legacy
+        value → 400 INVALID_SPEAKER_WORKFLOW_STATE."
+      operationId: updateSpeakerStatus
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerStatusResponse'
+        '400':
+          description: Invalid status (removed legacy value or READY) or reason too long
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '422':
+          description: Illegal state-machine transition or workflow validation failure
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+  /events/{eventCode}/speakers/{speakerId}/status/history:
+    get:
+      tags:
+      - Speaker Status
+      summary: Get speaker status history (Story 5.4 AC3-4, AC15)
+      description: Retrieve the complete status-change + content-review timeline for a speaker.
+      operationId: getSpeakerStatusHistory
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Status history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StatusHistoryItem'
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+  /events/{eventCode}/speakers/status-summary:
+    get:
+      tags:
+      - Speaker Status
+      summary: Get status dashboard summary (Story 5.4 AC5-6, AC13)
+      description: Aggregated speaker status counts, acceptance rate, slot thresholds + overflow.
+      operationId: getStatusSummary
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      responses:
+        '200':
+          description: Status summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusSummaryResponse'
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+  /events/{eventCode}/speakers/{speakerId}/content:
+    get:
+      tags:
+      - Speaker Status
+      summary: Get speaker content (Story 5.5 AC34)
+      description: Retrieve existing presentation content + material info for a speaker.
+      operationId: getSpeakerContent
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Speaker content retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerContentResponse'
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+    post:
+      tags:
+      - Speaker Status
+      summary: Submit speaker content on behalf (Story 5.5 AC6-10, Story 11.C.2)
+      description: "Organizer-on-behalf content submission. Creates/updates the session and
+        transitions the speaker to CONTENT_SUBMITTED via the consolidated
+        ContentSubmissionService. Unknown body fields are rejected (400)."
+      operationId: submitSpeakerContent
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitContentRequest'
+      responses:
+        '201':
+          description: Content submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentSubmitResponse'
+        '400':
+          description: Validation error (e.g. unknown field, title/abstract too long)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '422':
+          description: Invalid state — speaker must be in ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+  /events/{eventCode}/speakers/review-queue:
+    get:
+      tags:
+      - Speaker Status
+      summary: Get quality-review queue (Story 5.5 AC11)
+      description: "Speakers with CONTENT_SUBMITTED status, oldest submission first. Returns the
+        same SpeakerPoolResponse shape as GET /speakers/pool (API-consolidation Phase 7:
+        replaced the prior raw-entity return)."
+      operationId: getReviewQueue
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      responses:
+        '200':
+          description: Review queue retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpeakerPoolResponse'
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+  /events/{eventCode}/speakers/{speakerId}/review:
+    post:
+      tags:
+      - Speaker Status
+      summary: Approve or reject speaker content (Story 5.5 AC13-14, AC17)
+      description: "APPROVE → status QUALITY_REVIEWED. REJECT → requires feedback, notifies the
+        speaker with a link to the Cognito-secured portal for revisions. Content rejection is
+        NOT a state transition (ADR-009)."
+      operationId: reviewSpeakerContent
+      parameters:
+      - name: eventCode
+        in: path
+        description: Event code in format BATbern{number}
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern56
+      - name: speakerId
+        in: path
+        description: UUID of the speaker in the speaker pool
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '204':
+          description: Review action completed successfully
+        '400':
+          description: Validation error (e.g. feedback required for rejection)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '422':
+          description: Invalid state — speaker must be in CONTENT_SUBMITTED
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
   /events/{eventCode}/speakers/invite:
     post:
       tags:
@@ -897,8 +1231,335 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
       - BearerAuth: []
+
+  /speaker-portal/dashboard:
+    get:
+      tags:
+        - Speaker Portal Dashboard
+      summary: Get the authenticated speaker's dashboard
+      description: |
+        Aggregate dashboard across every event the authenticated speaker has a pool row in
+        (Story 6.4). The one speaker-portal endpoint that does not take an eventCode.
+
+        **Authorization**: SPEAKER role required.
+      operationId: getDashboard
+      responses:
+        '200':
+          description: Speaker dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerDashboardDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+
+  /speaker-portal/events/{eventCode}/respond:
+    post:
+      tags:
+        - Speaker Portal Response
+      summary: Submit a speaker's response to an invitation
+      description: |
+        The authenticated speaker accepts or declines an invitation for the given event
+        (Story 6.2a). DECLINE requires a reason. ACCEPT may carry optional preferences.
+
+        **Authorization**: SPEAKER role required (pool ownership enforced server-side).
+      operationId: respond
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event the speaker is responding to
+          schema:
+            type: string
+            example: 'BATbern58'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeakerResponseRequest'
+      responses:
+        '200':
+          description: Response processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerResponseResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      security:
+      - BearerAuth: []
+
+  /speaker-portal/events/{eventCode}/content:
+    get:
+      tags:
+        - Speaker Portal Content
+      summary: Get the speaker's content-submission state for an event
+      description: 'Story 6.3 speaker content self-submission. SPEAKER role (pool ownership enforced).'
+      operationId: getContentInfo
+      parameters:
+        - $ref: '#/components/parameters/SpeakerPortalEventCode'
+      responses:
+        '200':
+          description: Content info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerContentInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
+  /speaker-portal/events/{eventCode}/content/submit:
+    post:
+      tags:
+        - Speaker Portal Content
+      summary: Submit title/abstract/bio (and optional presentation upload id)
+      description: 'Story 6.3 / 11.C.2. SPEAKER role (pool ownership enforced).'
+      operationId: submitContent
+      parameters:
+        - $ref: '#/components/parameters/SpeakerPortalEventCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentSubmitRequest'
+      responses:
+        '201':
+          description: Content submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentSubmitResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
+  /speaker-portal/events/{eventCode}/materials/presigned-url:
+    post:
+      tags:
+        - Speaker Portal Content
+      summary: Request a presigned S3 URL for a material upload
+      description: 'Story 6.3 material upload. SPEAKER role (pool ownership enforced).'
+      operationId: generatePresignedUrl
+      parameters:
+        - $ref: '#/components/parameters/SpeakerPortalEventCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeakerMaterialUploadRequest'
+      responses:
+        '200':
+          description: Presigned upload URL + metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerMaterialUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
+  /speaker-portal/events/{eventCode}/materials/confirm:
+    post:
+      tags:
+        - Speaker Portal Content
+      summary: Confirm a completed material upload
+      description: 'Story 6.3 material confirm (moves the object into place). SPEAKER role.'
+      operationId: confirmUpload
+      parameters:
+        - $ref: '#/components/parameters/SpeakerPortalEventCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeakerMaterialConfirmRequest'
+      responses:
+        '201':
+          description: Material confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerMaterialConfirmResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
+  /events/{eventCode}/speaker-pool/{speakerPoolId}/send-reminder:
+    post:
+      tags:
+        - Speaker Reminders
+      summary: Manually send a deadline reminder to a speaker (Story 6.5 AC8)
+      description: 'Bypasses dedup but respects the reminders-disabled flag. ORGANIZER role.'
+      operationId: sendSpeakerReminder
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: speakerPoolId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendReminderRequest'
+      responses:
+        '200':
+          description: Reminder sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendReminderResponse'
+        '400':
+          description: Invalid reminder type or speaker state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendReminderResponse'
+        '409':
+          description: Reminders disabled for this speaker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendReminderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+
+  /events/{eventCode}/speaker-pool/{speakerPoolId}/reminders:
+    patch:
+      tags:
+        - Speaker Reminders
+      summary: Toggle the reminders-disabled flag for a speaker (Story 6.5 AC6)
+      description: 'ORGANIZER role.'
+      operationId: updateRemindersDisabled
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: speakerPoolId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRemindersDisabledRequest'
+      responses:
+        '200':
+          description: Flag updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemindersDisabledResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+
 components:
+  parameters:
+    SpeakerPortalEventCode:
+      name: eventCode
+      in: path
+      required: true
+      description: Event code the speaker-portal action targets
+      schema:
+        type: string
+        example: 'BATbern58'
   schemas:
+    ContentSubmitResponse:
+      type: object
+      description: 'Response after a successful speaker-portal content submission.
+        (Copied from the dormant speakers-api per ADR-014 so EMS — which serves the
+        speaker-portal content submit — generates the DTO; the speaker-portal submit
+        operations are not yet documented as paths here.)'
+      required:
+        - submissionId
+        - version
+        - status
+        - sessionTitle
+      properties:
+        submissionId:
+          type: string
+          format: uuid
+          description: The content submission record ID.
+        version:
+          type: integer
+          format: int32
+          description: Submission version (1 for first, increments on resubmission).
+          example: 1
+        status:
+          type: string
+          description: Submission status — always "SUBMITTED" after a successful submit.
+          example: SUBMITTED
+        sessionTitle:
+          type: string
+          description: Session title (for confirmation display).
+          example: Zero Trust Security in Enterprise Environments
     SelfNominateSpeakerRequest:
       type: object
       description: 'Story 7.2 "I Could Speak on That": an attendee''s speaker self-nomination body. The
@@ -913,6 +1574,7 @@ components:
 
         '
       additionalProperties: false
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
       required:
       - sessionTitle
       - abstract
@@ -943,6 +1605,7 @@ components:
 
         '
       additionalProperties: false
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
       required:
       - speakerName
       properties:
@@ -985,6 +1648,7 @@ components:
 
         '
       additionalProperties: false
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
       properties:
         speakerName:
           type: string
@@ -1092,6 +1756,231 @@ components:
 
             '
           example: Smith
+    SpeakerWorkflowState:
+      type: string
+      description: 'The 8 ADR-009 §0.1 speaker workflow states, serialized as the UPPER_CASE
+        enum name (the legacy SLOT_ASSIGNED/CONFIRMED/WITHDREW/OVERFLOW were removed per §0.7).'
+      enum:
+      - IDENTIFIED
+      - CONTACTED
+      - READY
+      - INVITED
+      - ACCEPTED
+      - CONTENT_SUBMITTED
+      - QUALITY_REVIEWED
+      - DECLINED
+      example: IDENTIFIED
+    UpdateStatusRequest:
+      type: object
+      description: Request to update speaker status (Story 5.4 AC1-4).
+      required:
+      - newStatus
+      properties:
+        newStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        reason:
+          type: string
+          maxLength: 2000
+          description: Optional reason for the status change (max 2000 chars).
+          example: Speaker confirmed availability via email
+    SpeakerStatusResponse:
+      type: object
+      description: Response after a speaker status update (Story 5.4).
+      properties:
+        speakerId:
+          type: string
+          format: uuid
+          description: Speaker pool ID
+        eventCode:
+          type: string
+          description: Event code (ADR-003)
+          example: BATbern56
+        currentStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        previousStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        changedByUsername:
+          type: string
+          description: Organizer who made the change
+          example: john.doe
+        changeReason:
+          type: string
+          description: Reason for the change
+        changedAt:
+          type: string
+          format: date-time
+          description: When the change occurred
+        isSlotAssigned:
+          type: boolean
+          description: 'Derived (ADR-009 §0.1): true when the speaker has a sessionId assigned.'
+        isPublishable:
+          type: boolean
+          description: 'Derived: currentStatus == QUALITY_REVIEWED AND isSlotAssigned.'
+    StatusHistoryItem:
+      type: object
+      description: 'Single timeline entry — a workflow state change (speaker_status_history) or a
+        synthesised content-rejection event (session_content_history with reviewer feedback).'
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: History record ID
+        kind:
+          type: string
+          enum:
+          - STATUS_CHANGE
+          - CONTENT_REJECTED
+          default: STATUS_CHANGE
+          description: 'STATUS_CHANGE = speaker_status_history row; CONTENT_REJECTED = a
+            content-rejection event (not a state transition, surfaced for the History tab).'
+        previousStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        newStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        changedByUsername:
+          type: string
+          example: john.doe
+        changeReason:
+          type: string
+        changedAt:
+          type: string
+          format: date-time
+    StatusSummaryResponse:
+      type: object
+      description: Status dashboard summary (Story 5.4 AC5-6, AC13).
+      properties:
+        eventCode:
+          type: string
+          example: BATbern56
+        statusCounts:
+          type: object
+          description: Count of speakers per workflow state (keys are SpeakerWorkflowState names).
+          additionalProperties:
+            type: integer
+            format: int64
+          example:
+            IDENTIFIED: 3
+            CONTACTED: 5
+            ACCEPTED: 6
+        totalSpeakers:
+          type: integer
+          format: int64
+        acceptedCount:
+          type: integer
+          format: int64
+        declinedCount:
+          type: integer
+          format: int64
+        pendingCount:
+          type: integer
+          format: int64
+        acceptanceRate:
+          type: number
+          format: double
+        minSlotsRequired:
+          type: integer
+        maxSlotsAllowed:
+          type: integer
+        thresholdMet:
+          type: boolean
+        overflowDetected:
+          type: boolean
+    SubmitContentRequest:
+      type: object
+      description: 'Organizer-on-behalf content submission (Story 5.5 / 11.C.2). Unknown body
+        fields are rejected (400).'
+      additionalProperties: false
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
+      required:
+      - presentationTitle
+      - presentationAbstract
+      properties:
+        presentationTitle:
+          type: string
+          maxLength: 200
+          description: Presentation title (becomes session.title).
+          example: Zero Trust Security in Enterprise Environments
+        presentationAbstract:
+          type: string
+          maxLength: 1000
+          description: Presentation abstract (becomes session.description).
+          example: A field report on implementing Zero Trust in large enterprises.
+        bio:
+          type: string
+          maxLength: 5000
+          description: Optional speaker bio, patched onto the User profile.
+        profilePictureUrl:
+          type: string
+          maxLength: 2048
+          description: Optional speaker portrait URL, patched onto the User profile.
+          example: https://cdn.batbern.ch/users/jane.smith.jpg
+        presentationUploadId:
+          type: string
+          description: Optional upload ID from a presigned-URL upload, linked to the session.
+          example: upload-abc-123
+    SpeakerContentResponse:
+      type: object
+      description: Response for speaker content get/submit operations (Story 5.5).
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          format: uuid
+        presentationTitle:
+          type: string
+        presentationAbstract:
+          type: string
+        username:
+          type: string
+          example: john.doe
+        speakerName:
+          type: string
+          example: John Doe
+        company:
+          type: string
+        status:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        hasContent:
+          type: boolean
+          description: False if the session was deleted (AC34).
+        warning:
+          type: string
+          description: Warning message if issues detected (AC34).
+        submittedAt:
+          type: string
+          format: date-time
+        hasMaterial:
+          type: boolean
+        materialUrl:
+          type: string
+          description: Material download URL (CloudFront CDN).
+          example: https://cdn.batbern.ch/materials/presentation.pdf
+        materialFileName:
+          type: string
+          example: zero-trust-presentation.pdf
+    ReviewAction:
+      type: string
+      enum:
+      - APPROVE
+      - REJECT
+      description: 'Quality-review action: APPROVE → QUALITY_REVIEWED; REJECT → requires feedback.'
+    ReviewRequest:
+      type: object
+      description: Request for a quality-review action (Story 5.5 AC13-14).
+      required:
+      - action
+      properties:
+        action:
+          $ref: '#/components/schemas/ReviewAction'
+        feedback:
+          type: string
+          maxLength: 2000
+          description: Feedback for rejection (required when action is REJECT).
     SpeakerPoolResponse:
       type: object
       description: 'Response representing a speaker pool entry.
@@ -1148,23 +2037,23 @@ components:
         status:
           type: string
           enum:
-          - identified
-          - contacted
-          - ready
-          - accepted
-          - declined
-          - content_submitted
-          - quality_reviewed
-          - slot_assigned
-          - confirmed
-          - withdrew
-          - overflow
-          description: 'Current status of the speaker in the pool workflow.
+          - IDENTIFIED
+          - CONTACTED
+          - READY
+          - INVITED
+          - ACCEPTED
+          - CONTENT_SUBMITTED
+          - QUALITY_REVIEWED
+          - DECLINED
+          description: 'Current status of the speaker in the pool workflow — the 8 ADR-009 §0.1
+            states, serialized as the UPPER_CASE SpeakerWorkflowState enum name (legacy
+            SLOT_ASSIGNED/CONFIRMED/WITHDREW/OVERFLOW were removed per ADR-009 §0.7; slot
+            assignment is now the derived isSlotAssigned flag).
 
-            Story 5.2 - AC13: Initial status = ''identified''
+            Story 5.2 - AC13: Initial status = ''IDENTIFIED''
 
             '
-          example: identified
+          example: IDENTIFIED
         notes:
           type: string
           nullable: true
@@ -1208,6 +2097,116 @@ components:
           format: date-time
           description: Timestamp of last update
           example: 2025-12-13 10:15:00+00:00
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Session UUID — set once a session is assigned to the speaker (Story 5.5).
+          example: 456e4567-e89b-12d3-a456-426614174222
+        sessionSlug:
+          type: string
+          nullable: true
+          description: 'Addressable session slug, surfaced alongside sessionId so the organizer
+            drawer''s content tab can PATCH /events/{code}/sessions/{slug} directly (2026-05-20).'
+          example: event-driven-architecture
+        username:
+          type: string
+          nullable: true
+          description: 'Canonical primary-speaker username, resolved from session_users →
+            CUMS at read time (Story 11.E.9). Null for pre-READY pool rows (no User yet).'
+          example: jane.smith
+        email:
+          type: string
+          nullable: true
+          description: 'Primary-speaker email, resolved live from CUMS (Story 6.1c / 11.E.9).
+            Null for pre-READY rows or when CUMS is degraded.'
+          example: jane.smith@example.com
+        invitedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp the invitation was sent (Story 6.1b).
+          example: 2025-12-14 09:00:00+00:00
+        responseDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Date by which the speaker must respond to the invitation (Story 6.1b).
+          example: 2025-12-21
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Date by which the speaker must submit content (Story 6.1b).
+          example: 2026-01-15
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp the speaker accepted the invitation (Story 6.2a).
+          example: 2025-12-16 11:30:00+00:00
+        declinedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp the speaker declined (Story 6.2a).
+          example: 2025-12-16 11:30:00+00:00
+        declineReason:
+          type: string
+          nullable: true
+          description: Free-text reason given when the speaker declined (Story 6.2a).
+          example: Scheduling conflict with another conference.
+        preferredTimeSlot:
+          type: string
+          nullable: true
+          description: Speaker-stated time-slot preference (Story 6.2a).
+          example: Morning
+        travelRequirements:
+          type: string
+          nullable: true
+          description: Speaker-stated travel requirements (Story 6.2a).
+          example: Needs hotel booking for the night before.
+        technicalRequirements:
+          type: string
+          nullable: true
+          description: Speaker-stated technical/AV requirements (Story 6.2a).
+          example: HDMI adapter for MacBook; clicker.
+        initialPresentationTitle:
+          type: string
+          nullable: true
+          description: 'Initial working title captured at response time (Story 6.2a).
+            sessions.title is canonical post-content; this stays null after Story 11.E.8.'
+          example: Scaling event-driven systems
+        preferenceComments:
+          type: string
+          nullable: true
+          description: Free-text comments accompanying the speaker''s preferences (Story 6.2a).
+          example: Happy to do a workshop instead of a talk if useful.
+        contentSubmittedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Timestamp of the latest content submission, derived from
+            session_content_history at read time (Story 6.3 / 11.E.8).'
+          example: 2026-01-10 14:00:00+00:00
+        submittedTitle:
+          type: string
+          nullable: true
+          description: 'Current presentation title (mirrors sessions.title, the canonical
+            source per Story 11.E.8 §2.9).'
+          example: Event-driven architecture in practice
+        submittedAbstract:
+          type: string
+          nullable: true
+          description: 'Current presentation abstract (mirrors sessions.description, canonical
+            per Story 11.E.8 §2.9).'
+          example: A field report on migrating a monolith to an event-driven core.
+        isSlotAssigned:
+          type: boolean
+          nullable: true
+          description: 'Derived flag (ADR-009 §0.1, computed at read time — NOT persisted):
+            true when the speaker''s session has a start_time set.'
+          example: true
     RecordOutreachRequest:
       type: object
       description: 'Request to record a speaker outreach attempt.
@@ -1393,19 +2392,17 @@ components:
         status:
           type: string
           enum:
-          - identified
-          - contacted
-          - ready
-          - accepted
-          - declined
-          - content_submitted
-          - quality_reviewed
-          - slot_assigned
-          - confirmed
-          - withdrew
-          - overflow
-          description: Current workflow status
-          example: identified
+          - IDENTIFIED
+          - CONTACTED
+          - READY
+          - INVITED
+          - ACCEPTED
+          - CONTENT_SUBMITTED
+          - QUALITY_REVIEWED
+          - DECLINED
+          description: 'Current workflow status — the 8 ADR-009 §0.1 states, serialized as the
+            UPPER_CASE SpeakerWorkflowState enum name.'
+          example: IDENTIFIED
         created:
           type: boolean
           description: True if newly created, false if existing (idempotent return)
@@ -1515,10 +2512,9 @@ components:
         locale:
           type: string
           nullable: true
-          description: Preferred language for the email (defaults to 'de')
-          enum:
-          - de
-          - en
+          description: 'Preferred language for the email (defaults to ''de''). Email templates
+            exist for de + en; any other value falls back to English at render time (free
+            string, not enum-constrained, to preserve the deployed pass-through behaviour).'
           example: de
         email:
           type: string
@@ -1557,9 +2553,10 @@ components:
         status:
           type: string
           enum:
-          - invited
-          description: Updated status (always INVITED after sending)
-          example: invited
+          - INVITED
+          description: Updated status — always INVITED after sending (UPPER_CASE
+            SpeakerWorkflowState enum name).
+          example: INVITED
         invitedAt:
           type: string
           format: date-time
@@ -1576,7 +2573,339 @@ components:
           nullable: true
           description: Deadline for content submission
           example: '2026-03-10'
+    SpeakerDashboardDto:
+      type: object
+      description: Speaker portal dashboard summary across all of the speaker's events (Story 6.4)
+      properties:
+        speakerName:
+          type: string
+        profilePictureUrl:
+          type: string
+        profileCompleteness:
+          type: integer
+          description: Profile completeness percentage (0–100)
+        upcomingEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardUpcomingEventDto'
+        pastEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardPastEventDto'
+    DashboardUpcomingEventDto:
+      type: object
+      description: An upcoming event the speaker is involved in
+      properties:
+        eventCode:
+          type: string
+        eventTitle:
+          type: string
+        eventDate:
+          type: string
+        eventLocation:
+          type: string
+        sessionTitle:
+          type: string
+        workflowState:
+          type: string
+        workflowStateLabel:
+          type: string
+        hasTitle:
+          type: boolean
+        hasAbstract:
+          type: boolean
+        hasMaterial:
+          type: boolean
+        materialFileName:
+          type: string
+        responseDeadline:
+          type: string
+        contentDeadline:
+          type: string
+        reviewerFeedback:
+          type: string
+        organizerName:
+          type: string
+        organizerEmail:
+          type: string
+        respondUrl:
+          type: string
+        contentUrl:
+          type: string
+    DashboardPastEventDto:
+      type: object
+      description: A past event the speaker presented at
+      properties:
+        eventCode:
+          type: string
+        eventTitle:
+          type: string
+        eventDate:
+          type: string
+        sessionTitle:
+          type: string
+        hasMaterial:
+          type: boolean
+        materialFileName:
+          type: string
+    SpeakerResponseType:
+      type: string
+      description: Speaker's response to an invitation
+      enum:
+        - ACCEPT
+        - DECLINE
+    SpeakerResponsePreferences:
+      type: object
+      description: Optional logistics preferences captured on ACCEPT (Story 6.2a)
+      properties:
+        timeSlot:
+          type: string
+          description: 'Preferred presentation time slot: morning, afternoon, no_preference'
+        travelRequirements:
+          type: string
+          description: 'Travel requirements: local, accommodation, virtual'
+        technicalRequirements:
+          type: array
+          items:
+            type: string
+          description: 'Technical requirements: mac_adapter, remote_option, special_av'
+        initialTitle:
+          type: string
+          description: Preliminary presentation title
+        comments:
+          type: string
+          description: Additional comments for the organizer
+    SpeakerResponseRequest:
+      type: object
+      description: A speaker's accept/decline response to an invitation (Story 6.2a)
+      required:
+        - response
+      properties:
+        response:
+          $ref: '#/components/schemas/SpeakerResponseType'
+        reason:
+          type: string
+          description: Reason for decline (required for DECLINE)
+        constraints:
+          type: string
+          description: Optional constraints or notes (e.g. travel, schedule)
+        preferences:
+          $ref: '#/components/schemas/SpeakerResponsePreferences'
+    SpeakerResponseResult:
+      type: object
+      description: Outcome of processing a speaker's invitation response (Story 6.2a)
+      properties:
+        success:
+          type: boolean
+        speakerName:
+          type: string
+        eventName:
+          type: string
+        eventDate:
+          type: string
+          description: Formatted event date (e.g. "20. November 2025")
+        sessionTitle:
+          type: string
+        nextSteps:
+          type: array
+          items:
+            type: string
+          description: Next steps for the speaker after responding
+        contentDeadline:
+          type: string
+          format: date
+          description: Content submission deadline (if accepted)
+        dashboardUrl:
+          type: string
+        errorMessage:
+          type: string
+    SpeakerContentInfo:
+      type: object
+      description: The speaker portal's content-submission state for one event (Story 6.3)
+      properties:
+        speakerName:
+          type: string
+        eventCode:
+          type: string
+        eventTitle:
+          type: string
+        hasSessionAssigned:
+          type: boolean
+        sessionTitle:
+          type: string
+        canSubmitContent:
+          type: boolean
+        hasDraft:
+          type: boolean
+        draftTitle:
+          type: string
+        draftAbstract:
+          type: string
+        draftVersion:
+          type: integer
+        lastSavedAt:
+          type: string
+          format: date-time
+        needsRevision:
+          type: boolean
+        reviewerFeedback:
+          type: string
+        reviewedAt:
+          type: string
+          format: date-time
+        reviewedBy:
+          type: string
+        hasMaterial:
+          type: boolean
+        materialUrl:
+          type: string
+        materialFileName:
+          type: string
+    ContentSubmitRequest:
+      type: object
+      description: Speaker content submission (title/abstract/bio + optional presentation upload)
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
+      required:
+        - title
+        - contentAbstract
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        contentAbstract:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        bio:
+          type: string
+          maxLength: 5000
+        profilePictureUrl:
+          type: string
+          maxLength: 2048
+        presentationUploadId:
+          type: string
+          maxLength: 200
+    SpeakerMaterialUploadRequest:
+      type: object
+      description: Request a presigned URL for a material upload
+      required:
+        - fileName
+        - fileSize
+        - mimeType
+      properties:
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+    SpeakerMaterialUploadResponse:
+      type: object
+      description: Presigned upload URL + metadata
+      properties:
+        uploadUrl:
+          type: string
+        uploadId:
+          type: string
+        s3Key:
+          type: string
+        fileExtension:
+          type: string
+        expiresInMinutes:
+          type: integer
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
+          description: Headers the client must send on the presigned PUT
+    SpeakerMaterialConfirmRequest:
+      type: object
+      description: Confirm a completed material upload
+      required:
+        - uploadId
+        - fileName
+        - fileExtension
+        - fileSize
+        - mimeType
+      properties:
+        uploadId:
+          type: string
+        fileName:
+          type: string
+        fileExtension:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+        materialType:
+          type: string
+          description: Defaults to PRESENTATION when omitted
+    SpeakerMaterialConfirmResponse:
+      type: object
+      description: Result of confirming a material upload
+      properties:
+        materialId:
+          type: string
+          format: uuid
+        uploadId:
+          type: string
+        fileName:
+          type: string
+        cloudFrontUrl:
+          type: string
+        materialType:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+    SendReminderRequest:
+      type: object
+      description: Manual speaker reminder request (Story 6.5)
+      properties:
+        reminderType:
+          type: string
+          description: 'RESPONSE or CONTENT'
+        tier:
+          type: string
+          description: 'Optional: TIER_1/TIER_2/TIER_3 (auto-detected if omitted)'
+    SendReminderResponse:
+      type: object
+      description: Manual reminder result; error fields populated on the 400/409 paths
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+      properties:
+        message:
+          type: string
+        tier:
+          type: string
+        emailAddress:
+          type: string
+        error:
+          type: string
+    UpdateRemindersDisabledRequest:
+      type: object
+      required:
+        - remindersDisabled
+      properties:
+        remindersDisabled:
+          type: boolean
+    RemindersDisabledResponse:
+      type: object
+      properties:
+        speakerPoolId:
+          type: string
+        remindersDisabled:
+          type: boolean
   responses:
+    Conflict:
+      description: Conflict - the speaker has already responded
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
     BadRequest:
       description: Bad request - validation error
       content:

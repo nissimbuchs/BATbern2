@@ -183,6 +183,115 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/public/organizers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List all organizers (public information only)
+     * @description Anonymous endpoint returning organizers' public information for the About page.
+     *     Exposes only publicly-shareable fields (name, bio, email, profile picture, company).
+     */
+    get: operations['getAllOrganizers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/by-company': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List users by company (service-to-service)
+     * @description Returns a paginated list of users in a company, optionally filtered by role.
+     *     VPC-internal service-to-service endpoint — authorization is enforced at the filter chain.
+     */
+    get: operations['listUsersByCompany'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/profile-picture/upload-from-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Admin — upload a user's profile picture from a URL
+     * @description Fetches an image from a URL and uploads it directly to S3 (bypasses the browser to avoid
+     *     binary corruption). Used for batch imports of speaker portraits.
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    post: operations['uploadProfilePictureFromUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/admin/reconcile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Trigger manual Cognito→DB user reconciliation (Admin)
+     * @description Manually syncs users from Cognito to the database (Story 1.2.5).
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    post: operations['reconcileUsers'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/admin/sync-status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check Cognito↔DB sync status (Admin)
+     * @description Compares Cognito and the database and reports drift (Story 1.2.5).
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    get: operations['getSyncStatus'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/{username}': {
     parameters: {
       query?: never;
@@ -203,7 +312,13 @@ export interface paths {
      *     **Performance**: <150ms (P95)
      */
     get: operations['getUserByUsername'];
-    put?: never;
+    /**
+     * Update a user's profile by username (Organizer/Admin)
+     * @description Full update of any user's profile by an organizer/admin.
+     *
+     *     **Authorization**: ORGANIZER or ADMIN role required
+     */
+    put: operations['updateUserByUsername'];
     post?: never;
     /**
      * Delete user and all associated data
@@ -471,34 +586,6 @@ export interface paths {
      *     **Cache Invalidation**: All user caches cleared on role update
      */
     put: operations['updateUserRoles'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{username}/activity': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get user activity history
-     * @description Retrieve paginated activity history for a specific user.
-     *
-     *     **Acceptance Criteria**: AC9
-     *
-     *     **Story 1.16.2**: Uses username as identifier instead of UUID
-     *
-     *     **Activity Types**: event_registered, session_attended, topic_voted, content_viewed
-     *
-     *     **Timeframe Filtering**: Support for date range queries
-     */
-    get: operations['getUserActivity'];
-    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -881,6 +968,55 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AdminUploadProfilePictureFromUrlRequest: {
+      /** @description Source image URL to fetch and upload */
+      url: string;
+      /**
+       * @description Suggested base filename (extension is derived from the fetched content type)
+       * @default profile
+       */
+      filename: string;
+    };
+    AdminUploadProfilePictureFromUrlResponse: {
+      /** @description CDN URL of the uploaded profile picture */
+      profilePictureUrl?: string;
+    };
+    /** @description Result of a manual Cognito→DB user reconciliation (Story 1.2.5) */
+    UserReconciliationReport: {
+      /** @description Users present in the DB but absent in Cognito, deactivated by this run */
+      orphanedUsersDeactivated?: number;
+      /** @description Users present in Cognito but absent in the DB, created by this run */
+      missingUsersCreated?: number;
+      /**
+       * Format: int64
+       * @description Reconciliation duration in milliseconds
+       */
+      durationMs?: number;
+      errors?: string[];
+      success?: boolean;
+      message?: string;
+    };
+    /** @description Public organizer projection for the About page (no sensitive fields) */
+    PublicOrganizerResponse: {
+      /** @description Username (public identifier) */
+      id?: string;
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      bio?: string;
+      profilePictureUrl?: string;
+      companyId?: string;
+    };
+    /** @description Cognito↔DB sync status snapshot (Story 1.2.5) */
+    UserSyncStatus: {
+      cognitoUserCount?: number;
+      databaseUserCount?: number;
+      missingInDatabase?: number;
+      orphanedInDatabase?: number;
+      missingCognitoIds?: string[];
+      inSync?: boolean;
+      message?: string;
+    };
     /**
      * @description Narrow public projection of a user — exactly the fields the public
      *     archive page needs for portrait display. No email, no role list,
@@ -1365,36 +1501,6 @@ export interface components {
       user: components['schemas']['UserResponse'];
     };
     /**
-     * @description Activity history record for audit purposes.
-     *     Note: id field uses internal UUID format (exception to ADR-003) as activity records
-     *     are internal audit entries and are not referenced across services.
-     */
-    ActivityHistory: {
-      /**
-       * Format: uuid
-       * @description Activity ID (internal UUID preserved for audit purposes - ADR-003 exception for internal audit records)
-       */
-      id?: string;
-      /**
-       * @description Username (unique identifier) - Story 1.16.2
-       * @example john.doe
-       */
-      username?: string;
-      /** @example event_registered */
-      activityType?: string;
-      /** @example event */
-      entityType?: string;
-      /** @example evt-123 */
-      entityId?: string;
-      /** @example Registered for BATbern Developer Meetup */
-      description?: string;
-      metadata?: {
-        [key: string]: unknown;
-      };
-      /** Format: date-time */
-      timestamp?: string;
-    };
-    /**
      * @description Company details with meaningful IDs.
      *     Story 1.16.2: id field contains company name, not UUID.
      */
@@ -1439,10 +1545,19 @@ export interface components {
        */
       fileName: string;
       /**
-       * @description File size in bytes (max 5 MB)
+       * @description File size in bytes. The 5 MB ceiling is enforced server-side by
+       *     ProfilePictureService (friendly `exceeds 5MB limit` 400) rather than a
+       *     declarative `maximum`, preserving the pre-wiring contract + message.
        * @example 1048576
        */
       fileSize: number;
+      /**
+       * @description Client-declared MIME type of the upload. Accepted for documentation-truth
+       *     (the frontend sends `file.type`), but the server authoritatively derives the
+       *     content type from the file extension — this value is not trusted or required.
+       * @example image/png
+       */
+      mimeType?: string;
     };
     /** @description Presigned URL response for S3 upload */
     PresignedUploadUrl: {
@@ -1972,6 +2087,140 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  getAllOrganizers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of organizers (public projection) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublicOrganizerResponse'][];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listUsersByCompany: {
+    parameters: {
+      query: {
+        /** @description Company name (ADR-003 meaningful ID) */
+        company: string;
+        /** @description Optional role filter */
+        role?: string;
+        /** @description Page number (1-indexed) */
+        page?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Paginated users for the company */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaginatedUserResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  uploadProfilePictureFromUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username (unique identifier) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AdminUploadProfilePictureFromUrlRequest'];
+      };
+    };
+    responses: {
+      /** @description Profile picture uploaded */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminUploadProfilePictureFromUrlResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Fetched image exceeds the size limit */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  reconcileUsers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Reconciliation report */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserReconciliationReport'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getSyncStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Sync status report */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserSyncStatus'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
   getUserByUsername: {
     parameters: {
       query?: {
@@ -1997,6 +2246,38 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  updateUserByUsername: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username (unique identifier) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateUserRequest'];
+      };
+    };
+    responses: {
+      /** @description User updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
@@ -2421,43 +2702,6 @@ export interface operations {
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       409: components['responses']['Conflict'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  getUserActivity: {
-    parameters: {
-      query?: {
-        /** @description Filter by timeframe */
-        timeframe?: '24h' | '7d' | '30d' | '90d' | 'all';
-        /** @description Filter by activity type */
-        activityType?: string;
-        page?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        /** @description Username (unique identifier) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Activity history retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            data?: components['schemas']['ActivityHistory'][];
-            pagination?: components['schemas']['PaginationMetadata'];
-          };
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };

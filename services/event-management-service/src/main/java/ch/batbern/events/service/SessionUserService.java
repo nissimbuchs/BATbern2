@@ -4,8 +4,8 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
-import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.events.exception.SpeakerAssignmentNotFoundException;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.SessionRepository;
@@ -54,11 +54,11 @@ public class SessionUserService {
      * @param username User's username (public identifier per ADR-003/1.16.2)
      * @param speakerRole Role of the speaker
      * @param presentationTitle ignored; preserved as a parameter for source-compat
-     * @return SessionSpeakerResponse with enriched user data
+     * @return SessionSpeaker with enriched user data
      * @throws IllegalArgumentException if session or user not found, or duplicate assignment
      * @throws UserNotFoundException if user not found via API
      */
-    public SessionSpeakerResponse assignSpeakerToSession(
+    public SessionSpeaker assignSpeakerToSession(
             UUID sessionId,
             String username,
             SpeakerRole speakerRole,
@@ -140,11 +140,11 @@ public class SessionUserService {
      *
      * @param sessionId Session UUID
      * @param username User's username
-     * @return Updated SessionSpeakerResponse
+     * @return Updated SessionSpeaker
      * @throws SpeakerAssignmentNotFoundException if assignment not found
      * @throws UserNotFoundException if user not found via API
      */
-    public SessionSpeakerResponse confirmSpeaker(UUID sessionId, String username) {
+    public SessionSpeaker confirmSpeaker(UUID sessionId, String username) {
         log.info("Confirming speaker {} for session {}", username, sessionId);
 
         // Find speaker assignment by username (ADR-003: meaningful identifier)
@@ -167,11 +167,11 @@ public class SessionUserService {
      * @param sessionId Session UUID
      * @param username User's username
      * @param reason Reason for declining
-     * @return Updated SessionSpeakerResponse
+     * @return Updated SessionSpeaker
      * @throws SpeakerAssignmentNotFoundException if assignment not found
      * @throws UserNotFoundException if user not found via API
      */
-    public SessionSpeakerResponse declineSpeaker(UUID sessionId, String username, String reason) {
+    public SessionSpeaker declineSpeaker(UUID sessionId, String username, String reason) {
         log.info("Declining speaker {} for session {} with reason: {}", username, sessionId, reason);
 
         // Find speaker assignment by username (ADR-003: meaningful identifier)
@@ -192,10 +192,10 @@ public class SessionUserService {
      * Get all speakers for a session (enriched with User data)
      *
      * @param sessionId Session UUID
-     * @return List of SessionSpeakerResponse
+     * @return List of SessionSpeaker
      */
     @Transactional(readOnly = true)
-    public List<SessionSpeakerResponse> getSessionSpeakers(UUID sessionId) {
+    public List<SessionSpeaker> getSessionSpeakers(UUID sessionId) {
         log.debug("Fetching speakers for session {}", sessionId);
 
         List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(sessionId);
@@ -209,10 +209,10 @@ public class SessionUserService {
      * Get all speakers for an event (for homepage display)
      *
      * @param eventId Event UUID
-     * @return List of SessionSpeakerResponse
+     * @return List of SessionSpeaker
      */
     @Transactional(readOnly = true)
-    public List<SessionSpeakerResponse> getEventSpeakers(UUID eventId) {
+    public List<SessionSpeaker> getEventSpeakers(UUID eventId) {
         log.debug("Fetching speakers for event {}", eventId);
 
         List<SessionUser> sessionUsers = sessionUserRepository.findAllByEventId(eventId);
@@ -223,14 +223,14 @@ public class SessionUserService {
     }
 
     /**
-     * Enrich SessionUser with User data to create SessionSpeakerResponse
+     * Enrich SessionUser with User data to create SessionSpeaker
      * Fetches user profile data from User Management Service API
      *
      * @param sessionUser SessionUser entity (must have username populated)
-     * @return SessionSpeakerResponse with combined data
+     * @return SessionSpeaker with combined data
      * @throws UserNotFoundException if user not found via API (only for new assignments)
      */
-    private SessionSpeakerResponse enrichWithUserData(SessionUser sessionUser) {
+    private SessionSpeaker enrichWithUserData(SessionUser sessionUser) {
         // ADR-003: username is required for API-based user lookup
         if (sessionUser.getUsername() == null) {
             throw new IllegalStateException(
@@ -248,7 +248,7 @@ public class SessionUserService {
             // Use cached speaker name fields from SessionUser (populated during assignment)
             log.warn("User not found for speaker lookup, using cached data: {}", sessionUser.getUsername());
 
-            return SessionSpeakerResponse.builder()
+            return SessionSpeaker.builder()
                     .username(sessionUser.getUsername())
                     .firstName(sessionUser.getSpeakerFirstName() != null
                             ? sessionUser.getSpeakerFirstName() : "Unknown")
@@ -256,7 +256,7 @@ public class SessionUserService {
                             ? sessionUser.getSpeakerLastName() : "Speaker")
                     .company(null) // No company data available for archived speakers
                     .profilePictureUrl(null) // No profile picture for archived speakers
-                    .speakerRole(sessionUser.getSpeakerRole())
+                    .speakerRole(toSpeakerRoleEnum(sessionUser.getSpeakerRole()))
                     // Story 11.E.8: session_users.presentation_title dropped (V102). The
                     // response field is retained for FE source-compat but always null now.
                     .presentationTitle(null)
@@ -269,20 +269,28 @@ public class SessionUserService {
      * Enrich SessionUser with User data (when User is already loaded)
      * Combines session-user relationship data with user profile data
      */
-    private SessionSpeakerResponse enrichWithUserData(SessionUser sessionUser, UserResponse user) {
-        return SessionSpeakerResponse.builder()
+    private SessionSpeaker enrichWithUserData(SessionUser sessionUser, UserResponse user) {
+        return SessionSpeaker.builder()
                 .username(user.getId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .company(user.getCompanyId()) // companyId is the company name (slug) per Story 1.16.2
                 .companyDisplayName(resolveCompanyDisplayName(user.getCompanyId()))
-                .profilePictureUrl(user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null)
+                .profilePictureUrl(user.getProfilePictureUrl())
                 .bio(user.getBio())
-                .speakerRole(sessionUser.getSpeakerRole())
+                .speakerRole(toSpeakerRoleEnum(sessionUser.getSpeakerRole()))
                 // Story 11.E.8: session_users.presentation_title dropped (V102).
                 .presentationTitle(null)
                 .isConfirmed(sessionUser.isConfirmed())
                 .build();
+    }
+
+    /**
+     * Convert the domain {@link SpeakerRole} to the generated wire enum. Value names are
+     * identical across the two (PRIMARY_SPEAKER / CO_SPEAKER / MODERATOR / PANELIST).
+     */
+    private static SessionSpeaker.SpeakerRoleEnum toSpeakerRoleEnum(SpeakerRole role) {
+        return role != null ? SessionSpeaker.SpeakerRoleEnum.fromValue(role.name()) : null;
     }
 
     /**

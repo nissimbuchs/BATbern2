@@ -4,12 +4,12 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
-import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.SpeakerAssignmentNotFoundException;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -102,7 +102,7 @@ class SessionUserServiceTest {
         when(sessionUserRepository.save(any(SessionUser.class))).thenReturn(savedSessionUser);
 
         // When: Assigning speaker to session
-        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+        SessionSpeaker response = sessionUserService.assignSpeakerToSession(
                 sessionId,
                 username,
                 SpeakerRole.PRIMARY_SPEAKER,
@@ -124,7 +124,7 @@ class SessionUserServiceTest {
         assertThat(response.getFirstName()).isEqualTo("John");
         assertThat(response.getLastName()).isEqualTo("Doe");
         assertThat(response.getCompany()).isEqualTo("GoogleZH");
-        assertThat(response.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
+        assertThat(response.getSpeakerRole()).isEqualTo(SessionSpeaker.SpeakerRoleEnum.PRIMARY_SPEAKER);
     }
 
     @Test
@@ -136,7 +136,7 @@ class SessionUserServiceTest {
         when(sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)).thenReturn(false);
         when(sessionUserRepository.save(any(SessionUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+        SessionSpeaker response = sessionUserService.assignSpeakerToSession(
                 sessionId, username, SpeakerRole.PRIMARY_SPEAKER, null);
 
         // Then: slug retained as the stable key, display name resolved for the UI
@@ -153,7 +153,7 @@ class SessionUserServiceTest {
         when(sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)).thenReturn(false);
         when(sessionUserRepository.save(any(SessionUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+        SessionSpeaker response = sessionUserService.assignSpeakerToSession(
                 sessionId, username, SpeakerRole.PRIMARY_SPEAKER, null);
 
         assertThat(response.getCompanyDisplayName()).isEqualTo("GoogleZH");
@@ -257,7 +257,7 @@ class SessionUserServiceTest {
         when(sessionUserRepository.save(any(SessionUser.class))).thenReturn(sessionUser);
 
         // When: Confirming speaker
-        SessionSpeakerResponse response = sessionUserService.confirmSpeaker(sessionId, username);
+        SessionSpeaker response = sessionUserService.confirmSpeaker(sessionId, username);
 
         // Then: SessionUser should be updated with confirmed status
         verify(sessionUserRepository).save(sessionUser);
@@ -265,7 +265,7 @@ class SessionUserServiceTest {
         assertThat(sessionUser.getConfirmedAt()).isNotNull();
 
         // And: Response should reflect confirmation
-        assertThat(response.isConfirmed()).isTrue();
+        assertThat(response.getIsConfirmed()).isTrue();
     }
 
     @Test
@@ -287,7 +287,7 @@ class SessionUserServiceTest {
         String declineReason = "Schedule conflict";
 
         // When: Declining speaker
-        SessionSpeakerResponse response = sessionUserService.declineSpeaker(
+        SessionSpeaker response = sessionUserService.declineSpeaker(
                 sessionId, username, declineReason
         );
 
@@ -298,7 +298,7 @@ class SessionUserServiceTest {
         assertThat(sessionUser.getDeclineReason()).isEqualTo(declineReason);
 
         // And: Response should reflect decline
-        assertThat(response.isConfirmed()).isFalse();
+        assertThat(response.getIsConfirmed()).isFalse();
     }
 
     @Test
@@ -334,23 +334,23 @@ class SessionUserServiceTest {
         when(userApiClient.getUserByUsername(username2)).thenReturn(user2);
 
         // When: Getting session speakers
-        List<SessionSpeakerResponse> speakers = sessionUserService.getSessionSpeakers(sessionId);
+        List<SessionSpeaker> speakers = sessionUserService.getSessionSpeakers(sessionId);
 
         // Then: Should return enriched speaker data
         assertThat(speakers).hasSize(2);
 
-        SessionSpeakerResponse firstSpeaker = speakers.get(0);
+        SessionSpeaker firstSpeaker = speakers.get(0);
         assertThat(firstSpeaker.getUsername()).isEqualTo("john.doe");
         assertThat(firstSpeaker.getFirstName()).isEqualTo("John");
         assertThat(firstSpeaker.getLastName()).isEqualTo("Doe");
         assertThat(firstSpeaker.getCompany()).isEqualTo("GoogleZH");
-        assertThat(firstSpeaker.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
-        assertThat(firstSpeaker.isConfirmed()).isTrue();
+        assertThat(firstSpeaker.getSpeakerRole()).isEqualTo(SessionSpeaker.SpeakerRoleEnum.PRIMARY_SPEAKER);
+        assertThat(firstSpeaker.getIsConfirmed()).isTrue();
 
-        SessionSpeakerResponse secondSpeaker = speakers.get(1);
+        SessionSpeaker secondSpeaker = speakers.get(1);
         assertThat(secondSpeaker.getUsername()).isEqualTo("jane.smith");
-        assertThat(secondSpeaker.getSpeakerRole()).isEqualTo(SpeakerRole.CO_SPEAKER);
-        assertThat(secondSpeaker.isConfirmed()).isFalse();
+        assertThat(secondSpeaker.getSpeakerRole()).isEqualTo(SessionSpeaker.SpeakerRoleEnum.CO_SPEAKER);
+        assertThat(secondSpeaker.getIsConfirmed()).isFalse();
     }
 
     @Test
@@ -359,7 +359,7 @@ class SessionUserServiceTest {
         when(sessionUserRepository.findBySessionId(sessionId)).thenReturn(List.of());
 
         // When: Getting session speakers
-        List<SessionSpeakerResponse> speakers = sessionUserService.getSessionSpeakers(sessionId);
+        List<SessionSpeaker> speakers = sessionUserService.getSessionSpeakers(sessionId);
 
         // Then: Should return empty list
         assertThat(speakers).isEmpty();
@@ -379,7 +379,7 @@ class SessionUserServiceTest {
         when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
 
         // When: Getting event speakers
-        List<SessionSpeakerResponse> speakers = sessionUserService.getEventSpeakers(eventId);
+        List<SessionSpeaker> speakers = sessionUserService.getEventSpeakers(eventId);
 
         // Then: Should return all speakers for the event
         assertThat(speakers).hasSize(1);
@@ -403,7 +403,7 @@ class SessionUserServiceTest {
         when(sessionUserRepository.save(any(SessionUser.class))).thenReturn(savedSessionUser);
 
         // When: Assigning speaker without presentation title
-        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+        SessionSpeaker response = sessionUserService.assignSpeakerToSession(
                 sessionId,
                 username,
                 SpeakerRole.MODERATOR,
@@ -411,6 +411,6 @@ class SessionUserServiceTest {
         );
 
         // Then: Should succeed with null presentationTitle
-        assertThat(response.getSpeakerRole()).isEqualTo(SpeakerRole.MODERATOR);
+        assertThat(response.getSpeakerRole()).isEqualTo(SessionSpeaker.SpeakerRoleEnum.MODERATOR);
     }
 }

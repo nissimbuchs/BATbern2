@@ -1,8 +1,8 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
-import ch.batbern.companyuser.dto.CompanyLogo;
-import ch.batbern.companyuser.dto.CompanySearchResponse;
+import ch.batbern.companyuser.dto.generated.CompanyLogo;
+import ch.batbern.companyuser.dto.generated.CompanySearchResponse;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +11,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -136,22 +137,39 @@ public class CompanySearchService {
      * @param includeLogo Whether to include logo in response
      */
     private CompanySearchResponse mapToSearchResponse(Company company, boolean includeLogo) {
-        CompanySearchResponse.CompanySearchResponseBuilder builder = CompanySearchResponse.builder()
+        CompanySearchResponse.Builder builder = CompanySearchResponse.builder()
                 .name(company.getName())
                 .displayName(company.getDisplayName())
                 .swissUID(company.getSwissUID())
                 .industry(company.getIndustry())
                 .isVerified(company.isVerified());
 
-        // Include logo object if requested and logo exists
+        // Include logo object if requested and logo exists (generated CompanyLogo.url is a URI)
         if (includeLogo && company.getLogoUrl() != null) {
             builder.logo(CompanyLogo.builder()
-                    .url(company.getLogoUrl())
+                    .url(toUri(company.getLogoUrl(), company.getName()))
                     .s3Key(company.getLogoS3Key())
                     .fileId(company.getLogoFileId())
                     .build());
         }
 
         return builder.build();
+    }
+
+    /**
+     * Convert a nullable stored URL string to a {@link URI} for the generated DTOs.
+     * Mirrors {@code UserResponseMapper}/{@code CompanyService}: null/blank or malformed → null
+     * (logged) rather than throwing.
+     */
+    private static URI toUri(String value, String companyName) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return URI.create(value);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid logo URL for company {}: {}", companyName, value);
+            return null;
+        }
     }
 }

@@ -2,13 +2,13 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.dto.TimetableResponse;
 import ch.batbern.events.dto.TimetableSlot;
 import ch.batbern.events.entity.AgendaConfig;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -94,6 +94,31 @@ Add these GitHub secrets (Settings → Secrets and variables → Actions):
 
 The pipeline exports `AUTH_TOKEN`, `ORGANIZER_AUTH_TOKEN`, `SPEAKER_AUTH_TOKEN`, and `PARTNER_AUTH_TOKEN` to all test steps. Roles without configured secrets are skipped gracefully.
 
+### Canonical test-user accounts (Cognito pool `eu-central-1_FtgfxgQRF`)
+
+> **The SPEAKER test user uses an SES-simulator address — do not "fix" it to a real mailbox.**
+
+The nightly e2e and per-deploy suites drive the **speaker invitation/response flow**, which sends
+real invitation/reminder emails via SES on staging (= production). To keep those sends from bouncing
+(and polluting SES reputation / the bounce-suppression list), the speaker test user's email is the
+AWS SES **simulator "success" address**, which SES always accepts and never bounces:
+
+| Role | Cognito username (UUID) | email (`STAGING_*_EMAIL`) | CUMS username (staging) |
+|---|---|---|---|
+| **Speaker** | `9314b802-80a1-70a0-f41c-31ee9a0452b4` | **`success+batbern.speaker@simulator.amazonses.com`** | **`batbern.speaker`** |
+
+(The local dev DB mirror slugs this same user as `successbatbern.speaker` — staging is authoritative.)
+
+**Do not recreate a real-mailbox speaker.** A legacy duplicate speaker on a real mailbox once existed
+and caused "two speakers" confusion; it was deleted everywhere on 2026-06-30 (Cognito + staging DB +
+local mirror). Keep the SES-simulator address as the single canonical speaker — do **not** repoint
+`STAGING_SPEAKER_EMAIL` at a real mailbox, or the nightly speaker-invitation emails will start
+bouncing again.
+
+SES simulator addresses (`success+label@simulator.amazonses.com`, `bounce@`, `complaint@`) are the
+AWS-blessed way to exercise send paths without real delivery — see the
+[Amazon SES mailbox simulator](https://docs.aws.amazon.com/ses/latest/dg/send-an-email-from-console.html#send-email-simulator).
+
 ---
 
 ## Layer 1: Shell Script Tests

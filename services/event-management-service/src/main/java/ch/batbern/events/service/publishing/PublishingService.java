@@ -4,13 +4,18 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.PublishingConfig;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.entity.EventTypeConfiguration;
-import ch.batbern.events.dto.AutoPublishScheduleRequest;
-import ch.batbern.events.dto.AutoPublishScheduleResponse;
-import ch.batbern.events.dto.PublishPhaseResponse;
-import ch.batbern.events.dto.PublishPreviewResponse;
+import ch.batbern.events.core.dto.generated.AutoPublishScheduleRequest;
+import ch.batbern.events.core.dto.generated.AutoPublishScheduleResponse;
+import ch.batbern.events.core.dto.generated.PublishPhaseResponse;
+import ch.batbern.events.core.dto.generated.PublishPreviewResponse;
+import ch.batbern.events.core.dto.generated.PublishingStatusResponse;
+import ch.batbern.events.core.dto.generated.SessionPreview;
+import ch.batbern.events.core.dto.generated.SessionValidationStatus;
+import ch.batbern.events.core.dto.generated.SpeakerPreview;
+import ch.batbern.events.core.dto.generated.UnassignedSession;
+import ch.batbern.events.core.dto.generated.UnpublishPhaseResponse;
+import ch.batbern.events.core.dto.generated.ValidationStatus;
 import ch.batbern.events.dto.PublishValidationError;
-import ch.batbern.events.dto.PublishingStatusResponse;
-import ch.batbern.events.dto.UnpublishPhaseResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTypeRepository;
@@ -99,7 +104,7 @@ public class PublishingService {
         return PublishPhaseResponse.builder()
                 .phase(phase)
                 .published(true)
-                .publishedAt(Instant.now())
+                .publishedAt(Instant.now().atOffset(java.time.ZoneOffset.UTC))
                 .cdnInvalidated(cdnInvalidated)
                 .build();
     }
@@ -129,7 +134,7 @@ public class PublishingService {
         return UnpublishPhaseResponse.builder()
                 .phase(phase)
                 .published(false)
-                .unpublishedAt(Instant.now())
+                .unpublishedAt(Instant.now().atOffset(java.time.ZoneOffset.UTC))
                 .cdnInvalidated(cdnInvalidated)
                 .build();
     }
@@ -150,10 +155,10 @@ public class PublishingService {
         boolean agendaPublished = currentPhase != null && currentPhase.equals("agenda");
 
         // Get speakers if speakers phase is published
-        List<PublishPreviewResponse.SpeakerPreview> speakers = new ArrayList<>();
+        List<SpeakerPreview> speakers = new ArrayList<>();
         if (speakersPublished) {
             speakers = speakerPoolRepository.findByEventId(event.getId()).stream()
-                    .map(sp -> PublishPreviewResponse.SpeakerPreview.builder()
+                    .map(sp -> SpeakerPreview.builder()
                             .name(sp.getSpeakerName())
                             .company(sp.getCompany())
                             .build())
@@ -161,10 +166,10 @@ public class PublishingService {
         }
 
         // Get sessions if agenda phase is published
-        List<PublishPreviewResponse.SessionPreview> sessions = agendaPublished
+        List<SessionPreview> sessions = agendaPublished
                 ? sessionRepository.findByEventId(event.getId()).stream()
                         .filter(s -> s.getStartTime() != null)
-                        .map(s -> PublishPreviewResponse.SessionPreview.builder()
+                        .map(s -> SessionPreview.builder()
                                 .title(s.getTitle())
                                 .startTime(s.getStartTime() != null
                                         ? s.getStartTime().toString() : null)
@@ -215,10 +220,10 @@ public class PublishingService {
                 .scheduled(true)
                 .phase2Enabled(request.getPhase2Enabled())
                 .phase2DaysBeforeEvent(request.getPhase2DaysBeforeEvent())
-                .phase2TriggerDate(phase2TriggerDate)
+                .phase2TriggerDate(phase2TriggerDate.atOffset(java.time.ZoneOffset.UTC))
                 .phase3Enabled(request.getPhase3Enabled())
                 .phase3DaysBeforeEvent(request.getPhase3DaysBeforeEvent())
-                .phase3TriggerDate(phase3TriggerDate)
+                .phase3TriggerDate(phase3TriggerDate.atOffset(java.time.ZoneOffset.UTC))
                 .build();
     }
 
@@ -241,10 +246,10 @@ public class PublishingService {
                 .scheduled(true)
                 .phase2Enabled(config.getAutoPublishSpeakers())
                 .phase2DaysBeforeEvent(config.getAutoPublishSpeakersDaysBefore())
-                .phase2TriggerDate(phase2TriggerDate)
+                .phase2TriggerDate(phase2TriggerDate.atOffset(java.time.ZoneOffset.UTC))
                 .phase3Enabled(config.getAutoPublishAgenda())
                 .phase3DaysBeforeEvent(config.getAutoPublishAgendaDaysBefore())
-                .phase3TriggerDate(phase3TriggerDate)
+                .phase3TriggerDate(phase3TriggerDate.atOffset(java.time.ZoneOffset.UTC))
                 .build();
     }
 
@@ -310,8 +315,8 @@ public class PublishingService {
         }
 
         // Build unassigned sessions list
-        List<PublishingStatusResponse.UnassignedSession> unassignedList = unassignedSessions.stream()
-                .map(s -> PublishingStatusResponse.UnassignedSession.builder()
+        List<UnassignedSession> unassignedList = unassignedSessions.stream()
+                .map(s -> UnassignedSession.builder()
                         .sessionSlug(s.getSessionSlug())
                         .title(s.getTitle())
                         .build())
@@ -323,15 +328,15 @@ public class PublishingService {
         return PublishingStatusResponse.builder()
                 .currentPhase(event.getCurrentPublishedPhase())
                 .publishedPhases(publishedPhases)
-                .topic(PublishingStatusResponse.ValidationStatus.builder()
+                .topic(ValidationStatus.builder()
                         .isValid(topicValid)
                         .errors(topicErrors)
                         .build())
-                .speakers(PublishingStatusResponse.ValidationStatus.builder()
+                .speakers(ValidationStatus.builder()
                         .isValid(speakersValid)
                         .errors(speakersErrors)
                         .build())
-                .sessions(PublishingStatusResponse.SessionValidationStatus.builder()
+                .sessions(SessionValidationStatus.builder()
                         .isValid(sessionsValid)
                         .errors(sessionsErrors)
                         .assignedCount(allSessions.size() - unassignedSessions.size())

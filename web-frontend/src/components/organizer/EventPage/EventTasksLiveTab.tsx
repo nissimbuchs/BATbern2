@@ -121,7 +121,7 @@ export const EventTasksLiveTab: React.FC<EventTasksLiveTabProps> = ({ event, eve
     const task = tasks.find((x) => x.templateId === templateId);
     if (!task) return;
     void run(() =>
-      taskService.updateTask(task.id, { assignedOrganizerUsername: assignee || null })
+      taskService.updateTask(task.id, { assignedOrganizerUsername: assignee || undefined })
     );
   };
 

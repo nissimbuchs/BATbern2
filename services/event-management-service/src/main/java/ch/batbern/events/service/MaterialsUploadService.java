@@ -1,7 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.SessionMaterialType;
-import ch.batbern.events.dto.PresignedMaterialUploadUrl;
+import ch.batbern.events.media.dto.generated.PresignedMaterialUploadUrl;
 import ch.batbern.events.exception.FileSizeExceededException;
 import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.exception.MaterialNotFoundException;

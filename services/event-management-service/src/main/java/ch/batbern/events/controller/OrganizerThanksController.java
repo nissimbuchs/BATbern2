@@ -1,14 +1,14 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.dto.FeaturedThanksResponse;
-import ch.batbern.events.dto.SubmitThanksRequest;
-import ch.batbern.events.dto.ThanksCountResponse;
-import ch.batbern.events.dto.ThanksFeaturePatchRequest;
-import ch.batbern.events.dto.ThanksNoteResponse;
+import ch.batbern.events.core.api.generated.OrganizerThanksApi;
+import ch.batbern.events.core.dto.generated.FeaturedThanksResponse;
+import ch.batbern.events.core.dto.generated.SubmitThanksRequest;
+import ch.batbern.events.core.dto.generated.ThanksCountResponse;
+import ch.batbern.events.core.dto.generated.ThanksFeaturePatchRequest;
+import ch.batbern.events.core.dto.generated.ThanksNoteResponse;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.OrganizerThanksService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -17,95 +17,64 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * "Thank the Organizers" endpoints (Story 7.4).
+ * "Thank the Organizers" endpoints (Story 7.4 / 7.7).
  *
- * <p>Both endpoints are PUBLIC (no {@code @PreAuthorize}) — anonymous allowed. Authentication is
- * OPTIONAL and the caller's canonical username is resolved via
- * {@link SecurityContextHelper#getCurrentUsernameOrNull()} (custom:username claim + Pattern 3b
- * twin DB fallback, {@code null} for anonymous): a logged-in caller is deduped + may attach a note
- * tied to their username; an anonymous caller is a rate-limited, Turnstile-guarded clap.
- *
- * <ul>
- *   <li>{@code POST /api/v1/events/{eventCode}/thanks} — submit; returns the new aggregate count.</li>
- *   <li>{@code GET  /api/v1/events/{eventCode}/thanks} — aggregate count (public). Organizers
- *       additionally receive the submitted notes (AC6); the public response is count-only.</li>
- * </ul>
+ * <p>{@code implements} the generated {@link OrganizerThanksApi} interface (events-core spec,
+ * ADR-006 contract-first); the class-level {@code @RequestMapping("/api/v1")} supplies the version
+ * prefix. Submit + read + featured-marquee are PUBLIC (no {@code @PreAuthorize}); the feature-toggle
+ * is organizer-only. The generated interface does not pass {@code Authentication}/{@code
+ * HttpServletRequest}, so those are resolved from {@link SecurityContextHolder}/{@link
+ * RequestContextHolder} (organizer-note gating + anonymous rate-limit client IP).
  */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class OrganizerThanksController {
+public class OrganizerThanksController implements OrganizerThanksApi {
 
     private final OrganizerThanksService thanksService;
     private final SecurityContextHelper securityContextHelper;
 
-    /**
-     * Submit a thank-you (public). Logged-in → deduped upsert by username; anonymous → clap row
-     * (Turnstile-guarded at the gateway + per-(event,IP) rate-limited at the service).
-     */
-    @PostMapping("/events/{eventCode}/thanks")
-    public ResponseEntity<ThanksCountResponse> submitThanks(
-            @PathVariable String eventCode,
-            @Valid @RequestBody(required = false) SubmitThanksRequest request,
-            HttpServletRequest httpRequest) {
+    /** Submit a thank-you (public). Logged-in → deduped upsert by username; anonymous → clap row. */
+    @Override
+    public ResponseEntity<ThanksCountResponse> submitThanks(String eventCode, SubmitThanksRequest request) {
         String username = resolveUsername();
         String note = request != null ? request.getNote() : null;
-        long count = thanksService.submitThanks(eventCode, username, note, getClientIp(httpRequest));
-        return ResponseEntity.ok(ThanksCountResponse.ofCount(count));
+        long count = thanksService.submitThanks(eventCode, username, note, getClientIp(currentHttpRequest()));
+        return ResponseEntity.ok(new ThanksCountResponse(count));
     }
 
-    /**
-     * Read the aggregate count (public). Organizer callers also get the submitted notes (AC6).
-     */
-    @GetMapping("/events/{eventCode}/thanks")
-    public ResponseEntity<ThanksCountResponse> getThanks(
-            @PathVariable String eventCode,
-            Authentication authentication) {
-        boolean isOrganizer = hasRole(authentication, "ROLE_ORGANIZER");
+    /** Read the aggregate count (public). Organizer callers also get the submitted notes (AC6). */
+    @Override
+    public ResponseEntity<ThanksCountResponse> getThanks(String eventCode) {
+        boolean isOrganizer = hasRole(SecurityContextHolder.getContext().getAuthentication(), "ROLE_ORGANIZER");
         return ResponseEntity.ok(thanksService.getThanks(eventCode, isOrganizer));
     }
 
-    /**
-     * PUBLIC featured marquee (Story 7.7). Up to {@code limit} (capped at 9) random organizer-
-     * featured, logged-in thank-yous across ALL events, enriched with first name + company logo.
-     * Anonymous notes are structurally excluded; the raw username is never returned.
-     */
-    @GetMapping("/thanks/featured")
-    public ResponseEntity<List<FeaturedThanksResponse>> getFeaturedThanks(
-            @RequestParam(name = "limit", defaultValue = "9") int limit) {
+    /** PUBLIC featured marquee (Story 7.7) — up to {@code limit} (capped at 9) random featured notes. */
+    @Override
+    public ResponseEntity<List<FeaturedThanksResponse>> getFeaturedThanks(Integer limit) {
         return ResponseEntity.ok(thanksService.getFeaturedThanks(limit));
     }
 
-    /**
-     * ORGANIZER feature-toggle (Story 7.7). Marks/un-marks a thank-you for the public marquee.
-     * Featuring an anonymous note is rejected (409 THANKS_NOT_FEATURABLE).
-     */
-    @PatchMapping("/events/{eventCode}/thanks/{id}")
+    /** ORGANIZER feature-toggle (Story 7.7). Featuring an anonymous note → 409 THANKS_NOT_FEATURABLE. */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<ThanksNoteResponse> setFeatured(
-            @PathVariable String eventCode,
-            @PathVariable UUID id,
-            @Valid @RequestBody ThanksFeaturePatchRequest request) {
-        return ResponseEntity.ok(thanksService.setFeatured(eventCode, id, request.featured()));
+    public ResponseEntity<ThanksNoteResponse> setThanksFeatured(
+            String eventCode, UUID id, ThanksFeaturePatchRequest request) {
+        return ResponseEntity.ok(thanksService.setFeatured(eventCode, id, request.getFeatured()));
     }
 
     /**
      * The logged-in caller's CANONICAL username (ADR-003 meaningful id), or {@code null} for
-     * anonymous. Resolved via {@link SecurityContextHelper#getCurrentUsernameOrNull()} — which
-     * reads the {@code custom:username} claim (+ Pattern 3b twin DB fallback) — NOT
-     * {@code authentication.getName()}, which returns the Cognito {@code sub} (a UUID) and
-     * previously caused thank-you notes to be stored against, and displayed as, the raw sub.
+     * anonymous — via {@code custom:username} claim (+ Pattern 3b DB fallback), NOT the Cognito sub.
      */
     private String resolveUsername() {
         return securityContextHelper.getCurrentUsernameOrNull();
@@ -121,6 +90,10 @@ public class OrganizerThanksController {
             }
         }
         return false;
+    }
+
+    private static HttpServletRequest currentHttpRequest() {
+        return ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
     }
 
     /** Client IP for the anonymous rate limit — first X-Forwarded-For hop, else remote address. */

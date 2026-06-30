@@ -3,7 +3,11 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.PartnerApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Topic;
-import ch.batbern.events.dto.TopicSessionDataResponse;
+import ch.batbern.events.dto.generated.topics.BacklogItem;
+import ch.batbern.events.dto.generated.topics.PartnerTopicGroup;
+import ch.batbern.events.dto.generated.topics.PastEventEntry;
+import ch.batbern.events.dto.generated.topics.TopicEntry;
+import ch.batbern.events.dto.generated.topics.TopicSessionDataResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -49,9 +54,9 @@ public class TopicSessionDataService {
     public TopicSessionDataResponse getSessionData(String eventCode) {
         log.debug("Building topic session data for event={}", eventCode);
 
-        List<TopicSessionDataResponse.PartnerTopicGroup> partnerTopics = fetchPartnerTopics();
-        List<TopicSessionDataResponse.PastEventEntry> pastEvents = fetchPastEvents();
-        List<TopicSessionDataResponse.BacklogItem> organizerBacklog = fetchOrganizerBacklog();
+        List<PartnerTopicGroup> partnerTopics = fetchPartnerTopics();
+        List<PastEventEntry> pastEvents = fetchPastEvents();
+        List<BacklogItem> organizerBacklog = fetchOrganizerBacklog();
         List<String> trendingTopics = fetchTrendingTopics();
 
         return TopicSessionDataResponse.builder()
@@ -64,19 +69,19 @@ public class TopicSessionDataService {
 
     // ==================== Private aggregation methods ====================
 
-    private List<TopicSessionDataResponse.PartnerTopicGroup> fetchPartnerTopics() {
+    private List<PartnerTopicGroup> fetchPartnerTopics() {
         try {
             return partnerApiClient.getPartnerTopics().stream()
                     .map(g -> {
-                        List<TopicSessionDataResponse.TopicEntry> entries = g.topics().stream()
-                                .map(t -> TopicSessionDataResponse.TopicEntry.builder()
+                        List<TopicEntry> entries = g.topics().stream()
+                                .map(t -> TopicEntry.builder()
                                         .title(t.title())
                                         .cluster(clusterService.matchCluster(t.title()).name())
                                         .voteCount(t.voteCount())
-                                        .createdAt(t.createdAt())
+                                        .createdAt(t.createdAt().atOffset(ZoneOffset.UTC))
                                         .build())
                                 .toList();
-                        return TopicSessionDataResponse.PartnerTopicGroup.builder()
+                        return PartnerTopicGroup.builder()
                                 .companyName(g.companyName())
                                 .logoUrl(g.logoUrl())
                                 .topics(entries)
@@ -89,12 +94,12 @@ public class TopicSessionDataService {
         }
     }
 
-    private List<TopicSessionDataResponse.PastEventEntry> fetchPastEvents() {
+    private List<PastEventEntry> fetchPastEvents() {
         try {
             List<Event> events = eventRepository.findAll(Sort.by(Sort.Direction.ASC, "eventNumber"));
             return events.stream()
                     .filter(e -> e.getEventNumber() != null)
-                    .map(e -> TopicSessionDataResponse.PastEventEntry.builder()
+                    .map(e -> PastEventEntry.builder()
                             .eventNumber(e.getEventNumber())
                             .topicName(e.getTitle() != null ? e.getTitle() : "BATbern" + e.getEventNumber())
                             .cluster(clusterService.getCluster(e.getEventNumber()).name())
@@ -106,7 +111,7 @@ public class TopicSessionDataService {
         }
     }
 
-    private List<TopicSessionDataResponse.BacklogItem> fetchOrganizerBacklog() {
+    private List<BacklogItem> fetchOrganizerBacklog() {
         try {
             List<Topic> allActive = topicRepository.findAllActive();
             java.util.Map<java.util.UUID, StalenessScoreService.StalenessData> stalenessMap =
@@ -116,7 +121,7 @@ public class TopicSessionDataService {
                             t.getId(), StalenessScoreService.StalenessData.NEVER_USED)
                             .staleness() >= AVAILABLE_STALENESS_THRESHOLD)
                     .limit(BACKLOG_LIMIT)
-                    .map(t -> TopicSessionDataResponse.BacklogItem.builder()
+                    .map(t -> BacklogItem.builder()
                             .title(t.getTitle())
                             .topicCode(t.getTopicCode())
                             .stalenessScore(stalenessMap.getOrDefault(

@@ -3,8 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.SpeakerMaterialConfirmRequest;
-import ch.batbern.events.dto.SpeakerMaterialConfirmResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialConfirmRequest;
+import ch.batbern.events.speakers.dto.generated.SpeakerMaterialConfirmResponse;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,12 +113,14 @@ class SpeakerPortalMaterialsServiceTest {
                         return m;
                     });
 
-            SpeakerMaterialConfirmRequest request = new SpeakerMaterialConfirmRequest(
-                    uploadId, "slides.pptx", "pptx",
-                    5_000_000L,
-                    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    "PRESENTATION"
-            );
+            SpeakerMaterialConfirmRequest request = SpeakerMaterialConfirmRequest.builder()
+                    .uploadId(uploadId)
+                    .fileName("slides.pptx")
+                    .fileExtension("pptx")
+                    .fileSize(5_000_000L)
+                    .mimeType("application/vnd.openxmlformats-officedocument.presentationml.presentation")
+                    .materialType("PRESENTATION")
+                    .build();
 
             // When
             SpeakerMaterialConfirmResponse response = service.confirmUpload(testSpeaker, request);
@@ -138,7 +140,7 @@ class SpeakerPortalMaterialsServiceTest {
 
             // Verify response
             assertThat(response).isNotNull();
-            assertThat(response.fileName()).isEqualTo("slides.pptx");
+            assertThat(response.getFileName()).isEqualTo("slides.pptx");
         }
 
         @Test
@@ -146,12 +148,14 @@ class SpeakerPortalMaterialsServiceTest {
         void shouldThrow_whenNoSessionAssigned() {
             testSpeaker.setSessionId(null);
 
-            SpeakerMaterialConfirmRequest request = new SpeakerMaterialConfirmRequest(
-                    "abc-123", "slides.pptx", "pptx",
-                    5_000_000L,
-                    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    "PRESENTATION"
-            );
+            SpeakerMaterialConfirmRequest request = SpeakerMaterialConfirmRequest.builder()
+                    .uploadId("abc-123")
+                    .fileName("slides.pptx")
+                    .fileExtension("pptx")
+                    .fileSize(5_000_000L)
+                    .mimeType("application/vnd.openxmlformats-officedocument.presentationml.presentation")
+                    .materialType("PRESENTATION")
+                    .build();
 
             assertThatThrownBy(() -> service.confirmUpload(testSpeaker, request))
                     .isInstanceOf(IllegalStateException.class)

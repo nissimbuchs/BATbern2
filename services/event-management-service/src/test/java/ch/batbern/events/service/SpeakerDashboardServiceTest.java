@@ -4,7 +4,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
-import ch.batbern.events.dto.SpeakerDashboardDto;
+import ch.batbern.events.speakers.dto.generated.SpeakerDashboardDto;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -82,12 +82,12 @@ class SpeakerDashboardServiceTest {
         SpeakerDashboardDto dashboard = service.getDashboard("john.doe");
 
         // All five completeness fields are filled → 100%, same as /profile shows.
-        assertThat(dashboard.profileCompleteness()).isEqualTo(100);
-        assertThat(dashboard.profilePictureUrl())
+        assertThat(dashboard.getProfileCompleteness()).isEqualTo(100);
+        assertThat(dashboard.getProfilePictureUrl())
                 .isEqualTo("https://cdn.batbern.ch/profiles/john.jpg");
-        assertThat(dashboard.speakerName()).isEqualTo("John Doe");
-        assertThat(dashboard.upcomingEvents()).isEmpty();
-        assertThat(dashboard.pastEvents()).isEmpty();
+        assertThat(dashboard.getSpeakerName()).isEqualTo("John Doe");
+        assertThat(dashboard.getUpcomingEvents()).isEmpty();
+        assertThat(dashboard.getPastEvents()).isEmpty();
     }
 
     @Test
@@ -101,8 +101,8 @@ class SpeakerDashboardServiceTest {
 
         SpeakerDashboardDto dashboard = service.getDashboard("jane.new");
 
-        assertThat(dashboard.profileCompleteness()).isEqualTo(60);
-        assertThat(dashboard.profilePictureUrl()).isNull();
+        assertThat(dashboard.getProfileCompleteness()).isEqualTo(60);
+        assertThat(dashboard.getProfilePictureUrl()).isNull();
     }
 
     @Test
@@ -113,9 +113,9 @@ class SpeakerDashboardServiceTest {
 
         SpeakerDashboardDto dashboard = service.getDashboard("ghost.user");
 
-        assertThat(dashboard.profileCompleteness()).isZero();
-        assertThat(dashboard.speakerName()).isEqualTo("ghost.user");
-        assertThat(dashboard.profilePictureUrl()).isNull();
+        assertThat(dashboard.getProfileCompleteness()).isZero();
+        assertThat(dashboard.getSpeakerName()).isEqualTo("ghost.user");
+        assertThat(dashboard.getProfilePictureUrl()).isNull();
     }
 
     /**
@@ -163,10 +163,10 @@ class SpeakerDashboardServiceTest {
 
         SpeakerDashboardDto dashboard = service.getDashboard("nissim.buchs");
 
-        assertThat(dashboard.pastEvents()).hasSize(1);
-        assertThat(dashboard.pastEvents().get(0).eventCode()).isEqualTo("BATbern1");
-        assertThat(dashboard.pastEvents().get(0).sessionTitle()).isEqualTo("IBIS Desktop");
-        assertThat(dashboard.upcomingEvents()).isEmpty();
+        assertThat(dashboard.getPastEvents()).hasSize(1);
+        assertThat(dashboard.getPastEvents().get(0).getEventCode()).isEqualTo("BATbern1");
+        assertThat(dashboard.getPastEvents().get(0).getSessionTitle()).isEqualTo("IBIS Desktop");
+        assertThat(dashboard.getUpcomingEvents()).isEmpty();
     }
 
     /**
@@ -208,7 +208,7 @@ class SpeakerDashboardServiceTest {
 
         SpeakerDashboardDto dashboard = service.getDashboard("nissim.buchs");
 
-        assertThat(dashboard.pastEvents()).isEmpty();
-        assertThat(dashboard.upcomingEvents()).isEmpty();
+        assertThat(dashboard.getPastEvents()).isEmpty();
+        assertThat(dashboard.getUpcomingEvents()).isEmpty();
     }
 }

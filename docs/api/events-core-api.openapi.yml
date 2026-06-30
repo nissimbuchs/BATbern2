@@ -23,12 +23,17 @@ security:
 tags:
 - name: Events
   description: Event CRUD and listing operations
-- name: Bulk Operations
-  description: Batch operations on multiple events
 - name: Event Actions
   description: Event publishing and workflow operations
+- name: Event Workflow
+  description: Event workflow state transitions and status (EventWorkflowController)
 - name: Event Types
   description: Event type configuration management (Story 5.1)
+- name: Organizer Thanks
+  description: Attendee thank-the-organizers notes + public featured marquee (Story 7.7, OrganizerThanksController)
+- name: Teaser Images
+  description: Event-specific and global teaser image management (EventTeaserImageController).
+    eventCode "_global" maps to images shown on all event presentations.
 paths:
   /events:
     get:
@@ -101,21 +106,30 @@ paths:
           example: -date
       - name: page
         in: query
-        description: Page number (0-indexed)
-        required: false
-        schema:
-          type: integer
-          minimum: 0
-          default: 0
-      - name: limit
-        in: query
-        description: Items per page (max 100)
+        description: 'Page number (1-indexed). Default 1. The deployed PaginationUtils.parseParams
+          rejects page <= 0 with 400, so the default must be 1.'
         required: false
         schema:
           type: integer
           minimum: 1
-          maximum: 100
+          default: 1
+      - name: limit
+        in: query
+        description: 'Items per page. The deployed PaginationUtils clamps values above 100 down
+          to 100 (it does NOT reject them), so no maximum is enforced at the contract layer.'
+        required: false
+        schema:
+          type: integer
+          minimum: 1
           default: 20
+      - name: includeArchived
+        in: query
+        description: 'Include archived events in the result set (default false). The public
+          archive index sets this true to list past events.'
+        required: false
+        schema:
+          type: boolean
+          default: false
       - name: include
         in: query
         description: Comma-separated list of resources to include
@@ -205,37 +219,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      tags:
-      - Bulk Operations
-      summary: Batch update multiple events
-      description: 'Update multiple events in a single request.
-
-
-        **Acceptance Criteria**: AC14
-
-
-        **Performance**: <1000ms for 50 events (P95)
-
-        '
-      operationId: batchUpdateEvents
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BatchUpdateRequest'
-      responses:
-        '200':
-          description: Batch update completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchUpdateResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -614,7 +597,7 @@ paths:
   /events/{eventCode}/workflow/transition:
     post:
       tags:
-      - Event Actions
+      - Event Workflow
       summary: Transition event to target workflow state
       description: 'Transition an event to a specific target workflow state.
 
@@ -704,17 +687,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  eventCode:
-                    type: string
-                    example: BATbern142
-                  workflowState:
-                    type: string
-                    example: TOPIC_SELECTION
-                  updatedAt:
-                    type: string
-                    format: date-time
+                $ref: '#/components/schemas/WorkflowTransitionResponse'
         '400':
           description: Invalid state transition
           content:
@@ -765,7 +738,7 @@ paths:
   /events/{eventCode}/workflow/status:
     get:
       tags:
-      - Event Actions
+      - Event Workflow
       summary: Get current workflow status
       description: 'Retrieve the current workflow status including current state, next available states,
 
@@ -840,7 +813,7 @@ paths:
   /events/{eventCode}/thanks:
     post:
       tags:
-      - Event Actions
+      - Organizer Thanks
       summary: Thank the organizers ("Thank the Organizers")
       description: "Send a one-click thank-you to the volunteer organizers after an event is live/completed.\n\n**Story**: 7.4 - \"Thank the Organizers\"\n**Authorization**: PUBLIC — anonymous allowed. Authentication is OPTIONAL.\n**Abuse guard (anonymous only)**: a valid Cloudflare Turnstile token\n(`X-Turnstile-Token` header) is required at the gateway, and submissions are\nrate-limited per (event, client-IP) at the service.\n\n**Business Rules**:\n- The event must be `EVENT_LIVE` or `EVENT_COMPLETED` — else 409 (`THANKS_NOT_ALLOWED`).\n- Logged-in attendees are deduped to one thank-you per event (a repeat updates the\n  optional note, it never double-counts).\n- Anonymous thank-yous are clap-style and not user-deduped; exceeding the per-(event,IP)\n  rate limit returns 429 (`THANKS_RATE_LIMITED`) without incrementing the counter.\n- The response carries the new aggregate `count`. Submitted notes are NEVER returned here.\n"
       operationId: submitThanks
@@ -917,7 +890,7 @@ paths:
       security: []
     get:
       tags:
-      - Event Actions
+      - Organizer Thanks
       summary: Get the thank-the-organizers aggregate (and notes for organizers)
       description: 'Returns the public clap-style aggregate `count` for an event. Organizer-authenticated
 
@@ -960,7 +933,7 @@ paths:
   /events/{eventCode}/thanks/{id}:
     patch:
       tags:
-      - Event Actions
+      - Organizer Thanks
       summary: Feature/un-feature a thank-you note (curated marquee)
       description: 'Organizer-only. Marks a logged-in thank-you note as featured (or un-features it) for the
 
@@ -1036,7 +1009,7 @@ paths:
   /thanks/featured:
     get:
       tags:
-      - Event Actions
+      - Organizer Thanks
       summary: Get curated featured thank-you notes for the public marquee
       description: 'Returns up to `limit` (capped at 9) RANDOM organizer-featured, logged-in thank-you notes
 
@@ -1055,12 +1028,11 @@ paths:
       - name: limit
         in: query
         required: false
-        description: Max notes to return (default 9, hard-capped at 9).
+        description: 'Max notes to return (default 9). The server soft-clamps to [1, 9] —
+          out-of-range values are accepted (not rejected) and clamped, not a 400.'
         schema:
           type: integer
           default: 9
-          minimum: 1
-          maximum: 9
       responses:
         '200':
           description: Up to `limit` random featured thank-you notes (may be empty).
@@ -1076,7 +1048,7 @@ paths:
   /attendee-portal/dashboard:
     get:
       tags:
-      - Event Actions
+      - Attendee Portal
       summary: Attendee dashboard — events I participated in (Story 7.6)
       description: 'Returns every event the authenticated attendee participated in (each non-cancelled
 
@@ -1289,10 +1261,40 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
       - BearerAuth: []
+  /events/{eventCode}/teaser-images:
+    get:
+      tags:
+      - Teaser Images
+      operationId: listTeaserImages
+      summary: List teaser images for an event (or the global set via _global)
+      description: 'Returns the teaser images configured for the event, ordered for the
+        moderator presentation. Use eventCode "_global" for images shown on all events.'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern57
+      responses:
+        '200':
+          description: List of teaser images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeaserImageItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /events/{eventCode}/teaser-images/upload-url:
     post:
       tags:
-      - Events
+      - Teaser Images
       operationId: generateTeaserImageUploadUrl
       summary: Get presigned S3 PUT URL for teaser image upload (organizer-only)
       security:
@@ -1324,7 +1326,7 @@ paths:
   /events/{eventCode}/teaser-images/confirm:
     post:
       tags:
-      - Events
+      - Teaser Images
       operationId: confirmTeaserImageUpload
       summary: Confirm upload and persist new teaser image
       security:
@@ -1362,7 +1364,7 @@ paths:
   /events/{eventCode}/teaser-images/{imageId}:
     patch:
       tags:
-      - Events
+      - Teaser Images
       operationId: updateTeaserImage
       summary: Update presentation position of a teaser image
       security:
@@ -1401,7 +1403,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
     delete:
       tags:
-      - Events
+      - Teaser Images
       operationId: deleteTeaserImage
       summary: Delete a specific teaser image by ID
       security:
@@ -1428,8 +1430,618 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/venue-coordination/preview:
+    post:
+      tags:
+        - Venue Coordination
+      summary: Preview a venue/catering coordination mail
+      description: 'Event Detail → Venue tab (Story). ORGANIZER role.'
+      operationId: previewVenueCoordination
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueCoordinationPreviewRequest'
+      responses:
+        '200':
+          description: Rendered preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueCoordinationPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/venue-coordination/send:
+    post:
+      tags:
+        - Venue Coordination
+      summary: Send a venue/catering coordination mail
+      description: 'Event Detail → Venue tab (Story). ORGANIZER role.'
+      operationId: sendVenueCoordination
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueCoordinationSendRequest'
+      responses:
+        '200':
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueCoordinationSendResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/publish/{phase}:
+    post:
+      tags:
+        - Publishing Engine
+      summary: Publish a progressive-publishing phase (topic/speakers/agenda)
+      description: 'Story progressive publishing (AC14-16). ORGANIZER role.'
+      operationId: publishPhase
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: phase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Phase published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishPhaseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/unpublish/{phase}:
+    post:
+      tags:
+        - Publishing Engine
+      summary: Unpublish a progressive-publishing phase
+      description: 'Story progressive publishing (AC18). ORGANIZER role.'
+      operationId: unpublishPhase
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: phase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Phase unpublished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnpublishPhaseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/publish/status:
+    get:
+      tags:
+        - Publishing Engine
+      summary: Get publishing status + per-phase validation
+      description: 'ORGANIZER role.'
+      operationId: getPublishingStatus
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Publishing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishingStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/publish/preview:
+    get:
+      tags:
+        - Publishing Engine
+      summary: Preview the public appearance before publishing
+      description: 'Story progressive publishing (AC20, AC29). ORGANIZER role.'
+      operationId: getPublishPreview
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishPreviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/publish/schedule:
+    post:
+      tags:
+        - Publishing Engine
+      summary: Configure the auto-publish schedule
+      description: 'Story progressive publishing (AC19). ORGANIZER role.'
+      operationId: configureAutoPublish
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoPublishScheduleRequest'
+      responses:
+        '200':
+          description: Schedule configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoPublishScheduleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+    get:
+      tags:
+        - Publishing Engine
+      summary: Get the auto-publish schedule
+      description: 'ORGANIZER role.'
+      operationId: getAutoPublishSchedule
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoPublishScheduleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /admin/backfill-speaker-names:
+    post:
+      tags:
+        - Admin
+      summary: Backfill speaker names for full-text search (maintenance)
+      description: 'Temporary maintenance endpoint (Story archive search).'
+      operationId: backfillSpeakerNames
+      responses:
+        '200':
+          description: Backfill result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackfillSpeakerNamesResponse'
+        '500':
+          description: Backfill failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackfillSpeakerNamesResponse'
+
+  /admin/settings/{key}:
+    get:
+      tags:
+        - Admin Settings
+      summary: Get an admin setting by key
+      description: 'Open GET for VPC-internal callers (Story 10.26); HTTP-level security gates access.'
+      operationId: getAdminSetting
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettingResponse'
+    put:
+      tags:
+        - Admin Settings
+      summary: Set an admin setting by key
+      description: 'ORGANIZER role.'
+      operationId: setAdminSetting
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAdminSettingRequest'
+      responses:
+        '200':
+          description: The updated setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/qna:
+    patch:
+      tags:
+        - Event Qna
+      summary: Adjust all of an event's session Q&A windows (Story 7.5)
+      description: 'Open/extend/close all session Q&A windows at once. ORGANIZER role.'
+      operationId: adjustQnaWindows
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QnaWindowPatchRequest'
+      responses:
+        '200':
+          description: Windows adjusted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QnaWindowAdjustResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+    BackfillSpeakerNamesResponse:
+      type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        updatedCount:
+          type: integer
+    AdminSettingResponse:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+          nullable: true
+    SetAdminSettingRequest:
+      type: object
+      properties:
+        value:
+          type: string
+    QnaWindowPatchRequest:
+      type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)'
+      properties:
+        closesAt:
+          type: string
+          format: date-time
+        close:
+          type: boolean
+        open:
+          type: boolean
+    QnaWindowAdjustResponse:
+      type: object
+      properties:
+        eventCode:
+          type: string
+        windowsAdjusted:
+          type: integer
+        status:
+          type: string
+    PublishPhaseResponse:
+      type: object
+      properties:
+        phase:
+          type: string
+        published:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+        cdnInvalidated:
+          type: boolean
+    UnpublishPhaseResponse:
+      type: object
+      properties:
+        phase:
+          type: string
+        published:
+          type: boolean
+        unpublishedAt:
+          type: string
+          format: date-time
+        cdnInvalidated:
+          type: boolean
+    ValidationStatus:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+    UnassignedSession:
+      type: object
+      properties:
+        sessionSlug:
+          type: string
+        title:
+          type: string
+    SessionValidationStatus:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+        assignedCount:
+          type: integer
+        totalCount:
+          type: integer
+        unassignedSessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnassignedSession'
+    PublishingStatusResponse:
+      type: object
+      properties:
+        currentPhase:
+          type: string
+        publishedPhases:
+          type: array
+          items:
+            type: string
+        topic:
+          $ref: '#/components/schemas/ValidationStatus'
+        speakers:
+          $ref: '#/components/schemas/ValidationStatus'
+        sessions:
+          $ref: '#/components/schemas/SessionValidationStatus'
+    SpeakerPreview:
+      type: object
+      properties:
+        name:
+          type: string
+        company:
+          type: string
+    SessionPreview:
+      type: object
+      properties:
+        title:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        room:
+          type: string
+    PublishPreviewResponse:
+      type: object
+      properties:
+        eventCode:
+          type: string
+        currentPhase:
+          type: string
+        topicPublished:
+          type: boolean
+        speakersPublished:
+          type: boolean
+        agendaPublished:
+          type: boolean
+        speakers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpeakerPreview'
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionPreview'
+    AutoPublishScheduleRequest:
+      type: object
+      properties:
+        phase2Enabled:
+          type: boolean
+        phase2DaysBeforeEvent:
+          type: integer
+          minimum: 1
+        phase3Enabled:
+          type: boolean
+        phase3DaysBeforeEvent:
+          type: integer
+          minimum: 1
+    AutoPublishScheduleResponse:
+      type: object
+      properties:
+        scheduled:
+          type: boolean
+        phase2Enabled:
+          type: boolean
+        phase2DaysBeforeEvent:
+          type: integer
+        phase2TriggerDate:
+          type: string
+          format: date-time
+        phase3Enabled:
+          type: boolean
+        phase3DaysBeforeEvent:
+          type: integer
+        phase3TriggerDate:
+          type: string
+          format: date-time
+    VenueRole:
+      type: string
+      description: Venue-coordination recipient role
+      enum:
+        - VENUE
+        - CATERING
+    VenueCoordinationPreviewRequest:
+      type: object
+      required:
+        - templateKey
+        - recipients
+      properties:
+        templateKey:
+          type: string
+        recipients:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/VenueRole'
+        locale:
+          type: string
+          description: Locale (de | en); falls back to de
+        notes:
+          type: string
+    VenueCoordinationPreviewResponse:
+      type: object
+      properties:
+        subject:
+          type: string
+        htmlBody:
+          type: string
+        toEmail:
+          type: string
+        ccEmails:
+          type: array
+          items:
+            type: string
+        replyToEmail:
+          type: string
+    VenueCoordinationSendRequest:
+      type: object
+      required:
+        - templateKey
+        - recipients
+      properties:
+        templateKey:
+          type: string
+        locale:
+          type: string
+        notes:
+          type: string
+        recipients:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/VenueRole'
+    VenueCoordinationSendResponse:
+      type: object
+      properties:
+        sentTo:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueRole'
     TeaserImagePresentationPosition:
       type: string
       description: Controls which slide the image appears after in the moderator presentation.
@@ -1513,6 +2125,7 @@ components:
           example: events/BATbern57/teaser/abc123-def456.jpg
     Event:
       type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
       required:
       - eventCode
       - title
@@ -1769,7 +2382,35 @@ components:
             '
           items:
             $ref: ./event-sessions-api.openapi.yml#/components/schemas/Session
+        topicSelectionNote:
+          type: string
+          description: "Organizer's free-text note on topic selection (Story 5.2)."
+        createdBy:
+          type: string
+          description: Username of the creator (audit).
+        updatedBy:
+          type: string
+          description: Username of the last updater (audit).
+        confirmedSpeakersCount:
+          type: integer
+          description: 'Speakers who accepted their invitation. Only present when ?include=metrics.'
+        speakersWithCompleteInfoCount:
+          type: integer
+          description: 'Speakers who submitted complete materials. Only present when ?include=metrics.'
+        pendingMaterialsCount:
+          type: integer
+          description: 'Speakers with materials still pending. Only present when ?include=metrics.'
+        maxSpeakerSlots:
+          type: integer
+          description: 'Maximum speaker slots for this event type. Only present when ?include=metrics.'
+        sessionsWithMaterialsCount:
+          type: integer
+          description: 'Sessions that have at least one material. Only present when ?include=metrics.'
+        totalSessionsCount:
+          type: integer
+          description: 'Total sessions for this event. Only present when ?include=metrics.'
     EventDetail:
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
       allOf:
       - $ref: '#/components/schemas/Event'
       - type: object
@@ -1778,8 +2419,11 @@ components:
             $ref: '#/components/schemas/Venue'
           sessions:
             type: array
+            description: 'Expanded sessions for the single-event detail view — carries the full
+              SessionResponse shape (materials + enriched speakers). The list endpoint embeds the
+              leaner Session instead (materialsStatus only, no materials array).'
             items:
-              $ref: ./event-sessions-api.openapi.yml#/components/schemas/Session
+              $ref: ./event-sessions-api.openapi.yml#/components/schemas/SessionResponse
           currentPublishedPhase:
             type: string
             nullable: true
@@ -1811,13 +2455,7 @@ components:
       type: object
       required:
       - title
-      - eventNumber
       - date
-      - registrationDeadline
-      - venueName
-      - venueAddress
-      - venueCapacity
-      - organizerUsername
       - eventType
       properties:
         title:
@@ -1883,14 +2521,7 @@ components:
       type: object
       required:
       - title
-      - eventNumber
       - date
-      - registrationDeadline
-      - venueName
-      - venueAddress
-      - venueCapacity
-      - organizerUsername
-      - eventType
       properties:
         title:
           type: string
@@ -2009,38 +2640,15 @@ components:
           minimum: 1
           maximum: 365
           description: 'Story 7.5 rework: window length in days (close = event date + this).'
-    BatchUpdateRequest:
-      type: object
-      required:
-      - updates
-      properties:
-        updates:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              fields:
-                type: object
-    BatchUpdateResponse:
-      type: object
-      properties:
-        successful:
-          type: integer
-          example: 45
-        failed:
-          type: integer
-          example: 5
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              error:
-                type: string
+        topicCode:
+          type: string
+          nullable: true
+          description: 'Topic code to associate with the event (Story 5.2). Null leaves it unchanged
+            unless explicitly cleared by the controller.'
+        topicSelectionNote:
+          type: string
+          nullable: true
+          description: "Organizer's free-text note on topic selection (Story 5.2)."
     EventType:
       type: string
       description: 'Event type identifier (Story 5.1 - Event Type Definition).
@@ -2298,6 +2906,23 @@ components:
       - EVENT_COMPLETED
       - ARCHIVED
       example: SPEAKER_IDENTIFICATION
+    WorkflowTransitionResponse:
+      type: object
+      description: Result of a successful workflow state transition.
+      required:
+      - eventCode
+      - workflowState
+      properties:
+        eventCode:
+          type: string
+          example: BATbern142
+        workflowState:
+          type: string
+          description: The event's workflow state name after the transition.
+          example: TOPIC_SELECTION
+        updatedAt:
+          type: string
+          format: date-time
     TransitionStateRequest:
       type: object
       description: 'Request to transition event to target workflow state (Story 5.1a - AC12).
@@ -2309,7 +2934,13 @@ components:
       - targetState
       properties:
         targetState:
-          $ref: '#/components/schemas/EventWorkflowState'
+          type: string
+          description: |
+            Target workflow state name (an EventWorkflowState constant, e.g.
+            SPEAKER_OUTREACH). Typed as a string — the domain enum carries ~20 states
+            and is validated server-side by the workflow state machine; the spec-level
+            EventWorkflowState enum is intentionally not used here to avoid an
+            incomplete-enum contract.
         overrideValidation:
           type: boolean
           nullable: true
@@ -2343,19 +2974,21 @@ components:
       - validationMessages
       properties:
         currentState:
-          $ref: '#/components/schemas/EventWorkflowState'
+          type: string
+          description: Current workflow state name (an EventWorkflowState constant).
+          example: SPEAKER_BRAINSTORMING
         nextAvailableStates:
           type: array
           description: List of states that can be transitioned to from current state
           items:
-            $ref: '#/components/schemas/EventWorkflowState'
+            type: string
           example:
           - SPEAKER_OUTREACH
         blockedTransitions:
           type: array
           description: List of states that are blocked due to validation failures
           items:
-            $ref: '#/components/schemas/EventWorkflowState'
+            type: string
           example:
           - SPEAKER_OUTREACH
         validationMessages:

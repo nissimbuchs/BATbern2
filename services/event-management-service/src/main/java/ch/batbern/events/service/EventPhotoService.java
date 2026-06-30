@@ -2,14 +2,14 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventPhoto;
-import ch.batbern.events.dto.EventPhotoConfirmRequestDto;
-import ch.batbern.events.dto.EventPhotoResponseDto;
-import ch.batbern.events.dto.EventPhotoUploadRequestDto;
-import ch.batbern.events.dto.EventPhotoUploadResponseDto;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.EventPhotoNotFoundException;
 import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.exception.PhotoUploadNotFoundException;
+import ch.batbern.events.media.dto.generated.EventPhotoConfirmRequest;
+import ch.batbern.events.media.dto.generated.EventPhotoResponse;
+import ch.batbern.events.media.dto.generated.EventPhotoUploadRequest;
+import ch.batbern.events.media.dto.generated.EventPhotoUploadResponse;
 import ch.batbern.events.repository.EventPhotoRepository;
 import ch.batbern.events.repository.EventRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +27,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -79,9 +81,9 @@ public class EventPhotoService {
      * Phase 1: Generate presigned PUT URL for direct S3 upload.
      * AC2 — Upload flow
      */
-    public EventPhotoUploadResponseDto requestUploadUrl(String eventCode,
-                                                        EventPhotoUploadRequestDto request,
-                                                        String uploaderUsername) {
+    public EventPhotoUploadResponse requestUploadUrl(String eventCode,
+                                                     EventPhotoUploadRequest request,
+                                                     String uploaderUsername) {
         eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
 
@@ -113,7 +115,7 @@ public class EventPhotoService {
 
         String uploadUrl = s3Presigner.presignPutObject(presignRequest).url().toString();
 
-        return EventPhotoUploadResponseDto.builder()
+        return EventPhotoUploadResponse.builder()
                 .photoId(photoId)
                 .uploadUrl(uploadUrl)
                 .s3Key(s3Key)
@@ -125,9 +127,9 @@ public class EventPhotoService {
      * Phase 3: Confirm upload — verify S3 presence, persist EventPhoto record.
      * AC2 — Upload flow
      */
-    public EventPhotoResponseDto confirmUpload(String eventCode,
-                                               EventPhotoConfirmRequestDto request,
-                                               String uploaderUsername) {
+    public EventPhotoResponse confirmUpload(String eventCode,
+                                            EventPhotoConfirmRequest request,
+                                            String uploaderUsername) {
         String expectedPrefix = String.format("events/%s/photos/", eventCode);
         if (request.getS3Key() == null || !request.getS3Key().startsWith(expectedPrefix)) {
             throw new InvalidFileTypeException(
@@ -163,7 +165,7 @@ public class EventPhotoService {
                 .sortOrder(0)
                 .build();
 
-        return toResponseDto(photoRepository.save(photo));
+        return toResponse(photoRepository.save(photo));
     }
 
     /**
@@ -193,10 +195,10 @@ public class EventPhotoService {
      * AC4 — Public photo listing (no auth required)
      */
     @Transactional(readOnly = true)
-    public List<EventPhotoResponseDto> listPhotos(String eventCode) {
+    public List<EventPhotoResponse> listPhotos(String eventCode) {
         return photoRepository.findByEventCodeOrderBySortOrderAscUploadedAtAsc(eventCode)
                 .stream()
-                .map(this::toResponseDto)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -205,7 +207,7 @@ public class EventPhotoService {
      * AC5 — Recent photos endpoint (homepage use)
      */
     @Transactional(readOnly = true)
-    public List<EventPhotoResponseDto> getRecentPhotos(int limit, int lastNEvents) {
+    public List<EventPhotoResponse> getRecentPhotos(int limit, int lastNEvents) {
         List<Event> recentEvents = eventRepository
                 .findAllByOrderByDateDesc(PageRequest.of(0, lastNEvents));
 
@@ -220,24 +222,27 @@ public class EventPhotoService {
         List<EventPhoto> all = photoRepository.findByEventCodeIn(eventCodes);
 
         if (all.size() <= limit) {
-            return all.stream().map(this::toResponseDto).toList();
+            return all.stream().map(this::toResponse).toList();
         }
 
         List<EventPhoto> shuffled = new ArrayList<>(all);
         Collections.shuffle(shuffled);
-        return shuffled.subList(0, limit).stream().map(this::toResponseDto).toList();
+        return shuffled.subList(0, limit).stream().map(this::toResponse).toList();
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────────
 
-    private EventPhotoResponseDto toResponseDto(EventPhoto photo) {
-        return EventPhotoResponseDto.builder()
+    private EventPhotoResponse toResponse(EventPhoto photo) {
+        OffsetDateTime uploadedAt = photo.getUploadedAt() != null
+                ? photo.getUploadedAt().atOffset(ZoneOffset.UTC)
+                : null;
+        return EventPhotoResponse.builder()
                 .id(photo.getId())
                 .eventCode(photo.getEventCode())
                 .displayUrl(photo.getDisplayUrl())
                 .filename(photo.getFilename())
                 .uploadedBy(photo.getUploadedBy())
-                .uploadedAt(photo.getUploadedAt())
+                .uploadedAt(uploadedAt)
                 .sortOrder(photo.getSortOrder())
                 .build();
     }

@@ -8,6 +8,12 @@ servers:
   - url: "/api/v1"
     description: "API Gateway base URL"
 
+tags:
+  - name: "Partner Meetings"
+    description: "Partner meeting coordination — CRUD and invites (Story 8.3)"
+  - name: "Partner Meeting Rsvps"
+    description: "Partner meeting RSVP listing (Story 8.3)"
+
 paths:
   /partner-meetings:
     get:
@@ -203,7 +209,7 @@ paths:
         REPLY emails. That callback is intentionally NOT exposed through the API gateway and is
         therefore not part of this public contract.
       operationId: "getMeetingRsvps"
-      tags: ["Partner Meetings"]
+      tags: ["Partner Meeting Rsvps"]
       parameters:
         - name: meetingId
           in: path
@@ -237,6 +243,7 @@ components:
   schemas:
     PartnerMeetingDTO:
       type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
       properties:
         id:
           type: string

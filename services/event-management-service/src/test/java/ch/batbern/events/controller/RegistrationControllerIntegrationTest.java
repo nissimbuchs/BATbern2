@@ -34,6 +34,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -711,6 +712,25 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         // Verify status is still confirmed
         Registration stillConfirmed = registrationRepository.findById(registration.getId()).orElseThrow();
         assertThat(stillConfirmed.getStatus()).isEqualTo("confirmed");
+    }
+
+    @Test
+    @DisplayName("should_updateStatus_when_patchWithTypedStatusBody")
+    void should_updateStatus_when_patchWithTypedStatusBody() throws Exception {
+        // The PATCH body is now the typed UpdateRegistrationStatusRequest ({status}),
+        // replacing the former raw Map<String,Object> (adversarial-review gap 2).
+        Registration registration = createTestRegistration("john.doe", "registered");
+
+        mockMvc.perform(patch("/api/v1/events/" + testEvent.getEventCode()
+                        + "/registrations/" + registration.getRegistrationCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"confirmed\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registrationCode").value(registration.getRegistrationCode()))
+                .andExpect(jsonPath("$.status").value("CONFIRMED")); // response status is uppercased
+
+        Registration updated = registrationRepository.findById(registration.getId()).orElseThrow();
+        assertThat(updated.getStatus()).isEqualTo("confirmed"); // DB constraint is lowercase
     }
 
     @Test

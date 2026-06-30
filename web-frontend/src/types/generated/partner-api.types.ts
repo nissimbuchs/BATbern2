@@ -103,6 +103,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/partners/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the current PARTNER user's company
+     * @description Returns the partner company name for the currently authenticated PARTNER user,
+     *     resolved via the `partner_contacts` table (ADR-003 username-based lookup). Used by
+     *     the frontend to populate `companyName` when it is absent from the JWT.
+     *
+     *     **Authorization**: PARTNER role required.
+     */
+    get: operations['getMyPartnerCompany'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/partners/{companyName}/notes': {
     parameters: {
       query?: never;
@@ -342,6 +366,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    MyPartnerCompanyResponse: {
+      /** @description The partner company name resolved for the current PARTNER user */
+      companyName: string;
+    };
     PartnerResponse: {
       /** @description Meaningful ID per ADR-003 */
       companyName: string;
@@ -884,6 +912,26 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['PartnerStatistics'];
+        };
+      };
+    };
+  };
+  getMyPartnerCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The current user's partner company */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyPartnerCompanyResponse'];
         };
       };
     };

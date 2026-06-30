@@ -1,5 +1,7 @@
 package ch.batbern.events.service.slotassignment;
 
+import ch.batbern.events.sessions.dto.generated.ConflictAnalysisResponse;
+
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerSlotPreference;
@@ -206,7 +208,7 @@ class ConflictDetectionServiceTest {
         ConflictAnalysisResponse result = conflictDetectionService.analyzeAllConflicts(eventCode);
 
         // Then: Returns ConflictAnalysisResponse with conflicts
-        assertThat(result.isHasConflicts()).isTrue();
+        assertThat(result.getHasConflicts()).isTrue();
         assertThat(result.getConflicts()).isNotEmpty();
         assertThat(result.getConflicts()).anyMatch(c -> c.getConflictType() == ConflictType.ROOM_OVERLAP);
     }
@@ -235,7 +237,7 @@ class ConflictDetectionServiceTest {
         ConflictAnalysisResponse result = conflictDetectionService.analyzeAllConflicts(eventCode);
 
         // Then: Returns hasConflicts=false, conflictCount=0
-        assertThat(result.isHasConflicts()).isFalse();
+        assertThat(result.getHasConflicts()).isFalse();
         assertThat(result.getConflicts()).isEmpty();
     }
 }

@@ -1,8 +1,8 @@
 package ch.batbern.companyuser.integration;
 
-import ch.batbern.companyuser.dto.CompanyResponse;
+import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.config.TestAwsConfig;
-import ch.batbern.companyuser.dto.CreateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;

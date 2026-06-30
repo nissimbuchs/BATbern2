@@ -58,7 +58,9 @@ class SpeakerWorkflowControllerIntegrationTest extends AbstractIntegrationTest {
     private SpeakerPoolRepository speakerPoolRepository;
 
     private Event testEvent;
-    private static final String TEST_EVENT_CODE = "BAT-CONTROLLER-TEST";
+    // Must match the spec @Pattern ^BATbern[0-9]+$ now enforced via the wired
+    // SpeakerStatusApi interface (Phase 7); a non-conforming code -> 400 before the handler.
+    private static final String TEST_EVENT_CODE = "BATbern998";
     private static final String BASE_PATH = "/api/v1/events/{eventCode}/speakers/{speakerId}/status";
 
     @BeforeEach

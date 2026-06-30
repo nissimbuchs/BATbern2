@@ -2,13 +2,15 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.PublicUserResponse;
+import ch.batbern.companyuser.dto.generated.PublicUserResponse;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.net.URI;
 
 /**
  * Service for anonymous (unauthenticated) lookup of public user data by username.
@@ -47,11 +49,12 @@ public class PublicUserService {
             throw new UserNotFoundException(username);
         }
 
+        String pictureUrl = user.getProfilePictureUrl();
         return PublicUserResponse.builder()
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .profilePictureUrl(user.getProfilePictureUrl())
+                .profilePictureUrl(pictureUrl == null ? null : URI.create(pictureUrl))
                 .build();
     }
 }

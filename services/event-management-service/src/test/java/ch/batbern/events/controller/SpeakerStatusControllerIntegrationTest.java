@@ -626,13 +626,15 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
     }
 
     /**
-     * Story 11.B.3 AC7: derived flags isSlotAssigned + isPublishable are exposed on
-     * SpeakerPoolResponse — verify via the existing GET /events/{code}/speakers/pool
-     * endpoint. Speaker is QUALITY_REVIEWED with session.start_time set →
-     * isSlotAssigned: true, isPublishable: true.
+     * Story 11.B.3 AC7: the derived flag isSlotAssigned is exposed on SpeakerPoolResponse —
+     * verify via the existing GET /events/{code}/speakers/pool endpoint. Speaker is
+     * QUALITY_REVIEWED with session.start_time set → isSlotAssigned: true.
+     *
+     * <p>API-consolidation Phase 7 (2026-06-28): the redundant isPublishable flag was trimmed
+     * from the wire (FE derives it from isSlotAssigned + status); only isSlotAssigned remains.
      */
     @Test
-    @DisplayName("Should expose isSlotAssigned and isPublishable on pool response")
+    @DisplayName("Should expose isSlotAssigned=true on pool response when session has start_time")
     void should_exposeDerivedFlags_when_speakerQualityReviewedWithSessionStartTime() throws Exception {
         // Given: Speaker quality-reviewed AND assigned session has a start_time.
         testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
@@ -647,16 +649,15 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id", is(testSpeaker.getId().toString())))
                 .andExpect(jsonPath("$[0].status", is("QUALITY_REVIEWED")))
-                .andExpect(jsonPath("$[0].isSlotAssigned", is(true)))
-                .andExpect(jsonPath("$[0].isPublishable", is(true)));
+                .andExpect(jsonPath("$[0].isSlotAssigned", is(true)));
     }
 
     /**
-     * Story 11.B.3 AC7: isPublishable is false when status is QUALITY_REVIEWED but the
+     * Story 11.B.3 AC7: isSlotAssigned is false when status is QUALITY_REVIEWED but the
      * assigned session has a NULL start_time (slot not yet scheduled).
      */
     @Test
-    @DisplayName("Should expose isPublishable=false when session has null start_time")
+    @DisplayName("Should expose isSlotAssigned=false when session has null start_time")
     void should_exposeIsPublishableFalse_when_sessionStartTimeNull() throws Exception {
         // Given: Speaker quality-reviewed BUT assigned session has start_time = null.
         testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
@@ -673,8 +674,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 // sessionId is set but start_time is null → the strict (session) overload
                 // is reached via SpeakerPoolService.getSpeakerPoolForEvent, so the result
                 // honours the session.start_time predicate.
-                .andExpect(jsonPath("$[0].isSlotAssigned", is(false)))
-                .andExpect(jsonPath("$[0].isPublishable", is(false)));
+                .andExpect(jsonPath("$[0].isSlotAssigned", is(false)));
     }
 
     /**
