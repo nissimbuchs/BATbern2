@@ -1,6 +1,8 @@
 package ch.batbern.partners.controller;
 
 import ch.batbern.partners.client.CompanyServiceClient;
+import ch.batbern.partners.client.UserServiceClient;
+import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
@@ -58,6 +60,9 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private CompanyServiceClient companyServiceClient;
+
+    @MockitoBean
+    private UserServiceClient userServiceClient;
 
     private CompanyResponse mockCompanyResponse;
 
@@ -300,6 +305,27 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value(containsString("size")));
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "PARTNER")
+    void should_returnTypedCompanyName_when_getMyPartnerCompanyCalledByPartner() throws Exception {
+        // Given: the user-service resolves the current user's companyId
+        UserResponse user = new UserResponse();
+        user.setId("partner.user");
+        user.setCompanyId("GoogleZH");
+        when(userServiceClient.getCurrentUserProfile()).thenReturn(user);
+
+        // When/Then: typed MyPartnerCompanyResponse (no raw Map)
+        mockMvc.perform(get("/api/v1/partners/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.companyName").value("GoogleZH"));
+    }
+
+    @Test
+    void should_return401or403_when_getMyPartnerCompanyCalledWithoutAuth() throws Exception {
+        mockMvc.perform(get("/api/v1/partners/me"))
+                .andExpect(status().is4xxClientError());
     }
 
     // Helper methods
