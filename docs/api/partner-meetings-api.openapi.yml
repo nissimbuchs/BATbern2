@@ -8,6 +8,12 @@ servers:
   - url: "/api/v1"
     description: "API Gateway base URL"
 
+tags:
+  - name: "Partner Meetings"
+    description: "Partner meeting coordination — CRUD and invites (Story 8.3)"
+  - name: "Partner Meeting Rsvps"
+    description: "Partner meeting RSVP listing (Story 8.3)"
+
 paths:
   /partner-meetings:
     get:

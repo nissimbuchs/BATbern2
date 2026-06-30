@@ -478,6 +478,53 @@ task openApiGenerateAi(type: org.openapitools.generator.gradle.plugin.tasks.Gene
     ]
 }
 
+// OpenAPI Generator (app-settings) — relocated from event-ai in API consolidation Phase 8
+task openApiGenerateAppSettings(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/event-app-settings-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-app-settings".toString()
+    apiPackage = 'ch.batbern.events.appsettings.api.generated'
+    modelPackage = 'ch.batbern.events.appsettings.dto.generated'
+    invokerPackage = 'ch.batbern.events.appsettings.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+}
+
 // OpenAPI Generator (analytics) — carved from events-api in API consolidation Phase 6
 task openApiGenerateAnalytics(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
     generatorName = 'spring'
@@ -750,7 +797,7 @@ tasks.register('aiSecurityTest', Test) {
 }
 
 // Make compileJava depend on all OpenAPI generation tasks
-compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics, tasks.openApiGenerateTasks
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAppSettings, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics, tasks.openApiGenerateTasks
 
 // Add generated sources to source sets
 sourceSets {
@@ -763,6 +810,7 @@ sourceSets {
             srcDir "$buildDir/generated-newsletter/src/main/java"
             srcDir "$buildDir/generated-media/src/main/java"
             srcDir "$buildDir/generated-ai/src/main/java"
+            srcDir "$buildDir/generated-app-settings/src/main/java"
             srcDir "$buildDir/generated-analytics/src/main/java"
             srcDir "$buildDir/generated-watch/src/main/java"
             srcDir "$buildDir/generated-users-client/src/main/java"
@@ -781,6 +829,7 @@ clean {
     delete "$buildDir/generated-newsletter"
     delete "$buildDir/generated-media"
     delete "$buildDir/generated-ai"
+    delete "$buildDir/generated-app-settings"
     delete "$buildDir/generated-analytics"
     delete "$buildDir/generated-watch"
     delete "$buildDir/generated-users-client"

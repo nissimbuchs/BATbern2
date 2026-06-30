@@ -23,6 +23,8 @@ security:
 tags:
 - name: AI Assist
   description: AI-assisted event content creation — description, theme image, abstract analysis (Story 10.16)
+- name: AI Prompts
+  description: Organizer-editable OpenAI prompt administration (event_description, theme_image, abstract_quality)
 paths:
   /ai-prompts:
     get:
@@ -155,20 +157,6 @@ paths:
           $ref: '#/components/responses/NotFound'
       security:
       - BearerAuth: []
-  /public/settings/features:
-    get:
-      tags:
-      - AI Assist
-      operationId: getFeatureFlags
-      summary: Get feature flags (public, no auth required)
-      security: []
-      responses:
-        '200':
-          description: Feature flags
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FeatureFlagsResponse'
   /events/{eventCode}/ai/description:
     post:
       tags:
@@ -307,11 +295,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
 components:
   schemas:
-    FeatureFlagsResponse:
-      type: object
-      properties:
-        aiContentEnabled:
-          type: boolean
     AiDescriptionResponse:
       type: object
       properties:

@@ -1,6 +1,5 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.config.AiConfig;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
@@ -11,7 +10,6 @@ import ch.batbern.events.ai.dto.generated.AbstractAnalysisResponse;
 import ch.batbern.events.ai.dto.generated.AiDescriptionResponse;
 import ch.batbern.events.ai.dto.generated.AiThemeImageResponse;
 import ch.batbern.events.ai.dto.generated.ApplyThemeImageRequest;
-import ch.batbern.events.ai.dto.generated.FeatureFlagsResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -39,7 +37,6 @@ import java.util.UUID;
 public class AiAssistController implements AiAssistApi {
 
     private final BatbernAiService aiService;
-    private final AiConfig aiConfig;
     private final EventRepository eventRepository;
     private final TopicRepository topicRepository;
     private final SessionRepository sessionRepository;
@@ -47,12 +44,6 @@ public class AiAssistController implements AiAssistApi {
 
     @org.springframework.beans.factory.annotation.Value("${aws.cloudfront.domain:https://cdn.batbern.ch}")
     private String cloudFrontDomain;
-
-    /** Public: no auth required — used by frontend feature flag check */
-    @Override
-    public ResponseEntity<FeatureFlagsResponse> getFeatureFlags() {
-        return ResponseEntity.ok(new FeatureFlagsResponse().aiContentEnabled(aiConfig.isAiEnabled()));
-    }
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")

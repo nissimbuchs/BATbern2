@@ -1,7 +1,6 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.ai.dto.generated.ApplyThemeImageRequest;
-import ch.batbern.events.config.AiConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -40,8 +39,6 @@ class AiAssistControllerSecurityTest {
     @Mock
     private BatbernAiService aiService;
     @Mock
-    private AiConfig aiConfig;
-    @Mock
     private EventRepository eventRepository;
     @Mock
     private TopicRepository topicRepository;
@@ -54,7 +51,7 @@ class AiAssistControllerSecurityTest {
 
     @BeforeEach
     void setUp() {
-        controller = new AiAssistController(aiService, aiConfig, eventRepository,
+        controller = new AiAssistController(aiService, eventRepository,
                 topicRepository, sessionRepository, speakerPoolRepository);
         ReflectionTestUtils.setField(controller, "cloudFrontDomain", CLOUDFRONT);
     }

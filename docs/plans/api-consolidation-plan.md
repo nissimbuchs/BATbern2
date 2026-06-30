@@ -7,9 +7,15 @@
 `GlobalSessionController` was NOT dead (live FE consumer) → **wired** (new `Company Sessions` op, event-sessions);
 dead `ActivityHistoryApi` op → **removed** from users-api; CUMS `UserController` 5 orphan endpoints + `LogoController`
 (7 ops) + `PublicOrganizerController` → **wired spec-first**; `DevEmail` (`@Profile("local")`) + `TestFixtureCleanup`
-(admin test util, JWT+ORGANIZER+regex, intentionally outside the public contract) → **documented skip**. The only
-controllers still hand-rolled anywhere are those dev/test-only two + the `Watch*` external-app contract (Phase 8).
-Phases 8 & 9 (domain-boundary relocations + tag/Javadoc hygiene) = TODO.
+(admin test util, JWT+ORGANIZER+regex, intentionally outside the public contract) → **documented skip**.
+⚠️ **CORRECTION (adversarial review 2026-06-29 — see the review section below):** the "EMS 100% / only dev-test+Watch*
+hand-rolled" wording is OVERSTATED. Verified still-hand-rolled/un-wired beyond the dev-test+Watch* set:
+`NotificationController` (EMS, 7 production ops, no spec at all) and EventController's 4 registration/stakeholder
+ops (raw `Map`; generated `RegistrationsApi` orphaned). Treat the per-controller claims as ~95%, not 100%.
+**Phase 9 (tag/Javadoc hygiene) = DONE. Phase 8 = PARTIAL:** 8.1 (`/public/settings/features` relocated off
+`AiAssistController` → new `event-app-settings-api` + `PublicSettingsController`, path-preserving) landed;
+8.2 (`/attendee-portal/dashboard`) stays deferred (attendee service dormant); 8.3 (Watch path normalization)
+owner-skipped (generated `WatchApi` is unimplemented + the iOS app vendors its own spec → latent/harmless).
 **Date:** 2026-06-25 (last status update: 2026-06-29)
 **Governing standard:** [ADR-013 — REST API CRUD Conventions](../architecture/ADR-013-rest-api-crud-conventions.md)
 **Scope:** CUMS (companies, users), EMS (events, topics), Partner (partners + 4 sub-specs),
@@ -19,6 +25,56 @@ This plan is the actionable counterpart to ADR-013. Each item is tagged
 `[REMOVE] / [MERGE] / [RENAME] / [KEEP-BUT-FIX]` and ordered by risk so the low-risk,
 high-clarity wins land first. **Staging IS production** — every contract-removing step must
 verify no live caller first.
+
+---
+
+## Post-implementation adversarial review (2026-06-29) — goals ~95% met; verified gaps remain
+
+A 5-agent adversarial review (each tasked to *falsify* the plan's claims against the actual code)
+ran after Phases 8–9. **The core goal is substantially achieved** — CUMS + Partner are fully
+contract-first (every wireable controller `implements <X>Api`), the shared `ErrorResponse`/
+pagination contract is single-sourced, the generator is on 7.14.0 (both pins — `settings.gradle`
+plugin id + root `build.gradle` dependency), `containerDefaultToNull` is on every generator block,
+BulkOperationsApi/ActivityHistoryApi are gone, partner specs are 5→2, and the milestone "both ends
+generated from the spec" holds for the overwhelming majority of the surface. **But the headline
+"EMS 100% / every controller / ALL ad-hoc Maps typed / only dev-test+Watch* hand-rolled" wording is
+overstated.** Verified open gaps (file:line evidence; corroborated across agents + spot-checked):
+
+1. **`NotificationController` is fully hand-rolled and un-wired** —
+   `services/event-management-service/.../notification/NotificationController.java:43`,
+   `@RequestMapping("/api/v1/notifications")`, **7 production ops**, JWT-protected, "Response
+   structures match frontend API contract." No `NotificationsApi` spec or generated interface exists
+   anywhere. It is **not** dev/test-only, **not** Watch*, and **not mentioned anywhere in this plan**.
+   This is the single biggest miss vs the "EMS 100% contract-first" claim. → file as a contract-first
+   wiring story (author `event-notifications-api` + `NotificationsApi`, consolidate the hand DTOs).
+2. **EventController registration ops are not wired to `RegistrationsApi`** — `confirmRegistration`
+   (`EventController.java:2138`, returns raw `Map<String,String>`), `updateRegistration` (`:2219`,
+   consumes raw `@RequestBody Map<String,Object>`, ignoring the generated `PatchRegistrationRequest`),
+   `resendConfirmationEmail` (`:1560`, raw `Map`), `enrollStakeholders` (`:1621`, raw `Map`). **No
+   controller implements `RegistrationsApi`** — the generated interface + `ConfirmRegistration200Response`
+   are orphaned. So "EventController fully contract-first" is false for the registration surface.
+3. **`/partners/me`** (`PartnerController.getMyPartnerCompany`, partner-coordination, raw `Map<String,String>`)
+   — already acknowledged as still-undocumented in this plan's Phase 2; type it when that item lands.
+4. **Dead/orphaned specs still present** (Phase 1 incomplete): `docs/api/auth-endpoints.openapi.yml`
+   (zero references anywhere — truly dead) and `docs/api/file-upload-api.openapi.yml` (no generator
+   `inputSpec`, no FE generate target; only prose refs + the Bruno collection name). Removing them is a
+   contract change → verify no live caller first (staging = prod).
+5. **Frontend hand wire-DTOs duplicating generated schemas:** `useFeatureFlags.ts` (✅ **fixed
+   2026-06-29** — now derives from the generated `FeatureFlagsResponse`), plus pre-existing
+   `src/types/watch.ts` (`PairingCode/StatusResponse`), `src/types/user.ts`, `src/types/auth.ts`.
+6. **Orphaned shadow DTOs** (hand twin is live, generated twin unused): EMS `watch/dto/*` + CUMS
+   `companyuser/watch/dto/*` — but these are the documented Watch* non-wire, so cosmetic.
+
+**Plan-text accuracy nits (corrected below where editing):** the "only dev/test two + Watch*"
+headline omits `NotificationController`; `InternalRsvpController` is in **partner-coordination**, not
+EMS; `WatchWebSocketController` is `@Controller` (STOMP), not `@RestController`; the parenthetical
+generator counts ("EMS ×11, partner ×3") are stale (now EMS 13, partner 4 after the app-settings +
+partner-meetings generators).
+
+**Verification of Phases 8–9 themselves (all green, local dev):** Bruno 14/14; Playwright full suite
+240 passed / 4 flaky / 2 failed — both failures are pre-existing environmental flakes (one `@quarantine`
+archive-scroll, one speaker-portal local-dev flake that passes in isolation), **zero regressions** from
+the 8.1/9 changes.
 
 ---
 
@@ -683,9 +739,9 @@ Consolidate each to its generated twin (delete the hand DTO), then the consumers
 | **5 Partner consolidation 5→2** | ✅ **DONE** | Folded `partner-notes-api` + `partner-analytics-api` + `partner-topics-api` into the generator-wired `partners-api.openapi.yml` (5→2; `partner-meetings-api` kept separate + brought to parity: shared `$ref` `ErrorResponse`, documented `GET /partner-meetings/{id}/rsvps` + the internal RSVP callback, bounded-list note). `/attendees/topics` relocated under a dedicated **Attendee Topics** tag (documented alias). **Spec made truthful**: added the live-but-undocumented `PATCH`/`DELETE /partners/topics/{topicId}` (updateTopic/deleteTopic) and `eventTitle` on `AttendanceSummaryRecord`; clarified `getPartnerStatistics` (portfolio summary) vs `analytics/dashboard` (attendance) boundary; normalized tags + relative `/api/v1` server + global `bearerAuth`. **Controllers rewired** to implement the generated interfaces: `PartnerNoteController`→`PartnerNotesApi`, `PartnerAnalyticsController`→`PartnerAnalyticsApi` (export now returns `Resource`), `TopicController`→`PartnerTopicsApi` (role resolved from `SecurityContextHolder`, no injected `Authentication`), `AttendeeTopicController`→`AttendeeTopicsApi`. Hand-written record/Lombok DTOs (PartnerNoteDTO, CreateNoteRequest, UpdateNoteRequest, TopicDTO, TopicSuggestionRequest, TopicStatusUpdateRequest, PartnerDashboardDTO) deleted — generated DTOs thread through the service layer (Instant→OffsetDateTime, String→inner enums). FE: deleted `partner-notes/partner-topics` generate scripts + stale `.types.ts`, repointed `partnerNotesApi.ts` to `partner-api.types`. Full BE partner-coordination suite + full FE vitest (5334) + FE type-check green. |
 | **6 events-api decomposition** | ✅ **DONE** | Carved the 10.3k-line `events-api.openapi.yml` (94 paths / 122 ops / 131 schemas / 16 tags) into **9 per-domain specs** — `events-core` + `event-{sessions,speakers,registrations,newsletter,media,ai,analytics,watch}-api` — driven by a deterministic carve script (path→domain map + computed schema ownership; report-only validated first). **Paths preserved verbatim** (122/122 ops, 0 dangling refs, no dup ops). Only cross-spec coupling is `core → sessions` (Event embeds `List<Session>`); every other spec depends only on shared-kernel. **Full per-domain Java + TS packages** (owner's explicit choice): 9 `openApiGenerate<Domain>` Gradle tasks (each → `ch.batbern.events.<domain>.{api,dto}.generated`), 9 FE `event*-api.types.ts`. **165 Java FQN re-points** across 102 files (`dto.generated.X` → `<domain>.dto.generated.X`) + 4 controller interface re-points (EventTypes→core, SpeakerOutreach→speakers, AiPrompts→ai, EmailTemplates→newsletter). **54 FE files re-pointed** (51 single-domain swap + 3 multi-domain aliased imports). **🐛 openapi-generator bug #17647 worked around:** `schemaMappings` to a cross-package type emits illegal `List<@Valid <FQN>>`; switched core's Session/SessionSpeaker to `importMappings` (import + simple name) + a `doLast` that deletes the dead duplicate copy. 2 defined-but-unreachable schemas (`Speaker`, `RegistrationAdminResponse`) **removed** as dead-code cleanup (follow-up): `Speaker` was an ADR-004-violating User-field duplicate with only a dead `SpeakerUI` alias; `RegistrationAdminResponse` had no path/code use. Updated: security-scan matrix (1→9 entries), BATbern-watch `generate-types.sh` (loops 9 specs), FE generated README. Clean Java compile (main+test) + FE type-check (0 errors) + EMS suite + FE vitest green. Single PR.
 | **7 Contract-first completion** | ✅ **COMPLETE** (EMS + CUMS + Partner; branch `api-consolidation-phase7`) | **Every wireable controller across all three services is contract-first.** EMS: EventController CRUD + `EventReportingApi`; `BulkOperationsApi` removed (dead); `GlobalSessionController` wired (new `Company Sessions` op — it was NOT dead). CUMS: all production controllers, incl. the formerly-undocumented `UserController` 5 orphan endpoints, `LogoController` (7 ops → companies-api `Logos` tag), `PublicOrganizerController`; dead `ActivityHistoryApi` op removed. Partner: meetings (new partner-meetings-api generator). Generator on 7.14.0 (9a). All hand DTOs shadowing generated schemas consolidated; ad-hoc `Map`/`?`/`byte[]` returns typed (byte[] → `Resource`); 409s via `@ExceptionHandler`. Only intentional non-wires remain: `DevEmail` (`@Profile("local")`), `TestFixtureCleanup` (admin test util, outside the public contract), `Watch*` (Phase 8 external app). |
-| **8 Domain-boundary corrections** | ⏳ **TODO** | Relocate misfiled endpoints (`/public/settings/features` off `AiAssistController`; `/attendee-portal/dashboard` → attendee domain) + normalize Watch paths that hard-code `/api/v1/`. Client-affecting (watch app); see §Phase 8. |
+| **8 Domain-boundary corrections** | 🟡 **PARTIAL** | ✅ `/public/settings/features` relocated off `AiAssistController` → new `event-app-settings-api` spec + `PublicSettingsController` (path-preserving, zero client impact). ⏭️ `/attendee-portal/dashboard` → attendee domain still deferred (service dormant). ⏭️ Watch path normalization owner-skipped (generated `WatchApi` unimplemented + iOS app vendors its own spec → latent/harmless). See §Phase 8. |
 | **9a Generator upgrade** | ✅ **DONE** (branch `api-consolidation-phase7`) | Upgraded openapi-generator **7.2.0 → 7.14.0** (both pins: `settings.gradle` + root `build.gradle`). **#17647 is fixed** → removed the EMS `core→sessions` workaround (`importMappings`+`doLast`); `Session`/`SessionSpeaker` now use plain `schemaMappings` and `Event.java` emits the legal `pkg.@Valid Session`. Did this **before Phase 7** so controllers wire against the final interface shape once. Churn was tiny: param type `Optional<X>`→`@Nullable X` (fixed `EmailTemplateController`); enum prefix no longer stripped, `WELCOME`→`AFTER_WELCOME` (wire values unchanged; fixed 4 refs in `EventTeaserImageServiceTest`); Java-client models-only now injects an unsatisfied `ApiClient` import → switched partner's `generateCompanyClientDtos`/`generateUserClientDtos` to the `spring` generator (consistent w/ EMS). **🐛 Wire-behaviour fix:** 7.14 default-initialises collection fields (`= new ArrayList<>()`) instead of leaving them null, so an unset list serialised as `[]` instead of being absent — broke the `?include=` sparse-fieldset contract (`TopicControllerIntegrationTest` saw `usageHistory: []` when not embedded). Fixed by adding `containerDefaultToNull: 'true'` to **every** generator `configOptions` block (CUMS ×2, EMS ×11, partner ×3) → restores pre-7.14 null-default. All other changes additive (per-DTO inner `Builder`, `@Nullable` field annots). Whole Java monorepo compiles main+test; FE unaffected (its types come from `openapi-typescript`, not this plugin). See §Phase 9. |
-| **9 Tooling & spec hygiene (rest)** | ⏳ **TODO** | Generator upgrade done (→ 9a). Remaining: declare top-level `tags`; fix stale `workflowService.ts` PUT comments. Low risk; see §Phase 9. |
+| **9 Tooling & spec hygiene (rest)** | ✅ **DONE** | Generator upgrade done (→ 9a). Declared top-level `tags` in the 2 specs missing them (`event-media-api`, `partner-meetings-api`; + `AI Prompts` in `event-ai-api`); fixed the stale `workflowService.ts` PUT→POST comment. See §Phase 9. |
 
 ---
 
@@ -1542,23 +1598,42 @@ then by domain within the service. Suggested order: CUMS (widest gap) → EMS �
 
 ---
 
-## Phase 8 — Domain-boundary corrections (endpoint relocation + path normalization) — ⏳ TODO
+## Phase 8 — Domain-boundary corrections (endpoint relocation + path normalization) — 🟡 PARTIAL (8.1 done; 8.2 deferred; 8.3 owner-skipped)
 
 Behaviour/contract-affecting, so deliberately deferred from the Phase 6 reorg.
 
-- `[RENAME]` **Relocate misfiled endpoints** (Phase 6 homed them pragmatically):
-  - `GET /public/settings/features` (feature flags) is served by `AiAssistController` — flags are
-    not AI. Move to a public/app-settings controller + its own spec section.
-  - `GET /attendee-portal/dashboard` is attendee-domain logic in EMS. Plan + ADR-014 flag it for
-    relocation to attendee-experience; revisit when/if that service is reactivated.
-- `[KEEP-BUT-FIX]` **Normalize the Watch paths.** `event-watch-api` paths hard-code the
-  `/api/v1/` prefix (`/api/v1/events/{eventCode}/live-timing`, `/api/v1/watch/...`) while every
-  other spec relies on the server base path. Strip the literal prefix so the watch contract matches
-  the rest. ⚠️ This is a real URL change for the BATbern-watch app client — coordinate + version it
-  (and update `apps/BATbern-watch`).
+- ✅ **DONE (2026-06-29): `GET /public/settings/features` relocated off `AiAssistController`.** Feature
+  flags are an app-settings concern, not an AI one. **Bootstrapped a new `event-app-settings-api`
+  spec + generator** (`openApiGenerateAppSettings` → `ch.batbern.events.appsettings.{api,dto}.generated`,
+  wired into compileJava.dependsOn + sourceSets + clean, modelled on `openApiGenerateTasks`). New
+  `PublicSettingsController implements AppSettingsApi` (class `@RequestMapping /api/v1`, reads
+  `AiConfig.isAiEnabled()`); removed `getFeatureFlags` + `FeatureFlagsResponse` + the now-orphan
+  `AiConfig` field/import from `AiAssistController`; removed the op + schema from `event-ai-api.yml`.
+  **Path preserved verbatim** (`/public/settings/features`, still `permitAll` — `SecurityConfig` is
+  path-based) so the FE `useFeatureFlags` hook is unchanged. Moved the integration test to
+  `PublicSettingsControllerIntegrationTest`; fixed `AiAssistControllerSecurityTest`'s direct
+  constructor call (dropped the `aiConfig` arg). FE: added `generate:api-types:event-app-settings`
+  (+ events chain), regenerated `event-app-settings-api.types.ts` (new) + `event-ai-api.types.ts`
+  (FeatureFlagsResponse removed), updated the generated `README` mapping. **Verified (local dev):**
+  EMS compile main+test; `PublicSettingsControllerIntegrationTest` + `AiAssistControllerIntegrationTest`
+  + `AiAssistControllerSecurityTest` green; EMS restart + live gateway smoke (`/public/settings/features`
+  200 `{aiContentEnabled:false}` via gateway + direct, `/ai-prompts` still 401 → AI controller intact);
+  FE `check:api-types` stable (only the 3 intended files; tag edits produced no TS drift) + `type-check`.
+- ⏭️ **DEFERRED (unchanged): `GET /attendee-portal/dashboard`** is attendee-domain logic in EMS. Plan
+  + ADR-014 flag it for relocation to attendee-experience; revisit when/if that service is reactivated.
+- ⏭️ **SKIPPED by owner (Nissim, 2026-06-29): Watch path normalization.** `event-watch-api` paths
+  hard-code the `/api/v1/` prefix while every sibling relies on the server base path. **Investigation
+  finding:** the generated `WatchApi.java` is **not implemented by any controller** (the watch
+  controllers are hand-rolled with literal `@RequestMapping("/api/v1/...")`), so stripping the prefix
+  in-repo would be doc-only with zero runtime effect; AND the iOS `apps/BATbern-watch` app vendors its
+  **own** old `events-api.openapi.yml` copy and hand-builds URLs (host base + literal `/api/v1/`), so
+  it does not consume this spec. The inconsistency is therefore latent + harmless. Owner chose to leave
+  it as-is rather than risk a versioned change to the external watch client that can't be built/tested
+  from this repo. **If revisited:** strip `/api/v1` from the 4 paths (server base already carries it),
+  regenerate the unused `WatchApi`, and treat the iOS re-sync as a separate watch-app task.
 
-**Risk:** medium — client-affecting (watch app, feature-flag callers). Usage-check → migrate
-callers in the same change.
+**Risk:** the one client-affecting item (8.3) was skipped, so what landed (8.1) is path-preserving,
+zero client impact.
 
 ---
 
@@ -1588,11 +1663,17 @@ Low-risk cleanup; no contract change.
   are generated by the separate `openapi-typescript` npm tool and are **not affected** by this
   Gradle-plugin bump. Done **before Phase 7** so the ~50 controllers wire against the final 7.14.0
   interface shape exactly once.
-- `[KEEP-BUT-FIX]` **Declare top-level `tags`** in every spec for the tags used on operations
-  (`event-media-api` currently declares none; `Event Photos`/`Speaker Invitation`/`Organizer` are
-  used but undeclared). Fold the single-op `Organizer` tag into a neighbour.
-- `[KEEP-BUT-FIX]` Fix stale Javadoc in `web-frontend/src/services/workflowService.ts` (comments
-  still say "PUT …/workflow/transition" after the POST change).
+- ✅ **DONE (2026-06-29): declared top-level `tags`** in the two specs that were missing them. After
+  Phase 7's churn the only specs with operation-level tags but no top-level `tags:` block were
+  `event-media-api` (now declares `Event Photos` + `Materials Upload`) and `partner-meetings-api`
+  (now declares `Partner Meetings` + `Partner Meeting Rsvps`). The plan's earlier mention of
+  `Speaker Invitation`/`Organizer` in event-media was stale — those tags are no longer there, so the
+  "fold the single-op Organizer tag" step is moot. Also added the undeclared `AI Prompts` tag to
+  `event-ai-api`'s top-level block while editing it for 8.1. No TS/codegen impact (top-level tags
+  don't affect `openapi-typescript` output — `check:api-types` stable).
+- ✅ **DONE (2026-06-29): fixed stale Javadoc** in `web-frontend/src/services/workflowService.ts`
+  (header comment said `PUT …/workflow/transition`; the call has been `POST` — corrected; no other
+  PUT references remain in the file).
 
 **Risk:** low.
 

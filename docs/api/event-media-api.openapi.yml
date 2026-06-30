@@ -20,6 +20,11 @@ servers:
   description: Development
 security:
 - BearerAuth: []
+tags:
+- name: Event Photos
+  description: Event photo gallery — upload, listing, and deletion
+- name: Materials Upload
+  description: Speaker material upload via presigned URLs
 paths:
   /events/recent-photos:
     get:

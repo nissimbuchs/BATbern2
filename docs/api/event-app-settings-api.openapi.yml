@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: BATbern App Settings API
+  version: 1.0.0
+  description: 'Public application settings — runtime feature flags consumed by the frontend.
+
+
+    Relocated from the AI spec (API consolidation Phase 8 — feature flags are an app-settings
+    concern, not an AI one). Path preserved verbatim (`/public/settings/features`).'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: https://api.batbern.ch/api/v1
+  description: Staging
+- url: http://localhost:8080/api/v1
+  description: Development
+tags:
+- name: App Settings
+  description: Public application settings and runtime feature flags (no auth)
+paths:
+  /public/settings/features:
+    get:
+      tags:
+      - App Settings
+      operationId: getFeatureFlags
+      summary: Get feature flags (public, no auth required)
+      security: []
+      responses:
+        '200':
+          description: Feature flags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlagsResponse'
+components:
+  schemas:
+    FeatureFlagsResponse:
+      type: object
+      properties:
+        aiContentEnabled:
+          type: boolean
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token
