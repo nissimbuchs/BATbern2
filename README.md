@@ -505,7 +505,6 @@ All secrets stored in GitHub Secrets and AWS Secrets Manager.
 
 ### API Documentation
 - [API Documentation](docs/api/)
-- [Authentication Endpoints](docs/api/auth-endpoints.openapi.yml) - OpenAPI 3.1 spec
 
 ### User Guides
 - [Forgot Password Flow](docs/guides/forgot-password-flow.md) - Password reset functionality (Story 1.2.2)

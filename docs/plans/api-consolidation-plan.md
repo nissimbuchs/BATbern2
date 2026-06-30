@@ -28,7 +28,11 @@ verify no live caller first.
 
 ---
 
-## Post-implementation adversarial review (2026-06-29) — goals ~95% met; verified gaps remain
+## Post-implementation adversarial review (2026-06-29) + gap remediation (2026-06-30)
+
+**Update 2026-06-30:** all 4 review gaps were addressed — gaps 1/3/4 fully fixed (NotificationController
+wired, `/partners/me` typed, dead specs removed) and gap 2 closed for the raw-Map finding (the full
+`RegistrationsApi` schema-divergence wire stays a separate FE-coordinated story). Original findings below.
 
 A 5-agent adversarial review (each tasked to *falsify* the plan's claims against the actual code)
 ran after Phases 8–9. **The core goal is substantially achieved** — CUMS + Partner are fully
@@ -40,30 +44,33 @@ generated from the spec" holds for the overwhelming majority of the surface. **B
 "EMS 100% / every controller / ALL ad-hoc Maps typed / only dev-test+Watch* hand-rolled" wording is
 overstated.** Verified open gaps (file:line evidence; corroborated across agents + spot-checked):
 
-1. **`NotificationController` is fully hand-rolled and un-wired** —
-   `services/event-management-service/.../notification/NotificationController.java:43`,
-   `@RequestMapping("/api/v1/notifications")`, **7 production ops**, JWT-protected, "Response
-   structures match frontend API contract." No `NotificationsApi` spec or generated interface exists
-   anywhere. It is **not** dev/test-only, **not** Watch*, and **not mentioned anywhere in this plan**.
-   This is the single biggest miss vs the "EMS 100% contract-first" claim. → file as a contract-first
-   wiring story (author `event-notifications-api` + `NotificationsApi`, consolidate the hand DTOs).
-2. **EventController registration ops are not wired to `RegistrationsApi`** — `confirmRegistration`
-   (`EventController.java:2138`, returns raw `Map<String,String>`), `updateRegistration` (`:2219`,
-   consumes raw `@RequestBody Map<String,Object>`, ignoring the generated `PatchRegistrationRequest`),
-   `resendConfirmationEmail` (`:1560`, raw `Map`), `enrollStakeholders` (`:1621`, raw `Map`). **No
-   controller implements `RegistrationsApi`** — the generated interface + `ConfirmRegistration200Response`
-   are orphaned. So "EventController fully contract-first" is false for the registration surface.
-3. **`/partners/me`** (`PartnerController.getMyPartnerCompany`, partner-coordination, raw `Map<String,String>`)
-   — already acknowledged as still-undocumented in this plan's Phase 2; type it when that item lands.
-4. **Dead/orphaned specs still present** (Phase 1 incomplete): `docs/api/auth-endpoints.openapi.yml`
-   (zero references anywhere — truly dead) and `docs/api/file-upload-api.openapi.yml` (no generator
-   `inputSpec`, no FE generate target; only prose refs + the Bruno collection name). Removing them is a
-   contract change → verify no live caller first (staging = prod).
+1. ✅ **FIXED (2026-06-30): `NotificationController` wired contract-first.** Authored
+   `event-notifications-api` spec + `openApiGenerateNotifications` generator; the controller now
+   `implements NotificationsApi`; the 7 hand DTOs were consolidated to generated twins (shared
+   `NotificationMapper`, Instant→OffsetDateTime, 4-field pagination preserved for a byte-identical
+   wire). 23 tests + live smoke green.
+2. 🟡 **PARTIALLY FIXED (2026-06-30): the EventController registration raw-Maps are typed.**
+   `confirmRegistration`→`ConfirmRegistration200Response`, `resendConfirmationEmail`→`ResendConfirmationResponse`,
+   `enrollStakeholders`→`EnrollStakeholdersResponse`, `updateRegistration` body→`UpdateRegistrationStatusRequest`
+   (spec made truthful; the old `PatchRegistrationRequest` modelled a never-implemented preference update).
+   **Still deferred:** the full `RegistrationsApi` @Override-wiring (the other ~8 read/create ops) — the
+   generated `Registration` schema renames wire fields (`firstName` vs deployed `attendeeFirstName`) and
+   list/create use different wrappers, so forcing it would break the public registration flow. That is a
+   separate FE-coordinated spec-truth story (the schemas must be reconciled to the deployed wire first).
+3. ✅ **FIXED (2026-06-30): `/partners/me` typed** — documented in partners-api as `getMyPartnerCompany`
+   returning `MyPartnerCompanyResponse`; `PartnerController` now `@Override`s it. Tests + live smoke green.
+4. ✅ **FIXED (2026-06-30): dead specs removed.** `auth-endpoints.openapi.yml` (the backend forgot/reset
+   endpoints were retired — the FE now resets via Amplify→Cognito directly, confirmed in
+   `useForgotPassword.ts`) and `file-upload-api.openapi.yml` (its `/logos/*` ops are now the wired
+   companies-api `Logos` tag, served by `LogoController`). Verified no live caller / no generator / no FE
+   target before deleting; fixed the dangling doc links (README, aws-ses/rate-limiting guides, companies-api
+   comment). _(Residual: two inert dead alternation branches in `.githooks/pre-push` reference the removed
+   filenames — harmless, never match a diff; left untouched as the hook is push-critical.)_
 5. **Frontend hand wire-DTOs duplicating generated schemas:** `useFeatureFlags.ts` (✅ **fixed
-   2026-06-29** — now derives from the generated `FeatureFlagsResponse`), plus pre-existing
-   `src/types/watch.ts` (`PairingCode/StatusResponse`), `src/types/user.ts`, `src/types/auth.ts`.
+   2026-06-29**), plus still-pre-existing `src/types/watch.ts` (`PairingCode/StatusResponse`),
+   `src/types/user.ts`, `src/types/auth.ts` (low priority; out of the contract-first backend scope).
 6. **Orphaned shadow DTOs** (hand twin is live, generated twin unused): EMS `watch/dto/*` + CUMS
-   `companyuser/watch/dto/*` — but these are the documented Watch* non-wire, so cosmetic.
+   `companyuser/watch/dto/*` — the documented Watch* non-wire, cosmetic.
 
 **Plan-text accuracy nits (corrected below where editing):** the "only dev/test two + Watch*"
 headline omits `NotificationController`; `InternalRsvpController` is in **partner-coordination**, not

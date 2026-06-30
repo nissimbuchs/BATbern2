@@ -859,7 +859,8 @@ paths:
   # 3. POST /api/v1/logos/{uploadId}/confirm - Confirm upload
   # 4. POST /api/v1/companies (with logoUploadId) - Associate logo with company
   #
-  # See file-upload-api.openapi.yml for detailed documentation
+  # The logo upload operations are documented inline under the `Logos` tag in this spec
+  # (served by LogoController -> generated LogosApi).
 
   /public/settings/presentation:
     get:
