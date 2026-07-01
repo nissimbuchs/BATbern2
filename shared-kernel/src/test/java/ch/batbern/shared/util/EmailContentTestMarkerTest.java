@@ -15,8 +15,15 @@ class EmailContentTestMarkerTest {
         "BATPW-E2E 1782885868836",
         "Join us at BATPW-E2E 42",
         "batpw-e2e lowercase still matches",
+        "Task template BATPW-E2E-TPL-99",                  // subsumed by BATPW-E2E
         "Event code BRUNO-TEST-abc123",
-        "prefix bruno-test- suffix"
+        "prefix bruno-test- suffix",
+        "session bruno-test-session-42",                   // subsumed by BRUNO-TEST-
+        "topic bruno-test-topic-42",                       // subsumed by BRUNO-TEST-
+        "invite to bruno-test-portal-42@e2e.batbern.invalid", // subsumed by BRUNO-TEST-
+        "Sponsored by BRUNOTESTCO1782885868836",           // company marker
+        "Dear bruno.test.7,",                              // username marker
+        "greeting for BRUNO.TEST uppercased"
     })
     @DisplayName("should_detectMarker_when_contentContainsAnyKnownToken")
     void should_detectMarker_when_contentContainsAnyKnownToken(String content) {
@@ -29,7 +36,10 @@ class EmailContentTestMarkerTest {
         "Willkommen zum Berner Architekten Treffen",
         "Newsletter: our next event",
         "e2e",                 // partial token, not the full marker
-        "BATPW"                // prefix only, not the full hyphenated marker
+        "BATPW",               // prefix only, not the full hyphenated marker
+        "brtest",              // deliberately NOT content-matched (short/risky) — recipient-domain guard covers it
+        "Dear Bruno,",         // bare firstName is too generic to match
+        "the test passed"      // bare 'test' word must never match
     })
     @DisplayName("should_notDetectMarker_when_legitimateContent")
     void should_notDetectMarker_when_legitimateContent(String content) {

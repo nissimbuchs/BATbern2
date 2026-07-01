@@ -627,6 +627,8 @@ class EmailServiceTest {
             "user@anything.invalid",
             "user@anything.example",
             "user@anything.localhost",
+            "byte-identity-a@e2e.batbern.local", // RFC 6762 mDNS domain (incident 2026-07-01 follow-up)
+            "user@host.local",
             "USER@EXAMPLE.COM",                 // case-insensitive
             "User@SubDomain.Example.com"        // sub of example.com (matches *.example TLD-suffix rule)
         })
