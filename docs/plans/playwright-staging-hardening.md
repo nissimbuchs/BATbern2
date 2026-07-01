@@ -39,6 +39,23 @@ production deploy.
 > its event-creating `beforeAll` 3×, mailing ~1,050 subscribers three real "BATPW-E2E" test
 > newsletters (3,175 SES sends) before it was stopped. Containment: SES account sending paused;
 > the two guards above landed as the durable fix.
+>
+> **Second wall of defence — server-side send guard.** Independent of the Playwright layer, the
+> backend now refuses to *send* a test-marked email even if some future test drives a real send
+> on production. The test suites already stamp canonical, unmistakable markers into the entity
+> names/titles/codes they create (`BATPW-E2E` for Playwright, `BRUNO-TEST-` for Bruno — see
+> `shared-kernel/.../util/EmailContentTestMarker`), and those markers surface in rendered email
+> subject/body. Two backend guards key off them:
+> 1. **`EmailService`** (shared-kernel) — on the real-send path only (non-null `SesClient`),
+>    `assertNotTestMarked(subject, htmlBody)` throws `TestMarkedEmailException` and logs at ERROR
+>    (log-metric-alarmable) before calling SES. Local dev / test capture is unaffected, so the
+>    dev-only newsletter spec still exercises the pipeline.
+> 2. **`NewsletterEmailService.sendNewsletter`** — fails fast for a test-marked event *before* the
+>    async bulk loop starts, so a marked event can never fan out to the subscriber list even if a
+>    template omits `{{eventTitle}}`.
+>
+> **Contract for test authors:** any test-created entity whose name/title/code can reach an email
+> MUST carry one of these markers — that is what makes it both sweep-cleanable and send-blocked.
 
 ### Decisions locked with the product owner (2026-05-30)
 

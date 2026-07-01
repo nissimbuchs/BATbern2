@@ -656,4 +656,101 @@ class EmailServiceTest {
             verify(sesClient).sendEmail(any(SendEmailRequest.class));
         }
     }
+
+    /**
+     * Second wall of defence (incident 2026-07-01): a test-marked email must never reach a live
+     * SES client. The suites stamp a canonical marker ({@code BATPW-E2E}, {@code BRUNO-TEST-})
+     * into entity titles/codes that flow into email subject/body; the send boundary refuses them.
+     * Guard runs ONLY on the real-send path (non-null sesClient) so local dev / test capture is
+     * unaffected and dev-only send specs still exercise the pipeline.
+     */
+    @Nested
+    @DisplayName("Test-Marked Email Guard (incident 2026-07-01 second wall)")
+    class TestMarkedEmailGuard {
+
+        private SesClient sesClient;
+
+        @BeforeEach
+        void wireMockSes() {
+            sesClient = mock(SesClient.class);
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
+            ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
+            ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+        }
+
+        @Test
+        @DisplayName("should_throwAndSkipSes_when_subjectContainsPlaywrightMarker")
+        void should_throwAndSkipSes_when_subjectContainsPlaywrightMarker() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    TestMarkedEmailException.class,
+                    () -> emailService.sendHtmlEmailSync(
+                            "real.person@batbern.ch", "BATPW-E2E 1782885868836", "<p>body</p>")
+            );
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_throwAndSkipSes_when_bodyContainsPlaywrightMarker")
+        void should_throwAndSkipSes_when_bodyContainsPlaywrightMarker() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    TestMarkedEmailException.class,
+                    () -> emailService.sendHtmlEmailSync(
+                            "real.person@batbern.ch", "Newsletter",
+                            "<h1>Join us at BATPW-E2E 1782885868836</h1>")
+            );
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_throwAndSkipSes_when_bodyContainsBrunoMarker")
+        void should_throwAndSkipSes_when_bodyContainsBrunoMarker() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    TestMarkedEmailException.class,
+                    () -> emailService.sendHtmlEmailSync(
+                            "real.person@batbern.ch", "Subject",
+                            "<p>Event code BRUNO-TEST-abc123</p>")
+            );
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_throwAndSkipSes_when_markerInAttachmentSendSubject")
+        void should_throwAndSkipSes_when_markerInAttachmentSendSubject() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    TestMarkedEmailException.class,
+                    () -> emailService.sendHtmlEmailWithAttachments(
+                            "real.person@batbern.ch", "Invite to BATPW-E2E 42", "<p>body</p>",
+                            List.of(new EmailService.EmailAttachment("event.ics",
+                                    "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(),
+                                    "text/calendar", true)))
+            );
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_matchMarker_caseInsensitively")
+        void should_matchMarker_caseInsensitively() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    TestMarkedEmailException.class,
+                    () -> emailService.sendHtmlEmailSync(
+                            "real.person@batbern.ch", "batpw-e2e lowercase", "<p>body</p>")
+            );
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_sendNormally_when_noTestMarkerPresent")
+        void should_sendNormally_when_noTestMarkerPresent() {
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("test-id").build());
+
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+                    () -> emailService.sendHtmlEmailSync(
+                            "real.person@batbern.ch", "BATbern 79 — Software Architecture",
+                            "<h1>Join us at BATbern 79</h1>")
+            );
+            verify(sesClient).sendEmail(any(SendEmailRequest.class));
+        }
+    }
 }

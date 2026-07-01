@@ -19,7 +19,9 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
+import ch.batbern.shared.service.TestMarkedEmailException;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.util.EmailContentTestMarker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -266,6 +268,19 @@ public class NewsletterEmailService {
                                                   @Nullable String templateKey,
                                                   @Nullable Integer maxRecipients,
                                                   boolean testMode) {
+        // Second wall of defence (incident 2026-07-01): refuse to bulk-mail the whole subscriber
+        // list for a TEST event. The test suites stamp a canonical marker into the event
+        // title/code (EmailContentTestMarker), so this fails fast BEFORE the async send loop even
+        // starts — belt to the EmailService per-email content guard's suspenders, and it also
+        // spares the subscriber list from a marked send that a template omitting {{eventTitle}}
+        // might otherwise slip past the per-email check.
+        if (EmailContentTestMarker.containsMarker(event.getTitle(), event.getEventCode())) {
+            log.error("BLOCKED newsletter send for test event (markers: {}): code={}, title={}",
+                    EmailContentTestMarker.describe(), event.getEventCode(), event.getTitle());
+            throw new TestMarkedEmailException(
+                    "newsletter for event " + event.getEventCode() + " (" + event.getTitle() + ")");
+        }
+
         String effectiveKey = resolveTemplateKey(templateKey);
         rejectRegistrantTemplate(effectiveKey, locale);
 
