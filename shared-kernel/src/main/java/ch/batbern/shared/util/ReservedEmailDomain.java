@@ -19,10 +19,13 @@ public final class ReservedEmailDomain {
             "example.com", "example.org", "example.net", "localhost"
     );
 
-    /** RFC 2606 / RFC 6761 reserved TLDs and sub-domain suffixes. */
+    /** RFC 2606 / RFC 6761 / RFC 6762 reserved TLDs and sub-domain suffixes. */
     private static final List<String> RESERVED_SUFFIXES = List.of(
             ".example", ".example.com", ".example.org", ".example.net",
-            ".test", ".invalid", ".localhost"
+            ".test", ".invalid", ".localhost",
+            // RFC 6762 mDNS special-use domain — never a routable mailbox. Test fixtures that
+            // used *.local hard-bounced on SES (incident 2026-07-01 follow-up); block them here.
+            ".local"
     );
 
     private ReservedEmailDomain() {

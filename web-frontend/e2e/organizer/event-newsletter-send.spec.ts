@@ -6,10 +6,19 @@
  * consolidated NewsletterController (preview/send/status — the 16-op `NewsletterApi` wire,
  * incl. the `testMode` field whose omission would have silently mailed all subscribers).
  *
- * Email-safety: runs against LOCAL DEV (TEST_ENV=development). The Spring `local` profile
- * has no SesClient → every send is intercepted by LocalEmailCapture (/dev/emails), so the
- * send pipeline executes end-to-end but nothing leaves the box. The fixture event is a
- * throwaway (event_number ≥ 10000, swept in teardown).
+ * ⚠️ EMAIL-SAFETY — DEV-ONLY, NEVER @gate. This spec drives the REAL newsletter send
+ * pipeline end-to-end. On LOCAL DEV (TEST_ENV=development) the Spring `local` profile has
+ * no SesClient → every send is intercepted by LocalEmailCapture (/dev/emails) and nothing
+ * leaves the box. On staging/production SES is LIVE, so running this here mails the ENTIRE
+ * subscriber list. It is therefore hard-guarded to `development` (see EMAIL_SAFE_ENV below)
+ * AND tagged @sends-real-email so run-playwright-tests.sh excludes it on every non-dev env.
+ *
+ * INCIDENT 2026-07-01: this spec was tagged @gate; nightly-e2e.yml runs the full @gate suite
+ * against staging (= production), and CI retries=2 caused beforeAll to run 3×. Result: ~1,050
+ * community members each received 3 real "BATPW-E2E" test newsletters (3,175 SES sends). Do
+ * NOT re-add @gate, and do NOT weaken the EMAIL_SAFE_ENV guard.
+ *
+ * The fixture event is a throwaway (event_number ≥ 10000, swept in teardown).
  *
  * Locale: pinned to EN via forceUserProfileLanguage so the role-name button selectors
  * ("Send Newsletter" / "Confirm") are stable regardless of the organizer's profile language.
@@ -25,7 +34,13 @@ import { cleanupByCode } from '../helpers/test-fixtures-cleanup';
 import { waitForAppShell } from '../helpers/app-shell';
 import { forceUserProfileLanguage } from '../helpers/mock-user-profile';
 
-test.describe('Organizer · Event newsletter send', { tag: '@gate' }, () => {
+// Hard email-safety gate: only LOCAL DEV intercepts mail (LocalEmailCapture). On any deployed
+// env SES is live, so the whole group — INCLUDING the event-creating beforeAll — is skipped.
+// describe.skip (not test.skip) guarantees the beforeAll never runs, so no send is ever issued.
+const EMAIL_SAFE_ENV = (process.env.TEST_ENV ?? 'development') === 'development';
+const describeNewsletter = EMAIL_SAFE_ENV ? test.describe : test.describe.skip;
+
+describeNewsletter('Organizer · Event newsletter send', { tag: '@sends-real-email' }, () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(3 * 60 * 1000);
 

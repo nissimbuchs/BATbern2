@@ -267,6 +267,17 @@ else
 fi
 
 # ── Build the grep routing (plan §A6) ─────────────────────────────────────────────────
+# EMAIL-SAFETY (incident 2026-07-01): specs that drive a REAL outbound-mail pipeline are
+# tagged @sends-real-email and are SAFE only on local dev (Spring `local` profile → no
+# SesClient → LocalEmailCapture). On any deployed env SES is live, so we ALWAYS exclude them
+# there — regardless of scope — to prevent a repeat of the nightly-@gate newsletter blast that
+# mailed ~1,050 subscribers 3×. Playwright's --grep-invert takes ONE regex, so it is composed.
+INVERT_PATTERN="@quarantine"
+if [ "$TEST_ENV" != "development" ]; then
+    INVERT_PATTERN="@quarantine|@sends-real-email"
+    echo -e "${YELLOW}Email-safety: excluding @sends-real-email specs on '$TEST_ENV' (SES is live).${NC}"
+fi
+
 GREP_ARGS=()
 if [ "$CLEANUP_ONLY" = "1" ]; then
     # Match no test → 0 tests run, but globalSetup + globalTeardown still fire, so the
@@ -274,16 +285,23 @@ if [ "$CLEANUP_ONLY" = "1" ]; then
     GREP_ARGS+=(--grep "@__cleanup_only_no_match__")
 else
     if [ -n "$SLICE" ]; then
-        GREP_ARGS+=(--grep "$SLICE" --grep-invert "@quarantine")
+        GREP_ARGS+=(--grep "$SLICE" --grep-invert "$INVERT_PATTERN")
     elif [ "$SCOPE" = "smoke" ]; then
-        GREP_ARGS+=(--grep "@smoke" --grep-invert "@quarantine")
+        GREP_ARGS+=(--grep "@smoke" --grep-invert "$INVERT_PATTERN")
     elif [ "$SCOPE" = "gate" ]; then
-        GREP_ARGS+=(--grep "@gate" --grep-invert "@quarantine")
+        GREP_ARGS+=(--grep "@gate" --grep-invert "$INVERT_PATTERN")
     elif [ "$SCOPE" = "quarantine" ]; then
         # Re-test only the quarantined specs (nightly) so settled flakes can be promoted.
-        GREP_ARGS+=(--grep "@quarantine")
+        # Still exclude @sends-real-email on deployed envs (a quarantined send-spec must never fire).
+        if [ "$TEST_ENV" != "development" ]; then
+            GREP_ARGS+=(--grep "@quarantine" --grep-invert "@sends-real-email")
+        else
+            GREP_ARGS+=(--grep "@quarantine")
+        fi
     elif [ "$SCOPE" = "all" ]; then
-        : # everything (local default) — quarantined specs included only here
+        # everything (local default) — quarantined specs included only here. On a deployed env,
+        # still bar the real-mail specs (belt-and-suspenders for a manual `all` run vs staging).
+        [ "$TEST_ENV" != "development" ] && GREP_ARGS+=(--grep-invert "@sends-real-email")
     else
         echo -e "${RED}ERROR: --scope must be smoke|gate|quarantine|all (got '$SCOPE')${NC}" >&2
         exit 2

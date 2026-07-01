@@ -155,7 +155,10 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
         `/api/v1/events/${eventCode}/speakers/${speakerAId}/promote`,
         {
           data: {
-            email: `byte-identity-a-${Date.now()}@e2e.batbern.local`,
+            // `.invalid` (RFC 2606) is refused by EmailService.assertSendable BEFORE any SES
+            // call — so the promote/invite never hard-bounces on staging. (`.local` used to
+            // bounce here, dripping SES reputation — incident 2026-07-01 follow-up.)
+            email: `byte-identity-a-${Date.now()}@e2e.batbern.invalid`,
             firstName: 'Byte',
             lastName: 'IdentityA',
           },

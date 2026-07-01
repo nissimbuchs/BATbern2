@@ -1,5 +1,6 @@
 package ch.batbern.shared.service;
 
+import ch.batbern.shared.util.EmailContentTestMarker;
 import ch.batbern.shared.util.ReservedEmailDomain;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -174,6 +175,9 @@ public class EmailService {
             return;
         }
 
+        // Second wall: never let a test-marked email reach a live SES client (real-send path only).
+        assertNotTestMarked(subject, htmlBody);
+
         try {
             log.debug("Sending HTML email (sync) to: {}, ccCount: {}, subject: {}, configSet: {}, replyTo: {}",
                     LoggingUtils.maskEmail(to), ccClean.size(), subject, configurationSetName,
@@ -268,6 +272,9 @@ public class EmailService {
             }
             return;
         }
+
+        // Second wall: never let a test-marked email reach a live SES client (real-send path only).
+        assertNotTestMarked(subject, htmlBody);
 
         try {
             log.debug("Sending HTML email with {} attachment(s) to: {}",
@@ -370,6 +377,9 @@ public class EmailService {
             }
             return;
         }
+
+        // Second wall: never let a test-marked email reach a live SES client (real-send path only).
+        assertNotTestMarked(subject, htmlBody);
 
         try {
             log.debug("Sending HTML email (sync) with {} attachment(s) to: {}", attachments.size(), to);
@@ -509,6 +519,25 @@ public class EmailService {
             log.warn("Refusing SES send to reserved-domain recipient: {}",
                     LoggingUtils.maskEmail(recipient));
             throw new ReservedEmailRecipientException(recipient);
+        }
+    }
+
+    /**
+     * Second wall of defence (incident 2026-07-01): refuse to hand a <b>test-marked</b> email to
+     * a live SES client. The test suites stamp canonical markers ({@link EmailContentTestMarker})
+     * into the entity names/titles that flow into email subjects/bodies, so a match here means the
+     * email was generated from test data and must never reach real recipients.
+     *
+     * <p>Called ONLY from the real-send branch (non-null {@code sesClient}) of each send method, so
+     * local dev / test (where {@code LocalEmailCapture} or logging handles the mail) is unaffected —
+     * dev-only send specs still run end-to-end. Logs at ERROR so a CloudWatch log-metric alarm can
+     * fire if a test ever leaks a send onto production, then throws to abort the SES call.
+     */
+    private static void assertNotTestMarked(String subject, String htmlBody) {
+        if (EmailContentTestMarker.containsMarker(subject, htmlBody)) {
+            log.error("BLOCKED test-marked email from live SES send (markers: {}). subject={}",
+                    EmailContentTestMarker.describe(), subject);
+            throw new TestMarkedEmailException("subject=" + subject);
         }
     }
 

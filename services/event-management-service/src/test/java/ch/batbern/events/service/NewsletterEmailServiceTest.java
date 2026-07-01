@@ -477,6 +477,24 @@ class NewsletterEmailServiceTest {
     }
 
     @Test
+    @DisplayName("sendNewsletter: refuses (throws) and touches no repositories when the event is test-marked")
+    void sendNewsletter_throws_whenEventIsTestMarked() {
+        // Second wall of defence (incident 2026-07-01): a BATPW-E2E test event must never
+        // trigger a bulk send. This fails fast BEFORE the duplicate-send check / subscriber
+        // count / audit record, so no subscriber machinery is touched.
+        testEvent.setId(UUID.randomUUID());
+        testEvent.setEventCode("BATbern79101");
+        testEvent.setTitle("BATPW-E2E 1782885868836");
+
+        assertThatThrownBy(() ->
+                newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
+                .isInstanceOf(ch.batbern.shared.service.TestMarkedEmailException.class);
+
+        verify(sendRepository, never()).findFirstByEventIdAndStatus(any(), any());
+        verify(subscriberService, never()).getActiveCount();
+    }
+
+    @Test
     @DisplayName("executeNewsletterSendAsync: uses paginated query — excludes suppressed subscribers")
     void executeNewsletterSendAsync_usesPagedQuery() {
         testEvent.setId(UUID.randomUUID());
