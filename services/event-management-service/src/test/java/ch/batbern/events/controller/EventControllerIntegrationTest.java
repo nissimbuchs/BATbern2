@@ -596,7 +596,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return404_when_eventNotFound")
     void should_return404_when_eventNotFound() throws Exception {
-        mockMvc.perform(get("/api/v1/events/999999")
+        mockMvc.perform(get("/api/v1/events/BATbern888")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Not Found"));
@@ -827,7 +827,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return404_when_deletingNonExistentEvent")
     void should_return404_when_deletingNonExistentEvent() throws Exception {
-        mockMvc.perform(delete("/api/v1/events/non-existent-id")
+        mockMvc.perform(delete("/api/v1/events/BATbern888")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -1012,7 +1012,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return404_when_listingSessionsForNonExistentEvent")
     void should_return404_when_listingSessionsForNonExistentEvent() throws Exception {
-        mockMvc.perform(get("/api/v1/events/non-existent-id/sessions")
+        // Pattern-conforming but non-existent code: a malformed code now fails the
+        // listSessions eventCode @Pattern → 400 before the handler (Phase 7 wiring).
+        mockMvc.perform(get("/api/v1/events/BATbern888/sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -1332,95 +1334,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.metrics.registrations").exists())
                 // Should count both registrations created in current month
                 .andExpect(jsonPath("$.metrics.registrations.total").value(greaterThanOrEqualTo(2)));
-    }
-
-    // ============================================================================
-    // AC14: Bulk Operations
-    // ============================================================================
-
-    @Test
-    @DisplayName("should_batchUpdate_when_arrayProvided")
-    void should_batchUpdate_when_arrayProvided() throws Exception {
-        Event event1 = eventRepository.findAll().get(0);
-        Event event2 = eventRepository.findAll().get(1);
-        Event event3 = eventRepository.findAll().get(2);
-
-        // Batch update multiple events
-        String batchUpdateRequest = """
-                [
-                    {
-                        "eventCode": "%s",
-                        "title": "Updated Event 1"
-                    },
-                    {
-                        "eventCode": "%s",
-                        "title": "Updated Event 2"
-                    },
-                    {
-                        "eventCode": "%s",
-                        "title": "Updated Event 3"
-                    }
-                ]
-                """.formatted(event1.getEventCode(), event2.getEventCode(), event3.getEventCode());
-
-        mockMvc.perform(patch("/api/v1/events")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(batchUpdateRequest))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.successful").isArray())
-                .andExpect(jsonPath("$.successful", hasSize(3)))
-                .andExpect(jsonPath("$.failed").isArray())
-                .andExpect(jsonPath("$.failed", hasSize(0)))
-                .andExpect(jsonPath("$.summary.total").value(3))
-                .andExpect(jsonPath("$.summary.successful").value(3))
-                .andExpect(jsonPath("$.summary.failed").value(0));
-
-        // Verify events were updated
-        Event updatedEvent1 = eventRepository.findById(event1.getId()).orElseThrow();
-        Event updatedEvent2 = eventRepository.findById(event2.getId()).orElseThrow();
-        Event updatedEvent3 = eventRepository.findById(event3.getId()).orElseThrow();
-
-        assertThat(updatedEvent1.getTitle()).isEqualTo("Updated Event 1");
-        assertThat(updatedEvent2.getTitle()).isEqualTo("Updated Event 2");
-        assertThat(updatedEvent3.getTitle()).isEqualTo("Updated Event 3");
-    }
-
-    @Test
-    @DisplayName("should_partiallySucceed_when_someInvalid")
-    void should_partiallySucceed_when_someInvalid() throws Exception {
-        Event validEvent = eventRepository.findAll().get(0);
-
-        // Batch update with one valid and one invalid event code
-        String batchUpdateRequest = """
-                [
-                    {
-                        "eventCode": "%s",
-                        "title": "Updated Valid Event"
-                    },
-                    {
-                        "eventCode": "non-existent-code",
-                        "title": "This Should Fail"
-                    }
-                ]
-                """.formatted(validEvent.getEventCode());
-
-        mockMvc.perform(patch("/api/v1/events")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(batchUpdateRequest))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.successful").isArray())
-                .andExpect(jsonPath("$.successful", hasSize(1)))
-                .andExpect(jsonPath("$.failed").isArray())
-                .andExpect(jsonPath("$.failed", hasSize(1)))
-                .andExpect(jsonPath("$.failed[0].eventCode").value("non-existent-code"))
-                .andExpect(jsonPath("$.failed[0].error").exists())
-                .andExpect(jsonPath("$.summary.total").value(2))
-                .andExpect(jsonPath("$.summary.successful").value(1))
-                .andExpect(jsonPath("$.summary.failed").value(1));
-
-        // Verify valid event was updated
-        Event updatedEvent = eventRepository.findById(validEvent.getId()).orElseThrow();
-        assertThat(updatedEvent.getTitle()).isEqualTo("Updated Valid Event");
     }
 
     // ============================================================================
@@ -2541,7 +2454,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Given: event with registrationCapacity=5, 3 attended + 1 confirmed = 4 confirmed total
         eventRepository.deleteAll();
         Event event = Event.builder()
-                .eventCode("BATbernCapTest")
+                .eventCode("BATbern9999")
                 .title("Capacity Test")
                 .eventNumber(9999)
                 .date(Instant.parse("2023-05-15T09:00:00Z"))

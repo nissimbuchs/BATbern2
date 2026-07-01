@@ -89,10 +89,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/materials/presigned-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate a presigned URL for a session-material upload
+     * @description Story 5.9 (3-phase upload, phase 1). ORGANIZER or SPEAKER role.
+     */
+    post: operations['generateMaterialPresignedUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/materials/{uploadId}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm a completed material upload
+     * @description Story 5.9 (3-phase upload, phase 2). ORGANIZER or SPEAKER role.
+     */
+    post: operations['confirmMaterialUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Request a presigned URL for a material upload (Story 5.9) */
+    MaterialUploadRequest: {
+      fileName: string;
+      /** Format: int64 */
+      fileSize: number;
+      mimeType: string;
+    };
+    /** @description Confirm a completed material upload (Story 5.9) */
+    MaterialUploadConfirmRequest: {
+      fileId?: string;
+      fileExtension?: string;
+      checksum?: string;
+    };
+    /** @description Presigned material upload URL + metadata (Story 5.9) */
+    PresignedMaterialUploadUrl: {
+      uploadUrl?: string;
+      fileId?: string;
+      s3Key?: string;
+      fileExtension?: string;
+      expiresInMinutes?: number;
+      requiredHeaders?: {
+        [key: string]: string;
+      };
+    };
     EventPhotoResponse: {
       /** Format: uuid */
       id: string;
@@ -106,8 +170,11 @@ export interface components {
     };
     EventPhotoUploadRequest: {
       filename: string;
-      /** @enum {string} */
-      contentType: 'image/jpeg' | 'image/png' | 'image/webp';
+      /**
+       * @description MIME type of the photo. Validated server-side against the allowed set (image/jpeg, image/png, image/webp) with a friendly 400 message; kept as a free string (not a wire enum) so the service stays the single validation authority.
+       * @example image/jpeg
+       */
+      contentType: string;
       /** Format: int64 */
       fileSize: number;
     };
@@ -362,6 +429,61 @@ export interface operations {
         };
         content?: never;
       };
+    };
+  };
+  generateMaterialPresignedUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MaterialUploadRequest'];
+      };
+    };
+    responses: {
+      /** @description Presigned upload URL + metadata */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PresignedMaterialUploadUrl'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  confirmMaterialUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Upload ID returned from the presigned-url step */
+        uploadId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MaterialUploadConfirmRequest'];
+      };
+    };
+    responses: {
+      /** @description Upload confirmed */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
 }

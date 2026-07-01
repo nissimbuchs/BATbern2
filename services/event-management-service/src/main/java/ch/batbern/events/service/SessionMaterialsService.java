@@ -2,13 +2,14 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
-import ch.batbern.events.dto.SessionMaterialAssociationRequest;
-import ch.batbern.events.dto.SessionMaterialResponse;
 import ch.batbern.events.event.SessionMaterialsUploadedEvent;
 import ch.batbern.events.exception.MaterialNotFoundException;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.sessions.dto.generated.MaterialUploadItem;
+import ch.batbern.events.sessions.dto.generated.SessionMaterialAssociationRequest;
+import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 import java.time.Year;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -81,7 +83,7 @@ public class SessionMaterialsService {
 
         // Create SessionMaterial entities and move files to final S3 location
         List<SessionMaterial> materials = new ArrayList<>();
-        for (ch.batbern.events.dto.MaterialUploadItem item : request.getMaterials()) {
+        for (MaterialUploadItem item : request.getMaterials()) {
             // Generate final S3 key
             String finalS3Key = generateFinalS3Key(session, item.getUploadId(), item.getFileExtension());
 
@@ -119,10 +121,10 @@ public class SessionMaterialsService {
 
         // Emit domain event
         List<String> uploadIds = request.getMaterials().stream()
-                .map(ch.batbern.events.dto.MaterialUploadItem::getUploadId)
+                .map(MaterialUploadItem::getUploadId)
                 .collect(Collectors.toList());
         List<String> materialTypes = request.getMaterials().stream()
-                .map(ch.batbern.events.dto.MaterialUploadItem::getMaterialType)
+                .map(MaterialUploadItem::getMaterialType)
                 .collect(Collectors.toList());
 
         SessionMaterialsUploadedEvent event = new SessionMaterialsUploadedEvent(
@@ -506,8 +508,10 @@ public class SessionMaterialsService {
                 .mimeType(material.getMimeType())
                 .materialType(material.getMaterialType())
                 .uploadedBy(material.getUploadedBy())
-                .createdAt(material.getCreatedAt())
-                .updatedAt(material.getUpdatedAt())
+                .createdAt(material.getCreatedAt() != null
+                        ? material.getCreatedAt().atOffset(ZoneOffset.UTC) : null)
+                .updatedAt(material.getUpdatedAt() != null
+                        ? material.getUpdatedAt().atOffset(ZoneOffset.UTC) : null)
                 .contentExtracted(material.getContentExtracted())
                 .extractionStatus(material.getExtractionStatus())
                 .build();

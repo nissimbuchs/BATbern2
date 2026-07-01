@@ -6,6 +6,9 @@ import ch.batbern.events.domain.SpeakerSlotPreference;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerSlotPreferenceRepository;
+import ch.batbern.events.sessions.dto.generated.ConflictAnalysisResponse;
+import ch.batbern.events.sessions.dto.generated.ConflictDetail;
+import ch.batbern.events.sessions.dto.generated.ConflictTimeRange;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -226,7 +229,7 @@ public class ConflictDetectionService {
         log.info("Analyzing all conflicts for event: {}", eventCode);
 
         List<Session> sessions = sessionRepository.findByEventCode(eventCode);
-        List<ConflictAnalysisResponse.ConflictDetail> conflicts = new ArrayList<>();
+        List<ConflictDetail> conflicts = new ArrayList<>();
 
         // Check for room overlaps
         for (int i = 0; i < sessions.size(); i++) {
@@ -246,12 +249,12 @@ public class ConflictDetectionService {
                     && timesOverlap(sessionA.getStartTime(), sessionA.getEndTime(),
                                 sessionB.getStartTime(), sessionB.getEndTime())) {
 
-                    conflicts.add(ConflictAnalysisResponse.ConflictDetail.builder()
+                    conflicts.add(ConflictDetail.builder()
                             .sessionSlug(sessionA.getSessionSlug())
                             .conflictType(ConflictType.ROOM_OVERLAP)
                             .severity(ConflictSeverity.ERROR)
                             .affectedSessions(List.of(sessionA.getSessionSlug(), sessionB.getSessionSlug()))
-                            .timeRange(ConflictAnalysisResponse.TimeRange.builder()
+                            .timeRange(ConflictTimeRange.builder()
                                     .start(sessionA.getStartTime().toString())
                                     .end(sessionA.getEndTime().toString())
                                     .build())

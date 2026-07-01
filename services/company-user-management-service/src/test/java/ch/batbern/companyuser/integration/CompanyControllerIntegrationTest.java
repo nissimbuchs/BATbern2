@@ -2,9 +2,9 @@ package ch.batbern.companyuser.integration;
 
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
-import ch.batbern.companyuser.dto.CreateCompanyRequest;
-import ch.batbern.companyuser.dto.GetOrCreateCompanyRequest;
-import ch.batbern.companyuser.dto.UpdateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.GetOrCreateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -593,5 +593,55 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("limit")));
+    }
+
+    // SWISS UID VALIDATION TESTS (AC12)
+    // (migrated from the former CompanyControllerTest @WebMvcTest slice — see CompanyVerificationApi)
+
+    @Test
+    @DisplayName("GET /companies/validate-uid - returns valid=true for a well-formed Swiss UID")
+    @WithMockUser(roles = {"ORGANIZER"})
+    void shouldValidateUID_whenValidUIDProvided() throws Exception {
+        mockMvc.perform(get("/api/v1/companies/validate-uid")
+                        .param("uid", "CHE-123.456.789"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.uid").value("CHE-123.456.789"))
+                .andExpect(jsonPath("$.message").value("Valid Swiss UID format"));
+    }
+
+    @Test
+    @DisplayName("GET /companies/validate-uid - returns valid=false for a malformed Swiss UID")
+    @WithMockUser(roles = {"ORGANIZER"})
+    void shouldReturnInvalid_whenInvalidUIDProvided() throws Exception {
+        mockMvc.perform(get("/api/v1/companies/validate-uid")
+                        .param("uid", "INVALID-UID"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(false))
+                .andExpect(jsonPath("$.uid").value("INVALID-UID"))
+                .andExpect(jsonPath("$.message").value("Invalid Swiss UID format. Expected: CHE-XXX.XXX.XXX"));
+    }
+
+    // COMPANY VERIFICATION TESTS (AC13)
+
+    @Test
+    @DisplayName("POST /companies/{name}/verify - marks company verified for ORGANIZER")
+    @WithMockUser(roles = {"ORGANIZER"})
+    void shouldVerifyCompany_whenOrganizer() throws Exception {
+        mockMvc.perform(post("/api/v1/companies/{name}/verify", testCompany.getName()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value(testCompany.getName()))
+                .andExpect(jsonPath("$.isVerified").value(true));
+
+        Company verified = companyRepository.findByName(testCompany.getName()).orElseThrow();
+        assertThat(verified.isVerified()).isTrue();
+    }
+
+    @Test
+    @DisplayName("POST /companies/{name}/verify - returns 403 for non-ORGANIZER")
+    @WithMockUser(roles = {"SPEAKER"})
+    void shouldReturn403_whenVerifyNotOrganizer() throws Exception {
+        mockMvc.perform(post("/api/v1/companies/{name}/verify", testCompany.getName()))
+                .andExpect(status().isForbidden());
     }
 }

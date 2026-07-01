@@ -77,10 +77,8 @@ After deployment to `project.batbern.ch`:
 | `/api/` | API Documentation Landing Page |
 | `/api/companies-api.html` | Interactive Companies API Docs |
 | `/api/events-api.html` | Interactive Events API Docs |
-| `/api/auth-endpoints.html` | Interactive Auth API Docs |
 | `/api/companies-api.openapi.yml` | Download Companies spec |
 | `/api/events-api.openapi.yml` | Download Events spec |
-| `/api/auth-endpoints.openapi.yml` | Download Auth spec |
 
 ## ✨ Features
 
@@ -138,12 +136,6 @@ Uploads everything to S3 → available at `project.batbern.ch`
 - **Story**: 1.15a.1
 - **Endpoints**: 25 (consolidated from 130!)
 - **Features**: Event CRUD, sessions, registrations, analytics, bulk operations
-
-### 3. Auth API
-- **File**: `docs/api/auth-endpoints.openapi.yml`
-- **Story**: 1.2.2
-- **Endpoints**: 2 (forgot password, resend reset link)
-- **Features**: Password reset flow, rate limiting, bilingual support
 
 ## 🛠️ Troubleshooting
 

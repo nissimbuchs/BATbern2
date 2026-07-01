@@ -4,7 +4,7 @@
  * HTTP client for Event Workflow Status APIs
  * Features:
  * - Get workflow status (GET /api/v1/events/{code}/workflow/status)
- * - Transition workflow state (PUT /api/v1/events/{code}/workflow/transition)
+ * - Transition workflow state (POST /api/v1/events/{code}/workflow/transition)
  * - JWT authentication via interceptors
  * - Error handling with correlation IDs
  */

@@ -439,6 +439,5 @@ private static final int ANON_MAX_REQUESTS = 3;
 ## Related Documentation
 
 - [Forgot Password Flow](./forgot-password-flow.md)
-- [API Documentation](../api/auth-endpoints.openapi.yml)
 - [Troubleshooting Guide](./troubleshooting-forgot-password.md)
 - [AWS SES Configuration](./aws-ses-configuration.md)

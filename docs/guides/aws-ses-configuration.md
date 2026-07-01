@@ -414,4 +414,3 @@ SES Pricing (as of 2025):
 
 - [Forgot Password Flow](./forgot-password-flow.md)
 - [Troubleshooting Guide](./troubleshooting-forgot-password.md)
-- [API Documentation](../api/auth-endpoints.openapi.yml)

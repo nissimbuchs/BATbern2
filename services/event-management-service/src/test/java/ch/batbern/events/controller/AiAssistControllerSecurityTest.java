@@ -1,6 +1,6 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.config.AiConfig;
+import ch.batbern.events.ai.dto.generated.ApplyThemeImageRequest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -39,8 +39,6 @@ class AiAssistControllerSecurityTest {
     @Mock
     private BatbernAiService aiService;
     @Mock
-    private AiConfig aiConfig;
-    @Mock
     private EventRepository eventRepository;
     @Mock
     private TopicRepository topicRepository;
@@ -53,7 +51,7 @@ class AiAssistControllerSecurityTest {
 
     @BeforeEach
     void setUp() {
-        controller = new AiAssistController(aiService, aiConfig, eventRepository,
+        controller = new AiAssistController(aiService, eventRepository,
                 topicRepository, sessionRepository, speakerPoolRepository);
         ReflectionTestUtils.setField(controller, "cloudFrontDomain", CLOUDFRONT);
     }
@@ -63,7 +61,7 @@ class AiAssistControllerSecurityTest {
     void should_rejectAndNotPersist_when_imageUrlNotCloudFront() {
         ResponseEntity<Void> response = controller.applyThemeImage(
                 "BATbern99",
-                new AiAssistController.ApplyThemeImageRequest("https://evil.example.com/x.png"));
+                new ApplyThemeImageRequest("https://evil.example.com/x.png"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         verify(eventRepository, never()).save(any());
@@ -74,7 +72,7 @@ class AiAssistControllerSecurityTest {
     void should_rejectAndNotPersist_when_imageUrlIsLookalikeHost() {
         ResponseEntity<Void> response = controller.applyThemeImage(
                 "BATbern99",
-                new AiAssistController.ApplyThemeImageRequest("https://cdn.batbern.ch.evil.com/x.png"));
+                new ApplyThemeImageRequest("https://cdn.batbern.ch.evil.com/x.png"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         verify(eventRepository, never()).save(any());
@@ -84,7 +82,7 @@ class AiAssistControllerSecurityTest {
     @DisplayName("applyThemeImage rejects a null URL (no persistence)")
     void should_rejectAndNotPersist_when_imageUrlNull() {
         ResponseEntity<Void> response = controller.applyThemeImage(
-                "BATbern99", new AiAssistController.ApplyThemeImageRequest(null));
+                "BATbern99", new ApplyThemeImageRequest(null));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         verify(eventRepository, never()).save(any());
@@ -99,7 +97,7 @@ class AiAssistControllerSecurityTest {
 
         ResponseEntity<Void> response = controller.applyThemeImage(
                 "BATbern99",
-                new AiAssistController.ApplyThemeImageRequest(CLOUDFRONT + "/ai-themes/abc.png"));
+                new ApplyThemeImageRequest(CLOUDFRONT + "/ai-themes/abc.png"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(eventRepository).save(event);

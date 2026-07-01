@@ -2,8 +2,8 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
-import ch.batbern.events.dto.EventPhotoResponseDto;
-import ch.batbern.events.dto.EventPhotoUploadResponseDto;
+import ch.batbern.events.media.dto.generated.EventPhotoResponse;
+import ch.batbern.events.media.dto.generated.EventPhotoUploadResponse;
 import ch.batbern.events.exception.EventPhotoNotFoundException;
 import ch.batbern.events.service.EventPhotoService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
@@ -15,7 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,11 +60,11 @@ class EventPhotoControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void getRecentPhotos_asAnonymous_returns200WithList() throws Exception {
-        EventPhotoResponseDto photo = EventPhotoResponseDto.builder()
+        EventPhotoResponse photo = EventPhotoResponse.builder()
                 .id(UUID.randomUUID())
                 .eventCode(EVENT_CODE)
                 .displayUrl("https://cdn.batbern.ch/events/BATbern42/photos/test.jpg")
-                .uploadedAt(Instant.now())
+                .uploadedAt(OffsetDateTime.now(ZoneOffset.UTC))
                 .sortOrder(0)
                 .build();
         when(photoService.getRecentPhotos(anyInt(), anyInt())).thenReturn(List.of(photo));
@@ -82,11 +83,11 @@ class EventPhotoControllerIntegrationTest extends AbstractIntegrationTest {
         UUID photoId = UUID.randomUUID();
         String s3Key = "events/" + EVENT_CODE + "/photos/" + photoId + ".jpg";
 
-        EventPhotoResponseDto photo = EventPhotoResponseDto.builder()
+        EventPhotoResponse photo = EventPhotoResponse.builder()
                 .id(photoId)
                 .eventCode(EVENT_CODE)
                 .displayUrl("https://cdn.batbern.ch/" + s3Key)
-                .uploadedAt(Instant.now())
+                .uploadedAt(OffsetDateTime.now(ZoneOffset.UTC))
                 .sortOrder(0)
                 .build();
 
@@ -115,7 +116,7 @@ class EventPhotoControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(roles = "ORGANIZER")
     void requestUploadUrl_asOrganizer_returns200WithUploadUrlAndPhotoId() throws Exception {
         UUID photoId = UUID.randomUUID();
-        EventPhotoUploadResponseDto response = EventPhotoUploadResponseDto.builder()
+        EventPhotoUploadResponse response = EventPhotoUploadResponse.builder()
                 .photoId(photoId)
                 .uploadUrl("https://s3.amazonaws.com/test-bucket/key?sig=x")
                 .s3Key("events/" + EVENT_CODE + "/photos/" + photoId + ".jpg")

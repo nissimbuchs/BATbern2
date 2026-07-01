@@ -189,11 +189,6 @@ This uploads everything to S3 and makes it available at `project.batbern.ch`.
    - 25 endpoints (consolidated from 130)
    - Event CRUD, sessions, registrations, analytics
 
-3. **Auth API** (`auth-endpoints.openapi.yml`)
-   - Story 1.2.2
-   - 2 endpoints
-   - Forgot password, resend reset link
-
 ## 🎓 Maintenance
 
 ### Adding New APIs

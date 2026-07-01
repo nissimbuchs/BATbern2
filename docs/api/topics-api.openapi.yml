@@ -31,11 +31,13 @@ servers:
 
 tags:
   - name: Topics
-    description: Topic management operations
-  - name: Topic Analysis
-    description: Staleness and similarity analysis
+    description: Topic management, staleness, and similarity analysis operations
   - name: Event Topics
     description: Topic selection for events
+  - name: Topic Similarity
+    description: Blob topic selector cluster classification (Story 10.4)
+  - name: Topic Session Data
+    description: Blob topic selector canvas bootstrap data (Story 10.4)
 
 paths:
   /topics:
@@ -86,7 +88,7 @@ paths:
           required: false
           schema:
             type: integer
-            default: 20
+            default: 50
             maximum: 100
         - name: include
           in: query
@@ -250,7 +252,7 @@ paths:
   /topics/{topicCode}/similar:
     get:
       tags:
-        - Topic Analysis
+        - Topics
       summary: Get similar topics
       description: |
         Get topics with >70% similarity for duplicate detection.
@@ -283,7 +285,7 @@ paths:
   /topics/{topicCode}/usage-history:
     get:
       tags:
-        - Topic Analysis
+        - Topics
       summary: Get topic usage history
       description: |
         Get usage history for heat map visualization.
@@ -317,7 +319,7 @@ paths:
   /topics/calculate-similarities:
     post:
       tags:
-        - Topic Analysis
+        - Topics
       summary: Calculate similarity scores
       description: |
         Calculate similarity scores for all topics.
@@ -382,8 +384,216 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /events/{eventCode}/topic-similarity:
+    post:
+      tags:
+        - Topic Similarity
+      summary: Classify a topic into a BATbern cluster
+      description: |
+        Classify a free-form topic text into a BATbern cluster and return related past event
+        numbers, used by the blob topic selector canvas to place green blobs and ignite red stars.
+
+        **Story 10.4** (AC32). The eventCode path segment is contextual only — classification
+        depends solely on the topic text.
+
+        **Authorization**: ORGANIZER role required
+      operationId: getTopicSimilarity
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code the topic is being evaluated for (contextual only)
+          schema:
+            type: string
+            example: 'BATbern58'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicSimilarityRequest'
+      responses:
+        '200':
+          description: Cluster affinity data for the topic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicSimilarityResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/topic-session-data:
+    get:
+      tags:
+        - Topic Session Data
+      summary: Bootstrap data for the blob topic selector canvas
+      description: |
+        Return all data needed to bootstrap the blob topic selector canvas in one call:
+        partner topics (green blobs), past events (red stars), organizer backlog (ghost blobs),
+        and AI-generated trending topics (gold shimmer ghosts).
+
+        **Story 10.4** (AC29–31). Each source degrades gracefully to an empty list on failure.
+        The eventCode path segment is contextual only.
+
+        **Authorization**: ORGANIZER role required
+      operationId: getTopicSessionData
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code the canvas is being opened for (contextual only)
+          schema:
+            type: string
+            example: 'BATbern58'
+      responses:
+        '200':
+          description: Aggregated canvas bootstrap data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicSessionDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   schemas:
+    TopicSimilarityRequest:
+      type: object
+      description: Request body for topic cluster classification (Story 10.4 AC32)
+      required:
+        - topic
+      properties:
+        topic:
+          type: string
+          minLength: 1
+          description: Free-form topic text to classify
+          example: 'AI Agents in Enterprise'
+    TopicSimilarityResponse:
+      type: object
+      description: Cluster affinity data driving the blob canvas (Story 10.4 AC32)
+      required:
+        - cluster
+        - similarityScore
+        - relatedPastEventNumbers
+      properties:
+        cluster:
+          type: string
+          description: BATbern cluster name (e.g. AI_ML, SECURITY, CLOUD_INFRA, BUSINESS_OTHER)
+          example: 'AI_ML'
+        similarityScore:
+          type: number
+          format: double
+          description: Confidence 0.0–1.0 that the topic belongs to this cluster
+          example: 0.85
+        relatedPastEventNumbers:
+          type: array
+          description: BATbern event numbers in the same cluster (drives red-star ignition)
+          items:
+            type: integer
+          example: [40, 44, 49, 56, 58]
+    TopicSessionDataResponse:
+      type: object
+      description: Aggregated bootstrap data for the blob topic selector canvas (Story 10.4 AC29–31)
+      required:
+        - partnerTopics
+        - pastEvents
+        - organizerBacklog
+        - trendingTopics
+      properties:
+        partnerTopics:
+          type: array
+          description: Partner topics grouped by company (green blobs)
+          items:
+            $ref: '#/components/schemas/PartnerTopicGroup'
+        pastEvents:
+          type: array
+          description: Past BATbern events with cluster classification (red star blobs)
+          items:
+            $ref: '#/components/schemas/PastEventEntry'
+        organizerBacklog:
+          type: array
+          description: Available topics from the organizer's backlog (ghost blobs)
+          items:
+            $ref: '#/components/schemas/BacklogItem'
+        trendingTopics:
+          type: array
+          description: AI-generated trending IT topics (gold shimmer ghost blobs)
+          items:
+            type: string
+    PartnerTopicGroup:
+      type: object
+      description: Partner topic suggestions grouped by company
+      required:
+        - companyName
+        - topics
+      properties:
+        companyName:
+          type: string
+          description: Partner company name
+        logoUrl:
+          type: string
+          description: Company logo URL (may be null when not available)
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopicEntry'
+    TopicEntry:
+      type: object
+      description: A single partner topic suggestion enriched with cluster, votes, and date
+      required:
+        - title
+        - cluster
+        - voteCount
+        - createdAt
+      properties:
+        title:
+          type: string
+        cluster:
+          type: string
+          description: BatbernCluster name the topic was classified into
+        voteCount:
+          type: integer
+          description: Number of partner votes cast on this topic suggestion
+        createdAt:
+          type: string
+          format: date-time
+          description: When the topic was first submitted (recency proxy for attraction strength)
+    BacklogItem:
+      type: object
+      description: An available topic from the organizer's backlog (ghost blob)
+      required:
+        - title
+        - topicCode
+        - stalenessScore
+      properties:
+        title:
+          type: string
+        topicCode:
+          type: string
+          description: Stable slug identifier (e.g. cloud-native-security-2024)
+        stalenessScore:
+          type: integer
+          description: Staleness score 0–100 (all backlog items >= 83); sizes the ghost blob
+    PastEventEntry:
+      type: object
+      description: A past BATbern event with cluster classification (red star blob)
+      required:
+        - eventNumber
+        - topicName
+        - cluster
+      properties:
+        eventNumber:
+          type: integer
+        topicName:
+          type: string
+        cluster:
+          type: string
     Topic:
       type: object
       description: Topic entity for event management

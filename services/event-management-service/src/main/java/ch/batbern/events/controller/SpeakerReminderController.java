@@ -2,7 +2,6 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.SendReminderRequest;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -11,65 +10,50 @@ import ch.batbern.events.service.SpeakerReminderService;
 import ch.batbern.events.service.SpeakerReminderService.ManualReminderResult;
 import ch.batbern.events.service.SpeakerReminderService.RemindersDisabledException;
 import ch.batbern.events.service.SpeakerReminderService.InvalidSpeakerStateException;
+import ch.batbern.events.speakers.api.generated.SpeakerRemindersApi;
+import ch.batbern.events.speakers.dto.generated.RemindersDisabledResponse;
+import ch.batbern.events.speakers.dto.generated.SendReminderRequest;
+import ch.batbern.events.speakers.dto.generated.SendReminderResponse;
+import ch.batbern.events.speakers.dto.generated.UpdateRemindersDisabledRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Map;
 import java.util.UUID;
 
 /**
  * REST Controller for speaker deadline reminder management.
- * Story 6.5: Automated Deadline Reminders (AC6, AC8)
+ * Story 6.5: Automated Deadline Reminders (AC6, AC8). All endpoints require ORGANIZER role.
  *
- * Provides endpoints for:
- * - Manually triggering a reminder for a specific speaker (AC8)
- * - Toggling reminders disabled flag (AC6)
- *
- * All endpoints require ORGANIZER role (JWT auth, not magic link).
+ * <p>API-consolidation Phase 7: implements the generated {@link SpeakerRemindersApi}.
  */
 @RestController
-@RequestMapping("/api/v1/events/{eventCode}/speaker-pool/{speakerPoolId}")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class SpeakerReminderController {
+public class SpeakerReminderController implements SpeakerRemindersApi {
 
     private final SpeakerReminderService speakerReminderService;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final SecurityContextHelper securityContextHelper;
 
-    /**
-     * Manually trigger a reminder email for a specific speaker (AC8).
-     * Bypasses deduplication but respects reminders_disabled flag.
-     *
-     * @param eventCode the event code
-     * @param speakerPoolId the speaker pool entry ID
-     * @param request the reminder request (type + optional tier)
-     * @return 200 OK with tier used and email address
-     */
-    @PostMapping("/send-reminder")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Map<String, String>> sendReminder(
-            @PathVariable String eventCode,
-            @PathVariable UUID speakerPoolId,
-            @RequestBody SendReminderRequest request) {
+    public ResponseEntity<SendReminderResponse> sendSpeakerReminder(
+            String eventCode,
+            UUID speakerPoolId,
+            SendReminderRequest request) {
 
         String organizerUsername = securityContextHelper.getCurrentUsername();
         log.info("Manual reminder requested by {} for speaker {} on event {}",
                 organizerUsername, speakerPoolId, eventCode);
 
-        // Validate event exists and speaker belongs to it
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
 
@@ -80,7 +64,6 @@ public class SpeakerReminderController {
             throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
         }
 
-        // Validate reminder type
         if (request.getReminderType() == null || request.getReminderType().isBlank()) {
             throw new IllegalArgumentException("reminderType is required (RESPONSE or CONTENT)");
         }
@@ -95,39 +78,32 @@ public class SpeakerReminderController {
             ManualReminderResult result = speakerReminderService.sendManualReminder(
                     speakerPoolId, reminderType, request.getTier(), organizerUsername);
 
-            return ResponseEntity.ok(Map.of(
-                    "message", "Reminder sent successfully",
-                    "tier", result.tier(),
-                    "emailAddress", result.emailAddress()
-            ));
+            return ResponseEntity.ok(SendReminderResponse.builder()
+                    .message("Reminder sent successfully")
+                    .tier(result.tier())
+                    .emailAddress(result.emailAddress())
+                    .build());
         } catch (RemindersDisabledException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "REMINDERS_DISABLED", "message", e.getMessage()));
+                    .body(SendReminderResponse.builder()
+                            .error("REMINDERS_DISABLED").message(e.getMessage()).build());
         } catch (InvalidSpeakerStateException e) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "INVALID_STATE", "message", e.getMessage()));
+                    .body(SendReminderResponse.builder()
+                            .error("INVALID_STATE").message(e.getMessage()).build());
         }
     }
 
-    /**
-     * Toggle reminders disabled flag for a specific speaker (AC6).
-     *
-     * @param eventCode the event code
-     * @param speakerPoolId the speaker pool entry ID
-     * @param request body with remindersDisabled field
-     * @return 200 OK with updated flag
-     */
-    @PatchMapping("/reminders")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     @Transactional
-    public ResponseEntity<Map<String, Object>> updateRemindersDisabled(
-            @PathVariable String eventCode,
-            @PathVariable UUID speakerPoolId,
-            @RequestBody Map<String, Boolean> request) {
+    public ResponseEntity<RemindersDisabledResponse> updateRemindersDisabled(
+            String eventCode,
+            UUID speakerPoolId,
+            UpdateRemindersDisabledRequest request) {
 
         log.info("Updating reminders disabled for speaker {} on event {}", speakerPoolId, eventCode);
 
-        // Validate event exists
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
 
@@ -138,7 +114,7 @@ public class SpeakerReminderController {
             throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
         }
 
-        Boolean remindersDisabled = request.get("remindersDisabled");
+        Boolean remindersDisabled = request.getRemindersDisabled();
         if (remindersDisabled == null) {
             throw new IllegalArgumentException("remindersDisabled field is required");
         }
@@ -146,9 +122,9 @@ public class SpeakerReminderController {
         speaker.setRemindersDisabled(remindersDisabled);
         speakerPoolRepository.save(speaker);
 
-        return ResponseEntity.ok(Map.of(
-                "speakerPoolId", speakerPoolId.toString(),
-                "remindersDisabled", remindersDisabled
-        ));
+        return ResponseEntity.ok(RemindersDisabledResponse.builder()
+                .speakerPoolId(speakerPoolId.toString())
+                .remindersDisabled(remindersDisabled)
+                .build());
     }
 }

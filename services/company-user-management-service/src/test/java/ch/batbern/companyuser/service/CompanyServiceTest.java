@@ -1,9 +1,9 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
-import ch.batbern.companyuser.dto.CreateCompanyRequest;
-import ch.batbern.companyuser.dto.UpdateCompanyRequest;
-import ch.batbern.companyuser.dto.CompanyResponse;
+import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.exception.InvalidUIDException;
@@ -135,7 +135,7 @@ class CompanyServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getName()).isEqualTo("Test Company AG");
         assertThat(response.getSwissUID()).isEqualTo("CHE-123.456.789");
-        assertThat(response.getVerified()).isFalse();
+        assertThat(response.getIsVerified()).isFalse();
 
         verify(securityContextHelper).getCurrentUsername();
         verify(companyRepository).save(any(Company.class));
@@ -515,7 +515,7 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.getLogo()).isNotNull();
-        assertThat(response.getLogo().getUrl()).isEqualTo("https://cdn.example.com/logo.png");
+        assertThat(response.getLogo().getUrl()).hasToString("https://cdn.example.com/logo.png");
         assertThat(response.getLogo().getS3Key()).isEqualTo("logos/file-123.png");
         assertThat(response.getLogo().getFileId()).isEqualTo("file-123");
     }

@@ -1,137 +1,60 @@
 package ch.batbern.companyuser.controller;
 
-import ch.batbern.companyuser.dto.LogoUploadConfirmRequest;
-import ch.batbern.companyuser.dto.LogoUploadRequest;
-import ch.batbern.companyuser.dto.PresignedUploadUrl;
+import ch.batbern.companyuser.api.generated.LogosApi;
+import ch.batbern.companyuser.dto.generated.FetchImageFromUrlRequest;
+import ch.batbern.companyuser.dto.generated.LogoCleanupStatistics;
+import ch.batbern.companyuser.dto.generated.LogoPresignedUploadUrl;
+import ch.batbern.companyuser.dto.generated.LogoUploadConfirmRequest;
+import ch.batbern.companyuser.dto.generated.LogoUploadRequest;
+import ch.batbern.companyuser.dto.generated.UploadImageFromUrlRequest;
+import ch.batbern.companyuser.dto.generated.UploadImageFromUrlResponse;
 import ch.batbern.companyuser.service.GenericLogoService;
 import ch.batbern.companyuser.service.ImageUrlFetcher;
 import ch.batbern.companyuser.service.LogoCleanupService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 /**
- * REST API controller for generic file upload operations
- * Story 1.16.3: Generic File Upload Service
- * ADR-002: Generic File Upload Service Architecture
+ * Generic logo/image upload — implements the generated {@link LogosApi}
+ * (companies-api {@code Logos} tag, Story 1.16.3 / ADR-002).
  *
- * Provides entity-agnostic file upload endpoints:
- * - Generate presigned URL for upload (no entity required)
- * - Confirm upload completion
- * - Delete unused uploads
- *
- * Three-phase upload flow:
- * 1. POST /logos/presigned-url → Get upload URL
- * 2. PUT (presigned URL) → Upload file to S3
- * 3. POST /logos/{uploadId}/confirm → Confirm upload
- * 4. POST /companies (with logoUploadId) → Associate with entity
+ * <p>Three-phase upload flow: presigned-url → (client PUTs to S3) → confirm → associate with an
+ * entity. Plus a URL proxy/import path (for batch logo import) and admin cleanup ops.
  */
 @RestController
-@RequestMapping("/api/v1/logos")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "File Upload", description = "Generic file upload operations for logos and images")
-public class LogoController {
+public class LogoController implements LogosApi {
 
     private final GenericLogoService logoService;
     private final LogoCleanupService cleanupService;
 
-    /**
-     * Phase 1: Request presigned URL for file upload
-     * No authentication required - anyone can upload
-     * No entity association required at this stage
-     *
-     * @param request Upload request with file metadata
-     * @return Presigned URL and upload metadata
-     */
-    @PostMapping("/presigned-url")
-    @Operation(
-            summary = "Generate presigned URL for file upload",
-            description = "Creates a presigned S3 URL for uploading a logo. "
-                    + "The URL expires after 15 minutes. Supports PNG, JPEG, and SVG files up to 5MB. "
-                    + "After uploading to S3, call the confirm endpoint to complete the upload. "
-                    + "No entity association required - works standalone."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Presigned URL generated successfully",
-                content = @Content(schema = @Schema(implementation = PresignedUploadUrl.class))
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid file type or size exceeds limit (5MB)"
-            )
-    })
-    public ResponseEntity<PresignedUploadUrl> requestUploadUrl(
-            @Valid @RequestBody LogoUploadRequest request) {
+    /** Phase 1: request a presigned upload URL. No authentication required. */
+    @Override
+    public ResponseEntity<LogoPresignedUploadUrl> requestLogoUploadUrl(LogoUploadRequest request) {
         log.info("Requesting presigned upload URL for file: {}, size: {} bytes",
                 request.getFileName(), request.getFileSize());
 
-        PresignedUploadUrl response = logoService.generatePresignedUrl(
+        LogoPresignedUploadUrl response = logoService.generatePresignedUrl(
                 request.getFileName(),
                 request.getFileSize(),
-                request.getMimeType()
-        );
+                request.getMimeType());
 
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Phase 2: Confirm upload completion
-     * Called by client after successfully uploading file to S3
-     * Updates logo status from PENDING to CONFIRMED
-     *
-     * @param uploadId Upload identifier from presigned URL response
-     * @param request  Confirmation request with checksum
-     * @return Success response
-     */
-    @PostMapping("/{uploadId}/confirm")
-    @Operation(
-            summary = "Confirm file upload completion",
-            description = "Confirms that the file has been successfully uploaded to S3. "
-                    + "Updates the logo status from PENDING to CONFIRMED. "
-                    + "Logo will expire after 7 days if not associated with an entity."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Upload confirmed successfully"
-            ),
-        @ApiResponse(
-                responseCode = "404",
-                description = "Upload ID not found"
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid upload state (not PENDING)"
-            )
-    })
-    public ResponseEntity<Void> confirmUpload(
-            @Parameter(description = "Upload ID from presigned URL response", required = true)
-            @PathVariable String uploadId,
-            @Valid @RequestBody LogoUploadConfirmRequest request) {
+    /** Phase 2: confirm upload completion (PENDING → CONFIRMED). No authentication required. */
+    @Override
+    public ResponseEntity<Void> confirmLogoUpload(String uploadId, LogoUploadConfirmRequest request) {
         log.info("Confirming upload for uploadId: {}, extension: {}",
                 uploadId, request.getFileExtension());
 
@@ -140,44 +63,10 @@ public class LogoController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * Delete unused logo
-     * Can only delete logos in PENDING or CONFIRMED status
-     * ASSOCIATED logos cannot be deleted (must delete entity first)
-     *
-     * @param uploadId Upload identifier
-     * @return Success response
-     */
-    @DeleteMapping("/{uploadId}")
+    /** Delete an unused (PENDING/CONFIRMED) logo. Requires authentication. */
+    @Override
     @PreAuthorize("isAuthenticated()")
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(
-            summary = "Delete unused logo",
-            description = "Deletes a logo that has not been associated with an entity. "
-                    + "Can only delete logos in PENDING or CONFIRMED status. "
-                    + "ASSOCIATED logos cannot be deleted directly."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "204",
-                description = "Logo deleted successfully"
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "404",
-                description = "Upload ID not found"
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Cannot delete ASSOCIATED logo"
-            )
-    })
-    public ResponseEntity<Void> deleteUnusedLogo(
-            @Parameter(description = "Upload ID to delete", required = true)
-            @PathVariable String uploadId) {
+    public ResponseEntity<Void> deleteUnusedLogo(String uploadId) {
         log.info("Deleting unused logo: {}", uploadId);
 
         logoService.deleteUnusedLogo(uploadId);
@@ -185,78 +74,26 @@ public class LogoController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Get cleanup statistics
-     * Admin endpoint for monitoring orphaned uploads
-     * Requires ORGANIZER role
-     *
-     * @return Cleanup statistics
-     */
-    @GetMapping("/cleanup/statistics")
+    /** Admin: cleanup statistics for orphaned uploads. Requires ORGANIZER role. */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(
-            summary = "Get cleanup statistics",
-            description = "Returns statistics about logo uploads in various states. "
-                    + "Used for monitoring and identifying orphaned uploads. "
-                    + "Requires ORGANIZER role."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Statistics retrieved successfully",
-                content = @Content(
-                                schema = @Schema(implementation = LogoCleanupService.CleanupStatistics.class))
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "403",
-                description = "Forbidden - requires ORGANIZER role"
-            )
-    })
-    public ResponseEntity<LogoCleanupService.CleanupStatistics> getCleanupStatistics() {
+    public ResponseEntity<LogoCleanupStatistics> getLogoCleanupStatistics() {
         log.debug("Fetching cleanup statistics");
 
         LogoCleanupService.CleanupStatistics stats = cleanupService.getCleanupStatistics();
 
-        return ResponseEntity.ok(stats);
+        return ResponseEntity.ok(new LogoCleanupStatistics()
+                .pendingCount(stats.pendingCount())
+                .confirmedCount(stats.confirmedCount())
+                .associatedCount(stats.associatedCount())
+                .expiredPendingCount(stats.expiredPendingCount())
+                .expiredConfirmedCount(stats.expiredConfirmedCount()));
     }
 
-    /**
-     * Manually trigger cleanup job
-     * Admin endpoint for emergency cleanup
-     * Requires ORGANIZER role
-     *
-     * @return Success response
-     */
-    @PostMapping("/cleanup/trigger")
+    /** Admin: manually trigger the orphaned-upload cleanup job. Requires ORGANIZER role. */
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(
-            summary = "Manually trigger cleanup job",
-            description = "Manually triggers the cleanup job to remove orphaned uploads. "
-                    + "Normally runs automatically at 2 AM daily. "
-                    + "Use this endpoint for testing or emergency cleanup. "
-                    + "Requires ORGANIZER role."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "202",
-                description = "Cleanup job triggered successfully"
-            ),
-        @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized - missing or invalid JWT token"
-            ),
-        @ApiResponse(
-                responseCode = "403",
-                description = "Forbidden - requires ORGANIZER role"
-            )
-    })
-    public ResponseEntity<Void> triggerManualCleanup() {
+    public ResponseEntity<Void> triggerLogoCleanup() {
         log.warn("Manual cleanup triggered by admin");
 
         cleanupService.triggerManualCleanup();
@@ -265,36 +102,12 @@ public class LogoController {
     }
 
     /**
-     * Fetch image from external URL and return as blob
-     * Used by batch import to bypass CORS restrictions
-     *
-     * @param requestBody Map containing the URL to fetch
-     * @return Image blob with appropriate content type
+     * Fetch an image from an external URL and return the raw bytes (CORS proxy for logo import).
+     * Up to 10MB; validates the content is an image. No authentication required.
      */
-    @PostMapping("/fetch-from-url")
-    @Operation(
-            summary = "Fetch image from external URL",
-            description = "Fetches an image from an external URL and returns it as a blob. "
-                    + "This endpoint acts as a proxy to bypass CORS restrictions when importing company logos. "
-                    + "Supports images up to 10MB. Validates that the content is actually an image."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Image fetched successfully",
-                content = @Content(mediaType = "image/*")
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid URL or not an image"
-            ),
-        @ApiResponse(
-                responseCode = "500",
-                description = "Failed to fetch image from URL"
-            )
-    })
-    public ResponseEntity<byte[]> fetchImageFromUrl(@RequestBody Map<String, String> requestBody) {
-        String url = requestBody.get("url");
+    @Override
+    public ResponseEntity<Resource> fetchImageFromUrl(FetchImageFromUrlRequest request) {
+        String url = request.getUrl();
 
         if (url == null || url.isBlank()) {
             return ResponseEntity.badRequest().build();
@@ -303,21 +116,18 @@ public class LogoController {
         log.info("Fetching image from URL: {}", url);
 
         try {
-            // Shared fetch + image validation pipeline (12.12 review, finding #7);
-            // 10MB cap for logo proxying.
             ImageUrlFetcher.FetchedImage image = ImageUrlFetcher.fetch(url, 10 * 1024 * 1024);
 
             log.info("Successfully fetched image: {} bytes, type: {}",
                     image.body().length, image.contentType());
 
-            // Return raw bytes with proper Content-Type
-            // Critical: Use MediaType.valueOf() instead of parseMediaType() to avoid charset addition
+            // Use MediaType.valueOf() (not parseMediaType) to avoid charset addition.
             MediaType mediaType = MediaType.valueOf(image.contentType());
 
             return ResponseEntity.ok()
                     .contentLength(image.body().length)
                     .contentType(mediaType)
-                    .body(image.body());
+                    .body(new ByteArrayResource(image.body()));
 
         } catch (ImageUrlFetcher.ImageFetchException e) {
             log.error("Error fetching image from URL: {}: {}", url, e.getMessage());
@@ -331,64 +141,30 @@ public class LogoController {
     }
 
     /**
-     * Fetch image from URL and upload directly to S3 (server-side only)
-     * Bypasses frontend entirely to avoid binary data corruption
-     *
-     * @param requestBody Map containing url and optionally filename
-     * @return Upload ID for use in company creation
+     * Fetch an image from a URL and upload it directly to S3 (server-side; bypasses the browser
+     * to avoid binary corruption). Returns the upload ID. No authentication required.
      */
-    @PostMapping("/upload-from-url")
-    @Operation(
-            summary = "Fetch and upload image from URL",
-            description = "Fetches an image from a URL and uploads it directly to S3, "
-                    + "returning the upload ID. This completely bypasses the frontend to "
-                    + "avoid binary data corruption issues."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-                responseCode = "200",
-                description = "Image uploaded successfully",
-                content = @Content(schema = @Schema(implementation = String.class))
-            ),
-        @ApiResponse(
-                responseCode = "400",
-                description = "Invalid URL or not an image"
-            ),
-        @ApiResponse(
-                responseCode = "413",
-                description = "Image too large (max 10MB)"
-            ),
-        @ApiResponse(
-                responseCode = "500",
-                description = "Failed to fetch or upload image"
-            )
-    })
-    public ResponseEntity<Map<String, String>> uploadImageFromUrl(
-            @RequestBody Map<String, String> requestBody) {
-        
-        String url = requestBody.get("url");
-        String suggestedFilename = requestBody.getOrDefault("filename", "logo");
-        
+    @Override
+    public ResponseEntity<UploadImageFromUrlResponse> uploadImageFromUrl(UploadImageFromUrlRequest request) {
+        String url = request.getUrl();
+        String suggestedFilename = request.getFilename() != null ? request.getFilename() : "logo";
+
         if (url == null || url.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        
+
         log.info("Uploading image from URL: {}", url);
 
         try {
-            // Shared fetch + image validation pipeline (12.12 review, finding #7);
-            // 10MB cap for logos.
             ImageUrlFetcher.FetchedImage image = ImageUrlFetcher.fetch(url, 10 * 1024 * 1024);
 
             String filename = suggestedFilename + "." + image.extension();
 
-            // Upload directly to S3 via logoService
-            // We'll use the logoService's internal upload method
             String uploadId = logoService.uploadLogoDirectly(image.body(), filename, image.contentType());
 
             log.info("Successfully uploaded image: {} bytes, uploadId: {}", image.body().length, uploadId);
 
-            return ResponseEntity.ok(Map.of("uploadId", uploadId));
+            return ResponseEntity.ok(new UploadImageFromUrlResponse().uploadId(uploadId));
 
         } catch (ImageUrlFetcher.ImageFetchException e) {
             log.error("Error uploading image from URL: {}: {}", url, e.getMessage());

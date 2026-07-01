@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.registrations.api.generated.DeregistrationApi;
 import ch.batbern.events.registrations.dto.generated.DeregistrationByEmailRequest;
 import ch.batbern.events.registrations.dto.generated.DeregistrationRequest;
 import ch.batbern.events.registrations.dto.generated.DeregisterByToken200Response;
@@ -9,11 +10,7 @@ import ch.batbern.events.service.DeregistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.ZoneOffset;
@@ -32,12 +29,20 @@ import java.time.ZoneOffset;
  * TODO: add per-IP rate limiting to /by-email to prevent email spam abuse.
  * Per-IP throttle: max 5 requests/hour per source IP (bucket4j or Spring rate-limiter).
  * Track in backlog as "Rate-limit deregistration-by-email endpoint"
+ * <p>
+ * {@code implements} the generated {@link DeregistrationApi} interface (event-registrations
+ * spec, ADR-006 contract-first). The interface supplies the verb/path/param mapping and the
+ * generated DTO types; the class-level {@code @RequestMapping("/api/v1")} supplies the version
+ * prefix (interface paths are {@code /registrations/deregister/...}). The {@code token} query
+ * param is declared {@code required: false} + plain {@code string} (not {@code uuid}) in the
+ * spec so an absent/blank/malformed value reaches {@link #parseTokenOrNotFound} and maps to 404
+ * rather than a framework 400/500.
  */
 @RestController
-@RequestMapping("/api/v1/registrations/deregister")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class DeregistrationController {
+public class DeregistrationController implements DeregistrationApi {
 
     private final DeregistrationService deregistrationService;
 
@@ -57,9 +62,8 @@ public class DeregistrationController {
      * @return 200 with registration summary; 404 if the token is absent, malformed, unknown,
      *         or already cancelled
      */
-    @GetMapping("/verify")
-    public ResponseEntity<DeregistrationVerifyResponse> verifyToken(
-            @RequestParam(required = false) String token) {
+    @Override
+    public ResponseEntity<DeregistrationVerifyResponse> verifyDeregistrationToken(String token) {
         DeregistrationService.DeregistrationVerifyResult result =
                 deregistrationService.verifyToken(parseTokenOrNotFound(token));
 
@@ -80,9 +84,9 @@ public class DeregistrationController {
      * @param request body containing the UUID token
      * @return 200 on success, 404 if token not found, 409 if already cancelled
      */
-    @PostMapping
+    @Override
     public ResponseEntity<DeregisterByToken200Response> deregisterByToken(
-            @RequestBody DeregistrationRequest request) {
+            DeregistrationRequest request) {
         deregistrationService.deregisterByToken(request.getToken());
         DeregisterByToken200Response response = new DeregisterByToken200Response()
                 .message("Registration successfully cancelled.");
@@ -97,9 +101,9 @@ public class DeregistrationController {
      * @param request body containing email and eventCode
      * @return 200 always
      */
-    @PostMapping("/by-email")
-    public ResponseEntity<RequestDeregistrationByEmail200Response> deregisterByEmail(
-            @RequestBody DeregistrationByEmailRequest request) {
+    @Override
+    public ResponseEntity<RequestDeregistrationByEmail200Response> requestDeregistrationByEmail(
+            DeregistrationByEmailRequest request) {
         // Fire and forget — anti-enumeration: never surface whether registration was found
         deregistrationService.deregisterByEmail(request.getEmail(), request.getEventCode());
         RequestDeregistrationByEmail200Response response = new RequestDeregistrationByEmail200Response()

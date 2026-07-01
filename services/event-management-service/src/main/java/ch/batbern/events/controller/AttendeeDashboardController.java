@@ -1,13 +1,13 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.dto.AttendeeDashboardResponse;
+import ch.batbern.events.core.api.generated.AttendeePortalApi;
+import ch.batbern.events.core.dto.generated.AttendeeDashboardResponse;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.AttendeeDashboardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,19 +18,21 @@ import org.springframework.web.bind.annotation.RestController;
  * — any logged-in user can view their own attended-event history (a speaker viewing their attendee
  * history is fine; the speaker dashboard remains their primary surface). The username is taken from
  * the JWT, never a path/header param.
+ *
+ * <p>API-consolidation Phase 7: implements the generated {@link AttendeePortalApi}.
  */
 @RestController
-@RequestMapping("/api/v1/attendee-portal")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class AttendeeDashboardController {
+public class AttendeeDashboardController implements AttendeePortalApi {
 
     private final AttendeeDashboardService dashboardService;
     private final SecurityContextHelper securityContextHelper;
 
-    @GetMapping("/dashboard")
+    @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<AttendeeDashboardResponse> getDashboard() {
+    public ResponseEntity<AttendeeDashboardResponse> getAttendeeDashboard() {
         String username = securityContextHelper.getCurrentUsername();
         return ResponseEntity.ok(dashboardService.getDashboard(username));
     }

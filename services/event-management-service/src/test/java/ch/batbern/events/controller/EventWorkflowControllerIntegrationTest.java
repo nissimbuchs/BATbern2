@@ -69,8 +69,10 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
         // Clean database before each test
         eventRepository.deleteAll();
 
-        // Create test event in CREATED state
-        testEvent = createTestEvent("BAT-2024-Q4", EventWorkflowState.CREATED);
+        // Create test event in CREATED state.
+        // Event code must match the events-core spec @Pattern ^BATbern[0-9]+$ (now enforced
+        // via the generated EventWorkflowApi interface); BAT-2024-Q4 was a stale fixture format.
+        testEvent = createTestEvent("BATbern142", EventWorkflowState.CREATED);
     }
 
     /**
@@ -306,7 +308,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @DisplayName("Should return 404 when event not found for transition")
     void should_return404_when_eventNotFound_forTransition() throws Exception {
         // When: Attempt transition on non-existent event
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", "NON-EXISTENT")
+        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", "BATbern999")
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"TOPIC_SELECTION\"}"))
@@ -322,7 +324,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @DisplayName("Should return 404 when event not found for status query")
     void should_return404_when_eventNotFound_forStatusQuery() throws Exception {
         // When: Query status of non-existent event
-        mockMvc.perform(get("/api/v1/events/{code}/workflow/status", "NON-EXISTENT")
+        mockMvc.perform(get("/api/v1/events/{code}/workflow/status", "BATbern999")
                         .with(user("john.doe").roles("ORGANIZER")))
                 // Then: Should return 404 Not Found
                 .andExpect(status().isNotFound());

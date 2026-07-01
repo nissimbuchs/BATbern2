@@ -2,6 +2,7 @@ package ch.batbern.partners.controller;
 
 import ch.batbern.partners.api.generated.PartnersApi;
 import ch.batbern.partners.dto.generated.CreatePartnerRequest;
+import ch.batbern.partners.dto.generated.MyPartnerCompanyResponse;
 import ch.batbern.partners.dto.generated.PartnerListResponse;
 import ch.batbern.partners.dto.generated.PartnerResponse;
 import ch.batbern.partners.dto.generated.PartnerStatistics;
@@ -14,13 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -124,11 +123,11 @@ public class PartnerController implements PartnersApi {
      * Resolves company via partner_contacts table (ADR-003: username-based lookup).
      * Used by the frontend to populate companyName when it is absent from the JWT.
      */
-    @GetMapping("/partners/me")
+    @Override
     @PreAuthorize("hasRole('PARTNER')")
-    public ResponseEntity<Map<String, String>> getMyPartnerCompany() {
+    public ResponseEntity<MyPartnerCompanyResponse> getMyPartnerCompany() {
         String companyName = partnerContactService.resolveCurrentUserCompanyName();
-        return ResponseEntity.ok(Map.of("companyName", companyName));
+        return ResponseEntity.ok(new MyPartnerCompanyResponse().companyName(companyName));
     }
 
     // Helper methods

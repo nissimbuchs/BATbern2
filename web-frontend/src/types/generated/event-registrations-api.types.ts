@@ -290,6 +290,50 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/registrations/{registrationCode}/resend-confirmation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resend the registration confirmation email
+     * @description Organizer-only: re-send the confirmation email to an attendee whose registration is still pending (status=registered). Generates fresh tokens.
+     *
+     *     **Security**: ORGANIZER role required.
+     */
+    post: operations['resendConfirmationEmail'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/enroll-stakeholders': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Bulk-enroll organizers and partners as confirmed participants
+     * @description Organizer-only action for events that predate auto-enrollment. Idempotent — already-registered users are counted as skipped, not re-enrolled.
+     *
+     *     **Security**: ORGANIZER role required.
+     */
+    post: operations['enrollStakeholders'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/registrations/confirm': {
     parameters: {
       query?: never;
@@ -523,7 +567,7 @@ export interface components {
       /** @example BATbern57 */
       eventCode: string;
       /** @enum {string} */
-      kind: 'speakers' | 'moderator';
+      kind: 'speakers' | 'moderator' | 'participants';
       /** @description Lowercase, deduplicated email addresses. */
       emails: string[];
     };
@@ -647,6 +691,24 @@ export interface components {
        * @example Vegetarian meal preference
        */
       specialRequests?: string;
+    };
+    /** @description Organizer status change for a registration (e.g. confirm/cancel). The deployed PATCH handler reads only `status`; a cancel triggers waitlist promotion. */
+    UpdateRegistrationStatusRequest: {
+      /**
+       * @description New registration status (e.g. confirmed, cancelled, registered, waitlist)
+       * @example confirmed
+       */
+      status?: string;
+    };
+    ResendConfirmationResponse: {
+      /** @description Human-readable result message */
+      message: string;
+    };
+    EnrollStakeholdersResponse: {
+      /** @description Number of stakeholders newly enrolled as confirmed participants */
+      enrolled: number;
+      /** @description Number of stakeholders already registered (idempotent skip) */
+      skipped: number;
     };
     /**
      * @description Story 4.1.5a/4.1.6: Update registration details
@@ -1338,7 +1400,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['PatchRegistrationRequest'];
+        'application/json': components['schemas']['UpdateRegistrationStatusRequest'];
       };
     };
     responses: {
@@ -1404,6 +1466,64 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  resendConfirmationEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        registrationCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Confirmation email resent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ResendConfirmationResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /** @description Registration is not pending (cannot resend) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ResendConfirmationResponse'];
+        };
+      };
+    };
+  };
+  enrollStakeholders: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Enrollment counts */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnrollStakeholdersResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
   confirmRegistration: {
     parameters: {
       query: {
@@ -1466,9 +1586,9 @@ export interface operations {
   };
   verifyDeregistrationToken: {
     parameters: {
-      query: {
-        /** @description UUID deregistration token */
-        token: string;
+      query?: {
+        /** @description UUID deregistration token. Optional and parsed defensively: an absent, blank, or malformed (non-UUID) value is treated as an invalid link → 404 (the same outcome as an unknown/expired token), never a 400 or 500. A mail client truncating the link at "?token=" must not produce a server error. */
+        token?: string;
       };
       header?: never;
       path?: never;

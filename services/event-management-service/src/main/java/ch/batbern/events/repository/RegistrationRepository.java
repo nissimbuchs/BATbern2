@@ -1,7 +1,7 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.AttendanceSummaryDTO;
+import ch.batbern.events.dto.AttendanceSummaryProjection;
 import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -312,7 +312,7 @@ public interface RegistrationRepository
      * @return list of per-event attendance summaries ordered by date descending
      */
     @Query("""
-        SELECT new ch.batbern.events.dto.AttendanceSummaryDTO(
+        SELECT new ch.batbern.events.dto.AttendanceSummaryProjection(
             e.eventCode,
             e.title,
             e.date,
@@ -325,7 +325,7 @@ public interface RegistrationRepository
         GROUP BY e.id, e.eventCode, e.title, e.date
         ORDER BY e.date DESC
         """)
-    List<AttendanceSummaryDTO> findAttendanceSummary(
+    List<AttendanceSummaryProjection> findAttendanceSummary(
             @Param("companyId") String companyId,
             @Param("fromDate") Instant fromDate);
 }

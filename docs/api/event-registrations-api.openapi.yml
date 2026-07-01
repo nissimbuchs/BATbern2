@@ -23,6 +23,12 @@ security:
 tags:
 - name: Registrations
   description: Event registration management
+- name: Deregistration
+  description: Self-service attendee deregistration (token- and email-initiated cancellation,
+    Story 10.12). Public — the UUID token is the auth mechanism (ADR-005).
+- name: Participants
+  description: Organizer participant management — add-participant, name-badge XLSX/DOCX
+    exports, and the internal email distribution-list route (ParticipantsController).
 paths:
   /events/{eventCode}/registrations:
     get:
@@ -194,7 +200,7 @@ paths:
   /events/{eventCode}/distribution-list/{kind}:
     get:
       tags:
-      - Registrations
+      - Participants
       summary: Resolve the email distribution list for an event (internal Lambda route)
       description: "Returns the email addresses to fan out for the per-event mailing aliases\n`batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and\n`batbern{N}-participants@batbern.ch`.\n\n- `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)\n  of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.\n- `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their\n  verified `additionalEmails`.\n- `participants`: every active registrant (`registered`/`confirmed`/`attended`;\n  excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the\n  same audience as the Communications → Event registrants send. Lowercase-deduped.\n\n**Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:\n  - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is\n    VPC-only).\n  - Organizer JWT from interactive callers.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).\n"
       operationId: getEventDistributionList
@@ -230,7 +236,7 @@ paths:
   /events/{eventCode}/participants:
     post:
       tags:
-      - Registrations
+      - Participants
       summary: Add an existing user as a confirmed participant (organizer)
       description: "Organizer-only. Adds an EXISTING BATbern user (chosen via the user autocomplete) onto\nthe event directly as a `confirmed` participant — skipping the self-registration +\nemail-confirmation step. The created row is a REAL attendee (counts toward capacity and\nthe event delete-guard), audited with `metadata.addedByOrganizer`.\n\n- Capacity: respected by default; if the event is full, returns `409` with\n  `details.code = \"capacity_exceeded\"`. Pass `force: true` to add over capacity.\n- Duplicate: an already-active registration returns `409` (generic). A `cancelled`\n  prior registration is replaced.\n- `notify` (default true) sends the attendee a \"you have a confirmed spot\" email.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-organizer-add-participant.md`.\n"
       operationId: addParticipant
@@ -286,7 +292,7 @@ paths:
   /events/{eventCode}/participants/export.xlsx:
     get:
       tags:
-      - Registrations
+      - Participants
       summary: Export participant name-badge data as XLSX
       description: "Streams an Office Open XML XLSX with one row per participant of the event. Columns\n(German — physical badges): `Vorname`, `Name`, `Firma`, `Rolle`. Roles are\n`Organisator`, `Referent`, `Teilnehmer` with precedence\nOrganisator > Referent > Teilnehmer (a user appearing in multiple sets renders once\nwith the highest-precedence role).\n\nRow sources (union, dedup-by-username):\n  - All organizer-role users (cross-service via UserApiClient).\n  - All `PRIMARY_SPEAKER` and `CO_SPEAKER` `session_users` of the event.\n  - All `registered`/`confirmed`/`attended` registrations of the event.\n\nFilename suggestion: `{eventCode}-namensschilder.xlsx`.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F3).\n"
       operationId: exportParticipantsXlsx
@@ -320,7 +326,7 @@ paths:
   /events/{eventCode}/participants/export.docx:
     get:
       tags:
-      - Registrations
+      - Participants
       summary: Export participant name badges as DOCX (Avery L4784 + BAT logo)
       description: "Streams a printable Microsoft Word document laid out for Avery\nZweckform L4784 name-badge sheets with the BAT logo embedded in every\nbadge. Each badge renders three lines:\n\n  - Name (Vorname + Nachname, bold, 12pt)\n  - Firma (next to the BAT logo, 12pt)\n  - Rolle (`Organisator | Referent | Teilnehmer`, italic, 10pt)\n\nRow sources, dedupe, role precedence and sort order are identical to\nthe XLSX export (`exportParticipantsXlsx`) — both endpoints draw from\nthe same `ParticipantsCollector`. The DOCX paginates as 27 badges\nper A4 page (9 badge rows × 3 badge columns); trailing slots on the\nlast page are visually blank but preserve the layout for clean printing.\n\nFilename suggestion: `{eventCode}-namensschilder.docx`.\n\n**Spec extension:** name-badge DOCX export (sibling of `exportParticipantsXlsx`).\n"
       operationId: exportParticipantsDocx
@@ -569,7 +575,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchRegistrationRequest'
+              $ref: '#/components/schemas/UpdateRegistrationStatusRequest'
       responses:
         '200':
           description: Registration updated successfully
@@ -669,6 +675,77 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/registrations/{registrationCode}/resend-confirmation:
+    post:
+      tags:
+      - Registrations
+      summary: Resend the registration confirmation email
+      description: 'Organizer-only: re-send the confirmation email to an attendee whose
+        registration is still pending (status=registered). Generates fresh tokens.
+
+
+        **Security**: ORGANIZER role required.'
+      operationId: resendConfirmationEmail
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      - name: registrationCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Confirmation email resent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendConfirmationResponse'
+        '409':
+          description: Registration is not pending (cannot resend)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendConfirmationResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /events/{eventCode}/enroll-stakeholders:
+    post:
+      tags:
+      - Registrations
+      summary: Bulk-enroll organizers and partners as confirmed participants
+      description: 'Organizer-only action for events that predate auto-enrollment.
+        Idempotent — already-registered users are counted as skipped, not re-enrolled.
+
+
+        **Security**: ORGANIZER role required.'
+      operationId: enrollStakeholders
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern25
+      responses:
+        '200':
+          description: Enrollment counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollStakeholdersResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /events/{eventCode}/registrations/confirm:
     post:
       tags:
@@ -769,7 +846,7 @@ paths:
   /registrations/deregister/verify:
     get:
       tags:
-      - Registrations
+      - Deregistration
       summary: Verify deregistration token (public)
       description: 'Verifies a deregistration token and returns registration details for confirmation.
 
@@ -788,11 +865,13 @@ paths:
       parameters:
       - name: token
         in: query
-        description: UUID deregistration token
-        required: true
+        description: 'UUID deregistration token. Optional and parsed defensively: an absent,
+          blank, or malformed (non-UUID) value is treated as an invalid link → 404 (the same
+          outcome as an unknown/expired token), never a 400 or 500. A mail client truncating
+          the link at "?token=" must not produce a server error.'
+        required: false
         schema:
           type: string
-          format: uuid
       responses:
         '200':
           description: Token valid — returns registration summary for confirmation
@@ -812,7 +891,7 @@ paths:
   /registrations/deregister:
     post:
       tags:
-      - Registrations
+      - Deregistration
       summary: Cancel registration via deregistration token (public)
       description: 'Cancels a registration using the self-service deregistration token.
 
@@ -861,7 +940,7 @@ paths:
   /registrations/deregister/by-email:
     post:
       tags:
-      - Registrations
+      - Deregistration
       summary: Request deregistration link via email (public, anti-enumeration)
       description: 'Sends a deregistration link to the provided email address if a matching registration is found.
 
@@ -1176,6 +1255,7 @@ components:
           enum:
           - speakers
           - moderator
+          - participants
         emails:
           type: array
           description: Lowercase, deduplicated email addresses.
@@ -1341,6 +1421,35 @@ components:
           type: string
           description: Dietary preferences, accessibility needs, etc.
           example: Vegetarian meal preference
+    UpdateRegistrationStatusRequest:
+      type: object
+      description: 'Organizer status change for a registration (e.g. confirm/cancel).
+        The deployed PATCH handler reads only `status`; a cancel triggers waitlist promotion.'
+      properties:
+        status:
+          type: string
+          description: New registration status (e.g. confirmed, cancelled, registered, waitlist)
+          example: confirmed
+    ResendConfirmationResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          description: Human-readable result message
+    EnrollStakeholdersResponse:
+      type: object
+      required:
+      - enrolled
+      - skipped
+      properties:
+        enrolled:
+          type: integer
+          description: Number of stakeholders newly enrolled as confirmed participants
+        skipped:
+          type: integer
+          description: Number of stakeholders already registered (idempotent skip)
     PatchRegistrationRequest:
       type: object
       description: 'Story 4.1.5a/4.1.6: Update registration details

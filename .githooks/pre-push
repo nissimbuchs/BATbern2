@@ -106,7 +106,7 @@ while IFS= read -r file; do
         docs/api/events-core-api.openapi.yml|docs/api/event-*-api.openapi.yml|docs/api/topics-api.openapi.yml)
             add_service event-management-service
             ;;
-        docs/api/companies-api.openapi.yml|docs/api/users-api.openapi.yml|docs/api/auth-endpoints.openapi.yml)
+        docs/api/companies-api.openapi.yml|docs/api/users-api.openapi.yml)
             add_service company-user-management-service
             ;;
         docs/api/partner*.openapi.yml)
@@ -118,7 +118,7 @@ while IFS= read -r file; do
         docs/api/attendees-api.openapi.yml)
             add_service attendee-experience-service
             ;;
-        docs/api/_shared.openapi.yml|docs/api/file-upload-api.openapi.yml)
+        docs/api/_shared.openapi.yml)
             # Cross-cutting contract — exercise the primary backend services that codegen from it.
             add_service event-management-service
             add_service company-user-management-service

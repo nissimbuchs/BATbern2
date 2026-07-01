@@ -24,14 +24,82 @@ tags:
 - name: Event Actions
   description: Event publishing and workflow operations
 - name: Sessions
-  description: Event session management
+  description: Event session CRUD, structural generation and batch import (SessionController)
+- name: Slot Assignment
+  description: Place a speaker session onto a stable timetable slot key — assign/insert/swap
+    (SlotAssignmentController, Story 15.3)
+- name: Session Speakers
+  description: Session-user speaker assignments — assign/list/remove/confirm/decline (SessionSpeakerController,
+    Story 1.15a.1b)
+- name: Session Materials
+  description: Per-session uploaded materials (slide decks / documents) — associate/list/download/delete
+    + batch-import-from-URL (SessionMaterialsController, Story 5.9)
+- name: Agenda Config
+  description: Per-event agenda/slot configuration with copy-on-edit override (Story 15.2,
+    AgendaConfigController)
+- name: Session QnA
+  description: Per-session Q&A thread — public read, authenticated post, organizer takedown (SessionQnaController)
+- name: Timetable
+  description: Authoritative per-event timetable / slot grid (TimetableController)
 - name: Bulk Operations
   description: Batch operations on multiple events
+- name: Company Sessions
+  description: Cross-event session search by company — sessions with at least one speaker
+    from the given company, enriched with event + full speaker context (GlobalSessionController,
+    organizer Company-detail Sessions tab)
 paths:
+  /sessions:
+    get:
+      tags:
+      - Company Sessions
+      summary: Search sessions across all events by company
+      description: 'Returns sessions where at least one speaker belongs to the given company,
+        enriched with event metadata and the full speaker list per session (so the frontend can
+        highlight the company''s speakers). ORGANIZER role required. A blank/absent `companyName`
+        yields an empty page.'
+      operationId: searchSessionsByCompany
+      parameters:
+      - name: companyName
+        in: query
+        description: Company name (ADR-003 meaningful ID). Blank/absent → empty result.
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        description: 1-indexed page number
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 50
+      responses:
+        '200':
+          description: Paginated company sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompanySessionResponse'
+                  pagination:
+                    $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - bearerAuth: []
   /events/{eventCode}/sessions/{sessionSlug}/qna:
     get:
       tags:
-      - Event Actions
+      - Session QnA
       summary: Get a session's Q&A thread ("The Apéro Continues")
       description: 'Returns the open or frozen Q&A thread for a session. PUBLIC — anonymous may read the
 
@@ -135,7 +203,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/qna/posts:
     post:
       tags:
-      - Event Actions
+      - Session QnA
       summary: Post a Q&A question or answer (logged-in)
       description: 'Any logged-in user may post within an open window (AC2). `parentPostId` set = an answer to
 
@@ -214,7 +282,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/qna/posts/{postId}:
     delete:
       tags:
-      - Event Actions
+      - Session QnA
       summary: Take down a Q&A post (organizer)
       description: 'Organizer-only soft-delete (AC4): the post becomes a "removed by organizer" tombstone
 
@@ -298,9 +366,11 @@ paths:
           type: string
       - name: page
         in: query
+        description: 1-indexed page number
         schema:
           type: integer
-          default: 0
+          default: 1
+          minimum: 1
       - name: limit
         in: query
         schema:
@@ -318,7 +388,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Session'
+                      $ref: '#/components/schemas/SessionResponse'
                   pagination:
                     $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
         '404':
@@ -359,7 +429,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
+                $ref: '#/components/schemas/SessionResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -369,7 +439,7 @@ paths:
   /events/{eventCode}/timetable:
     get:
       tags:
-      - Sessions
+      - Timetable
       summary: Get the authoritative timetable for an event
       description: 'Returns the complete chronological slot grid for the event, including both
 
@@ -416,7 +486,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/slot:
     post:
       tags:
-      - Sessions
+      - Slot Assignment
       summary: Assign / insert / swap a speaker session by stable slot key (Story 15.3)
       description: "Places a speaker session onto a `SPEAKER_SLOT` addressed by its deterministic\n`slotKey` (see `TimetableSlot.slotKey`). One path covers three modes:\n\n- `ASSIGN` — target slot is empty: the session takes that slot's computed times.\n- `INSERT` — target slot is occupied: the session takes the target ordinal and\n  every already-assigned session at that ordinal or later shifts one slot later;\n  all affected sessions' times are recomputed and saved in a single transaction.\n  Rejected with **409** if the shift would exceed the last computed speaker slot\n  (agenda full).\n- `SWAP` — target slot is occupied: the dragged (already-assigned) session and the\n  occupant exchange slots (and times).\n\nSession time persistence is unchanged — `startTime`/`endTime` remain the stored\nauthority; this endpoint only recomputes and saves them for the affected sessions.\n\n**Access**: ORGANIZER role required.\n"
       operationId: assignSessionToSlot
@@ -462,10 +532,252 @@ paths:
             application/json:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+
+  /events/{eventCode}/sessions/unassigned:
+    get:
+      tags:
+      - Slot Assignment
+      summary: List unassigned (placeholder) sessions for an event (Story 5.7)
+      description: 'Placeholder sessions without timing, enriched with speaker data. ORGANIZER role.'
+      operationId: getUnassignedSessions
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Unassigned sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/{sessionSlug}/timing:
+    patch:
+      tags:
+      - Slot Assignment
+      summary: Assign timing to a session (drag-and-drop) (Story 5.7)
+      description: 'Detects room/speaker conflicts before assigning. ORGANIZER role.'
+      operationId: assignTiming
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionTimingRequest'
+      responses:
+        '200':
+          description: Timing assigned; returns the updated session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Timing conflict (room overlap or speaker double-booking)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingConflictError'
+    delete:
+      tags:
+      - Slot Assignment
+      summary: Unassign a single session's timing (Story 15.3)
+      description: 'Clears startTime/endTime/room (back to the unassigned pool). ORGANIZER role.'
+      operationId: unassignTiming
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Timing cleared; returns the updated session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/bulk-timing:
+    post:
+      tags:
+      - Slot Assignment
+      summary: Bulk-assign timing to multiple sessions (Story 5.7 AC13)
+      description: 'All-or-nothing: any cross-assignment conflict applies no changes. ORGANIZER role.'
+      operationId: bulkAssignTiming
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTimingRequest'
+      responses:
+        '200':
+          description: Bulk assignment applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkTimingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Bulk timing conflicts detected — no changes applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkTimingConflictError'
+
+  /events/{eventCode}/sessions/conflicts:
+    get:
+      tags:
+      - Slot Assignment
+      summary: Comprehensive scheduling-conflict analysis (Story 5.7 AC9)
+      description: 'Detects all room/speaker conflicts across the event. ORGANIZER role.'
+      operationId: analyzeConflicts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Conflict analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictAnalysisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/timing:
+    delete:
+      tags:
+      - Slot Assignment
+      summary: Clear all session timings for an event (Clear All)
+      description: 'Resets every session to unassigned. ORGANIZER role.'
+      operationId: clearAllTimings
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: All timings cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClearTimingsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/auto-assign:
+    post:
+      tags:
+      - Slot Assignment
+      summary: Auto-assign all unassigned sessions to available slots (Auto Assign)
+      description: 'Assigns sessions sequentially to available time slots. ORGANIZER role.'
+      operationId: autoAssignTimings
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Sessions auto-assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoAssignResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /events/{eventCode}/agenda-config:
     get:
       tags:
-      - Sessions
+      - Agenda Config
       summary: Get the resolved agenda config for an event (Story 15.2)
       description: 'Returns the effective agenda/slot configuration for the event: the per-event
 
@@ -502,7 +814,7 @@ paths:
           $ref: '#/components/responses/NotFound'
     put:
       tags:
-      - Sessions
+      - Agenda Config
       summary: Upsert the per-event agenda config override (Story 15.2)
       description: 'Copy-on-edit: creates or updates the per-event `event_agenda_config` row from the
 
@@ -579,12 +891,14 @@ paths:
           type: string
           pattern: ^BATbern[0-9]+$
           example: BATbern142
-      requestBody:
+      - name: overwrite
+        in: query
+        description: When true, delete existing structural sessions before regenerating
+          (otherwise 409 if they already exist).
         required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GenerateStructuralSessionsRequest'
+        schema:
+          type: boolean
+          default: false
       responses:
         '201':
           description: Structural sessions created
@@ -859,7 +1173,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/speakers:
     get:
       tags:
-      - Sessions
+      - Session Speakers
       summary: List session speakers
       description: 'Retrieve all speakers assigned to a specific session with enriched User data.
 
@@ -907,7 +1221,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     post:
       tags:
-      - Sessions
+      - Session Speakers
       summary: Assign speaker to session
       description: 'Assign a user as a speaker to a session with a specific role.
 
@@ -966,7 +1280,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}:
     delete:
       tags:
-      - Sessions
+      - Session Speakers
       summary: Remove speaker from session
       description: 'Remove a speaker assignment from a session.
 
@@ -1007,7 +1321,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/confirm:
     post:
       tags:
-      - Sessions
+      - Session Speakers
       summary: Confirm speaker participation
       description: 'Mark a speaker as confirmed for the session.
 
@@ -1050,7 +1364,7 @@ paths:
   /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/decline:
     post:
       tags:
-      - Sessions
+      - Session Speakers
       summary: Decline speaker participation
       description: 'Mark a speaker as declined for the session with an optional reason.
 
@@ -1095,8 +1409,399 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/materials:
+    post:
+      tags:
+      - Session Materials
+      summary: Associate uploaded materials with a session
+      description: 'Associate 1-10 already-uploaded materials with a session (Story 5.9).
+
+
+        **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).'
+      operationId: associateMaterials
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionMaterialAssociationRequest'
+      responses:
+        '201':
+          description: Materials associated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMaterialsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Speaker may only upload to their own sessions
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+      - Session Materials
+      summary: List session materials
+      description: 'Retrieve all materials associated with a session (Story 5.9). Requires
+        authentication (organizer/speaker materials-management view); anonymous archive visitors
+        download individual materials via the public {materialId}/download endpoint instead.'
+      operationId: getSessionMaterials
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      responses:
+        '200':
+          description: List of session materials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMaterialsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}:
+    delete:
+      tags:
+      - Session Materials
+      summary: Delete a session material
+      description: 'Remove a material from a session (Story 5.9).
+
+
+        **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).'
+      operationId: deleteSessionMaterial
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      - name: materialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '204':
+          description: Material deleted successfully
+        '403':
+          description: Speaker may only delete materials from their own sessions
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download:
+    get:
+      tags:
+      - Session Materials
+      summary: Get a presigned download URL for a material
+      description: 'Generate a time-limited presigned download URL for a single material (Story 5.9).
+        Public endpoint.'
+      operationId: getMaterialDownloadUrl
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      - name: materialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Presigned download URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialDownloadUrlResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{eventCode}/sessions/{sessionSlug}/materials/upload-from-url:
+    post:
+      tags:
+      - Session Materials
+      summary: Import a material from a URL
+      description: 'Batch-import helper — fetch a material from a source URL and associate it with
+        a session (Story 5.9). Used by historical-data import.
+
+
+        **Authorization**: ORGANIZER only.'
+      operationId: uploadMaterialFromUrl
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadMaterialFromUrlRequest'
+      responses:
+        '201':
+          description: Material imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMaterialResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
+    CompanySessionResponse:
+      type: object
+      description: 'A session that has at least one speaker from the queried company, combined
+        with event + full-speaker context (GlobalSessionController / Company-detail Sessions tab).'
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+      properties:
+        sessionSlug:
+          type: string
+          description: Session slug (event-scoped identifier)
+        eventCode:
+          type: string
+          example: BATbern57
+        eventTitle:
+          type: string
+          description: Title of the event this session belongs to
+        eventDate:
+          type: string
+          description: Event date (ISO-8601)
+        title:
+          type: string
+          description: Session title
+        sessionType:
+          type: string
+          description: Session type (e.g. talk, aperitif)
+        startTime:
+          type: string
+          description: Session start time (ISO-8601)
+        endTime:
+          type: string
+          description: Session end time (ISO-8601)
+        room:
+          type: string
+          description: Room / location
+        speakers:
+          type: array
+          description: All speakers of this session (includes speakers from other companies)
+          items:
+            $ref: '#/components/schemas/SessionSpeaker'
+    SessionTimingRequest:
+      type: object
+      description: Assign timing (start/end/room) to a session — Story 5.7 drag-and-drop
+      required:
+      - startTime
+      - endTime
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        room:
+          type: string
+        sessionType:
+          type: string
+        changeReason:
+          type: string
+        notes:
+          type: string
+    BulkTimingAssignment:
+      type: object
+      required:
+      - sessionSlug
+      - startTime
+      - endTime
+      properties:
+        sessionSlug:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        room:
+          type: string
+    BulkTimingRequest:
+      type: object
+      required:
+      - assignments
+      properties:
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/BulkTimingAssignment'
+        changeReason:
+          type: string
+    BulkTimingResponse:
+      type: object
+      properties:
+        assignedCount:
+          type: integer
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionResponse'
+    ConflictType:
+      type: string
+      description: Scheduling-conflict type (lowercase wire values)
+      enum:
+      - room_overlap
+      - speaker_double_booked
+      - speaker_unavailable
+      - preference_mismatch
+    ConflictSeverity:
+      type: string
+      enum:
+      - error
+      - warning
+    ConflictTimeRange:
+      type: object
+      properties:
+        start:
+          type: string
+        end:
+          type: string
+    ConflictDetail:
+      type: object
+      properties:
+        sessionSlug:
+          type: string
+        conflictType:
+          $ref: '#/components/schemas/ConflictType'
+        severity:
+          $ref: '#/components/schemas/ConflictSeverity'
+        affectedSessions:
+          type: array
+          items:
+            type: string
+        timeRange:
+          $ref: '#/components/schemas/ConflictTimeRange'
+        resolution:
+          type: string
+    ConflictAnalysisResponse:
+      type: object
+      description: Comprehensive scheduling-conflict analysis (Story 5.7 AC9)
+      properties:
+        hasConflicts:
+          type: boolean
+        conflictCount:
+          type: integer
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflictDetail'
+    TimingConflictItem:
+      type: object
+      properties:
+        type:
+          type: string
+        conflictingSessionSlug:
+          type: string
+    TimingConflictError:
+      type: object
+      description: 409 body when a single-session timing assignment conflicts
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimingConflictItem'
+    BulkTimingConflictError:
+      type: object
+      description: 409 body when a bulk timing assignment has cross-conflicts (no changes applied)
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        conflictCount:
+          type: integer
+    ClearTimingsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        clearedCount:
+          type: integer
+    AutoAssignResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        assignedCount:
+          type: integer
     SlotAssignmentRequest:
       type: object
       description: 'Request to place a speaker session onto a slot addressed by its stable `slotKey`
@@ -1243,16 +1948,11 @@ components:
         sessionType:
           type: string
           nullable: true
-          description: Session type - null for placeholder sessions, assigned during agenda planning
-          enum:
-          - keynote
-          - presentation
-          - workshop
-          - panel_discussion
-          - networking
-          - break
-          - lunch
-          - moderation
+          description: 'Session type — null for placeholder sessions, assigned during agenda
+            planning. Free-form string (NOT a closed enum): the deployed contract returns
+            additional values such as `aperitif`, so callers must tolerate unknown types.
+            Known values: keynote, presentation, workshop, panel_discussion, networking,
+            break, lunch, moderation, aperitif.'
           example: keynote
         startTime:
           type: string
@@ -1293,35 +1993,13 @@ components:
             $ref: '#/components/schemas/SessionSpeaker'
         materialsStatus:
           type: string
-          description: 'Material submission workflow status
-
-            - NONE: No materials submitted yet (initial state)
-
-            - pending: Materials submitted, awaiting review
-
-            - in_review: Materials under review
-
-            - approved: Materials approved
-
-            - requires_changes: Materials need changes
-
-            - rejected: Materials rejected
-
-            - revision_submitted: Revised materials submitted
-
-            - COMPLETE: Materials finalized and approved (final state)
-
-            '
-          enum:
-          - NONE
-          - pending
-          - in_review
-          - approved
-          - requires_changes
-          - rejected
-          - revision_submitted
-          - COMPLETE
-          example: pending
+          description: 'Material submission workflow status. Free-form string (NOT a closed
+            enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and
+            `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the
+            review-workflow values below, so callers must tolerate unknown values.
+            Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved,
+            requires_changes, rejected, revision_submitted.'
+          example: COMPLETE
     SessionSpeaker:
       type: object
       description: 'Story 1.15a.1b: Session speaker with enriched User data
@@ -1416,13 +2094,202 @@ components:
           description: Whether speaker has confirmed participation
           example: true
     SessionResponse:
-      description: 'Story 1.15a.1b: Session response with embedded speakers
+      description: 'Story 1.15a.1b: Session response with embedded speakers + materials.
 
-        Same as Session schema but used specifically for API responses
+        Session schema plus the service-enriched materials list/count (Story 5.9).
 
         '
       allOf:
       - $ref: '#/components/schemas/Session'
+      - type: object
+        properties:
+          materials:
+            type: array
+            description: 'Story 5.9: Uploaded session materials (populated by the service layer)'
+            items:
+              $ref: '#/components/schemas/SessionMaterialResponse'
+          materialsCount:
+            type: integer
+            description: 'Story 5.9: Number of uploaded materials (for overview displays)'
+            example: 3
+    SessionMaterialResponse:
+      type: object
+      description: 'Story 5.9: Session material (uploaded slide deck / document).
+
+        Returned by GET /sessions/{sessionSlug}/materials and embedded in Session
+        responses. Maps the SessionMaterial entity; createdAt/updatedAt are UTC.
+
+        '
+      required:
+      - id
+      - uploadId
+      - s3Key
+      - fileName
+      - fileExtension
+      - fileSize
+      - mimeType
+      - materialType
+      - uploadedBy
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Material identifier (same-service UUID)
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        uploadId:
+          type: string
+          description: Client-supplied upload correlation id
+          example: upload-2026-0001
+        s3Key:
+          type: string
+          description: S3 object key of the stored material
+          example: materials/2026/batbern142/ui-design/slides.pdf
+        cloudFrontUrl:
+          type: string
+          description: CloudFront delivery URL for the material (null until CDN-published)
+          example: https://cdn.batbern.ch/materials/2026/batbern142/ui-design/slides.pdf
+        fileName:
+          type: string
+          description: Original uploaded file name
+          example: slides.pdf
+        fileExtension:
+          type: string
+          description: File extension (without the dot)
+          example: pdf
+        fileSize:
+          type: integer
+          format: int64
+          description: File size in bytes
+          example: 2097152
+        mimeType:
+          type: string
+          description: MIME type of the material
+          example: application/pdf
+        materialType:
+          type: string
+          description: Material classification (e.g. slides, document)
+          example: slides
+        uploadedBy:
+          type: string
+          description: Username of the uploader (public identifier per ADR-003)
+          example: john.doe
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC)
+          example: 2026-06-28T08:28:30.440Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last-update timestamp (UTC)
+          example: 2026-06-28T08:28:30.440Z
+        contentExtracted:
+          type: boolean
+          description: 'Story 5.10 forward-compat: whether text content has been extracted for RAG search'
+          example: false
+        extractionStatus:
+          type: string
+          description: 'Story 5.10 forward-compat: content-extraction status'
+          example: PENDING
+    MaterialUploadItem:
+      type: object
+      description: 'Story 5.9: one already-uploaded material to associate with a session. Carries
+        the upload correlation id from the presigned-URL step plus the file metadata.'
+      required:
+      - uploadId
+      - materialType
+      - fileName
+      - fileExtension
+      - fileSize
+      - mimeType
+      properties:
+        uploadId:
+          type: string
+          minLength: 1
+          description: Upload correlation id from MaterialsUploadService presigned-URL generation
+          example: upload-2026-0001
+        materialType:
+          type: string
+          minLength: 1
+          description: Material classification (PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER)
+          example: PRESENTATION
+        fileName:
+          type: string
+          minLength: 1
+          description: Original uploaded file name
+          example: slides.pdf
+        fileExtension:
+          type: string
+          minLength: 1
+          description: File extension without the dot
+          example: pdf
+        fileSize:
+          type: integer
+          format: int64
+          description: File size in bytes
+          example: 2097152
+        mimeType:
+          type: string
+          minLength: 1
+          description: MIME type of the material
+          example: application/pdf
+    SessionMaterialAssociationRequest:
+      type: object
+      description: 'Story 5.9: associate 1-10 already-uploaded materials with a session.'
+      required:
+      - materials
+      properties:
+        materials:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/MaterialUploadItem'
+    SessionMaterialsResponse:
+      type: object
+      description: 'Story 5.9: wrapper for the materials associated with a session (returned by
+        associate + list).'
+      required:
+      - materials
+      properties:
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionMaterialResponse'
+    MaterialDownloadUrlResponse:
+      type: object
+      description: 'Story 5.9: time-limited presigned download URL for a single session material.'
+      required:
+      - downloadUrl
+      properties:
+        downloadUrl:
+          type: string
+          description: Presigned URL to download the material
+          example: https://s3.eu-central-1.amazonaws.com/batbern-materials/...&X-Amz-Signature=...
+    UploadMaterialFromUrlRequest:
+      type: object
+      description: 'Batch-import helper: fetch a material from a source URL and associate it with
+        a session (organizer-only). Used by historical-data import.'
+      required:
+      - url
+      - filename
+      properties:
+        url:
+          type: string
+          minLength: 1
+          description: Source URL to fetch the material from
+          example: https://cdn.batbern.ch/legacy/BAT142_UI_Design.pdf
+        filename:
+          type: string
+          minLength: 1
+          description: Target file name
+          example: BAT142_UI_Design.pdf
+        materialType:
+          type: string
+          description: Material classification; defaults to DOCUMENT when omitted
+          example: DOCUMENT
     BatchImportSessionRequest:
       type: object
       description: 'Request payload for batch import from legacy sessions.json.
@@ -1449,8 +2316,14 @@ components:
           example: Discussion on modern UI patterns
         pdf:
           type: string
-          description: PDF filename for reference (appended to description)
+          description: 'Legacy PDF filename for reference (appended to description). Deprecated
+            — use materialUrl (Story 5.9).'
           example: BAT142_UI_Design.pdf
+        materialUrl:
+          type: string
+          description: 'CDN URL for a PDF/PPTX material. When provided, the backend fetches it
+            and associates it as a session material (Story 5.9).'
+          example: https://cdn.batbern.ch/materials/BAT142_UI_Design.pdf
         authoren:
           type: string
           description: Moderator name (for Moderation sessions)
@@ -1495,6 +2368,7 @@ components:
       required:
       - totalProcessed
       - successfullyCreated
+      - updated
       - skipped
       - failed
       - details
@@ -1507,6 +2381,10 @@ components:
           type: integer
           description: Successfully created sessions
           example: 2
+        updated:
+          type: integer
+          description: Existing sessions updated (e.g. materials added to a duplicate)
+          example: 0
         skipped:
           type: integer
           description: Skipped sessions (duplicates)
@@ -1538,6 +2416,7 @@ components:
           type: string
           enum:
           - success
+          - updated
           - skipped
           - failed
           description: Import status
@@ -1553,19 +2432,15 @@ components:
           example: user-interface-design-abc123
     CreateSessionRequest:
       type: object
-      description: 'Create session request - supports creating placeholder sessions.
-
-
-        **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
-
-        Timing will be assigned later during slot assignment workflow (Story 5.7).
-
-
-        **Full Sessions**: Provide all fields to create a fully-defined session.
-
-        '
+      description: 'Create a fully-defined session. title, sessionType, startTime and
+        endTime are all required (the deployed controller rejects a request missing any
+        of them with 400). sessionType is a free string rather than an enum so structural
+        types such as `aperitif` can be created without a contract change.'
       required:
       - title
+      - sessionType
+      - startTime
+      - endTime
       properties:
         title:
           type: string
@@ -1574,27 +2449,16 @@ components:
           type: string
         sessionType:
           type: string
-          nullable: true
-          description: Session type - omit for placeholder sessions
-          enum:
-          - keynote
-          - presentation
-          - workshop
-          - panel_discussion
-          - networking
-          - break
-          - lunch
-          - moderation
+          description: 'Session type, e.g. keynote, presentation, workshop, panel_discussion,
+            networking, break, lunch, moderation, aperitif.'
         startTime:
           type: string
           format: date-time
-          nullable: true
-          description: Session start time - omit for placeholder sessions
+          description: Session start time (ISO-8601).
         endTime:
           type: string
           format: date-time
-          nullable: true
-          description: Session end time - omit for placeholder sessions
+          description: Session end time (ISO-8601).
         room:
           type: string
           maxLength: 100
@@ -1853,18 +2717,6 @@ components:
           format: time
           nullable: true
           example: '19:00'
-    GenerateStructuralSessionsRequest:
-      type: object
-      description: Request to generate structural sessions (moderation, break, lunch) for an event.
-      properties:
-        overwrite:
-          type: boolean
-          default: false
-          description: 'If false (default), returns 409 if structural sessions already exist.
-
-            If true, deletes existing structural sessions and recreates them.
-
-            '
     QnaPostRequest:
       type: object
       description: 'Story 7.5: post a Q&A question or answer. `parentPostId` set = an answer to that question;
@@ -1880,8 +2732,9 @@ components:
       properties:
         body:
           type: string
+          minLength: 1
           maxLength: 5000
-          description: The question or answer text.
+          description: The question or answer text (non-empty).
           example: How did you handle schema migration during the cutover?
         parentPostId:
           type: string

@@ -94,7 +94,12 @@ openApiGenerate {
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true',  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
+        // Restore the class-level @JsonInclude(NON_NULL) the hand-written Company DTOs carried, so unset
+        // fields are OMITTED from JSON (not serialized as null). The sparse-fieldset (?fields=) and
+        // resource-expansion (?include=) contracts depend on absent fields — see AdvancedQueryIntegrationTest.
+        additionalModelTypeAnnotations: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
     ]
 
     globalProperties = [
@@ -144,7 +149,8 @@ task openApiGenerateUsers(type: org.openapitools.generator.gradle.plugin.tasks.G
         useOptional: 'false',
         delegatePattern: 'false',
         useJakartaEe: 'true',
-        generateBuilders: 'true'
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
     ]
 
     globalProperties = [

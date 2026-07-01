@@ -25,6 +25,7 @@ This will generate TypeScript types from:
 | `docs/api/event-newsletter-api.openapi.yml`    | `event-newsletter-api.types.ts`    |
 | `docs/api/event-media-api.openapi.yml`         | `event-media-api.types.ts`         |
 | `docs/api/event-ai-api.openapi.yml`            | `event-ai-api.types.ts`            |
+| `docs/api/event-app-settings-api.openapi.yml`  | `event-app-settings-api.types.ts`  |
 | `docs/api/event-analytics-api.openapi.yml`     | `event-analytics-api.types.ts`     |
 | `docs/api/event-watch-api.openapi.yml`         | `event-watch-api.types.ts`         |
 | `docs/api/speakers-api.openapi.yml`            | `speakers-api.types.ts`            |

@@ -2,7 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Logo;
 import ch.batbern.companyuser.domain.LogoStatus;
-import ch.batbern.companyuser.dto.PresignedUploadUrl;
+import ch.batbern.companyuser.dto.generated.LogoPresignedUploadUrl;
 import ch.batbern.companyuser.exception.FileSizeExceededException;
 import ch.batbern.companyuser.exception.InvalidFileTypeException;
 import ch.batbern.companyuser.exception.LogoNotFoundException;
@@ -84,7 +84,7 @@ public class GenericLogoService {
      * @throws FileSizeExceededException if file size exceeds 5MB
      * @throws InvalidFileTypeException  if file type is not allowed
      */
-    public PresignedUploadUrl generatePresignedUrl(String fileName, long fileSize, String mimeType) {
+    public LogoPresignedUploadUrl generatePresignedUrl(String fileName, long fileSize, String mimeType) {
         log.info("Generating presigned upload URL for file: {}, size: {} bytes", fileName, fileSize);
 
         // Validate file size (max 5MB)
@@ -140,14 +140,13 @@ public class GenericLogoService {
 
         log.info("Generated presigned URL for upload ID: {}, S3 key: {}", uploadId, tempS3Key);
 
-        return PresignedUploadUrl.builder()
+        return new LogoPresignedUploadUrl()
                 .uploadUrl(uploadUrl)
                 .fileId(uploadId) // Use uploadId as fileId for client reference
                 .s3Key(tempS3Key)
                 .fileExtension(fileExtension)
                 .expiresInMinutes(PRESIGNED_URL_EXPIRATION_MINUTES)
-                .requiredHeaders(Map.of("Content-Type", mimeType))
-                .build();
+                .requiredHeaders(Map.of("Content-Type", mimeType));
     }
 
     /**

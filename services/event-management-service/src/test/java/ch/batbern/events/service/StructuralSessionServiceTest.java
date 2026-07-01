@@ -2,7 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.SessionResponse;
+import ch.batbern.events.sessions.dto.generated.SessionResponse;
 
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.entity.AgendaConfig;

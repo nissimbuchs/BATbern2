@@ -1,8 +1,9 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.EventAgendaConfigResponse;
-import ch.batbern.events.dto.UpdateEventAgendaConfigRequest;
+import ch.batbern.events.sessions.dto.generated.AgendaConfigSource;
+import ch.batbern.events.sessions.dto.generated.EventAgendaConfigResponse;
+import ch.batbern.events.sessions.dto.generated.UpdateEventAgendaConfigRequest;
 import ch.batbern.events.entity.AgendaConfig;
 import ch.batbern.events.entity.EventAgendaConfig;
 import ch.batbern.events.exception.EventNotFoundException;
@@ -26,9 +27,6 @@ import java.time.format.DateTimeParseException;
 @RequiredArgsConstructor
 public class AgendaConfigService {
 
-    private static final String SOURCE_TEMPLATE = "TEMPLATE";
-    private static final String SOURCE_OVERRIDE = "EVENT_OVERRIDE";
-
     private final EventRepository eventRepository;
     private final EventAgendaConfigRepository overrideRepository;
     private final AgendaConfigResolver agendaConfigResolver;
@@ -45,7 +43,7 @@ public class AgendaConfigService {
         Event event = loadEvent(eventCode);
         boolean hasOverride = overrideRepository.findByEventId(event.getId()).isPresent();
         AgendaConfig config = agendaConfigResolver.resolve(event);
-        return toResponse(config, hasOverride ? SOURCE_OVERRIDE : SOURCE_TEMPLATE);
+        return toResponse(config, hasOverride ? AgendaConfigSource.EVENT_OVERRIDE : AgendaConfigSource.TEMPLATE);
     }
 
     /**
@@ -60,16 +58,16 @@ public class AgendaConfigService {
     @Transactional
     public EventAgendaConfigResponse upsert(String eventCode, UpdateEventAgendaConfigRequest request) {
         // Cross-field rule surfaced as 400 (the entity @PrePersist throws IllegalStateException → 500).
-        if (request.maxSlots() < request.minSlots()) {
+        if (request.getMaxSlots() < request.getMinSlots()) {
             throw new IllegalArgumentException(String.format(
-                    "maxSlots (%d) must be >= minSlots (%d)", request.maxSlots(), request.minSlots()));
+                    "maxSlots (%d) must be >= minSlots (%d)", request.getMaxSlots(), request.getMinSlots()));
         }
         Event event = loadEvent(eventCode);
         EventAgendaConfig entity = overrideRepository.findByEventId(event.getId())
                 .orElseGet(() -> EventAgendaConfig.builder().eventId(event.getId()).build());
         apply(entity, request);
         EventAgendaConfig saved = overrideRepository.save(entity);
-        return toResponse(saved, SOURCE_OVERRIDE);
+        return toResponse(saved, AgendaConfigSource.EVENT_OVERRIDE);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -80,25 +78,26 @@ public class AgendaConfigService {
     }
 
     private void apply(EventAgendaConfig entity, UpdateEventAgendaConfigRequest req) {
-        entity.setMinSlots(req.minSlots());
-        entity.setMaxSlots(req.maxSlots());
-        entity.setSlotDuration(req.slotDuration());
-        entity.setTheoreticalSlotsAM(req.theoreticalSlotsAM());
-        entity.setBreakSlots(req.breakSlots());
-        entity.setLunchSlots(req.lunchSlots());
-        entity.setDefaultCapacity(req.defaultCapacity());
-        entity.setModerationStartDuration(req.moderationStartDuration());
-        entity.setModerationEndDuration(req.moderationEndDuration());
-        entity.setBreakDuration(req.breakDuration());
-        entity.setLunchDuration(req.lunchDuration());
-        entity.setAperitifSlots(req.aperitifSlots());
-        entity.setAperitifDuration(req.aperitifDuration());
-        entity.setAperitifPosition(req.aperitifPosition());
-        entity.setTypicalStartTime(parseTime(req.typicalStartTime()));
-        entity.setTypicalEndTime(parseTime(req.typicalEndTime()));
+        entity.setMinSlots(req.getMinSlots());
+        entity.setMaxSlots(req.getMaxSlots());
+        entity.setSlotDuration(req.getSlotDuration());
+        entity.setTheoreticalSlotsAM(req.getTheoreticalSlotsAM());
+        entity.setBreakSlots(req.getBreakSlots());
+        entity.setLunchSlots(req.getLunchSlots());
+        entity.setDefaultCapacity(req.getDefaultCapacity());
+        entity.setModerationStartDuration(req.getModerationStartDuration());
+        entity.setModerationEndDuration(req.getModerationEndDuration());
+        entity.setBreakDuration(req.getBreakDuration());
+        entity.setLunchDuration(req.getLunchDuration());
+        entity.setAperitifSlots(req.getAperitifSlots());
+        entity.setAperitifDuration(req.getAperitifDuration());
+        // Wire enum (start|end) → DB String column.
+        entity.setAperitifPosition(req.getAperitifPosition() == null ? null : req.getAperitifPosition().getValue());
+        entity.setTypicalStartTime(parseTime(req.getTypicalStartTime()));
+        entity.setTypicalEndTime(parseTime(req.getTypicalEndTime()));
     }
 
-    private EventAgendaConfigResponse toResponse(AgendaConfig config, String source) {
+    private EventAgendaConfigResponse toResponse(AgendaConfig config, AgendaConfigSource source) {
         return EventAgendaConfigResponse.builder()
                 .source(source)
                 .minSlots(config.getMinSlots())
@@ -114,7 +113,8 @@ public class AgendaConfigService {
                 .lunchDuration(config.getLunchDuration())
                 .aperitifSlots(config.getAperitifSlots())
                 .aperitifDuration(config.getAperitifDuration())
-                .aperitifPosition(config.getAperitifPosition())
+                .aperitifPosition(config.getAperitifPosition() == null ? null
+                        : EventAgendaConfigResponse.AperitifPositionEnum.fromValue(config.getAperitifPosition()))
                 .typicalStartTime(formatTime(config.getTypicalStartTime()))
                 .typicalEndTime(formatTime(config.getTypicalEndTime()))
                 .build();

@@ -1,14 +1,14 @@
 package ch.batbern.events.mapper;
 
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.CreateSessionRequest;
-import ch.batbern.events.dto.SessionResponse;
+import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,13 +58,13 @@ class SessionMapperTest {
             assertThat(result.getTitle()).isEqualTo("Opening Keynote");
             assertThat(result.getDescription()).isEqualTo("The main opening keynote presentation");
             assertThat(result.getSessionType()).isEqualTo("keynote");
-            assertThat(result.getStartTime()).isEqualTo("2025-06-15T14:00:00Z");
-            assertThat(result.getEndTime()).isEqualTo("2025-06-15T15:30:00Z");
+            assertThat(result.getStartTime()).isEqualTo(OffsetDateTime.parse("2025-06-15T14:00:00Z"));
+            assertThat(result.getEndTime()).isEqualTo(OffsetDateTime.parse("2025-06-15T15:30:00Z"));
             assertThat(result.getRoom()).isEqualTo("Main Hall");
             assertThat(result.getCapacity()).isEqualTo(500);
             assertThat(result.getLanguage()).isEqualTo("de");
-            assertThat(result.getCreatedAt()).isEqualTo("2025-06-01T10:00:00Z");
-            assertThat(result.getUpdatedAt()).isEqualTo("2025-06-10T15:30:00Z");
+            assertThat(result.getCreatedAt()).isEqualTo(OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+            assertThat(result.getUpdatedAt()).isEqualTo(OffsetDateTime.parse("2025-06-10T15:30:00Z"));
             assertThat(result.getMaterialsCount()).isEqualTo(3);
             assertThat(result.getMaterialsStatus()).isEqualTo("COMPLETE");
         }
@@ -122,73 +122,6 @@ class SessionMapperTest {
             // Then
             assertThat(result.getSpeakers()).isNull();
             assertThat(result.getMaterials()).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("toEntity")
-    class ToEntityTests {
-
-        @Test
-        @DisplayName("should return null when request is null")
-        void shouldReturnNullWhenRequestIsNull() {
-            Session result = mapper.toEntity(null);
-            assertThat(result).isNull();
-        }
-
-        @Test
-        @DisplayName("should map all fields from CreateSessionRequest to entity")
-        void shouldMapAllFieldsFromCreateSessionRequest() {
-            // Given
-            CreateSessionRequest request = CreateSessionRequest.builder()
-                    .title("Workshop: Microservices")
-                    .description("Hands-on microservices workshop")
-                    .sessionType("workshop")
-                    .startTime("2025-06-15T16:00:00Z")
-                    .endTime("2025-06-15T18:00:00Z")
-                    .room("Workshop Room A")
-                    .capacity(30)
-                    .language("en")
-                    .build();
-
-            // When
-            Session result = mapper.toEntity(request);
-
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getTitle()).isEqualTo("Workshop: Microservices");
-            assertThat(result.getDescription()).isEqualTo("Hands-on microservices workshop");
-            assertThat(result.getSessionType()).isEqualTo("workshop");
-            assertThat(result.getStartTime()).isEqualTo(Instant.parse("2025-06-15T16:00:00Z"));
-            assertThat(result.getEndTime()).isEqualTo(Instant.parse("2025-06-15T18:00:00Z"));
-            assertThat(result.getRoom()).isEqualTo("Workshop Room A");
-            assertThat(result.getCapacity()).isEqualTo(30);
-            assertThat(result.getLanguage()).isEqualTo("en");
-        }
-
-        @Test
-        @DisplayName("should handle null optional fields")
-        void shouldHandleNullOptionalFields() {
-            // Given
-            CreateSessionRequest request = CreateSessionRequest.builder()
-                    .title("Minimal Session")
-                    .sessionType("presentation")
-                    .startTime("2025-06-15T14:00:00Z")
-                    .endTime("2025-06-15T15:00:00Z")
-                    .description(null)
-                    .room(null)
-                    .capacity(null)
-                    .language(null)
-                    .build();
-
-            // When
-            Session result = mapper.toEntity(request);
-
-            // Then
-            assertThat(result.getDescription()).isNull();
-            assertThat(result.getRoom()).isNull();
-            assertThat(result.getCapacity()).isNull();
-            assertThat(result.getLanguage()).isNull();
         }
     }
 

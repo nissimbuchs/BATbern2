@@ -2,8 +2,8 @@ package ch.batbern.companyuser.integration;
 
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
-import ch.batbern.companyuser.dto.CreateCompanyRequest;
-import ch.batbern.companyuser.dto.UpdateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.service.CompanyService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
@@ -162,7 +162,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getWebsite()).isEqualTo("https://event.example.com");
         assertThat(response.getIndustry()).isEqualTo("Testing");
         assertThat(response.getDescription()).isEqualTo("Testing events");
-        assertThat(response.getVerified()).isFalse();
+        assertThat(response.getIsVerified()).isFalse();
         assertThat(response.getCreatedAt()).isNotNull();
         assertThat(response.getUpdatedAt()).isNotNull();
     }

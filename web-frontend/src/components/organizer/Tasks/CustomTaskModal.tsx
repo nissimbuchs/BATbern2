@@ -197,9 +197,9 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
     if (isEditMode && existingTask) {
       // Edit mode: patch existing task
       const request: UpdateEventTaskRequest = {
-        notes: notes || null,
-        assignedOrganizerUsername: assignedOrganizer || null,
-        dueDate: absoluteDueDate ? new Date(absoluteDueDate).toISOString() : null,
+        notes: notes || undefined,
+        assignedOrganizerUsername: assignedOrganizer || undefined,
+        dueDate: absoluteDueDate ? new Date(absoluteDueDate).toISOString() : undefined,
       };
       updateTaskMutation.mutate({ taskId: existingTask.id, request });
       return;

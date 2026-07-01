@@ -1,6 +1,8 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.api.generated.topics.TopicsApi;
 import ch.batbern.events.domain.Topic;
+import ch.batbern.events.dto.generated.topics.CalculateSimilarities200Response;
 import ch.batbern.events.dto.generated.topics.CreateTopicRequest;
 import ch.batbern.events.dto.generated.topics.TopicListResponse;
 import ch.batbern.events.dto.TopicFilterRequest;
@@ -9,7 +11,6 @@ import ch.batbern.events.service.StalenessScoreService;
 import ch.batbern.events.service.TopicService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,14 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -50,8 +44,8 @@ import org.springframework.web.server.ResponseStatusException;
  * - GET /api/v1/topics/{topicCode}/usage-history - Get usage history
  */
 @RestController
-@RequestMapping("/api/v1/topics")
-public class TopicController {
+@RequestMapping("/api/v1")
+public class TopicController implements TopicsApi {
 
     private final TopicService topicService;
     private final TopicMapper topicMapper;
@@ -83,13 +77,13 @@ public class TopicController {
      * @param include Optional comma-separated includes (e.g., "history,similarity")
      * @return Paginated list of topics
      */
-    @GetMapping
-    public ResponseEntity<TopicListResponse> getAllTopics(
-            @RequestParam(required = false) String filter,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "50") Integer limit,
-            @RequestParam(required = false) String sort,
-            @RequestParam(required = false) String include) {
+    @Override
+    public ResponseEntity<TopicListResponse> listTopics(
+            String filter,
+            String sort,
+            Integer page,
+            Integer limit,
+            String include) {
 
         // Parse filter JSON
         String category = null;
@@ -223,11 +217,11 @@ public class TopicController {
     /**
      * Get topic by code (ADR-003).
      */
-    @GetMapping("/{topicCode}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ch.batbern.events.dto.generated.topics.Topic> getTopicByCode(
-            @PathVariable String topicCode,
-            @RequestParam(required = false) String include) {
+            String topicCode,
+            String include) {
 
         Optional<Topic> topicOpt = topicService.getTopicByCode(topicCode);
         if (topicOpt.isEmpty()) {
@@ -259,10 +253,10 @@ public class TopicController {
     /**
      * Create new topic (AC8).
      */
-    @PostMapping
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ch.batbern.events.dto.generated.topics.Topic> createTopic(
-            @Valid @RequestBody CreateTopicRequest request) {
+            CreateTopicRequest request) {
         Topic topic = topicService.createTopic(
                 request.getTitle(),
                 request.getDescription(),
@@ -276,11 +270,11 @@ public class TopicController {
     /**
      * Update existing topic (Story 5.2a).
      */
-    @PutMapping("/{topicCode}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ch.batbern.events.dto.generated.topics.Topic> updateTopic(
-            @PathVariable String topicCode,
-            @Valid @RequestBody CreateTopicRequest request) {
+            String topicCode,
+            CreateTopicRequest request) {
 
         Topic topic = topicService.updateTopicByCode(
                 topicCode,
@@ -296,9 +290,9 @@ public class TopicController {
     /**
      * Delete topic (Story 5.2a).
      */
-    @DeleteMapping("/{topicCode}")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Void> deleteTopic(@PathVariable String topicCode) {
+    public ResponseEntity<Void> deleteTopic(String topicCode) {
         topicService.deleteTopicByCode(topicCode);
         return ResponseEntity.noContent().build();
     }
@@ -306,10 +300,10 @@ public class TopicController {
     /**
      * Get similar topics (>70% similarity) for duplicate detection (AC5).
      */
-    @GetMapping("/{topicCode}/similar")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<List<ch.batbern.events.dto.generated.topics.Topic>> getSimilarTopics(
-            @PathVariable String topicCode) {
+            String topicCode) {
         List<Topic> similarTopics = topicService.getSimilarTopicsByCode(topicCode);
         Map<UUID, StalenessScoreService.StalenessData> stalenessMap =
                 stalenessScoreService.computeStalenessDataBatch(similarTopics);
@@ -328,10 +322,10 @@ public class TopicController {
     /**
      * Get usage history for a topic (AC2).
      */
-    @GetMapping("/{topicCode}/usage-history")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<ch.batbern.events.dto.generated.topics.TopicUsageHistory>> getUsageHistory(
-            @PathVariable String topicCode) {
+    public ResponseEntity<List<ch.batbern.events.dto.generated.topics.TopicUsageHistory>> getTopicUsageHistory(
+            String topicCode) {
         Optional<Topic> topic = topicService.getTopicByCode(topicCode);
         if (topic.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -343,10 +337,11 @@ public class TopicController {
     /**
      * Calculate similarity scores for all topics (maintenance endpoint, AC4).
      */
-    @PostMapping("/calculate-similarities")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<String> calculateSimilarities() {
+    public ResponseEntity<CalculateSimilarities200Response> calculateSimilarities() {
         topicService.calculateAllSimilarities();
-        return ResponseEntity.ok("Similarity scores calculated for all topics");
+        return ResponseEntity.ok(new CalculateSimilarities200Response()
+                .message("Similarity scores calculated for all topics"));
     }
 }

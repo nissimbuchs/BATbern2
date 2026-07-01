@@ -1,26 +1,27 @@
 package ch.batbern.companyuser.controller;
 
-import ch.batbern.companyuser.dto.LogoUploadConfirmRequest;
-import ch.batbern.companyuser.dto.LogoUploadRequest;
-import ch.batbern.companyuser.dto.PresignedUploadUrl;
+import ch.batbern.companyuser.dto.generated.LogoUploadConfirmRequest;
+import ch.batbern.companyuser.dto.generated.LogoUploadRequest;
+import ch.batbern.companyuser.dto.generated.LogoPresignedUploadUrl;
 import ch.batbern.companyuser.exception.FileSizeExceededException;
 import ch.batbern.companyuser.exception.InvalidFileTypeException;
+import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.exception.LogoNotFoundException;
-import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.service.GenericLogoService;
 import ch.batbern.companyuser.service.LogoCleanupService;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,12 +48,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Story 1.16.3: Generic File Upload Service
  * Tests all REST endpoints with security, validation, and error handling
  */
-@WebMvcTest(controllers = LogoController.class)
-// Epic 13 (SB4): @WebMvcTest no longer auto-applies springSecurity() to MockMvc, so @WithMockUser
-// is dropped and secured endpoints return 401. MockMvcSecuritySetup re-applies it (the @SpringBootTest
-// path gets it via AbstractIntegrationTest; slice tests must import it explicitly).
-@Import({ch.batbern.companyuser.config.SecurityConfig.class, ch.batbern.shared.test.MockMvcSecuritySetup.class})
-class LogoControllerTest {
+// Epic 13 / API consolidation Phase 7: LogoController now implements the generated LogosApi
+// interface (mappings inherited from the interface). The SB4 @WebMvcTest slice does NOT register
+// interface-inherited @RequestMapping (every handler-dispatching request 500s), so this runs as a
+// full-context @SpringBootTest (via AbstractIntegrationTest) with the two logo services mocked —
+// the CompanyController precedent.
+@Transactional
+@Import(TestAwsConfig.class)
+class LogoControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -65,17 +68,6 @@ class LogoControllerTest {
 
     @MockitoBean
     private LogoCleanupService cleanupService;
-
-    @MockitoBean
-    private UserRepository userRepository; // Required by WebMvcConfig -> JITUserProvisioningInterceptor
-
-    // Required by WebMvcConfig -> JITUserProvisioningInterceptor (verified-additional-email guard)
-    @MockitoBean
-    private ch.batbern.companyuser.repository.UserAdditionalEmailRepository userAdditionalEmailRepository;
-
-    // Required by WebMvcConfig -> FederatedAvatarImportInterceptor (Story 12.12)
-    @MockitoBean
-    private ch.batbern.companyuser.service.FederatedAvatarImportService federatedAvatarImportService;
 
     // ============ POST /presigned-url Tests ============
 
@@ -90,7 +82,7 @@ class LogoControllerTest {
                 .mimeType("image/png")
                 .build();
 
-        PresignedUploadUrl expectedResponse = PresignedUploadUrl.builder()
+        LogoPresignedUploadUrl expectedResponse = LogoPresignedUploadUrl.builder()
                 .uploadUrl("https://s3.amazonaws.com/bucket/logos/temp/upload-123/logo.png?signature=xyz")
                 .fileId("file-123")
                 .fileExtension("png")

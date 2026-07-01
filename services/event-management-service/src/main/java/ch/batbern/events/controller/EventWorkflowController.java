@@ -1,39 +1,40 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.core.api.generated.EventWorkflowApi;
+import ch.batbern.events.core.dto.generated.TransitionStateRequest;
+import ch.batbern.events.core.dto.generated.WorkflowStatusDto;
+import ch.batbern.events.core.dto.generated.WorkflowTransitionResponse;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.TransitionStateRequest;
-import ch.batbern.events.dto.WorkflowStatusDto;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventWorkflowStateMachine;
 import ch.batbern.events.service.WorkflowTransitionValidator;
 import ch.batbern.shared.types.EventWorkflowState;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Event Workflow Controller
  * Story 5.1a: Workflow State Machine Foundation - AC12-13
  *
- * Provides endpoints for managing event workflow state transitions
+ * <p>Phase 7 (ADR-006 / api-consolidation): contract-first — this controller
+ * {@code implements} the generated {@code EventWorkflowApi} interface (events-core spec,
+ * "Event Workflow" tag), which carries the HTTP method/path mappings and request/response
+ * DTO types. The class-level {@code @RequestMapping("/api/v1")} supplies the version prefix
+ * the interface paths omit (e.g. interface {@code /events/{eventCode}/workflow/status} →
+ * {@code /api/v1/events/...}). Method-level {@code @PreAuthorize} / cache eviction stay on the
+ * implementation (the generated interface carries neither); behaviour matches the pre-wiring
+ * controller exactly.
  *
  * Security:
  * - Authentication: JWT token required (enforced by Spring Security)
@@ -41,11 +42,10 @@ import java.util.Map;
  * - Rate Limiting: Applied at API Gateway level (10 transitions/min per user)
  */
 @RestController
-@RequestMapping("/api/v1/events")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Event Workflow", description = "Event workflow state management API")
-public class EventWorkflowController {
+public class EventWorkflowController implements EventWorkflowApi {
 
     private final EventWorkflowStateMachine stateMachine;
     private final WorkflowTransitionValidator transitionValidator;
@@ -53,45 +53,34 @@ public class EventWorkflowController {
     private final SecurityContextHelper securityContextHelper;
 
     /**
-     * Transition event to target workflow state (AC12)
-     *
-     * PUT /api/v1/events/{code}/workflow/transition
-     *
-     * Security:
-     * - Requires ORGANIZER role
-     * - Rate limited to 10 transitions per minute (API Gateway)
-     * - Username extracted from JWT token for audit trail
-     *
-     * @param eventCode Event code (e.g., "BAT-2024-Q4")
-     * @param request Transition request containing target state
-     * @return Updated event with new workflow state
+     * Transition event to target workflow state (AC12).
+     * POST /api/v1/events/{eventCode}/workflow/transition — requires ORGANIZER role,
+     * rate-limited to 10 transitions/min (API Gateway). Username from JWT for audit.
      */
-    @PostMapping("/{code}/workflow/transition")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     @org.springframework.cache.annotation.Caching(evict = {
         @CacheEvict(value = "eventWithIncludes", allEntries = true),
         @CacheEvict(value = "archiveEvents", allEntries = true)
     })
-    @Operation(summary = "Transition event to target workflow state",
-               description = "Requires ORGANIZER role. Rate limited to 10 transitions/min.")
-    public ResponseEntity<Map<String, Object>> transitionEventWorkflowState(
-            @PathVariable("code") String eventCode,
-            @Valid @RequestBody TransitionStateRequest request) {
+    public ResponseEntity<WorkflowTransitionResponse> transitionEventWorkflowState(
+            String eventCode, TransitionStateRequest transitionStateRequest) {
 
         // Extract authenticated user from JWT token
         String organizerUsername = securityContextHelper.getCurrentUsername();
 
         // Extract override flag (defaults to false if not provided)
-        boolean override = Boolean.TRUE.equals(request.getOverrideValidation());
+        boolean override = Boolean.TRUE.equals(transitionStateRequest.getOverrideValidation());
 
         // Log override attempts for security auditing
         if (override) {
             log.warn("WORKFLOW OVERRIDE: user={}, event={}, target={}, reason='{}'",
-                     organizerUsername, eventCode, request.getTargetState(),
-                     request.getOverrideReason() != null ? request.getOverrideReason() : "Not provided");
+                     organizerUsername, eventCode, transitionStateRequest.getTargetState(),
+                     transitionStateRequest.getOverrideReason() != null
+                             ? transitionStateRequest.getOverrideReason() : "Not provided");
         } else {
             log.info("User {} transitioning event {} to state {}",
-                     organizerUsername, eventCode, request.getTargetState());
+                     organizerUsername, eventCode, transitionStateRequest.getTargetState());
         }
 
         // Find event by event code
@@ -99,7 +88,7 @@ public class EventWorkflowController {
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
 
         // Parse target state
-        EventWorkflowState targetState = EventWorkflowState.valueOf(request.getTargetState());
+        EventWorkflowState targetState = EventWorkflowState.valueOf(transitionStateRequest.getTargetState());
 
         // Perform transition via state machine with override flag
         Event updatedEvent = stateMachine.transitionToState(
@@ -107,14 +96,14 @@ public class EventWorkflowController {
                 targetState,
                 organizerUsername,
                 override,
-                request.getOverrideReason()
+                transitionStateRequest.getOverrideReason()
         );
 
-        // Build response
-        Map<String, Object> response = new HashMap<>();
-        response.put("eventCode", updatedEvent.getEventCode());
-        response.put("workflowState", updatedEvent.getWorkflowState().name());
-        response.put("updatedAt", updatedEvent.getUpdatedAt());
+        WorkflowTransitionResponse response = new WorkflowTransitionResponse()
+                .eventCode(updatedEvent.getEventCode())
+                .workflowState(updatedEvent.getWorkflowState().name())
+                .updatedAt(updatedEvent.getUpdatedAt() != null
+                        ? updatedEvent.getUpdatedAt().atOffset(ZoneOffset.UTC) : null);
 
         log.info("Event {} successfully transitioned to {}", eventCode, targetState);
 
@@ -122,22 +111,12 @@ public class EventWorkflowController {
     }
 
     /**
-     * Get current workflow status (AC13)
-     *
-     * GET /api/v1/events/{code}/workflow/status
-     *
-     * Security:
-     * - Requires authentication (any authenticated user)
-     * - Rate limited at API Gateway level
-     *
-     * @param eventCode Event code (e.g., "BAT-2024-Q4")
-     * @return Current workflow status with next available states and validation messages
+     * Get current workflow status (AC13).
+     * GET /api/v1/events/{eventCode}/workflow/status — requires authentication.
+     * Returns current state, next available states, and validation blockers.
      */
-    @GetMapping("/{code}/workflow/status")
-    @Operation(summary = "Get current workflow status",
-               description = "Returns current state, next available states, and validation blockers")
-    public ResponseEntity<WorkflowStatusDto> getWorkflowStatus(
-            @PathVariable("code") String eventCode) {
+    @Override
+    public ResponseEntity<WorkflowStatusDto> getWorkflowStatus(String eventCode) {
 
         String requestingUser = securityContextHelper.getCurrentUsername();
         log.info("User {} querying workflow status for event {}", requestingUser, eventCode);
@@ -165,12 +144,11 @@ public class EventWorkflowController {
             }
         }
 
-        WorkflowStatusDto statusDto = WorkflowStatusDto.builder()
+        WorkflowStatusDto statusDto = new WorkflowStatusDto()
                 .currentState(currentState.name())
                 .nextAvailableStates(nextAvailableStates)
                 .validationMessages(validationMessages)
-                .blockedTransitions(blockedTransitions)
-                .build();
+                .blockedTransitions(blockedTransitions);
 
         log.info("Workflow status for event {}: current={}, next={}",
                  eventCode, currentState, nextAvailableStates);
@@ -179,14 +157,11 @@ public class EventWorkflowController {
     }
 
     /**
-     * Get next available states based on current state
-     * This follows the 9-step workflow sequence
-     *
-     * Delegates to WorkflowTransitionValidator for single source of truth
+     * Get next available states based on current state.
+     * Delegates to WorkflowTransitionValidator for single source of truth; filters out
+     * idempotent (same-state) transitions for UI display.
      */
     private List<String> getNextAvailableStates(EventWorkflowState currentState) {
-        // Get valid target states from WorkflowTransitionValidator
-        // Filter out idempotent transitions (same state to same state) for UI display
         return transitionValidator.getValidTargetStates(currentState).stream()
                 .filter(state -> state != currentState)
                 .map(Enum::name)

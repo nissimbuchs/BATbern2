@@ -1,15 +1,12 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.dto.TopicSimilarityRequest;
-import ch.batbern.events.dto.TopicSimilarityResponse;
+import ch.batbern.events.api.generated.topics.TopicSimilarityApi;
+import ch.batbern.events.dto.generated.topics.TopicSimilarityRequest;
+import ch.batbern.events.dto.generated.topics.TopicSimilarityResponse;
 import ch.batbern.events.service.TopicSimilarityService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,27 +19,19 @@ import org.springframework.web.bind.annotation.RestController;
  * - Red star blobs ignite when relatedPastEventNumbers matches their event number
  */
 @RestController
-@RequestMapping("/api/v1/events/{eventCode}")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
-public class TopicSimilarityController {
+public class TopicSimilarityController implements TopicSimilarityApi {
 
     private final TopicSimilarityService topicSimilarityService;
 
-    /**
-     * Classify a topic text and return cluster affinity data.
-     *
-     * POST /api/v1/events/{eventCode}/topic-similarity
-     *
-     * @param eventCode the event for which the topic is being evaluated (path variable)
-     * @param request   body containing the topic text
-     * @return cluster, similarity score, and related past event numbers
-     */
-    @PostMapping("/topic-similarity")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<TopicSimilarityResponse> getTopicSimilarity(
-            @PathVariable String eventCode,
-            @Valid @RequestBody TopicSimilarityRequest request) {
-        TopicSimilarityResponse response = topicSimilarityService.getSimilarity(request.getTopic());
+            String eventCode,
+            TopicSimilarityRequest topicSimilarityRequest) {
+        TopicSimilarityResponse response =
+                topicSimilarityService.getSimilarity(topicSimilarityRequest.getTopic());
         return ResponseEntity.ok(response);
     }
 }

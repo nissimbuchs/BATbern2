@@ -7,16 +7,16 @@ import ch.batbern.events.domain.NewsletterRecipientId;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.NewsletterPreviewResponse;
-import ch.batbern.events.dto.NewsletterSendResponse;
-import ch.batbern.events.dto.NewsletterSendStatusResponse;
-import ch.batbern.events.dto.SessionSpeakerResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterPreviewResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSendResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSendStatusResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -35,7 +35,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -609,13 +611,13 @@ public class NewsletterEmailService {
         int pct = total > 0 ? Math.min(100, done * 100 / total) : 0;
         return NewsletterSendStatusResponse.builder()
                 .id(send.getId())
-                .status(send.getStatus())
+                .status(NewsletterSendStatusResponse.StatusEnum.fromValue(send.getStatus()))
                 .sentCount(send.getSentCount())
                 .failedCount(send.getFailedCount())
                 .totalCount(total)
                 .percentComplete(pct)
-                .startedAt(send.getStartedAt())
-                .completedAt(send.getCompletedAt())
+                .startedAt(toOffset(send.getStartedAt()))
+                .completedAt(toOffset(send.getCompletedAt()))
                 .build();
     }
 
@@ -623,18 +625,22 @@ public class NewsletterEmailService {
     public NewsletterSendResponse toResponse(NewsletterSend send) {
         return NewsletterSendResponse.builder()
                 .id(send.getId())
-                .sentAt(send.getSentAt())
-                .reminder(send.isReminder())
+                .sentAt(toOffset(send.getSentAt()))
+                .isReminder(send.isReminder())
                 .locale(send.getLocale())
                 .recipientCount(send.getRecipientCount() != null ? send.getRecipientCount() : 0)
                 .sentByUsername(send.getSentByUsername())
-                .status(send.getStatus())
+                .status(NewsletterSendResponse.StatusEnum.fromValue(send.getStatus()))
                 .sentCount(send.getSentCount())
                 .failedCount(send.getFailedCount())
-                .startedAt(send.getStartedAt())
-                .completedAt(send.getCompletedAt())
-                .testMode(send.isTestMode())
+                .startedAt(toOffset(send.getStartedAt()))
+                .completedAt(toOffset(send.getCompletedAt()))
                 .build();
+    }
+
+    /** Convert a stored Instant to a UTC OffsetDateTime for the wire DTO (serialises identically as …Z). */
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
     }
 
     // ── Variable building ─────────────────────────────────────────────────────
@@ -852,14 +858,14 @@ public class NewsletterEmailService {
                 continue;
             }
 
-            List<SessionSpeakerResponse> speakers =
+            List<SessionSpeaker> speakers =
                     sessionUserService.getSessionSpeakers(session.getId());
             if (speakers.isEmpty()) {
                 continue;
             }
 
             String title = speakers.stream()
-                    .map(SessionSpeakerResponse::getPresentationTitle)
+                    .map(SessionSpeaker::getPresentationTitle)
                     .filter(t -> t != null && !t.isBlank())
                     .findFirst()
                     .orElse(session.getTitle());

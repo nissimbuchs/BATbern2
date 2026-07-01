@@ -1,5 +1,13 @@
 package ch.batbern.events.notification;
 
+import ch.batbern.events.notifications.api.generated.NotificationsApi;
+import ch.batbern.events.notifications.dto.generated.BatchOperationRequest;
+import ch.batbern.events.notifications.dto.generated.DeleteNotificationResponse;
+import ch.batbern.events.notifications.dto.generated.MarkAsReadResponse;
+import ch.batbern.events.notifications.dto.generated.NotificationCountResponse;
+import ch.batbern.events.notifications.dto.generated.NotificationPagination;
+import ch.batbern.events.notifications.dto.generated.NotificationResponse;
+import ch.batbern.events.notifications.dto.generated.NotificationsResponse;
 import ch.batbern.shared.api.PaginationParams;
 import ch.batbern.shared.api.PaginationUtils;
 import jakarta.persistence.EntityNotFoundException;
@@ -8,57 +16,40 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * REST API for Notifications
- * Story BAT-7: Notifications API Consolidation
+ * REST API for Notifications — Story BAT-7.
  *
- * Endpoints:
- * - GET /api/v1/notifications - List notifications (AC1)
- * - PUT /api/v1/notifications/{id}/read - Mark as read (AC2)
- * - PUT /api/v1/notifications/batch-read - Bulk mark as read (AC2)
- * - GET /api/v1/notifications/history - Delivery history (AC4)
- * - DELETE /api/v1/notifications/{id} - Delete (AC5)
- * - DELETE /api/v1/notifications/batch-delete - Bulk delete (AC5)
- * - GET /api/v1/notifications/count - Get count (AC6)
- *
- * Note: Response structures match frontend API contract
+ * <p>Contract-first: implements the generated {@link NotificationsApi} (spec
+ * {@code event-notifications-api.openapi.yml}). Endpoints (under {@code /api/v1}):
+ * {@code GET /notifications}, {@code GET /notifications/count}, {@code PUT /notifications/{id}/read},
+ * {@code PUT /notifications/batch-read}, {@code GET /notifications/history},
+ * {@code DELETE /notifications/{id}}, {@code DELETE /notifications/batch-delete}.
  */
 @RestController
-@RequestMapping("/api/v1/notifications")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
-public class NotificationController {
+public class NotificationController implements NotificationsApi {
 
-    private final NotificationService notificationService;
     private final NotificationRepository notificationRepository;
 
-    /**
-     * AC1: List notifications with filtering and pagination
-     * Returns custom response structure matching frontend API contract
-     *
-     * Uses shared PaginationUtils for consistent 1-based pagination
-     */
-    @GetMapping
-    public NotificationsResponse listNotifications(
-            @RequestParam String username,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer limit
+    @Override
+    public ResponseEntity<NotificationsResponse> listNotifications(
+            String username,
+            String status,
+            Integer page,
+            Integer limit
     ) {
         // Parse pagination params (1-based, with defaults and validation)
         PaginationParams paginationParams = PaginationUtils.parseParams(page, limit);
@@ -72,41 +63,35 @@ public class NotificationController {
                 ? notificationRepository.findByRecipientUsernameAndStatus(username, status.toUpperCase(), pageable)
                 : notificationRepository.findByRecipientUsername(username, pageable);
 
-        // Convert Spring Page to custom response structure
         List<NotificationResponse> data = notifications.getContent().stream()
-                .map(NotificationResponse::fromEntity)
+                .map(NotificationMapper::toResponse)
                 .collect(Collectors.toList());
 
-        // Generate pagination metadata using shared utility
-        ch.batbern.shared.api.PaginationMetadata paginationMetadata =
-                PaginationUtils.generateMetadata(pageNum, pageSize, notifications.getTotalElements());
+        NotificationPagination pagination = new NotificationPagination()
+                .page(pageNum)
+                .limit(pageSize)
+                .totalItems(notifications.getTotalElements())
+                .totalPages(notifications.getTotalPages());
 
-        return NotificationsResponse.builder()
+        return ResponseEntity.ok(new NotificationsResponse()
                 .data(data)
-                .pagination(PaginationMetadata.fromShared(paginationMetadata))
-                .build();
+                .pagination(pagination));
     }
 
-    /**
-     * AC6: Get notification count (unread or total)
-     */
-    @GetMapping("/count")
-    public NotificationCountResponse getUnreadCount(
-            @RequestParam String username,
-            @RequestParam(defaultValue = "UNREAD") String status
+    @Override
+    public ResponseEntity<NotificationCountResponse> getUnreadCount(
+            String username,
+            String status
     ) {
         long count = status != null && !status.isEmpty()
                 ? notificationRepository.countByRecipientUsernameAndStatus(username, status.toUpperCase())
                 : notificationRepository.countByRecipientUsernameAndStatus(username, "UNREAD");
 
-        return NotificationCountResponse.builder().count(count).build();
+        return ResponseEntity.ok(new NotificationCountResponse().count(count));
     }
 
-    /**
-     * AC2: Mark single notification as read
-     */
-    @PutMapping("/{id}/read")
-    public MarkAsReadResponse markAsRead(@PathVariable UUID id) {
+    @Override
+    public ResponseEntity<MarkAsReadResponse> markAsRead(UUID id) {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Notification not found"));
 
@@ -115,19 +100,14 @@ public class NotificationController {
         notification.setReadAt(now);
         notificationRepository.save(notification);
 
-        return MarkAsReadResponse.builder()
+        return ResponseEntity.ok(new MarkAsReadResponse()
                 .success(true)
                 .markedCount(1)
-                .updatedAt(now)
-                .build();
+                .updatedAt(now.atOffset(ZoneOffset.UTC)));
     }
 
-    /**
-     * AC2: Mark multiple notifications as read (bulk operation)
-     * Accepts request body matching frontend API contract
-     */
-    @PutMapping("/batch-read")
-    public MarkAsReadResponse batchMarkAsRead(@RequestBody BatchOperationRequest request) {
+    @Override
+    public ResponseEntity<MarkAsReadResponse> batchMarkAsRead(BatchOperationRequest request) {
         List<Notification> notifications = notificationRepository.findAllById(request.getNotificationIds());
 
         Instant now = Instant.now();
@@ -138,61 +118,46 @@ public class NotificationController {
 
         notificationRepository.saveAll(notifications);
 
-        return MarkAsReadResponse.builder()
+        return ResponseEntity.ok(new MarkAsReadResponse()
                 .success(true)
                 .markedCount(notifications.size())
-                .updatedAt(now)
-                .build();
+                .updatedAt(now.atOffset(ZoneOffset.UTC)));
     }
 
-    /**
-     * AC4: Get delivery history by channel
-     */
-    @GetMapping("/history")
-    public List<NotificationResponse> getDeliveryHistory(
-            @RequestParam String username,
-            @RequestParam String channel
+    @Override
+    public ResponseEntity<List<NotificationResponse>> getDeliveryHistory(
+            String username,
+            String channel
     ) {
-        List<Notification> history = notificationRepository
-                .findByRecipientUsernameAndChannelOrderByCreatedAtDesc(username, channel.toUpperCase());
-
-        return history.stream()
-                .map(NotificationResponse::fromEntity)
+        List<NotificationResponse> history = notificationRepository
+                .findByRecipientUsernameAndChannelOrderByCreatedAtDesc(username, channel.toUpperCase())
+                .stream()
+                .map(NotificationMapper::toResponse)
                 .toList();
+
+        return ResponseEntity.ok(history);
     }
 
-    /**
-     * AC5: Delete single notification
-     */
-    @DeleteMapping("/{id}")
-    public DeleteNotificationResponse deleteNotification(@PathVariable UUID id) {
+    @Override
+    public ResponseEntity<DeleteNotificationResponse> deleteNotification(UUID id) {
         if (!notificationRepository.existsById(id)) {
             throw new EntityNotFoundException("Notification not found");
         }
 
         notificationRepository.deleteById(id);
 
-        return DeleteNotificationResponse.builder()
-                .success(true)
-                .build();
+        return ResponseEntity.ok(new DeleteNotificationResponse().success(true));
     }
 
-    /**
-     * AC5: Delete multiple notifications (bulk operation)
-     * Accepts request body matching frontend API contract
-     */
-    @DeleteMapping("/batch-delete")
-    public DeleteNotificationResponse batchDelete(@RequestBody BatchOperationRequest request) {
+    @Override
+    public ResponseEntity<DeleteNotificationResponse> batchDelete(BatchOperationRequest request) {
         notificationRepository.deleteAllById(request.getNotificationIds());
 
-        return DeleteNotificationResponse.builder()
-                .success(true)
-                .build();
+        return ResponseEntity.ok(new DeleteNotificationResponse().success(true));
     }
 
     /**
-     * Exception handler for EntityNotFoundException
-     * Returns 404 instead of 500
+     * Returns 404 (instead of 500) when a notification is missing.
      */
     @ExceptionHandler(EntityNotFoundException.class)
     @ResponseStatus(org.springframework.http.HttpStatus.NOT_FOUND)

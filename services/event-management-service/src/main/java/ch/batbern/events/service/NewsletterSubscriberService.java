@@ -1,8 +1,8 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.NewsletterSubscriber;
-import ch.batbern.events.dto.NewsletterSubscriptionStatusResponse;
-import ch.batbern.events.dto.SubscriberResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusResponse;
+import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.ReservedEmailDomainException;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -260,13 +262,18 @@ public class NewsletterSubscriberService {
                 .language(sub.getLanguage())
                 .source(sub.getSource())
                 .username(sub.getUsername())
-                .subscribedAt(sub.getSubscribedAt())
-                .unsubscribedAt(sub.getUnsubscribedAt())
+                .subscribedAt(toOffset(sub.getSubscribedAt()))
+                .unsubscribedAt(toOffset(sub.getUnsubscribedAt()))
                 .bounceType(sub.getBounceType())
                 .bounceCount(sub.getBounceCount())
-                .lastBouncedAt(sub.getLastBouncedAt())
-                .suppressedAt(sub.getSuppressedAt())
+                .lastBouncedAt(toOffset(sub.getLastBouncedAt()))
+                .suppressedAt(toOffset(sub.getSuppressedAt()))
                 .build();
+    }
+
+    /** Convert a stored Instant to a UTC OffsetDateTime for the wire DTO (serialises identically as …Z). */
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
     }
 
     // ── Story 10.28: Organizer subscriber management ────────────────────────

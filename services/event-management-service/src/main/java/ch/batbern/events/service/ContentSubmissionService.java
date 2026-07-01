@@ -7,9 +7,9 @@ import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.ContentSubmitResponse;
-import ch.batbern.events.dto.SpeakerContentInfo;
-import ch.batbern.events.dto.SpeakerContentResponse;
+import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
+import ch.batbern.events.speakers.dto.generated.SpeakerContentInfo;
+import ch.batbern.events.speakers.dto.generated.SpeakerContentResponse;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
 import ch.batbern.events.repository.EventRepository;
@@ -28,6 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -119,7 +121,7 @@ public class ContentSubmissionService {
                 || speaker.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED;
 
         if (!canSubmit) {
-            return SpeakerContentInfo.noSession(
+            return noSessionContentInfo(
                     speaker.getSpeakerName(),
                     event.getEventCode(),
                     event.getTitle()
@@ -187,14 +189,32 @@ public class ContentSubmissionService {
                 .draftTitle(canonicalTitle)
                 .draftAbstract(canonicalAbstract)
                 .draftVersion(latestSubmission.map(SessionContentVersion::getSubmissionVersion).orElse(null))
-                .lastSavedAt(latestSubmission.map(SessionContentVersion::getUpdatedAt).orElse(canonicalUpdatedAt))
+                .lastSavedAt(toOffset(
+                        latestSubmission.map(SessionContentVersion::getUpdatedAt).orElse(canonicalUpdatedAt)))
                 .needsRevision(needsRevision)
                 .reviewerFeedback(reviewerFeedback)
-                .reviewedAt(reviewedAt)
+                .reviewedAt(toOffset(reviewedAt))
                 .reviewedBy(reviewedBy)
                 .hasMaterial(hasMaterial)
                 .materialUrl(materialUrl)
                 .materialFileName(materialFileName)
+                .build();
+    }
+
+    /** Content-info envelope for a speaker with no submittable session yet. */
+    private static SpeakerContentInfo noSessionContentInfo(
+            String speakerName, String eventCode, String eventTitle) {
+        return SpeakerContentInfo.builder()
+                .speakerName(speakerName)
+                .eventCode(eventCode)
+                .eventTitle(eventTitle)
+                .hasSessionAssigned(false)
+                .canSubmitContent(false)
+                .hasDraft(false)
+                .needsRevision(false)
+                .hasMaterial(false)
+                .materialUrl(null)
+                .materialFileName(null)
                 .build();
     }
 
@@ -542,7 +562,7 @@ public class ContentSubmissionService {
                 .company(speaker.getCompany())
                 .status(speaker.getStatus())
                 .hasContent(true)
-                .submittedAt(session.getCreatedAt())
+                .submittedAt(toOffset(session.getCreatedAt()))
                 .hasMaterial(hasMaterial)
                 .materialUrl(materialUrl)
                 .materialFileName(materialFileName)
@@ -558,5 +578,9 @@ public class ContentSubmissionService {
             return null;
         }
         return value.length() > maxLength ? value.substring(0, maxLength) : value;
+    }
+
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 }

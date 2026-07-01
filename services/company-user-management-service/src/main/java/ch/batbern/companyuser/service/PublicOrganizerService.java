@@ -2,7 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.PublicOrganizerResponse;
+import ch.batbern.companyuser.dto.generated.PublicOrganizerResponse;
 import ch.batbern.companyuser.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,14 +47,13 @@ public class PublicOrganizerService {
      * Only includes publicly shareable fields
      */
     private PublicOrganizerResponse mapToPublicResponse(User user) {
-        return PublicOrganizerResponse.builder()
+        return new PublicOrganizerResponse()
                 .id(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .bio(user.getBio())
                 .profilePictureUrl(user.getProfilePictureUrl())
-                .companyId(user.getCompanyId())
-                .build();
+                .companyId(user.getCompanyId());
     }
 }

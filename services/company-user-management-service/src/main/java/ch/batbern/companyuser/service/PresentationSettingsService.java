@@ -1,8 +1,8 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.PresentationSettings;
-import ch.batbern.companyuser.dto.PresentationSettingsRequest;
-import ch.batbern.companyuser.dto.PresentationSettingsResponse;
+import ch.batbern.companyuser.dto.generated.PresentationSettingsRequest;
+import ch.batbern.companyuser.dto.generated.PresentationSettingsResponse;
 import ch.batbern.companyuser.repository.PresentationSettingsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

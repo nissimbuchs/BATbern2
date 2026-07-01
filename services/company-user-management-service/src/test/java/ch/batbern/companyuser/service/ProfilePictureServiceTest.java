@@ -1,7 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.PresignedUploadUrl;
+import ch.batbern.companyuser.dto.generated.PresignedUploadUrl;
 import ch.batbern.companyuser.exception.FileSizeExceededException;
 import ch.batbern.companyuser.exception.InvalidFileTypeException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
@@ -92,7 +92,7 @@ class ProfilePictureServiceTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getUploadUrl()).isEqualTo(mockPresignedUrl.toString());
+        assertThat(result.getUploadUrl().toString()).isEqualTo(mockPresignedUrl.toString());
         assertThat(result.getFileId()).isNotBlank();
         assertThat(result.getS3Key()).startsWith("profile-pictures/");
         assertThat(result.getS3Key()).contains(username);

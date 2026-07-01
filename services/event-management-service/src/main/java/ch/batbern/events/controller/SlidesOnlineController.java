@@ -1,7 +1,8 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.SlidesOnlineSendResponse;
+import ch.batbern.events.newsletter.api.generated.SlidesOnlineApi;
+import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SlidesOnlineEmailService;
@@ -9,8 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,7 +26,7 @@ import java.util.NoSuchElementException;
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class SlidesOnlineController {
+public class SlidesOnlineController implements SlidesOnlineApi {
 
     private final SlidesOnlineEmailService slidesOnlineEmailService;
     private final EventRepository eventRepository;
@@ -38,9 +37,9 @@ public class SlidesOnlineController {
      *
      * @return 200 with the send id + PENDING status (the send runs asynchronously)
      */
-    @PostMapping("/events/{eventCode}/slides-online/send")
+    @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SlidesOnlineSendResponse> sendSlidesOnline(@PathVariable String eventCode) {
+    public ResponseEntity<SlidesOnlineSendResponse> sendSlidesOnline(String eventCode) {
         Event event = findEventOrThrow(eventCode);
         String sentByUsername = securityContextHelper.getCurrentUsername();
         SlidesOnlineSendResponse response = slidesOnlineEmailService.sendSlidesOnline(event, sentByUsername);

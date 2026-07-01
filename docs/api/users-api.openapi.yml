@@ -54,14 +54,16 @@ tags:
     description: User account settings management
   - name: Role Management
     description: User role management with business rules
-  - name: Activity History
-    description: User activity tracking and history
   - name: Profile Picture
     description: Profile picture upload and management
   - name: GDPR Compliance
     description: GDPR-compliant data export and deletion
   - name: Domain Integration
     description: Domain service integration endpoints
+  - name: User Administration
+    description: Admin Cognito↔DB reconciliation and sync-status (Story 1.2.5)
+  - name: Public Organizers
+    description: Anonymous public organizer directory (About page)
   - name: Public
     description: |
       Anonymous (unauthenticated) endpoints. Strictly narrow public projection —
@@ -535,6 +537,172 @@ paths:
       security:
         - BearerAuth: []
 
+  /public/organizers:
+    get:
+      tags:
+        - Public Organizers
+      summary: List all organizers (public information only)
+      description: |
+        Anonymous endpoint returning organizers' public information for the About page.
+        Exposes only publicly-shareable fields (name, bio, email, profile picture, company).
+      operationId: getAllOrganizers
+      responses:
+        '200':
+          description: List of organizers (public projection)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicOrganizerResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/by-company:
+    get:
+      tags:
+        - User Management
+      summary: List users by company (service-to-service)
+      description: |
+        Returns a paginated list of users in a company, optionally filtered by role.
+        VPC-internal service-to-service endpoint — authorization is enforced at the filter chain.
+      operationId: listUsersByCompany
+      parameters:
+        - name: company
+          in: query
+          description: Company name (ADR-003 meaningful ID)
+          required: true
+          schema:
+            type: string
+        - name: role
+          in: query
+          description: Optional role filter
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Paginated users for the company
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{username}/profile-picture/upload-from-url:
+    post:
+      tags:
+        - Profile Picture
+      summary: Admin — upload a user's profile picture from a URL
+      description: |
+        Fetches an image from a URL and uploads it directly to S3 (bypasses the browser to avoid
+        binary corruption). Used for batch imports of speaker portraits.
+
+        **Authorization**: ORGANIZER role required
+      operationId: uploadProfilePictureFromUrl
+      parameters:
+        - name: username
+          in: path
+          description: Username (unique identifier)
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUploadProfilePictureFromUrlRequest'
+      responses:
+        '200':
+          description: Profile picture uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUploadProfilePictureFromUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Fetched image exceeds the size limit
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/admin/reconcile:
+    post:
+      tags:
+        - User Administration
+      summary: Trigger manual Cognito→DB user reconciliation (Admin)
+      description: |
+        Manually syncs users from Cognito to the database (Story 1.2.5).
+
+        **Authorization**: ORGANIZER role required
+      operationId: reconcileUsers
+      responses:
+        '200':
+          description: Reconciliation report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReconciliationReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/admin/sync-status:
+    get:
+      tags:
+        - User Administration
+      summary: Check Cognito↔DB sync status (Admin)
+      description: |
+        Compares Cognito and the database and reports drift (Story 1.2.5).
+
+        **Authorization**: ORGANIZER role required
+      operationId: getSyncStatus
+      responses:
+        '200':
+          description: Sync status report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSyncStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/{username}:
     get:
       tags:
@@ -577,6 +745,50 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - User Management
+      summary: Update a user's profile by username (Organizer/Admin)
+      description: |
+        Full update of any user's profile by an organizer/admin.
+
+        **Authorization**: ORGANIZER or ADMIN role required
+      operationId: updateUserByUsername
+      parameters:
+        - name: username
+          in: path
+          description: Username (unique identifier)
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1146,86 +1358,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  /users/{username}/activity:
-    get:
-      tags:
-        - Activity History
-      summary: Get user activity history
-      description: |
-        Retrieve paginated activity history for a specific user.
-
-        **Acceptance Criteria**: AC9
-
-        **Story 1.16.2**: Uses username as identifier instead of UUID
-
-        **Activity Types**: event_registered, session_attended, topic_voted, content_viewed
-
-        **Timeframe Filtering**: Support for date range queries
-
-      operationId: getUserActivity
-      parameters:
-        - name: username
-          in: path
-          description: Username (unique identifier)
-          required: true
-          schema:
-            type: string
-            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-            example: john.doe
-        - name: timeframe
-          in: query
-          description: Filter by timeframe
-          required: false
-          schema:
-            type: string
-            enum: [24h, 7d, 30d, 90d, all]
-            default: 30d
-        - name: activityType
-          in: query
-          description: Filter by activity type
-          required: false
-          schema:
-            type: string
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-      responses:
-        '200':
-          description: Activity history retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ActivityHistory'
-                  pagination:
-                    $ref: '#/components/schemas/PaginationMetadata'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -1850,6 +1982,85 @@ paths:
 
 components:
   schemas:
+    AdminUploadProfilePictureFromUrlRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: Source image URL to fetch and upload
+        filename:
+          type: string
+          description: Suggested base filename (extension is derived from the fetched content type)
+          default: profile
+    AdminUploadProfilePictureFromUrlResponse:
+      type: object
+      properties:
+        profilePictureUrl:
+          type: string
+          description: CDN URL of the uploaded profile picture
+    UserReconciliationReport:
+      type: object
+      description: Result of a manual Cognito→DB user reconciliation (Story 1.2.5)
+      properties:
+        orphanedUsersDeactivated:
+          type: integer
+          description: Users present in the DB but absent in Cognito, deactivated by this run
+        missingUsersCreated:
+          type: integer
+          description: Users present in Cognito but absent in the DB, created by this run
+        durationMs:
+          type: integer
+          format: int64
+          description: Reconciliation duration in milliseconds
+        errors:
+          type: array
+          items:
+            type: string
+        success:
+          type: boolean
+        message:
+          type: string
+    PublicOrganizerResponse:
+      type: object
+      description: Public organizer projection for the About page (no sensitive fields)
+      properties:
+        id:
+          type: string
+          description: Username (public identifier)
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        bio:
+          type: string
+        profilePictureUrl:
+          type: string
+        companyId:
+          type: string
+    UserSyncStatus:
+      type: object
+      description: Cognito↔DB sync status snapshot (Story 1.2.5)
+      properties:
+        cognitoUserCount:
+          type: integer
+        databaseUserCount:
+          type: integer
+        missingInDatabase:
+          type: integer
+        orphanedInDatabase:
+          type: integer
+        missingCognitoIds:
+          type: array
+          items:
+            type: string
+        inSync:
+          type: boolean
+        message:
+          type: string
     # Story 11.C.1: Public user projection (anonymous lookup)
     PublicUserResponse:
       type: object
@@ -2486,41 +2697,6 @@ components:
         user:
           $ref: '#/components/schemas/UserResponse'
 
-    ActivityHistory:
-      type: object
-      description: |
-        Activity history record for audit purposes.
-        Note: id field uses internal UUID format (exception to ADR-003) as activity records
-        are internal audit entries and are not referenced across services.
-      properties:
-        id:
-          type: string
-          description: Activity ID (internal UUID preserved for audit purposes - ADR-003 exception for internal audit records)
-          format: uuid
-        username:
-          type: string
-          description: Username (unique identifier) - Story 1.16.2
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-          example: john.doe
-        activityType:
-          type: string
-          example: event_registered
-        entityType:
-          type: string
-          example: event
-        entityId:
-          type: string
-          example: evt-123
-        description:
-          type: string
-          example: Registered for BATbern Developer Meetup
-        metadata:
-          type: object
-          additionalProperties: true
-        timestamp:
-          type: string
-          format: date-time
-
     Company:
       type: object
       description: |
@@ -2601,10 +2777,19 @@ components:
           example: profile.jpg
         fileSize:
           type: integer
-          description: File size in bytes (max 5 MB)
+          description: |
+            File size in bytes. The 5 MB ceiling is enforced server-side by
+            ProfilePictureService (friendly `exceeds 5MB limit` 400) rather than a
+            declarative `maximum`, preserving the pre-wiring contract + message.
           minimum: 1
-          maximum: 5242880
           example: 1048576
+        mimeType:
+          type: string
+          description: |
+            Client-declared MIME type of the upload. Accepted for documentation-truth
+            (the frontend sends `file.type`), but the server authoritatively derives the
+            content type from the file extension — this value is not trusted or required.
+          example: image/png
 
     PresignedUploadUrl:
       type: object

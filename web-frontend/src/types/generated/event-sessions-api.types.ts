@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+  '/sessions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search sessions across all events by company
+     * @description Returns sessions where at least one speaker belongs to the given company, enriched with event metadata and the full speaker list per session (so the frontend can highlight the company's speakers). ORGANIZER role required. A blank/absent `companyName` yields an empty page.
+     */
+    get: operations['searchSessionsByCompany'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/sessions/{sessionSlug}/qna': {
     parameters: {
       query?: never;
@@ -174,6 +194,130 @@ export interface paths {
      *     **Access**: ORGANIZER role required.
      */
     post: operations['assignSessionToSlot'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/unassigned': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List unassigned (placeholder) sessions for an event (Story 5.7)
+     * @description Placeholder sessions without timing, enriched with speaker data. ORGANIZER role.
+     */
+    get: operations['getUnassignedSessions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/timing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Unassign a single session's timing (Story 15.3)
+     * @description Clears startTime/endTime/room (back to the unassigned pool). ORGANIZER role.
+     */
+    delete: operations['unassignTiming'];
+    options?: never;
+    head?: never;
+    /**
+     * Assign timing to a session (drag-and-drop) (Story 5.7)
+     * @description Detects room/speaker conflicts before assigning. ORGANIZER role.
+     */
+    patch: operations['assignTiming'];
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/bulk-timing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Bulk-assign timing to multiple sessions (Story 5.7 AC13)
+     * @description All-or-nothing: any cross-assignment conflict applies no changes. ORGANIZER role.
+     */
+    post: operations['bulkAssignTiming'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/conflicts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Comprehensive scheduling-conflict analysis (Story 5.7 AC9)
+     * @description Detects all room/speaker conflicts across the event. ORGANIZER role.
+     */
+    get: operations['analyzeConflicts'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/timing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Clear all session timings for an event (Clear All)
+     * @description Resets every session to unassigned. ORGANIZER role.
+     */
+    delete: operations['clearAllTimings'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/auto-assign': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Auto-assign all unassigned sessions to available slots (Auto Assign)
+     * @description Assigns sessions sequentially to available time slots. ORGANIZER role.
+     */
+    post: operations['autoAssignTimings'];
     delete?: never;
     options?: never;
     head?: never;
@@ -426,10 +570,203 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/sessions/{sessionSlug}/materials': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List session materials
+     * @description Retrieve all materials associated with a session (Story 5.9). Requires authentication (organizer/speaker materials-management view); anonymous archive visitors download individual materials via the public {materialId}/download endpoint instead.
+     */
+    get: operations['getSessionMaterials'];
+    put?: never;
+    /**
+     * Associate uploaded materials with a session
+     * @description Associate 1-10 already-uploaded materials with a session (Story 5.9).
+     *
+     *     **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).
+     */
+    post: operations['associateMaterials'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a session material
+     * @description Remove a material from a session (Story 5.9).
+     *
+     *     **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).
+     */
+    delete: operations['deleteSessionMaterial'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a presigned download URL for a material
+     * @description Generate a time-limited presigned download URL for a single material (Story 5.9). Public endpoint.
+     */
+    get: operations['getMaterialDownloadUrl'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/materials/upload-from-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import a material from a URL
+     * @description Batch-import helper — fetch a material from a source URL and associate it with a session (Story 5.9). Used by historical-data import.
+     *
+     *     **Authorization**: ORGANIZER only.
+     */
+    post: operations['uploadMaterialFromUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description A session that has at least one speaker from the queried company, combined with event + full-speaker context (GlobalSessionController / Company-detail Sessions tab). */
+    CompanySessionResponse: {
+      /** @description Session slug (event-scoped identifier) */
+      sessionSlug?: string;
+      /** @example BATbern57 */
+      eventCode?: string;
+      /** @description Title of the event this session belongs to */
+      eventTitle?: string;
+      /** @description Event date (ISO-8601) */
+      eventDate?: string;
+      /** @description Session title */
+      title?: string;
+      /** @description Session type (e.g. talk, aperitif) */
+      sessionType?: string;
+      /** @description Session start time (ISO-8601) */
+      startTime?: string;
+      /** @description Session end time (ISO-8601) */
+      endTime?: string;
+      /** @description Room / location */
+      room?: string;
+      /** @description All speakers of this session (includes speakers from other companies) */
+      speakers?: components['schemas']['SessionSpeaker'][];
+    };
+    /** @description Assign timing (start/end/room) to a session — Story 5.7 drag-and-drop */
+    SessionTimingRequest: {
+      /** Format: date-time */
+      startTime: string;
+      /** Format: date-time */
+      endTime: string;
+      room?: string;
+      sessionType?: string;
+      changeReason?: string;
+      notes?: string;
+    };
+    BulkTimingAssignment: {
+      sessionSlug: string;
+      /** Format: date-time */
+      startTime: string;
+      /** Format: date-time */
+      endTime: string;
+      room?: string;
+    };
+    BulkTimingRequest: {
+      assignments: components['schemas']['BulkTimingAssignment'][];
+      changeReason?: string;
+    };
+    BulkTimingResponse: {
+      assignedCount?: number;
+      sessions?: components['schemas']['SessionResponse'][];
+    };
+    /**
+     * @description Scheduling-conflict type (lowercase wire values)
+     * @enum {string}
+     */
+    ConflictType:
+      | 'room_overlap'
+      | 'speaker_double_booked'
+      | 'speaker_unavailable'
+      | 'preference_mismatch';
+    /** @enum {string} */
+    ConflictSeverity: 'error' | 'warning';
+    ConflictTimeRange: {
+      start?: string;
+      end?: string;
+    };
+    ConflictDetail: {
+      sessionSlug?: string;
+      conflictType?: components['schemas']['ConflictType'];
+      severity?: components['schemas']['ConflictSeverity'];
+      affectedSessions?: string[];
+      timeRange?: components['schemas']['ConflictTimeRange'];
+      resolution?: string;
+    };
+    /** @description Comprehensive scheduling-conflict analysis (Story 5.7 AC9) */
+    ConflictAnalysisResponse: {
+      hasConflicts?: boolean;
+      conflictCount?: number;
+      conflicts?: components['schemas']['ConflictDetail'][];
+    };
+    TimingConflictItem: {
+      type?: string;
+      conflictingSessionSlug?: string;
+    };
+    /** @description 409 body when a single-session timing assignment conflicts */
+    TimingConflictError: {
+      error?: string;
+      message?: string;
+      conflicts?: components['schemas']['TimingConflictItem'][];
+    };
+    /** @description 409 body when a bulk timing assignment has cross-conflicts (no changes applied) */
+    BulkTimingConflictError: {
+      error?: string;
+      message?: string;
+      conflictCount?: number;
+    };
+    ClearTimingsResponse: {
+      message?: string;
+      clearedCount?: number;
+    };
+    AutoAssignResponse: {
+      message?: string;
+      assignedCount?: number;
+    };
     /**
      * @description Request to place a speaker session onto a slot addressed by its stable `slotKey`
      *     (Story 15.3). `mode` selects assign / insert-and-reflow / swap behaviour.
@@ -526,20 +863,10 @@ export interface components {
       title: string;
       description?: string;
       /**
-       * @description Session type - null for placeholder sessions, assigned during agenda planning
+       * @description Session type — null for placeholder sessions, assigned during agenda planning. Free-form string (NOT a closed enum): the deployed contract returns additional values such as `aperitif`, so callers must tolerate unknown types. Known values: keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif.
        * @example keynote
-       * @enum {string|null}
        */
-      sessionType?:
-        | 'keynote'
-        | 'presentation'
-        | 'workshop'
-        | 'panel_discussion'
-        | 'networking'
-        | 'break'
-        | 'lunch'
-        | 'moderation'
-        | null;
+      sessionType?: string | null;
       /**
        * Format: date-time
        * @description Session start time - null for placeholder sessions, assigned during slot assignment
@@ -569,27 +896,10 @@ export interface components {
        */
       speakers?: components['schemas']['SessionSpeaker'][];
       /**
-       * @description Material submission workflow status
-       *     - NONE: No materials submitted yet (initial state)
-       *     - pending: Materials submitted, awaiting review
-       *     - in_review: Materials under review
-       *     - approved: Materials approved
-       *     - requires_changes: Materials need changes
-       *     - rejected: Materials rejected
-       *     - revision_submitted: Revised materials submitted
-       *     - COMPLETE: Materials finalized and approved (final state)
-       * @example pending
-       * @enum {string}
+       * @description Material submission workflow status. Free-form string (NOT a closed enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the review-workflow values below, so callers must tolerate unknown values. Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved, requires_changes, rejected, revision_submitted.
+       * @example COMPLETE
        */
-      materialsStatus?:
-        | 'NONE'
-        | 'pending'
-        | 'in_review'
-        | 'approved'
-        | 'requires_changes'
-        | 'rejected'
-        | 'revision_submitted'
-        | 'COMPLETE';
+      materialsStatus?: string;
     };
     /**
      * @description Story 1.15a.1b: Session speaker with enriched User data
@@ -663,10 +973,166 @@ export interface components {
       isConfirmed: boolean;
     };
     /**
-     * @description Story 1.15a.1b: Session response with embedded speakers
-     *     Same as Session schema but used specifically for API responses
+     * @description Story 1.15a.1b: Session response with embedded speakers + materials.
+     *     Session schema plus the service-enriched materials list/count (Story 5.9).
      */
-    SessionResponse: components['schemas']['Session'];
+    SessionResponse: components['schemas']['Session'] & {
+      /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
+      materials?: components['schemas']['SessionMaterialResponse'][];
+      /**
+       * @description Story 5.9: Number of uploaded materials (for overview displays)
+       * @example 3
+       */
+      materialsCount?: number;
+    };
+    /**
+     * @description Story 5.9: Session material (uploaded slide deck / document).
+     *     Returned by GET /sessions/{sessionSlug}/materials and embedded in Session responses. Maps the SessionMaterial entity; createdAt/updatedAt are UTC.
+     */
+    SessionMaterialResponse: {
+      /**
+       * Format: uuid
+       * @description Material identifier (same-service UUID)
+       * @example 3fa85f64-5717-4562-b3fc-2c963f66afa6
+       */
+      id: string;
+      /**
+       * @description Client-supplied upload correlation id
+       * @example upload-2026-0001
+       */
+      uploadId: string;
+      /**
+       * @description S3 object key of the stored material
+       * @example materials/2026/batbern142/ui-design/slides.pdf
+       */
+      s3Key: string;
+      /**
+       * @description CloudFront delivery URL for the material (null until CDN-published)
+       * @example https://cdn.batbern.ch/materials/2026/batbern142/ui-design/slides.pdf
+       */
+      cloudFrontUrl?: string;
+      /**
+       * @description Original uploaded file name
+       * @example slides.pdf
+       */
+      fileName: string;
+      /**
+       * @description File extension (without the dot)
+       * @example pdf
+       */
+      fileExtension: string;
+      /**
+       * Format: int64
+       * @description File size in bytes
+       * @example 2097152
+       */
+      fileSize: number;
+      /**
+       * @description MIME type of the material
+       * @example application/pdf
+       */
+      mimeType: string;
+      /**
+       * @description Material classification (e.g. slides, document)
+       * @example slides
+       */
+      materialType: string;
+      /**
+       * @description Username of the uploader (public identifier per ADR-003)
+       * @example john.doe
+       */
+      uploadedBy: string;
+      /**
+       * Format: date-time
+       * @description Creation timestamp (UTC)
+       * @example 2026-06-28T08:28:30.440Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Last-update timestamp (UTC)
+       * @example 2026-06-28T08:28:30.440Z
+       */
+      updatedAt: string;
+      /**
+       * @description Story 5.10 forward-compat: whether text content has been extracted for RAG search
+       * @example false
+       */
+      contentExtracted?: boolean;
+      /**
+       * @description Story 5.10 forward-compat: content-extraction status
+       * @example PENDING
+       */
+      extractionStatus?: string;
+    };
+    /** @description Story 5.9: one already-uploaded material to associate with a session. Carries the upload correlation id from the presigned-URL step plus the file metadata. */
+    MaterialUploadItem: {
+      /**
+       * @description Upload correlation id from MaterialsUploadService presigned-URL generation
+       * @example upload-2026-0001
+       */
+      uploadId: string;
+      /**
+       * @description Material classification (PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER)
+       * @example PRESENTATION
+       */
+      materialType: string;
+      /**
+       * @description Original uploaded file name
+       * @example slides.pdf
+       */
+      fileName: string;
+      /**
+       * @description File extension without the dot
+       * @example pdf
+       */
+      fileExtension: string;
+      /**
+       * Format: int64
+       * @description File size in bytes
+       * @example 2097152
+       */
+      fileSize: number;
+      /**
+       * @description MIME type of the material
+       * @example application/pdf
+       */
+      mimeType: string;
+    };
+    /** @description Story 5.9: associate 1-10 already-uploaded materials with a session. */
+    SessionMaterialAssociationRequest: {
+      materials: components['schemas']['MaterialUploadItem'][];
+    };
+    /** @description Story 5.9: wrapper for the materials associated with a session (returned by associate + list). */
+    SessionMaterialsResponse: {
+      materials: components['schemas']['SessionMaterialResponse'][];
+    };
+    /** @description Story 5.9: time-limited presigned download URL for a single session material. */
+    MaterialDownloadUrlResponse: {
+      /**
+       * @description Presigned URL to download the material
+       * @example https://s3.eu-central-1.amazonaws.com/batbern-materials/...&X-Amz-Signature=...
+       */
+      downloadUrl: string;
+    };
+    /** @description Batch-import helper: fetch a material from a source URL and associate it with a session (organizer-only). Used by historical-data import. */
+    UploadMaterialFromUrlRequest: {
+      /**
+       * @description Source URL to fetch the material from
+       * @example https://cdn.batbern.ch/legacy/BAT142_UI_Design.pdf
+       */
+      url: string;
+      /**
+       * @description Target file name
+       * @example BAT142_UI_Design.pdf
+       */
+      filename: string;
+      /**
+       * @description Material classification; defaults to DOCUMENT when omitted
+       * @example DOCUMENT
+       */
+      materialType?: string;
+    };
     /**
      * @description Request payload for batch import from legacy sessions.json.
      *     Designed for historical data migration from BATspa application.
@@ -688,10 +1154,15 @@ export interface components {
        */
       abstract?: string;
       /**
-       * @description PDF filename for reference (appended to description)
+       * @description Legacy PDF filename for reference (appended to description). Deprecated — use materialUrl (Story 5.9).
        * @example BAT142_UI_Design.pdf
        */
       pdf?: string;
+      /**
+       * @description CDN URL for a PDF/PPTX material. When provided, the backend fetches it and associates it as a session material (Story 5.9).
+       * @example https://cdn.batbern.ch/materials/BAT142_UI_Design.pdf
+       */
+      materialUrl?: string;
       /**
        * @description Moderator name (for Moderation sessions)
        * @example Thomas Goetz
@@ -741,6 +1212,11 @@ export interface components {
        */
       successfullyCreated: number;
       /**
+       * @description Existing sessions updated (e.g. materials added to a duplicate)
+       * @example 0
+       */
+      updated: number;
+      /**
        * @description Skipped sessions (duplicates)
        * @example 1
        */
@@ -765,7 +1241,7 @@ export interface components {
        * @example success
        * @enum {string}
        */
-      status: 'success' | 'skipped' | 'failed';
+      status: 'success' | 'updated' | 'skipped' | 'failed';
       /**
        * @description Status message
        * @example Session created successfully
@@ -777,41 +1253,22 @@ export interface components {
        */
       sessionSlug?: string | null;
     };
-    /**
-     * @description Create session request - supports creating placeholder sessions.
-     *
-     *     **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
-     *     Timing will be assigned later during slot assignment workflow (Story 5.7).
-     *
-     *     **Full Sessions**: Provide all fields to create a fully-defined session.
-     */
+    /** @description Create a fully-defined session. title, sessionType, startTime and endTime are all required (the deployed controller rejects a request missing any of them with 400). sessionType is a free string rather than an enum so structural types such as `aperitif` can be created without a contract change. */
     CreateSessionRequest: {
       title: string;
       description?: string;
-      /**
-       * @description Session type - omit for placeholder sessions
-       * @enum {string|null}
-       */
-      sessionType?:
-        | 'keynote'
-        | 'presentation'
-        | 'workshop'
-        | 'panel_discussion'
-        | 'networking'
-        | 'break'
-        | 'lunch'
-        | 'moderation'
-        | null;
+      /** @description Session type, e.g. keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif. */
+      sessionType: string;
       /**
        * Format: date-time
-       * @description Session start time - omit for placeholder sessions
+       * @description Session start time (ISO-8601).
        */
-      startTime?: string | null;
+      startTime: string;
       /**
        * Format: date-time
-       * @description Session end time - omit for placeholder sessions
+       * @description Session end time (ISO-8601).
        */
-      endTime?: string | null;
+      endTime: string;
       room?: string;
       capacity?: number;
       /** @default de */
@@ -956,15 +1413,6 @@ export interface components {
        */
       typicalEndTime?: string | null;
     };
-    /** @description Request to generate structural sessions (moderation, break, lunch) for an event. */
-    GenerateStructuralSessionsRequest: {
-      /**
-       * @description If false (default), returns 409 if structural sessions already exist.
-       *     If true, deletes existing structural sessions and recreates them.
-       * @default false
-       */
-      overwrite: boolean;
-    };
     /**
      * @description Story 7.5: post a Q&A question or answer. `parentPostId` set = an answer to that question;
      *     omitted = a top-level question. Identity comes from the JWT, never the body.
@@ -972,7 +1420,7 @@ export interface components {
      */
     QnaPostRequest: {
       /**
-       * @description The question or answer text.
+       * @description The question or answer text (non-empty).
        * @example How did you handle schema migration during the cutover?
        */
       body: string;
@@ -1041,6 +1489,38 @@ export interface components {
       posts: components['schemas']['QnaPostResponse'][];
     };
     /**
+     * @description Page-based pagination metadata returned with every paginated list response.
+     *     Backed by `ch.batbern.shared.api.PaginationMetadata`. Page-based — NOT
+     *     offset/cursor.
+     */
+    PaginationMetadata: {
+      /**
+       * @description Zero-based (or one-based per spec) current page index.
+       * @example 0
+       */
+      page: number;
+      /**
+       * @description Page size — items per page.
+       * @example 20
+       */
+      limit: number;
+      /**
+       * Format: int64
+       * @description Total number of items across all pages.
+       * @example 150
+       */
+      totalItems: number;
+      /**
+       * @description Total number of pages.
+       * @example 8
+       */
+      totalPages: number;
+      /** @description Whether a next page exists. */
+      hasNext: boolean;
+      /** @description Whether a previous page exists. */
+      hasPrev: boolean;
+    };
+    /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.
      *     Flat shape (NOT nested under `error`). Backed by
      *     `ch.batbern.shared.dto.ErrorResponse`. `@JsonInclude(NON_NULL)` — absent fields
@@ -1085,38 +1565,6 @@ export interface components {
       };
       /** @description Present only in dev/staging diagnostics — never in production. */
       stackTrace?: string;
-    };
-    /**
-     * @description Page-based pagination metadata returned with every paginated list response.
-     *     Backed by `ch.batbern.shared.api.PaginationMetadata`. Page-based — NOT
-     *     offset/cursor.
-     */
-    PaginationMetadata: {
-      /**
-       * @description Zero-based (or one-based per spec) current page index.
-       * @example 0
-       */
-      page: number;
-      /**
-       * @description Page size — items per page.
-       * @example 20
-       */
-      limit: number;
-      /**
-       * Format: int64
-       * @description Total number of items across all pages.
-       * @example 150
-       */
-      totalItems: number;
-      /**
-       * @description Total number of pages.
-       * @example 8
-       */
-      totalPages: number;
-      /** @description Whether a next page exists. */
-      hasNext: boolean;
-      /** @description Whether a previous page exists. */
-      hasPrev: boolean;
     };
   };
   responses: {
@@ -1182,6 +1630,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  searchSessionsByCompany: {
+    parameters: {
+      query?: {
+        /** @description Company name (ADR-003 meaningful ID). Blank/absent → empty result. */
+        companyName?: string;
+        /** @description 1-indexed page number */
+        page?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Paginated company sessions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data?: components['schemas']['CompanySessionResponse'][];
+            pagination?: components['schemas']['PaginationMetadata'];
+          };
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
   getSessionQna: {
     parameters: {
       query?: never;
@@ -1378,6 +1857,7 @@ export interface operations {
       query?: {
         /** @description JSON filter criteria */
         filter?: string;
+        /** @description 1-indexed page number */
         page?: number;
         limit?: number;
       };
@@ -1397,7 +1877,7 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['Session'][];
+            data?: components['schemas']['SessionResponse'][];
             pagination?: components['schemas']['PaginationMetadata'];
           };
         };
@@ -1428,7 +1908,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['Session'];
+          'application/json': components['schemas']['SessionResponse'];
         };
       };
       400: components['responses']['BadRequest'];
@@ -1504,6 +1984,211 @@ export interface operations {
       };
     };
   };
+  getUnassignedSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Unassigned sessions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  unassignTiming: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Timing cleared; returns the updated session */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  assignTiming: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SessionTimingRequest'];
+      };
+    };
+    responses: {
+      /** @description Timing assigned; returns the updated session */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /** @description Timing conflict (room overlap or speaker double-booking) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TimingConflictError'];
+        };
+      };
+    };
+  };
+  bulkAssignTiming: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BulkTimingRequest'];
+      };
+    };
+    responses: {
+      /** @description Bulk assignment applied */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BulkTimingResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /** @description Bulk timing conflicts detected — no changes applied */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BulkTimingConflictError'];
+        };
+      };
+    };
+  };
+  analyzeConflicts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Conflict analysis */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConflictAnalysisResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  clearAllTimings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All timings cleared */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ClearTimingsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  autoAssignTimings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Sessions auto-assigned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AutoAssignResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
   getEventAgendaConfig: {
     parameters: {
       query?: never;
@@ -1563,7 +2248,10 @@ export interface operations {
   };
   generateStructuralSessions: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description When true, delete existing structural sessions before regenerating (otherwise 409 if they already exist). */
+        overwrite?: boolean;
+      };
       header?: never;
       path: {
         /** @description Event code in format BATbern{number} */
@@ -1571,11 +2259,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['GenerateStructuralSessionsRequest'];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Structural sessions created */
       201: {
@@ -1919,6 +2603,166 @@ export interface operations {
         };
       };
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getSessionMaterials: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of session materials */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionMaterialsResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  associateMaterials: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SessionMaterialAssociationRequest'];
+      };
+    };
+    responses: {
+      /** @description Materials associated successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionMaterialsResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Speaker may only upload to their own sessions */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  deleteSessionMaterial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+        /** @example 3fa85f64-5717-4562-b3fc-2c963f66afa6 */
+        materialId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Material deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Speaker may only delete materials from their own sessions */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getMaterialDownloadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+        /** @example 3fa85f64-5717-4562-b3fc-2c963f66afa6 */
+        materialId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Presigned download URL */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MaterialDownloadUrlResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  uploadMaterialFromUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UploadMaterialFromUrlRequest'];
+      };
+    };
+    responses: {
+      /** @description Material imported successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionMaterialResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
       500: components['responses']['InternalServerError'];
     };
   };

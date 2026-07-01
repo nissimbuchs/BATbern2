@@ -6,7 +6,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.SlidesOnlineSendResponse;
+import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
@@ -156,7 +156,7 @@ class SlidesOnlineEmailServiceTest {
         SlidesOnlineSendResponse resp = service.sendSlidesOnline(event, "org.user");
 
         assertThat(resp.getSendId()).isEqualTo(sendId);
-        assertThat(resp.getStatus()).isEqualTo("PENDING");
+        assertThat(resp.getStatus()).isEqualTo(SlidesOnlineSendResponse.StatusEnum.PENDING);
         assertThat(resp.getRecipientCount()).isEqualTo(2);
         verify(selfMock).executeSlidesOnlineSendAsync(sendId, event, "slides-online");
     }

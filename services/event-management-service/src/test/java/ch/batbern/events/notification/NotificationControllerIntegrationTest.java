@@ -2,6 +2,7 @@ package ch.batbern.events.notification;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.notifications.dto.generated.BatchOperationRequest;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -180,7 +181,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
                 testNotificationId3
         );
 
-        BatchOperationRequest request = new BatchOperationRequest(notificationIds);
+        BatchOperationRequest request = new BatchOperationRequest().notificationIds(notificationIds);
         String requestBody = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(put("/api/v1/notifications/batch-read")
@@ -252,7 +253,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
                 testNotificationId3
         );
 
-        BatchOperationRequest request = new BatchOperationRequest(notificationIds);
+        BatchOperationRequest request = new BatchOperationRequest().notificationIds(notificationIds);
         String requestBody = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(delete("/api/v1/notifications/batch-delete")

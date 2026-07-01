@@ -218,7 +218,7 @@ export async function createAndSelectTopic(token: string, eventCode: string): Pr
  * 23:59 Bern time). A pure-UI walk would stall on cron and depend on flaky DnD/content flows.
  *
  * Per OQ-3 (resolved: hybrid), the gate force-advances state via the same test-override the
- * organizer UI exposes — `PUT /events/{code}/workflow/transition` with
+ * organizer UI exposes — `POST /events/{code}/workflow/transition` with
  * `overrideValidation:true` — which `EventWorkflowStateMachine.transitionToState` honours by
  * SKIPPING ALL validation (so any target state is reachable, incl. non-adjacent jumps and the
  * cron-only EVENT_LIVE/EVENT_COMPLETED). The walk is API-driven, UI-asserted: after each
@@ -256,7 +256,9 @@ export async function transitionWorkflow(
   overrideReason = 'Playwright slice-10 lifecycle walk — force-advance (test override)'
 ): Promise<string> {
   const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/workflow/transition`, {
-    method: 'PUT',
+    // POST, not PUT: EventWorkflowController maps @PostMapping (Phase 4 7f761a31 PUT→POST flip).
+    // The stale PUT here caused a 405 in the lifecycle/speaker-pool gate specs.
+    method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ targetState, overrideValidation: true, overrideReason }),
   });

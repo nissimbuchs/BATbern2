@@ -2,10 +2,10 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.Logo;
-import ch.batbern.companyuser.dto.CompanyLogo;
-import ch.batbern.companyuser.dto.CompanyResponse;
-import ch.batbern.companyuser.dto.CreateCompanyRequest;
-import ch.batbern.companyuser.dto.UpdateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.CompanyLogo;
+import ch.batbern.companyuser.dto.generated.CompanyResponse;
+import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
+import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
 import ch.batbern.companyuser.event.CompanyCreatedEvent;
 import ch.batbern.companyuser.event.CompanyDeletedEvent;
 import ch.batbern.companyuser.event.CompanyUpdatedEvent;
@@ -22,7 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -402,11 +404,11 @@ public class CompanyService {
      * Story 1.16.2: Use company name as unique identifier (no separate id field)
      */
     private CompanyResponse mapToResponse(Company company) {
-        // Build CompanyLogo if logo URL is present
+        // Build CompanyLogo if logo URL is present (generated DTO uses URI; entity stores String)
         CompanyLogo logo = null;
         if (company.getLogoUrl() != null) {
             logo = CompanyLogo.builder()
-                    .url(company.getLogoUrl())
+                    .url(toUri(company.getLogoUrl(), company.getName()))
                     .s3Key(company.getLogoS3Key())
                     .fileId(company.getLogoFileId())
                     .build();
@@ -419,12 +421,31 @@ public class CompanyService {
                 .website(company.getWebsite())
                 .industry(company.getIndustry())
                 .description(company.getDescription())
-                .verified(company.isVerified())
-                .createdAt(company.getCreatedAt())
-                .updatedAt(company.getUpdatedAt())
+                .isVerified(company.isVerified())
+                .createdAt(company.getCreatedAt() != null
+                        ? company.getCreatedAt().atOffset(ZoneOffset.UTC) : null)
+                .updatedAt(company.getUpdatedAt() != null
+                        ? company.getUpdatedAt().atOffset(ZoneOffset.UTC) : null)
                 .createdBy(company.getCreatedBy())
                 .logo(logo)
                 .build();
+    }
+
+    /**
+     * Convert a nullable stored URL string to a {@link URI} for the generated DTOs.
+     * Mirrors {@code UserResponseMapper}: returns {@code null} on null/blank or a malformed
+     * value (logged) rather than throwing, so a bad row never 500s a read.
+     */
+    private static URI toUri(String value, String companyName) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return URI.create(value);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid URL for company {}: {}", companyName, value);
+            return null;
+        }
     }
 
     /**

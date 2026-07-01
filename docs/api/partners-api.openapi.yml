@@ -263,6 +263,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartnerStatistics'
 
+  /partners/me:
+    get:
+      tags: [Partners]
+      operationId: getMyPartnerCompany
+      summary: Get the current PARTNER user's company
+      description: |
+        Returns the partner company name for the currently authenticated PARTNER user,
+        resolved via the `partner_contacts` table (ADR-003 username-based lookup). Used by
+        the frontend to populate `companyName` when it is absent from the JWT.
+
+        **Authorization**: PARTNER role required.
+      responses:
+        '200':
+          description: The current user's partner company
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyPartnerCompanyResponse'
+
   /partners/{companyName}/notes:
     parameters:
       - name: companyName
@@ -800,6 +819,14 @@ components:
       bearerFormat: JWT
 
   schemas:
+    MyPartnerCompanyResponse:
+      type: object
+      required:
+        - companyName
+      properties:
+        companyName:
+          type: string
+          description: The partner company name resolved for the current PARTNER user
     PartnerResponse:
       type: object
       required:

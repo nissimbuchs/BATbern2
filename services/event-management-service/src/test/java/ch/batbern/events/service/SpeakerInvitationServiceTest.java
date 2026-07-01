@@ -5,10 +5,10 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.dto.InviteSpeakerRequest;
-import ch.batbern.events.dto.InviteSpeakerResponse;
-import ch.batbern.events.dto.SendInvitationRequest;
-import ch.batbern.events.dto.SendInvitationResponse;
+import ch.batbern.events.speakers.dto.generated.InviteSpeakerRequest;
+import ch.batbern.events.speakers.dto.generated.InviteSpeakerResponse;
+import ch.batbern.events.speakers.dto.generated.SendInvitationRequest;
+import ch.batbern.events.speakers.dto.generated.SendInvitationResponse;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -111,8 +111,8 @@ class SpeakerInvitationServiceTest {
     @Test
     @DisplayName("inviteSpeaker creates pool entry at IDENTIFIED and looks up/creates user")
     void should_createPoolEntryAtIdentified_when_inviteSpeakerCalled() {
-        InviteSpeakerRequest request = new InviteSpeakerRequest(
-                testEmail, "Test", "Speaker", "TestCorp", null, null);
+        InviteSpeakerRequest request = new InviteSpeakerRequest()
+                .email(testEmail).firstName("Test").lastName("Speaker").company("TestCorp");
 
         when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
         // Story 11.E.9: findByEventIdAndEmail was removed when the email column was
@@ -130,8 +130,8 @@ class SpeakerInvitationServiceTest {
 
         InviteSpeakerResponse response = speakerInvitationService.inviteSpeaker(testEventCode, request);
 
-        assertThat(response.email()).isEqualTo(testEmail);
-        assertThat(response.username()).isEqualTo(testUsername);
+        assertThat(response.getEmail()).isEqualTo(testEmail);
+        assertThat(response.getUsername()).isEqualTo(testUsername);
 
         ArgumentCaptor<SpeakerPool> poolCaptor = ArgumentCaptor.forClass(SpeakerPool.class);
         verify(speakerPoolRepository).save(poolCaptor.capture());
@@ -143,8 +143,8 @@ class SpeakerInvitationServiceTest {
     void should_throwEventNotFoundException_when_eventMissing() {
         when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.empty());
 
-        InviteSpeakerRequest request = new InviteSpeakerRequest(
-                testEmail, "Test", "Speaker", "TestCorp", null, null);
+        InviteSpeakerRequest request = new InviteSpeakerRequest()
+                .email(testEmail).firstName("Test").lastName("Speaker").company("TestCorp");
 
         assertThatThrownBy(() -> speakerInvitationService.inviteSpeaker(testEventCode, request))
                 .isInstanceOf(EventNotFoundException.class);
@@ -180,13 +180,13 @@ class SpeakerInvitationServiceTest {
         when(speakerPoolRepository.findById(testSpeakerId)).thenReturn(Optional.of(speaker));
 
         LocalDate deadline = LocalDate.now().plusDays(14);
-        SendInvitationRequest request = new SendInvitationRequest(deadline, null, "de", null);
+        SendInvitationRequest request = new SendInvitationRequest().responseDeadline(deadline).locale("de");
 
         SendInvitationResponse response = speakerInvitationService.sendInvitation(
                 testEventCode, testUsername, request);
 
-        assertThat(response.status()).isEqualTo(SpeakerWorkflowState.INVITED);
-        assertThat(response.invitedAt()).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(SendInvitationResponse.StatusEnum.INVITED);
+        assertThat(response.getInvitedAt()).isNotNull();
 
         ArgumentCaptor<String> actor = ArgumentCaptor.forClass(String.class);
         verify(speakerWorkflowService).transition(

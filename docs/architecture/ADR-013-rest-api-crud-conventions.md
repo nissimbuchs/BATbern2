@@ -1,7 +1,30 @@
 # ADR-013: REST API CRUD Conventions
 
 ## Status
-Accepted
+Accepted — **implemented** (api-consolidation Phases 0–9, 2026-06-29).
+
+## Implementation status (2026-06-29)
+
+The staged cleanup in `docs/plans/api-consolidation-plan.md` is essentially complete:
+
+- **Phases 0–6** (shared-kernel contract, dead-spec removal, live-route documentation,
+  convention conformance, mutation-model fixes, partner consolidation, events-api
+  decomposition) — **done**.
+- **Phase 7 (contract-first completion)** — **done across all three active services.** Every
+  wireable controller in EMS, CUMS, and Partner now `implements <X>Api` against a generated
+  OpenAPI interface (no hand-rolled REST controllers remain except dev/test-only
+  `DevEmail`/`TestFixtureCleanup` and the external `Watch*` app contract). Combined with the
+  frontend's `openapi-typescript` types, **both ends of every service are now generated from
+  the OpenAPI specs** — the contract is the single source of truth end-to-end.
+- **Phase 8** — `GET /public/settings/features` relocated off `AiAssistController` to a
+  dedicated `event-app-settings-api` + `PublicSettingsController` (8.1). `/attendee-portal/dashboard`
+  relocation deferred (attendee-experience dormant). Watch-path normalization deliberately
+  skipped (the generated `WatchApi` is unimplemented and the iOS watch app vendors its own spec,
+  so the inconsistency is latent/harmless).
+- **Phase 9** — generator upgraded to 7.14.0 (9a); top-level `tags` declared in the remaining
+  specs; stale `workflowService.ts` Javadoc fixed.
+
+See the plan for the per-controller record.
 
 ## Context
 

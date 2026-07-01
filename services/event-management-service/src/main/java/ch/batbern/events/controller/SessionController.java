@@ -2,17 +2,21 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.dto.BatchImportSessionRequest;
-import ch.batbern.events.dto.BatchImportSessionResult;
-import ch.batbern.events.dto.CreateSessionRequest;
-import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.exception.EventNotFoundException;
+import ch.batbern.events.mapper.SessionMapper;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionBatchImportService;
 import ch.batbern.events.service.SessionService;
 import ch.batbern.events.service.StructuralSessionService;
+import ch.batbern.events.sessions.api.generated.SessionsApi;
+import ch.batbern.events.sessions.dto.generated.BatchImportSessionRequest;
+import ch.batbern.events.sessions.dto.generated.BatchImportSessionResult;
+import ch.batbern.events.sessions.dto.generated.CreateSessionRequest;
+import ch.batbern.events.sessions.dto.generated.ListSessions200Response;
+import ch.batbern.events.sessions.dto.generated.PatchSessionRequest;
+import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterOperator;
 import ch.batbern.shared.api.FilterParser;
@@ -21,7 +25,6 @@ import ch.batbern.shared.api.PaginationParams;
 import ch.batbern.shared.api.PaginationUtils;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.service.SlugGenerationService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
@@ -30,38 +33,27 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import java.time.Instant;
-import java.util.HashMap;
+import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
- * REST Controller for Event Session sub-resources
+ * REST Controller for Event Session sub-resources.
+ * Implements the generated {@link SessionsApi} contract (event-sessions-api.openapi.yml),
+ * so the HTTP verb/path/validation annotations are inherited from the interface and the
+ * OpenAPI spec is the enforced contract (Phase 7 — ADR-006).
+ *
  * Story 1.15a.1: Events API Consolidation - AC9-10
  * Story 1.16.2: Updated to use eventCode and sessionSlug (meaningful IDs)
- *
- * Endpoints:
- * - GET    /api/v1/events/{eventCode}/sessions
- * - POST   /api/v1/events/{eventCode}/sessions
- * - PUT    /api/v1/events/{eventCode}/sessions/{sessionSlug}
- * - DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}
  */
 @RestController
-@RequestMapping("/api/v1/events/{eventCode}/sessions")
-public class SessionController {
+@RequestMapping("/api/v1")
+public class SessionController implements SessionsApi {
 
     @Autowired
     private SessionRepository sessionRepository;
@@ -79,22 +71,24 @@ public class SessionController {
     private SessionService sessionService;
 
     @Autowired
+    private SessionMapper sessionMapper;
+
+    @Autowired
     private SessionBatchImportService sessionBatchImportService;
 
     @Autowired
     private StructuralSessionService structuralSessionService;
 
     /**
-     * AC9: List sessions for an event with optional filtering
-     * Story 1.16.2: Updated to use eventCode instead of UUID
+     * AC9: List sessions for an event with optional filtering.
      * GET /api/v1/events/{eventCode}/sessions?filter={}&page={}&limit={}
      */
-    @GetMapping
-    public ResponseEntity<Map<String, Object>> listSessions(
-            @PathVariable String eventCode,
-            @RequestParam(required = false) String filter,
-            @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "20") int limit) {
+    @Override
+    public ResponseEntity<ListSessions200Response> listSessions(
+            String eventCode,
+            String filter,
+            Integer page,
+            Integer limit) {
 
         // Find event by eventCode
         UUID eventId = eventRepository.findByEventCode(eventCode)
@@ -102,7 +96,7 @@ public class SessionController {
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         try {
-            // Parse pagination parameters
+            // Parse pagination parameters (1-indexed page)
             PaginationParams paginationParams = PaginationUtils.parseParams(page, limit);
             int pageNum = paginationParams.getPage();
             int pageSize = paginationParams.getLimit();
@@ -122,8 +116,14 @@ public class SessionController {
             Pageable pageable = PageRequest.of(pageNum - 1, pageSize); // Convert to 0-indexed
             Page<Session> sessionsPage = sessionRepository.findAll(spec, pageable);
 
-            // Set eventCode on all sessions for API response
-            sessionsPage.getContent().forEach(session -> session.setEventCode(eventCode));
+            // Map entities to the generated SessionResponse via the pure mapper (no speaker
+            // enrichment — list payloads stay lean, matching prior raw-entity behaviour).
+            List<SessionResponse> data = sessionsPage.getContent().stream()
+                    .map(session -> {
+                        session.setEventCode(eventCode);
+                        return sessionMapper.toDto(session);
+                    })
+                    .toList();
 
             // Generate pagination metadata
             PaginationMetadata metadata = PaginationUtils.generateMetadata(
@@ -132,33 +132,28 @@ public class SessionController {
                     sessionsPage.getTotalElements()
             );
 
-            // Build response
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", sessionsPage.getContent());
-            response.put("pagination", metadata);
+            ListSessions200Response response = new ListSessions200Response()
+                    .data(data)
+                    .pagination(metadata);
 
             return ResponseEntity.ok(response);
 
+        } catch (ValidationException e) {
+            throw e;
         } catch (Exception e) {
             throw new ValidationException("Invalid filter or pagination parameters: " + e.getMessage());
         }
     }
 
     /**
-     * Get a single session by sessionSlug
-     * Story 1.15a.1b: Returns SessionResponse with speakers array
+     * Get a single session by sessionSlug.
      * GET /api/v1/events/{eventCode}/sessions/{sessionSlug}
-     *
-     * @param eventCode Event code (for API consistency, not used in lookup)
-     * @param sessionSlug Session slug (globally unique identifier)
-     * @param expand Optional expand parameter (e.g., "speakers")
-     * @return SessionResponse with optional speaker details
      */
-    @GetMapping("/{sessionSlug}")
+    @Override
     public ResponseEntity<SessionResponse> getSession(
-            @PathVariable String eventCode,
-            @PathVariable String sessionSlug,
-            @RequestParam(required = false) String expand) {
+            String eventCode,
+            String sessionSlug,
+            String expand) {
 
         // Find session by slug (globally unique, no need for eventCode in query)
         Session session = sessionRepository.findBySessionSlug(sessionSlug)
@@ -171,16 +166,14 @@ public class SessionController {
     }
 
     /**
-     * AC10: Create a new session for an event
-     * Story 1.16.2: Auto-generates sessionSlug from title
-     * Story 1.15a.1b: Returns SessionResponse with speakers array
+     * AC10: Create a new session for an event.
      * POST /api/v1/events/{eventCode}/sessions
      */
-    @PostMapping
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SessionResponse> createSession(
-            @PathVariable String eventCode,
-            @Valid @RequestBody CreateSessionRequest request) {
+            String eventCode,
+            CreateSessionRequest createSessionRequest) {
 
         // Find event by eventCode
         UUID eventId = eventRepository.findByEventCode(eventCode)
@@ -188,7 +181,7 @@ public class SessionController {
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         // Generate unique session slug from title
-        String baseSlug = slugGenerationService.generateSessionSlug(request.getTitle());
+        String baseSlug = slugGenerationService.generateSessionSlug(createSessionRequest.getTitle());
         String sessionSlug = slugGenerationService.ensureUniqueSlug(
                 baseSlug,
                 sessionRepository::existsBySessionSlug
@@ -199,14 +192,14 @@ public class SessionController {
                 .sessionSlug(sessionSlug)
                 .eventId(eventId)
                 .eventCode(eventCode)
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .sessionType(request.getSessionType())
-                .startTime(parseInstant(request.getStartTime()))
-                .endTime(parseInstant(request.getEndTime()))
-                .room(request.getRoom())
-                .capacity(request.getCapacity())
-                .language(request.getLanguage())
+                .title(createSessionRequest.getTitle())
+                .description(createSessionRequest.getDescription())
+                .sessionType(createSessionRequest.getSessionType())
+                .startTime(toInstant(createSessionRequest.getStartTime()))
+                .endTime(toInstant(createSessionRequest.getEndTime()))
+                .room(createSessionRequest.getRoom())
+                .capacity(createSessionRequest.getCapacity())
+                .language(createSessionRequest.getLanguage())
                 .build();
 
         Session savedSession = sessionRepository.save(session);
@@ -218,23 +211,16 @@ public class SessionController {
     }
 
     /**
-     * Partially update a session (PATCH)
+     * Partially update a session (PATCH). Only provided fields change.
+     * Supported fields: title, description, durationMinutes.
      * PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}
-     *
-     * Allows updating individual fields without requiring all fields.
-     * Supported fields: title, description, durationMinutes
-     *
-     * @param eventCode Event code
-     * @param sessionSlug Session slug identifier
-     * @param updates Map of field updates (only provided fields will be updated)
-     * @return Updated session response
      */
-    @PatchMapping("/{sessionSlug}")
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SessionResponse> patchSession(
-            @PathVariable String eventCode,
-            @PathVariable String sessionSlug,
-            @RequestBody Map<String, Object> updates) {
+            String eventCode,
+            String sessionSlug,
+            PatchSessionRequest patchSessionRequest) {
 
         // Find event by eventCode
         UUID eventId = eventRepository.findByEventCode(eventCode)
@@ -250,37 +236,28 @@ public class SessionController {
             throw new ValidationException("Session does not belong to this event");
         }
 
-        // Apply partial updates
-        if (updates.containsKey("title")) {
-            session.setTitle((String) updates.get("title"));
+        // Apply partial updates (null = field not provided)
+        if (patchSessionRequest.getTitle() != null) {
+            session.setTitle(patchSessionRequest.getTitle());
         }
 
-        if (updates.containsKey("description")) {
-            session.setDescription((String) updates.get("description"));
+        if (patchSessionRequest.getDescription() != null) {
+            session.setDescription(patchSessionRequest.getDescription());
         }
 
-        if (updates.containsKey("durationMinutes")) {
-            Integer durationMinutes = null;
-            Object durationValue = updates.get("durationMinutes");
-            if (durationValue instanceof Integer) {
-                durationMinutes = (Integer) durationValue;
-            } else if (durationValue instanceof Number) {
-                durationMinutes = ((Number) durationValue).intValue();
-            }
-
-            if (durationMinutes != null && durationMinutes > 0) {
-                // Update endTime based on startTime + duration
-                Instant startTime = session.getStartTime();
-                if (startTime != null) {
-                    Instant newEndTime = startTime.plusSeconds(durationMinutes * 60L);
-                    if (!newEndTime.equals(session.getEndTime())) {
-                        session.setEndTime(newEndTime);
-                        // Clear actual execution data when scheduled end time changes (W4.x).
-                        session.setActualStartTime(null);
-                        session.setActualEndTime(null);
-                        session.setOverrunMinutes(null);
-                        session.setCompletedByUsername(null);
-                    }
+        Integer durationMinutes = patchSessionRequest.getDurationMinutes();
+        if (durationMinutes != null && durationMinutes > 0) {
+            // Update endTime based on startTime + duration
+            Instant startTime = session.getStartTime();
+            if (startTime != null) {
+                Instant newEndTime = startTime.plusSeconds(durationMinutes * 60L);
+                if (!newEndTime.equals(session.getEndTime())) {
+                    session.setEndTime(newEndTime);
+                    // Clear actual execution data when scheduled end time changes (W4.x).
+                    session.setActualStartTime(null);
+                    session.setActualEndTime(null);
+                    session.setOverrunMinutes(null);
+                    session.setCompletedByUsername(null);
                 }
             }
         }
@@ -294,21 +271,19 @@ public class SessionController {
     }
 
     /**
-     * AC10: Delete a session
-     * Story 1.16.2: Uses sessionSlug as path parameter
+     * AC10: Delete a session.
      * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}
      *
-     * Note: @Transactional is required at controller level to ensure atomic deletion
-     * of session + related content submissions. The schema lacks ON DELETE CASCADE
-     * (V53), requiring application-level cascade deletion. Transaction ensures both
-     * deletes succeed or both roll back, preventing orphaned records.
+     * Note: @Transactional ensures atomic deletion of session + related content
+     * submissions. The schema lacks ON DELETE CASCADE (V53), requiring application-level
+     * cascade deletion.
      */
-    @DeleteMapping("/{sessionSlug}")
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Void> deleteSession(
-            @PathVariable String eventCode,
-            @PathVariable String sessionSlug) {
+            String eventCode,
+            String sessionSlug) {
 
         // Find event by eventCode
         UUID eventId = eventRepository.findByEventCode(eventCode)
@@ -334,28 +309,37 @@ public class SessionController {
     }
 
     /**
-     * Batch import sessions from legacy JSON (sessions.json)
+     * Batch import sessions from legacy JSON (sessions.json).
      * POST /api/v1/events/{eventCode}/sessions/batch-import
-     *
-     * Imports multiple sessions from historical data with:
-     * - Duplicate detection by (event_id, title)
-     * - Sequential 45-minute time slots
-     * - Speaker assignment by matching speakerId to username
-     * - Event organizer as moderator when no speakers
-     *
-     * @param eventCode Event code (e.g., "BATbern142")
-     * @param requests List of session import requests from legacy JSON
-     * @return BatchImportSessionResult with statistics and details
      */
-    @PostMapping("/batch-import")
+    @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<BatchImportSessionResult> batchImportSessions(
-            @PathVariable String eventCode,
-            @Valid @RequestBody List<BatchImportSessionRequest> requests) {
+            String eventCode,
+            List<BatchImportSessionRequest> batchImportSessionRequest) {
 
-        BatchImportSessionResult result = sessionBatchImportService.importSessions(eventCode, requests);
+        BatchImportSessionResult result =
+                sessionBatchImportService.importSessions(eventCode, batchImportSessionRequest);
 
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Generate structural sessions (moderation, break, lunch) for an event.
+     * ORGANIZER role required.
+     * POST /api/v1/events/{eventCode}/sessions/structural?overwrite={bool}
+     */
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<List<SessionResponse>> generateStructuralSessions(
+            String eventCode,
+            Boolean overwrite) {
+
+        List<SessionResponse> sessions = structuralSessionService.generateStructuralSessions(
+                eventCode, Boolean.TRUE.equals(overwrite));
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(sessions);
     }
 
     /**
@@ -394,35 +378,9 @@ public class SessionController {
     }
 
     /**
-     * Generate structural sessions (moderation, break, lunch) for an event.
-     * ORGANIZER role required.
-     * POST /api/v1/events/{eventCode}/sessions/structural
-     *
-     * @param eventCode Public event code
-     * @param overwrite If true, delete existing structural sessions before generating
-     * @return 201 with list of created sessions, or 409 if sessions exist and overwrite=false
+     * Convert an OffsetDateTime (wire) to an Instant (entity storage).
      */
-    @PostMapping("/structural")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<List<SessionResponse>> generateStructuralSessions(
-            @PathVariable String eventCode,
-            @RequestParam(required = false, defaultValue = "false") boolean overwrite) {
-
-        List<SessionResponse> sessions = structuralSessionService.generateStructuralSessions(
-                eventCode, overwrite);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(sessions);
-    }
-
-    /**
-     * Parse ISO-8601 datetime string to Instant
-     */
-    private Instant parseInstant(String dateTimeStr) {
-        try {
-            return Instant.parse(dateTimeStr);
-        } catch (Exception e) {
-            throw new ValidationException("Invalid datetime format. Use ISO-8601: " + dateTimeStr);
-        }
+    private Instant toInstant(OffsetDateTime dateTime) {
+        return dateTime != null ? dateTime.toInstant() : null;
     }
 }

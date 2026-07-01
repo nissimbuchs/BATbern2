@@ -24,7 +24,11 @@ tags:
 - name: Email Templates
   description: Email template management for organizers (Story 10.2)
 - name: Newsletter
-  description: Newsletter subscription, unsubscribe, and sending (Story 10.7)
+  description: Newsletter subscription, unsubscribe, and sending (NewsletterController, Story 10.7)
+- name: Registrant Notice
+  description: Ad-hoc registrant notice preview/send (RegistrantNoticeController)
+- name: Slides Online
+  description: '"Slides are online" post-event notice send (SlidesOnlineController)'
 paths:
   /email-templates:
     get:
@@ -352,6 +356,26 @@ paths:
                 $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /newsletter/subscribers/count:
+    get:
+      tags:
+      - Newsletter
+      summary: Active subscriber count (ORGANIZER)
+      description: Cheap COUNT query used by the newsletter tab to display subscriber totals.
+      operationId: getSubscriberCount
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Active subscriber count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberCountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /newsletter/subscribers:
     get:
       tags:
@@ -551,7 +575,7 @@ paths:
   /events/{eventCode}/slides-online/send:
     post:
       tags:
-      - Newsletter
+      - Slides Online
       summary: Send the "slides are online" mail to the event's active registrants (ORGANIZER)
       description: 'Story 7.3 — sends a one-shot, event-triggered "The Slides Are Online" mail to the event''s
 
@@ -589,7 +613,7 @@ paths:
   /events/{eventCode}/registrant-notices/preview:
     post:
       tags:
-      - Newsletter
+      - Registrant Notice
       summary: Preview a registrant-notice mail in a chosen language (ORGANIZER)
       description: 'Story 7.3 hardening — renders a REGISTRANT_NOTICE-category template (e.g. slides-online)
 
@@ -631,7 +655,7 @@ paths:
   /events/{eventCode}/registrant-notices/send:
     post:
       tags:
-      - Newsletter
+      - Registrant Notice
       summary: Send a registrant-notice mail to the event's active registrants (ORGANIZER)
       description: 'Story 7.3 hardening — sends a REGISTRANT_NOTICE-category template (e.g. slides-online) to the
 
@@ -827,6 +851,16 @@ paths:
           description: Send is already COMPLETED or IN_PROGRESS — retry not allowed
 components:
   schemas:
+    SubscriberCountResponse:
+      type: object
+      required:
+      - totalActive
+      properties:
+        totalActive:
+          type: integer
+          format: int64
+          description: Number of currently active newsletter subscribers
+          example: 1234
     NewsletterSubscribeRequest:
       type: object
       required:
@@ -885,6 +919,12 @@ components:
           description: 'Story 10.29 AC7: Maximum number of recipients for canary send mode. If omitted, sends to all active subscribers.
 
             '
+        testMode:
+          type: boolean
+          nullable: true
+          default: false
+          description: 'When true, the send/preview targets only organizers (test send), not real
+            subscribers. Gates whether real recipient emails go out.'
     NewsletterSendResponse:
       type: object
       required:
@@ -1218,6 +1258,11 @@ components:
       properties:
         subscribed:
           type: boolean
+        language:
+          type: string
+          nullable: true
+          default: de
+          description: Preferred newsletter language; defaults to 'de' when omitted.
   responses:
     BadRequest:
       description: Bad request - validation error
