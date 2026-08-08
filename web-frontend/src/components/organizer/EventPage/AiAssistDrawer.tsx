@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon, AutoAwesome, ContentCopy, Check } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { safeRandomUUID } from '@/utils/uuid';
 import {
   useAiGenerateDescription,
   useAiGenerateThemeImage,
@@ -75,7 +76,9 @@ export function AiAssistDrawer({
     setGeneratedImageUrl(null);
     setGeneratedImageS3Key(null);
     imageMutation.mutate(
-      { seed: regenerate ? crypto.randomUUID() : undefined },
+      // safeRandomUUID, not crypto.randomUUID: the latter is undefined outside a secure
+      // context, so "Regenerate" threw on a dev server browsed over plain http://.
+      { seed: regenerate ? safeRandomUUID() : undefined },
       {
         onSuccess: (data) => {
           setGeneratedImageUrl(data.imageUrl);
