@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { AppConfig } from '../config/runtime-config';
-import { loadRuntimeConfig } from '../config/runtime-config';
+import { loadRuntimeConfig, resolveApiBaseUrl } from '../config/runtime-config';
 import { updateApiClientConfig } from '../services/api/apiClient';
 import {
   setAmplifyRuntimeConfig,
@@ -51,7 +51,10 @@ export function ConfigProvider({ config: providedConfig, children }: ConfigProvi
       .then((cfg) => {
         // Module-level stashes run regardless of unmount — config arrival is a fact, and
         // skipping them would strand the waiters inside ensureAmplifyConfigured().
-        updateApiClientConfig(cfg.apiBaseUrl);
+        // resolveApiBaseUrl() keeps the backend's value in prod and stays same-origin
+        // under `vite dev`, where the advertised absolute localhost URL would resolve
+        // against the viewer's machine rather than the dev host.
+        updateApiClientConfig(resolveApiBaseUrl(cfg));
         setAmplifyRuntimeConfig(cfg);
         if (cancelled) return;
         setLoadedConfig(cfg);
