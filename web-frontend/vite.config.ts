@@ -232,15 +232,18 @@ export default defineConfig({
         // ConfigProvider cancels the Amplify runtime-config handshake and sign-in dies
         // with "AuthUserPoolException: Auth UserPool not configured".
         //
-        // start-all-native.sh exports VITE_API_PORT (and VITE_API_BASE_URL) into
-        // .env.native.{instance}, which also makes parallel instances work — instance 2
-        // needs to reach its own gateway on BASE_PORT, not instance 1's.
-        // Docker Compose sets neither, so it keeps the service-name default.
+        // Default is localhost, because every host-side workflow needs it: both
+        // `make dev-native-up` (which exports VITE_API_PORT into .env.native.{instance},
+        // so parallel instances reach their OWN gateway) and the standalone
+        // `cd web-frontend && npm run dev` documented in CLAUDE.md.
+        //
+        // Docker Compose is the exception — there the dev server runs inside a container
+        // where the gateway is reachable only as `batbern-api-gateway`, and localhost
+        // would be the container itself. Compose declares that explicitly via
+        // VITE_API_PROXY_TARGET (see docker-compose.yml).
         target:
           process.env.VITE_API_PROXY_TARGET ||
-          (process.env.VITE_API_PORT
-            ? `http://localhost:${process.env.VITE_API_PORT}`
-            : 'http://batbern-api-gateway:8080'),
+          `http://localhost:${process.env.VITE_API_PORT || '8000'}`,
         changeOrigin: true,
         secure: false,
       },
