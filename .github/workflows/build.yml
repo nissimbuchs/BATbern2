@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -67,7 +67,7 @@ jobs:
 
       - name: Upload coverage reports
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: shared-kernel/build/reports/jacoco/test/jacocoTestReport.xml
           flags: shared-kernel
@@ -108,7 +108,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Fetch full history for git diff
 
@@ -366,7 +366,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Fetch full history to enable git diff between commits
 
@@ -505,7 +505,7 @@ jobs:
 
       - name: Upload coverage reports
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true' && always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: web-frontend/coverage/coverage-final.json
           flags: frontend
@@ -524,7 +524,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Fetch full history to enable git diff between commits
 
@@ -633,7 +633,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
 

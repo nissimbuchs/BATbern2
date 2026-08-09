@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Fetch full history for proper git operations
           fetch-depth: 0
@@ -135,7 +135,7 @@ jobs:
           steps.extract.outputs.changed == 'true' &&
           github.event_name == 'pull_request' &&
           github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({
