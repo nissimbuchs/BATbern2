@@ -80,7 +80,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: ZAP API Scan — ${{ matrix.api }}
         uses: zaproxy/action-api-scan@v0.10.0
@@ -136,7 +136,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: ZAP Baseline Scan — Frontend
         uses: zaproxy/action-baseline@v0.14.0
