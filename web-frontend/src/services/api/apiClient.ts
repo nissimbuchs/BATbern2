@@ -9,13 +9,19 @@ import { hasCognitoSession } from '@/utils/auth/cognitoSession';
 import { ensureAmplifyConfigured } from '@/config/amplify';
 import { authService } from '@/services/auth/authService';
 import { setLogoutReason } from '@/services/auth/logoutReason';
+import { safeRandomUUID } from '@/utils/uuid';
 
 /**
  * Generate a unique correlation ID for request tracing
+ *
+ * Uses safeRandomUUID(): crypto.randomUUID() is undefined outside a secure context, and
+ * the TypeError it threw aborted EVERY outgoing request from the interceptor when the
+ * dev server was browsed over plain http:// by LAN IP. Tracing must never fail a request.
+ *
  * @returns UUID v4 format correlation ID
  */
 function generateCorrelationId(): string {
-  return crypto.randomUUID();
+  return safeRandomUUID();
 }
 
 /**

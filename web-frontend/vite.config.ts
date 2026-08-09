@@ -224,7 +224,26 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://batbern-api-gateway:8080',
+        // Docker Compose resolves `batbern-api-gateway` on its own network, but native
+        // dev (make dev-native-up) runs the gateway as a plain process on localhost —
+        // there the Docker hostname does not resolve and EVERY /api/* call 502s.
+        //
+        // That 502 is not obvious from the symptom: GET /api/v1/config fails, so
+        // ConfigProvider cancels the Amplify runtime-config handshake and sign-in dies
+        // with "AuthUserPoolException: Auth UserPool not configured".
+        //
+        // Default is localhost, because every host-side workflow needs it: both
+        // `make dev-native-up` (which exports VITE_API_PORT into .env.native.{instance},
+        // so parallel instances reach their OWN gateway) and the standalone
+        // `cd web-frontend && npm run dev` documented in CLAUDE.md.
+        //
+        // Docker Compose is the exception — there the dev server runs inside a container
+        // where the gateway is reachable only as `batbern-api-gateway`, and localhost
+        // would be the container itself. Compose declares that explicitly via
+        // VITE_API_PROXY_TARGET (see docker-compose.yml).
+        target:
+          process.env.VITE_API_PROXY_TARGET ||
+          `http://localhost:${process.env.VITE_API_PORT || '8000'}`,
         changeOrigin: true,
         secure: false,
       },

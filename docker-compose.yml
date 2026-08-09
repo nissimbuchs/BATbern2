@@ -67,6 +67,11 @@ services:
       # Vite dev server proxies /api requests to API Gateway (see vite.config.ts)
       # In production, runtime config is loaded from the backend
       - NODE_ENV=development
+      # The dev server runs INSIDE this container, so the gateway is reachable only by
+      # its compose service name — localhost here would be the container itself. Every
+      # host-side workflow (make dev-native-up, standalone `npm run dev`) uses the
+      # localhost default in vite.config.ts, so compose declares its own target.
+      - VITE_API_PROXY_TARGET=http://batbern-api-gateway:8080
     volumes:
       - ./web-frontend:/app
       - /app/node_modules

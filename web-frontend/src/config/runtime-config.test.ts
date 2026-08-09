@@ -7,7 +7,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadRuntimeConfig, clearConfigCache, type AppConfig } from './runtime-config';
+import {
+  loadRuntimeConfig,
+  clearConfigCache,
+  getDefaultApiBaseUrl,
+  resolveApiBaseUrl,
+  type AppConfig,
+} from './runtime-config';
 
 const validConfig: AppConfig = {
   environment: 'staging',
@@ -158,6 +164,63 @@ describe('runtime-config', () => {
 
     const config = await loadRuntimeConfig();
     expect(config.environment).toBe('development');
+  });
+
+  // ---- API base URL resolution (dev must never reach production)
+  describe('API base URL resolution', () => {
+    // getApiUrl() used to send EVERY non-localhost hostname to https://api.batbern.ch.
+    // Browsing a `make dev-native-up` frontend by LAN IP therefore aimed a dev UI at
+    // PRODUCTION (batbern-staging serves www.batbern.ch) — only CORS stopped it.
+    //
+    // Under `vite dev` the base URL is now same-origin, so /api goes through the Vite
+    // proxy to whichever gateway that dev server is configured for. Production builds
+    // (import.meta.env.DEV === false) keep the original hostname-derived behaviour.
+
+    it('should_useSameOriginRelativeUrl_when_runningUnderViteDev', () => {
+      vi.stubEnv('DEV', true);
+      // A LAN IP is the case that used to fall through to production.
+      vi.spyOn(window, 'location', 'get').mockReturnValue({
+        ...window.location,
+        hostname: '192.168.1.37',
+      } as Location);
+
+      expect(getDefaultApiBaseUrl()).toBe('/api/v1');
+      expect(getDefaultApiBaseUrl()).not.toContain('api.batbern.ch');
+
+      vi.unstubAllEnvs();
+    });
+
+    it('should_keepProductionHost_when_notRunningUnderViteDev', () => {
+      vi.stubEnv('DEV', false);
+      vi.spyOn(window, 'location', 'get').mockReturnValue({
+        ...window.location,
+        hostname: 'www.batbern.ch',
+      } as Location);
+
+      expect(getDefaultApiBaseUrl()).toBe('https://api.batbern.ch/api/v1');
+
+      vi.unstubAllEnvs();
+    });
+
+    it('should_adoptBackendApiBaseUrl_when_notRunningUnderViteDev', () => {
+      vi.stubEnv('DEV', false);
+
+      expect(resolveApiBaseUrl(validConfig)).toBe('https://api.batbern.ch/api/v1');
+
+      vi.unstubAllEnvs();
+    });
+
+    it('should_ignoreBackendApiBaseUrl_when_runningUnderViteDev', () => {
+      // The backend advertises an absolute http://localhost:{port}/api/v1. "localhost"
+      // is resolved by the BROWSER, so adopting it breaks every viewer that is not
+      // sitting on the dev host itself.
+      vi.stubEnv('DEV', true);
+      const devConfig: AppConfig = { ...validConfig, apiBaseUrl: 'http://localhost:8000/api/v1' };
+
+      expect(resolveApiBaseUrl(devConfig)).toBe('/api/v1');
+
+      vi.unstubAllEnvs();
+    });
   });
 
   // ---- clearConfigCache

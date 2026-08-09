@@ -13,7 +13,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: devpass123
     ports:
-      - "5432:5432"
+      # Host port is overridable: some hosts already occupy 5432 (a Synology NAS runs
+      # DSM's own PostgreSQL there). Keep this in sync with DB_TUNNEL_PORT in
+      # scripts/dev/start-all-native.sh.
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - batbern-dev-data:/var/lib/postgresql/data
     healthcheck:
