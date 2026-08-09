@@ -1,7 +1,7 @@
 buildscript {
     dependencies {
         // Flyway PostgreSQL database plugin required for Flyway 11.x
-        classpath 'org.flywaydb:flyway-database-postgresql:12.5.0'
+        classpath 'org.flywaydb:flyway-database-postgresql:13.0.0'
     }
 }
 
@@ -52,7 +52,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-jackson2'
 
     // AWS SDK for EventBridge, CloudWatch, Cognito, and SES
-    implementation platform('software.amazon.awssdk:bom:2.43.2')
+    implementation platform('software.amazon.awssdk:bom:2.49.5')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
@@ -87,7 +87,7 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic'
 
     // Database
-    implementation 'org.postgresql:postgresql:42.7.11'
+    implementation 'org.postgresql:postgresql:42.7.13'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
 
