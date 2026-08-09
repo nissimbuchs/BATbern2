@@ -63,7 +63,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.16.0",
-    "aws-cdk": "latest",
+    "aws-cdk": "^2.1135.1",
     "aws-sdk-client-mock": "^4.1.0",
     "esbuild": "^0.28.1",
     "jest": "^30.4.2",
