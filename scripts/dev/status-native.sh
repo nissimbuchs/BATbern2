@@ -17,6 +17,10 @@ NC='\033[0m' # No Color
 PID_DIR="/tmp"
 LOG_DIR="/tmp"
 
+# Service selection — shared with start-all-native.sh. Services outside DEV_SERVICES are
+# intentionally not started, so reporting them as "down" would be a false alarm.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/native-services.sh"
+
 # Instance-specific configuration
 BASE_PORT="${BASE_PORT:-8000}"  # Default to 8000 (instance 1)
 
@@ -41,7 +45,9 @@ ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
 FRONTEND_PORT=$((BASE_PORT + 100))
 
 # Shared infrastructure ports
-DB_TUNNEL_PORT=5432
+# DB_TUNNEL_PORT is overridable to match docker-compose-dev.yml's POSTGRES_PORT —
+# see the note in start-all-native.sh.
+DB_TUNNEL_PORT="${DB_TUNNEL_PORT:-5432}"
 MINIO_API_PORT=8450
 MINIO_CONSOLE_PORT=8451
 
@@ -166,14 +172,25 @@ check_postgres_status() {
 main() {
     local all_running=true
 
-    # Check all services using calculated ports
-    check_service_status "api-gateway" ${API_GATEWAY_PORT} || all_running=false
-    check_service_status "company-user-management" ${COMPANY_USER_MGMT_PORT} || all_running=false
-    check_service_status "event-management" ${EVENT_MGMT_PORT} || all_running=false
-    check_service_status "speaker-coordination" ${SPEAKER_COORD_PORT} || all_running=false
-    check_service_status "partner-coordination" ${PARTNER_COORD_PORT} || all_running=false
-    check_service_status "attendee-experience" ${ATTENDEE_EXP_PORT} || all_running=false
+    # Check only the selected services. A service outside DEV_SERVICES was never meant to
+    # be running, so counting it as a failure would make every status read amber.
+    local svc
+    local not_selected=""
+    for svc in ${ALL_NATIVE_SERVICES}; do
+        if service_enabled "$svc"; then
+            check_service_status "$svc" "$(service_port "$svc")" || all_running=false
+        else
+            not_selected="${not_selected} ${svc}"
+        fi
+    done
     check_service_status "web-frontend" ${FRONTEND_PORT} || all_running=false
+
+    if [ -n "$not_selected" ]; then
+        echo ""
+        echo -e "${CYAN}Not selected (DEV_SERVICES):${NC}${not_selected}"
+        echo -e "  ${YELLOW}Intentionally not started — not a failure.${NC}"
+        echo -e "  ${YELLOW}Run everything: DEV_SERVICES=\"${ALL_NATIVE_SERVICES}\" make dev-native-up${NC}"
+    fi
 
     echo ""
 

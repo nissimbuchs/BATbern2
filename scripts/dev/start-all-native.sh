@@ -11,14 +11,25 @@
 #   - Instance 2: BASE_PORT=9000 → services 9080-9085, frontend 4000, DB tunnel 6432, MinIO 9100-9101
 #   - Both instances share the same database but have isolated processes
 #
-# Services started (with default ports):
+# Services started BY DEFAULT (with default ports):
 #   - API Gateway (port 8080)
 #   - Company User Management Service (port 8081)
 #   - Event Management Service (port 8082)
-#   - Speaker Coordination Service (port 8083)
 #   - Partner Coordination Service (port 8084)
-#   - Attendee Experience Service (port 8085)
 #   - Web Frontend (port 3000)
+#
+# NOT started by default: Speaker Coordination (8083) and Attendee Experience (8085).
+# They hold no local data worth exercising, and each one costs ~400-500 MB. Opt in with:
+#   DEV_SERVICES="api-gateway company-user-management event-management \
+#                 speaker-coordination partner-coordination attendee-experience" make dev-native-up
+#
+# Memory tuning (added 2026-08-08 for the 6 GB NAS dev host; also helps laptops):
+#   - Each service runs as `java -Xmx… -jar <fat jar>` instead of `./gradlew bootRun`.
+#     bootRun cost a Gradle launcher JVM *per service* on top of the app JVM.
+#     Set DEV_RUN_MODE=bootrun to get the old behaviour back (needed for DevTools hot reload).
+#   - Per-service heap caps, biggest where the data is: see service_heap() below.
+#   - JARs are built in ONE Gradle invocation before any service starts, instead of N
+#     concurrent `--no-daemon` builds, which was the real memory peak.
 
 set -e
 
@@ -35,6 +46,13 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PID_DIR="/tmp"
 LOG_DIR="/tmp"
 ENV_FILE="${PROJECT_ROOT}/.env"
+
+# Service selection, per-service heaps, module paths — shared with status-native.sh.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/native-services.sh"
+
+# jar     = java -jar the fat JAR (default; one JVM per service)
+# bootrun = ./gradlew bootRun (Spring DevTools hot reload; adds a Gradle launcher JVM per service)
+DEV_RUN_MODE="${DEV_RUN_MODE:-jar}"
 
 # Instance-specific configuration
 BASE_PORT="${BASE_PORT:-8000}"  # Default to 8000 (instance 1)
@@ -62,8 +80,11 @@ ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
 FRONTEND_PORT=$((BASE_PORT + 100))
 
 # Shared infrastructure ports (all instances use the same DB tunnel and MinIO)
-# DB tunnel port - always 5432 (shared across all instances)
-DB_TUNNEL_PORT=5432
+# DB tunnel port - 5432 by default, and shared across all instances by design.
+# Overridable because some hosts already have something on 5432 (e.g. a Synology NAS
+# runs DSM's own PostgreSQL on 127.0.0.1:5432). Must match the host port that
+# docker-compose-dev.yml publishes, i.e. POSTGRES_PORT.
+DB_TUNNEL_PORT="${DB_TUNNEL_PORT:-5432}"
 
 # MinIO ports - always 8450/8451 (shared across all instances)
 # Using 8450/8451 to avoid conflicts with common application ports like 9000
@@ -429,8 +450,9 @@ wait_for_health() {
 # Start a Spring Boot service
 start_spring_service() {
     local service_name=$1
-    local gradle_task=$2
-    local port=$3
+    local gradle_task="$(service_module "$service_name"):bootRun"
+    local port="$(service_port "$service_name")"
+    local heap="$(service_heap "$service_name")"
     local pid_file="${PID_DIR}/batbern-${INSTANCE}-${service_name}.pid"
     local log_file="${LOG_DIR}/batbern-${INSTANCE}-${service_name}.log"
 
@@ -445,17 +467,9 @@ start_spring_service() {
         fi
     fi
 
-    echo -e "${CYAN}  → Building ${service_name} JAR...${NC}"
-
-    # Build the JAR
-    cd "${PROJECT_ROOT}"
-    local jar_task="${gradle_task//:bootRun/:bootJar}"
-    ./gradlew ${jar_task} --no-daemon -q > /dev/null 2>&1
-
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}    ✗ Failed to build ${service_name} JAR${NC}"
-        return 1
-    fi
+    # NOTE: the JAR is built up-front by build_jars() in a single Gradle invocation.
+    # It used to be built here, which meant N concurrent `--no-daemon` Gradle builds —
+    # the peak memory moment of the whole script.
 
     # Find the JAR file (exclude -plain.jar, get the executable fat JAR)
     local jar_path=""
@@ -473,7 +487,9 @@ start_spring_service() {
         return 1
     fi
 
-    echo -e "${CYAN}  → Starting ${service_name}...${NC}"
+    local heap_note="heap ${heap}"
+    if [ "$DEV_RUN_MODE" = "bootrun" ]; then heap_note="heap uncapped (bootrun)"; fi
+    echo -e "${CYAN}  → Starting ${service_name} (${heap_note}, mode ${DEV_RUN_MODE})...${NC}"
     echo -e "${CYAN}    JAR: $(basename $jar_path)${NC}"
 
     # Export environment: base .env first, then instance overrides
@@ -482,12 +498,24 @@ start_spring_service() {
     source "${ENV_NATIVE_FILE}"
     set +a
 
-    # Start with gradlew bootRun for better hot-reload with DevTools
-    # Use absolute path from PROJECT_ROOT
-    local gradle_module=$(echo "$gradle_task" | sed 's/:bootRun$//')
     cd "${PROJECT_ROOT}"
-    nohup ./gradlew ${gradle_module}:bootRun --args="--server.port=$port" > "$log_file" 2>&1 &
-    local pid=$!
+    local pid
+    if [ "$DEV_RUN_MODE" = "bootrun" ]; then
+        # Gradle bootRun: keeps Spring DevTools hot reload, at the cost of an extra
+        # Gradle launcher JVM per service.
+        # NOTE: the per-service heap cap does NOT apply in this mode — no build.gradle
+        # reads a jvmArgs property, and JAVA_TOOL_OPTIONS would also cap Gradle's own
+        # JVMs. Use this mode on a machine with RAM to spare.
+        local gradle_module=$(echo "$gradle_task" | sed 's/:bootRun$//')
+        nohup ./gradlew ${gradle_module}:bootRun \
+            --args="--server.port=$port" > "$log_file" 2>&1 &
+        pid=$!
+    else
+        # Default: run the fat JAR directly. One JVM per service, explicit heap, no Gradle.
+        nohup java -Xmx"${heap}" -XX:MaxMetaspaceSize=192m \
+            -jar "$jar_path" --server.port=$port > "$log_file" 2>&1 &
+        pid=$!
+    fi
     echo $pid > "$pid_file"
     disown  # Remove from job control so parent script can exit
 
@@ -542,6 +570,26 @@ start_frontend() {
     echo ""
 }
 
+# Build every selected service's fat JAR in ONE Gradle invocation.
+# Previously each service built its own with --no-daemon, in parallel — N Gradle JVMs
+# alive simultaneously, which dwarfed the memory the running services actually need.
+build_jars() {
+    local tasks=""
+    local svc
+    for svc in ${DEV_SERVICES}; do
+        tasks="${tasks} $(service_module "$svc"):bootJar"
+    done
+
+    echo -e "${CYAN}→ Building JARs:${tasks}${NC}"
+    cd "${PROJECT_ROOT}"
+    if ! ./gradlew ${tasks} -q; then
+        echo -e "${RED}  ✗ JAR build failed — see the Gradle output above${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}  ✓ JARs built${NC}"
+    echo ""
+}
+
 # Main execution
 main() {
     check_prerequisites
@@ -555,16 +603,25 @@ main() {
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
+    echo -e "${CYAN}→ Services selected: ${DEV_SERVICES}${NC}"
+    echo ""
+
+    # One Gradle run for every JAR, before any service JVM exists.
+    build_jars
+
     # Start API Gateway first (other services may depend on it)
-    start_spring_service "api-gateway" ":api-gateway:bootRun" ${API_GATEWAY_PORT}
+    if service_enabled "api-gateway"; then
+        start_spring_service "api-gateway"
+    fi
 
     # Start backend services in parallel (they don't depend on each other)
     echo -e "${CYAN}→ Starting backend microservices...${NC}"
-    start_spring_service "company-user-management" ":services:company-user-management-service:bootRun" ${COMPANY_USER_MGMT_PORT} &
-    start_spring_service "event-management" ":services:event-management-service:bootRun" ${EVENT_MGMT_PORT} &
-    start_spring_service "speaker-coordination" ":services:speaker-coordination-service:bootRun" ${SPEAKER_COORD_PORT} &
-    start_spring_service "partner-coordination" ":services:partner-coordination-service:bootRun" ${PARTNER_COORD_PORT} &
-    start_spring_service "attendee-experience" ":services:attendee-experience-service:bootRun" ${ATTENDEE_EXP_PORT} &
+    local svc
+    for svc in ${DEV_SERVICES}; do
+        if [ "$svc" != "api-gateway" ]; then
+            start_spring_service "$svc" &
+        fi
+    done
 
     # Wait for all background service starts to complete
     wait
@@ -579,14 +636,27 @@ main() {
     echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "${CYAN}Services running at:${NC}"
-    echo -e "  ${GREEN}API Gateway:${NC}                http://localhost:${API_GATEWAY_PORT}"
-    echo -e "  ${GREEN}Company User Management:${NC}    http://localhost:${COMPANY_USER_MGMT_PORT}"
-    echo -e "  ${GREEN}Event Management:${NC}           http://localhost:${EVENT_MGMT_PORT}"
-    echo -e "  ${GREEN}Speaker Coordination:${NC}       http://localhost:${SPEAKER_COORD_PORT}"
-    echo -e "  ${GREEN}Partner Coordination:${NC}       http://localhost:${PARTNER_COORD_PORT}"
-    echo -e "  ${GREEN}Attendee Experience:${NC}        http://localhost:${ATTENDEE_EXP_PORT}"
+    # `|| true` on every line: under `set -e` a false `&&` list would abort the script.
+    service_enabled "api-gateway"             && echo -e "  ${GREEN}API Gateway:${NC}                http://localhost:${API_GATEWAY_PORT}  (heap $(service_heap api-gateway))" || true
+    service_enabled "company-user-management" && echo -e "  ${GREEN}Company User Management:${NC}    http://localhost:${COMPANY_USER_MGMT_PORT}  (heap $(service_heap company-user-management))" || true
+    service_enabled "event-management"        && echo -e "  ${GREEN}Event Management:${NC}           http://localhost:${EVENT_MGMT_PORT}  (heap $(service_heap event-management))" || true
+    service_enabled "speaker-coordination"    && echo -e "  ${GREEN}Speaker Coordination:${NC}       http://localhost:${SPEAKER_COORD_PORT}  (heap $(service_heap speaker-coordination))" || true
+    service_enabled "partner-coordination"    && echo -e "  ${GREEN}Partner Coordination:${NC}       http://localhost:${PARTNER_COORD_PORT}  (heap $(service_heap partner-coordination))" || true
+    service_enabled "attendee-experience"     && echo -e "  ${GREEN}Attendee Experience:${NC}        http://localhost:${ATTENDEE_EXP_PORT}  (heap $(service_heap attendee-experience))" || true
     echo -e "  ${GREEN}Web Frontend:${NC}               http://localhost:${FRONTEND_PORT}"
     echo ""
+
+    # Be explicit about what is NOT running — a 502 from the gateway is otherwise baffling.
+    local skipped=""
+    for svc in ${ALL_NATIVE_SERVICES}; do
+        service_enabled "$svc" || skipped="${skipped} ${svc}"
+    done
+    if [ -n "$skipped" ]; then
+        echo -e "${YELLOW}Not started:${skipped}${NC}"
+        echo -e "${YELLOW}  Gateway routes to these will fail. Start them with:${NC}"
+        echo -e "${YELLOW}  DEV_SERVICES=\"${DEV_SERVICES}${skipped}\" make dev-native-up${NC}"
+        echo ""
+    fi
     echo -e "${CYAN}Infrastructure:${NC}"
     echo -e "  ${GREEN}Database Tunnel:${NC}            localhost:${DB_TUNNEL_PORT}"
     echo -e "  ${GREEN}MinIO API:${NC}                  http://localhost:${MINIO_API_PORT}"

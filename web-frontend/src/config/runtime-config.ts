@@ -102,6 +102,23 @@ export async function loadRuntimeConfig(): Promise<AppConfig> {
  * - batbern.ch / www.batbern.ch → production API Gateway
  */
 function getApiUrl(): string {
+  // Dev server: always same-origin. Vite proxies /api to the gateway (see the proxy
+  // block in vite.config.ts), so this resolves correctly no matter which hostname the
+  // browser used — localhost, a LAN IP, a machine name, a tunnel.
+  //
+  // Two bugs this closes, both hit while running `make dev-native-up` on a remote host:
+  //  1. SAFETY: the fall-through below sends ANY non-localhost hostname to
+  //     https://api.batbern.ch. Browsing a dev UI by LAN IP therefore pointed it at
+  //     PRODUCTION (batbern-staging serves www.batbern.ch); only CORS stopped it.
+  //  2. CORRECTNESS: "localhost" is resolved by the BROWSER, so a hardcoded
+  //     http://localhost:8000 means the viewer's own machine, not the dev host.
+  //
+  // `import.meta.env.DEV` is true only under `vite dev`; every production build has it
+  // false and takes the original path below, unchanged.
+  if (import.meta.env.DEV) {
+    return '';
+  }
+
   const hostname = window.location.hostname;
 
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
@@ -134,6 +151,21 @@ function getApiUrl(): string {
  */
 export function getDefaultApiBaseUrl(): string {
   return `${getApiUrl()}/api/v1`;
+}
+
+/**
+ * The API base URL the client should actually use, given a loaded runtime config.
+ *
+ * In production this is the backend's authoritative `apiBaseUrl`, unchanged.
+ *
+ * Under `vite dev` the backend's value is deliberately ignored: `ConfigController`
+ * advertises an absolute `http://localhost:{port}/api/v1`, and "localhost" is resolved
+ * by the browser — so adopting it breaks the app for anyone viewing the dev server from
+ * another machine (it would point at the VIEWER's localhost). Staying same-origin keeps
+ * every call flowing through the Vite proxy, which reaches the real gateway.
+ */
+export function resolveApiBaseUrl(config: AppConfig): string {
+  return import.meta.env.DEV ? getDefaultApiBaseUrl() : config.apiBaseUrl;
 }
 
 /**

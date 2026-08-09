@@ -77,14 +77,29 @@ make dev-native-up
 docker compose up -d
 ```
 
-Services will start on their default ports:
-- API Gateway: http://localhost:8080
-- Company/User Management: http://localhost:8081
-- Event Management: http://localhost:8082
-- Speaker Coordination: http://localhost:8083
-- Partner Coordination: http://localhost:8084
-- Attendee Experience: http://localhost:8085
+Services started **by default**, on their default ports:
+- API Gateway: http://localhost:8080 (heap 320m)
+- Company/User Management: http://localhost:8081 (heap 512m)
+- Event Management: http://localhost:8082 (heap 768m)
+- Partner Coordination: http://localhost:8084 (heap 320m)
 - Frontend: http://localhost:3000
+
+**Not started by default:** Speaker Coordination (8083) and Attendee Experience (8085).
+They hold no local data worth exercising day to day, and each costs ~400-500 MB. The API
+Gateway will return errors for routes that target them. To run the full set:
+
+```bash
+DEV_SERVICES="api-gateway company-user-management event-management \
+speaker-coordination partner-coordination attendee-experience" make dev-native-up
+```
+
+**Memory behaviour:** each service runs as `java -Xmx<heap> -jar <fat jar>`, and all JARs are
+built in a single Gradle invocation before any service starts. Set `DEV_RUN_MODE=bootrun` to
+go back to `./gradlew bootRun` per service — that restores Spring DevTools hot reload but adds
+a Gradle launcher JVM per service and ignores the heap caps.
+
+Service selection and heaps are defined in one place: `scripts/dev/lib/native-services.sh`.
+`make dev-native-status` reports unselected services separately rather than as failures.
 
 ### 4. Database Migrations
 
