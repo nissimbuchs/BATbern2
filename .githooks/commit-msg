@@ -12,8 +12,16 @@ NC='\033[0m' # No Color
 
 # Use commitlint if available in web-frontend
 if [ -d "web-frontend" ] && [ -f "web-frontend/node_modules/.bin/commitlint" ]; then
+    # Resolve to an ABSOLUTE path before cd'ing. git passes this as a path relative to the
+    # repo root (".git/COMMIT_EDITMSG"), and @commitlint/cli 21 resolves --edit against the
+    # current directory, so after `cd web-frontend` the file is no longer found. commitlint
+    # then exits non-zero and the branch below reports "Invalid commit message format" —
+    # blaming the message for what is actually a missing file. commitlint 20 resolved
+    # relative to the git root, which is why this only started failing when #880 bumped
+    # @commitlint/cli 20 -> 21. Symptom: EVERY commit rejected, whatever the message says.
+    COMMIT_MSG_ABS=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
     cd web-frontend
-    if npx commitlint --edit "$1" >/dev/null 2>&1; then
+    if npx commitlint --edit "$COMMIT_MSG_ABS" >/dev/null 2>&1; then
         echo -e "${GREEN}✅ Commit message format valid${NC}"
         exit 0
     else
