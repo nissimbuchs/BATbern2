@@ -66,13 +66,36 @@ install_hook "pre-push"
 git config core.hooksPath "$CUSTOM_HOOKS_DIR"
 echo -e "${GREEN}✓ Configured git to use $CUSTOM_HOOKS_DIR${NC}"
 
-# Install npm packages needed for frontend hooks (if web-frontend exists)
+# Check the npm tooling the frontend hooks need.
+#
+# This used to run:
+#   npm install --save-dev prettier eslint @commitlint/cli @commitlint/config-conventional
+#
+# Those are unpinned package names with --save-dev, so npm resolved them to the LATEST
+# versions and rewrote web-frontend/package.json AND package-lock.json. Installing git hooks
+# silently bumped two devDependencies for every developer who followed README.md — observed
+# 2026-08-09: eslint ^10.2.1 -> ^10.8.1 and prettier ^3.8.3 -> ^3.9.6, as an uncommitted
+# working-tree change nobody asked for.
+#
+# All four packages are already devDependencies of web-frontend. Setting up hooks must not
+# change what the project depends on, so this now only VERIFIES and tells you what to run.
 if [ -d "web-frontend" ] && [ -f "web-frontend/package.json" ]; then
     echo ""
-    echo -e "${BLUE}📦 Installing npm dependencies for frontend hooks...${NC}"
-    cd web-frontend
-    npm install --save-dev prettier eslint @commitlint/cli @commitlint/config-conventional
-    cd ..
+    echo -e "${BLUE}📦 Checking npm tooling for the frontend hooks...${NC}"
+    MISSING=""
+    for pkg in prettier eslint @commitlint/cli @commitlint/config-conventional; do
+        if [ ! -d "web-frontend/node_modules/$pkg" ]; then
+            MISSING="$MISSING $pkg"
+        fi
+    done
+
+    if [ -n "$MISSING" ]; then
+        echo -e "${YELLOW}  ⚠ Missing:${MISSING}${NC}"
+        echo -e "${YELLOW}    Run: cd web-frontend && npm ci${NC}"
+        echo -e "${YELLOW}    (npm ci installs the pinned versions; it will not alter package.json)${NC}"
+    else
+        echo -e "${GREEN}  ✓ prettier, eslint and commitlint present${NC}"
+    fi
 fi
 
 # Ensure shared-kernel has gradle wrapper
