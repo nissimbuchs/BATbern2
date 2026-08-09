@@ -1,5 +1,23 @@
 import '@testing-library/jest-dom';
+import { configure } from '@testing-library/react';
 import { vi } from 'vitest';
+
+// Testing Library's waitFor/findBy* default to a 1000 ms budget, and that default is
+// NOT covered by vitest's testTimeout (30 s) — they are separate clocks. On slower
+// hardware the 1 s budget expires while the component is still legitimately rendering,
+// producing failures that depend on the machine rather than on the code.
+//
+// Concretely (2026-08-09): RegistrationWizard's step-1 → step-2 specs type into five
+// fields with userEvent and then waitFor the step-2 render. On a GitHub runner that
+// completes in ~1.9 s and passes; on a 2.4 GHz Atom the same specs take ~4.7 s and fail
+// on waitFor, deterministically. Four specs were red locally while CI was green — the
+// worst kind of failure, because it trains people to ignore local results.
+//
+// 5 s keeps failures reasonably prompt (a genuinely broken assertion still fails in 5 s,
+// not 30 s) while removing the machine-speed dependency. This raises only the ceiling for
+// waiting; tests that pass quickly still return as soon as their condition is met, so the
+// suite does not get slower.
+configure({ asyncUtilTimeout: 5000 });
 
 // Suppress JSDOM "Not implemented" warnings that go directly to process.stderr
 // (e.g., getComputedStyle with pseudo-elements, navigation to another Document)

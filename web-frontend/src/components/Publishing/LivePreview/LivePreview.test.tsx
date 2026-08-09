@@ -166,7 +166,13 @@ describe('LivePreview', () => {
 
       await waitFor(() => {
         const iframe = screen.getByTestId('preview-iframe');
-        expect(iframe).toHaveStyle({ width: '210mm', height: '297mm' });
+        // Asserts the INLINE style rather than toHaveStyle(): jsdom 30 normalises physical
+        // units to pixels in getComputedStyle, so toHaveStyle({ width: '210mm' }) now sees
+        // "793.701px" (210 * 96/25.4) and fails. jsdom 29 returned "210mm" verbatim. The
+        // component is correct either way — it sets A4 — so assert what it sets, which is
+        // stable across jsdom versions. The px-based sibling tests above are unaffected.
+        expect(iframe.style.width).toBe('210mm');
+        expect(iframe.style.height).toBe('297mm');
       });
     });
   });
