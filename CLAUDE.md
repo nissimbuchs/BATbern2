@@ -571,8 +571,27 @@ git commit -m "test(integration): add company API contract tests"
 > CloudFormation stacks retain `BATbern-staging-*` names; the `isProduction: true` flag in CDK config controls production behavior.
 > Production URLs: www.batbern.ch, api.batbern.ch, cdn.batbern.ch
 
+> ### ⚠️ Opening a PR against `develop` DEPLOYS TO PRODUCTION
+>
+> `deploy-staging.yml` is `workflow_call` only. The `deploy-to-staging` job in `build.yml`
+> invokes it on a **push to `develop`** *and* on a **pull request targeting `develop`**
+> (any actor except `dependabot[bot]`):
+>
+> ```yaml
+> if: (github.event_name == 'push'         && github.ref == 'refs/heads/develop') ||
+>     (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop' &&
+>      github.actor != 'dependabot[bot]')
+> ```
+>
+> So opening — or pushing another commit to — a PR ships that branch to www.batbern.ch,
+> unmerged and unreviewed. Drafts included. There is **no `environment:` protection gate**;
+> `concurrency: deploy-staging` serialises deploys but does not gate them. Treat opening a PR
+> as a production action, and remember that merging N queued PRs means N sequential deploys.
+> Dependabot PRs are excluded and never deploy. Full trigger matrix:
+> `docs/deployment/cicd-pipeline-guide.md`.
+
 ```bash
-# Production deploy (auto-deploy on push to develop)
+# Production deploy (auto-deploy on push to develop — AND on any PR targeting develop)
 git push origin develop
 
 # Tagged releases (manual — 3 steps)

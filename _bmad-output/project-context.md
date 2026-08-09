@@ -260,10 +260,43 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 
 ### Git & Branching
 - **Branch naming**: `feature/{description}`, `hotfix/{description}`, `release/{version}`
-- **Main branches**: `main` (production), `develop` (staging integration)
-- Merge to `develop` triggers staging auto-deploy — but CI may silently exclude commits
-  added AFTER the build starts. If staging is missing changes, manually trigger:
+- **Branches**: `develop` is the PRODUCTION branch — it deploys to www.batbern.ch. `main` is
+  **vestigial**: nothing has merged to it since 2026-06-07 and it deploys nowhere. It will
+  always appear "ahead" of `develop` because develop→main PR merges create merge commits that
+  never flow back — that count means nothing, do NOT treat it as missing code.
+- Merge to `develop` triggers a production deploy — but CI may silently exclude commits
+  added AFTER the build starts. If production is missing changes, manually trigger:
   `gh workflow run build.yml --ref develop`
+
+### CI/CD — A PULL REQUEST DEPLOYS TO PRODUCTION (most dangerous unobvious rule)
+- `deploy-staging.yml` is `workflow_call` only; the `deploy-to-staging` job in `build.yml`
+  invokes it when:
+  ```yaml
+  (github.event_name == 'push'         && github.ref == 'refs/heads/develop') ||
+  (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop' &&
+   github.actor != 'dependabot[bot]')
+  ```
+- **Opening or updating a PR against `develop` ships that branch to www.batbern.ch** —
+  unmerged, unreviewed, drafts included. There is NO `environment:` protection gate.
+  `concurrency: deploy-staging` only serialises deploys; it does not gate them.
+- Treat "open a PR" as a production action. Merging N queued PRs = N sequential prod deploys.
+- Dependabot PRs are excluded by the `github.actor` clause — they build/test but never deploy.
+- `develop` branch protection: 8 required checks (`build-frontend`, `build-shared-kernel`,
+  `build-services (×6)`), `strict: true` (branch must be current before merge), 0 required
+  reviews. A required check that never RUNS blocks a PR exactly like a failing one.
+
+### Maintenance-mode operational facts (2026-08-09)
+- **Nightly E2E is the health signal.** `Nightly E2E (full @gate suite)` runs daily against
+  production. Check it before assuming the system is fine. `@gate` = proven suite;
+  `@quarantine` = excluded from the gate and auto-promoted back when it goes green
+  (`scripts/ci/run-playwright-tests.sh` composes `--grep @gate --grep-invert @quarantine`).
+- **Dependabot automation is broken and reports success.** Its workflow runs sit at
+  `action_required` (repo policy `fork-pr-contributor-approval: first_time_contributors`), so
+  the required checks never run and every PR is `MERGEABLE` + `BLOCKED` forever. The batch-merge
+  job counts "auto-merge enabled" as "Merged: N" and exits 0 — a green workflow that merges
+  nothing. Do not trust that summary.
+- Deploy safety nets that DO exist: pre-deploy RDS snapshot when migrations are detected, the
+  post-deploy E2E suite, and automatic rollback on failure.
 
 ### Commit Message Format (Conventional Commits)
 ```
@@ -382,6 +415,8 @@ type(scope): description
   mock the service layer instead.
 
 ### Build & CI Gotchas
+- **Opening a PR against `develop` deploys to production** — see the CI/CD section above.
+  This is the single most surprising rule in the repo; it is not in most people's mental model.
 - Build pipeline does NOT reliably trigger on `develop` push after squash merges —
   manually trigger: `gh workflow run build.yml --ref develop`
 - Deploy to Staging MUST be called via `workflow_call` from the Build Pipeline — standalone
@@ -410,7 +445,11 @@ type(scope): description
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-_Last Updated: 2026-06-06 (folded in: ADR-009, ADR-010 + verified-additional-email amendment,
+_Last Updated: 2026-08-09 (added: CI/CD section — a PR against `develop` deploys to production;
+branch-protection required checks; `main` is vestigial; maintenance-mode operational facts —
+nightly E2E as the health signal, Dependabot automation broken while reporting success)_
+
+_Previously: 2026-06-06 (folded in: ADR-009, ADR-010 + verified-additional-email amendment,
 Epics 11/12 outcomes, narrowed email-localization rule, additional-emails + verification flow,
 no-MUI-on-public-pages bundle boundary, Bruno docs{} rule, Flyway never-edit-applied rule,
 Lambda handler-test + Docker-bundling rules)_

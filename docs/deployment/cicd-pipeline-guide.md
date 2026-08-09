@@ -114,9 +114,37 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
 
 > **Note:** The `deploy-staging.yml` workflow deploys to the production environment (staging account 188701360969 serves production traffic at www.batbern.ch).
 
-**Triggers:**
-- Automatic after successful build on `develop` branch
-- Manual workflow dispatch
+**Triggers — read this carefully, it is not what most people assume:**
+
+`deploy-staging.yml` has no `push`/`pull_request` triggers of its own. It is `workflow_call`
+only, invoked by the `deploy-to-staging` job in `build.yml`, whose condition is:
+
+```yaml
+# .github/workflows/build.yml
+if: (github.event_name == 'push'         && github.ref == 'refs/heads/develop') ||
+    (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop' &&
+     github.actor != 'dependabot[bot]')
+```
+
+| Event | Deploys to production? |
+|---|---|
+| Push/merge to `develop` | **Yes** |
+| **Open or update a PR targeting `develop`** | **YES — the PR branch's code, unmerged and unreviewed** |
+| PR targeting `develop` opened by `dependabot[bot]` | No — build and test only |
+| Push to `main` | No (build only; `main` is not the production branch) |
+| Manual `workflow_dispatch` | Yes |
+
+**A pull request deploys to production.** Opening a PR against `develop` ships that branch to
+www.batbern.ch before anyone reviews or merges it. There is no `environment:` protection gate on
+the deploy job — the only safety mechanisms are `concurrency: deploy-staging` (which serialises
+deploys, it does not gate them), the pre-deploy RDS snapshot when migrations are detected, and
+the post-deploy E2E suite with rollback.
+
+Practical consequences:
+- Treat opening a PR as a production action. Draft PRs still fire it.
+- Merging N queued PRs means N sequential production deploys.
+- The `dependabot[bot]` exclusion is why dependency PRs are safe to accumulate — they never
+  deploy — but merging them does, once each.
 
 **Jobs:**
 1. **Detect Changes**
