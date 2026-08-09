@@ -22,7 +22,9 @@
     "ignoreDeprecations": "6.0",
 
     /* Path mapping */
-    "baseUrl": ".",
+    /* No "baseUrl": TypeScript 7 removed it (error TS5102). Not needed here — every
+       mapping below is explicitly relative ("./src/*"), so paths resolve against this
+       file's directory, which is what baseUrl: "." was doing anyway. */
     "paths": {
       "@/*": ["./src/*"],
       "@components/*": ["./src/components/*"],
