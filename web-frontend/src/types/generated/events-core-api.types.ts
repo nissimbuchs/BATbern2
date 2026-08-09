@@ -878,10 +878,7 @@ export interface components {
      * @enum {string}
      */
     TeaserImagePresentationPosition:
-      | 'AFTER_WELCOME'
-      | 'AFTER_COMMITTEE'
-      | 'AFTER_TOPIC_REVEAL'
-      | 'AFTER_UPCOMING_EVENTS';
+      'AFTER_WELCOME' | 'AFTER_COMMITTEE' | 'AFTER_TOPIC_REVEAL' | 'AFTER_UPCOMING_EVENTS';
     /** @description A single teaser image for the moderator presentation page. */
     TeaserImageItem: {
       /**
@@ -1110,11 +1107,7 @@ export interface components {
          * @enum {string}
          */
         category?:
-          | 'technical'
-          | 'management'
-          | 'soft_skills'
-          | 'industry_trends'
-          | 'tools_platforms';
+          'technical' | 'management' | 'soft_skills' | 'industry_trends' | 'tools_platforms';
       } | null;
       /**
        * @description Expanded venue details (only included when ?include=venue).

@@ -719,10 +719,7 @@ export interface components {
      * @enum {string}
      */
     ConflictType:
-      | 'room_overlap'
-      | 'speaker_double_booked'
-      | 'speaker_unavailable'
-      | 'preference_mismatch';
+      'room_overlap' | 'speaker_double_booked' | 'speaker_unavailable' | 'preference_mismatch';
     /** @enum {string} */
     ConflictSeverity: 'error' | 'warning';
     ConflictTimeRange: {
