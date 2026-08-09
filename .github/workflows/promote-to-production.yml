@@ -172,7 +172,7 @@ jobs:
       - name: Set up Node.js 20
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: infrastructure/package-lock.json
 
@@ -251,7 +251,7 @@ jobs:
       - name: Set up Node.js 20
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: infrastructure/package-lock.json
 

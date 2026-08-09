@@ -434,7 +434,7 @@ jobs:
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: web-frontend/package-lock.json
 
@@ -584,7 +584,7 @@ jobs:
         if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: infrastructure/package-lock.json
 
@@ -803,7 +803,7 @@ jobs:
       - name: Set up Node.js 20
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: web-frontend/package-lock.json
 
