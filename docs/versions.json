@@ -21,7 +21,7 @@
   "backend": {
     "java": "21",
     "spring-boot": null,
-    "junit": "5.x",
+    "junit": "6.x",
     "testcontainers": null,
     "gradle": "8.x",
     "mockito": "5.x",
