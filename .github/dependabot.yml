@@ -8,20 +8,51 @@
 # - Keep dependencies up to date with monthly batched updates
 #
 # Schedule: Monthly on first Monday at 3:00-4:30 AM
-# Automated merge: dependabot-batch-merge.yml workflow runs at 10:00 AM same day
+# Automated merge: dependabot-batch-merge.yml workflow runs at 10:36 AM the same day
+#
+# ── Why `directories:` (plural) and not one entry per manifest (issue #930) ──
+# `groups:` only groups dependencies WITHIN a single update entry. With one entry
+# per directory, the same bump in N manifests produces N pull requests no matter
+# how the groups are written. On 2026-08-10 that turned 3 logical changes into 9
+# PRs: `software.amazon.awssdk:bom -> 2.51.2` became #906/#908/#917/#924,
+# `gradle-wrapper -> 9.7.0` became #909/#912/#927, and
+# `org.flywaydb:flyway-database-postgresql -> 13.2.0` became #907/#921.
+# Security updates already behaved correctly because security grouping spans
+# directories — hence #898's "across 3 directories" title.
+#
+# The single gradle entry below therefore covers every Gradle manifest via
+# `directories:`, so one bump is one PR across the whole backend. npm entries stay
+# separate on purpose: web-frontend, the CDK app, and the two Lambda packages are
+# genuinely different dependency sets with different ignore rules, so collapsing
+# them would group unrelated things rather than deduplicate related ones.
 #
 # More info: https://docs.github.com/en/code-security/dependabot
 
 version: 2
 updates:
-  # Gradle dependencies for API Gateway
+  # ── All Gradle manifests, one entry (was 7 separate entries; see #930) ───────
+  # Covers the root build (Spring Boot BOM/plugins + the `subprojects {
+  # dependencies { ... } }` block that supplies every service's starters),
+  # api-gateway, shared-kernel, and all domain services.
+  #
+  # `/services/*` intentionally globs all five services including
+  # attendee-experience-service. Its build.gradle currently declares no
+  # dependencies of its own, so it contributes nothing today — but the glob means
+  # it is covered automatically the moment that changes, which removes the
+  # "remember to add an entry" maintenance note this file used to carry.
   - package-ecosystem: "gradle"
-    directory: "/api-gateway"
+    directories:
+      - "/"
+      - "/api-gateway"
+      - "/shared-kernel"
+      - "/services/*"
     schedule:
       interval: "monthly"
       day: "monday"
       time: "03:00"
-    open-pull-requests-limit: 3
+    # One entry, one limit. Previously 7 entries x 2-3 each allowed up to 20 PRs
+    # while every individual entry looked conservative.
+    open-pull-requests-limit: 5
     groups:
       # applies-to defaults to version-updates, so WITHOUT this block security
       # updates arrive ungrouped — one PR per advisory, exempt from
@@ -30,65 +61,41 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+      gradle-wrapper:
+        patterns:
+          - "gradle-wrapper"
       aws-sdk:
         patterns:
           - "software.amazon.awssdk:*"
+          - "com.amazonaws:*"
       spring-boot:
         patterns:
           - "org.springframework.boot:*"
           - "org.springframework.cloud:*"
+      flyway:
+        patterns:
+          - "org.flywaydb:*"
+      logging:
+        patterns:
+          - "net.logstash.logback:*"
+          - "ch.qos.logback:*"
+          - "org.slf4j:*"
+      caffeine:
+        patterns:
+          - "com.github.ben-manes.caffeine:*"
       testing:
         patterns:
           - "org.junit.*:*"
           - "org.mockito:*"
           - "org.assertj:*"
           - "org.testcontainers:*"
+          - "org.awaitility:*"
     reviewers:
       - "nissimbuchs"
     labels:
       - "dependencies"
       - "security"
-      - "api-gateway"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-
-  # Gradle dependencies for Shared Kernel
-  - package-ecosystem: "gradle"
-    directory: "/shared-kernel"
-    schedule:
-      interval: "monthly"
-      day: "monday"
-      time: "03:00"
-    open-pull-requests-limit: 3
-    groups:
-      # applies-to defaults to version-updates, so WITHOUT this block security
-      # updates arrive ungrouped — one PR per advisory, exempt from
-      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
-      security-updates:
-        applies-to: security-updates
-        patterns:
-          - "*"
-      aws-sdk:
-        patterns:
-          - "software.amazon.awssdk:*"
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-      flyway:
-        patterns:
-          - "org.flywaydb:*"
-          - "org.flywaydb.flyway:*"
-      testing:
-        patterns:
-          - "org.junit.*:*"
-          - "org.testcontainers:*"
-    reviewers:
-      - "nissimbuchs"
-    labels:
-      - "dependencies"
-      - "security"
-      - "shared-kernel"
+      - "backend"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -219,186 +226,6 @@ updates:
       prefix: "chore(ci)"
       include: "scope"
 
-  # ── Root Gradle build (added 2026-08-10) ────────────────────────────────────
-  # build.gradle declares the Spring Boot BOM/plugins AND a `subprojects {
-  # dependencies { ... } }` block that supplies the starters every service uses.
-  # Without this entry those versions were never proposed for update.
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-      day: "monday"
-      time: "03:00"
-    open-pull-requests-limit: 3
-    groups:
-      # applies-to defaults to version-updates, so WITHOUT this block security
-      # updates arrive ungrouped — one PR per advisory, exempt from
-      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
-      security-updates:
-        applies-to: security-updates
-        patterns:
-          - "*"
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-          - "org.springframework.cloud:*"
-      testing:
-        patterns:
-          - "org.junit.*:*"
-          - "org.mockito:*"
-          - "org.assertj:*"
-          - "org.testcontainers:*"
-    labels:
-      - "dependencies"
-      - "security"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-
-  # ── Domain services (added 2026-08-10) ──────────────────────────────────────
-  # Four of the five services declare their own dependencies (53 in total) and
-  # none were watched: only /api-gateway and /shared-kernel had entries, so the
-  # bulk of the backend received no updates at all, security ones included.
-  # attendee-experience-service is intentionally absent — its build.gradle
-  # declares no dependencies of its own (everything comes from the root
-  # subprojects block above). Add an entry here if that ever changes.
-  - package-ecosystem: "gradle"
-    directory: "/services/event-management-service"
-    schedule:
-      interval: "monthly"
-      day: "monday"
-      time: "03:00"
-    open-pull-requests-limit: 2
-    groups:
-      # applies-to defaults to version-updates, so WITHOUT this block security
-      # updates arrive ungrouped — one PR per advisory, exempt from
-      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
-      security-updates:
-        applies-to: security-updates
-        patterns:
-          - "*"
-      aws-sdk:
-        patterns:
-          - "software.amazon.awssdk:*"
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-          - "org.springframework.cloud:*"
-      testing:
-        patterns:
-          - "org.junit.*:*"
-          - "org.mockito:*"
-          - "org.assertj:*"
-          - "org.testcontainers:*"
-    labels:
-      - "dependencies"
-      - "security"
-      - "event-management"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-
-  - package-ecosystem: "gradle"
-    directory: "/services/company-user-management-service"
-    schedule:
-      interval: "monthly"
-      day: "monday"
-      time: "03:00"
-    open-pull-requests-limit: 2
-    groups:
-      # applies-to defaults to version-updates, so WITHOUT this block security
-      # updates arrive ungrouped — one PR per advisory, exempt from
-      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
-      security-updates:
-        applies-to: security-updates
-        patterns:
-          - "*"
-      aws-sdk:
-        patterns:
-          - "software.amazon.awssdk:*"
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-          - "org.springframework.cloud:*"
-      testing:
-        patterns:
-          - "org.junit.*:*"
-          - "org.mockito:*"
-          - "org.assertj:*"
-          - "org.testcontainers:*"
-    labels:
-      - "dependencies"
-      - "security"
-      - "company-user-management"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-
-  - package-ecosystem: "gradle"
-    directory: "/services/partner-coordination-service"
-    schedule:
-      interval: "monthly"
-      day: "monday"
-      time: "03:00"
-    open-pull-requests-limit: 2
-    groups:
-      # applies-to defaults to version-updates, so WITHOUT this block security
-      # updates arrive ungrouped — one PR per advisory, exempt from
-      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
-      security-updates:
-        applies-to: security-updates
-        patterns:
-          - "*"
-      aws-sdk:
-        patterns:
-          - "software.amazon.awssdk:*"
-      spring-boot:
-        patterns:
-          - "org.springframework.boot:*"
-          - "org.springframework.cloud:*"
-      testing:
-        patterns:
-          - "org.junit.*:*"
-          - "org.mockito:*"
-          - "org.assertj:*"
-          - "org.testcontainers:*"
-    labels:
-      - "dependencies"
-      - "security"
-      - "partner-coordination"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-
-  - package-ecosystem: "gradle"
-    directory: "/services/speaker-coordination-service"
-    schedule:
-      interval: "monthly"
-      day: "monday"
-      time: "03:00"
-    open-pull-requests-limit: 2
-    groups:
-      # applies-to defaults to version-updates, so WITHOUT this block security
-      # updates arrive ungrouped — one PR per advisory, exempt from
-      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
-      security-updates:
-        applies-to: security-updates
-        patterns:
-          - "*"
-      testing:
-        patterns:
-          - "org.junit.*:*"
-          - "org.mockito:*"
-          - "org.assertj:*"
-          - "org.testcontainers:*"
-    labels:
-      - "dependencies"
-      - "security"
-      - "speaker-coordination"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-
   # ── Lambda manifests (added 2026-08-10) ─────────────────────────────────────
   # These ship to production and were the most out-of-date manifests in the repo.
   # image-resize is the one that matters most: the CDK Docker bundler runs
@@ -429,13 +256,16 @@ updates:
       prefix: "chore(deps)"
       include: "scope"
     versioning-strategy: increase
-    # sharp majors change the deployed native binary AND its TypeScript shape
-    # (0.34 was CJS and callable; 0.35 exposes a namespace with a `default`,
-    # which breaks lib/lambda/image-resize/index.ts with TS2349). Those need the
-    # handler tests and a deliberate deploy — see issue #883.
-    ignore:
-      - dependency-name: "sharp"
-        update-types: ["version-update:semver-major"]
+    # NOTE: the previous `ignore` on sharp majors was removed in #929's follow-up.
+    # Its stated reason — that 0.35 breaks index.ts with TS2349 — was real but is
+    # fixed: the handler now annotates the one call signature it uses as
+    # `SharpFactory` instead of `typeof import('sharp')`, which is stable across
+    # sharp's CJS (`export = sharp`, callable) and ESM (namespace + `default`)
+    # declaration shapes. Keeping the ignore would have suppressed sharp majors
+    # silently — including a major that carries a libvips CVE fix, which is
+    # exactly how GHSA-f88m-g3jw-g9cj sat unfixed. A sharp major still changes the
+    # deployed @img/* native set and MUST re-bundle through Docker (never hotswap);
+    # test/unit/lambda/image-resize.test.ts is what catches a regression.
 
   - package-ecosystem: "npm"
     directory: "/infrastructure/lambda/github-issues-integration"
@@ -461,3 +291,8 @@ updates:
       prefix: "chore(deps)"
       include: "scope"
     versioning-strategy: increase
+    # NOTE (#928): this manifest does NOT govern what the deployed Lambda bundles.
+    # NodejsFunction resolves from the hoisted infrastructure/node_modules, so
+    # @octokit/rest 22.x ships while this file says ^20.0.2, and there is no
+    # lockfile here for `npm audit` to read. Fix the manifest/bundling mismatch in
+    # #928; until then, updates proposed here are cosmetic.

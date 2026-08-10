@@ -1,12 +1,18 @@
 name: Dependabot Batch Merge
 
-# Automatically batch-merge dependabot PRs on a monthly schedule
-# Runs on first Monday of each month at 10:00 AM (after dependabot creates PRs at 3-4 AM)
+# Automatically batch-merge dependabot PRs on a monthly schedule.
+# Runs on the first Monday of each month at 10:36 UTC (dependabot opens its PRs at 3-4 AM).
+# The schedule is expressed as a days-1-7 cron plus a weekday gate in the job — see below.
 
 on:
-  # Scheduled run: First Monday of each month at 10:00 AM
+  # Scheduled run: first Monday of each month, 10:36 UTC (off the top of the hour;
+  # ':00' schedules are delayed). Cron alone CANNOT express "first Monday": when
+  # both day-of-month and day-of-week are restricted, cron ORs them, so the old
+  # '36 10 1-7 * 1' fired on days 1-7 *or* any Monday — ~11 runs a month, not 1.
+  # Observed before the fix: Aug 1,2,3,4,5,6,7 then 10; Jul 4,5,6,7 then 13,20,27.
+  # So we keep the day-of-month window here and gate the weekday in the job below.
   schedule:
-    - cron: '36 10 1-7 * 1'  # First Monday of month, 10:36 UTC — off the top of the hour (':00' delayed)
+    - cron: '36 10 1-7 * *'  # days 1-7; the "is it Monday?" test lives in the first-monday-gate step
 
   # Manual trigger for testing or emergency runs
   workflow_dispatch:
@@ -29,12 +35,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # The cron above fires on days 1-7 of every month; this is what narrows it to
+      # the FIRST MONDAY. A bare `exit 0` here would not help — a step exiting 0 does
+      # not skip later steps — so the outcome is published as an output and every
+      # subsequent step is conditioned on it.
+      - name: First-Monday gate
+        id: first-monday-gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual run — bypassing the first-Monday gate."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          dow=$(date -u +%u)   # ISO weekday: 1 = Monday
+          dom=$(date -u +%-d)
+          if [ "$dow" = "1" ]; then
+            echo "First Monday of the month (day $dom) — proceeding."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Day $dom is not a Monday (ISO weekday $dow) — this is the cron's"
+            echo "day-of-month window firing on a non-Monday. Nothing to do."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout repository
+        if: steps.first-monday-gate.outputs.proceed == 'true'
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up GitHub CLI
+        if: steps.first-monday-gate.outputs.proceed == 'true'
         run: |
           # gh CLI is pre-installed on ubuntu-latest
           gh --version
@@ -42,14 +73,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run batch merge script
+        if: steps.first-monday-gate.outputs.proceed == 'true'
         run: |
           bash scripts/ci/dependabot-batch-merge.sh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
 
+      # always() so a FAILED batch-merge still publishes its summary — but scoped to
+      # gated-in runs, otherwise the 6 skipped days each post "No summary file found".
       - name: Post summary to workflow
-        if: always()
+        if: always() && steps.first-monday-gate.outputs.proceed == 'true'
         run: |
           if [ -f /tmp/dependabot-batch-merge-summary.md ]; then
             cat /tmp/dependabot-batch-merge-summary.md >> $GITHUB_STEP_SUMMARY
