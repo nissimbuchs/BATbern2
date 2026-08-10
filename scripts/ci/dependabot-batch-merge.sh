@@ -5,7 +5,11 @@ set -euo pipefail
 # Automatically merges open dependabot PRs in batches to avoid conflicts
 #
 # Usage:
-#   DRY_RUN=false ./scripts/ci/dependabot-batch-merge.sh
+#   # A PR armed for auto-merge this long without merging means the required checks
+# are not completing. Override with STALLED_AFTER_DAYS=n.
+STALLED_AFTER_DAYS="${STALLED_AFTER_DAYS:-3}"
+
+DRY_RUN=false ./scripts/ci/dependabot-batch-merge.sh
 #   DRY_RUN=true ./scripts/ci/dependabot-batch-merge.sh  # Test mode
 #
 # Environment variables:
@@ -82,7 +86,7 @@ get_dependabot_prs() {
     gh pr list \
         --label dependencies \
         --state open \
-        --json number,title,headRefName,updatedAt,mergeable \
+        --json number,title,headRefName,updatedAt,mergeable,autoMergeRequest \
         --jq 'sort_by(.updatedAt) | .[]' \
         > /tmp/dependabot-prs.json
 
@@ -174,9 +178,24 @@ process_pr() {
     local pr_number=$(echo "$pr_data" | jq -r '.number')
     local pr_title=$(echo "$pr_data" | jq -r '.title')
     local mergeable=$(echo "$pr_data" | jq -r '.mergeable')
+    local armed_at=$(echo "$pr_data" | jq -r '.autoMergeRequest.enabledAt // empty')
 
     echo "" >> "$SUMMARY_FILE"
     log_info "Processing PR #$pr_number: $pr_title"
+
+    # A PR that has been armed for auto-merge for days and is STILL open means the
+    # required checks are not completing — arming is not merging. Surface it loudly:
+    # reporting "merged" for these is what hid a 22-PR jam for six weeks (issue #877).
+    if [ -n "$armed_at" ]; then
+        local armed_epoch=$(date -d "$armed_at" +%s 2>/dev/null || echo 0)
+        local now_epoch=$(date +%s)
+        local age_days=$(( (now_epoch - armed_epoch) / 86400 ))
+        if [ "$armed_epoch" -gt 0 ] && [ "$age_days" -ge "$STALLED_AFTER_DAYS" ]; then
+            log_error "PR #$pr_number has had auto-merge armed since $armed_at ($age_days days) and is still open"
+            echo "- ⚠️ **#$pr_number stalled**: auto-merge armed $age_days days ago, still not merged" >> "$SUMMARY_FILE"
+            return 2
+        fi
+    fi
 
     if [ "$mergeable" = "CONFLICTING" ]; then
         close_pr "$pr_number" "Merge conflicts detected. Will be recreated in next dependabot run."
@@ -190,8 +209,13 @@ process_pr() {
         return 1
     fi
 
-    enable_auto_merge "$pr_number"
-    return 0
+    # Propagate the result. This used to be `enable_auto_merge ...; return 0`, so a
+    # FAILED arming was still counted as a success — e.g. `gh pr merge --auto` refuses
+    # draft PRs, and every one of them would have been reported as fine.
+    if enable_auto_merge "$pr_number"; then
+        return 0
+    fi
+    return 3
 }
 
 # Main execution
@@ -210,16 +234,19 @@ main() {
     fi
 
     # Process each PR
-    local merged=0
+    local armed=0
     local closed=0
+    local stalled=0
     local failed=0
 
     while IFS= read -r pr_data; do
-        if process_pr "$pr_data"; then
-            ((merged++)) || true
-        else
-            ((closed++)) || true
-        fi
+        process_pr "$pr_data"
+        case $? in
+            0) ((armed++))   || true ;;
+            2) ((stalled++)) || true ;;
+            3) ((failed++))  || true ;;
+            *) ((closed++))  || true ;;
+        esac
 
         # Brief delay between PRs to avoid rate limiting
         sleep 3
@@ -232,12 +259,24 @@ main() {
     echo "## 📊 Final Statistics" >> "$SUMMARY_FILE"
     echo "" >> "$SUMMARY_FILE"
     echo "- **Total PRs processed**: $pr_count" >> "$SUMMARY_FILE"
-    echo "- **PRs queued for merge**: $merged" >> "$SUMMARY_FILE"
+    echo "- **Auto-merge ARMED (not merged — merges when required checks pass)**: $armed" >> "$SUMMARY_FILE"
+    echo "- **STALLED (armed >= ${STALLED_AFTER_DAYS}d, still open)**: $stalled" >> "$SUMMARY_FILE"
+    echo "- **Failed to arm**: $failed" >> "$SUMMARY_FILE"
     echo "- **PRs closed (conflicts)**: $closed" >> "$SUMMARY_FILE"
     echo "" >> "$SUMMARY_FILE"
 
+    log_info "Processed: $pr_count | Armed: $armed | Stalled: $stalled | Failed: $failed | Closed: $closed"
+
+    if [ "$stalled" -gt 0 ] || [ "$failed" -gt 0 ]; then
+        echo "> **$stalled PR(s) have had auto-merge armed for >= ${STALLED_AFTER_DAYS} days and have still not merged.**" >> "$SUMMARY_FILE"
+        echo "> Arming is not merging: GitHub merges only once every REQUIRED check reports." >> "$SUMMARY_FILE"
+        echo "> Check that Dependabot's workflow runs are not sitting at \`action_required\` — see issue #877." >> "$SUMMARY_FILE"
+        log_error "$stalled PR(s) stalled — failing so this is visible instead of reported as success"
+        cat "$SUMMARY_FILE"
+        exit 1
+    fi
+
     log_success "Batch merge completed!"
-    log_info "Processed: $pr_count | Merged: $merged | Closed: $closed"
 
     cat "$SUMMARY_FILE"
 }
