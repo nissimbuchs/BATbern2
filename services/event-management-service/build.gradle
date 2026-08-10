@@ -51,7 +51,7 @@ dependencies {
     implementation 'software.amazon.awssdk:url-connection-client'
     // Note: AWS SDK v2 uses software.amazon.awssdk:ses, but EmailService uses legacy v1 API
     // Adding AWS SDK v1 SES for compatibility with existing EmailService implementation
-    implementation 'com.amazonaws:aws-java-sdk-ses:1.12.772'
+    implementation 'com.amazonaws:aws-java-sdk-ses:1.12.797'
 
     // Service-specific: Thymeleaf for email templates (BAT-7)
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
