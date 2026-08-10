@@ -7,6 +7,9 @@
 
 set -e
 
+# Docker Compose command differs by host (v2 plugin vs v1 binary) — see compose_cmd().
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/native-services.sh"
+
 # Always use staging (local dev mirrors staging Cognito)
 ENVIRONMENT="staging"
 JWT_TOKEN=${1:-""}
@@ -105,7 +108,7 @@ if ! curl -s http://localhost:8000/actuator/health > /dev/null 2>&1; then
   echo "Start services first:"
   echo "  make dev-native-up"
   echo "  OR"
-  echo "  docker compose up -d"
+  echo "  $(compose_cmd) up -d"
   exit 1
 fi
 

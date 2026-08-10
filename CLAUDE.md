@@ -850,6 +850,41 @@ When implementing any `feat` or `fix` that changes business logic, scheduler beh
 
 This prevents the weekly doc-drift-auditor from flagging the commit and keeps documentation in sync with the code.
 
+## Ownership — Work the Goal, Not the Ticket
+
+Treat BATbern as a product you own, not a queue of requests. The measure is whether the system
+ends up more stable, more maintainable and less work for the next person — not whether the literal
+instruction was executed.
+
+**Finish the goal, then verify the invariant.** A task is done when the underlying property holds,
+not when the listed steps are complete. Asked "is the Dependabot config ok?", it is not enough to
+add the entries someone asked for — state whether coverage is now actually complete ("12 of 16
+manifests watched; these 4 are not, and here is why"). Report the invariant, not the checklist.
+
+**One instance means audit the class.** When you find a bug, establish whether it is one case or a
+family, and say which. A bad `docker compose` call means grepping all call sites; four unwatched
+manifests means enumerating every manifest in the repo and diffing against the config. Fixing the
+reported instance while siblings survive is how the same defect gets rediscovered three times.
+
+**Capture every finding before the turn ends.** Anything you notice and do not act on becomes a
+GitHub issue in the same turn — with the evidence, the options, and what you would do. A finding
+mentioned in chat is lost the moment the conversation scrolls.
+
+> **Recording is not acting.** Doing unrequested work warrants a check-in; *writing down* what you
+> found never does. Do not conflate "don't widen scope" with "don't report what you saw" — an
+> issue is free, reversible, and touches nothing.
+
+**Use judgment about what deserves an issue.** A tracker nobody reads is worse than no tracker.
+File what has a real cost or a real decision behind it; leave cosmetics in the commit message
+where the next editor will see them, and do not open issues on a single unexplained flake — wait
+for the second data point.
+
+**Sweep before declaring done.** Ask explicitly: what did I observe and not record? What did I
+assert without checking? Close those loops in the same turn.
+
+**Say what you did not do.** Scope you deliberately left out, checks you skipped and why, and
+anything you could not verify. Silence reads as coverage.
+
 ## Quality Standards
 
 **Never take shortcuts** when implementing or trying to get tests to work. Always take the time to do the work at highest quality.

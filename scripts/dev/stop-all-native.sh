@@ -18,6 +18,9 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Docker Compose command differs by host (v2 plugin vs v1 binary) — see compose_cmd().
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/native-services.sh"
+
 # Configuration
 PID_DIR="/tmp"
 KEEP_TUNNEL=false
@@ -141,7 +144,7 @@ main() {
 
         # Note: PostgreSQL is managed by Docker Compose (docker-compose-dev.yml)
         # It is NOT stopped by this script to preserve data between sessions
-        # To stop PostgreSQL: docker compose -f docker-compose-dev.yml down
+        # To stop PostgreSQL: $(compose_cmd) -f docker-compose-dev.yml down
         echo -e "${CYAN}  ℹ  Local PostgreSQL is managed by Docker Compose (kept running)${NC}"
     else
         echo ""
@@ -157,7 +160,7 @@ main() {
 
     echo -e "${CYAN}💡 Infrastructure services:${NC}"
     echo -e "${CYAN}   - PostgreSQL: Managed by Docker Compose (kept running)${NC}"
-    echo -e "${CYAN}     Stop: docker compose -f docker-compose-dev.yml down${NC}"
+    echo -e "${CYAN}     Stop: $(compose_cmd) -f docker-compose-dev.yml down${NC}"
     if [ "$KEEP_TUNNEL" = true ]; then
         echo -e "${CYAN}   - MinIO: Still running${NC}"
     fi
