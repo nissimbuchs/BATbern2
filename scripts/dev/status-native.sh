@@ -163,7 +163,7 @@ check_postgres_status() {
         fi
     else
         echo -e " ${RED}✗ STOPPED${NC}    ${YELLOW}(container not running)${NC}"
-        echo -e "   ${CYAN}Start: docker compose -f docker-compose-dev.yml up -d${NC}"
+        echo -e "   ${CYAN}Start: $(compose_cmd) -f docker-compose-dev.yml up -d${NC}"
         return 1
     fi
 }

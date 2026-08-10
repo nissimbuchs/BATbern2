@@ -375,7 +375,12 @@ check_local_postgres() {
         # Container doesn't exist - create and start with docker compose
         echo -e "${CYAN}  → Creating PostgreSQL container with Docker Compose...${NC}"
         cd "${PROJECT_ROOT}"
-        docker compose -f docker-compose-dev.yml up -d 2>&1 | sed 's/^/    /'
+        COMPOSE=$(compose_cmd)
+        if [ -z "$COMPOSE" ]; then
+            echo -e "${RED}  ✗ No Docker Compose found (looked for 'docker compose' and 'docker-compose')${NC}"
+            exit 1
+        fi
+        $COMPOSE -f docker-compose-dev.yml up -d 2>&1 | sed 's/^/    /'
         if [ $? -ne 0 ]; then
             echo -e "${RED}  ✗ Failed to start PostgreSQL container${NC}"
             exit 1

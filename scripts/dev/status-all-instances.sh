@@ -14,6 +14,9 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Docker Compose command differs by host (v2 plugin vs v1 binary) — see compose_cmd().
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/native-services.sh"
+
 # Configuration
 PID_DIR="/tmp"
 
@@ -139,7 +142,7 @@ if docker ps --filter "name=batbern-dev-postgres" --format "{{.Status}}" 2>/dev/
     fi
 else
     echo -e "  ${YELLOW}○${NC} PostgreSQL: Not running"
-    echo -e "     Start: docker compose -f docker-compose-dev.yml up -d"
+    echo -e "     Start: $(compose_cmd) -f docker-compose-dev.yml up -d"
 fi
 
 # Check MinIO
@@ -163,5 +166,5 @@ echo ""
 echo -e "${CYAN}Useful commands:${NC}"
 echo -e "  ${YELLOW}List instances:${NC}   make dev-native-list"
 echo -e "  ${YELLOW}View logs:${NC}        make dev-native-logs-instance BASE_PORT=<port>"
-echo -e "  ${YELLOW}Stop PostgreSQL:${NC} docker compose -f docker-compose-dev.yml down"
+echo -e "  ${YELLOW}Stop PostgreSQL:${NC} $(compose_cmd) -f docker-compose-dev.yml down"
 echo ""
