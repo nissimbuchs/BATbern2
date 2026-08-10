@@ -23,6 +23,13 @@ updates:
       time: "03:00"
     open-pull-requests-limit: 3
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       aws-sdk:
         patterns:
           - "software.amazon.awssdk:*"
@@ -55,6 +62,13 @@ updates:
       time: "03:00"
     open-pull-requests-limit: 3
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       aws-sdk:
         patterns:
           - "software.amazon.awssdk:*"
@@ -88,6 +102,13 @@ updates:
       time: "03:30"
     open-pull-requests-limit: 3
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       aws-sdk:
         patterns:
           - "@aws-sdk/*"
@@ -120,6 +141,13 @@ updates:
       time: "04:00"
     open-pull-requests-limit: 3
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       vitest-ecosystem:
         patterns:
           - "vitest"
@@ -174,6 +202,14 @@ updates:
       day: "monday"
       time: "04:30"
     open-pull-requests-limit: 3
+    groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
     reviewers:
       - "nissimbuchs"
     labels:
@@ -195,6 +231,13 @@ updates:
       time: "03:00"
     open-pull-requests-limit: 3
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       spring-boot:
         patterns:
           - "org.springframework.boot:*"
@@ -227,6 +270,13 @@ updates:
       time: "03:00"
     open-pull-requests-limit: 2
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       aws-sdk:
         patterns:
           - "software.amazon.awssdk:*"
@@ -256,6 +306,13 @@ updates:
       time: "03:00"
     open-pull-requests-limit: 2
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       aws-sdk:
         patterns:
           - "software.amazon.awssdk:*"
@@ -285,6 +342,13 @@ updates:
       time: "03:00"
     open-pull-requests-limit: 2
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       aws-sdk:
         patterns:
           - "software.amazon.awssdk:*"
@@ -314,6 +378,13 @@ updates:
       time: "03:00"
     open-pull-requests-limit: 2
     groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       testing:
         patterns:
           - "org.junit.*:*"
@@ -341,6 +412,14 @@ updates:
       day: "monday"
       time: "03:30"
     open-pull-requests-limit: 2
+    groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "security"
@@ -365,6 +444,14 @@ updates:
       day: "monday"
       time: "03:30"
     open-pull-requests-limit: 2
+    groups:
+      # applies-to defaults to version-updates, so WITHOUT this block security
+      # updates arrive ungrouped — one PR per advisory, exempt from
+      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "security"
