@@ -6,6 +6,10 @@
 //   - 2026-05-16 (commit 436c4c9c): sharp transitive deps (detect-libc, color, semver)
 //   - 2026-05-18: forced rebuild after Tier-1 abuse-defense direct-update bypass
 //                 reverted the @img/* native packages back to the pre-fix state.
+//   - 2026-08-10: sharp 0.34 -> 0.35 for the libvips advisories (GHSA-f88m-g3jw-g9cj:
+//                 CVE-2026-33327/33328/35590/35591). 0.35 swaps the whole @img/* native
+//                 package set, so the Docker bundler MUST re-run — do not hotswap.
+//                 See the SharpFactory note below for the 0.35 typing change.
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import type { CloudFrontRequestEvent, CloudFrontRequestResult } from 'aws-lambda';
 
@@ -18,6 +22,16 @@ const MAX_DIM = 2000;
 
 type Fit = 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
 const VALID_FIT = new Set<string>(['cover', 'contain', 'fill', 'inside', 'outside']);
+
+// The single sharp call signature this handler needs, spelled out rather than taken from
+// `typeof import('sharp')`. sharp ships two declaration shapes and BOTH are reachable here:
+// `dist/index.d.cts` is `export = sharp` over a callable `declare function sharp`, while
+// `dist/index.d.mts` is `export const sharp` + `export default sharp` — a module NAMESPACE
+// with no call signature. Root `tsc` and ts-jest do not pick the same one (ts-jest resolves
+// the nested copy under lib/lambda/image-resize/node_modules), so annotating with
+// `typeof import('sharp')` type-checks in one and fails TS2349 in the other. `Sharp` as a
+// *type* exists in both, so this alias is stable across resolutions and across 0.34/0.35.
+type SharpFactory = (input: Buffer) => import('sharp').Sharp;
 
 export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFrontRequestResult> => {
   const request = event.Records[0].cf.request;
@@ -32,9 +46,18 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
 
   // Dynamic import keeps the module loadable even if sharp is absent from the Lambda package.
   // A static top-level import would crash module initialisation and break ALL requests with 503.
-  let sharpFn: typeof import('sharp');
+  // Accept either interop shape at runtime too: 0.34's CJS export is the callable itself,
+  // 0.35's dual build hands back a namespace whose `default` is the callable. Anything else
+  // (or a native-binary load failure) falls open to pass-through rather than 503-ing.
+  let sharpFn: SharpFactory;
   try {
-    sharpFn = (await import('sharp')).default as unknown as typeof import('sharp');
+    const mod: unknown = await import('sharp');
+    const candidate =
+      typeof mod === 'function' ? mod : (mod as { default?: unknown } | null)?.default;
+    if (typeof candidate !== 'function') {
+      throw new TypeError('sharp module exposed no callable export');
+    }
+    sharpFn = candidate as SharpFactory;
   } catch (err) {
     console.error('image-resize: sharp import failed, falling back to pass-through', err);
     return request;

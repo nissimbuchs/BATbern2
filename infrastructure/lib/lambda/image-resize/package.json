@@ -6,10 +6,10 @@
   "main": "index.js",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
-    "sharp": "^0.34.0"
+    "sharp": "^0.35.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.28.2"
   }
 }

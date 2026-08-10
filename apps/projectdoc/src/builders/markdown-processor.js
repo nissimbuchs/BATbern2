@@ -17,7 +17,14 @@ import * as cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
 
 // Markdown-it plugins
-import markdownItMermaid from 'markdown-it-mermaid';
+//
+// NOTE: no markdown-it-mermaid here on purpose. Its only effect was registering
+// `renderer.rules.fence`, which the custom fence renderer further down in
+// setupMarkdownIt() unconditionally overwrites — and that custom renderer is
+// what actually emits `<div class="mermaid">` for ```mermaid blocks. The plugin
+// was therefore a no-op that pinned a transitive mermaid 7.1.2 (XSS +
+// CSS-injection advisories). Client-side rendering comes from the mermaid@11
+// CDN script in src/templates/layout.html.
 import markdownItAnchor from 'markdown-it-anchor';
 import markdownItToc from 'markdown-it-table-of-contents';
 import markdownItContainer from 'markdown-it-container';
@@ -58,7 +65,6 @@ class MarkdownProcessor {
 
     // Add plugins
     this.md
-      .use(markdownItMermaid.default || markdownItMermaid)
       .use(markdownItAnchor, {
         level: [1, 2, 3, 4, 5, 6],
         permalink: markdownItAnchor.permalink.ariaHidden({
