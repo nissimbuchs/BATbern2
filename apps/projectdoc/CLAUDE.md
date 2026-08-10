@@ -371,7 +371,12 @@ The markdown processor applies these transformations:
 - **Task lists** (markdown-it-task-lists, GitHub-style)
 - **Footnotes** (markdown-it-footnote)
 - **Custom containers** (markdown-it-container)
-- **Mermaid diagrams** (markdown-it-mermaid)
+- **Mermaid diagrams** — the custom `fence` renderer in `src/builders/markdown-processor.js`
+  emits `<div class="mermaid">` for ```` ```mermaid ```` blocks; the `mermaid@11` CDN script in
+  `src/templates/layout.html` renders them client-side. There is deliberately **no**
+  `markdown-it-mermaid` dependency: its only effect was a `renderer.rules.fence` registration
+  that the custom renderer overwrote anyway, so it contributed nothing while pinning a
+  transitive `mermaid@7.1.2` with XSS and CSS-injection advisories.
 - **Anchor links** (markdown-it-anchor)
 
 ### Report Data Access
