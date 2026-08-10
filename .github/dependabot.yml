@@ -21,7 +21,7 @@ updates:
       interval: "monthly"
       day: "monday"
       time: "03:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       aws-sdk:
         patterns:
@@ -53,7 +53,7 @@ updates:
       interval: "monthly"
       day: "monday"
       time: "03:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       aws-sdk:
         patterns:
@@ -86,7 +86,7 @@ updates:
       interval: "monthly"
       day: "monday"
       time: "03:30"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       aws-sdk:
         patterns:
@@ -118,7 +118,7 @@ updates:
       interval: "monthly"
       day: "monday"
       time: "04:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       vitest-ecosystem:
         patterns:
@@ -182,3 +182,195 @@ updates:
     commit-message:
       prefix: "chore(ci)"
       include: "scope"
+
+  # ── Root Gradle build (added 2026-08-10) ────────────────────────────────────
+  # build.gradle declares the Spring Boot BOM/plugins AND a `subprojects {
+  # dependencies { ... } }` block that supplies the starters every service uses.
+  # Without this entry those versions were never proposed for update.
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 3
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework.cloud:*"
+      testing:
+        patterns:
+          - "org.junit.*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # ── Domain services (added 2026-08-10) ──────────────────────────────────────
+  # Four of the five services declare their own dependencies (53 in total) and
+  # none were watched: only /api-gateway and /shared-kernel had entries, so the
+  # bulk of the backend received no updates at all, security ones included.
+  # attendee-experience-service is intentionally absent — its build.gradle
+  # declares no dependencies of its own (everything comes from the root
+  # subprojects block above). Add an entry here if that ever changes.
+  - package-ecosystem: "gradle"
+    directory: "/services/event-management-service"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 2
+    groups:
+      aws-sdk:
+        patterns:
+          - "software.amazon.awssdk:*"
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework.cloud:*"
+      testing:
+        patterns:
+          - "org.junit.*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+    labels:
+      - "dependencies"
+      - "security"
+      - "event-management"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "gradle"
+    directory: "/services/company-user-management-service"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 2
+    groups:
+      aws-sdk:
+        patterns:
+          - "software.amazon.awssdk:*"
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework.cloud:*"
+      testing:
+        patterns:
+          - "org.junit.*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+    labels:
+      - "dependencies"
+      - "security"
+      - "company-user-management"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "gradle"
+    directory: "/services/partner-coordination-service"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 2
+    groups:
+      aws-sdk:
+        patterns:
+          - "software.amazon.awssdk:*"
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework.cloud:*"
+      testing:
+        patterns:
+          - "org.junit.*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+    labels:
+      - "dependencies"
+      - "security"
+      - "partner-coordination"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "gradle"
+    directory: "/services/speaker-coordination-service"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 2
+    groups:
+      testing:
+        patterns:
+          - "org.junit.*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+    labels:
+      - "dependencies"
+      - "security"
+      - "speaker-coordination"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # ── Lambda manifests (added 2026-08-10) ─────────────────────────────────────
+  # These ship to production and were the most out-of-date manifests in the repo.
+  # image-resize is the one that matters most: the CDK Docker bundler runs
+  # `npm ci` in THIS directory, so this file — not infrastructure/package.json —
+  # decides which sharp binary reaches the image-resize Lambda. Dependabot was
+  # bumping the outer test-only copy while the deployed one sat unmanaged.
+  - package-ecosystem: "npm"
+    directory: "/infrastructure/lib/lambda/image-resize"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "03:30"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "security"
+      - "infrastructure"
+      - "lambda"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    versioning-strategy: increase
+    # sharp majors change the deployed native binary AND its TypeScript shape
+    # (0.34 was CJS and callable; 0.35 exposes a namespace with a `default`,
+    # which breaks lib/lambda/image-resize/index.ts with TS2349). Those need the
+    # handler tests and a deliberate deploy — see issue #883.
+    ignore:
+      - dependency-name: "sharp"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "npm"
+    directory: "/infrastructure/lambda/github-issues-integration"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "03:30"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "security"
+      - "infrastructure"
+      - "lambda"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    versioning-strategy: increase
