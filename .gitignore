@@ -202,7 +202,22 @@ config/credentials.*
 
 # BFG Repo-Cleaner reports
 *.bfg-report/
-apps/BATspa-old/src/api/anmeldungen.csv
+
+# ── Participant / speaker data files (PII) ──────────────────────────────────
+# These patterns are GENERALISED on purpose. The previous rule pinned one exact
+# path (apps/BATspa-old/src/api/anmeldungen.csv) and therefore protected nothing
+# else: three differently-named CSVs and three speakers*.json files in that same
+# directory were tracked anyway, carrying real names and 155 real work addresses.
+# The retired app is gone, but the file *shapes* are what matter — block them
+# wherever they reappear, not where they last happened to sit.
+anmeldungen*.csv
+**/anmeldungen*.csv
+bat_daten.csv
+**/companies_participants.csv
+**/speakers-with-*-urls.json
+# NOTE: a bare `speakers.json` is NOT ignored — it is too plausible a legitimate
+# fixture name to blanket-block. If you add one, it must contain synthetic data
+# only (@example.com), as web-frontend/e2e/fixtures/*.csv correctly do.
 
 # Sample mail-merged participant lists may carry real attendee PII — never commit.
 # The canonical *empty* template (Avery-Zweckform_L4784_BATLogo.docx) IS committed

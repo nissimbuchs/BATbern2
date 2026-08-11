@@ -267,32 +267,14 @@ updates:
     # deployed @img/* native set and MUST re-bundle through Docker (never hotswap);
     # test/unit/lambda/image-resize.test.ts is what catches a regression.
 
-  - package-ecosystem: "npm"
-    directory: "/infrastructure/lambda/github-issues-integration"
-    schedule:
-      interval: "monthly"
-      day: "monday"
-      time: "03:30"
-    open-pull-requests-limit: 2
-    groups:
-      # applies-to defaults to version-updates, so WITHOUT this block security
-      # updates arrive ungrouped — one PR per advisory, exempt from
-      # open-pull-requests-limit. That is how 13 landed at once on 2026-08-10.
-      security-updates:
-        applies-to: security-updates
-        patterns:
-          - "*"
-    labels:
-      - "dependencies"
-      - "security"
-      - "infrastructure"
-      - "lambda"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-    versioning-strategy: increase
-    # NOTE (#928): this manifest does NOT govern what the deployed Lambda bundles.
-    # NodejsFunction resolves from the hoisted infrastructure/node_modules, so
-    # @octokit/rest 22.x ships while this file says ^20.0.2, and there is no
-    # lockfile here for `npm audit` to read. Fix the manifest/bundling mismatch in
-    # #928; until then, updates proposed here are cosmetic.
+  # NOTE (#928, resolved): there is deliberately NO entry for
+  # /infrastructure/lambda/github-issues-integration. That directory's
+  # package.json was deleted rather than updated, because it never governed what
+  # the deployed Lambda bundles — NodejsFunction resolves `index.ts` from the
+  # hoisted infrastructure/node_modules, where all four of its declared
+  # dependencies already live at newer versions. It had no lockfile, so
+  # `npm audit` could not read it either, and Dependabot was proposing updates to
+  # a file with no effect (#938, #941 — both closed as moot). The Lambda's
+  # dependencies are declared in infrastructure/package.json and watched by the
+  # /infrastructure entry above. Do not re-add an entry here unless that
+  # directory regains a real, bundling-relevant manifest AND a lockfile.

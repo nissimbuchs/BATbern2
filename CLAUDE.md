@@ -950,10 +950,35 @@ genuinely multilingual public.
 
 ### Data Handling Rules
 
-1. **CSV Files with Personal Data**: NEVER commit CSV files containing real names, emails, or other PII
-   - Use synthetic/anonymized test data for development
+1. **CSV / JSON Files with Personal Data**: NEVER commit files containing real names, emails, or other PII
+   - Use synthetic/anonymized test data for development. `@example.com` addresses only —
+     `web-frontend/e2e/fixtures/*.csv` is the reference example of doing this right.
    - Real participant data should only exist in secure databases
-   - CSV files in `apps/BATspa-old/` are blocked by `.gitignore`
+   - **Verify the pattern, not the intent.** A path-pinned `.gitignore` line protects only that
+     exact path. Before trusting one, run `git ls-files | grep -i '\.csv$'` and grep tracked
+     files for email shapes — a rule can look like coverage while covering nothing.
+
+   > **Historical note (2026-08-11).** This section used to claim "CSV files in
+   > `apps/BATspa-old/` are blocked by `.gitignore`". That was **false**: exactly one path was
+   > listed (`anmeldungen.csv`), while three differently-named CSVs *and* three
+   > `speakers*.json` files in the same directory were tracked — carrying real names and 155
+   > real work addresses across 76 real domains, public since 2025-12-04. The app was retired
+   > and the files removed from `HEAD` in the same change that fixed this text; the
+   > `.gitignore` patterns are now generalised by file shape rather than by path.
+   >
+   > **The data remains in git history by an explicit, informed owner decision** — it was
+   > assessed as very old and stale, and the risk of leaving it there was accepted rather than
+   > rewriting public history. This is recorded so the next reader (or agent) who greps history
+   > and finds those addresses knows it was seen, evaluated, and decided — not missed. Do not
+   > re-escalate it as a new discovery, and do not "fix" it with a force-push.
+   >
+   > **Restoring the retired data (Epic 3's import still needs it):** `apps/BATspa-old/src/api`
+   > and `src/archiv` (856 files — 294 PDFs, 410 JPGs) were deleted from `HEAD`, not from
+   > history. `git checkout 2ce77d61 -- apps/BATspa-old/src/archiv` brings them back; prefer a
+   > scratch worktree and do **not** re-commit them. Five migration scripts read those paths
+   > (`scripts/convert-companies-csv*.mjs`, `scripts/staging/generate-staging-*.js`) and will
+   > fail until you do. Full detail: `docs/prd/epic-3-historical-data-migration.md` →
+   > "Data Sources".
 
 2. **Test Data Guidelines**:
    - Use faker libraries to generate realistic but fake test data

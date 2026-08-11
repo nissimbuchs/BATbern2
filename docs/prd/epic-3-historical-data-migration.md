@@ -206,6 +206,8 @@ As an **organizer**, I want to import historical event participation data from a
 
 **Business Context:**
 - **Data Source**: `/apps/BATspa-old/src/api/anmeldungen.csv` - 2,307 participants, 57 events
+  (never committed — gitignored; source it from the secure store. The surrounding directory was
+  retired 2026-08-11 and must be restored from git history first — see "Data Sources" below.)
 - **Goal**: Complete the historical data migration by adding participant attendance records
 - **Value**: Preserve 20+ years of BATbern attendance history for analytics and attendee tracking
 
@@ -440,9 +442,35 @@ As an **organizer**, I want to import historical event participation data from a
 - Individual story file: `docs/stories/1.15-*.md`
 
 **Data Sources:**
-- Existing Angular website data location: [(../../apps/BATspa-old)]
-- JSON schema documentation: [(../../apps/BATspa-old/src/api)]
-- Sample data for testing: [(../../apps/BATspa-old/src/api)]
+
+> ### ⚠️ `apps/BATspa-old/` was retired on 2026-08-11 — restore it before running the import
+>
+> The legacy Angular app was deleted from `HEAD` (it carried a vulnerable Angular dependency
+> tree that generated self-merging security PRs). **Its data is intact in git history** and
+> must be checked out before any of the migration tooling will run:
+>
+> ```bash
+> # Last commit containing the files:
+> git checkout 2ce77d61 -- apps/BATspa-old/src/api      # sessions.json, speakers.json, …
+> git checkout 2ce77d61 -- apps/BATspa-old/src/archiv   # 856 files: 294 PDFs, 410 JPGs, 67 PNGs
+> ```
+>
+> Restore into a scratch worktree rather than the repo if you can — do **not** re-commit
+> `apps/BATspa-old/` (see the PII note in `CLAUDE.md` → Personal Data & Security Guidelines;
+> `src/api/speakers*.json` carry real names and work addresses).
+>
+> **Tooling that reads these paths and will fail without the restore:**
+> `scripts/convert-companies-csv.mjs`, `scripts/convert-companies-csv-robust.mjs`,
+> `scripts/convert-companies-csv-fast.mjs`, `scripts/staging/generate-staging-companies-json.js`,
+> `scripts/staging/generate-staging-sessions-json.js`
+>
+> `src/api/anmeldungen.csv` (2,307 participants) was **never committed** — it is gitignored and
+> has always lived outside the repo. Source it from the secure store as before; the retirement
+> changed nothing about it.
+
+- Existing Angular website data location: [(../../apps/BATspa-old)] — **retired, restore per above**
+- JSON schema documentation: [(../../apps/BATspa-old/src/api)] — **retired, restore per above**
+- Sample data for testing: [(../../apps/BATspa-old/src/api)] — **retired, restore per above**
 
 **Epic Reorganization Context:**
 - Date: 2025-10-12
