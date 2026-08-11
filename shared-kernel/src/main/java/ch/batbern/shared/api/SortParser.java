@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -27,6 +28,25 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class SortParser {
+
+    /**
+     * Field names we are willing to hand to the persistence layer: a Java-style
+     * identifier, optionally dot-separated for nested paths ("author.name").
+     *
+     * <p>Anything else is rejected here rather than downstream. Spring Data JPA's
+     * {@code QueryUtils.checkSortExpression} rejects any {@code \p{Punct}} character in a
+     * sort property by throwing {@code InvalidDataAccessApiUsageException} — and it does so
+     * <em>before</em> resolving the property, so even a real field with a stray punctuation
+     * character (e.g. {@code "date%"}) blows up. That exception is not a
+     * {@code PropertyReferenceException}, so it escaped the 400 mapping and surfaced as a
+     * 500 with severity CRITICAL (issue #903).
+     *
+     * <p>Validating at the parse boundary keeps malformed user input a 400 for every caller
+     * of this parser, and keeps punctuation — the SQL-injection vector Spring Data's guard
+     * exists to stop — out of sort expressions entirely.
+     */
+    private static final Pattern SAFE_FIELD_NAME =
+            Pattern.compile("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*");
 
     /**
      * Parses a sort string into a list of SortCriteria.
@@ -90,6 +110,14 @@ public class SortParser {
         // Check for invalid characters (multiple prefixes)
         if (fieldName.startsWith("+") || fieldName.startsWith("-")) {
             throw new ValidationException("Invalid sort format: multiple prefix symbols");
+        }
+
+        // Reject anything that is not a plain identifier path (issue #903).
+        // The field name is echoed back so the caller can see what was rejected; it is
+        // user-supplied but safe here because ValidationException messages are rendered as
+        // JSON text, never as a format string or SQL fragment.
+        if (!SAFE_FIELD_NAME.matcher(fieldName).matches()) {
+            throw new ValidationException("Invalid field name in sort: " + fieldName);
         }
 
         return SortCriteria.builder()

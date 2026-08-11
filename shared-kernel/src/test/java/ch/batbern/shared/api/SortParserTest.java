@@ -250,4 +250,91 @@ class SortParserTest {
         // Then: Should return empty string
         assertThat(sql).isEmpty();
     }
+
+    // ========================================
+    // Issue #903: reject unsafe field names at the parse boundary
+    //
+    // Spring Data JPA's QueryUtils.checkSortExpression rejects ANY \p{Punct}
+    // character in a sort property with InvalidDataAccessApiUsageException —
+    // BEFORE the property is resolved. That is an unhandled 500 rather than a
+    // 400, and it fires even when the field name itself is valid (e.g. "date%").
+    // Validating here turns the whole class into a 400 at the edge.
+    // ========================================
+
+    @Test
+    @DisplayName("should_throwValidationError_when_fieldContainsPercent")
+    void should_throwValidationError_when_fieldContainsPercent() {
+        // Given: the exact value the weekly ZAP scan reports (decoded form)
+        String unsafeSort = "ZAP%n%s%n%s";
+
+        // When/Then: rejected at the parse boundary, not deep inside Spring Data
+        assertThatThrownBy(() -> SortParser.parse(unsafeSort))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid field name in sort");
+    }
+
+    @Test
+    @DisplayName("should_throwValidationError_when_validFieldHasTrailingPercent")
+    void should_throwValidationError_when_validFieldHasTrailingPercent() {
+        // Given: a REAL field name with a single stray percent appended.
+        // This is the case that proves the trigger is the punctuation, not the
+        // field name — "date" resolves fine, "date%" produced a 500 in prod.
+        assertThatThrownBy(() -> SortParser.parse("date%"))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid field name in sort");
+    }
+
+    @Test
+    @DisplayName("should_throwValidationError_when_fieldContainsSqlPunctuation")
+    void should_throwValidationError_when_fieldContainsSqlPunctuation() {
+        // Given: punctuation that Spring Data's guard exists to stop
+        String[] unsafe = {
+            "date;DROP TABLE events",
+            "count(*)",
+            "date desc",
+            "date'",
+            "date\"",
+            "date-title",
+            "date/title",
+            "date|title",
+            "date%20n"
+        };
+
+        // When/Then: every one is a 400-shaped ValidationException
+        for (String sort : unsafe) {
+            assertThatThrownBy(() -> SortParser.parse(sort))
+                    .as("sort=%s must be rejected", sort)
+                    .isInstanceOf(ValidationException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("should_acceptValidIdentifiers_when_legitimateFieldNamesProvided")
+    void should_acceptValidIdentifiers_when_legitimateFieldNamesProvided() {
+        // Given: every field shape the platform actually sorts by today.
+        // Guards against the validation being too strict for real callers.
+        String[] valid = {
+            "date", "-date", "+date",
+            "eventNumber", "attendeeCount", "currentAttendeeCount",
+            "createdAt", "-votes", "title",
+            "last_name", "_internal",
+            "author.name", "-event.date", "a.b.c"
+        };
+
+        // When/Then: all parse without throwing
+        for (String sort : valid) {
+            assertThat(SortParser.parse(sort))
+                    .as("sort=%s must be accepted", sort)
+                    .hasSize(1);
+        }
+    }
+
+    @Test
+    @DisplayName("should_rejectUnsafeField_when_mixedWithValidFieldsInMultiSort")
+    void should_rejectUnsafeField_when_mixedWithValidFieldsInMultiSort() {
+        // Given: one bad field hidden among good ones
+        // When/Then: the whole sort is rejected — no partial application
+        assertThatThrownBy(() -> SortParser.parse("-date,ZAP%n,+title"))
+                .isInstanceOf(ValidationException.class);
+    }
 }

@@ -302,6 +302,40 @@ public class GlobalExceptionHandler {
 }
 ```
 
+#### Two invariants the handlers must preserve
+
+**1. A correlation ID that is returned must also be logged.** Every handler obtains the ID via
+`CorrelationIdGenerator.current()` — never `generate()` — and the generic handler resolves it
+*before* its `log.error(...)` call and passes it as a log argument:
+
+```java
+String correlationId = CorrelationIdGenerator.current();
+log.error("Unexpected error [correlationId={}]", correlationId, ex);
+```
+
+`generate()` mints a fresh UUID per call, so a handler that logs first and generates second hands
+the caller an ID that appears in no log line — the response and the log become unlinkable, and a
+user (or a ZAP report, or a support request) quoting an ID cannot be matched to anything. `current()`
+reads and registers the ID in the SLF4J `MDC` under `correlationId`, so it is stable for the whole
+request, reused across service hops when forwarded via `X-Correlation-ID`, and rendered by any log
+pattern containing `%X{correlationId}`. `generate()` remains correct inside the correlation filters,
+which legitimately mint the ID for a brand-new request. (Issue #904.)
+
+**2. Malformed user input must never produce a 5xx.** Two traps have caused 500s that should have
+been 400s:
+
+- `MethodArgumentNotValidException` needs its own explicit `@ExceptionHandler`, or the catch-all
+  `@ExceptionHandler(Exception.class)` shadows Spring's default 400.
+- **Sort parameters** are validated at the parse boundary by `SortParser`, which accepts only
+  identifier paths (`[A-Za-z_][A-Za-z0-9_]*` optionally dot-separated). This is not cosmetic:
+  Spring Data JPA's `QueryUtils.checkSortExpression` rejects **any** `\p{Punct}` character in a
+  sort property by throwing `InvalidDataAccessApiUsageException` — and it does so *before*
+  resolving the property, so even a real field name with one stray character (`sort=date%`)
+  bypassed the `PropertyReferenceException` → 400 mapping and surfaced as a 500 with severity
+  CRITICAL. Validating in `SortParser` fixes this for every service that uses it and keeps
+  punctuation — the injection vector Spring Data's guard exists to stop — out of sort expressions
+  entirely. (Issue #903.)
+
 ### Circuit Breaker Pattern Implementation
 
 The platform uses **Resilience4j** circuit breakers (not a bespoke `CircuitBreakerService`). Configuration is rate-based, not count-based:

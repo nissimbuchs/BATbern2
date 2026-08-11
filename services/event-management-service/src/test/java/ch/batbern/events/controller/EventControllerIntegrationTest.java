@@ -431,6 +431,67 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ============================================================================
+    // Issue #903: malformed sort values must be 4xx, never 5xx
+    //
+    // Reproduced on production 2026-08-11:
+    //   sort=date                -> 200
+    //   sort=notafield           -> 400  (PropertyReferenceException, handled)
+    //   sort=ZAP%n%s%n%s         -> 500  severity CRITICAL   <-- the defect
+    //   sort=date%               -> 500  (a VALID field plus one stray '%')
+    //
+    // Cause: Spring Data JPA's QueryUtils.checkSortExpression rejects any \p{Punct}
+    // in a sort property with InvalidDataAccessApiUsageException, *before* resolving
+    // the property — so it never reached the PropertyReferenceException 400 mapping.
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_return400_when_sortContainsFormatSpecifiers")
+    void should_return400_when_sortContainsFormatSpecifiers() throws Exception {
+        // Given: the exact value the weekly ZAP scan flags as "Format String Error"
+        mockMvc.perform(get("/api/v1/events")
+                        .param("sort", "ZAP%n%s%n%s")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message", containsString("Invalid field name in sort")));
+    }
+
+    @Test
+    @DisplayName("should_return400_when_validSortFieldHasTrailingPercent")
+    void should_return400_when_validSortFieldHasTrailingPercent() throws Exception {
+        // Given: "date" is a real, sortable field — only the trailing '%' is bad.
+        // This is the case proving the trigger is punctuation, not an unknown field.
+        mockMvc.perform(get("/api/v1/events")
+                        .param("sort", "date%")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("should_return400_when_sortContainsSqlPunctuation")
+    void should_return400_when_sortContainsSqlPunctuation() throws Exception {
+        // Given: the injection shapes Spring Data's guard exists to stop
+        for (String unsafe : new String[] {"date;DROP TABLE events", "count(*)", "date desc"}) {
+            mockMvc.perform(get("/api/v1/events")
+                            .param("sort", unsafe)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    @DisplayName("should_return400_when_unknownSortFieldProvided")
+    void should_return400_when_unknownSortFieldProvided() throws Exception {
+        // Regression guard: the pre-existing 400 for an unknown-but-clean field name
+        // must keep working. This path was always correct and must not regress.
+        mockMvc.perform(get("/api/v1/events")
+                        .param("sort", "notafield")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ============================================================================
     // AC1.5: Paginate Event Results
     // ============================================================================
 
