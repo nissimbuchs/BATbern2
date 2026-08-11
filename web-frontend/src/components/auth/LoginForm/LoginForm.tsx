@@ -229,7 +229,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
       >
         <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography component="h1" variant="h4" gutterBottom>
+            <Typography component="h1" variant="h4" gutterBottom data-testid="login-form-title">
               {pendingNewPassword
                 ? t('auth:newPassword.title', 'Set a new password')
                 : t('auth:login.title')}

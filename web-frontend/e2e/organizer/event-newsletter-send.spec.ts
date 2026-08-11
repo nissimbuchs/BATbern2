@@ -70,18 +70,18 @@ describeNewsletter('Organizer · Event newsletter send', { tag: '@sends-real-ema
     await gotoNewsletter(page);
 
     // Default template 'newsletter-event' (de→auto) is preselected; no selection needed.
-    const sendButton = page.getByRole('button', { name: 'Send Newsletter' });
+    const sendButton = page.getByTestId('newsletter-send-button');
     await expect(sendButton).toBeVisible({ timeout: 15_000 });
 
     // Preview renders without disabling the send action.
-    await page.getByRole('button', { name: 'Preview' }).click();
+    await page.getByTestId('newsletter-preview-button').click();
     await expect(sendButton).toBeEnabled();
 
     // Send → confirm dialog → confirm. (Safe in dev: LocalEmailCapture intercepts.)
     await sendButton.click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Confirm' }).click();
+    await dialog.getByTestId('newsletter-confirm-send-button').click();
 
     // The component polls the send status; a terminal COMPLETED state shows this alert.
     await expect(page.getByTestId('newsletter-send-completed')).toBeVisible({ timeout: 45_000 });

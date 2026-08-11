@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .error("InvalidStateTransitionException")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity(ex.getSeverity().toString())
                 .details(ex.getDetails())
                 .build();
@@ -73,7 +73,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity(ex.getSeverity().toString())
                 .details(ex.getDetails())
                 .build();
@@ -97,7 +97,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity(ex.getSeverity().toString())
                 .details(ex.getDetails())
                 .build();
@@ -132,7 +132,7 @@ public class GlobalExceptionHandler {
                 .message("Validation failed: " + ex.getBindingResult().getFieldErrors().stream()
                         .map(fieldError -> fieldError.getDefaultMessage())
                         .collect(Collectors.joining(", ")))
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -161,7 +161,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message("Validation failed: " + ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -185,7 +185,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message("Malformed JSON request body")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -208,7 +208,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN.value())
                 .error("Forbidden")
                 .message("Access denied - insufficient permissions")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("HIGH")
                 .build();
 
@@ -235,7 +235,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.METHOD_NOT_ALLOWED.value())
                 .error("Method Not Allowed")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
@@ -249,7 +249,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,
             HttpServletRequest request) {
-        log.error("Unexpected error: {}", ex.getMessage(), ex);
+        // Obtain the correlation ID BEFORE logging, and log it, so the ID handed back to
+        // the caller can actually be found in CloudWatch (issue #904). Generating it after
+        // the log call — as this did — returns the client an ID that appears in no log line.
+        String correlationId = CorrelationIdGenerator.current();
+        log.error("Unexpected error [correlationId={}]", correlationId, ex);
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
@@ -257,7 +261,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
                 .message("An unexpected error occurred")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(correlationId)
                 .severity("HIGH")
                 .build();
 

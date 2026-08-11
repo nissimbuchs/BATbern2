@@ -91,29 +91,34 @@ test.describe('Organizer · Event Registrations management', { tag: '@gate' }, (
     await cleanupById(token, 'companies', companySlug(SEED_COMPANY));
   });
 
-  // @quarantine 2026-08-09 — UNDIAGNOSED. This test has failed on all three retries in
-  // every Nightly E2E run since 2026-06-28 (last green 2026-06-27), and it is the ONLY
-  // @gate failure in the suite: 1 failed / 184 passed. Six weeks of a permanently red
-  // nightly trains everyone to ignore the signal, which is worse than the failure itself,
-  // so it moves to @quarantine to restore a meaningful gate.
+  // ROOT-CAUSED 2026-08-11 (issue #955) — un-quarantined; the cause was in the assertion,
+  // not the product.
   //
-  // Root cause NOT established — this is a deliberate mute, not a fix. It fails on the
-  // "Showing X–Y of Z" assertion (`participants-result-count` → /of\s+[1-9]/), i.e. the
-  // list renders but the total reads zero, so the seeded rows are missing rather than the
-  // page being broken. Prime suspects, in order: the two seedRegistration() POSTs silently
-  // failing against the shared environment; or fixture events being swept by the
-  // global-teardown event_number ≥ 10000 sweep before this test asserts (the describe is
-  // `mode: 'serial'`, so a beforeAll failure would surface exactly here first).
+  // This test, and its `cancels a registration` sibling, failed on all three retries in
+  // every Nightly E2E run from 2026-07-02 (last green 2026-06-27) — 41 consecutive red
+  // nights, and the only @gate failure in the suite. The 2026-08-09 note here recorded it
+  // as UNDIAGNOSED and suspected the seedRegistration() POSTs or the teardown sweep. Both
+  // suspicions were wrong.
   //
-  // The nightly quarantine re-test auto-promotes it back to @gate once it goes green, so
-  // this does not silently disappear. Sibling tests in this describe stay @gate.
-  test('lists seeded and auto-enrolled registrations', { tag: '@quarantine' }, async ({ page }) => {
+  // The nightly failure screenshot shows the organizer UI rendered in GERMAN — "ANMELDUNGEN",
+  // "Veranstaltungsteilnehmer", "ALLE STATUS", "ABGESAGT" — with "9 / 50 bestätigt", i.e. the
+  // seeded rows were present and the page was fine. The assertions were the problem:
+  //   • /of\s+[1-9]/ can never match the German summary ("… von 9").
+  //   • getByLabel('Cancel Registration') can never match a German aria-label, which is why
+  //     the sibling test's click timed out after 180s.
+  // The rest of the suite passes because it locates by data-testid, which is locale-neutral.
+  // The spec was added 2026-07-01 in aed45d2f, which is exactly why the nightly went red
+  // between 06-27 and 07-02: it never passed against a German UI.
+  //
+  // Rule going forward: assert on testids and numbers, never on translated UI copy.
+  test('lists seeded and auto-enrolled registrations', async ({ page }) => {
     await gotoRegistrations(page, event.eventCode);
 
     await expect(page.getByRole('row', { name: /Pwcancel/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Pwdelete/ })).toBeVisible();
-    // "Showing X–Y of Z" summary renders with a non-zero total.
-    await expect(page.getByTestId('participants-result-count')).toContainText(/of\s+[1-9]/);
+    // Result-count summary renders a non-zero total. Locale-neutral: match the digits only,
+    // never the surrounding copy ("Showing X–Y of Z" / "Zeige X–Y von Z").
+    await expect(page.getByTestId('participants-result-count')).toContainText(/[1-9]\d*/);
   });
 
   test('status filter narrows the list', async ({ page }) => {
@@ -156,11 +161,18 @@ test.describe('Organizer · Event Registrations management', { tag: '@gate' }, (
     const patch = page.waitForResponse(
       (r) => /\/registrations\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH'
     );
-    await row.getByLabel('Cancel Registration').click();
+    // Locate by testid, not by accessible name: the nightly renders the organizer UI in
+    // German, so getByLabel('Cancel Registration') never resolved (issue #955).
+    await row.getByTestId('registration-action-cancel').click();
     expect((await patch).status()).toBe(200);
 
-    // The list invalidates and the status cell updates in place to "Cancelled".
-    await expect(row).toContainText(/cancelled/i);
+    // The list invalidates and the status cell updates in place. Assert on the raw enum in
+    // data-status, not the rendered label — that label is localised ("Abgesagt" in the
+    // nightly's German UI), which is what made this spec unrunnable there (issue #955).
+    await expect(row.getByTestId('participant-status-chip')).toHaveAttribute(
+      'data-status',
+      'CANCELLED'
+    );
 
     // …and the row appears under the CANCELLED filter.
     await page.getByTestId('participant-status-CANCELLED').click();
@@ -172,12 +184,13 @@ test.describe('Organizer · Event Registrations management', { tag: '@gate' }, (
 
     const row = page.getByRole('row', { name: /Pwdelete/ });
     await expect(row).toBeVisible();
-    await row.getByLabel('Delete Registration').click();
+    await row.getByTestId('registration-action-delete').click();
 
-    // Confirmation dialog → confirm with the "Delete" action.
+    // Confirmation dialog → confirm with the destructive action. Located by testid because
+    // the button reads "Löschen" in the nightly's German UI, not "Delete" (issue #955).
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: /^delete$/i }).click();
+    await dialog.getByTestId('registration-delete-confirm').click();
 
     await expect(page.getByRole('row', { name: /Pwdelete/ })).toBeHidden();
   });

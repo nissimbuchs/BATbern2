@@ -75,7 +75,12 @@ export const PartnerList: React.FC = () => {
         <Alert severity="error">
           <Typography variant="body1">{errorMessage}</Typography>
           <Typography variant="caption" color="text.secondary">
-            {t('error.correlationId')}: {correlationId}
+            <span
+              data-testid="partner-list-error-correlation-id"
+              data-correlation-id={correlationId}
+            >
+              {t('error.correlationId')}: {correlationId}
+            </span>
           </Typography>
         </Alert>
       </Box>
@@ -147,7 +152,13 @@ export const PartnerList: React.FC = () => {
               borderColor: 'divider',
             }}
           >
-            <Typography variant="body2" color="text.secondary" data-testid="pagination-info">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              data-testid="pagination-info"
+              data-page={(pagination?.page || 0) + 1}
+              data-total-pages={pagination?.totalPages || 1}
+            >
               {t('pagination.page', {
                 current: (pagination?.page || 0) + 1,
                 total: pagination?.totalPages || 1,
@@ -220,7 +231,13 @@ export const PartnerList: React.FC = () => {
             borderColor: 'divider',
           }}
         >
-          <Typography variant="body2" color="text.secondary" data-testid="pagination-info">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            data-testid="pagination-info"
+            data-page={(pagination?.page || 0) + 1}
+            data-total-pages={pagination?.totalPages || 1}
+          >
             {t('pagination.page', {
               current: (pagination?.page || 0) + 1,
               total: pagination?.totalPages || 1,

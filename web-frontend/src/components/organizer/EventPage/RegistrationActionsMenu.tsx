@@ -190,6 +190,7 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({
                 }}
                 disabled={resendMutation.isPending}
                 sx={{ color: 'info.main' }}
+                data-testid="registration-action-resend"
               >
                 <EmailIcon fontSize="small" />
               </IconButton>
@@ -202,6 +203,7 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({
                 onClick={handleCancelClick}
                 disabled={cancelMutation.isPending}
                 sx={{ color: 'warning.main' }}
+                data-testid="registration-action-cancel"
               >
                 <CancelIcon fontSize="small" />
               </IconButton>
@@ -213,6 +215,7 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({
               size="small"
               onClick={handleDeleteClick}
               disabled={deleteMutation.isPending}
+              data-testid="registration-action-delete"
               sx={{ color: 'error.main' }}
             >
               <DeleteIcon fontSize="small" />
@@ -262,7 +265,11 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={deleteMutation.isPending}>
+          <Button
+            onClick={handleDeleteCancel}
+            disabled={deleteMutation.isPending}
+            data-testid="registration-delete-dismiss"
+          >
             {t('common:actions.cancel')}
           </Button>
           <Button
@@ -271,6 +278,7 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({
             variant="contained"
             disabled={deleteMutation.isPending}
             autoFocus
+            data-testid="registration-delete-confirm"
           >
             {t('common:actions.delete')}
           </Button>

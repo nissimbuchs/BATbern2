@@ -287,9 +287,7 @@ const TopicListPage: React.FC = () => {
             <TableBody>
               {sortedTopics.map((topic) => {
                 const statusKey = topic.status.toLowerCase() as
-                  | 'proposed'
-                  | 'selected'
-                  | 'declined';
+                  'proposed' | 'selected' | 'declined';
                 const isOwn = topic.suggestedByCompany === user?.companyName;
                 return (
                   <TableRow key={topic.id} hover data-testid={`topic-item-${topic.id}`}>
@@ -303,6 +301,7 @@ const TopicListPage: React.FC = () => {
                           label={t(`portal.topics.status.${statusKey}`)}
                           color={STATUS_COLOR[topic.status]}
                           size="small"
+                          data-status={topic.status}
                           data-testid={`topic-status-${topic.id}`}
                         />
                         {topic.status === 'SELECTED' && topic.plannedEvent && (

@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(ex.getDetails())
                 .build();
@@ -85,7 +85,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -119,7 +119,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message("Profile incomplete — please add your first and last name before registering")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -146,7 +146,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message("Invalid field name in sort or filter: " + ex.getPropertyName())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -180,7 +180,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message("Validation failed: " + errors)
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -215,7 +215,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message("Validation failed: " + errors)
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -239,7 +239,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -264,7 +264,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -295,7 +295,7 @@ public class GlobalExceptionHandler {
                 .status(status)
                 .error(httpStatus.getReasonPhrase())
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity(status >= 500 ? "HIGH" : "MEDIUM")
                 .build();
 
@@ -319,7 +319,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -343,7 +343,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -366,7 +366,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -389,7 +389,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -413,7 +413,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -437,7 +437,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .error("Unprocessable Entity")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -461,7 +461,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .error("Unprocessable Entity")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -486,7 +486,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -511,7 +511,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -536,7 +536,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -559,7 +559,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -588,7 +588,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -613,7 +613,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -636,7 +636,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .error("Unprocessable Entity")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -660,7 +660,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN.value())
                 .error("Forbidden")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -679,7 +679,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         // Code review 2026-05-18 (P21): generate correlation ID once so log + response share it,
         // letting support tie the WARN line above to the 403 the user reported.
-        String correlationId = CorrelationIdGenerator.generate();
+        String correlationId = CorrelationIdGenerator.current();
         log.warn("Speaker portal access denied: path={} correlationId={} reason={}",
                 request.getRequestURI(), correlationId, ex.getMessage());
 
@@ -713,7 +713,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN.value())
                 .error("Forbidden")
                 .message("Access denied - insufficient permissions")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -736,7 +736,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .error("Unprocessable Entity")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("HIGH")
                 .build();
 
@@ -761,7 +761,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .error("InvalidStateTransitionException")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -785,7 +785,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .error("Unprocessable Entity")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("HIGH")
                 .details(ex.getContext())
                 .build();
@@ -813,7 +813,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message("Invalid ID format")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -864,7 +864,7 @@ public class GlobalExceptionHandler {
                     .status(HttpStatus.BAD_REQUEST.value())
                     .error("Bad Request")
                     .message(message)
-                    .correlationId(CorrelationIdGenerator.generate())
+                    .correlationId(CorrelationIdGenerator.current())
                     .severity("MEDIUM")
                     .details(details)
                     .build();
@@ -887,7 +887,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message(message)
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -918,7 +918,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -951,7 +951,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message("The resource was modified by another request. Please refresh and try again.")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -978,7 +978,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -1001,7 +1001,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .build();
 
@@ -1031,7 +1031,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -1059,7 +1059,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -1087,7 +1087,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -1119,7 +1119,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -1147,7 +1147,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -1175,7 +1175,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -1203,7 +1203,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -1230,7 +1230,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -1259,7 +1259,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.TOO_MANY_REQUESTS.value())
                 .error("Too Many Requests")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .details(details)
                 .build();
@@ -1291,7 +1291,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
                 .details(details)
                 .build();
@@ -1315,7 +1315,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -1339,7 +1339,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -1362,7 +1362,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -1387,7 +1387,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -1418,7 +1418,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message("No endpoint " + request.getMethod() + " " + request.getRequestURI())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -1447,7 +1447,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.METHOD_NOT_ALLOWED.value())
                 .error("Method Not Allowed")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("LOW")
                 .build();
 
@@ -1471,7 +1471,7 @@ public class GlobalExceptionHandler {
                 .status(ex.getStatusCode().value())
                 .error(HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase())
                 .message(ex.getReason() != null ? ex.getReason() : "Request rejected")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(CorrelationIdGenerator.current())
                 .severity("WARNING")
                 .build();
         return ResponseEntity.status(ex.getStatusCode()).body(error);
@@ -1481,7 +1481,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,
             HttpServletRequest request) {
-        log.error("Unexpected error", ex);
+        // Obtain the correlation ID BEFORE logging, and log it, so the ID handed back to
+        // the caller can actually be found in CloudWatch (issue #904). Generating it after
+        // the log call — as this did — returns the client an ID that appears in no log line.
+        String correlationId = CorrelationIdGenerator.current();
+        log.error("Unexpected error [correlationId={}]", correlationId, ex);
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
@@ -1489,7 +1493,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
                 .message("An unexpected error occurred")
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(correlationId)
                 .severity("CRITICAL")
                 .build();
 

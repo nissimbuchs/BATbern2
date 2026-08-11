@@ -108,6 +108,8 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
               color="primary"
               size="small"
               sx={{ mb: 0.5 }}
+              data-testid="partner-card-tier"
+              data-tier={partner.partnershipLevel}
             />
             <Typography variant="h6">{partner.companyName}</Typography>
           </Box>

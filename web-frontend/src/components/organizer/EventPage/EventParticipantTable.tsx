@@ -393,10 +393,14 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 <CompanyCell companyId={participant.company?.id} />
               </TableCell>
               <TableCell>
+                {/* data-status carries the raw enum so tests can assert on state without
+                    depending on translated copy — the label is localised (issue #955). */}
                 <Chip
                   label={getStatusLabel(participant.status)}
                   size="small"
                   color={getStatusChipColor(participant.status)}
+                  data-testid="participant-status-chip"
+                  data-status={participant.status}
                 />
               </TableCell>
               <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>

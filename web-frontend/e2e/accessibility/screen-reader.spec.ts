@@ -54,7 +54,7 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', { tag: '@gate' }, () 
     await expect(
       page.getByRole('checkbox', { name: /remember|angemeldet bleiben/i })
     ).toBeVisible();
-    await expect(page.getByRole('combobox', { name: /language/i })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: /language|sprache/i })).toBeVisible();
   });
 
   test('should have visually hidden screen reader text for icons', async ({ page }) => {
