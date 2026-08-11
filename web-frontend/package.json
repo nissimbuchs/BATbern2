@@ -99,7 +99,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "ics": "^3.8.1",
     "lucide-react": "^1.27.0",
-    "papaparse": "^5.5.3",
+    "papaparse": "^5.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-dropzone": "^14.3.8",
