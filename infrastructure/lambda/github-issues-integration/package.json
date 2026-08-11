@@ -7,7 +7,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@aws-sdk/client-ssm": "^3.0.0",
+    "@aws-sdk/client-ssm": "^3.1106.0",
     "@octokit/rest": "^20.0.2",
     "@types/aws-lambda": "^8.10.0"
   },
