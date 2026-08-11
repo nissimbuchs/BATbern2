@@ -55,8 +55,10 @@ test.describe('Archive Browsing', { tag: ['@gate', '@smoke'] }, () => {
 
     const progress = page.getByTestId('events-progress');
     await expect(progress).toBeVisible();
-    // The "<n> of <m> events" string is hardcoded (not localized) — safe to assert its shape.
-    await expect(progress).toHaveText(/\d+\s+of\s+\d+/);
+    // Assert digits only. The string is currently hardcoded English ("<n> of <m> events" in
+    // ArchivePage.tsx) which is itself an i18n gap on a public page; asserting the shape
+    // rather than the word means this spec survives that being fixed (#955).
+    await expect(progress).toHaveText(/\d+\D+\d+/);
   });
 
   test('hides the desktop view toggle on a mobile viewport', async ({ page }) => {

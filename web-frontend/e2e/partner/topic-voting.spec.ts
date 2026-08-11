@@ -192,7 +192,9 @@ test.describe('Partner Topic Voting @gate', () => {
 
     const chip = page.getByTestId('topic-status-e2e-topic-1');
     await expect(chip).toBeVisible();
-    await expect(chip).toHaveText('Selected');
+    // Assert the raw enum in data-status, not the chip's label — the label is localised
+    // and the organizer/partner UI renders in the user's profile language (issue #955).
+    await expect(chip).toHaveAttribute('data-status', 'SELECTED');
 
     await expect(page.getByTestId('topic-planned-event-e2e-topic-1')).toContainText('BATbern58');
   });

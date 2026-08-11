@@ -36,7 +36,7 @@ test.describe('Auth bootstrap survives a slow runtime-config fetch @regression',
 
     // Pre-fix failure mode: the public login screen rendered instead of the admin page.
     await expect(
-      page.getByRole('heading', { name: 'Welcome Back' }),
+      page.getByTestId('login-form-title'),
       'must not fall back to the public login screen during the config window'
     ).toHaveCount(0);
 

@@ -200,9 +200,11 @@ test.describe('Partner Directory @gate -Filter Functionality', () => {
     const cardCount = await partnerCards.count();
 
     if (cardCount > 0) {
-      // Verify GOLD badge appears in cards
+      // Verify the GOLD tier badge appears. Assert data-tier, not the label: the tier name
+      // renders via t(`tiers.gold`) and only matches /gold/i because German happens to use
+      // the same word — a coincidence, not a contract (#955).
       const firstCard = partnerCards.first();
-      await expect(firstCard).toContainText(/gold/i);
+      await expect(firstCard.getByTestId('partner-card-tier')).toHaveAttribute('data-tier', 'GOLD');
     } else {
       await expect(page.getByTestId('partner-list-empty')).toBeVisible();
     }
@@ -348,14 +350,15 @@ test.describe('Partner Directory @gate -Pagination', () => {
 
         // Verify page changed
         const paginationInfo = page.getByTestId('pagination-info');
-        await expect(paginationInfo).toContainText('Page 2');
+        // data-page carries the raw page number; the visible text is localised (#955).
+        await expect(paginationInfo).toHaveAttribute('data-page', '2');
 
         // Click previous page button
         await page.getByTestId('prev-page-button').click();
         await page.waitForLoadState('networkidle');
 
         // Verify back on page 1
-        await expect(paginationInfo).toContainText('Page 1');
+        await expect(paginationInfo).toHaveAttribute('data-page', '1');
       }
     }
   });
@@ -412,7 +415,10 @@ test.describe('Partner Directory @gate -Error Handling', () => {
     const errorContainer = page.getByTestId('partner-list-error');
     await expect(errorContainer).toBeVisible({ timeout: 10000 });
 
-    // Verify correlation ID is displayed in error (technical field, can use text match)
-    await expect(errorContainer).toContainText('Correlation ID');
+    // Verify a correlation ID is surfaced. NOT a text match: the label is localised via
+    // t('error.correlationId'), so assert the element and its raw value instead (#955).
+    const correlation = errorContainer.getByTestId('partner-list-error-correlation-id');
+    await expect(correlation).toBeVisible();
+    await expect(correlation).toHaveAttribute('data-correlation-id', /.+/);
   });
 });

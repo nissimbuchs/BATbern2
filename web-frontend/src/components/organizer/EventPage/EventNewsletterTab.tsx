@@ -346,6 +346,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
                 }
                 onClick={handlePreview}
                 disabled={previewMutation.isPending}
+                data-testid="newsletter-preview-button"
               >
                 {t('eventPage.newsletter.preview')}
               </Button>
@@ -353,6 +354,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
                 variant="contained"
                 onClick={() => openConfirm('newsletter')}
                 disabled={sendMutation.isPending || isJobActive}
+                data-testid="newsletter-send-button"
               >
                 {t('eventPage.newsletter.sendNewsletter')}
               </Button>
@@ -361,6 +363,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
                 color="secondary"
                 onClick={() => openConfirm('reminder')}
                 disabled={sendMutation.isPending || isJobActive}
+                data-testid="newsletter-send-reminder-button"
               >
                 {t('eventPage.newsletter.sendReminder')}
               </Button>
@@ -557,6 +560,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
             variant="contained"
             disabled={sendMutation.isPending}
             autoFocus
+            data-testid="newsletter-confirm-send-button"
           >
             {sendMutation.isPending ? (
               <CircularProgress size={20} />
