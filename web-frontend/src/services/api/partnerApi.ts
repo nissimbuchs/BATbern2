@@ -168,6 +168,35 @@ export const updatePartner = async (
 };
 
 /**
+ * Deactivate a partnership (soft delete — sets the partnership end date to today).
+ *
+ * `isActive` is derived from `partnershipEndDate`, never set directly. Issue #821.
+ *
+ * @param companyName - Company name (meaningful ID per ADR-003)
+ */
+export const deactivatePartner = async (companyName: string): Promise<void> => {
+  await apiClient.delete(`${PARTNER_API_PATH}/${companyName}`);
+};
+
+/**
+ * Reactivate a deactivated partnership by clearing its end date.
+ *
+ * The counterpart to {@link deactivatePartner}. This is a dedicated operation rather than a
+ * PATCH because a partial update cannot express "clear this field" — it cannot distinguish an
+ * absent property from an explicit null, so the service ignores a null `partnershipEndDate`.
+ * Idempotent. Issue #821.
+ *
+ * @param companyName - Company name (meaningful ID per ADR-003)
+ * @returns The reactivated PartnerResponse
+ */
+export const reactivatePartner = async (companyName: string): Promise<PartnerResponse> => {
+  const response = await apiClient.post<PartnerResponse>(
+    `${PARTNER_API_PATH}/${companyName}/reactivate`
+  );
+  return response.data;
+};
+
+/**
  * Get partner contacts for a company.
  * Returns all users with PARTNER role and matching companyId from User Service.
  *

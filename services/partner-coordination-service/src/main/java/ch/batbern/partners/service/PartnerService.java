@@ -207,6 +207,45 @@ public class PartnerService {
     }
 
     /**
+     * Reactivate a deactivated partnership by clearing its end date.
+     *
+     * <p>{@code isActive} is derived, not stored — {@link Partner#isActive()} is true when there
+     * is no end date, or the end date is in the future. Deactivation ({@link #deletePartner})
+     * sets the end date to today; this is its symmetric counterpart and restores the
+     * open-ended state.
+     *
+     * <p>This is a dedicated operation rather than a field on {@code UpdatePartnerRequest}
+     * because a partial update cannot express "clear this field": it cannot distinguish an
+     * absent property from an explicit {@code null}, which is exactly why
+     * {@link #updatePartner} skips a null {@code partnershipEndDate}. Issue #821 — the
+     * organizer's Active toggle was a no-op in the off→on direction for this reason.
+     *
+     * <p>Idempotent: reactivating an already-active partnership is a no-op that still returns
+     * the current state, so a stale UI or a double-click cannot corrupt anything.
+     *
+     * @param companyName Company name
+     * @return The reactivated partner
+     */
+    @Timed(value = "partner.reactivate", description = "Time taken to reactivate partner")
+    public PartnerResponse reactivatePartner(String companyName) {
+        log.info("Reactivating partner for company: {}", companyName);
+
+        Partner partner = partnerRepository.findByCompanyName(companyName)
+                .orElseThrow(() -> new PartnerNotFoundException(
+                        "Partner not found for company: " + companyName));
+
+        partner.setPartnershipEndDate(null);
+        partner.setUpdatedAt(Instant.now());
+
+        Partner saved = partnerRepository.save(partner);
+        log.info("Partner reactivated: {}", saved.getId());
+
+        publishPartnerUpdatedEvent(saved);
+
+        return mapToResponse(saved);
+    }
+
+    /**
      * Soft delete partner (deactivate by setting end date).
      *
      * @param companyName Company name
