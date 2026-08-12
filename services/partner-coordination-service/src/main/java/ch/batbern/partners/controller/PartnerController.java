@@ -109,6 +109,15 @@ public class PartnerController implements PartnersApi {
     }
 
     @Override
+    public ResponseEntity<PartnerResponse> reactivatePartner(String companyName) {
+        log.info("POST /partners/{}/reactivate", companyName);
+
+        PartnerResponse partner = partnerService.reactivatePartner(companyName);
+
+        return ResponseEntity.ok(partner);
+    }
+
+    @Override
     public ResponseEntity<PartnerStatistics> getPartnerStatistics() {
         log.debug("GET /partners/statistics");
 

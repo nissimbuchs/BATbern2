@@ -206,6 +206,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /partners/{companyName}/reactivate:
+    parameters:
+      - name: companyName
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 12
+        description: Company name (meaningful ID per ADR-003)
+    post:
+      tags: [Partners]
+      operationId: reactivatePartner
+      summary: Reactivate a deactivated partnership
+      description: |
+        Clears `partnershipEndDate`, restoring the partnership to open-ended — the state
+        `isActive` is derived from (no end date, or an end date in the future).
+
+        This exists as its own operation rather than as a `PATCH` because
+        `UpdatePartnerRequest` cannot express "clear this field": a partial update cannot
+        distinguish an absent property from an explicit `null`, and the service therefore
+        ignores a null `partnershipEndDate`. `DELETE` already deactivates by setting the end
+        date to today, so this is its symmetric counterpart.
+
+        Idempotent: reactivating an already-active partnership succeeds and changes nothing.
+      responses:
+        '200':
+          description: Partner reactivated; returns the updated partnership
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResponse'
+        '404':
+          description: Partner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /partners/{companyName}/contacts:
     parameters:
       - name: companyName

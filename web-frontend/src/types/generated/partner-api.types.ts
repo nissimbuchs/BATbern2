@@ -50,6 +50,38 @@ export interface paths {
     patch: operations['updatePartner'];
     trace?: never;
   };
+  '/partners/{companyName}/reactivate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (meaningful ID per ADR-003) */
+        companyName: string;
+      };
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reactivate a deactivated partnership
+     * @description Clears `partnershipEndDate`, restoring the partnership to open-ended — the state
+     *     `isActive` is derived from (no end date, or an end date in the future).
+     *
+     *     This exists as its own operation rather than as a `PATCH` because
+     *     `UpdatePartnerRequest` cannot express "clear this field": a partial update cannot
+     *     distinguish an absent property from an explicit `null`, and the service therefore
+     *     ignores a null `partnershipEndDate`. `DELETE` already deactivates by setting the end
+     *     date to today, so this is its symmetric counterpart.
+     *
+     *     Idempotent: reactivating an already-active partnership succeeds and changes nothing.
+     */
+    post: operations['reactivatePartner'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/partners/{companyName}/contacts': {
     parameters: {
       query?: never;
@@ -851,6 +883,38 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Partner not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  reactivatePartner: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (meaningful ID per ADR-003) */
+        companyName: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Partner reactivated; returns the updated partnership */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PartnerResponse'];
         };
       };
       /** @description Partner not found */

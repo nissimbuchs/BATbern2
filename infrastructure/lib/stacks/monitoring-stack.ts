@@ -182,10 +182,19 @@ export class MonitoringStack extends cdk.Stack {
     });
 
     if (this.alarmTopic) {
+      // Issue #956: OK actions are as important as ALARM actions here. The
+      // github-issues Lambda already implements close-on-recovery
+      // (lambda/github-issues-integration/index.ts → closeIssue), but it can only run if
+      // the alarm actually publishes on the OK transition. Without addOkAction the
+      // recovery notification is never sent, so every alarm issue stays open forever —
+      // #484 sat open for ~2 months and #648 for ~3.5 weeks after their alarms recovered.
+      // The Lambda reopens the SAME issue on a re-ALARM, so a flapping alarm churns one
+      // issue rather than accumulating new ones.
       const snsAction = new cloudwatchActions.SnsAction(this.alarmTopic);
-      bounceRateWarning.addAlarmAction(snsAction);
-      bounceRateCritical.addAlarmAction(snsAction);
-      complaintRateCritical.addAlarmAction(snsAction);
+      for (const alarm of [bounceRateWarning, bounceRateCritical, complaintRateCritical]) {
+        alarm.addAlarmAction(snsAction);
+        alarm.addOkAction(snsAction);
+      }
     }
 
     // Story 10.29 AC9: Bounce processing DLQ alarm (when DLQ name provided)
@@ -206,7 +215,9 @@ export class MonitoringStack extends cdk.Stack {
       });
 
       if (this.alarmTopic) {
-        dlqAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alarmTopic));
+        const dlqSnsAction = new cloudwatchActions.SnsAction(this.alarmTopic);
+        dlqAlarm.addAlarmAction(dlqSnsAction);
+        dlqAlarm.addOkAction(dlqSnsAction); // see #956 note above
       }
     }
 

@@ -68,6 +68,46 @@ This document consolidates security implementation, performance standards, acces
   `cognito-idp:ResendConfirmationCode`, scoped to the user-pool ARN (the SPA client has no secret,
   so no `SecretHash` is needed).
 
+## Monitoring & Alerting
+
+### Alarm → GitHub issue lifecycle
+
+CloudWatch alarms publish to the `batbern-{env}-alarms` SNS topic, which invokes the
+`batbern-{env}-github-issues` Lambda (`infrastructure/lambda/github-issues-integration/`). It keeps
+**one issue per alarm name**, keyed by the alarm name in the issue body:
+
+| Alarm transition | Lambda behaviour |
+|---|---|
+| → `ALARM`, no issue exists | Creates an issue |
+| → `ALARM`, issue open | Comments on the existing issue |
+| → `ALARM`, issue closed | Reopens it and comments |
+| → `OK` | Comments "alarm resolved" and **closes** it |
+| → `INSUFFICIENT_DATA` | Ignored |
+
+**The invariant: an `incident`-labelled issue that is open means the alarm is currently firing.**
+That is what makes the tracker answerable to "is anything wrong right now?".
+
+**Every alarm must therefore register BOTH actions:**
+
+```ts
+alarm.addAlarmAction(snsAction);
+alarm.addOkAction(snsAction);   // without this the issue never closes
+```
+
+An alarm with `AlarmActions` and an empty `OKActions` files an issue that can never be closed by the
+Lambda, because the recovery notification is never published — the close-on-OK code runs, it is just
+never invoked. This was the state of every alarm except the budget alarm until 2026-08-12: #484
+stayed open ~2 months and #648 ~3.5 weeks after their alarms had returned to `OK`, and their 44 and
+100 comments were re-notifications piled onto records that had stopped being true (issue #956).
+
+`monitoring-stack.test.ts` enforces the pairing: any alarm with alarm actions and no OK action fails
+the build. A global count is not enough — it would pass if one alarm carried two OK actions and
+another none — so the assertion is per-alarm.
+
+Related: the ZAP security scan files issues through a different path (the scan action itself, not
+this Lambda) and needs its own hygiene, because its dedup is broken upstream — see #905 and
+`.github/workflows/security-scan.yml`.
+
 ## Cost Optimizations (2026-03)
 
 The following cost optimizations were applied to the production (staging) environment:

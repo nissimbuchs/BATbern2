@@ -54,8 +54,6 @@ const mockPartnerDetail = {
   tierStartDate: '2023-01-01T00:00:00Z',
   previousTier: 'SILVER' as const,
   isActive: true,
-  renewalDate: '2026-01-01T00:00:00Z',
-  autoRenewal: true,
   company: {
     companyName: 'GoogleZH',
     legalName: 'Google Switzerland GmbH',

@@ -58,6 +58,45 @@ describe('MonitoringStack', () => {
       // Verify SNS topics for alarm notifications (multiple topics for different alarm types)
       template.resourceCountIs('AWS::SNS::Topic', 2);
     });
+
+    // ── Issue #956: alarms must notify on RECOVERY, not only on breach ──────────
+    //
+    // The github-issues Lambda implements close-on-recovery
+    // (lambda/github-issues-integration/index.ts → closeIssue), but it is invoked by SNS.
+    // An alarm with AlarmActions and an EMPTY OKActions never publishes the recovery
+    // notification, so the Lambda never runs and the issue stays open forever. Verified in
+    // production on 2026-08-12: both live alarms had `OKActions: []`, which is why #484 sat
+    // open ~2 months and #648 ~3.5 weeks after their alarms had returned to OK.
+    //
+    // Asserting per-alarm rather than counting: a global count would still pass if one alarm
+    // carried two OK actions and another carried none.
+    test('should_notifyOnRecovery_when_alarmHasAlarmActions', () => {
+      // Arrange
+      const app = new App();
+
+      // Act
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+
+      // Assert
+      const template = Template.fromStack(stack);
+      const alarms = template.findResources('AWS::CloudWatch::Alarm');
+
+      const alarmNames = Object.keys(alarms);
+      expect(alarmNames.length).toBeGreaterThan(0);
+
+      const alarmOnlyNoOk = alarmNames.filter((name) => {
+        const props = alarms[name].Properties ?? {};
+        const hasAlarmAction = Array.isArray(props.AlarmActions) && props.AlarmActions.length > 0;
+        const hasOkAction = Array.isArray(props.OKActions) && props.OKActions.length > 0;
+        return hasAlarmAction && !hasOkAction;
+      });
+
+      // Every alarm that pages on breach must also announce its recovery.
+      expect(alarmOnlyNoOk).toEqual([]);
+    });
   });
 
   describe('Log Groups', () => {

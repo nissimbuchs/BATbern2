@@ -45,6 +45,10 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Organizer Partner Settings (2026-08-12)**:
+- ✅ The **Active partnership** toggle (Partners → open a partner → Settings) now works. It previously appeared to switch but saved nothing — the control was rendered without a handler, so every flip was silently discarded. Deactivating ends the partnership as of today; re-activating restores it to open-ended.
+- ⚠️ The **Auto-renewal** switch and the "renewal date" line have been **removed** from that tab. Neither field has ever existed in the partner API, so the switch could never save and the date was always blank — it only looked like a setting. Nothing was lost, because nothing was ever stored. If automatic renewal is wanted as a real feature, it needs an API and a database column first.
+
 **Improvements — Organizer Communications (Epic 14, 2026-06-15)**:
 - ✅ Two "deregistration call" registrant-notice templates (DE + EN) — ask registrants of a fully-booked event to free their seat; selectable in Communications → Event registrants:
   - `registrant-notice-deregistration-call` — one-click cancel via a per-recipient `{{deregistrationUrl}}` (requires the send-side injection below; available once the backend deploys)
