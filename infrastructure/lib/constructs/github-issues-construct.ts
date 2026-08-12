@@ -26,8 +26,13 @@ export class GitHubIssuesConstruct extends Construct {
   constructor(scope: Construct, id: string, props: GitHubIssuesConstructProps) {
     super(scope, id);
 
-    const githubOwner = props.githubOwner || 'batbern';
-    const githubRepo = props.githubRepo || 'BATbern-develop';
+    // Defaults match the real repository. They previously read 'batbern' /
+    // 'BATbern-develop' — neither of which exists ('BATbern-develop' is a local checkout
+    // directory name, not a repo) — so any caller relying on the defaults would have
+    // silently pointed the Lambda at a 404 and filed nothing. `bin/batbern-infrastructure.ts`
+    // always passes real values, which is why this never bit; it stays a trap regardless.
+    const githubOwner = props.githubOwner || 'nissimbuchs';
+    const githubRepo = props.githubRepo || 'BATbern2';
     const githubTokenParam = props.githubTokenParamName || `/batbern/${props.environment}/github/token`;
 
     // Lambda function for GitHub Issues integration

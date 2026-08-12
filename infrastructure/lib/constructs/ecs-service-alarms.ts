@@ -114,6 +114,7 @@ export class EcsServiceAlarms extends Construct {
       }
     );
     memoryUtilizationAlarm.addAlarmAction(alarmAction);
+    memoryUtilizationAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 2: OOM Kill Detection (exit code 137)
     // IMPORTANT: Only create if Container Insights is enabled
@@ -165,6 +166,7 @@ export class EcsServiceAlarms extends Construct {
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
       oomKillAlarm.addAlarmAction(alarmAction);
+      oomKillAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
       oomKillAlarm.node.addDependency(oomMetricFilter);
     }
 
@@ -193,6 +195,7 @@ export class EcsServiceAlarms extends Construct {
       }
     );
     taskFailureAlarm.addAlarmAction(alarmAction);
+    taskFailureAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 4: EventBridge Publishing Failures
     const eventBridgeFailuresAlarm = new cloudwatch.Alarm(
@@ -218,6 +221,7 @@ export class EcsServiceAlarms extends Construct {
       }
     );
     eventBridgeFailuresAlarm.addAlarmAction(alarmAction);
+    eventBridgeFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Output alarm names for reference
     const alarmNames = [
