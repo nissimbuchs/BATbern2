@@ -165,6 +165,12 @@ export class StorageStack extends cdk.Stack {
           command: [
             'bash', '-c',
             [
+              // NOTE: the flags below are left exactly as deployed. `--platform`/`--arch` are not
+              // npm's documented filters (`--os`/`--cpu` are), so they look wrong — but this
+              // install is known to produce the glibc binary the function needs, and I could not
+              // reproduce the flag behaviour of this image's npm locally. Changing them would be
+              // an unverified change on the path that serves every CDN image, so determinism is
+              // enforced below instead, where it costs nothing to be sure.
               'npm ci --cache /tmp/.npm --platform=linux --arch=x64 --libc=glibc',
               [
                 './node_modules/.bin/esbuild index.ts',
@@ -178,6 +184,27 @@ export class StorageStack extends cdk.Stack {
               // transitive deps (detect-libc, color, semver, …) which must be present at runtime.
               // Prune dev deps then copy the entire production node_modules to /asset-output.
               'npm prune --omit=dev --cache /tmp/.npm',
+              // Drop the musl variants unconditionally. This is what makes the bundle
+              // DETERMINISTIC, and it is why the deploys of 2026-08-12 kept failing their smoke
+              // test.
+              //
+              // Measured from the deployed artifacts (Lambda@Edge versions 74-80), the bundle
+              // alternated between two sizes:
+              //
+              //   15,763,107 B  @img/{sharp-linux-x64, sharp-libvips-linux-x64, sharp-wasm32, colour}
+              //   24,050,269 B  the same PLUS @img/{sharp-linuxmusl-x64, sharp-libvips-linuxmusl-x64}
+              //
+              // The ~18.7 MB delta is exactly the musl pair; everything else was byte-identical
+              // across both. A changed bundle means a new Lambda@Edge version on every deploy,
+              // which re-replicates the function to all edge locations — and CDN resize requests
+              // 503 during that window. It also strands the old version: CloudFormation reports
+              // DELETE_FAILED (skipped) because a replicated version cannot be deleted until it
+              // drains.
+              //
+              // Removing musl is provably safe rather than a judgement call: Lambda runs Amazon
+              // Linux (glibc), so a musl binary can never load there, and the glibc pair sharp
+              // actually uses is present in BOTH observed variants.
+              'rm -rf node_modules/@img/sharp-linuxmusl-x64 node_modules/@img/sharp-libvips-linuxmusl-x64',
               'cp -r node_modules /asset-output/node_modules',
             ].join(' && '),
           ],

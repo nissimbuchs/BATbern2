@@ -62,6 +62,42 @@ if [ -n "$TS_FILES" ]; then
     fi
 fi
 
+# ── Generated API types must match the specs (#902) ──────────────────────────────
+#
+# `check:api-types` regenerates every OpenAPI-derived type file and fails if the result
+# differs from what is committed. Until now it ran ONLY in CI ("Verify API types are
+# up-to-date" in build-frontend), so this class of break was invisible locally — and on this
+# repo a push to a PR branch IS a production deploy, so the cost of finding out in CI is a
+# wasted deploy, not just a wasted pipeline run.
+#
+# It bites even when no spec changed: every `generate:api-types:*` script pipes
+# openapi-typescript output through `prettier --write`, so the committed files carry whatever
+# formatting the pinned prettier produced. #880 bumped prettier 3.8.3 → 3.9.6, which collapsed
+# short unions onto one line, and CI failed after lint, tsc, the production build and 5470
+# tests had all passed locally. None of those can catch it.
+#
+# Why pre-commit and not pre-push (which is what #902 suggested): pre-push here runs the FULL
+# Java suite including Testcontainers integration tests, which is too heavy for smaller dev
+# machines — it is routinely bypassed with `--no-verify`, so a check placed there would simply
+# never run. pre-commit is lightweight (eslint/prettier/checkstyle) and actually executes.
+#
+# Gated so it costs nothing on an ordinary commit. The package.json/lock triggers are what
+# catch the prettier-bump case, which is NOT a spec edit.
+API_TYPE_TRIGGERS=$(echo "$STAGED_FILES" | grep -E \
+  '^docs/api/|^web-frontend/package(-lock)?\.json$|^web-frontend/src/types/generated/' || true)
+
+if [ -n "$API_TYPE_TRIGGERS" ]; then
+    echo -e "${YELLOW}🔗 API specs / frontend deps changed, verifying generated types...${NC}"
+    if [ -d "web-frontend" ]; then
+        cd web-frontend
+        # Regenerates in place, then diffs against what is committed. If types are current
+        # this is a no-op; if not, it fails AND leaves the corrected files in the working
+        # tree, so the fix is `git add src/types/generated/`.
+        npm run check:api-types || TESTS_FAILED=1
+        cd ..
+    fi
+fi
+
 # Run backend checks if Java files changed
 if [ -n "$JAVA_FILES" ]; then
     echo -e "${YELLOW}☕ Java files changed, running checks...${NC}"
