@@ -92,6 +92,7 @@ export class UserSyncAlarms extends Construct {
       }
     );
     postConfirmationLatencyAlarm.addAlarmAction(alarmAction);
+    postConfirmationLatencyAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 2: PreTokenGeneration Lambda Latency
     const preTokenGenerationLatencyAlarm = new cloudwatch.Alarm(
@@ -118,6 +119,7 @@ export class UserSyncAlarms extends Construct {
       }
     );
     preTokenGenerationLatencyAlarm.addAlarmAction(alarmAction);
+    preTokenGenerationLatencyAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 3: User Creation Failures
     const userCreationFailuresAlarm = new cloudwatch.Alarm(
@@ -144,6 +146,7 @@ export class UserSyncAlarms extends Construct {
       }
     );
     userCreationFailuresAlarm.addAlarmAction(alarmAction);
+    userCreationFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 4: JIT Provisioning Failures
     const jitProvisioningFailuresAlarm = new cloudwatch.Alarm(
@@ -170,6 +173,7 @@ export class UserSyncAlarms extends Construct {
       }
     );
     jitProvisioningFailuresAlarm.addAlarmAction(alarmAction);
+    jitProvisioningFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 5: Drift Detection (Reconciliation)
     const driftDetectionAlarm = new cloudwatch.Alarm(
@@ -193,6 +197,7 @@ export class UserSyncAlarms extends Construct {
       }
     );
     driftDetectionAlarm.addAlarmAction(alarmAction);
+    driftDetectionAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 6: Reconciliation Job Failures
     const reconciliationFailuresAlarm = new cloudwatch.Alarm(
@@ -216,6 +221,7 @@ export class UserSyncAlarms extends Construct {
       }
     );
     reconciliationFailuresAlarm.addAlarmAction(alarmAction);
+    reconciliationFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 7: PreSignUp Account-Linking Failures (Story 12.6 — SSO Phase 2)
     // The PreSignUp federated path NEVER throws (a throw 503s the sign-in), so a failed
@@ -244,6 +250,7 @@ export class UserSyncAlarms extends Construct {
       }
     );
     preSignUpFailuresAlarm.addAlarmAction(alarmAction);
+    preSignUpFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Output alarm topic ARN
     new cdk.CfnOutput(this, 'AlarmTopicArn', {
