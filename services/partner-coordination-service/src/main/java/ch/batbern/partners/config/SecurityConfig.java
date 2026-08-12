@@ -108,6 +108,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/partner-meetings/**").hasRole("ORGANIZER")
                 // Story 8.4: Partner Notes (ORGANIZER only — partners must not see notes)
                 .requestMatchers("/api/v1/partners/*/notes/**").hasRole("ORGANIZER")
+                // Issue #821: reactivating a partnership is an organizer action. Stated
+                // explicitly rather than relying on the anyRequest() fallback below, which
+                // would let ANY authenticated principal — attendee or speaker — flip a
+                // partnership back on.
+                .requestMatchers(HttpMethod.POST, "/api/v1/partners/*/reactivate").hasRole("ORGANIZER")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt

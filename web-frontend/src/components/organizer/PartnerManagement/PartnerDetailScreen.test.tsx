@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -24,6 +24,16 @@ vi.mock('@/hooks/usePartnerNotes', () => ({
   usePartnerNotes: vi.fn(),
 }));
 
+// Issue #821: the Settings tab's Active switch calls onUpdateStatus through optional
+// chaining, and this screen rendered <PartnerSettingsTab> WITHOUT that prop — so the toggle
+// was a silent no-op. PartnerSettingsTab's own tests passed the prop themselves and were
+// green throughout, which is precisely why nothing caught it. These mocks let us assert the
+// wiring at the level where it was missing.
+vi.mock('@/services/api/partnerApi', () => ({
+  deactivatePartner: vi.fn().mockResolvedValue(undefined),
+  reactivatePartner: vi.fn().mockResolvedValue({}),
+}));
+
 // Mock store state
 const mockStoreState = {
   activeTab: 0,
@@ -47,6 +57,7 @@ import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
+import { deactivatePartner, reactivatePartner } from '@/services/api/partnerApi';
 
 // Mock partner data
 const mockPartnerDetail = {
@@ -57,8 +68,6 @@ const mockPartnerDetail = {
   tierStartDate: '2024-01-01T00:00:00Z',
   previousTier: 'GOLD' as const,
   isActive: true,
-  autoRenewal: true,
-  renewalDate: '2026-01-01T00:00:00Z',
   company: {
     name: 'Google Zurich',
     industry: 'Technology',
@@ -111,6 +120,63 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
       </QueryClientProvider>
     );
   };
+
+  // ── Settings tab · Active toggle (issue #821) ─────────────────────────────────
+
+  const renderSettingsTab = () => {
+    vi.mocked(usePartnerDetail).mockReturnValue({
+      data: mockPartnerDetail,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof usePartnerDetail>);
+    // Mutate the shared mock state rather than calling mockImplementation: an
+    // implementation set here SURVIVES vi.clearAllMocks() in beforeEach and would leak
+    // activeTab: 6 into every later test in this file.
+    mockStoreState.activeTab = 6;
+    return renderWithProviders();
+  };
+
+  afterEach(() => {
+    mockStoreState.activeTab = 0;
+  });
+
+  it('should_deactivatePartner_when_activeToggleSwitchedOff', async () => {
+    const user = userEvent.setup();
+    renderSettingsTab();
+
+    const toggle = await screen.findByRole('switch', { name: /Active/i });
+    expect(toggle).toBeChecked();
+
+    await user.click(toggle);
+
+    // Deactivation is a DELETE (soft — sets partnershipEndDate to today). isActive is
+    // derived server-side and is not PATCHable, so this is not an update call.
+    await waitFor(() => expect(deactivatePartner).toHaveBeenCalledWith('GoogleZH'));
+    expect(reactivatePartner).not.toHaveBeenCalled();
+  });
+
+  it('should_reactivatePartner_when_activeToggleSwitchedOn', async () => {
+    const user = userEvent.setup();
+    vi.mocked(usePartnerDetail).mockReturnValue({
+      data: { ...mockPartnerDetail, isActive: false },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof usePartnerDetail>);
+    mockStoreState.activeTab = 6;
+    renderWithProviders();
+
+    const toggle = await screen.findByRole('switch', { name: /Active/i });
+    expect(toggle).not.toBeChecked();
+
+    await user.click(toggle);
+
+    // Reactivation CLEARS the end date via its own endpoint — a PATCH cannot express
+    // "clear this field", which is why the off→on direction had no working call at all.
+    await waitFor(() => expect(reactivatePartner).toHaveBeenCalledWith('GoogleZH'));
+    expect(deactivatePartner).not.toHaveBeenCalled();
+  });
 
   /**
    * Test: should_renderPartnerDetailScreen_when_partnerLoaded

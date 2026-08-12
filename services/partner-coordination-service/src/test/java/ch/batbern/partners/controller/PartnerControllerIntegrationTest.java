@@ -276,6 +276,65 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.isActive").value(false));
     }
 
+    // ── Reactivation (issue #821) ────────────────────────────────────────────────
+    //
+    // The Settings-tab Active toggle was a no-op. Deactivation already worked via DELETE
+    // (sets partnershipEndDate = today), but there was no way back: isActive is DERIVED
+    // from partnershipEndDate, and updatePartner ignores a null end date because a partial
+    // update cannot distinguish an absent property from an explicit null. Hence a dedicated
+    // operation whose whole job is to clear the field.
+
+    @Test
+    void should_reactivatePartner_when_reactivateEndpointCalledOnDeactivatedPartner()
+            throws Exception {
+        // Given: a partner that has been soft-deleted
+        createTestPartner("GoogleZH", PartnershipLevel.GOLD);
+        mockMvc.perform(delete("/api/v1/partners/GoogleZH")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.isActive").value(false));
+
+        // When: reactivated
+        mockMvc.perform(post("/api/v1/partners/GoogleZH/reactivate")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isActive").value(true))
+                // The end date is CLEARED, not pushed out — the partnership is open-ended
+                // again, which is the state isActive() treats as unconditionally active.
+                .andExpect(jsonPath("$.partnershipEndDate").doesNotExist());
+
+        // Then: the change persists on a fresh read
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isActive").value(true));
+    }
+
+    @Test
+    void should_beIdempotent_when_reactivatingAnAlreadyActivePartner() throws Exception {
+        // Given: an active partner (no end date)
+        createTestPartner("GoogleZH", PartnershipLevel.GOLD);
+
+        // When/Then: reactivating twice is harmless — the toggle must not be able to break
+        // state if the UI is out of date or the organizer double-clicks.
+        for (int i = 0; i < 2; i++) {
+            mockMvc.perform(post("/api/v1/partners/GoogleZH/reactivate")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isActive").value(true));
+        }
+    }
+
+    @Test
+    void should_return404_when_reactivatingNonExistentPartner() throws Exception {
+        mockMvc.perform(post("/api/v1/partners/NotFoundCo/reactivate")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").exists());
+    }
+
     @Test
     void should_return404_when_deletingNonExistentPartner() throws Exception {
         // When/Then - Use valid company name length (≤12 chars per VARCHAR(12) schema)
