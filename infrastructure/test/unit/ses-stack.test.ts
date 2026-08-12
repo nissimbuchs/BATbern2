@@ -128,7 +128,7 @@ describe('SesStack', () => {
   test('should_createTransactionalEventLogger_withOwnLogGroup_andSubscription', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'batbern-staging-transactional-event-logger',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs24.x',
     });
     template.hasResourceProperties('AWS::Logs::LogGroup', {
       LogGroupName: '/aws/lambda/batbern-staging-transactional-event-logger',

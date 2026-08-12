@@ -184,7 +184,7 @@ describe('InboundEmailStack', () => {
   test('should_createForwarderLambda_when_forwardingConfigured', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'batbern-email-forwarder-staging',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs24.x',
       MemorySize: 256,
       Timeout: 60,
     });
@@ -272,7 +272,7 @@ describe('InboundEmailStack', () => {
   test('should_createSesEventLoggerLambda_with_ownLogGroup', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'batbern-staging-ses-event-logger',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs24.x',
     });
     template.hasResourceProperties('AWS::Logs::LogGroup', {
       LogGroupName: '/aws/lambda/batbern-staging-ses-event-logger',

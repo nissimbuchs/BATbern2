@@ -40,7 +40,7 @@ export class GitHubIssuesConstruct extends Construct {
       functionName: `batbern-${props.environment}-github-issues`,
       entry: path.join(__dirname, '../../lambda/github-issues-integration/index.ts'),
       handler: 'handler',
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       environment: {

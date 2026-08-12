@@ -271,7 +271,7 @@ export class InboundEmailStack extends cdk.Stack {
 
     const sesEventLogger = new NodejsFunction(this, 'SesEventLogger', {
       functionName: `batbern-${envName}-ses-event-logger`,
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       entry: path.join(__dirname, '../../lambda/ses-event-logger/index.ts'),
       handler: 'handler',
       memorySize: 128,
@@ -297,7 +297,7 @@ export class InboundEmailStack extends cdk.Stack {
 
     const forwarderLambda = new NodejsFunction(this, 'EmailForwarder', {
       functionName: `batbern-email-forwarder-${envName}`,
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       entry: path.join(__dirname, '../../lambda/email-forwarder/index.ts'),
       handler: 'handler',
       memorySize: 256,
