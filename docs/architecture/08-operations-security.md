@@ -120,6 +120,65 @@ The following cost optimizations were applied to the production (staging) enviro
 
 **`isProd` bug fix (2026-03-22):** The `cluster-stack.ts` and `incident-management-stack.ts` stacks were incorrectly using `envName === 'production'` to determine production behavior. Since the consolidated environment uses `envName: 'staging'` but serves production traffic, this was changed to use `config.isProduction` (which is `true`). This ensures production-grade behavior (alerts, scaling) is correctly applied.
 
+## CDN Image Resizing (Lambda@Edge)
+
+`cdn.batbern.ch` resizes images on the fly (`?w=&h=&fit=`) via a Lambda@Edge function
+(`infrastructure/lib/stacks/storage-stack.ts` → `ImageResizeFn`, source in
+`lib/lambda/image-resize/`). Two operational properties matter more than they look.
+
+### The bundle must be byte-deterministic
+
+`sharp` cannot be bundled by esbuild (native `.node` binary), so it stays external and the whole
+production `node_modules` is copied into the artifact. If that artifact changes, CDK publishes a **new
+Lambda@Edge version**, and CloudFront must re-replicate the function to every edge location. During
+that window resize requests return **503**, and the old version cannot be deleted until it drains —
+which is what this line in a deploy log means:
+
+```
+edge-lambda-stack-… | DELETE_FAILED (skipped) | AWS::Lambda::Version
+  | ImageResizeFnCurrentVersion… (this will take a few minutes to recover)
+```
+
+So a non-deterministic bundle means **every** deploy pays a replication window, whether or not the
+image code changed. That happened until 2026-08-12: `npm` resolved the musl variant on some builds
+and not others, so the artifact alternated between two sizes (measured on deployed versions 74–80):
+
+| bundle | contents |
+|---|---|
+| 15,763,107 B | `@img/{sharp-linux-x64, sharp-libvips-linux-x64, sharp-wasm32, colour}` |
+| 24,050,269 B | the same **plus** `@img/{sharp-linuxmusl-x64, sharp-libvips-linuxmusl-x64}` |
+
+The bundling step now deletes the musl variants explicitly. Lambda runs Amazon Linux (**glibc**), so a
+musl binary can never load there — it is dead weight, not a fallback. Both variants always contained
+the glibc pair `sharp` actually loads, so neither was ever "missing sharp".
+
+**If you change anything under `lib/lambda/image-resize/` or its bundling command, check that two
+consecutive deploys publish the same `CodeSize`:**
+
+```bash
+AWS_PROFILE=batbern-staging aws lambda list-versions-by-function --region us-east-1   --function-name <edge-lambda-stack-…-ImageResizeFn…>   --query 'Versions[].{Ver:Version,Size:CodeSize,Modified:LastModified}' --output table
+```
+
+Lambda@Edge lives in **us-east-1** regardless of where the rest of the platform runs, and its logs
+are written in the region nearest the viewer — not in eu-central-1.
+
+### Reading a CDN resize failure
+
+The post-deploy smoke test (`scripts/ci/smoke-tests.sh`, Test 4) asserts a resize returns
+`200 image/webp`, retrying for ~2 minutes to ride out the replication window above. When it does
+fail, the response shape says which bug it is:
+
+| Observed | Meaning |
+|---|---|
+| `503` / no response | the function crashed at **init** — a native module genuinely absent from the bundle |
+| `200` + `image/jpeg` | the function ran, `sharp` failed, and it fell back to passing the original through |
+| `200` + `image/webp` | healthy |
+
+These are different faults with different fixes, and conflating them sends you looking for a
+packaging bug when the real answer is "wait for replication". The test randomises `w`/`h` on every
+attempt because CloudFront caches error responses briefly — reusing one cache key can return a
+cached 503 for a whole retry loop and hide a recovery.
+
 ## Performance Benchmarks and SLAs
 
 ### Service Level Agreements (SLAs)
