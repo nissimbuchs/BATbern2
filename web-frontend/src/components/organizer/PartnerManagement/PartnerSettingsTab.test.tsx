@@ -10,8 +10,6 @@ const mockPartnerDetail = {
   partnershipLevel: 'PLATINUM' as const,
   partnershipStartDate: '2022-01-01T00:00:00Z',
   isActive: true,
-  autoRenewal: true,
-  renewalDate: '2026-01-01T00:00:00Z',
 };
 
 // Mock organizer user
@@ -37,13 +35,11 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
         partner={mockPartnerDetail}
         currentUser={mockOrganizerUser}
         onUpdateStatus={vi.fn()}
-        onUpdateAutoRenewal={vi.fn()}
       />
     );
 
     expect(screen.getByRole('heading', { name: /Settings/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Active Partnership/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Auto-Renewal/i })).toBeInTheDocument();
   });
 
   /**
@@ -56,7 +52,6 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
         partner={mockPartnerDetail}
         currentUser={mockNonOrganizerUser}
         onUpdateStatus={vi.fn()}
-        onUpdateAutoRenewal={vi.fn()}
       />
     );
 
@@ -76,7 +71,6 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
         partner={mockPartnerDetail}
         currentUser={mockOrganizerUser}
         onUpdateStatus={onUpdateStatus}
-        onUpdateAutoRenewal={vi.fn()}
       />
     );
 
@@ -88,28 +82,41 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
   });
 
   /**
-   * Test 8.4: should_updateAutoRenewal_when_settingChanged
-   * Verify auto-renewal toggle triggers callback with new value
+   * Auto-renewal was REMOVED from this tab (issue #821). `autoRenewal` and `renewalDate`
+   * exist in neither `PartnerResponse` nor `UpdatePartnerRequest` — the switch and the
+   * "renews on" line rendered fields the backend has never had, so they were always
+   * undefined and the switch could never persist anything. This asserts they stay gone.
    */
-  it('should_updateAutoRenewal_when_settingChanged', async () => {
-    const onUpdateAutoRenewal = vi.fn();
-    const user = userEvent.setup();
+  it('should_notRenderAutoRenewalControls_when_settingsTabRendered', () => {
     render(
       <PartnerSettingsTab
         partner={mockPartnerDetail}
         currentUser={mockOrganizerUser}
         onUpdateStatus={vi.fn()}
-        onUpdateAutoRenewal={onUpdateAutoRenewal}
       />
     );
 
-    const autoRenewalSwitch = screen.getByRole('switch', {
-      name: /Auto-Renewal/i,
-    });
-    expect(autoRenewalSwitch).toBeChecked();
+    expect(screen.queryByRole('switch', { name: /Auto-Renewal/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Renewal Date/i)).not.toBeInTheDocument();
+  });
 
-    await user.click(autoRenewalSwitch);
-    expect(onUpdateAutoRenewal).toHaveBeenCalledWith(false);
+  /**
+   * Issue #821: the switch must be disabled while the activate/deactivate call is in
+   * flight, so a double-click cannot fire two opposing mutations.
+   */
+  it('should_disableStatusToggle_when_updateInFlight', () => {
+    render(
+      <PartnerSettingsTab
+        partner={mockPartnerDetail}
+        currentUser={mockOrganizerUser}
+        onUpdateStatus={vi.fn()}
+        isUpdatingStatus
+      />
+    );
+
+    // Query by role, not testid: MUI puts data-testid on the wrapper span while the
+    // disabled attribute lives on the inner input.
+    expect(screen.getByRole('switch', { name: /Active/i })).toBeDisabled();
   });
 
   /**
@@ -122,7 +129,6 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
         partner={mockPartnerDetail}
         currentUser={mockOrganizerUser}
         onUpdateStatus={vi.fn()}
-        onUpdateAutoRenewal={vi.fn()}
       />
     );
 
@@ -141,31 +147,12 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
         partner={mockPartnerDetail}
         currentUser={mockOrganizerUser}
         onUpdateStatus={vi.fn()}
-        onUpdateAutoRenewal={vi.fn()}
       />
     );
 
     const deleteButton = screen.getByRole('button', { name: /Delete/i });
     expect(deleteButton).toBeDisabled();
     expect(deleteButton).toHaveAttribute('title', expect.stringContaining('Epic 8'));
-  });
-
-  /**
-   * Test 8.7: should_displayRenewalDate_when_autoRenewalEnabled
-   * Verify renewal date is displayed when auto-renewal is on
-   */
-  it('should_displayRenewalDate_when_autoRenewalEnabled', () => {
-    render(
-      <PartnerSettingsTab
-        partner={mockPartnerDetail}
-        currentUser={mockOrganizerUser}
-        onUpdateStatus={vi.fn()}
-        onUpdateAutoRenewal={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText(/Renewal Date/i)).toBeInTheDocument();
-    expect(screen.getByText(/Jan 1, 2026/i)).toBeInTheDocument();
   });
 
   /**
@@ -178,7 +165,6 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
         partner={mockPartnerDetail}
         currentUser={mockOrganizerUser}
         onUpdateStatus={vi.fn()}
-        onUpdateAutoRenewal={vi.fn()}
       />
     );
 
@@ -197,7 +183,6 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
         partner={inactivePartner}
         currentUser={mockOrganizerUser}
         onUpdateStatus={vi.fn()}
-        onUpdateAutoRenewal={vi.fn()}
       />
     );
 

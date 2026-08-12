@@ -24,7 +24,9 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
+import { deactivatePartner, reactivatePartner } from '@/services/api/partnerApi';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import { useAuth } from '@/hooks/useAuth';
 import { PartnerDetailHeader } from './PartnerDetailHeader';
@@ -151,10 +153,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
   const currentUser = {
     username: user?.username ?? '',
     role: (user?.role?.toUpperCase() ?? 'ORGANIZER') as
-      | 'ORGANIZER'
-      | 'PARTNER'
-      | 'SPEAKER'
-      | 'ATTENDEE',
+      'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE',
   };
 
   // Story 8.0 H2: Clamp activeTab so stale ORGANIZER state cannot expose hidden tabs to PARTNER.
@@ -170,6 +169,29 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     isError,
     error,
   } = usePartnerDetail(resolvedCompanyName, 'company,contacts,votes,meetings,activity');
+
+  // Issue #821: the Settings-tab Active switch was rendered without a handler, and
+  // PartnerSettingsTab called it through optional chaining — so flipping it did nothing,
+  // silently. isActive is derived from partnershipEndDate server-side and cannot be PATCHed,
+  // so the two directions are different operations.
+  const queryClient = useQueryClient();
+  const updateStatusMutation = useMutation({
+    // Returns void rather than the branch results: the two calls resolve to different
+    // shapes (PartnerResponse vs void), and the fresh state comes from the invalidation
+    // below, not from the mutation's return value.
+    mutationFn: async (active: boolean): Promise<void> => {
+      if (active) {
+        await reactivatePartner(resolvedCompanyName);
+      } else {
+        await deactivatePartner(resolvedCompanyName);
+      }
+    },
+    onSuccess: () => {
+      // Refresh the detail view and any partner list showing the active flag.
+      queryClient.invalidateQueries({ queryKey: ['partner', resolvedCompanyName] });
+      queryClient.invalidateQueries({ queryKey: ['partners'] });
+    },
+  });
 
   // Build breadcrumb items (memoized to prevent re-renders)
   // Story 8.0 M1: breadcrumb path is role-aware — partners cannot access /organizer/partners
@@ -311,7 +333,12 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
 
           {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
           {effectiveTab === 6 && currentUser.role !== 'PARTNER' && (
-            <PartnerSettingsTab partner={partner} currentUser={currentUser} />
+            <PartnerSettingsTab
+              partner={partner}
+              currentUser={currentUser}
+              onUpdateStatus={(active) => updateStatusMutation.mutate(active)}
+              isUpdatingStatus={updateStatusMutation.isPending}
+            />
           )}
         </Box>
 
