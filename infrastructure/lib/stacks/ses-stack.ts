@@ -145,7 +145,7 @@ export class SesStack extends cdk.Stack {
 
     const transactionalEventLogger = new NodejsFunction(this, 'TransactionalEventLogger', {
       functionName: `batbern-${envName}-transactional-event-logger`,
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       entry: path.join(__dirname, '../../lambda/ses-event-logger/index.ts'),
       handler: 'handler',
       memorySize: 128,

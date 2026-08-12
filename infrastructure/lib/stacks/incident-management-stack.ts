@@ -93,7 +93,7 @@ export class IncidentManagementStack extends cdk.Stack {
     // PagerDuty Integration Lambda (AC: 13)
     this.pagerDutyIntegrationFunction = new lambda.Function(this, 'PagerDutyIntegration', {
       functionName: `batbern-${envName}-pagerduty-integration`,
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'index.handler',
       logGroup: pagerDutyLogGroup,
       code: lambda.Code.fromInline(`
@@ -139,7 +139,7 @@ export class IncidentManagementStack extends cdk.Stack {
     // Runbook Automation Lambda (AC: 14)
     this.runbookAutomationFunction = new lambda.Function(this, 'RunbookAutomation', {
       functionName: `batbern-${envName}-runbook-automation`,
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'index.handler',
       logGroup: runbookLogGroup,
       code: lambda.Code.fromInline(`
@@ -178,7 +178,7 @@ export class IncidentManagementStack extends cdk.Stack {
     // Post-Mortem Creation Lambda (AC: 15)
     this.postMortemFunction = new lambda.Function(this, 'PostMortemCreation', {
       functionName: `batbern-${envName}-create-postmortem`,
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'index.handler',
       logGroup: postMortemLogGroup,
       code: lambda.Code.fromInline(`
@@ -231,7 +231,7 @@ export class IncidentManagementStack extends cdk.Stack {
     // StatusPage Integration Lambda (AC: 16)
     this.statusPageIntegrationFunction = new lambda.Function(this, 'StatusPageIntegration', {
       functionName: `batbern-${envName}-update-statuspage`,
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'index.handler',
       logGroup: statusPageLogGroup,
       code: lambda.Code.fromInline(`

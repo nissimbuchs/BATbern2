@@ -155,20 +155,20 @@ export class StorageStack extends cdk.Stack {
     const lambdaSrcDir = path.join(__dirname, '../lambda/image-resize');
 
     const imageResizeFn = new cloudfront.experimental.EdgeFunction(this, 'ImageResizeFn', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'index.handler',
       memorySize: 512,
       description: `BATbern image resize Lambda@Edge - ${props.config.envName}`,
       code: lambda.Code.fromAsset(lambdaSrcDir, {
         bundling: {
-          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
+          image: lambda.Runtime.NODEJS_24_X.bundlingImage,
           command: [
             'bash', '-c',
             [
               'npm ci --cache /tmp/.npm --platform=linux --arch=x64 --libc=glibc',
               [
                 './node_modules/.bin/esbuild index.ts',
-                '--bundle --platform=node --target=node20 --external:sharp',
+                '--bundle --platform=node --target=node24 --external:sharp',
                 `--define:CONTENT_BUCKET_NAME='"${contentBucketName}"'`,
                 `--define:CONTENT_BUCKET_REGION='"${contentBucketRegion}"'`,
                 '--outfile=/asset-output/index.js',
