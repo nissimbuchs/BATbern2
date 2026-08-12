@@ -137,21 +137,57 @@ else
     # regression would otherwise poison one fixed cache entry forever — the test
     # would keep seeing the stale jpeg long after the Lambda recovered. A random
     # cache-buster guarantees this test always reflects the *current* Lambda state.
-    rand_w=$((150 + RANDOM % 350))
-    rand_h=$((150 + RANDOM % 350))
-    resize_url="$CDN_URL/$SAMPLE_IMAGE_PATH?w=$rand_w&h=$rand_h&fit=cover"
-    resize_response=$(curl -s -D - -o /dev/null --max-time 15 "$resize_url" || echo "")
-    resize_status=$(echo "$resize_response" | grep "^HTTP" | awk '{print $2}' | tr -d '\r')
-    resize_ct=$(echo "$resize_response" | grep -i "^content-type:" | tr -d '\r' | head -1)
+    # Retried, because a deploy that changes this function re-replicates it to every
+    # CloudFront edge location, and requests can 503 until that finishes. CloudFormation
+    # says so itself during the deploy: "DELETE_FAILED (skipped) | AWS::Lambda::Version |
+    # ImageResizeFnCurrentVersion... (this will take a few minutes to recover)".
+    #
+    # A single immediate assertion therefore raced the rollout and failed two consecutive
+    # production deploys on 2026-08-12 while the CDN was in fact healthy minutes later.
+    # Retrying converts that flake into a real signal: if resize is still not serving WebP
+    # after the window below, something is genuinely broken.
+    #
+    # w/h are randomised PER ATTEMPT, not once: CloudFront caches error responses briefly,
+    # so reusing one cache key could return a cached 503 for the whole retry loop and hide
+    # a recovery. A fresh key each time always reflects the current Lambda state.
+    resize_max_attempts=8
+    resize_delay=15
+    resize_ok=false
+    resize_attempt=1
+    while [ "$resize_attempt" -le "$resize_max_attempts" ]; do
+        rand_w=$((150 + RANDOM % 350))
+        rand_h=$((150 + RANDOM % 350))
+        resize_url="$CDN_URL/$SAMPLE_IMAGE_PATH?w=$rand_w&h=$rand_h&fit=cover"
+        resize_response=$(curl -s -D - -o /dev/null --max-time 15 "$resize_url" || echo "")
+        resize_status=$(echo "$resize_response" | grep "^HTTP" | awk '{print $2}' | tr -d '\r')
+        resize_ct=$(echo "$resize_response" | grep -i "^content-type:" | tr -d '\r' | head -1)
 
-    if [ "$resize_status" = "200" ] && echo "$resize_ct" | grep -qi "image/webp"; then
-        echo -e "  ${GREEN}✓${NC} Resize+WebP: $resize_status, $resize_ct"
+        if [ "$resize_status" = "200" ] && echo "$resize_ct" | grep -qi "image/webp"; then
+            resize_ok=true
+            break
+        fi
+
+        if [ "$resize_attempt" -lt "$resize_max_attempts" ]; then
+            echo -e "  ${YELLOW}…${NC} attempt $resize_attempt/$resize_max_attempts: HTTP ${resize_status:-000} ${resize_ct} — edge function may still be replicating, retrying in ${resize_delay}s"
+            sleep "$resize_delay"
+        fi
+        resize_attempt=$((resize_attempt + 1))
+    done
+
+    if [ "$resize_ok" = "true" ]; then
+        echo -e "  ${GREEN}✓${NC} Resize+WebP: $resize_status, $resize_ct (attempt $resize_attempt/$resize_max_attempts)"
         ((passed++))
     else
-        echo -e "  ${RED}✗ FAIL${NC}: Resize request returned HTTP $resize_status, Content-Type: $resize_ct"
+        echo -e "  ${RED}✗ FAIL${NC}: Resize still not serving WebP after $resize_max_attempts attempts over ~$((resize_max_attempts * resize_delay))s"
+        echo -e "      Last response: HTTP $resize_status, Content-Type: $resize_ct"
         echo -e "      Expected HTTP 200 + content-type: image/webp"
         echo -e "      URL: $resize_url"
-        echo -e "      This usually means the Lambda@Edge function is missing 'sharp' in its package."
+        echo -e "      Interpreting this:"
+        echo -e "        503 / no response  → the Lambda@Edge crashed at init (a missing native"
+        echo -e "                              module, e.g. @img/sharp-linux-x64 absent from the bundle)"
+        echo -e "        200 + image/jpeg   → the function ran but sharp failed, so it fell back to"
+        echo -e "                              passing the original through"
+        echo -e "      Check the Lambda@Edge logs in us-east-1 (and the region nearest the runner)."
         ((failed++))
     fi
 fi
