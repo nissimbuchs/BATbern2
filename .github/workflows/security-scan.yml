@@ -102,6 +102,66 @@ jobs:
           # the 5 parallel jobs (default is 'zap_scan' for all jobs)
           artifact_name: zap-api-${{ matrix.api }}
 
+      # ── Collapse duplicate ZAP issues (#905) ─────────────────────────────────
+      #
+      # zaproxy/action-*@v0.10.0 is SUPPOSED to update an existing open issue whose title
+      # matches `issue_title`. Its dedup is broken upstream and cannot be fixed by anything
+      # we configure. It builds the lookup as:
+      #
+      #   q: encodeURI(`is:issue state:open repo:${owner}/${repo} ${issueTitle}`)
+      #        .replace(/%20/g, "+")
+      #
+      # then hands that already-encoded string to octokit, which encodes it AGAIN. Verified
+      # against GitHub search on 2026-08-12 — only the un-encoded form matches:
+      #
+      #   "is:issue state:open repo:… <title>"        → 1 result   ✅
+      #   "is:issue+state:open+repo:…+<title>"        → 0 results  ❌  (what the action sends)
+      #   spaces + "%E2%80%94" for the em dash       → 0 results  ❌
+      #
+      # The `+` separators alone are fatal, independent of the em dash in our titles, so the
+      # search returns nothing every run, `items.length === 0`, and a brand-new issue is
+      # filed each Monday. Six accumulated for events-core between 2026-07-06 and 08-10.
+      #
+      # Until upstream is fixed we let it file, then collapse: keep the newest open issue per
+      # title and close the older ones pointing at it. So there is always exactly ONE live
+      # issue per API — a record that stays readable instead of six nobody reads.
+      #
+      # Deliberately uses the REST issues list + an exact title match rather than the search
+      # API: search is the thing that is unreliable here (it is also eventually consistent,
+      # so a just-created issue may not be indexed yet). REST is immediate and exact.
+      - name: Collapse duplicate ZAP issues — ${{ matrix.api }}
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_TITLE: 'ZAP Security Findings — ${{ matrix.api }} API'
+        run: |
+          set -euo pipefail
+
+          # Newest first. Exact title match, and only issues the bot itself filed.
+          numbers=$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
+            --jq '.[] | select(.title == env.ISSUE_TITLE)
+                      | select(.user.login == "github-actions[bot]")
+                      | .number' | sort -rn)
+
+          count=$(printf '%s' "$numbers" | grep -c . || true)
+          echo "Open issues titled \"$ISSUE_TITLE\": $count"
+          if [ "$count" -le 1 ]; then
+            echo "Nothing to collapse."
+            exit 0
+          fi
+
+          keep=$(printf '%s\n' "$numbers" | head -1)
+          echo "Keeping #$keep as the live issue."
+
+          printf '%s\n' "$numbers" | tail -n +2 | while read -r n; do
+            [ -n "$n" ] || continue
+            echo "Closing duplicate #$n"
+            gh issue close "$n" \
+              --comment "Superseded by #${keep} — the current ZAP findings for this API. Closed automatically so exactly one issue stays live per API; the scan action re-files instead of updating because its dedup lookup is broken upstream (see #905)." \
+              || echo "::warning::Could not close #$n"
+          done
+
       - name: Stage JSON + log reports for projectdoc — ${{ matrix.api }}
         if: always()
         run: |
@@ -151,6 +211,66 @@ jobs:
           cmd_options: '-a -I --autooff'
           issue_title: 'ZAP Security Findings — Frontend'
           artifact_name: zap-frontend-baseline
+
+      # ── Collapse duplicate ZAP issues (#905) ─────────────────────────────────
+      #
+      # zaproxy/action-*@v0.10.0 is SUPPOSED to update an existing open issue whose title
+      # matches `issue_title`. Its dedup is broken upstream and cannot be fixed by anything
+      # we configure. It builds the lookup as:
+      #
+      #   q: encodeURI(`is:issue state:open repo:${owner}/${repo} ${issueTitle}`)
+      #        .replace(/%20/g, "+")
+      #
+      # then hands that already-encoded string to octokit, which encodes it AGAIN. Verified
+      # against GitHub search on 2026-08-12 — only the un-encoded form matches:
+      #
+      #   "is:issue state:open repo:… <title>"        → 1 result   ✅
+      #   "is:issue+state:open+repo:…+<title>"        → 0 results  ❌  (what the action sends)
+      #   spaces + "%E2%80%94" for the em dash       → 0 results  ❌
+      #
+      # The `+` separators alone are fatal, independent of the em dash in our titles, so the
+      # search returns nothing every run, `items.length === 0`, and a brand-new issue is
+      # filed each Monday. Six accumulated for events-core between 2026-07-06 and 08-10.
+      #
+      # Until upstream is fixed we let it file, then collapse: keep the newest open issue per
+      # title and close the older ones pointing at it. So there is always exactly ONE live
+      # issue per API — a record that stays readable instead of six nobody reads.
+      #
+      # Deliberately uses the REST issues list + an exact title match rather than the search
+      # API: search is the thing that is unreliable here (it is also eventually consistent,
+      # so a just-created issue may not be indexed yet). REST is immediate and exact.
+      - name: Collapse duplicate ZAP issues — Frontend
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_TITLE: 'ZAP Security Findings — Frontend'
+        run: |
+          set -euo pipefail
+
+          # Newest first. Exact title match, and only issues the bot itself filed.
+          numbers=$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
+            --jq '.[] | select(.title == env.ISSUE_TITLE)
+                      | select(.user.login == "github-actions[bot]")
+                      | .number' | sort -rn)
+
+          count=$(printf '%s' "$numbers" | grep -c . || true)
+          echo "Open issues titled \"$ISSUE_TITLE\": $count"
+          if [ "$count" -le 1 ]; then
+            echo "Nothing to collapse."
+            exit 0
+          fi
+
+          keep=$(printf '%s\n' "$numbers" | head -1)
+          echo "Keeping #$keep as the live issue."
+
+          printf '%s\n' "$numbers" | tail -n +2 | while read -r n; do
+            [ -n "$n" ] || continue
+            echo "Closing duplicate #$n"
+            gh issue close "$n" \
+              --comment "Superseded by #${keep} — the current ZAP findings for this API. Closed automatically so exactly one issue stays live per API; the scan action re-files instead of updating because its dedup lookup is broken upstream (see #905)." \
+              || echo "::warning::Could not close #$n"
+          done
 
       - name: Stage JSON + log reports for projectdoc — frontend
         if: always()
