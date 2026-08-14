@@ -18,12 +18,13 @@
 #   - Partner Coordination Service (port 8084)
 #   - Web Frontend (port 3000)
 #
-# NOT started by default: Speaker Coordination (8083) and Attendee Experience (8085).
-# They hold no local data worth exercising, and each one costs ~400-500 MB. Opt in with:
-#   DEV_SERVICES="api-gateway company-user-management event-management \
-#                 speaker-coordination partner-coordination attendee-experience" make dev-native-up
+# All six services start by default (see DEV_SERVICES in lib/native-services.sh). The
+# 4-service default that ran 2026-08-08..2026-08-14 existed only for the 6 GB NAS dev
+# host, which is being decommissioned. To run a subset on a small machine, name it:
+#   DEV_SERVICES="api-gateway company-user-management event-management" make dev-native-up
 #
-# Memory tuning (added 2026-08-08 for the 6 GB NAS dev host; also helps laptops):
+# Memory tuning (added 2026-08-08 for the 6 GB NAS dev host; kept — it also helps laptops
+# and is what keeps six JVMs affordable):
 #   - Each service runs as `java -Xmx… -jar <fat jar>` instead of `./gradlew bootRun`.
 #     bootRun cost a Gradle launcher JVM *per service* on top of the app JVM.
 #     Set DEV_RUN_MODE=bootrun to get the old behaviour back (needed for DevTools hot reload).

@@ -31,13 +31,18 @@ compose_cmd() {
 # reporting — do not reorder without checking the callers.
 ALL_NATIVE_SERVICES="api-gateway company-user-management event-management speaker-coordination partner-coordination attendee-experience"
 
-# Services started by default.
+# Services started by default: all of them.
 #
-# Speaker Coordination and Attendee Experience are deliberately excluded: they hold no
-# local data worth exercising day to day, and each costs ~400-500 MB of RAM. Override to
-# run the full set:
-#   DEV_SERVICES="$ALL_NATIVE_SERVICES" make dev-native-up
-DEV_SERVICES="${DEV_SERVICES:-api-gateway company-user-management event-management partner-coordination}"
+# Between 2026-08-08 and 2026-08-14 this defaulted to a 4-service subset (Speaker
+# Coordination and Attendee Experience excluded, ~400-500 MB each) because the dev host
+# was a 6 GB NAS. That box is being decommissioned, so the subset no longer buys anything
+# — and a partial set is actively misleading: the API Gateway routes to the missing
+# services and fails, which reads as a broken gateway rather than a service that was
+# never started.
+#
+# To run a subset anyway (a genuinely small machine, or isolating one service), name it:
+#   DEV_SERVICES="api-gateway company-user-management" make dev-native-up
+DEV_SERVICES="${DEV_SERVICES:-$ALL_NATIVE_SERVICES}"
 
 # Per-service max heap. Event Management carries the bulk of the domain data, then
 # Company/User; the rest are thin. Explicit caps matter because the JVM otherwise

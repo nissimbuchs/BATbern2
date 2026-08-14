@@ -77,21 +77,26 @@ make dev-native-up
 docker compose up -d
 ```
 
-Services started **by default**, on their default ports:
+All six services start **by default**, on their default ports:
 - API Gateway: http://localhost:8080 (heap 320m)
 - Company/User Management: http://localhost:8081 (heap 512m)
 - Event Management: http://localhost:8082 (heap 768m)
+- Speaker Coordination: http://localhost:8083 (heap 320m)
 - Partner Coordination: http://localhost:8084 (heap 320m)
+- Attendee Experience: http://localhost:8085 (heap 320m)
 - Frontend: http://localhost:3000
 
-**Not started by default:** Speaker Coordination (8083) and Attendee Experience (8085).
-They hold no local data worth exercising day to day, and each costs ~400-500 MB. The API
-Gateway will return errors for routes that target them. To run the full set:
+Total heap cap across the six is ~2.5 GB. Between 2026-08-08 and 2026-08-14 the default was
+a 4-service subset (Speaker Coordination and Attendee Experience omitted) for a 6 GB NAS dev
+host; that host is being decommissioned and the subset is gone. To run fewer services on a
+small machine, name the ones you want:
 
 ```bash
-DEV_SERVICES="api-gateway company-user-management event-management \
-speaker-coordination partner-coordination attendee-experience" make dev-native-up
+DEV_SERVICES="api-gateway company-user-management event-management" make dev-native-up
 ```
+
+The API Gateway returns errors for routes targeting a service you left out — if a gateway
+route fails, check the service is actually running before suspecting the gateway.
 
 **Memory behaviour:** each service runs as `java -Xmx<heap> -jar <fat jar>`, and all JARs are
 built in a single Gradle invocation before any service starts. Set `DEV_RUN_MODE=bootrun` to
