@@ -238,3 +238,6 @@ apps/BATbern-watch/BATbern-watch.xcodeproj/project.xcworkspace/xcuserdata/nissim
 
 # PII — local company/email mismatch audit (never commit)
 company_mismatch_candidates.md
+
+# Anonymized DB snapshots (never commit — large, and derived from prod)
+.snapshots/
