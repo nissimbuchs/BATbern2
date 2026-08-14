@@ -129,7 +129,16 @@ else
     write_token_file ~/.batbern/${ENVIRONMENT}-${ROLE}.json "$ROLE"
 fi
 
-echo -e "${YELLOW}Token will expire at: $(date -v+${expires_in}S +"%Y-%m-%d %H:%M:%S")${NC}"
+# Compute the expiry timestamp portably (Linux hosts have GNU date, macOS has BSD date)
+if date --version >/dev/null 2>&1; then
+    # GNU date
+    expires_at=$(date -d "+${expires_in} seconds" +"%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "unknown")
+else
+    # BSD date (macOS)
+    expires_at=$(date -v+${expires_in}S +"%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "unknown")
+fi
+
+echo -e "${YELLOW}Token will expire at: ${expires_at}${NC}"
 echo ""
 echo -e "${BLUE}Token details:${NC}"
 echo "ID Token (first 50 chars): ${id_token:0:50}..."
