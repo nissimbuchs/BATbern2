@@ -105,10 +105,10 @@ The platform maintains a **single source of truth** for all technology versions 
 For detailed technology stack information, see [tech-stack.md](./tech-stack.md).
 
 **Current Major Versions:**
-- **Frontend**: React 19.x, TypeScript 5.x, MUI 7.x, Vite 7.x
-- **Backend**: Java 21 LTS, Spring Boot 3.x, PostgreSQL 15+, Caffeine 3.x
+- **Frontend**: React 19.x, TypeScript 6.x, MUI 7.x, Vite 8.x
+- **Backend**: Java 21 LTS, Spring Boot 4.x, PostgreSQL 15+, Caffeine 3.x
 - **Infrastructure**: AWS CDK 2.x, Single-AZ deployment (cost-optimized)
-- **Testing**: JUnit 5.x, Vitest 3.x, Playwright 1.x, Testcontainers 1.x
+- **Testing**: JUnit 6.x, Vitest 4.x, Playwright 1.x, Testcontainers 2.x
 
 ## Key Architectural Decisions
 

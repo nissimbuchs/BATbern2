@@ -6,47 +6,47 @@
 
 | Category | Technology | Version | Purpose | Rationale |
 |----------|------------|---------|----------|-----------|
-| Frontend Language | TypeScript | 5.x | Type-safe frontend development | Essential for large-scale enterprise app with multiple developer teams |
+| Frontend Language | TypeScript | 6.x | Type-safe frontend development | Essential for large-scale enterprise app with multiple developer teams |
 | Frontend Framework | React | 19.x | Role-adaptive user interface | Mature ecosystem, excellent TypeScript support, component reusability |
 | UI Component Library | Material-UI (MUI) | 7.x | Swiss-standard design components | Consistent with frontend spec, enterprise-grade accessibility |
-| Data Visualization | Recharts | 2.x | Interactive charts and heat maps | React-native, TypeScript support, Material-UI compatible, declarative API |
+| Data Visualization | Recharts | 3.x | Interactive charts and heat maps | React-native, TypeScript support, Material-UI compatible, declarative API |
 | State Management | Zustand + React Query | 5.x | Client state + server state | Lightweight, TypeScript-first, excellent caching for content discovery |
 | Backend Language | Java | 21 LTS | Enterprise service development | Long-term support, enterprise ecosystem, team expertise |
-| Backend Framework | Spring Boot | 3.x | Microservices and REST APIs | Industry standard for Java enterprise, excellent cloud integration |
+| Backend Framework | Spring Boot | 4.x | Microservices and REST APIs | Industry standard for Java enterprise, excellent cloud integration |
 | API Style | REST + OpenAPI | 3.x | Service communication | Clear documentation, tooling support, enterprise standard |
 | Database | PostgreSQL | 15+ | Primary data storage | ACID compliance, JSON support, excellent performance |
 | Cache | Caffeine | 3.x | Application-level in-memory caching | High performance, cost-effective, zero external dependencies |
 | File Storage | AWS S3 | Latest | Document and media storage | Enterprise-grade, CDN integration, Swiss compliance capable |
 | Authentication | AWS Cognito | Latest | Multi-role user management | Enterprise SSO, fine-grained permissions, AWS ecosystem |
-| Frontend Testing | Vitest + React Testing Library | 3.x / 16.x | Component and integration testing | Fast, TypeScript native, React best practices |
-| Backend Testing | JUnit + Testcontainers | 5.x / 1.x | Service and integration testing | Java standard, real database testing |
+| Frontend Testing | Vitest + React Testing Library | 4.x / 16.x | Component and integration testing | Fast, TypeScript native, React best practices |
+| Backend Testing | JUnit + Testcontainers | 6.x / 2.x | Service and integration testing | Java standard, real database testing |
 | E2E Testing | Playwright | 1.x | Full application workflows | Cross-browser, reliable, excellent CI integration |
 | Build Tool | Gradle | 8.x | Java service builds | Superior dependency management, enterprise standard |
-| Bundler | Vite | 7.x | Frontend build and dev server | Fast HMR, TypeScript support, modern tooling |
+| Bundler | Vite | 8.x | Frontend build and dev server | Fast HMR, TypeScript support, modern tooling |
 | IaC Tool | AWS CDK | 2.x | Infrastructure as code | Type-safe infrastructure, AWS native, versioned stacks |
 | CI/CD | GitHub Actions | Latest | Automated testing and deployment | Integrated with repository, excellent AWS integration |
 | Monitoring | AWS CloudWatch + Grafana | Latest / 10.x | Application and infrastructure monitoring | Enterprise observability, custom dashboards |
 | Logging | SLF4J + Logback | 2.x / 1.x | Structured application logging | Java standard, structured JSON logging |
-| CSS Framework | Tailwind CSS | 3.x | Utility-first styling | Rapid development, consistent design system |
+| CSS Framework | Tailwind CSS | 4.x | Utility-first styling | Rapid development, consistent design system |
 
 ## Frontend Technology Details
 
 ### React Ecosystem
 - **React 19.x**: Concurrent features, automatic batching, Suspense improvements
-- **TypeScript 5.x**: Advanced type inference, decorators, import attributes
+- **TypeScript 6.x**: Advanced type inference, decorators, import attributes
 - **Material-UI 7.x**: Theming system, accessibility features, Swiss design compliance
-- **Recharts 2.x**: Declarative charting library for React with TypeScript support
+- **Recharts 3.x**: Declarative charting library for React with TypeScript support
 - **Zustand 5.x**: Minimal boilerplate, TypeScript-first state management
 - **React Query 5.x**: Server state management, caching, background updates
 
 ### Development Tools
-- **Vite 7.x**: Fast build times, hot module replacement, optimized bundling
-- **ESLint 9.x**: Code quality and consistency enforcement
+- **Vite 8.x**: Fast build times, hot module replacement, optimized bundling
+- **ESLint 10.x**: Code quality and consistency enforcement
 - **Prettier 3.x**: Code formatting standardization
-- **Tailwind CSS 3.x**: Utility-first CSS framework for rapid UI development
+- **Tailwind CSS 4.x**: Utility-first CSS framework for rapid UI development
 
 ### Testing Framework
-- **Vitest 3.x**: Fast unit testing with TypeScript support
+- **Vitest 4.x**: Fast unit testing with TypeScript support
 - **React Testing Library 16.x**: Component testing best practices
 - **Playwright 1.x**: End-to-end testing across browsers
 
@@ -54,8 +54,8 @@
 
 ### Java Enterprise Stack
 - **Java 21 LTS**: Long-term support, virtual threads, pattern matching
-- **Spring Boot 3.x**: Auto-configuration, embedded servers, production-ready features
-- **Spring Security 6.x**: OAuth2, JWT, method-level security
+- **Spring Boot 4.x**: Auto-configuration, embedded servers, production-ready features
+- **Spring Security 7.x**: OAuth2, JWT, method-level security
 - **Spring Data JPA**: Repository pattern, query generation, transaction management
 
 ### Database & Caching
@@ -65,8 +65,8 @@
 
 ### Build & Testing
 - **Gradle 8.x**: Dependency management, multi-project builds, performance optimization
-- **JUnit 5.x**: Modern testing framework with parameterized tests
-- **Testcontainers 1.x**: Integration testing with real databases
+- **JUnit 6.x**: Modern testing framework with parameterized tests
+- **Testcontainers 2.x**: Integration testing with real databases
 - **MockMvc**: Spring MVC testing framework
 
 ## Infrastructure Technology
@@ -82,7 +82,7 @@
 
 ### Infrastructure as Code
 - **AWS CDK 2.x**: Type-safe infrastructure definition
-- **TypeScript 5.x**: CDK language for infrastructure code
+- **TypeScript 6.x**: CDK language for infrastructure code
 - **CloudFormation**: AWS native infrastructure templates
 
 ### CI/CD Pipeline

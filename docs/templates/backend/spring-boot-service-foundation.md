@@ -22,7 +22,7 @@ Controller → Service → Repository → Database
 ## Prerequisites
 
 - Java 21 LTS
-- Spring Boot 3.x
+- Spring Boot 4.x
 - PostgreSQL 15+
 - Flyway for migrations
 - OpenAPI specification for the domain

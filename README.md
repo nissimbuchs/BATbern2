@@ -433,7 +433,7 @@ Each deploy is visible on the [/deployments](../../deployments) and [/releases](
 
 ### Technology Stack
 - **Backend:** Java 21, Spring Boot 3.5+
-- **Frontend:** React 19, TypeScript 5.x, Material-UI + Tailwind CSS
+- **Frontend:** React 19, TypeScript 6.x, Material-UI + Tailwind CSS
 - **Auth:** AWS Cognito + Google SSO federation (OIDC)
 - **Database:** PostgreSQL 15+
 - **Cache:** Caffeine 3.x (in-memory)

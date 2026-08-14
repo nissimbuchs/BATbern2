@@ -212,7 +212,7 @@ we can convert this to architecture-beta syntax with icon support.
 
 **Technology Stack:**
 - **Frontend**: React 18 + TypeScript, deployed on S3 + CloudFront
-- **API Gateway**: Spring Boot 3 + Spring Cloud Gateway
+- **API Gateway**: Spring Boot 4 + Spring Cloud Gateway
 - **Microservices**: Java 21 + Spring Boot, running on ECS Fargate
 - **Database**: PostgreSQL 15 on RDS (ARM Graviton2)
 - **Authentication**: AWS Cognito with OAuth2/JWT
@@ -328,7 +328,7 @@ graph TB
 - PostgreSQL (event data persistence with workflow state)
 - Caffeine Cache (in-memory workflow state caching and optimization)
 
-**Technology Stack:** Java 21 + Spring Boot 3.x, PostgreSQL 15+, Caffeine 3.x (in-memory caching), EventBridge (domain events), WebSocket (real-time notifications)
+**Technology Stack:** Java 21 + Spring Boot 4.x, PostgreSQL 15+, Caffeine 3.x (in-memory caching), EventBridge (domain events), WebSocket (real-time notifications)
 
 ### Speaker Coordination Service
 
@@ -411,7 +411,7 @@ graph TB
 - All domain services (company relationship validation)
 - Shared Kernel (company domain events)
 
-**Technology Stack:** Java 21 + Spring Boot 3.x, PostgreSQL 15+, AWS S3 (logo storage), Caffeine 3.x (company search caching)
+**Technology Stack:** Java 21 + Spring Boot 4.x, PostgreSQL 15+, AWS S3 (logo storage), Caffeine 3.x (company search caching)
 
 ### Frontend Application
 

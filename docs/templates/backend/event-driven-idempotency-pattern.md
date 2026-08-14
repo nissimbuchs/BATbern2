@@ -10,7 +10,7 @@ Pattern for implementing idempotent event listeners in Spring Boot that handle d
 
 ## Prerequisites
 
-- Spring Boot 3.x with Spring Events
+- Spring Boot 4.x with Spring Events
 - Spring Data JPA
 - Understanding of event-driven architecture
 - Knowledge of idempotency concepts

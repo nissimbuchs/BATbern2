@@ -10,7 +10,7 @@ Comprehensive pattern for managing database transactions in Spring Boot services
 
 ## Prerequisites
 
-- Spring Boot 3.x with Spring Data JPA
+- Spring Boot 4.x with Spring Data JPA
 - PostgreSQL database
 - Understanding of ACID properties
 - Knowledge of isolation levels and transaction propagation

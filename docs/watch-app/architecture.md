@@ -140,7 +140,7 @@ Two services extended:
 
 | Decision | Value |
 |---|---|
-| Language & Runtime | Swift 6.0 / watchOS 11+ (client) · Java 21 / Spring Boot 3.x (backend) |
+| Language & Runtime | Swift 6.0 / watchOS 11+ (client) · Java 21 / Spring Boot 4.x (backend) |
 | UI Framework | SwiftUI with watchOS app lifecycle |
 | Persistence | SwiftData (client) · PostgreSQL 15+ (backend) |
 | Networking | URLSession + StompClientLib (client) · Spring WebSocket (backend) |
@@ -1213,7 +1213,7 @@ Action:  Watch → STOMP SEND /action → EMS → Process → Broadcast STATE_UP
   - 13 screens + 3 complications mapped to UX spec IDs
 - **AI Agent Implementation Guide:**
   - Swift 6.0 / SwiftUI / watchOS 11+ / SwiftData (client)
-  - Java 21 / Spring Boot 3.x / Spring WebSocket / PostgreSQL 15+ (backend)
+  - Java 21 / Spring Boot 4.x / Spring WebSocket / PostgreSQL 15+ (backend)
   - 12 mandatory enforcement rules for AI agents
   - ADR-003 compliance required throughout
 

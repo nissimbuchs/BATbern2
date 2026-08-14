@@ -24,6 +24,13 @@ const ROOT_DIR = path.join(__dirname, '..');
 const VERSIONS_FILE = path.join(ROOT_DIR, 'docs', 'versions.json');
 const FRONTEND_PACKAGE = path.join(ROOT_DIR, 'web-frontend', 'package.json');
 const BACKEND_GRADLE = path.join(ROOT_DIR, 'api-gateway', 'build.gradle');
+// Epic 13 (SB4) moved the estate-wide pins out of the per-module build files: the Spring
+// Boot plugin version now lives once in settings.gradle pluginManagement, and the
+// Testcontainers BOM in the ROOT build.gradle. Scanning only api-gateway/build.gradle
+// silently produced null for both — which is how docs/versions.json ended up claiming
+// "spring-boot": null while the estate ran 4.0.7.
+const ROOT_GRADLE = path.join(ROOT_DIR, 'build.gradle');
+const SETTINGS_GRADLE = path.join(ROOT_DIR, 'settings.gradle');
 const INFRA_PACKAGE = path.join(ROOT_DIR, 'infrastructure', 'package.json');
 
 // Parse command line arguments
@@ -112,7 +119,17 @@ function extractFrontendVersions() {
  */
 function extractBackendVersions() {
   try {
-    const gradleContent = fs.readFileSync(BACKEND_GRADLE, 'utf8');
+    // Concatenate every file that can carry a pin. Missing files are tolerated so the
+    // script still works from a partial checkout.
+    const gradleContent = [BACKEND_GRADLE, ROOT_GRADLE, SETTINGS_GRADLE]
+      .map(f => {
+        try {
+          return fs.readFileSync(f, 'utf8');
+        } catch {
+          return '';
+        }
+      })
+      .join('\n');
     const lines = gradleContent.split('\n');
 
     const versions = {
@@ -143,8 +160,13 @@ function extractBackendVersions() {
         if (match) versions.junit = extractVersion(match[1]);
       }
 
-      // Testcontainers version
-      if (line.includes('org.testcontainers:testcontainers:')) {
+      // Testcontainers version. Since Epic 13 the version comes from the BOM
+      // (org.testcontainers:testcontainers-bom:x.y.z) rather than a direct module
+      // coordinate, so match both spellings.
+      if (
+        line.includes('org.testcontainers:testcontainers:') ||
+        line.includes('org.testcontainers:testcontainers-bom:')
+      ) {
         const match = line.match(/:([0-9.]+)['"]?\s*$/);
         if (match) versions.testcontainers = extractVersion(match[1]);
       }

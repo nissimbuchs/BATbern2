@@ -18,7 +18,7 @@ Focus on unobvious details that agents otherwise miss._
 ## Technology Stack & Versions
 
 ### Frontend
-- React 19.2.4 + TypeScript 5.3
+- React 19.2 + TypeScript 6.x
 - MUI 7.x (Material-UI) — primary component library
 - Radix UI + shadcn/ui — supplemental headless components
 - TanStack Query (React Query) 5.90 — server state
@@ -26,21 +26,21 @@ Focus on unobvious details that agents otherwise miss._
 - React Router 7.x
 - react-hook-form 7.x + zod 4.x — forms & validation
 - i18next 25.x + react-i18next 16.x — i18n (10 locales: de, en, fr, it, rm, es, fi, nl, ja, gsw-BE)
-- Tailwind CSS 4.x + Vite 7.x
+- Tailwind CSS 4.x + Vite 8.x
 - aws-amplify 6.x — Cognito auth
 
 ### Backend
-- Java 21 LTS + Spring Boot 3.x + Spring Security 6.x
+- Java 21 LTS + Spring Boot 4.x + Spring Security 7.x
 - PostgreSQL 15+ (primary DB — never H2, ever)
 - Flyway — database migrations
 - Caffeine 3.x — application-level in-memory cache (no Redis)
 - Gradle 8.x — builds always run from repo root
-- OpenAPI Generator 7.2 — Spring Boot 3 interface generation
+- OpenAPI Generator 7.14 — Spring Boot 4 interface generation
 
 ### Testing
 - Vitest 4.x + React Testing Library 16.x
 - Playwright 1.x (E2E): 3 projects — `chromium` (organizer), `speaker`, `partner`
-- JUnit 5.x + Testcontainers 1.x (PostgreSQL — mandatory for integration tests)
+- JUnit 6.x + Testcontainers 2.x (PostgreSQL — mandatory for integration tests)
 
 ### Infrastructure
 - AWS ECS Fargate + Cognito + S3 + CDK 2.x
@@ -240,7 +240,7 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - Stores: `src/stores/` (Zustand)
 
 ### Linting & Formatting
-- ESLint 9.x + Prettier 3.x — both run in `lint-staged` on commit
+- ESLint 10.x + Prettier 3.x — both run in `lint-staged` on commit
 - Max ESLint warnings in CI: 50 (`--max-warnings 50`)
 - `npm run format` before committing if not using lint-staged
 - Spotless runs on Java code; Checkstyle enforces style rules (both in pre-commit hook)
@@ -445,7 +445,12 @@ type(scope): description
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-_Last Updated: 2026-08-09 (added: CI/CD section — a PR against `develop` deploys to production;
+_Last Updated: 2026-08-14 (corrected stale version claims to match the actual estate:
+Spring Boot 4.x, Spring Security 7.x, TypeScript 6.x, Vite 8.x, JUnit 6.x, Testcontainers 2.x,
+ESLint 10.x, OpenAPI Generator 7.14. `docs/versions.json` is the generated source of truth —
+it had been correct; the hand-written docs had drifted away from it.)_
+
+_Previously: 2026-08-09 (added: CI/CD section — a PR against `develop` deploys to production;
 branch-protection required checks; `main` is vestigial; maintenance-mode operational facts —
 nightly E2E as the health signal, Dependabot automation broken while reporting success)_
 
