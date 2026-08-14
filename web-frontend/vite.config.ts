@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import os from 'os';
 import viteCompression from 'vite-plugin-compression';
 import { VitePWA } from 'vite-plugin-pwa';
 import sitemap from 'vite-plugin-sitemap';
@@ -222,6 +223,28 @@ export default defineConfig({
     // Instance 1: PORT=3000 (default), Instance 2: PORT=4000
     port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
     host: true,
+    // `host: true` only binds 0.0.0.0 — it does NOT make the server reachable by
+    // hostname. Vite's DNS-rebinding guard (isHostAllowed) always permits literal
+    // IPv4/IPv6 and localhost, but any OTHER Host header must appear here or the
+    // request is answered with 403 "Blocked request. This host is not allowed."
+    //
+    // So http://192.168.1.181:3000 works out of the box while http://rack:3000
+    // 403s — a confusing split, because the dev server's own banner advertises the
+    // IP form and never mentions the hostname form is blocked.
+    //
+    // Entries are resolved per-machine rather than hardcoded, so no developer's
+    // box name leaks into this shared file: os.hostname() covers `http://rack:3000`
+    // and `.local` covers the mDNS/Avahi form `http://rack.local:3000`. Note the
+    // leading-dot rule only matches hostnames ENDING in `.local`, so the bare
+    // label has to be listed separately. VITE_ALLOWED_HOSTS (comma-separated)
+    // is the escape hatch for a reverse proxy or tunnel domain.
+    allowedHosts: [
+      os.hostname(),
+      '.local',
+      ...(process.env.VITE_ALLOWED_HOSTS?.split(',')
+        .map((h) => h.trim())
+        .filter(Boolean) ?? []),
+    ],
     proxy: {
       '/api': {
         // Docker Compose resolves `batbern-api-gateway` on its own network, but native
