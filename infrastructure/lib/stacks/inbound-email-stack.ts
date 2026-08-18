@@ -67,10 +67,8 @@ export class InboundEmailStack extends cdk.Stack {
     // Environment-specific reply-to address for environment isolation.
     // Each environment's SES account only receives replies addressed to its own subdomain,
     // preventing staging replies from landing in the production service or vice versa.
-    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
-    const replyDomain = isProdTraffic
-      ? 'batbern.ch'
-      : `${envName}.batbern.ch`; // e.g. staging.batbern.ch
+    const isProdTraffic = props.config.isProduction ?? envName === 'production';
+    const replyDomain = isProdTraffic ? 'batbern.ch' : `${envName}.batbern.ch`; // e.g. staging.batbern.ch
     const forwardingDomain = isProdTraffic ? 'batbern.ch' : `${envName}.batbern.ch`;
     const replyAddress = `replies@${replyDomain}`;
 
@@ -109,7 +107,7 @@ export class InboundEmailStack extends cdk.Stack {
         conditions: {
           StringEquals: { 'aws:SourceAccount': this.account },
         },
-      }),
+      })
     );
 
     // S3 bucket for raw inbound emails (7-day auto-purge)
@@ -135,14 +133,14 @@ export class InboundEmailStack extends cdk.Stack {
         conditions: {
           StringEquals: { 'aws:Referer': this.account },
         },
-      }),
+      })
     );
 
     // S3 event notification → SQS for reply emails (emails/ prefix)
     inboundBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new s3n.SqsDestination(inboundQueue),
-      { prefix: 'emails/' },
+      { prefix: 'emails/' }
     );
 
     // SES receipt rule set for inbound email
@@ -304,11 +302,13 @@ export class InboundEmailStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(60),
       logGroup: forwarderLogGroup,
       // VPC access: Lambda needs to call services via Service Connect DNS
-      ...(props.vpc && props.lambdaSecurityGroup ? {
-        vpc: props.vpc,
-        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-        securityGroups: [props.lambdaSecurityGroup],
-      } : {}),
+      ...(props.vpc && props.lambdaSecurityGroup
+        ? {
+            vpc: props.vpc,
+            vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+            securityGroups: [props.lambdaSecurityGroup],
+          }
+        : {}),
       environment: {
         API_GATEWAY_URL: apiGatewayUrl,
         SES_SENDER_ADDRESS: `noreply@${forwardingDomain}`,
@@ -332,7 +332,7 @@ export class InboundEmailStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
         actions: ['ses:SendEmail', 'ses:SendRawEmail'],
         resources: ['*'],
-      }),
+      })
     );
 
     // Grant Lambda CloudWatch PutMetricData permission
@@ -344,14 +344,14 @@ export class InboundEmailStack extends cdk.Stack {
         conditions: {
           StringEquals: { 'cloudwatch:namespace': 'BATbern/EmailForwarder' },
         },
-      }),
+      })
     );
 
     // S3 event notification → Lambda for forwarding emails (forwarding/ prefix)
     inboundBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new s3n.LambdaDestination(forwarderLambda),
-      { prefix: 'forwarding/' },
+      { prefix: 'forwarding/' }
     );
 
     // CloudWatch alarm for abuse detection (AC10)
@@ -366,6 +366,10 @@ export class InboundEmailStack extends cdk.Stack {
       }),
       threshold: 20,
       evaluationPeriods: 1,
+      // Issue #969: EmailsRejected is a custom metric emitted only when the forwarder
+      // runs, so quiet periods would otherwise flap the alarm to INSUFFICIENT_DATA.
+      // Zero rejections is the healthy state.
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
 

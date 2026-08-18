@@ -217,6 +217,10 @@ describe('InboundEmailStack', () => {
   test('should_createCloudWatchAlarm_when_forwarderLambdaCreated', () => {
     template.hasResourceProperties('AWS::CloudWatch::Alarm', {
       MetricName: 'EmailsRejected',
+      // Issue #969: the custom EmailsRejected metric is only emitted when the forwarder
+      // runs, so without notBreaching the alarm flaps INSUFFICIENT_DATA <-> OK. Zero
+      // rejections is the healthy state.
+      TreatMissingData: 'notBreaching',
       Namespace: 'BATbern/EmailForwarder',
       Threshold: 20,
       EvaluationPeriods: 1,
@@ -291,9 +295,13 @@ describe('InboundEmailStack', () => {
     const helperStack2 = new (require('aws-cdk-lib').Stack)(mxApp, 'HelperStack2', {
       env: { account: '123456789012', region: 'eu-central-1' },
     });
-    const hostedZone = new (require('aws-cdk-lib/aws-route53').HostedZone)(helperStack2, 'TestZone', {
-      zoneName: 'batbern.ch',
-    });
+    const hostedZone = new (require('aws-cdk-lib/aws-route53').HostedZone)(
+      helperStack2,
+      'TestZone',
+      {
+        zoneName: 'batbern.ch',
+      }
+    );
 
     const mxStack = new InboundEmailStack(mxApp, 'TestMxInboundEmailStack', {
       config: stagingConfig,

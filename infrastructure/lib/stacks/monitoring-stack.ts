@@ -35,7 +35,7 @@ export class MonitoringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: MonitoringStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
+    const isProd = props.config.isProduction ?? props.config.envName === 'production';
 
     // Create SNS topic for alarm notifications (production and staging)
     if (isProd || props.config.envName === 'staging') {
@@ -154,7 +154,8 @@ export class MonitoringStack extends cdk.Stack {
 
     const bounceRateCritical = new cloudwatch.Alarm(this, 'BounceRateCritical', {
       alarmName: `batbern-${props.config.envName}-bounce-rate-critical`,
-      alarmDescription: 'SES bounce rate exceeds 5% critical threshold — sending may be paused by AWS',
+      alarmDescription:
+        'SES bounce rate exceeds 5% critical threshold — sending may be paused by AWS',
       metric: new cloudwatch.Metric({
         namespace: 'AWS/SES',
         metricName: 'Reputation.BounceRate',
@@ -178,6 +179,13 @@ export class MonitoringStack extends cdk.Stack {
       }),
       threshold: 0.0005,
       evaluationPeriods: 1,
+      // Issue #969: SES publishes Reputation.ComplaintRate only while there is sending
+      // activity. With the CDK default (MISSING) the alarm drops to INSUFFICIENT_DATA in
+      // every quiet window and flips back to OK on the next send — firing the OK action
+      // each time (2-3 notification emails/day at a measured complaint rate of 0.0).
+      // NOT_BREACHING makes a no-send period count as OK, so no transition occurs.
+      // Both bounce-rate alarms above already do this; this one was the lone omission.
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
 
@@ -211,6 +219,10 @@ export class MonitoringStack extends cdk.Stack {
         }),
         threshold: 0,
         evaluationPeriods: 1,
+        // Issue #969: SQS publishes ApproximateNumberOfMessagesVisible only while the
+        // queue is active. Without this the alarm oscillates INSUFFICIENT_DATA <-> OK
+        // and fires the OK action (an email) on every recovery. An empty DLQ is healthy.
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
         comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       });
 
