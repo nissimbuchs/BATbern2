@@ -240,10 +240,15 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - Stores: `src/stores/` (Zustand)
 
 ### Linting & Formatting
-- ESLint 10.x + Prettier 3.x — both run in `lint-staged` on commit
-- Max ESLint warnings in CI: 50 (`--max-warnings 50`)
-- `npm run format` before committing if not using lint-staged
-- Spotless runs on Java code; Checkstyle enforces style rules (both in pre-commit hook)
+- ESLint 10.x + Prettier 3.x — run by `lint-staged`, invoked from `web-frontend/` by
+  `.githooks/pre-commit`. It **auto-fixes and re-stages** (`eslint --fix`,
+  `prettier --write`); it does not merely reject.
+- Max ESLint warnings in CI: 50 (`--max-warnings 50`) — the hook is stricter (`0`)
+- `infrastructure/**/*.ts` is NOT covered by any pre-commit lint — lint-staged is scoped
+  to `web-frontend/`. `infrastructure/` also has its own `.prettierrc.json` as of
+  2026-08-18; before that `prettier --check` there graded against defaults.
+- Checkstyle enforces Java style in the hook. **Spotless does NOT run in the hook** —
+  only `checkstyleMain` + `checkstyleTest` do.
 
 ### Security Rules
 - **NEVER commit** `.env` files, `*.csv` with PII, DB dumps, API keys
@@ -326,8 +331,20 @@ type(scope): description
 - Speaker Coordination: `8003`, Partner Coordination: `8004`
 - Attendee Experience: `8005`, Frontend: `8100`
 
-### Pre-commit Hook
-- Runs: ESLint fix, Prettier, Vitest related tests (frontend); Checkstyle, Spotless (Java).
+### Git Hooks (`.githooks/`)
+- **Not installed by `make install`.** A fresh clone has NO hooks — verify with
+  `git config core.hooksPath` (should print `.githooks`). Install:
+  `./.githooks/install-hooks.sh`
+- `pre-commit` runs, on staged files only: `lint-staged` when ANY `web-frontend/` file is
+  staged (gated on the directory, not the extension — a locale `.json` or `.css`-only
+  commit used to be skipped entirely), `npm run check:api-types` (only when `docs/api/`,
+  `web-frontend/package*.json` or `src/types/generated/` is staged), and
+  `./gradlew checkstyleMain checkstyleTest` (Java). No Vitest, no Spotless.
+- `commit-msg` enforces conventional commits via commitlint. `type-empty` and
+  `subject-empty` are at error severity — a message with no type is rejected.
+- `pre-push` runs test suites for the components that changed. `infrastructure/*`,
+  `docs/*` and `*.md` are skipped entirely. A `shared-kernel/*` change fans out to ALL
+  six Java components with full Testcontainers integration suites — the slow path.
 - Fix ALL Checkstyle violations before committing — hook blocks the commit.
 - Use `--no-verify` ONLY when explicitly instructed by the user; never as a workaround.
 

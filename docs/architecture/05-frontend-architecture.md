@@ -1805,7 +1805,7 @@ https://batbern.ch/current-event?lang=en
 
 ```bash
 #!/bin/bash
-# .husky/pre-commit
+# .githooks/pre-commit
 
 # Validate that all translation keys exist in both de and en
 node scripts/validate-translations.js

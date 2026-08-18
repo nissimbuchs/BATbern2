@@ -76,16 +76,37 @@ docs(api): update OpenAPI specification for partner analytics
 ## Code Quality Standards
 
 ### Pre-commit Hooks
-```bash
-# Install pre-commit hooks
-npm run prepare
 
-# Hooks run automatically on commit:
-# - ESLint for frontend code
-# - Checkstyle for backend code
-# - Unit tests for changed files
-# - Format checks (Prettier/Spotless)
+Hooks live in `.githooks/` and are NOT installed by `make install` — a fresh clone is
+ungated until you run the installer yourself:
+
+```bash
+./.githooks/install-hooks.sh      # sets core.hooksPath=.githooks
 ```
+
+What actually runs (see `.githooks/pre-commit`), all scoped to staged files:
+- **Frontend** (anything under `web-frontend/`): `lint-staged`, which runs
+  `eslint --fix --max-warnings 0` then `prettier --write` on staged `.ts/.tsx/.js/.jsx`,
+  and `prettier --write` on staged `.json/.css/.md`. It **fixes and re-stages** rather
+  than rejecting, and it operates on the *staged* content, so partially staged files
+  (`git add -p`) are handled correctly. It is invoked from `web-frontend/` because
+  lint-staged scopes to its cwd — from the repo root its `*.md` glob would rewrite all of
+  `docs/`.
+- **Generated API types**: `npm run check:api-types`, but only when `docs/api/`,
+  `web-frontend/package.json`, `web-frontend/package-lock.json` or
+  `web-frontend/src/types/generated/` is staged
+- **Backend** (`.java`): `./gradlew checkstyleMain checkstyleTest`
+
+`.githooks/pre-push` then runs the test suites for whichever components changed, and
+`.githooks/commit-msg` validates conventional-commit format via commitlint.
+
+There is no Vitest or Spotless step — `pre-push` runs the full frontend suite, so running
+related tests again at commit time only slows down the hook people are most tempted to
+bypass. Previous instructions here said `npm run prepare`; no such script has ever existed
+in any `package.json`.
+
+**Known gap:** `infrastructure/**/*.ts` gets no pre-commit linting at all — lint-staged is
+scoped to `web-frontend/`. Tracked separately.
 
 ### Code Review Checklist
 - [ ] **TDD Followed**: Tests were written before implementation
