@@ -76,16 +76,27 @@ docs(api): update OpenAPI specification for partner analytics
 ## Code Quality Standards
 
 ### Pre-commit Hooks
-```bash
-# Install pre-commit hooks
-npm run prepare
 
-# Hooks run automatically on commit:
-# - ESLint for frontend code
-# - Checkstyle for backend code
-# - Unit tests for changed files
-# - Format checks (Prettier/Spotless)
+Hooks live in `.githooks/` and are NOT installed by `make install` — a fresh clone is
+ungated until you run the installer yourself:
+
+```bash
+./.githooks/install-hooks.sh      # sets core.hooksPath=.githooks
 ```
+
+What actually runs (see `.githooks/pre-commit`), all scoped to staged files:
+- **Frontend** (`.ts/.tsx/.js/.jsx`): ESLint `--max-warnings 0`, then `prettier --check`
+- **Generated API types**: `npm run check:api-types`, but only when `docs/api/`,
+  `web-frontend/package.json`, `web-frontend/package-lock.json` or
+  `web-frontend/src/types/generated/` is staged
+- **Backend** (`.java`): `./gradlew checkstyleMain checkstyleTest`
+
+`.githooks/pre-push` then runs the test suites for whichever components changed, and
+`.githooks/commit-msg` validates conventional-commit format via commitlint.
+
+There is no Vitest, Spotless, or lint-staged step in the pre-commit hook, despite what
+older docs claimed. Previous instructions here said `npm run prepare`; no such script has
+ever existed in any `package.json`.
 
 ### Code Review Checklist
 - [ ] **TDD Followed**: Tests were written before implementation

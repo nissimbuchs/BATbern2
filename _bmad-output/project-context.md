@@ -240,10 +240,13 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - Stores: `src/stores/` (Zustand)
 
 ### Linting & Formatting
-- ESLint 10.x + Prettier 3.x — both run in `lint-staged` on commit
-- Max ESLint warnings in CI: 50 (`--max-warnings 50`)
-- `npm run format` before committing if not using lint-staged
-- Spotless runs on Java code; Checkstyle enforces style rules (both in pre-commit hook)
+- ESLint 10.x + Prettier 3.x — run directly on staged files by `.githooks/pre-commit`
+  (ESLint `--max-warnings 0`, then `prettier --check`). `lint-staged` is a devDependency
+  with a config block but **no caller** since husky was removed — nothing invokes it.
+- Max ESLint warnings in CI: 50 (`--max-warnings 50`) — note the hook is stricter than CI
+- `npm run format` before committing, or the hook's `prettier --check` will reject
+- Checkstyle enforces Java style in the hook. **Spotless does NOT run in the hook** —
+  only `checkstyleMain` + `checkstyleTest` do.
 
 ### Security Rules
 - **NEVER commit** `.env` files, `*.csv` with PII, DB dumps, API keys
@@ -326,8 +329,19 @@ type(scope): description
 - Speaker Coordination: `8003`, Partner Coordination: `8004`
 - Attendee Experience: `8005`, Frontend: `8100`
 
-### Pre-commit Hook
-- Runs: ESLint fix, Prettier, Vitest related tests (frontend); Checkstyle, Spotless (Java).
+### Git Hooks (`.githooks/`)
+- **Not installed by `make install`.** A fresh clone has NO hooks — verify with
+  `git config core.hooksPath` (should print `.githooks`). Install:
+  `./.githooks/install-hooks.sh`
+- `pre-commit` runs, on staged files only: ESLint `--max-warnings 0` + `prettier --check`
+  (frontend), `npm run check:api-types` (only when `docs/api/`, `web-frontend/package*.json`
+  or `src/types/generated/` is staged), `./gradlew checkstyleMain checkstyleTest` (Java).
+  No Vitest, no Spotless, no lint-staged.
+- `commit-msg` enforces conventional commits via commitlint. `type-empty` and
+  `subject-empty` are at error severity — a message with no type is rejected.
+- `pre-push` runs test suites for the components that changed. `infrastructure/*`,
+  `docs/*` and `*.md` are skipped entirely. A `shared-kernel/*` change fans out to ALL
+  six Java components with full Testcontainers integration suites — the slow path.
 - Fix ALL Checkstyle violations before committing — hook blocks the commit.
 - Use `--no-verify` ONLY when explicitly instructed by the user; never as a workaround.
 

@@ -32,7 +32,8 @@ TESTS_FAILED=0
 if [ -n "$TS_FILES" ]; then
     echo -e "${YELLOW}📦 Frontend files changed, running checks...${NC}"
 
-    # Use lint-staged for efficient frontend checks
+    # ESLint + Prettier, scoped to the staged frontend files (not lint-staged —
+    # its only caller was the husky pre-commit hook, removed 2026-08-18)
     if [ -d "web-frontend" ] && [ -f "web-frontend/package.json" ]; then
         cd web-frontend
 

@@ -7,8 +7,8 @@
       ["feat", "fix", "docs", "style", "refactor", "review", "test", "chore", "perf", "ci", "build", "revert"]
     ],
     "type-case": [1, "always", "lower-case"],
-    "type-empty": [1, "never"],
-    "subject-empty": [1, "never"],
+    "type-empty": [2, "never"],
+    "subject-empty": [2, "never"],
     "subject-case": [0],
     "body-leading-blank": [0],
     "body-max-line-length": [0],
