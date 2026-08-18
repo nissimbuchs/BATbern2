@@ -440,6 +440,12 @@ describe('MonitoringStack', () => {
         Threshold: 0.0005,
         EvaluationPeriods: 1,
         Period: 300,
+        // Issue #969: SES publishes Reputation.* only while there is sending activity.
+        // Without notBreaching the alarm falls to INSUFFICIENT_DATA in every quiet window
+        // and flips back to OK on the next send, firing the OK action each time (2-3
+        // notification emails/day with zero complaints). Both bounce-rate alarms already
+        // set this; the complaint alarm was the lone omission.
+        TreatMissingData: 'notBreaching',
       });
     });
 
@@ -459,6 +465,11 @@ describe('MonitoringStack', () => {
         Threshold: 0,
         EvaluationPeriods: 1,
         Period: 60,
+        // Issue #969: SQS publishes ApproximateNumberOfMessagesVisible only while the
+        // queue is active, so without notBreaching this alarm oscillates
+        // INSUFFICIENT_DATA <-> OK and emails on every OK transition. An empty DLQ is
+        // the healthy state and must read as OK, not as "no data".
+        TreatMissingData: 'notBreaching',
       });
     });
   });
