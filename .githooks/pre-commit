@@ -21,45 +21,44 @@ if [ -z "$STAGED_FILES" ]; then
     exit 0
 fi
 
-# Check for TypeScript/JavaScript changes
-TS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+# Check for staged Java changes (the frontend is gated on directory, see below)
 JAVA_FILES=$(echo "$STAGED_FILES" | grep -E '\.java$' || true)
 
 # Track if any tests failed
 TESTS_FAILED=0
 
-# Run frontend checks if TypeScript/JavaScript files changed
-if [ -n "$TS_FILES" ]; then
-    echo -e "${YELLOW}📦 Frontend files changed, running checks...${NC}"
+# Run frontend checks if anything under web-frontend/ changed.
+#
+# Gated on the DIRECTORY, not on the file extension. The previous version gated on staged
+# *.ts/tsx/js/jsx anywhere in the repo, which meant:
+#   - staging only web-frontend/src/index.css         -> skipped entirely
+#   - staging only web-frontend/public/locales/*.json -> skipped entirely  (the i18n files!)
+#   - staging only web-frontend/README.md             -> skipped entirely
+#   - staging only infrastructure/**/*.ts             -> entered the block and ran nothing
+#
+# lint-staged replaces the hand-rolled eslint/prettier invocation because it:
+#   - reads the STAGED content (it stashes unstaged changes first). Passing paths to
+#     `prettier --check` checked the working tree instead, so a partially staged file
+#     (git add -p) was validated on bytes that were not being committed.
+#   - --fix/--write and re-stages, rather than failing and making you fix it by hand.
+#   - covers json/css/md, which the extension gate silently dropped.
+#
+# It MUST run from web-frontend/ -- lint-staged scopes to its cwd. From the repo root the
+# `*.{json,css,md}` glob would sweep in docs/**/*.md and prettier --write the whole
+# documentation tree. Verified 2026-08-18.
+FRONTEND_STAGED=$(echo "$STAGED_FILES" | grep '^web-frontend/' || true)
 
-    # ESLint + Prettier, scoped to the staged frontend files (not lint-staged —
-    # its only caller was the husky pre-commit hook, removed 2026-08-18)
+if [ -n "$FRONTEND_STAGED" ]; then
+    echo -e "${YELLOW}Frontend files changed, running lint-staged...${NC}"
+    echo "  (eslint --fix and prettier --write may amend and re-stage your files)"
+
     if [ -d "web-frontend" ] && [ -f "web-frontend/package.json" ]; then
         cd web-frontend
-
-        # Filter for frontend files only and strip web-frontend/ prefix
-        FRONTEND_FILES=$(echo "$STAGED_FILES" | grep '^web-frontend/' | sed 's|^web-frontend/||')
-
-        if [ -n "$FRONTEND_FILES" ]; then
-            # Run ESLint on changed frontend files (exclude config and env files)
-            echo "  Running ESLint..."
-            LINT_FILES=$(echo "$FRONTEND_FILES" | grep -v -E '\.(eslintrc|prettierignore)' | grep -v '\.env' || true)
-            if [ -n "$LINT_FILES" ]; then
-                echo "$LINT_FILES" | xargs npx eslint --max-warnings 0 --no-warn-ignored || TESTS_FAILED=1
-            fi
-
-            # Run Prettier check on changed frontend files (exclude config and env files)
-            echo "  Running Prettier..."
-            PRETTIER_FILES=$(echo "$FRONTEND_FILES" | grep -v -E '\.(eslintrc|prettierignore|eslintignore)' | grep -v '\.env' || true)
-            if [ -n "$PRETTIER_FILES" ]; then
-                echo "$PRETTIER_FILES" | xargs npx prettier --check || TESTS_FAILED=1
-            fi
-        fi
+        npx lint-staged || TESTS_FAILED=1
         cd ..
-    elif [ -f "package.json" ]; then
-        # Fallback for non-monorepo structure
-        npx eslint $TS_FILES --max-warnings 0 --no-warn-ignored || TESTS_FAILED=1
-        npx prettier --check $TS_FILES || TESTS_FAILED=1
+    else
+        echo -e "${RED}web-frontend directory not found${NC}"
+        TESTS_FAILED=1
     fi
 fi
 

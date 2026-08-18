@@ -168,10 +168,9 @@
     "vitest-axe": "^0.1.0"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write",
-      "vitest related --run --passWithNoTests"
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix --max-warnings 0 --no-warn-ignored",
+      "prettier --write"
     ],
     "*.{json,css,md}": [
       "prettier --write"

@@ -240,11 +240,13 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - Stores: `src/stores/` (Zustand)
 
 ### Linting & Formatting
-- ESLint 10.x + Prettier 3.x — run directly on staged files by `.githooks/pre-commit`
-  (ESLint `--max-warnings 0`, then `prettier --check`). `lint-staged` is a devDependency
-  with a config block but **no caller** since husky was removed — nothing invokes it.
-- Max ESLint warnings in CI: 50 (`--max-warnings 50`) — note the hook is stricter than CI
-- `npm run format` before committing, or the hook's `prettier --check` will reject
+- ESLint 10.x + Prettier 3.x — run by `lint-staged`, invoked from `web-frontend/` by
+  `.githooks/pre-commit`. It **auto-fixes and re-stages** (`eslint --fix`,
+  `prettier --write`); it does not merely reject.
+- Max ESLint warnings in CI: 50 (`--max-warnings 50`) — the hook is stricter (`0`)
+- `infrastructure/**/*.ts` is NOT covered by any pre-commit lint — lint-staged is scoped
+  to `web-frontend/`. `infrastructure/` also has its own `.prettierrc.json` as of
+  2026-08-18; before that `prettier --check` there graded against defaults.
 - Checkstyle enforces Java style in the hook. **Spotless does NOT run in the hook** —
   only `checkstyleMain` + `checkstyleTest` do.
 
@@ -333,10 +335,11 @@ type(scope): description
 - **Not installed by `make install`.** A fresh clone has NO hooks — verify with
   `git config core.hooksPath` (should print `.githooks`). Install:
   `./.githooks/install-hooks.sh`
-- `pre-commit` runs, on staged files only: ESLint `--max-warnings 0` + `prettier --check`
-  (frontend), `npm run check:api-types` (only when `docs/api/`, `web-frontend/package*.json`
-  or `src/types/generated/` is staged), `./gradlew checkstyleMain checkstyleTest` (Java).
-  No Vitest, no Spotless, no lint-staged.
+- `pre-commit` runs, on staged files only: `lint-staged` when ANY `web-frontend/` file is
+  staged (gated on the directory, not the extension — a locale `.json` or `.css`-only
+  commit used to be skipped entirely), `npm run check:api-types` (only when `docs/api/`,
+  `web-frontend/package*.json` or `src/types/generated/` is staged), and
+  `./gradlew checkstyleMain checkstyleTest` (Java). No Vitest, no Spotless.
 - `commit-msg` enforces conventional commits via commitlint. `type-empty` and
   `subject-empty` are at error severity — a message with no type is rejected.
 - `pre-push` runs test suites for the components that changed. `infrastructure/*`,
