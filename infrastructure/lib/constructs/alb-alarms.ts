@@ -34,6 +34,11 @@ export interface AlbAlarmsProps {
     readonly clientErrorCount?: number;
     /** P95 TargetResponseTime, in SECONDS. */
     readonly latencyP95Seconds?: number;
+    /**
+     * Minimum requests in a 5-minute window before the latency alarm evaluates at all.
+     * Below this the p95 is computed over too few samples to mean anything.
+     */
+    readonly latencyMinRequests?: number;
     /** Availability floor as a percentage, e.g. 99.9. */
     readonly availabilityPercent?: number;
   };
@@ -78,6 +83,7 @@ export class AlbAlarms extends Construct {
       // threshold of 500 written for milliseconds, i.e. a 500-second SLA had it ever run.
       // coding-standards.md targets P95 < 200ms; 500ms is the alerting floor above it.
       latencyP95Seconds: props.thresholds?.latencyP95Seconds ?? 0.5,
+      latencyMinRequests: props.thresholds?.latencyMinRequests ?? 20,
       availabilityPercent: props.thresholds?.availabilityPercent ?? 99.9,
     };
 
@@ -133,12 +139,36 @@ export class AlbAlarms extends Construct {
     });
 
     // ── Latency ────────────────────────────────────────────────────────────────────
+    // A percentile over a handful of requests is not a percentile.
+    //
+    // Measured 2026-08-19, hours after this alarm first shipped: request volume per
+    // 5-minute window ran 0, 0, 0, 1, 1, 11, 44, 108, 168, 497. In most windows the p95 IS
+    // a single request — and when that request is the first to reach a cold JVM after ECS
+    // replaces a task, it reads 2-3 seconds. The alarm went red on its own deploy
+    // (batbern-staging-alb-latency-p95, 3.22s and 2.27s at 18:58 and 19:03, immediately
+    // after the service reached steady state at 20:57 local following a target
+    // deregistration at 20:51).
+    //
+    // Baseline p95 in normal windows is 2-25 MILLIseconds, so the platform is not slow;
+    // the metric is just meaningless at low sample counts. Raising the threshold would
+    // have bought silence by hiding real latency at every volume, which is the failure
+    // this whole construct exists to undo. Gating on traffic keeps the threshold honest
+    // and makes the alarm speak only when the number means something.
     const latency = new cloudwatch.Alarm(this, 'LatencyP95', {
       alarmName: `batbern-${env}-alb-latency-p95`,
       alarmDescription:
-        `P95 target response time exceeds ${thresholds.latencyP95Seconds}s ` +
+        `P95 target response time exceeds ${thresholds.latencyP95Seconds}s over at least ` +
+        `${thresholds.latencyMinRequests} requests in 5 minutes ` +
         '(coding-standards.md targets P95 < 200ms)',
-      metric: albMetric('TargetResponseTime', 'p95'),
+      metric: new cloudwatch.MathExpression({
+        expression: `IF(requests >= ${thresholds.latencyMinRequests}, latency, 0)`,
+        usingMetrics: {
+          requests: albMetric('RequestCount', 'Sum'),
+          latency: albMetric('TargetResponseTime', 'p95'),
+        },
+        period,
+        label: 'P95 latency (traffic-gated)',
+      }),
       threshold: thresholds.latencyP95Seconds,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,

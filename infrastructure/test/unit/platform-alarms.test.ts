@@ -149,11 +149,40 @@ describe('Platform alarms (#970)', () => {
       // have meant a 500-second SLA. coding-standards.md targets P95 < 200ms.
       withAlb().hasResourceProperties('AWS::CloudWatch::Alarm', {
         AlarmName: 'batbern-staging-alb-latency-p95',
-        Namespace: 'AWS/ApplicationELB',
-        MetricName: 'TargetResponseTime',
-        ExtendedStatistic: 'p95',
         Threshold: 0.5,
+        ComparisonOperator: 'GreaterThanThreshold',
         TreatMissingData: 'notBreaching',
+        Metrics: Match.arrayWith([
+          Match.objectLike({
+            MetricStat: Match.objectLike({
+              Stat: 'p95',
+              Metric: Match.objectLike({
+                Namespace: 'AWS/ApplicationELB',
+                MetricName: 'TargetResponseTime',
+              }),
+            }),
+          }),
+        ]),
+      });
+    });
+
+    test('should_ignoreLatencyBelowMinimumTraffic_when_albAlarmsCreated', () => {
+      // A percentile computed over a handful of requests is not a percentile. Measured on
+      // 2026-08-19 immediately after this alarm first shipped: request volume per 5-minute
+      // window ran 0, 0, 1, 1, 11, 44, 108, 168, 497 — so in most windows p95 IS a single
+      // request, and if that request is the first to hit a cold JVM after an ECS task
+      // replacement it reads 2-3 seconds. The alarm went red on its own deploy.
+      //
+      // The guard makes the expression report 0 below a floor of real traffic, so the
+      // alarm speaks only when the number means something. Raising the threshold instead
+      // would have hidden genuine latency at every volume.
+      withAlb().hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: 'batbern-staging-alb-latency-p95',
+        Metrics: Match.arrayWith([
+          Match.objectLike({
+            Expression: Match.stringLikeRegexp('IF\\(requests >= \\d+'),
+          }),
+        ]),
       });
     });
 
