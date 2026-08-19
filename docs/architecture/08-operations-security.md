@@ -163,7 +163,7 @@ check it there once rather than trusting a green unit test. `alert-rules.test.ts
 specific dimension mistakes above, and no alarm anywhere may use `treatMissingData: BREACHING` — a
 permanently red alarm is worse than no alarm, because it teaches everyone to ignore the channel.
 
-### Percentile alarms need a traffic floor
+### The deploy warmup is real latency, and the latency alarm must outlast it
 
 `alb-latency-p95` gates its expression on request volume:
 
@@ -171,25 +171,40 @@ permanently red alarm is worse than no alarm, because it teaches everyone to ign
 IF(requests >= 20, latency, 0)
 ```
 
-This is not a fudge to quieten it — it is what makes the threshold meaningful. BATbern's traffic is
-low and bursty: measured request counts per 5-minute window run `0, 0, 0, 1, 1, 11, 44, 108, 168,
-497`. In most windows the p95 **is one request**, and if that request is the first to reach a cold
-JVM after ECS replaces a task it reads 2–3 seconds. The alarm went ALARM on the very deploy that
-introduced it (#980), on two lonely requests in a three-period window, while the baseline p95 in
-windows with real traffic was 2–25 **milliseconds**.
+That floor is independently correct — quiet windows carry 1–6 requests, where a p95 is essentially
+one sample — but **it is not what keeps the alarm quiet**, and it is worth being precise about why,
+because the first attempt at this got it wrong.
 
-The alternative — raising the threshold until the noise stopped — would have hidden genuine latency
-at every traffic level, which is the same class of mistake as the dead alarms above: a signal that
-looks like coverage and is not. Gating on volume keeps the 0.5 s threshold honest and silences only
-the windows where the number never carried information.
+`alb-latency-p95` sent five notifications on 2026-08-19, the day it shipped. The initial diagnosis
+was "low traffic, so p95 is one cold-start request". The measurements say otherwise. Across two ECS
+task replacements, per 5-minute window:
 
-The same caution applies to any percentile or ratio alarm added later. `alb-availability` uses
-`IF(requests > 0, …, 100)` for the same reason. A count-based alarm (5xx, unhealthy targets) needs no
-such guard, because a count of one is still a fact.
+| requests | p95 | | requests | p95 |
+|---|---|---|---|---|
+| 25 | 3.7081 s | | 35 | 4.7058 s |
+| 116 | 1.9862 s | | 220 | 1.1722 s |
+| 256 | 0.8424 s | | 533 | 0.4328 s |
+| 386 | 0.5252 s | | | |
+| 45 | 0.0057 s | | | |
 
-**Cold starts are a known, unquantified cost here.** A first request hitting a freshly started
-Fargate task can take seconds. That is real user-visible latency, it is not yet characterised, and
-the alarm now makes it visible instead of invisible.
+Volume **ramps** while latency **decays** — a JVM warming up under real load. Every breaching window
+carries 25–533 requests and clears the 20-request floor, so the volume gate would not have suppressed
+a single one of those five emails. This is genuine, user-visible latency: on the order of 800 real
+requests take seconds after each task replacement, for roughly 10–15 minutes, before settling to a
+2–25 **millisecond** baseline.
+
+So the alarm is not wrong and the metric is not noise — the alarm simply has to outlast a condition
+that resolves itself. It requires **5 breaching periods out of 6 (25 minutes)**. The observed warmups
+breached for 4 and 2 periods respectively; latency that is genuinely stuck still fires. The trade is
+explicit: a real regression is detected ~25 minutes later than it otherwise would be, in exchange for
+not paging on every deploy.
+
+**Do not "fix" a noisy alarm by raising its threshold.** That hides genuine latency at every traffic
+level and produces a signal that looks like coverage and is not — the same failure as the dead alarms
+above. Change *when* it speaks, not *what it considers acceptable*.
+
+**The warmup itself is unfixed.** It is now quantified rather than invisible, and tracked separately.
+The alarm change buys quiet; it does not make the platform fast after a deploy.
 
 ## Cost Optimizations (2026-03)
 

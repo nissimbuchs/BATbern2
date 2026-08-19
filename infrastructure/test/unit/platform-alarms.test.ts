@@ -166,16 +166,32 @@ describe('Platform alarms (#970)', () => {
       });
     });
 
-    test('should_ignoreLatencyBelowMinimumTraffic_when_albAlarmsCreated', () => {
-      // A percentile computed over a handful of requests is not a percentile. Measured on
-      // 2026-08-19 immediately after this alarm first shipped: request volume per 5-minute
-      // window ran 0, 0, 1, 1, 11, 44, 108, 168, 497 — so in most windows p95 IS a single
-      // request, and if that request is the first to hit a cold JVM after an ECS task
-      // replacement it reads 2-3 seconds. The alarm went red on its own deploy.
+    test('should_requireSustainedBreach_when_latencyAlarmCreated', () => {
+      // The breach that actually occurs here is a deploy. Measured 2026-08-19 across two
+      // ECS task replacements, p95 by 5-minute window with request counts:
       //
-      // The guard makes the expression report 0 below a floor of real traffic, so the
-      // alarm speaks only when the number means something. Raising the threshold instead
-      // would have hidden genuine latency at every volume.
+      //   25 req/3.71s, 116/1.99s, 256/0.84s, 386/0.53s, 45/0.006s
+      //   35 req/4.71s, 220/1.17s, 533/0.43s
+      //
+      // Volume ramps while latency decays — a JVM warming under real load. Those warmups
+      // breached for 4 and 2 consecutive periods, so requiring 5 of 6 (25 minutes) keeps
+      // the alarm silent for them while still catching latency that is genuinely stuck.
+      withAlb().hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: 'batbern-staging-alb-latency-p95',
+        EvaluationPeriods: 6,
+        DatapointsToAlarm: 5,
+      });
+    });
+
+    test('should_ignoreLatencyBelowMinimumTraffic_when_albAlarmsCreated', () => {
+      // A percentile computed over a handful of requests is not a percentile: quiet windows
+      // carry 1-6 requests, where p95 is essentially a single sample.
+      //
+      // NOTE: this guard is NOT what silences the deploy-warmup breaches. Every window in
+      // those episodes carried 25-533 requests and clears this floor — see
+      // should_requireSustainedBreach_when_latencyAlarmCreated, which is the control that
+      // actually does that work. This one is retained because it is independently correct,
+      // not because it fixed the 2026-08-19 notifications.
       withAlb().hasResourceProperties('AWS::CloudWatch::Alarm', {
         AlarmName: 'batbern-staging-alb-latency-p95',
         Metrics: Match.arrayWith([
