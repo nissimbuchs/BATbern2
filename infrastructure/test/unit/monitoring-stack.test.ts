@@ -38,8 +38,20 @@ describe('MonitoringStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify alarms are created (availability, errors, client errors, latency, CPU, memory, disk, database, budget + 3 SES bounce/complaint alarms from Story 10.29)
-      template.resourceCountIs('AWS::CloudWatch::Alarm', 12);
+      // 3 RDS alarms (connections, low free storage, CPU) + 3 SES bounce/complaint alarms
+      // from Story 10.29.
+      //
+      // Was 12 before #970. The nine removed alarms had never evaluated a datapoint —
+      // they queried AWS/ApiGateway (traffic is served by an ALB), AWS/ECS without
+      // ClusterName, DBClusterIdentifier for a single RDS instance, AWS/EBS with no
+      // volumes, and AWS/Billing outside us-east-1. Their real replacements moved next to
+      // the resources they watch: AlbAlarms in ApiGatewayServiceStack, and per-service CPU
+      // and memory in EcsServiceAlarms. See platform-alarms.test.ts.
+      //
+      // Note what this assertion cannot tell you, which is how #970 survived so long: a
+      // count is blind to whether any alarm's dimensions match a real resource. The
+      // dimension guards live in alert-rules.test.ts.
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 6);
     });
 
     test('should_configureAlarmActions_when_productionEnvironment', () => {
