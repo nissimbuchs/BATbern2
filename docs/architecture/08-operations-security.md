@@ -163,6 +163,34 @@ check it there once rather than trusting a green unit test. `alert-rules.test.ts
 specific dimension mistakes above, and no alarm anywhere may use `treatMissingData: BREACHING` — a
 permanently red alarm is worse than no alarm, because it teaches everyone to ignore the channel.
 
+### Percentile alarms need a traffic floor
+
+`alb-latency-p95` gates its expression on request volume:
+
+```
+IF(requests >= 20, latency, 0)
+```
+
+This is not a fudge to quieten it — it is what makes the threshold meaningful. BATbern's traffic is
+low and bursty: measured request counts per 5-minute window run `0, 0, 0, 1, 1, 11, 44, 108, 168,
+497`. In most windows the p95 **is one request**, and if that request is the first to reach a cold
+JVM after ECS replaces a task it reads 2–3 seconds. The alarm went ALARM on the very deploy that
+introduced it (#980), on two lonely requests in a three-period window, while the baseline p95 in
+windows with real traffic was 2–25 **milliseconds**.
+
+The alternative — raising the threshold until the noise stopped — would have hidden genuine latency
+at every traffic level, which is the same class of mistake as the dead alarms above: a signal that
+looks like coverage and is not. Gating on volume keeps the 0.5 s threshold honest and silences only
+the windows where the number never carried information.
+
+The same caution applies to any percentile or ratio alarm added later. `alb-availability` uses
+`IF(requests > 0, …, 100)` for the same reason. A count-based alarm (5xx, unhealthy targets) needs no
+such guard, because a count of one is still a fact.
+
+**Cold starts are a known, unquantified cost here.** A first request hitting a freshly started
+Fargate task can take seconds. That is real user-visible latency, it is not yet characterised, and
+the alarm now makes it visible instead of invisible.
+
 ## Cost Optimizations (2026-03)
 
 The following cost optimizations were applied to the production (staging) environment:
