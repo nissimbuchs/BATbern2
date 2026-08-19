@@ -163,6 +163,49 @@ check it there once rather than trusting a green unit test. `alert-rules.test.ts
 specific dimension mistakes above, and no alarm anywhere may use `treatMissingData: BREACHING` — a
 permanently red alarm is worse than no alarm, because it teaches everyone to ignore the channel.
 
+### The deploy warmup is real latency, and the latency alarm must outlast it
+
+`alb-latency-p95` gates its expression on request volume:
+
+```
+IF(requests >= 20, latency, 0)
+```
+
+That floor is independently correct — quiet windows carry 1–6 requests, where a p95 is essentially
+one sample — but **it is not what keeps the alarm quiet**, and it is worth being precise about why,
+because the first attempt at this got it wrong.
+
+`alb-latency-p95` sent five notifications on 2026-08-19, the day it shipped. The initial diagnosis
+was "low traffic, so p95 is one cold-start request". The measurements say otherwise. Across two ECS
+task replacements, per 5-minute window:
+
+| requests | p95 | | requests | p95 |
+|---|---|---|---|---|
+| 25 | 3.7081 s | | 35 | 4.7058 s |
+| 116 | 1.9862 s | | 220 | 1.1722 s |
+| 256 | 0.8424 s | | 533 | 0.4328 s |
+| 386 | 0.5252 s | | | |
+| 45 | 0.0057 s | | | |
+
+Volume **ramps** while latency **decays** — a JVM warming up under real load. Every breaching window
+carries 25–533 requests and clears the 20-request floor, so the volume gate would not have suppressed
+a single one of those five emails. This is genuine, user-visible latency: on the order of 800 real
+requests take seconds after each task replacement, for roughly 10–15 minutes, before settling to a
+2–25 **millisecond** baseline.
+
+So the alarm is not wrong and the metric is not noise — the alarm simply has to outlast a condition
+that resolves itself. It requires **5 breaching periods out of 6 (25 minutes)**. The observed warmups
+breached for 4 and 2 periods respectively; latency that is genuinely stuck still fires. The trade is
+explicit: a real regression is detected ~25 minutes later than it otherwise would be, in exchange for
+not paging on every deploy.
+
+**Do not "fix" a noisy alarm by raising its threshold.** That hides genuine latency at every traffic
+level and produces a signal that looks like coverage and is not — the same failure as the dead alarms
+above. Change *when* it speaks, not *what it considers acceptable*.
+
+**The warmup itself is unfixed.** It is now quantified rather than invisible, and tracked separately.
+The alarm change buys quiet; it does not make the platform fast after a deploy.
+
 ## Cost Optimizations (2026-03)
 
 The following cost optimizations were applied to the production (staging) environment:

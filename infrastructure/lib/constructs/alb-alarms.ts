@@ -34,6 +34,11 @@ export interface AlbAlarmsProps {
     readonly clientErrorCount?: number;
     /** P95 TargetResponseTime, in SECONDS. */
     readonly latencyP95Seconds?: number;
+    /**
+     * Minimum requests in a 5-minute window before the latency alarm evaluates at all.
+     * Below this the p95 is computed over too few samples to mean anything.
+     */
+    readonly latencyMinRequests?: number;
     /** Availability floor as a percentage, e.g. 99.9. */
     readonly availabilityPercent?: number;
   };
@@ -78,6 +83,7 @@ export class AlbAlarms extends Construct {
       // threshold of 500 written for milliseconds, i.e. a 500-second SLA had it ever run.
       // coding-standards.md targets P95 < 200ms; 500ms is the alerting floor above it.
       latencyP95Seconds: props.thresholds?.latencyP95Seconds ?? 0.5,
+      latencyMinRequests: props.thresholds?.latencyMinRequests ?? 20,
       availabilityPercent: props.thresholds?.availabilityPercent ?? 99.9,
     };
 
@@ -133,15 +139,57 @@ export class AlbAlarms extends Construct {
     });
 
     // ── Latency ────────────────────────────────────────────────────────────────────
+    // Fires only on SUSTAINED latency, because the thing that actually breaches here is a
+    // deploy, and a deploy recovers on its own.
+    //
+    // Measured 2026-08-19 across two ECS task replacements (windows are 5 minutes):
+    //
+    //   requests   p95        requests   p95
+    //         25   3.7081s          35   4.7058s
+    //        116   1.9862s         220   1.1722s
+    //        256   0.8424s         533   0.4328s
+    //        386   0.5252s
+    //         45   0.0057s
+    //
+    // Volume ramps while latency decays — a JVM warming up under real load, not a metric
+    // artifact. Hundreds of genuine requests take seconds for roughly 10-15 minutes after
+    // a task is replaced, then settle to a 2-25 MILLIsecond baseline.
+    //
+    // A first attempt gated this on request volume (`IF(requests >= 20, ...)`) on the
+    // theory that a p95 over one request is meaningless. That theory was wrong for THIS
+    // signal: every breaching window above carries 25-533 requests and clears the floor,
+    // so the gate would not have suppressed a single one of the five notifications sent on
+    // 2026-08-19. The volume gate is retained because it is independently correct — a p95
+    // over 2-6 requests really is noise — but it is not what makes this alarm quiet.
+    //
+    // What makes it quiet is requiring the breach to PERSIST: 5 of 6 periods, i.e. 25
+    // minutes. The observed warmups breached for 4 windows and 2 windows respectively, so
+    // neither trips this, while latency that is genuinely stuck still does. That is a
+    // deliberate trade — detection of a real regression is delayed by ~25 minutes in
+    // exchange for not paging on every deploy.
+    //
+    // The warmup itself is real user-visible latency and is NOT fixed by this alarm
+    // change; it is quantified and tracked separately.
     const latency = new cloudwatch.Alarm(this, 'LatencyP95', {
       alarmName: `batbern-${env}-alb-latency-p95`,
       alarmDescription:
-        `P95 target response time exceeds ${thresholds.latencyP95Seconds}s ` +
-        '(coding-standards.md targets P95 < 200ms)',
-      metric: albMetric('TargetResponseTime', 'p95'),
+        `P95 target response time above ${thresholds.latencyP95Seconds}s, sustained for 25 ` +
+        `minutes, over at least ${thresholds.latencyMinRequests} requests per window ` +
+        '(coding-standards.md targets P95 < 200ms; deploy warmup lasts 10-15 min and is excluded)',
+      metric: new cloudwatch.MathExpression({
+        expression: `IF(requests >= ${thresholds.latencyMinRequests}, latency, 0)`,
+        usingMetrics: {
+          requests: albMetric('RequestCount', 'Sum'),
+          latency: albMetric('TargetResponseTime', 'p95'),
+        },
+        period,
+        label: 'P95 latency (traffic-gated)',
+      }),
       threshold: thresholds.latencyP95Seconds,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
+      // 5 of 6 periods = 25 minutes of sustained breach. See the note above: a deploy
+      // warmup breaches for 2-4 periods and must not page.
+      evaluationPeriods: 6,
+      datapointsToAlarm: 5,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
