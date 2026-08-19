@@ -7,16 +7,67 @@ import { Construct } from 'constructs';
 export interface AlarmConstructProps {
   environment: string;
   alarmTopic?: sns.Topic;
+  /**
+   * RDS instance identifier for the database alarms.
+   *
+   * Defaults to `batbern-{environment}-postgres`, which is the identifier
+   * `DatabaseStack` sets explicitly (`lib/stacks/database-stack.ts`, `instanceIdentifier`).
+   * It is passed as a plain string rather than a CDK reference on purpose: DatabaseStack is
+   * created before MonitoringStack in `bin/batbern-infrastructure.ts`, and a cross-stack
+   * reference here would add a dependency edge for a value that is deterministic anyway.
+   * If DatabaseStack's naming ever changes, change it here too.
+   */
+  dbInstanceIdentifier?: string;
 }
 
 /**
- * Reusable construct for creating comprehensive CloudWatch alarms
+ * Platform alarms owned by MonitoringStack.
  *
- * Implements alarms for:
- * - SLA monitoring (AC: 5)
- * - Error rate thresholds (AC: 6)
- * - Performance/latency (AC: 7)
- * - Resource utilization (AC: 8)
+ * ## History — issue #970
+ *
+ * This construct used to declare nine alarms covering SLA, error rate, latency, resource
+ * utilization and cost. **Not one of them had ever evaluated a single datapoint.** Live
+ * `describe-alarms` output showed eight reporting `"Unchecked: Initial alarm creation"`
+ * and the ninth `"Insufficient Data"`, because every one queried a resource that does not
+ * exist in this account:
+ *
+ * | alarm | queried | reality |
+ * |---|---|---|
+ * | `high-availability` | `AWS/ApiGateway`, `ApiName=batbern-{env}` | traffic is served by an **ALB**; no REST API Gateway exists |
+ * | `high-errors` | same | same |
+ * | `high-client-errors` | same | same |
+ * | `high-latency` | same | same |
+ * | `high-cpu` | `AWS/ECS`, `ServiceName` only | `batbern-{env}` is the **cluster**; AWS/ECS needs ClusterName **and** ServiceName |
+ * | `high-memory` | same | same |
+ * | `high-disk` | `AWS/EBS VolumeUtilization` | not a real EBS metric name, and there are no EBS volumes — storage is RDS |
+ * | `database-connections` | `AWS/RDS`, `DBClusterIdentifier` | RDS here is a single **instance**, not an Aurora cluster |
+ * | `budget-overage` | `AWS/Billing` in eu-central-1 | `AWS/Billing` is only ever published in **us-east-1** |
+ *
+ * `high-availability` was worse still: it compared `Sum(RequestCount)` — a request count —
+ * against `99.9` as though it were a percentage, and used
+ * `treatMissingData: BREACHING`, so it reported ALARM continuously from 2025-10-04. Ten
+ * months of a permanently red alarm trains everyone to ignore the channel.
+ *
+ * None of this was catchable by the tests that existed. `Template.fromStack()` assertions
+ * pass on an alarm whose dimensions match nothing, and the E2E specs asserted
+ * `alarm.Threshold === 99.9` — true of a dead alarm — while never running in CI, which
+ * only executes `test/unit`.
+ *
+ * ## What lives here now
+ *
+ * Only alarms whose target identifiers are genuinely available to MonitoringStack. The
+ * rest moved next to the resources they watch, which is where `EcsServiceAlarms` and
+ * `UserSyncAlarms` already were:
+ *
+ * - availability / 5xx / 4xx / latency / unhealthy targets → `AlbAlarms`, in
+ *   `ApiGatewayServiceStack` (it owns the ALB)
+ * - CPU and memory → `EcsServiceAlarms`, per service, in each service stack
+ * - cost → deliberately not replaced here; see below
+ *
+ * **Cost monitoring is intentionally absent.** `AWS/Billing` cannot work from
+ * eu-central-1, and the correct home is AWS Budgets in the management account
+ * (510187933511), which holds consolidated billing and where the CFO already has billing
+ * access. Tracked separately rather than reimplemented wrongly a second time.
  */
 export class AlarmConstruct extends Construct {
   public readonly alarms: cloudwatch.Alarm[];
@@ -24,292 +75,85 @@ export class AlarmConstruct extends Construct {
   constructor(scope: Construct, id: string, props: AlarmConstructProps) {
     super(scope, id);
 
-    this.alarms = [];
+    this.alarms = [...this.createDatabaseAlarms(props)];
 
-    // Create all alarm categories
-    this.alarms.push(...this.createSLAAlarms(props));
-    this.alarms.push(...this.createErrorRateAlarms(props));
-    this.alarms.push(...this.createPerformanceAlarms(props));
-    this.alarms.push(...this.createResourceUtilizationAlarms(props));
-    this.alarms.push(...this.createCostAlarms(props));
+    if (props.alarmTopic) {
+      const action = new cloudwatchActions.SnsAction(props.alarmTopic);
+      for (const alarm of this.alarms) {
+        alarm.addAlarmAction(action);
+        // #956: the github-issues Lambda closes an alarm's issue on the OK transition; with
+        // no OK action the issue stays open forever.
+        alarm.addOkAction(action);
+      }
+    }
   }
 
   /**
-   * Create cost monitoring alarms (AC: 11)
-   * Target: Budget threshold alerts
+   * RDS alarms. These stay in MonitoringStack because the instance identifier is a
+   * deterministic string (see `dbInstanceIdentifier`), so no cross-stack reference is
+   * needed to build the dimension.
    */
-  private createCostAlarms(props: AlarmConstructProps): cloudwatch.Alarm[] {
-    const alarms: cloudwatch.Alarm[] = [];
+  private createDatabaseAlarms(props: AlarmConstructProps): cloudwatch.Alarm[] {
+    const dbInstanceIdentifier =
+      props.dbInstanceIdentifier ?? `batbern-${props.environment}-postgres`;
+    const isProduction = props.environment === 'production';
 
-    // Budget Overage Alarm
-    // Note: alarmName/alarmDescription/evaluationPeriods are valid per AWS CDK docs but TypeScript types are incomplete
-    const budgetAlarm = new cloudwatch.Alarm(this, 'BudgetAlarm', {
-      alarmName: `batbern-${props.environment}-budget-overage`,
-      alarmDescription: 'Alert when AWS costs exceed budget threshold',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/Billing',
-        metricName: 'EstimatedCharges',
-        dimensionsMap: {
-          Currency: 'USD',
-        },
-        statistic: 'Maximum',
-        period: cdk.Duration.hours(6),
-      }),
-      threshold: props.environment === 'production' ? 1000 : 100, // $1000 for prod, $100 for dev/staging
-      evaluationPeriods: 1,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      actionsEnabled: true,
-    });
-
-    if (props.alarmTopic) {
-      budgetAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      budgetAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
-
-    alarms.push(budgetAlarm);
-    return alarms;
-  }
-
-  /**
-   * Create SLA monitoring alarms (AC: 5)
-   * Target: 99.9% availability
-   */
-  private createSLAAlarms(props: AlarmConstructProps): cloudwatch.Alarm[] {
-    const alarms: cloudwatch.Alarm[] = [];
-
-    // Availability Alarm - 99.9% SLA
-    const availabilityAlarm = new cloudwatch.Alarm(this, 'AvailabilityAlarm', {
-      alarmName: `batbern-${props.environment}-high-availability`,
-      alarmDescription: 'Alert when availability drops below 99.9% SLA',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: 'Count',
-        dimensionsMap: {
-          ApiName: `batbern-${props.environment}`,
-        },
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 99.9,
-      evaluationPeriods: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.BREACHING,
-      actionsEnabled: true,
-    });
-
-    if (props.alarmTopic) {
-      availabilityAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      availabilityAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
-
-    alarms.push(availabilityAlarm);
-    return alarms;
-  }
-
-  /**
-   * Create error rate alarms (AC: 6)
-   * Target: < 0.1% error rate
-   */
-  private createErrorRateAlarms(props: AlarmConstructProps): cloudwatch.Alarm[] {
-    const alarms: cloudwatch.Alarm[] = [];
-
-    // High Error Rate Alarm
-    const highErrorAlarm = new cloudwatch.Alarm(this, 'HighErrorAlarm', {
-      alarmName: `batbern-${props.environment}-high-errors`,
-      alarmDescription: 'Alert when error rate is high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: '5XXError',
-        dimensionsMap: {
-          ApiName: `batbern-${props.environment}`,
-        },
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 10,
-      evaluationPeriods: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      actionsEnabled: true,
-    });
-
-    if (props.alarmTopic) {
-      highErrorAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      highErrorAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
-
-    alarms.push(highErrorAlarm);
-
-    // 4XX Error Rate Alarm (client errors)
-    const clientErrorAlarm = new cloudwatch.Alarm(this, 'ClientErrorAlarm', {
-      alarmName: `batbern-${props.environment}-high-client-errors`,
-      alarmDescription: 'Alert when client error rate is high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: '4XXError',
-        dimensionsMap: {
-          ApiName: `batbern-${props.environment}`,
-        },
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 50,
-      evaluationPeriods: 3,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      actionsEnabled: true,
-    });
-
-    if (props.alarmTopic) {
-      clientErrorAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      clientErrorAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
-
-    alarms.push(clientErrorAlarm);
-    return alarms;
-  }
-
-  /**
-   * Create performance/latency alarms (AC: 7)
-   * Target: P95 < 500ms
-   */
-  private createPerformanceAlarms(props: AlarmConstructProps): cloudwatch.Alarm[] {
-    const alarms: cloudwatch.Alarm[] = [];
-
-    // High Latency Alarm (P95)
-    const highLatencyAlarm = new cloudwatch.Alarm(this, 'HighLatencyAlarm', {
-      alarmName: `batbern-${props.environment}-high-latency`,
-      alarmDescription: 'Alert when P95 API latency exceeds 500ms SLA target',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: 'Latency',
-        dimensionsMap: {
-          ApiName: `batbern-${props.environment}`,
-        },
-        statistic: 'p95',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 500, // 500ms as per SLA requirements (AC: 7)
-      evaluationPeriods: 3,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      actionsEnabled: true,
-    });
-
-    if (props.alarmTopic) {
-      highLatencyAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      highLatencyAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
-
-    alarms.push(highLatencyAlarm);
-    return alarms;
-  }
-
-  /**
-   * Create resource utilization alarms (AC: 8)
-   * Targets: CPU < 80%, Memory < 80%, Disk < 85%
-   */
-  private createResourceUtilizationAlarms(props: AlarmConstructProps): cloudwatch.Alarm[] {
-    const alarms: cloudwatch.Alarm[] = [];
-
-    // High CPU Alarm
-    const highCpuAlarm = new cloudwatch.Alarm(this, 'HighCpuAlarm', {
-      alarmName: `batbern-${props.environment}-high-cpu`,
-      alarmDescription: 'Alert when CPU utilization is high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ECS',
-        metricName: 'CPUUtilization',
-        dimensionsMap: {
-          ServiceName: `batbern-${props.environment}`,
-        },
-        statistic: 'Average',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 80,
-      evaluationPeriods: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      actionsEnabled: true,
-    });
-
-    if (props.alarmTopic) {
-      highCpuAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      highCpuAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
-
-    alarms.push(highCpuAlarm);
-
-    // High Memory Alarm
-    const highMemoryAlarm = new cloudwatch.Alarm(this, 'HighMemoryAlarm', {
-      alarmName: `batbern-${props.environment}-high-memory`,
-      alarmDescription: 'Alert when memory utilization is high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ECS',
-        metricName: 'MemoryUtilization',
-        dimensionsMap: {
-          ServiceName: `batbern-${props.environment}`,
-        },
-        statistic: 'Average',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 80,
-      evaluationPeriods: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      actionsEnabled: true,
-    });
-
-    if (props.alarmTopic) {
-      highMemoryAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      highMemoryAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
-
-    alarms.push(highMemoryAlarm);
-
-    // High Disk Utilization Alarm
-    const highDiskAlarm = new cloudwatch.Alarm(this, 'HighDiskAlarm', {
-      alarmName: `batbern-${props.environment}-high-disk`,
-      alarmDescription: 'Alert when disk utilization is high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/EBS',
-        metricName: 'VolumeUtilization',
-        statistic: 'Average',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 85,
-      evaluationPeriods: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      actionsEnabled: true,
-    });
-
-    if (props.alarmTopic) {
-      highDiskAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      highDiskAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
-
-    alarms.push(highDiskAlarm);
-
-    // Database Connection Alarm
-    const databaseConnectionAlarm = new cloudwatch.Alarm(this, 'DatabaseConnectionAlarm', {
-      alarmName: `batbern-${props.environment}-database-connections`,
-      alarmDescription: 'Alert when database connections are high',
-      metric: new cloudwatch.Metric({
+    const rdsMetric = (metricName: string, statistic: string) =>
+      new cloudwatch.Metric({
         namespace: 'AWS/RDS',
-        metricName: 'DatabaseConnections',
-        dimensionsMap: {
-          DBClusterIdentifier: `batbern-${props.environment}`,
-        },
-        statistic: 'Average',
+        metricName,
+        // DBInstanceIdentifier, not DBClusterIdentifier — this is a single
+        // db.t4g.micro instance (see tech-stack.md), never an Aurora cluster. The old
+        // alarm used the cluster dimension and therefore matched nothing.
+        dimensionsMap: { DBInstanceIdentifier: dbInstanceIdentifier },
+        statistic,
         period: cdk.Duration.minutes(5),
-      }),
+      });
+
+    const connections = new cloudwatch.Alarm(this, 'DatabaseConnectionAlarm', {
+      alarmName: `batbern-${props.environment}-database-connections`,
+      alarmDescription: 'RDS connection count is high — connection pool may be exhausted',
+      metric: rdsMetric('DatabaseConnections', 'Maximum'),
+      // db.t4g.micro's default max_connections is ~112 (DBInstanceClassMemory/9531392).
+      // 80 leaves room to react before the pool is exhausted and Hikari starts timing out.
       threshold: 80,
       evaluationPeriods: 2,
+      datapointsToAlarm: 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      actionsEnabled: true,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    if (props.alarmTopic) {
-      databaseConnectionAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-      databaseConnectionAlarm.addOkAction(new cloudwatchActions.SnsAction(props.alarmTopic));
-    }
+    // Replaces the `high-disk` alarm, which queried `AWS/EBS VolumeUtilization` — not a
+    // real EBS metric, against volumes that do not exist. The storage that can actually
+    // fill up and take the platform down is the RDS instance's.
+    //
+    // FreeStorageSpace is in BYTES and the comparison is LESS_THAN: unlike a utilization
+    // percentage, less is worse.
+    const freeStorage = new cloudwatch.Alarm(this, 'DatabaseStorageAlarm', {
+      alarmName: `batbern-${props.environment}-database-storage-low`,
+      alarmDescription:
+        'RDS free storage is low — the database will stop accepting writes when it fills',
+      metric: rdsMetric('FreeStorageSpace', 'Minimum'),
+      threshold: (isProduction ? 5 : 2) * 1024 * 1024 * 1024, // 5 GiB prod, 2 GiB otherwise
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
+      // A missing datapoint here must NOT read as healthy the way it can for a
+      // count-based alarm, but BREACHING would produce the permanently-red failure mode of
+      // the old high-availability alarm. MISSING keeps the last known state instead.
+      treatMissingData: cloudwatch.TreatMissingData.MISSING,
+    });
 
-    alarms.push(databaseConnectionAlarm);
+    const cpu = new cloudwatch.Alarm(this, 'DatabaseCpuAlarm', {
+      alarmName: `batbern-${props.environment}-database-cpu`,
+      alarmDescription: 'RDS CPU utilization is high',
+      metric: rdsMetric('CPUUtilization', 'Average'),
+      threshold: 80,
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
 
-    return alarms;
+    return [connections, freeStorage, cpu];
   }
 }

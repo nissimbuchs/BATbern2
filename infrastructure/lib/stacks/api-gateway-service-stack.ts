@@ -11,6 +11,7 @@ import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createContainerImage } from '../utils/container-image-helper';
 import { EcsServiceAlarms } from '../constructs/ecs-service-alarms';
+import { AlbAlarms } from '../constructs/alb-alarms';
 
 export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -55,14 +56,14 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     super(scope, id, props);
 
     const envName = props.config.envName;
-    const isProd = props.config.isProduction ?? (envName === 'production');
+    const isProd = props.config.isProduction ?? envName === 'production';
 
     // Common environment variables (non-sensitive)
     const commonEnv = {
       SPRING_PROFILES_ACTIVE: envName,
       APP_ENVIRONMENT: isProd ? 'production' : envName,
       AWS_REGION: props.config.region,
-      LOG_LEVEL: (isProd || envName === 'staging') ? 'INFO' : 'DEBUG',
+      LOG_LEVEL: isProd || envName === 'staging' ? 'INFO' : 'DEBUG',
       ...(props.databaseEndpoint && {
         DATABASE_URL: `jdbc:postgresql://${props.databaseEndpoint}:5432/batbern`,
       }),
@@ -161,25 +162,27 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     });
 
     // Grant CloudWatch Logs permissions
-    taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'logs:CreateLogGroup',
-        'logs:CreateLogStream',
-        'logs:PutLogEvents',
-        'logs:DescribeLogStreams',
-      ],
-      resources: ['*'],
-    }));
+    taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'logs:CreateLogGroup',
+          'logs:CreateLogStream',
+          'logs:PutLogEvents',
+          'logs:DescribeLogStreams',
+        ],
+        resources: ['*'],
+      })
+    );
 
     // Grant CloudWatch Metrics permissions
-    taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'cloudwatch:PutMetricData',
-      ],
-      resources: ['*'],
-    }));
+    taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cloudwatch:PutMetricData'],
+        resources: ['*'],
+      })
+    );
 
     // Grant Secrets Manager permissions to task execution role
     if (props.databaseSecret) {
@@ -255,7 +258,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     // Increase ALB idle timeout to 120s to avoid 60s timeout during cold starts
     (this.service.loadBalancer.node.defaultChild as cdk.CfnResource).addPropertyOverride(
       'LoadBalancerAttributes',
-      [{ Key: 'idle_timeout.timeout_seconds', Value: '120' }],
+      [{ Key: 'idle_timeout.timeout_seconds', Value: '120' }]
     );
 
     // Enable Service Connect for service-to-service communication
@@ -265,14 +268,18 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     cfnService.addPropertyOverride('ServiceConnectConfiguration', {
       Enabled: true,
       Namespace: 'batbern.local',
-      Services: [{
-        PortName: 'api-gateway-port',
-        DiscoveryName: 'api-gateway',
-        ClientAliases: [{
-          Port: 8080,
-          DnsName: 'api-gateway',
-        }],
-      }],
+      Services: [
+        {
+          PortName: 'api-gateway-port',
+          DiscoveryName: 'api-gateway',
+          ClientAliases: [
+            {
+              Port: 8080,
+              DnsName: 'api-gateway',
+            },
+          ],
+        },
+      ],
     });
 
     // Add circuit breaker to fail fast on repeated task failures
@@ -336,6 +343,25 @@ export class ApiGatewayServiceStack extends cdk.Stack {
           taskFailureCount: envName === 'production' ? 2 : 5,
           eventBridgePublishingFailures: envName === 'production' ? 5 : 10,
         },
+      });
+
+      // Issue #970: platform-wide availability / 5xx / 4xx / latency alarms.
+      //
+      // These replace four alarms in AlarmConstruct that queried AWS/ApiGateway with
+      // ApiName=batbern-{env}. No REST API Gateway exists in this account — traffic is
+      // served by this ALB — so all four sat in INSUFFICIENT_DATA from creation and were
+      // never once evaluated.
+      //
+      // They live here rather than in MonitoringStack because the ALB's CloudWatch
+      // identifiers only exist once the load balancer does, and MonitoringStack is created
+      // long before this stack. The topic flows the other way (MonitoringStack exports it,
+      // bin/ passes it in), which is the same arrangement EcsServiceAlarms already uses.
+      new AlbAlarms(this, 'AlbAlarms', {
+        environment: envName,
+        loadBalancerFullName: this.service.loadBalancer.loadBalancerFullName,
+        targetGroupFullName: this.service.targetGroup.targetGroupFullName,
+        alarmTopic: props.alarmTopic,
+        isProduction: isProd,
       });
     }
 

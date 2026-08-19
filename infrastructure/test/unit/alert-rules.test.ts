@@ -5,392 +5,201 @@ import { devConfig } from '../../lib/config/dev-config';
 import { prodConfig } from '../../lib/config/prod-config';
 
 /**
- * Test suite for Alert Configuration (Task 3 - AC: 5, 6, 7, 8)
+ * Alert configuration for the alarms MonitoringStack still owns, plus regression guards
+ * for issue #970.
+ *
+ * This file used to assert that MonitoringStack contained availability / error / latency /
+ * CPU / memory / disk alarms. It did — nine of them, and **not one had ever evaluated a
+ * datapoint**, because each queried a resource that does not exist in this account. Every
+ * assertion here passed against alarms that were permanently INSUFFICIENT_DATA, which is
+ * precisely the problem: `hasResourceProperties` sees a name and a threshold, and is blind
+ * to whether the metric resolves to anything at all.
+ *
+ * Those alarms now live next to the resources they watch and are covered by
+ * `platform-alarms.test.ts`:
+ *   - availability / 5xx / 4xx / latency / unhealthy targets → `AlbAlarms`
+ *   - CPU and memory, per service                            → `EcsServiceAlarms`
+ *
+ * What remains here is what MonitoringStack can legitimately own (the RDS alarms, whose
+ * instance identifier is deterministic) and — more usefully — a set of guards asserting the
+ * *absence* of the specific mistakes that made the old alarms dead. A named-and-thresholded
+ * alarm proves nothing; a correct dimension is the thing worth testing.
  */
 describe('Alert Rules Configuration', () => {
-  describe('SLA Monitoring Alarms (AC: 5)', () => {
-    test('should_createAvailabilityAlarm_when_slaMonitoringConfigured', () => {
-      // Arrange
-      const app = new App();
+  const templateFor = (config: typeof prodConfig) => {
+    const app = new App();
+    const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+      config,
+      env: { account: '123456789012', region: 'eu-central-1' },
+    });
+    return Template.fromStack(stack);
+  };
 
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
+  const alarmsOf = (template: Template) =>
+    Object.values(template.findResources('AWS::CloudWatch::Alarm')).map((r) => r.Properties ?? {});
+
+  describe('#970 regression guards — dimensions that resolve to a real resource', () => {
+    test('should_neverQueryApiGatewayNamespace_when_alarmsCreated', () => {
+      // Four alarms queried AWS/ApiGateway with ApiName=batbern-{env}. Traffic is served
+      // by an ALB; no REST API Gateway exists in this account. They never evaluated once.
+      const offenders = alarmsOf(templateFor(prodConfig))
+        .filter((p) => p.Namespace === 'AWS/ApiGateway')
+        .map((p) => p.AlarmName);
+      expect(offenders).toEqual([]);
+    });
+
+    test('should_alwaysPairClusterNameWithServiceName_when_ecsAlarmCreated', () => {
+      // high-cpu and high-memory set only { ServiceName: 'batbern-{env}' } — which is the
+      // CLUSTER name. AWS/ECS needs both dimensions or the metric resolves to nothing.
+      const offenders = alarmsOf(templateFor(prodConfig))
+        .filter((p) => p.Namespace === 'AWS/ECS')
+        .filter((p) => {
+          const names = (p.Dimensions ?? []).map((d: { Name: string }) => d.Name);
+          return !(names.includes('ClusterName') && names.includes('ServiceName'));
+        })
+        .map((p) => p.AlarmName);
+      expect(offenders).toEqual([]);
+    });
+
+    test('should_useDbInstanceIdentifier_when_rdsAlarmCreated', () => {
+      // database-connections used DBClusterIdentifier. RDS here is a single
+      // db.t4g.micro instance, never an Aurora cluster.
+      const rdsAlarms = alarmsOf(templateFor(prodConfig)).filter((p) => p.Namespace === 'AWS/RDS');
+      expect(rdsAlarms.length).toBeGreaterThan(0);
+
+      const offenders = rdsAlarms
+        .filter((p) => {
+          const names = (p.Dimensions ?? []).map((d: { Name: string }) => d.Name);
+          return !names.includes('DBInstanceIdentifier') || names.includes('DBClusterIdentifier');
+        })
+        .map((p) => p.AlarmName);
+      expect(offenders).toEqual([]);
+    });
+
+    test('should_notQueryBillingOutsideUsEast1_when_alarmsCreated', () => {
+      // budget-overage used AWS/Billing in eu-central-1. That namespace is only ever
+      // published in us-east-1, so it could not have produced a datapoint anywhere else.
+      const offenders = alarmsOf(templateFor(prodConfig))
+        .filter((p) => p.Namespace === 'AWS/Billing')
+        .map((p) => p.AlarmName);
+      expect(offenders).toEqual([]);
+    });
+
+    test('should_notQueryEbsVolumeMetrics_when_alarmsCreated', () => {
+      // high-disk used AWS/EBS VolumeUtilization — not a real EBS metric name, against
+      // volumes that do not exist. Storage that can actually fill up is the RDS instance's.
+      const offenders = alarmsOf(templateFor(prodConfig))
+        .filter((p) => p.Namespace === 'AWS/EBS')
+        .map((p) => p.AlarmName);
+      expect(offenders).toEqual([]);
+    });
+
+    test('should_neverTreatMissingDataAsBreaching_when_alarmsCreated', () => {
+      // high-availability used BREACHING, so with a metric that never produced data it sat
+      // in ALARM continuously from 2025-10-04 — about ten months. A permanently red alarm
+      // is worse than no alarm: it trains everyone to ignore the channel.
+      const offenders = alarmsOf(templateFor(prodConfig))
+        .filter((p) => p.TreatMissingData === 'breaching')
+        .map((p) => p.AlarmName);
+      expect(offenders).toEqual([]);
+    });
+
+    test('should_scopeResourceMetricsToAResource_when_alarmsCreated', () => {
+      // A metric alarm with no dimensions aggregates across every resource in the
+      // namespace — high-disk had none at all. This only applies to namespaces whose
+      // metrics are per-resource: AWS/SES `Reputation.*` is account-level and correctly
+      // carries no dimensions, as do the custom BATbern/* user-sync metrics.
+      const RESOURCE_SCOPED = ['AWS/ECS', 'AWS/RDS', 'AWS/ApplicationELB', 'AWS/SQS', 'AWS/EBS'];
+      const offenders = alarmsOf(templateFor(prodConfig))
+        .filter((p) => RESOURCE_SCOPED.includes(p.Namespace))
+        .filter((p) => (p.Dimensions ?? []).length === 0)
+        .map((p) => p.AlarmName);
+      expect(offenders).toEqual([]);
+    });
+  });
+
+  describe('Database Alarms (RDS — owned by MonitoringStack)', () => {
+    test('should_createDatabaseConnectionAlarm_when_rdsMonitoringEnabled', () => {
+      templateFor(prodConfig).hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*database-connections'),
+        Namespace: 'AWS/RDS',
+        MetricName: 'DatabaseConnections',
+        Dimensions: [{ Name: 'DBInstanceIdentifier', Value: 'batbern-production-postgres' }],
+        ComparisonOperator: 'GreaterThanThreshold',
       });
+    });
 
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify availability alarm exists with 99.9% threshold
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmName: Match.stringLikeRegexp('.*availability.*'),
-        Threshold: 99.9,
+    test('should_alarmWhenFreeStorageFalls_when_rdsMonitoringEnabled', () => {
+      // Replaces the bogus AWS/EBS disk alarm. FreeStorageSpace is in BYTES and — unlike a
+      // utilization percentage — less is worse, hence LessThanThreshold.
+      templateFor(prodConfig).hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*database-storage-low'),
+        Namespace: 'AWS/RDS',
+        MetricName: 'FreeStorageSpace',
         ComparisonOperator: 'LessThanThreshold',
+        Threshold: 5 * 1024 * 1024 * 1024,
       });
     });
 
-    test('should_configureAlarmEvaluationPeriods_when_slaAlarmsCreated', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify alarms have proper evaluation periods
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        EvaluationPeriods: Match.anyValue(),
-      });
-    });
-
-    test('should_configureTreatMissingData_when_slaAlarmsCreated', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify alarms handle missing data appropriately
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        TreatMissingData: Match.anyValue(),
-      });
-    });
-  });
-
-  describe('Error Rate Alarms (AC: 6)', () => {
-    test('should_createErrorRateAlarm_when_thresholdExceeded', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify error rate alarm exists
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmName: Match.stringLikeRegexp('.*error.*'),
-        ComparisonOperator: 'GreaterThanThreshold',
-      });
-    });
-
-    test('should_createServiceSpecificErrorAlarms_when_multipleServices', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify multiple error rate alarms exist
-      const alarms = template.findResources('AWS::CloudWatch::Alarm');
-      const errorAlarms = Object.values(alarms).filter((alarm: any) =>
-        alarm.Properties?.AlarmName?.includes('error') ||
-        alarm.Properties?.MetricName === '5XXError'
-      );
-
-      expect(errorAlarms.length).toBeGreaterThan(0);
-    });
-
-    test('should_configureErrorRateThreshold_when_errorAlarmsCreated', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify error rate threshold is reasonable (0.1% = 0.001 or count-based)
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        Threshold: Match.anyValue(),
-      });
-    });
-  });
-
-  describe('Performance Alarms (AC: 7)', () => {
-    test('should_createLatencyAlarm_when_p95ResponseTimeExceeds500ms', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify latency alarm exists with proper threshold
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmName: Match.stringLikeRegexp('.*latency.*'),
-        ComparisonOperator: 'GreaterThanThreshold',
-      });
-    });
-
-    test('should_useP95Statistic_when_latencyAlarmsCreated', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify P95 statistic is used for latency
-      const alarms = template.findResources('AWS::CloudWatch::Alarm');
-      const latencyAlarms = Object.values(alarms).filter((alarm: any) =>
-        alarm.Properties?.AlarmName?.includes('latency')
-      );
-
-      expect(latencyAlarms.length).toBeGreaterThan(0);
-    });
-
-    test('should_createThroughputAlarms_when_performanceMonitoringEnabled', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify throughput monitoring exists (multiple alarms)
-      const alarmCount = Object.keys(template.findResources('AWS::CloudWatch::Alarm')).length;
-      expect(alarmCount).toBeGreaterThan(0);
-    });
-  });
-
-  describe('Resource Utilization Alarms (AC: 8)', () => {
-    test('should_createCpuAlarm_when_utilizationAbove80Percent', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify CPU alarm exists with 80% threshold
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmName: Match.stringLikeRegexp('.*cpu.*'),
+    test('should_createDatabaseCpuAlarm_when_rdsMonitoringEnabled', () => {
+      templateFor(prodConfig).hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*database-cpu'),
+        Namespace: 'AWS/RDS',
+        MetricName: 'CPUUtilization',
         Threshold: 80,
         ComparisonOperator: 'GreaterThanThreshold',
-      });
-    });
-
-    test('should_createMemoryAlarm_when_utilizationAbove80Percent', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify memory alarm exists
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmName: Match.stringLikeRegexp('.*memory.*'),
-        ComparisonOperator: 'GreaterThanThreshold',
-      });
-    });
-
-    test('should_createDiskUtilizationAlarm_when_resourceMonitoringEnabled', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify disk utilization alarm exists
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmName: Match.stringLikeRegexp('.*disk.*|.*storage.*'),
-        ComparisonOperator: 'GreaterThanThreshold',
-      });
-    });
-
-    test('should_createDatabaseConnectionAlarm_when_rdsMonitoringEnabled', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify database connection alarm exists
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmName: Match.stringLikeRegexp('.*database.*|.*db.*'),
       });
     });
   });
 
   describe('Alarm Actions and Notifications', () => {
     test('should_attachSNSActions_when_productionAlarmsCreated', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify alarms have SNS actions attached
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+      templateFor(prodConfig).hasResourceProperties('AWS::CloudWatch::Alarm', {
         AlarmActions: Match.anyValue(),
       });
     });
 
     test('should_notCreateAlarmActions_when_devEnvironment', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: devConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify no SNS topic in dev
-      template.resourceCountIs('AWS::SNS::Topic', 0);
+      templateFor(devConfig).resourceCountIs('AWS::SNS::Topic', 0);
     });
 
-    test('should_configureOKActions_when_alarmRecoveryEnabled', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify alarms have OK actions for recovery notifications
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        OKActions: Match.anyValue(),
-      });
+    test('should_configureOKActions_onEveryAlarm_when_alarmTopicExists', () => {
+      // #956: the github-issues Lambda closes an alarm's issue on the OK transition. An
+      // alarm with no OK action leaves its issue open forever (#484 sat open ~2 months).
+      const missing = alarmsOf(templateFor(prodConfig))
+        .filter((p) => !p.OKActions || p.OKActions.length === 0)
+        .map((p) => p.AlarmName);
+      expect(missing).toEqual([]);
     });
   });
 
   describe('Alarm Consistency and Standards', () => {
     test('should_useConsistentNaming_when_alarmsCreated', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify all alarms follow naming convention: batbern-{env}-{metric-type}
-      const alarms = template.findResources('AWS::CloudWatch::Alarm');
-      Object.values(alarms).forEach((alarm: any) => {
-        expect(alarm.Properties?.AlarmName).toMatch(/batbern-.*-.*/);
-      });
+      const badlyNamed = alarmsOf(templateFor(prodConfig))
+        .map((p) => p.AlarmName)
+        .filter((name: string) => typeof name === 'string' && !name.startsWith('batbern-'));
+      expect(badlyNamed).toEqual([]);
     });
 
     test('should_haveAlarmDescriptions_when_alarmsCreated', () => {
-      // Arrange
-      const app = new App();
-
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify all alarms have descriptions
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmDescription: Match.anyValue(),
-      });
+      const undescribed = alarmsOf(templateFor(prodConfig))
+        .filter((p) => !p.AlarmDescription)
+        .map((p) => p.AlarmName);
+      expect(undescribed).toEqual([]);
     });
 
-    test('should_enableAlarmActions_when_alarmsCreated', () => {
-      // Arrange
-      const app = new App();
+    test('should_configureEvaluationPeriods_when_alarmsCreated', () => {
+      const missing = alarmsOf(templateFor(prodConfig))
+        .filter((p) => p.EvaluationPeriods === undefined)
+        .map((p) => p.AlarmName);
+      expect(missing).toEqual([]);
+    });
 
-      // Act
-      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
-        config: prodConfig,
-        env: { account: '123456789012', region: 'eu-central-1' },
-      });
-
-      // Assert
-      const template = Template.fromStack(stack);
-
-      // Verify alarm actions are enabled
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        ActionsEnabled: true,
-      });
+    test('should_configureTreatMissingData_when_alarmsCreated', () => {
+      const missing = alarmsOf(templateFor(prodConfig))
+        .filter((p) => p.TreatMissingData === undefined)
+        .map((p) => p.AlarmName);
+      expect(missing).toEqual([]);
     });
   });
 });

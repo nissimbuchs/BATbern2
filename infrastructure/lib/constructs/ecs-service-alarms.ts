@@ -61,6 +61,8 @@ export interface EcsServiceAlarmsProps {
    */
   readonly thresholds?: {
     readonly memoryUtilization?: number;
+    /** CPU utilization percentage. Issue #970. */
+    readonly cpuUtilization?: number;
     readonly oomKillCount?: number;
     readonly taskFailureCount?: number;
     readonly eventBridgePublishingFailures?: number;
@@ -72,15 +74,14 @@ export class EcsServiceAlarms extends Construct {
     super(scope, id);
 
     // Default thresholds - stricter for production
-    const isProduction = props.isProduction ?? (props.environment === 'production');
+    const isProduction = props.isProduction ?? props.environment === 'production';
     const thresholds = {
       memoryUtilization: props.thresholds?.memoryUtilization ?? 80,
+      cpuUtilization: props.thresholds?.cpuUtilization ?? 80,
       oomKillCount: props.thresholds?.oomKillCount ?? (isProduction ? 1 : 3),
-      taskFailureCount:
-        props.thresholds?.taskFailureCount ?? (isProduction ? 2 : 5),
+      taskFailureCount: props.thresholds?.taskFailureCount ?? (isProduction ? 2 : 5),
       eventBridgePublishingFailures:
-        props.thresholds?.eventBridgePublishingFailures ??
-        (isProduction ? 5 : 10),
+        props.thresholds?.eventBridgePublishingFailures ?? (isProduction ? 5 : 10),
     };
 
     // Create CloudWatch alarm action
@@ -90,31 +91,61 @@ export class EcsServiceAlarms extends Construct {
     const serviceDisplayName = props.serviceDisplayName;
 
     // Alarm 1: High Memory Utilization
-    const memoryUtilizationAlarm = new cloudwatch.Alarm(
-      this,
-      'HighMemoryUtilization',
-      {
-        alarmName: `batbern-${props.environment}-${serviceDisplayName}-High-Memory`,
-        alarmDescription: `${serviceDisplayName} memory utilization exceeds ${thresholds.memoryUtilization}% (average over 5 minutes)`,
-        metric: new cloudwatch.Metric({
-          namespace: 'AWS/ECS',
-          metricName: 'MemoryUtilization',
-          dimensionsMap: {
-            ServiceName: props.serviceName,
-            ClusterName: props.clusterName,
-          },
-          statistic: 'Average',
-          period: cdk.Duration.minutes(5),
-        }),
-        threshold: thresholds.memoryUtilization,
-        evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
+    const memoryUtilizationAlarm = new cloudwatch.Alarm(this, 'HighMemoryUtilization', {
+      alarmName: `batbern-${props.environment}-${serviceDisplayName}-High-Memory`,
+      alarmDescription: `${serviceDisplayName} memory utilization exceeds ${thresholds.memoryUtilization}% (average over 5 minutes)`,
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/ECS',
+        metricName: 'MemoryUtilization',
+        dimensionsMap: {
+          ServiceName: props.serviceName,
+          ClusterName: props.clusterName,
+        },
+        statistic: 'Average',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: thresholds.memoryUtilization,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
     memoryUtilizationAlarm.addAlarmAction(alarmAction);
     memoryUtilizationAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
+
+    // Alarm 1b: High CPU Utilization
+    //
+    // Issue #970: CPU was nominally covered by `batbern-{env}-high-cpu` in AlarmConstruct,
+    // but that alarm set dimensionsMap { ServiceName: `batbern-{env}` } — which is the
+    // CLUSTER name, not a service name — and omitted ClusterName entirely. AWS/ECS needs
+    // BOTH dimensions to resolve a datapoint, so it reported "Insufficient Data:
+    // 2 datapoints were unknown" for its entire life and never once evaluated.
+    //
+    // Defining it here instead gives per-service CPU with the dimensions the memory alarm
+    // beside it has always used correctly, for all six services rather than one bogus
+    // aggregate.
+    const cpuUtilizationAlarm = new cloudwatch.Alarm(this, 'HighCpuUtilization', {
+      alarmName: `batbern-${props.environment}-${serviceDisplayName}-High-CPU`,
+      alarmDescription: `${serviceDisplayName} CPU utilization exceeds ${thresholds.cpuUtilization}% (average over 5 minutes)`,
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/ECS',
+        metricName: 'CPUUtilization',
+        dimensionsMap: {
+          ServiceName: props.serviceName,
+          ClusterName: props.clusterName,
+        },
+        statistic: 'Average',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: thresholds.cpuUtilization,
+      // Two consecutive periods: Fargate tasks spike on JVM start and during a rolling
+      // deploy, and a single 5-minute average above 80% is not an incident.
+      evaluationPeriods: 2,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    cpuUtilizationAlarm.addAlarmAction(alarmAction);
+    cpuUtilizationAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 2: OOM Kill Detection (exit code 137)
     // IMPORTANT: Only create if Container Insights is enabled
@@ -126,19 +157,10 @@ export class EcsServiceAlarms extends Construct {
       const logGroupName = `/aws/ecs/containerinsights/${props.clusterName}/performance`;
 
       const oomMetricFilter = new logs.MetricFilter(this, 'OOMKillMetricFilter', {
-        logGroup: logs.LogGroup.fromLogGroupName(
-          this,
-          'ContainerInsightsLogGroup',
-          logGroupName
-        ),
+        logGroup: logs.LogGroup.fromLogGroupName(this, 'ContainerInsightsLogGroup', logGroupName),
         metricNamespace: 'BATbern/ECS',
         metricName: 'OOMKills',
-        filterPattern: logs.FilterPattern.allTerms(
-          props.serviceName,
-          'exit',
-          'code',
-          '137'
-        ),
+        filterPattern: logs.FilterPattern.allTerms(props.serviceName, 'exit', 'code', '137'),
         metricValue: '1',
         defaultValue: 0,
         dimensions: {
@@ -171,55 +193,45 @@ export class EcsServiceAlarms extends Construct {
     }
 
     // Alarm 3: Task Failure Rate (abnormal task stops)
-    const taskFailureAlarm = new cloudwatch.Alarm(
-      this,
-      'HighTaskFailureRate',
-      {
-        alarmName: `batbern-${props.environment}-${serviceDisplayName}-Task-Failures`,
-        alarmDescription: `${serviceDisplayName} experiencing abnormal task restarts (>${thresholds.taskFailureCount} failures per 15 minutes)`,
-        metric: new cloudwatch.Metric({
-          namespace: 'AWS/ECS',
-          metricName: 'TaskCount',
-          dimensionsMap: {
-            ServiceName: props.serviceName,
-            ClusterName: props.clusterName,
-          },
-          statistic: 'SampleCount',
-          period: cdk.Duration.minutes(15),
-        }),
-        threshold: thresholds.taskFailureCount,
-        evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
+    const taskFailureAlarm = new cloudwatch.Alarm(this, 'HighTaskFailureRate', {
+      alarmName: `batbern-${props.environment}-${serviceDisplayName}-Task-Failures`,
+      alarmDescription: `${serviceDisplayName} experiencing abnormal task restarts (>${thresholds.taskFailureCount} failures per 15 minutes)`,
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/ECS',
+        metricName: 'TaskCount',
+        dimensionsMap: {
+          ServiceName: props.serviceName,
+          ClusterName: props.clusterName,
+        },
+        statistic: 'SampleCount',
+        period: cdk.Duration.minutes(15),
+      }),
+      threshold: thresholds.taskFailureCount,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
     taskFailureAlarm.addAlarmAction(alarmAction);
     taskFailureAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 4: EventBridge Publishing Failures
-    const eventBridgeFailuresAlarm = new cloudwatch.Alarm(
-      this,
-      'EventBridgePublishingFailures',
-      {
-        alarmName: `batbern-${props.environment}-${serviceDisplayName}-EventBridge-Failures`,
-        alarmDescription: `${serviceDisplayName} experiencing EventBridge publishing failures (>${thresholds.eventBridgePublishingFailures} per 5 minutes)`,
-        metric: new cloudwatch.Metric({
-          namespace: 'BATbern/EventBridge',
-          metricName: 'PublishingFailures',
-          dimensionsMap: {
-            ServiceName: serviceDisplayName,
-          },
-          statistic: 'Sum',
-          period: cdk.Duration.minutes(5),
-        }),
-        threshold: thresholds.eventBridgePublishingFailures,
-        evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
+    const eventBridgeFailuresAlarm = new cloudwatch.Alarm(this, 'EventBridgePublishingFailures', {
+      alarmName: `batbern-${props.environment}-${serviceDisplayName}-EventBridge-Failures`,
+      alarmDescription: `${serviceDisplayName} experiencing EventBridge publishing failures (>${thresholds.eventBridgePublishingFailures} per 5 minutes)`,
+      metric: new cloudwatch.Metric({
+        namespace: 'BATbern/EventBridge',
+        metricName: 'PublishingFailures',
+        dimensionsMap: {
+          ServiceName: serviceDisplayName,
+        },
+        statistic: 'Sum',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: thresholds.eventBridgePublishingFailures,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
     eventBridgeFailuresAlarm.addAlarmAction(alarmAction);
     eventBridgeFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 

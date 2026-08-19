@@ -108,6 +108,61 @@ Related: the ZAP security scan files issues through a different path (the scan a
 this Lambda) and needs its own hygiene, because its dedup is broken upstream — see #905 and
 `.github/workflows/security-scan.yml`.
 
+### What is actually monitored, and where each alarm is defined
+
+Alarms are defined **next to the resource they watch**, not centrally. The alarm topic is created by
+`MonitoringStack` and passed outward into the stacks that own resources; identifiers never flow back,
+because most of them do not exist yet when `MonitoringStack` is constructed (`bin/` line 172, versus
+line 422 for `ApiGatewayServiceStack`).
+
+| Watched | Alarms | Defined in |
+|---|---|---|
+| ALB (platform ingress) | `alb-5xx`, `alb-4xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
+| ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-EventBridge-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
+| RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
+| SES reputation | `bounce-rate-warning`, `bounce-rate-critical`, `complaint-rate-critical` | `MonitoringStack` |
+| Bounce processing | `bounce-processing-dlq` | `MonitoringStack` |
+| Cognito / user sync | 7 alarms | `UserSyncAlarms`, in `MonitoringStack` |
+| Inbound email abuse | `emails-rejected` | `InboundEmailStack` |
+
+RDS alarms are the exception that stays central: `DatabaseStack` runs *before* `MonitoringStack`, but
+the instance identifier is deterministic (`batbern-{env}-postgres`, set explicitly as
+`instanceIdentifier`), so the dimension can be built from a string without a cross-stack reference.
+
+**There is deliberately no cost alarm.** `AWS/Billing` is only published in us-east-1, and
+consolidated billing lives in the management account (510187933511) where finance already has
+access. Tracked in #978.
+
+### A declared alarm is not a working alarm
+
+Until 2026-08-19, nine of these alarms had **never evaluated a single datapoint** (#970). They
+queried `AWS/ApiGateway` when traffic is served by an ALB, `AWS/ECS` without `ClusterName`,
+`DBClusterIdentifier` against a single RDS instance, `AWS/EBS` with no volumes, and `AWS/Billing`
+outside us-east-1. One of them — `high-availability` — additionally compared a *request count*
+against `99.9` as though it were a percentage and treated missing data as breaching, so it reported
+`ALARM` continuously for about ten months.
+
+Nothing caught it, because nothing was looking at the right property:
+
+- `Template.fromStack()` assertions pass against an alarm whose dimensions match no resource on
+  earth. CloudFormation does not validate that a dimension resolves to anything.
+- The E2E specs asserted `alarm.Threshold === 99.9`, which is true of a dead alarm — and did not
+  run in any case (#979).
+
+**The signal that distinguishes a live alarm from a dead one is `StateReason`.** CloudWatch reports
+`"Unchecked: Initial alarm creation"` for an alarm that has never evaluated:
+
+```sh
+AWS_PROFILE=batbern-staging aws cloudwatch describe-alarms --region eu-central-1 \
+  --query 'MetricAlarms[?contains(StateReason, `Unchecked`)].[AlarmName,Namespace,MetricName]' \
+  --output text
+```
+
+Anything that command returns, hours after a deploy, is watching nothing. When adding an alarm,
+check it there once rather than trusting a green unit test. `alert-rules.test.ts` now also guards the
+specific dimension mistakes above, and no alarm anywhere may use `treatMissingData: BREACHING` — a
+permanently red alarm is worse than no alarm, because it teaches everyone to ignore the channel.
+
 ## Cost Optimizations (2026-03)
 
 The following cost optimizations were applied to the production (staging) environment:
