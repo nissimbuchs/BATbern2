@@ -32,10 +32,25 @@ export class ClusterStack extends cdk.Stack {
     this.cluster = new ecs.Cluster(this, 'MicroservicesCluster', {
       vpc: props.vpc,
       clusterName: `batbern-${envName}`,
-      // Enabled for deployment monitoring: provides RunningTaskCount, DesiredTaskCount
-      // metrics needed by deployment alarms. ~$48/mo but essential for diagnosing
-      // stuck deployments that have plagued production since isProd=true.
-      containerInsightsV2: ecs.ContainerInsights.ENABLED,
+      // DISABLED for cost: $46.07/month, 15% of the entire AWS bill, for 163 custom
+      // metrics at $0.30 each (docs/plans/aws-cost-reduction.md).
+      //
+      // It was previously enabled with the comment "provides RunningTaskCount,
+      // DesiredTaskCount metrics needed by deployment alarms ... essential for diagnosing
+      // stuck deployments". That intent was never wired up and was verified as such before
+      // switching it off:
+      //   - no alarm in this repo references RunningTaskCount or DesiredTaskCount
+      //   - no deployed alarm uses the ECS/ContainerInsights namespace
+      //   - the one consumer, EcsServiceAlarms' OOM-kill alarm, is gated on a
+      //     `containerInsightsEnabled` prop that NO stack passes, so it is never created
+      //
+      // What is genuinely lost: the CloudWatch console's Container Insights dashboards,
+      // which a human may reach for while a deploy is stuck. Per-service CPU and memory
+      // alarms are unaffected — those read the free AWS/ECS namespace.
+      //
+      // To restore for an incident: flip to ENABLED and deploy this stack alone
+      // (`npm run deploy:staging:layer3-application`). Metrics resume within minutes.
+      containerInsightsV2: ecs.ContainerInsights.DISABLED,
       // Enable Service Connect for automatic service-to-service networking
       defaultCloudMapNamespace: {
         name: `batbern.local`,

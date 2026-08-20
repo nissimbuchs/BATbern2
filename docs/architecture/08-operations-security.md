@@ -108,6 +108,23 @@ Related: the ZAP security scan files issues through a different path (the scan a
 this Lambda) and needs its own hygiene, because its dedup is broken upstream — see #905 and
 `.github/workflows/security-scan.yml`.
 
+### Cost, and what monitoring costs
+
+Container Insights is **disabled** on the ECS cluster. It billed $46.07/month for 163
+custom metrics at $0.30 each — 15% of the entire AWS bill — and nothing consumed it: no
+alarm references `RunningTaskCount` or `DesiredTaskCount`, no deployed alarm uses the
+`ECS/ContainerInsights` namespace, and the OOM-kill alarm that would use it is gated on a
+`containerInsightsEnabled` prop no stack passes. Re-enable it in `cluster-stack.ts` and
+deploy that stack alone if you need its console dashboards during an incident; metrics
+resume within minutes.
+
+Alarms themselves cost $4.10/month and logs $1.50 — both immaterial. When trimming
+monitoring for cost, metrics are the line worth looking at, never logs.
+
+Full analysis and the reduction plan: `docs/plans/aws-cost-reduction.md`. Note there is
+currently **no cost alarm at all** (#978), which is why the bill ran at double its target
+unnoticed.
+
 ### What is actually monitored, and where each alarm is defined
 
 Alarms are defined **next to the resource they watch**, not centrally. The alarm topic is created by

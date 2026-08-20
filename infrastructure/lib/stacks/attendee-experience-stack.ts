@@ -48,6 +48,20 @@ export class AttendeeExperienceStack extends cdk.Stack {
         cpu: 256,
         memoryLimitMiB: 1024, // Increased from 512 MB: 80% mem max, 120s startup caused health check failures
         healthCheckStartPeriodSeconds: 300, // Spring Boot on constrained resources needs headroom
+        // PARKED AT ZERO TASKS — docs/plans/aws-cost-reduction.md, tier 1.
+        //
+        // This service is an empty Spring Boot application: src/main/java contains exactly
+        // one file, AttendeeExperienceApplication.java, with no controllers and no
+        // endpoints. The only gateway route pointing at it, /api/v1/content, resolves to no
+        // handler in any service. It ran 2 Fargate tasks 24/7 for ~$17/month.
+        //
+        // Parked rather than deleted: Epic 7 will need this service, and restoring a
+        // desiredCount is one deploy where recreating a stack is not. disableAutoScaling is
+        // required, or the scaler registers a target and CPU policy for a service that is off.
+        //
+        // To bring it back: set desiredCount to 1 and remove disableAutoScaling.
+        desiredCount: 0,
+        disableAutoScaling: true,
       },
       cluster: props.cluster,
       vpc: props.vpc,
