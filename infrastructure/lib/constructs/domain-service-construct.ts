@@ -19,6 +19,20 @@ export interface DomainServiceConfig {
   additionalEnvironment?: Record<string, string>;
   /** Additional secrets from AWS Secrets Manager to inject as environment variables. */
   additionalSecrets?: Record<string, ecs.Secret>;
+  /**
+   * Override the task count set at service CREATION. Defaults to isProd ? 2 : 1.
+   *
+   * Note this is not what governs steady state — Application Auto Scaling is, via
+   * `minCapacity`. Set both, or the scaler undoes this within minutes. See
+   * `docs/plans/aws-cost-reduction.md`.
+   */
+  desiredCount?: number;
+  /**
+   * Skip Application Auto Scaling registration entirely. Required for a service parked at
+   * `desiredCount: 0` — otherwise a scaling target and CPU policy are registered for a
+   * service that is meant to be off.
+   */
+  disableAutoScaling?: boolean;
   /** Override auto-scaling minimum task count. Defaults to isProd ? 2 : 1. */
   minCapacity?: number;
   /** Override auto-scaling maximum task count. Defaults to minCapacity * 4. */
@@ -222,7 +236,7 @@ export function createDomainService(
     const service = new ecs.FargateService(scope, 'Service', {
       cluster: props.cluster,
       taskDefinition,
-      desiredCount: isProd ? 2 : 1,
+      desiredCount: props.serviceConfig.desiredCount ?? (isProd ? 2 : 1),
       assignPublicIp: false,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
@@ -302,20 +316,27 @@ export function createDomainService(
     // address the root cause directly. Deployment alarms can be revisited with Container Insights
     // metrics once Change 6 (Container Insights) is deployed.
 
-    // Configure auto-scaling
-    const defaultMin = isProd ? 2 : 1;
-    const resolvedMin = props.serviceConfig.minCapacity ?? defaultMin;
-    const resolvedMax = props.serviceConfig.maxCapacity ?? (resolvedMin * 4);
-    const scaling = service.autoScaleTaskCount({
-      minCapacity: resolvedMin,
-      maxCapacity: resolvedMax,
-    });
+    // Configure auto-scaling.
+    //
+    // This, not desiredCount, decides how many tasks run a month from now: desiredCount
+    // applies at creation and the scaler owns it thereafter. EventManagement is the proof —
+    // created with desiredCount 2, it has run 1 task for months because its minCapacity is
+    // 1. A cost change that sets one without the other does nothing.
+    if (!props.serviceConfig.disableAutoScaling) {
+      const defaultMin = isProd ? 2 : 1;
+      const resolvedMin = props.serviceConfig.minCapacity ?? defaultMin;
+      const resolvedMax = props.serviceConfig.maxCapacity ?? (resolvedMin * 4);
+      const scaling = service.autoScaleTaskCount({
+        minCapacity: resolvedMin,
+        maxCapacity: resolvedMax,
+      });
 
-    scaling.scaleOnCpuUtilization('CpuScaling', {
-      targetUtilizationPercent: 70,
-      scaleInCooldown: cdk.Duration.seconds(60),
-      scaleOutCooldown: cdk.Duration.seconds(60),
-    });
+      scaling.scaleOnCpuUtilization('CpuScaling', {
+        targetUtilizationPercent: 70,
+        scaleInCooldown: cdk.Duration.seconds(60),
+        scaleOutCooldown: cdk.Duration.seconds(60),
+      });
+    }
 
     // Output Service Connect DNS name for debugging
     new cdk.CfnOutput(scope, 'ServiceConnectDNS', {

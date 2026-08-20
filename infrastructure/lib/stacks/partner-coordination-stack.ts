@@ -68,6 +68,19 @@ export class PartnerCoordinationStack extends cdk.Stack {
         routePattern: '/api/v1/partners',
         cpu: 256,
         memoryLimitMiB: 1024, // Increased from 512 MB (Priority 4: ECS Right-Sizing - was at 87-90% utilization)
+        // ONE STEADY-STATE TASK — docs/plans/aws-cost-reduction.md, tier 2.
+        //
+        // minCapacity is the control that matters: desiredCount applies only at creation,
+        // and the scaler owns the count thereafter. Two tasks were never real high
+        // availability here — the VPC is single-AZ, and services run 70% on Fargate Spot,
+        // which already causes 4-5 minute silent replacements. maxCapacity 2 keeps
+        // headroom for the three events a year.
+        //
+        // ApiGatewayService deliberately stays at 2: it is the public entry point, and the
+        // one place a replacement gap is visible to visitors.
+        desiredCount: 1,
+        minCapacity: 1,
+        maxCapacity: 2,
         healthCheckStartPeriodSeconds: 300, // DB + Flyway + JPA
         additionalEnvironment,
       },
