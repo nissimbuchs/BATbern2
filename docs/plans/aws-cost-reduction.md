@@ -94,6 +94,17 @@ Scaled to zero rather than deleted — Epic 7 will need the service, and a `desi
 one deploy to restore where a stack is not. Risk: none for the first; the second costs
 console dashboards and the (never-created) OOM alarm.
 
+**Parking a service breaks the post-deploy smoke gate**, and the first attempt at this hit
+it: `scripts/ci/smoke-tests.sh` asserted all five domain services return 200 from
+`/services/{name}/health`, so attendee-experience returned 503 and failed the deploy *after*
+every stack had applied successfully. The stacks were live and correct; only the promotion
+of `staging-current → staging-stable` was skipped.
+
+The gate now reads desired counts from ECS and skips whatever is parked, rather than
+hardcoding an exception that would rot the moment Epic 7 brings the service back. If the ECS
+lookup is unavailable the gate checks everything — the fallback is deliberately the stricter
+behaviour, so a missing lookup can never silently disable it.
+
 ### Tier 2 — stop paying for redundancy that does not exist → **$215/mo** ✅ implemented
 
 | Action | Saving |

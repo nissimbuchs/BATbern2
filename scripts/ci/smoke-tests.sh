@@ -62,11 +62,63 @@ fi
 # Test 3: Service health checks (proxied via API Gateway's ServiceHealthController)
 # Each microservice exposes /actuator/health on its Service Connect DNS; the API Gateway
 # proxies these at /services/{name}/health (see api-gateway/.../ServiceHealthController.java).
+#
+# A service deliberately parked at desiredCount 0 is SKIPPED rather than failed.
+# attendee-experience is parked (docs/plans/aws-cost-reduction.md tier 1 — it is an empty
+# application), and hardcoding it out of the list here would rot the moment it comes back
+# for Epic 7. So the parked state is detected from ECS rather than assumed: whatever the
+# cluster says has 0 desired tasks is expected to be unreachable.
+#
+# If the ECS lookup is unavailable (no credentials, no cluster), every service in the list
+# is checked — the fallback is deliberately the STRICTER behaviour, so a missing lookup can
+# never silently turn this gate off.
 echo -e "\n${YELLOW}Test 3:${NC} Service health checks"
 services=("event-management" "speaker-coordination" "partner-coordination" "attendee-experience" "company-user-management")
 service_tests_failed=0
 
+# Map of ECS service display names -> desired count, e.g. "AttendeeExperience 0".
+ecs_cluster="batbern-${ENVIRONMENT:-staging}"
+parked_services=""
+if command -v aws >/dev/null 2>&1; then
+    if service_arns=$(aws ecs list-services --cluster "$ecs_cluster" --query 'serviceArns' --output text 2>/dev/null) \
+        && [ -n "$service_arns" ]; then
+        # shellcheck disable=SC2086
+        parked_services=$(aws ecs describe-services --cluster "$ecs_cluster" \
+            --services $service_arns \
+            --query 'services[?desiredCount==`0`].serviceName' --output text 2>/dev/null || echo "")
+        if [ -n "$parked_services" ]; then
+            echo -e "  ${YELLOW}note${NC}: parked at 0 tasks, will be skipped: $parked_services"
+        fi
+    else
+        echo -e "  ${YELLOW}note${NC}: could not read ECS desired counts — checking every service"
+    fi
+fi
+
+# Health-endpoint name -> the fragment that appears in the ECS service name.
+#
+# Deliberately an explicit map rather than a CamelCase derivation: four of the five do
+# derive mechanically, but company-user-management's ECS service is called
+# CompanyManagement (no "User"), so a derivation silently fails to match exactly one
+# service — and it would fail in the direction of checking a parked service and reporting
+# a false failure, which is confusing rather than safe.
+ecs_name_for() {
+    case "$1" in
+        event-management)        echo "EventManagement" ;;
+        speaker-coordination)    echo "SpeakerCoordination" ;;
+        partner-coordination)    echo "PartnerCoordination" ;;
+        attendee-experience)     echo "AttendeeExperience" ;;
+        company-user-management) echo "CompanyManagement" ;;
+        *)                       echo "" ;;
+    esac
+}
+
 for service in "${services[@]}"; do
+    ecs_name=$(ecs_name_for "$service")
+    if [ -n "$parked_services" ] && [ -n "$ecs_name" ] && echo "$parked_services" | grep -q "$ecs_name"; then
+        echo -e "  ${YELLOW}−${NC} $service skipped (parked at 0 tasks)"
+        continue
+    fi
+
     endpoint="$API_URL/services/$service/health"
     response=$(curl -s -o /dev/null -w "%{http_code}" "$endpoint" || echo "000")
 
