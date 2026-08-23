@@ -151,6 +151,46 @@ the instance identifier is deterministic (`batbern-{env}-postgres`, set explicit
 consolidated billing lives in the management account (510187933511) where finance already has
 access. Tracked in #978.
 
+### Test-runner worker caps are a memory constraint, not a tuning knob
+
+Both JS test runners in this repository pin `maxWorkers: 3`:
+`web-frontend/vite.config.ts` (`test.maxWorkers`) and `infrastructure/package.json` (jest).
+
+Neither is a performance choice. Both runners default to roughly one worker per core, and the
+development host `rack` has 16 cores against 29,877 MiB — about **1.8 GB of RAM per core before
+anything else runs**. A per-core fan-out therefore cannot fit by construction.
+
+Measured on 2026-08-23, when `vitest run --coverage` took the host down twice in 71 minutes.
+During the first crash: 17 node processes (1 main + 16 workers) holding **36.6 GB** between
+17.5 GB resident and 19.2 GB swapped, with `Free swap = 0kB`. The OOM killer chose
+`user@1000.service`, so systemd SIGKILLed every session inside it at once. That is ~2.15 GB per
+worker under coverage. Independently, `npx jest test/unit` in `infrastructure/` at its default
+15 workers was killed with exit 137 mid-run — each worker synthesises CloudFormation stacks — and
+completes cleanly at 3.
+
+3 workers plus the main process is ~8.6 GB, inside the real budget (`user.slice` now enforces
+`MemoryMax=14G`, less 3-5 GB of interactive baseline). 4 plus main is ~10.8 GB and too close.
+
+Two things to know before changing these numbers:
+
+- **Keep them absolute, not percentages.** `'25%'` is 4 workers on a 16-core box and 8 on a
+  32-core one, which is the same failure on bigger hardware.
+- **The host now kills instead of dying.** With the cgroup cap enforced, an over-parallel run no
+  longer takes the machine down — a worker is SIGKILLed mid-test (exit 137,
+  `constraint=CONSTRAINT_MEMCG`) and it presents as a **flaky test failure**. That is the more
+  expensive outcome, because it looks like a defect in our code rather than a resource limit.
+
+Effectively a no-op in CI: `ubuntu-latest` is a 4-vCPU runner where the default is already 3.
+(Inferred from GitHub's documented runner spec, not measured on a runner.)
+
+Verified, not assumed: with the cap in place, a 12-file vitest run peaked at exactly 3
+concurrent fork workers, counted through `/proc`. An earlier measurement suggesting 5 was an
+artefact of the sampler's own `grep` matching itself.
+
+`minWorkers` is deliberately absent — it does not exist in vitest 4 (checked against the
+installed 4.1.10 type definitions). `pool` is left alone too: `'forks'` is already the v4
+default, so setting it changes nothing.
+
 ### Alarm to agent: the triage handoff (#986)
 
 The chain is `alarm -> SNS batbern-{env}-alarms -> batbern-{env}-github-issues Lambda -> GitHub
