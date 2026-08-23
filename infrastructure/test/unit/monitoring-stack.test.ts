@@ -24,6 +24,42 @@ describe('MonitoringStack', () => {
     });
   });
 
+  describe('GitHub Issues integration (#986)', () => {
+    // prodConfig, not devConfig: the alarm topic and therefore the whole GitHub Issues
+    // chain only exist for production and staging (monitoring-stack.ts:41). A devConfig
+    // stack has no topic, no Lambda and nothing to assert.
+    const template = () =>
+      Template.fromStack(
+        new MonitoringStack(new App(), 'TestMonitoringStackProd', {
+          config: prodConfig,
+          env: { account: '123456789012', region: 'eu-central-1' },
+        })
+      );
+
+    test('should_enableClaudeTriageByDefault_when_gitHubIssuesLambdaCreated', () => {
+      // The handoff that makes claude.yml fire on `issues: opened`. Exposed as an env var
+      // rather than baked into the bundle so it can be flipped in the console without a
+      // code deploy if a flapping alarm starts one agent run per cycle.
+      template().hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: 'batbern-production-github-issues',
+        Environment: Match.objectLike({
+          Variables: Match.objectLike({
+            CLAUDE_TRIAGE_ENABLED: 'true',
+            GITHUB_OWNER: 'nissimbuchs',
+            GITHUB_REPO: 'BATbern2',
+          }),
+        }),
+      });
+    });
+
+    test('should_subscribeTheLambdaToTheAlarmTopic_when_gitHubIssuesEnabled', () => {
+      // Without this the whole chain is inert: no subscription, no issue, no triage.
+      template().hasResourceProperties('AWS::SNS::Subscription', {
+        Protocol: 'lambda',
+      });
+    });
+  });
+
   describe('CloudWatch Alarms', () => {
     test('should_createAlarms_when_monitoringStackDeployed', () => {
       // Arrange

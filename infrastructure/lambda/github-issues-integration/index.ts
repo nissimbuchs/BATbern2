@@ -236,7 +236,7 @@ ${
 - [ ] Review application logs
 - [ ] Deploy fix if needed
 - [ ] Update runbook if this is a new scenario
-
+${triageHandoff()}
 ### Links
 - [CloudWatch Alarm](${dashboardUrl})
 - [CloudWatch Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=${region}#dashboards:name=BATbern-${getEnvironment(alarm.AlarmName)})
@@ -244,6 +244,70 @@ ${
 
 ---
 *This issue was automatically created by CloudWatch alarm integration.*
+`;
+}
+
+/**
+ * The `@claude` handoff appended to a NEWLY CREATED alarm issue.
+ *
+ * `.github/workflows/claude.yml` fires on `issues: opened` only when the body or title
+ * contains `@claude`, and for that trigger the issue body IS the prompt. So the boundaries
+ * have to be written into the body — there is nowhere else to put them.
+ *
+ * Three deliberate constraints, and they are not decoration:
+ *
+ * 1. **Read-only.** The agent diagnoses; it does not remediate. This mirrors the standing
+ *    rule that where money moves or regulators ask questions the core stays deterministic
+ *    and the AI sits at the edge.
+ * 2. **No pull request.** This is the important one. In this repository, opening a PR
+ *    against `develop` triggers `deploy-staging.yml` and ships that branch to
+ *    www.batbern.ch — unmerged, unreviewed, drafts included. An agent that "fixed" an alarm
+ *    by opening a PR would be performing an unreviewed production deploy in response to a
+ *    CloudWatch metric. The workflow's `permissions:` block withholds `contents: write` so
+ *    it cannot push a branch either; this instruction and that permission are belt and
+ *    braces, and neither is sufficient alone.
+ * 3. **Say when the answer is "nothing".** The alarm that prompted this whole change fired
+ *    six times on a PHP scanner. "This is not a fault, here is why" is the most useful
+ *    output such a run can produce, and an agent that feels obliged to find a defect will
+ *    invent one.
+ *
+ * ONLY on creation. The re-trigger comment and the recovery comment must never carry the
+ * mention: an oscillating alarm would otherwise start one agent run per cycle, and the alarm
+ * retired in this same change managed six cycles in three days, two of them 60 seconds long.
+ * Tests pin all three cases.
+ *
+ * Kill switch: `CLAUDE_TRIAGE_ENABLED=false` on the Lambda drops the handoff and leaves the
+ * issue otherwise untouched. A Lambda env var change is effective immediately, so an agent
+ * storm can be stopped without deploying code.
+ */
+function triageHandoff(): string {
+  if ((process.env.CLAUDE_TRIAGE_ENABLED ?? 'true').toLowerCase() === 'false') {
+    return '';
+  }
+
+  return `
+### Triage
+
+@claude please triage this alarm.
+
+Work the question "is this a fault, and if so where", and stop there:
+
+- Read the CloudWatch metric and the relevant \`/aws/ecs/BATbern-staging/*\` log groups around
+  the state-change time. Establish what actually happened before proposing anything.
+- Separate what you **measured** from what you **infer**. Say which commands you ran. If you
+  did not run something, say so rather than implying you did.
+- **If this is not a fault, say that and say why.** A clean "this is external traffic / a
+  deploy warmup / expected test load, here is the evidence" is a complete and valuable answer.
+  Do not go looking for a defect to justify the run.
+- Stay **read-only** against AWS. Describe, get, filter, query. Do not mutate infrastructure,
+  restart services, or change alarm configuration.
+- **Do not open a pull request** and do not push a branch. In this repository a PR against
+  \`develop\` deploys straight to www.batbern.ch, so that would be an unreviewed production
+  deploy triggered by a metric. Propose the change in a comment and let a human take it.
+- If the alarm is itself the problem — wrong metric, wrong threshold, watching something we do
+  not control — say so. That has already been the answer once (#986).
+
+Post your findings as a comment on this issue.
 `;
 }
 

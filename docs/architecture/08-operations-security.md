@@ -151,6 +151,42 @@ the instance identifier is deterministic (`batbern-{env}-postgres`, set explicit
 consolidated billing lives in the management account (510187933511) where finance already has
 access. Tracked in #978.
 
+### Alarm to agent: the triage handoff (#986)
+
+The chain is `alarm -> SNS batbern-{env}-alarms -> batbern-{env}-github-issues Lambda -> GitHub
+issue`. That much already existed and works: it opens an issue, comments on re-trigger, and closes
+on recovery. What was missing was the last hop.
+
+`.github/workflows/claude.yml` was disabled on 2026-05-25 (`9f21453f`) and is re-enabled. It fires
+on `issues: opened` only when the body or title contains `@claude`, so the Lambda now appends a
+triage block containing that mention to every issue it **creates**.
+
+Three properties are load-bearing.
+
+**The mention is only on creation.** The re-trigger comment and the recovery comment must never
+carry it. An oscillating alarm would otherwise start one agent run per cycle, and the alarm retired
+in this same change managed six cycles in three days, two of them lasting 60 seconds. Tests pin all
+three cases.
+
+**`contents` stays `read` in the workflow's `permissions:` block.** A pull request against `develop`
+invokes `deploy-staging.yml` and ships that branch to www.batbern.ch, unmerged and unreviewed. An
+agent that "fixed" an alarm by opening a PR would be performing an unreviewed production deploy in
+response to a CloudWatch metric. Without `contents: write` there is no branch to open one from. The
+triage prompt also says not to; the permission is the half that does not depend on the model
+complying. `issues: write` and `pull-requests: write` are granted so it can reply, which needs no
+branch.
+
+**`CLAUDE_TRIAGE_ENABLED=false`** on the Lambda drops the handoff and leaves the issue otherwise
+intact. It is an environment variable rather than a bundled constant because that change is
+effective immediately: an agent storm can be stopped from the console without deploying code. Same
+convention as `FEATURES_SSO_ENABLED`.
+
+Known limitation, accepted rather than solved: a self-healing alarm can close its issue while the
+agent run is still going, so the run produces a comment on a closed issue. A poll-based trigger
+(cron over `gh issue list --label incident --state open`) would skip those naturally, since an alarm
+that clears inside the poll interval never wakes anything. That remains the better design and is not
+built.
+
 ### An alarm on someone else's behaviour is not a signal (#986)
 
 `alb-4xx` was retired on 2026-08-23. It watched `HTTPCode_Target_4XX_Count > 50` per 5 minutes and

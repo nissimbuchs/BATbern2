@@ -106,6 +106,7 @@ describe('github-issues Lambda handler', () => {
     process.env.GITHUB_OWNER = 'batbern';
     process.env.GITHUB_REPO = 'BATbern-develop';
     process.env.GITHUB_TOKEN_PARAM = '/batbern/production/github/token';
+    delete process.env.CLAUDE_TRIAGE_ENABLED;
 
     // SSM returns a token
     mockSsmSend.mockResolvedValue({ Parameter: { Value: 'ghp_test_token' } });
@@ -173,6 +174,78 @@ describe('github-issues Lambda handler', () => {
       const values = [...bodyOf().matchAll(/region=([^&#)\s]*)/g)].map((m) => m[1]);
       expect(values.length).toBeGreaterThanOrEqual(3);
       expect([...new Set(values)]).toEqual(['eu-central-1']);
+    });
+  });
+
+  describe('@claude triage handoff', () => {
+    const bodyOf = () => (mockIssuesCreate.mock.calls[0][0] as { body: string }).body;
+
+    it('should_mentionClaude_when_issueIsCreated', async () => {
+      // .github/workflows/claude.yml fires on `issues: opened` only when the body or title
+      // contains '@claude'. Without the mention the workflow is inert and the alarm sits
+      // there waiting for a human.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      expect(bodyOf()).toContain('@claude');
+    });
+
+    it('should_giveClaudeTheConstraints_when_issueIsCreated', async () => {
+      // The mention alone would hand an agent a production incident with no boundaries. The
+      // body is the prompt for an `issues: opened` run, so the boundaries have to live in it.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const body = bodyOf();
+      expect(body).toContain('Do not open a pull request');
+      expect(body).toContain('read-only');
+    });
+
+    it('should_notMentionClaude_when_alarmReTriggersOnAnOpenIssue', async () => {
+      // This is the flap guard. An alarm that oscillates would otherwise start one agent run
+      // per cycle: batbern-staging-alb-4xx managed six cycles in three days, two of them 60
+      // seconds long. Re-trigger updates the issue and must stay silent.
+      mockSearchIssues.mockResolvedValue({
+        data: { items: [{ number: 42, state: 'open', title: 'existing' }] },
+      });
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      expect(mockIssuesCreate).not.toHaveBeenCalled();
+      const comments = mockIssuesCreateComment.mock.calls.map(
+        (c) => (c[0] as { body: string }).body
+      );
+      expect(comments.length).toBeGreaterThan(0);
+      for (const comment of comments) {
+        expect(comment).not.toContain('@claude');
+      }
+    });
+
+    it('should_notMentionClaude_when_alarmRecoversAndIssueIsClosed', async () => {
+      mockSearchIssues.mockResolvedValue({
+        data: { items: [{ number: 42, state: 'open', title: 'existing' }] },
+      });
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'OK' })]));
+
+      const comments = mockIssuesCreateComment.mock.calls.map(
+        (c) => (c[0] as { body: string }).body
+      );
+      for (const comment of comments) {
+        expect(comment).not.toContain('@claude');
+      }
+    });
+
+    it('should_omitTheMention_when_killSwitchIsOff', async () => {
+      // Runtime off switch, same convention as FEATURES_SSO_ENABLED. A Lambda env var change
+      // takes effect immediately, so an agent storm can be stopped without a code deploy.
+      process.env.CLAUDE_TRIAGE_ENABLED = 'false';
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const body = bodyOf();
+      expect(body).not.toContain('@claude');
+      // Everything a human needs must still be there.
+      expect(body).toContain('## CloudWatch Alarm Details');
+      expect(body).toContain('region=eu-central-1');
     });
   });
 
