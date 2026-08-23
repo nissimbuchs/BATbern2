@@ -30,16 +30,21 @@ interface CloudWatchAlarm {
  * - OK state → Closes the corresponding GitHub Issue
  *
  * Environment variables:
- * - GITHUB_OWNER: GitHub repository owner (e.g., "batbern")
- * - GITHUB_REPO: GitHub repository name (e.g., "BATbern-develop")
+ * - GITHUB_OWNER: GitHub repository owner (e.g., "nissimbuchs")
+ * - GITHUB_REPO: GitHub repository name (e.g., "BATbern2")
  * - GITHUB_TOKEN_PARAM: SSM parameter name for GitHub PAT
  */
 export const handler = async (event: SNSEvent): Promise<void> => {
   console.log('Received SNS event:', JSON.stringify(event, null, 2));
 
-  const githubOwner = process.env.GITHUB_OWNER || 'batbern';
-  const githubRepo = process.env.GITHUB_REPO || 'BATbern-develop';
-  const githubTokenParam = process.env.GITHUB_TOKEN_PARAM || '/batbern/production/github/token';
+  // Defaults match the real repository. They previously read 'batbern' / 'BATbern-develop',
+  // neither of which exists ('BATbern-develop' is a local checkout directory, not a repo), so
+  // a caller relying on them would have filed into a 404. GitHubIssuesConstruct always sets
+  // these env vars, which is why it never bit; the construct carries the same note about its
+  // own defaults, and this is the second half of that same trap.
+  const githubOwner = process.env.GITHUB_OWNER || 'nissimbuchs';
+  const githubRepo = process.env.GITHUB_REPO || 'BATbern2';
+  const githubTokenParam = process.env.GITHUB_TOKEN_PARAM || '/batbern/staging/github/token';
 
   // Get GitHub token from SSM Parameter Store
   const githubToken = await getParameter(githubTokenParam);
@@ -171,10 +176,36 @@ async function findIssueByAlarm(
 }
 
 /**
+ * The AWS region CODE for console URLs, e.g. `eu-central-1`.
+ *
+ * #987: `alarm.Region` cannot be used for this. CloudWatch populates that field with the
+ * human DISPLAY NAME — `"EU (Frankfurt)"`, with a space and parentheses — so every console
+ * link this Lambda produced read `region=EU (Frankfurt)` and none of them resolved. AWS's own
+ * notification email links `region=eu-central-1` correctly, which left the mail usable and
+ * the GitHub issue not, backwards given the issue is meant to be the primary workflow.
+ *
+ * The alarm ARN in the same payload always carries the code as its 4th colon-separated field
+ * (`arn:aws:cloudwatch:eu-central-1:188701360969:alarm:name`), so that is the authority here.
+ * `alarm.Region` is still the right thing to SHOW a human; it is only wrong inside a URL.
+ */
+function regionCode(alarm: CloudWatchAlarm): string {
+  const fromArn = alarm.AlarmArn?.split(':')[3];
+  if (fromArn) {
+    return fromArn;
+  }
+  // Last resort: a Region value that already looks like a code (no spaces) is usable.
+  if (alarm.Region && !/\s/.test(alarm.Region)) {
+    return alarm.Region;
+  }
+  return 'eu-central-1';
+}
+
+/**
  * Format the issue body with alarm details.
  */
 function formatIssueBody(alarm: CloudWatchAlarm): string {
-  const dashboardUrl = `https://console.aws.amazon.com/cloudwatch/home?region=${alarm.Region}#alarmsV2:alarm/${encodeURIComponent(alarm.AlarmName)}`;
+  const region = regionCode(alarm);
+  const dashboardUrl = `https://console.aws.amazon.com/cloudwatch/home?region=${region}#alarmsV2:alarm/${encodeURIComponent(alarm.AlarmName)}`;
 
   return `## CloudWatch Alarm Details
 
@@ -205,14 +236,78 @@ ${
 - [ ] Review application logs
 - [ ] Deploy fix if needed
 - [ ] Update runbook if this is a new scenario
-
+${triageHandoff()}
 ### Links
 - [CloudWatch Alarm](${dashboardUrl})
-- [CloudWatch Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=${alarm.Region}#dashboards:name=BATbern-${getEnvironment(alarm.AlarmName)})
-- [Application Logs](https://console.aws.amazon.com/cloudwatch/home?region=${alarm.Region}#logsV2:log-groups/log-group/$252Faws$252Flogs$252FBATbern-${getEnvironment(alarm.AlarmName)}$252Fapplication)
+- [CloudWatch Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=${region}#dashboards:name=BATbern-${getEnvironment(alarm.AlarmName)})
+- [Application Logs](https://console.aws.amazon.com/cloudwatch/home?region=${region}#logsV2:log-groups/log-group/$252Faws$252Flogs$252FBATbern-${getEnvironment(alarm.AlarmName)}$252Fapplication)
 
 ---
 *This issue was automatically created by CloudWatch alarm integration.*
+`;
+}
+
+/**
+ * The `@claude` handoff appended to a NEWLY CREATED alarm issue.
+ *
+ * `.github/workflows/claude.yml` fires on `issues: opened` only when the body or title
+ * contains `@claude`, and for that trigger the issue body IS the prompt. So the boundaries
+ * have to be written into the body — there is nowhere else to put them.
+ *
+ * Three deliberate constraints, and they are not decoration:
+ *
+ * 1. **Read-only.** The agent diagnoses; it does not remediate. This mirrors the standing
+ *    rule that where money moves or regulators ask questions the core stays deterministic
+ *    and the AI sits at the edge.
+ * 2. **No pull request.** This is the important one. In this repository, opening a PR
+ *    against `develop` triggers `deploy-staging.yml` and ships that branch to
+ *    www.batbern.ch — unmerged, unreviewed, drafts included. An agent that "fixed" an alarm
+ *    by opening a PR would be performing an unreviewed production deploy in response to a
+ *    CloudWatch metric. The workflow's `permissions:` block withholds `contents: write` so
+ *    it cannot push a branch either; this instruction and that permission are belt and
+ *    braces, and neither is sufficient alone.
+ * 3. **Say when the answer is "nothing".** The alarm that prompted this whole change fired
+ *    six times on a PHP scanner. "This is not a fault, here is why" is the most useful
+ *    output such a run can produce, and an agent that feels obliged to find a defect will
+ *    invent one.
+ *
+ * ONLY on creation. The re-trigger comment and the recovery comment must never carry the
+ * mention: an oscillating alarm would otherwise start one agent run per cycle, and the alarm
+ * retired in this same change managed six cycles in three days, two of them 60 seconds long.
+ * Tests pin all three cases.
+ *
+ * Kill switch: `CLAUDE_TRIAGE_ENABLED=false` on the Lambda drops the handoff and leaves the
+ * issue otherwise untouched. A Lambda env var change is effective immediately, so an agent
+ * storm can be stopped without deploying code.
+ */
+function triageHandoff(): string {
+  if ((process.env.CLAUDE_TRIAGE_ENABLED ?? 'true').toLowerCase() === 'false') {
+    return '';
+  }
+
+  return `
+### Triage
+
+@claude please triage this alarm.
+
+Work the question "is this a fault, and if so where", and stop there:
+
+- Read the CloudWatch metric and the relevant \`/aws/ecs/BATbern-staging/*\` log groups around
+  the state-change time. Establish what actually happened before proposing anything.
+- Separate what you **measured** from what you **infer**. Say which commands you ran. If you
+  did not run something, say so rather than implying you did.
+- **If this is not a fault, say that and say why.** A clean "this is external traffic / a
+  deploy warmup / expected test load, here is the evidence" is a complete and valuable answer.
+  Do not go looking for a defect to justify the run.
+- Stay **read-only** against AWS. Describe, get, filter, query. Do not mutate infrastructure,
+  restart services, or change alarm configuration.
+- **Do not open a pull request** and do not push a branch. In this repository a PR against
+  \`develop\` deploys straight to www.batbern.ch, so that would be an unreviewed production
+  deploy triggered by a metric. Propose the change in a comment and let a human take it.
+- If the alarm is itself the problem — wrong metric, wrong threshold, watching something we do
+  not control — say so. That has already been the answer once (#986).
+
+Post your findings as a comment on this issue.
 `;
 }
 

@@ -55,8 +55,12 @@ function makeAlarmMessage(overrides: Partial<{
     NewStateValue: 'ALARM',
     NewStateReason: 'Threshold Crossed: memory > 80%',
     StateChangeTime: '2026-05-16T10:00:00.000+0000',
-    Region: 'eu-central-1',
-    AlarmArn: 'arn:aws:cloudwatch:eu-central-1:123:alarm:test-alarm',
+    // #987: CloudWatch puts the human DISPLAY NAME in Region, not the region code. This
+    // fixture said 'eu-central-1' for a year, which is why three broken console links
+    // shipped and stayed — the test could not see a bug the fixture had defined away.
+    // Verified against a real payload in the batbern-staging-github-issues log group.
+    Region: 'EU (Frankfurt)',
+    AlarmArn: 'arn:aws:cloudwatch:eu-central-1:188701360969:alarm:test-alarm',
     OldStateValue: 'OK',
     Trigger: {
       MetricName: 'MemoryUtilization',
@@ -102,6 +106,7 @@ describe('github-issues Lambda handler', () => {
     process.env.GITHUB_OWNER = 'batbern';
     process.env.GITHUB_REPO = 'BATbern-develop';
     process.env.GITHUB_TOKEN_PARAM = '/batbern/production/github/token';
+    delete process.env.CLAUDE_TRIAGE_ENABLED;
 
     // SSM returns a token
     mockSsmSend.mockResolvedValue({ Parameter: { Value: 'ghp_test_token' } });
@@ -126,6 +131,122 @@ describe('github-issues Lambda handler', () => {
     expect(createArgs.labels).toContain('incident');
     expect(createArgs.labels).toContain('severity:high'); // High-Memory → severity:high
     expect(createArgs.labels).toContain('component:ecs');
+  });
+
+  describe('console links (#987)', () => {
+    const bodyOf = () => (mockIssuesCreate.mock.calls[0][0] as { body: string }).body;
+
+    it('should_buildLinksWithTheRegionCode_when_cloudWatchSendsTheDisplayName', async () => {
+      // The defect: every link read `region=EU (Frankfurt)` — display name, with a space —
+      // so none of them resolved. AWS's own notification mail gets this right, which made
+      // the mail usable and the issue not, backwards given the issue is the workflow.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const body = bodyOf();
+      expect(body).toContain('region=eu-central-1');
+      expect(body).not.toContain('region=EU (Frankfurt)');
+      expect(body).not.toContain('region=EU%20(Frankfurt)');
+    });
+
+    it('should_stillShowTheHumanRegionName_when_bodyIsRendered', async () => {
+      // The display name is the right thing for a human to read; it is only wrong in a URL.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      expect(bodyOf()).toContain('**Region:** EU (Frankfurt)');
+    });
+
+    it('should_deriveRegionFromTheArn_when_regionFieldIsMissingEntirely', async () => {
+      // The ARN is the authority and is always present. Region is a convenience field.
+      const message = makeAlarmMessage({ NewStateValue: 'ALARM' }) as Record<string, unknown>;
+      delete message.Region;
+      await handler(makeSnsEvent([message]));
+
+      expect(bodyOf()).toContain('region=eu-central-1');
+    });
+
+    it('should_useTheRegionCodeInEveryLink_when_bodyIsRendered', async () => {
+      // Catches the whole class rather than the three known instances: every region= param
+      // anywhere in the body must be a region CODE. Asserting on the rendered URL alone is
+      // not enough — a naive `https?://[^\s)]*` match stops at the space, so a broken link
+      // looks well-formed to the matcher. Read the parameter values instead.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const values = [...bodyOf().matchAll(/region=([^&#)\s]*)/g)].map((m) => m[1]);
+      expect(values.length).toBeGreaterThanOrEqual(3);
+      expect([...new Set(values)]).toEqual(['eu-central-1']);
+    });
+  });
+
+  describe('@claude triage handoff', () => {
+    const bodyOf = () => (mockIssuesCreate.mock.calls[0][0] as { body: string }).body;
+
+    it('should_mentionClaude_when_issueIsCreated', async () => {
+      // .github/workflows/claude.yml fires on `issues: opened` only when the body or title
+      // contains '@claude'. Without the mention the workflow is inert and the alarm sits
+      // there waiting for a human.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      expect(bodyOf()).toContain('@claude');
+    });
+
+    it('should_giveClaudeTheConstraints_when_issueIsCreated', async () => {
+      // The mention alone would hand an agent a production incident with no boundaries. The
+      // body is the prompt for an `issues: opened` run, so the boundaries have to live in it.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const body = bodyOf();
+      expect(body).toContain('Do not open a pull request');
+      expect(body).toContain('read-only');
+    });
+
+    it('should_notMentionClaude_when_alarmReTriggersOnAnOpenIssue', async () => {
+      // This is the flap guard. An alarm that oscillates would otherwise start one agent run
+      // per cycle: batbern-staging-alb-4xx managed six cycles in three days, two of them 60
+      // seconds long. Re-trigger updates the issue and must stay silent.
+      mockSearchIssues.mockResolvedValue({
+        data: { items: [{ number: 42, state: 'open', title: 'existing' }] },
+      });
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      expect(mockIssuesCreate).not.toHaveBeenCalled();
+      const comments = mockIssuesCreateComment.mock.calls.map(
+        (c) => (c[0] as { body: string }).body
+      );
+      expect(comments.length).toBeGreaterThan(0);
+      for (const comment of comments) {
+        expect(comment).not.toContain('@claude');
+      }
+    });
+
+    it('should_notMentionClaude_when_alarmRecoversAndIssueIsClosed', async () => {
+      mockSearchIssues.mockResolvedValue({
+        data: { items: [{ number: 42, state: 'open', title: 'existing' }] },
+      });
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'OK' })]));
+
+      const comments = mockIssuesCreateComment.mock.calls.map(
+        (c) => (c[0] as { body: string }).body
+      );
+      for (const comment of comments) {
+        expect(comment).not.toContain('@claude');
+      }
+    });
+
+    it('should_omitTheMention_when_killSwitchIsOff', async () => {
+      // Runtime off switch, same convention as FEATURES_SSO_ENABLED. A Lambda env var change
+      // takes effect immediately, so an agent storm can be stopped without a code deploy.
+      process.env.CLAUDE_TRIAGE_ENABLED = 'false';
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const body = bodyOf();
+      expect(body).not.toContain('@claude');
+      // Everything a human needs must still be there.
+      expect(body).toContain('## CloudWatch Alarm Details');
+      expect(body).toContain('region=eu-central-1');
+    });
   });
 
   it('should_closeExistingIssue_when_alarmReturnsToOkState', async () => {

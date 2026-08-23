@@ -13,6 +13,16 @@ export interface GitHubIssuesConstructProps {
   githubOwner?: string;
   githubRepo?: string;
   githubTokenParamName?: string;
+  /**
+   * Whether alarm issues carry the '@claude' triage handoff that invokes
+   * .github/workflows/claude.yml (#986). Defaults to true.
+   *
+   * Exposed as a Lambda environment variable rather than baked in, because a Lambda env var
+   * change is effective immediately: if a flapping alarm starts one agent run per cycle, this
+   * can be flipped in the console without deploying code. Same reasoning as
+   * FEATURES_SSO_ENABLED.
+   */
+  claudeTriageEnabled?: boolean;
 }
 
 /**
@@ -47,6 +57,7 @@ export class GitHubIssuesConstruct extends Construct {
         GITHUB_OWNER: githubOwner,
         GITHUB_REPO: githubRepo,
         GITHUB_TOKEN_PARAM: githubTokenParam,
+        CLAUDE_TRIAGE_ENABLED: String(props.claudeTriageEnabled ?? true),
       },
       bundling: {
         externalModules: ['@aws-sdk/*'], // AWS SDK v3 is provided by Lambda runtime

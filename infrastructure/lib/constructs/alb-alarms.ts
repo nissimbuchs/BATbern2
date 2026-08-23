@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cloudwatch_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 
@@ -25,13 +26,19 @@ export interface AlbAlarmsProps {
   /** SNS topic for alarm + recovery notifications. */
   readonly alarmTopic: sns.ITopic;
 
+  /**
+   * The api-gateway service's CloudWatch log group. Required for the ApiClientErrors alarm
+   * (#986), which is fed by MetricFilters over the gateway's own access-log marker rather
+   * than by an ALB metric — see the note on that alarm below. Omit it and the alarm is
+   * simply not created, which is the right behaviour for a stack that has no gateway.
+   */
+  readonly apiGatewayLogGroup?: logs.ILogGroup;
+
   readonly isProduction?: boolean;
 
   readonly thresholds?: {
     /** Target 5xx responses per 5 minutes. */
     readonly serverErrorCount?: number;
-    /** Target 4xx responses per 5 minutes. */
-    readonly clientErrorCount?: number;
     /** P95 TargetResponseTime, in SECONDS. */
     readonly latencyP95Seconds?: number;
     /**
@@ -41,6 +48,13 @@ export interface AlbAlarmsProps {
     readonly latencyMinRequests?: number;
     /** Availability floor as a percentage, e.g. 99.9. */
     readonly availabilityPercent?: number;
+    /** Share of served API requests returning 4xx, as a percentage, before alarming. */
+    readonly apiClientErrorPercent?: number;
+    /**
+     * Minimum served API requests in a 5-minute window before the 4xx ratio evaluates.
+     * Below this the ratio is a handful of samples and means nothing.
+     */
+    readonly apiClientErrorMinRequests?: number;
   };
 }
 
@@ -77,7 +91,6 @@ export class AlbAlarms extends Construct {
 
     const thresholds = {
       serverErrorCount: props.thresholds?.serverErrorCount ?? (isProduction ? 5 : 10),
-      clientErrorCount: props.thresholds?.clientErrorCount ?? 50,
       // SECONDS. AWS/ApplicationELB TargetResponseTime is in seconds, unlike
       // AWS/ApiGateway Latency which is milliseconds — the alarm this replaces carried a
       // threshold of 500 written for milliseconds, i.e. a 500-second SLA had it ever run.
@@ -85,6 +98,8 @@ export class AlbAlarms extends Construct {
       latencyP95Seconds: props.thresholds?.latencyP95Seconds ?? 0.5,
       latencyMinRequests: props.thresholds?.latencyMinRequests ?? 20,
       availabilityPercent: props.thresholds?.availabilityPercent ?? 99.9,
+      apiClientErrorPercent: props.thresholds?.apiClientErrorPercent ?? 50,
+      apiClientErrorMinRequests: props.thresholds?.apiClientErrorMinRequests ?? 10,
     };
 
     const action = new cloudwatch_actions.SnsAction(props.alarmTopic);
@@ -124,19 +139,165 @@ export class AlbAlarms extends Construct {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    // ── 4xx: clients are being rejected ────────────────────────────────────────────
-    // Deliberately looser and slower than 5xx. A burst of 401s during a token refresh
-    // storm, or 404s from a scanner, is not an incident; a sustained elevation is.
-    const clientErrors = new cloudwatch.Alarm(this, 'ClientErrors', {
-      alarmName: `batbern-${env}-alb-4xx`,
-      alarmDescription: `More than ${thresholds.clientErrorCount} target 4xx responses in 5 minutes`,
-      metric: albMetric('HTTPCode_Target_4XX_Count', 'Sum'),
-      threshold: thresholds.clientErrorCount,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
+    // ── 4xx: deliberately NOT alarmed on at the ALB (#986) ─────────────────────────
+    // There used to be a `batbern-{env}-alb-4xx` alarm on HTTPCode_Target_4XX_Count > 50
+    // per 5 minutes. It fired six times in the three days to 2026-08-23 and self-resolved
+    // every time, and the cause was never once a fault.
+    //
+    // Measured, 2026-08-23 14:35-14:50 UTC (the window the last page cited: 118 4xx at
+    // 14:40, 73 at 14:45), from 808 api-gateway request log lines:
+    //
+    //   /actuator/health   360 requests    1 distinct path
+    //   /api/v1/*           64 requests    6 distinct paths   <- all the real traffic
+    //   neither            384 requests  186 distinct paths
+    //
+    // The 384 are a webshell sweep against api.batbern.ch — /gecko-new.php, /aa.php,
+    // /wp-content/plugins/hellopress/wp_filemanager.php, /qyffk.php, 186 distinct
+    // nonexistent .php paths in fifteen minutes. Every one is a 404, and every 404 is one
+    // HTTPCode_Target_4XX_Count. api.batbern.ch resolves straight to this ALB with no
+    // CloudFront and no WAF, so there is nothing between a scanner and a 404.
+    //
+    // Raw target-4xx is therefore not an actionable signal at ANY threshold: the number it
+    // reports is a property of the internet, not of BATbern. Raising the threshold would
+    // only set the bar at "how large a scan before we care", which is not a question worth
+    // answering. Note the deleted alarm's own comment already anticipated this ("404s from
+    // a scanner is not an incident") — it just could not act on it with this metric.
+    //
+    // The signal that alarm was reaching for — a deploy that starts rejecting real
+    // requests — is kept, as the ApiClientErrors ratio alarm below, which counts 4xx only
+    // on paths the gateway actually serves.
+
+    // ── API 4xx, as a ratio, from OUR OWN access log (#986) ────────────────────────
+    // The replacement for the retired alb-4xx. Two things had to change: what is counted,
+    // and how it is compared.
+    //
+    // WHAT: not every 4xx reaching a target, only 4xx on paths the gateway serves.
+    // ClientErrorMetricsFilter emits one GATEWAY_API_REQUEST line per served request and
+    // nothing at all for the rest, so the PHP sweep that made alb-4xx useless never enters
+    // either side of this fraction.
+    //
+    // HOW: a ratio, because absolute request volume swings thirtyfold. Measured over the
+    // 24h to 2026-08-23 15:00 UTC, /api/ requests per 5-minute window were 12-35 through
+    // the day and 988 / 842 / 527 in the three windows from 02:40 while the nightly E2E
+    // suite runs. An absolute threshold high enough to survive 02:40 is unreachable at
+    // midday — a permanently silent alarm, which is precisely the #970 failure mode — and
+    // one low enough to work at midday pages every night. The nightly suite's own 4xx peak
+    // measured 32 in a 5-minute bin against 988 requests, i.e. about 3%, so a ratio
+    // separates the two cleanly where no constant can.
+    //
+    // The denominator is deliberately NOT the ALB's RequestCount: that counts the scanner
+    // traffic, so a sweep would inflate it and mask a genuine break exactly when the
+    // system is under the most noise.
+    //
+    // Both metric filters require '@timestamp' as well as the marker. The gateway's
+    // logback config writes every event into this log group TWICE — the LogstashEncoder
+    // JSON line via stdout and the ECS awslogs driver, and a plain-text PatternLayout line
+    // via ca.pjer.logback.AwsLogsAppender writing to the same group directly. Matching the
+    // marker alone would double-count both sides of the ratio. It happens to cancel out in
+    // a ratio, but the request count is published as a metric in its own right, so the
+    // dedup is not optional. The double-write is itself a defect and is tracked separately.
+    let apiClientErrors: cloudwatch.Alarm | undefined;
+
+    if (props.apiGatewayLogGroup) {
+      // NO `dimensions` on either transformation, and this is not a preference. Measured
+      // against the live CloudWatch Logs API on 2026-08-23 with a throwaway log group:
+      //
+      //   dimensions + defaultValue -> InvalidParameterException
+      //                                "dimensions and default value are mutually exclusive"
+      //   defaultValue alone        -> accepted
+      //   dimensions alone          -> InvalidParameterException
+      //                                "The specified filter pattern does not support dimensions"
+      //
+      // So dimensions are impossible here regardless of defaultValue: a literal-term filter
+      // pattern cannot carry them at all — that needs a structured (JSON or space-delimited
+      // named-field) pattern, and the pattern has to stay literal because only one of the two
+      // renderings of each log event is JSON.
+      //
+      // `defaultValue: 0` is the half worth keeping anyway. It makes CloudWatch Logs publish
+      // an explicit zero for every period with no match, so both metrics are continuous from
+      // the moment the filter exists. Without it a healthy system produces a metric with
+      // gaps, the ratio yields no datapoint, and the alarm is indistinguishable from one
+      // watching a metric nobody publishes — which is the #970 failure wearing a new hat.
+      //
+      // Losing the Environment dimension costs nothing today: this account holds one
+      // environment (188701360969, envName 'staging', serving production). Should a second
+      // ever share it, split by NAMESPACE — 'BATbern/Gateway/{env}' — not by dimension,
+      // because dimensions will still be unavailable.
+
+      const requestsFilter = new logs.MetricFilter(this, 'ApiRequestsMetricFilter', {
+        logGroup: props.apiGatewayLogGroup,
+        metricNamespace: 'BATbern/Gateway',
+        metricName: 'ApiRequests',
+        // Literal terms, matching ClientErrorMetricsFilter.LOG_MARKER. Kept a plain term
+        // match rather than a JSON pattern because only one of the two renderings of each
+        // event is JSON at all.
+        filterPattern: logs.FilterPattern.allTerms('GATEWAY_API_REQUEST', '@timestamp'),
+        metricValue: '1',
+        defaultValue: 0,
+      });
+
+      const clientErrorsFilter = new logs.MetricFilter(this, 'ApiClientErrorsMetricFilter', {
+        logGroup: props.apiGatewayLogGroup,
+        metricNamespace: 'BATbern/Gateway',
+        metricName: 'ApiClientErrors',
+        // clientError=true is an explicit field on the log line rather than something this
+        // pattern has to infer from a status code, so the pattern cannot drift as the set
+        // of 4xx codes the gateway emits changes.
+        filterPattern: logs.FilterPattern.allTerms(
+          'GATEWAY_API_REQUEST',
+          '@timestamp',
+          'clientError=true'
+        ),
+        metricValue: '1',
+        defaultValue: 0,
+      });
+
+      // No dimensionsMap, matching the filters above. If these two ever disagree the alarm
+      // queries a metric that is never published and goes permanently, silently green.
+      const gatewayMetric = (metricName: string) =>
+        new cloudwatch.Metric({
+          namespace: 'BATbern/Gateway',
+          metricName,
+          statistic: 'Sum',
+          period,
+        });
+
+      apiClientErrors = new cloudwatch.Alarm(this, 'ApiClientErrors', {
+        alarmName: `batbern-${env}-api-4xx-ratio`,
+        alarmDescription:
+          `More than ${thresholds.apiClientErrorPercent}% of served API requests returned ` +
+          `4xx, sustained for 15 minutes, over at least ` +
+          `${thresholds.apiClientErrorMinRequests} requests per window (replaces alb-4xx, ` +
+          'which counted scanner 404s — see #986)',
+        metric: new cloudwatch.MathExpression({
+          // The IF guard is the same shape the latency alarm uses and matters for the same
+          // reason: quiet windows carry a handful of requests, where a percentage is one
+          // sample wearing a percent sign. Returning 0 below the floor states the truth —
+          // no meaningful traffic means no measured failure rate — and keeps quiet periods
+          // out of the alarm rather than producing a gap.
+          expression: `IF(requests >= ${thresholds.apiClientErrorMinRequests}, errors / requests * 100, 0)`,
+          usingMetrics: {
+            requests: gatewayMetric('ApiRequests'),
+            errors: gatewayMetric('ApiClientErrors'),
+          },
+          period,
+          label: 'Served API 4xx %',
+        }),
+        threshold: thresholds.apiClientErrorPercent,
+        // 3 of 3 periods = 15 minutes sustained. A deploy rolls tasks one at a time and a
+        // single window can legitimately go bad while a task warms; the thing worth waking
+        // someone for is a break that does not clear itself.
+        evaluationPeriods: 3,
+        datapointsToAlarm: 3,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      });
+
+      // The metric does not exist until the filters do, and CloudFormation will not infer
+      // that ordering from a namespace string.
+      apiClientErrors.node.addDependency(requestsFilter);
+      apiClientErrors.node.addDependency(clientErrorsFilter);
+    }
 
     // ── Latency ────────────────────────────────────────────────────────────────────
     // Fires only on SUSTAINED latency, because the thing that actually breaches here is a
@@ -247,7 +408,10 @@ export class AlbAlarms extends Construct {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    this.alarms.push(serverErrors, clientErrors, latency, availability, unhealthyTargets);
+    this.alarms.push(serverErrors, latency, availability, unhealthyTargets);
+    if (apiClientErrors) {
+      this.alarms.push(apiClientErrors);
+    }
 
     for (const alarm of this.alarms) {
       alarm.addAlarmAction(action);

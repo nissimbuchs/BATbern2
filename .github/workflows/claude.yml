@@ -1,3 +1,15 @@
+# Re-enabled 2026-08-23 (#986). Disabled on 2026-05-25 by 9f21453f alongside build-reports
+# and SonarCloud. It is back because the CloudWatch alarm -> GitHub issue pipeline now hands
+# off to it: batbern-{env}-github-issues appends an '@claude' triage block to every alarm
+# issue it opens, and the `issues: opened` trigger below is what picks that up.
+#
+# READ THE PERMISSIONS BLOCK BEFORE WIDENING IT. `contents` is deliberately `read`. In this
+# repository a pull request against `develop` invokes deploy-staging.yml and ships that branch
+# to www.batbern.ch - unmerged, unreviewed, drafts included. Granting `contents: write` here
+# would let an agent responding to a CloudWatch metric push a branch and open a PR, i.e.
+# perform an unreviewed production deploy in response to a monitoring signal. The triage
+# prompt also says not to; this is the half that does not depend on the model complying.
+
 name: Claude Code
 
 on:
@@ -19,14 +31,19 @@ jobs:
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
+      # read, NOT write - see the note at the top of this file. This is the control that
+      # makes "do not open a pull request" an invariant rather than an instruction: without
+      # contents: write there is no branch to open one from.
       contents: read
-      pull-requests: read
-      issues: read
+      # write, so Claude can reply on the issue or PR it was called into. Harmless without
+      # contents: write - a PR still needs a pushed branch.
+      pull-requests: write
+      issues: write
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
