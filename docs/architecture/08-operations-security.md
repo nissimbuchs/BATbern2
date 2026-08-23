@@ -135,6 +135,7 @@ line 422 for `ApiGatewayServiceStack`).
 | Watched | Alarms | Defined in |
 |---|---|---|
 | ALB (platform ingress) | `alb-5xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
+| Gateway API surface | `api-4xx-ratio` | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-EventBridge-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
 | SES reputation | `bounce-rate-warning`, `bounce-rate-critical`, `complaint-rate-critical` | `MonitoringStack` |
@@ -176,8 +177,45 @@ The lesson generalises past this one alarm: **an alarm must watch something we c
 that an anonymous third party can move at will is a noise generator, and a noisy alarm is worse
 than an absent one because it trains its reader to ignore the channel.
 
-The signal `alb-4xx` was reaching for — a deploy that starts rejecting real requests — is kept, on
-a gateway-side counter scoped to paths the gateway actually serves.
+The signal `alb-4xx` was reaching for — a deploy that starts rejecting real requests — is kept, as
+`api-4xx-ratio`.
+
+### `api-4xx-ratio`, and why it is a ratio
+
+`ClientErrorMetricsFilter` in the api-gateway logs one `GATEWAY_API_REQUEST` line per request on a
+path the gateway serves, and nothing at all for anything else. Two `logs.MetricFilter`s over that
+marker publish `BATbern/Gateway ApiRequests` and `ApiClientErrors`, and the alarm compares them:
+
+```
+IF(requests >= 10, errors / requests * 100, 0) > 50%, for 3 of 3 periods
+```
+
+Three properties are deliberate.
+
+**It counts only our own surface.** The scanner sweep produces no log line, so it enters neither
+side of the fraction. The denominator is explicitly *not* the ALB's `RequestCount`, which counts the
+sweep and would therefore inflate during exactly the noise the alarm needs to see through.
+
+**It is a ratio, not a count.** Measured `/api/` requests per 5-minute window over the 24h to
+2026-08-23 15:00 UTC: 12-35 through the day, and 988 / 842 / 527 in the three windows from 02:40
+while the nightly E2E suite runs. No constant survives a 30× swing — high enough for 02:40 is
+unreachable at midday, which is a dead alarm and the #970 failure mode; low enough for midday pages
+every night. The nightly suite's own 4xx peak measured 32 in a bin against 988 requests, about 3%,
+so a ratio separates them and a count cannot.
+
+**Both filter patterns require `@timestamp`.** The gateway's `logback-spring.xml` writes every event
+into this log group **twice** — the `LogstashEncoder` JSON line via stdout and the ECS `awslogs`
+driver, plus a plain-text `PatternLayout` line written directly by `ca.pjer.logback.AwsLogsAppender`
+to the same group. Only the JSON rendering contains `@timestamp`, so requiring that term
+deduplicates. Verified with `aws logs test-metric-filter` against both renderings: the request
+pattern matches 2 of 4 sample events and the error pattern 1 of 4, with the plain-text duplicate and
+a `SecurityHeadersFilter` DEBUG line correctly excluded. The double-write is itself a defect and is
+tracked separately.
+
+A side effect worth naming: **the gateway now has an access log.** It had none, which is why
+attributing the 4xx spike above required an Insights query over DEBUG filter-chain chatter. Query
+strings are stripped before logging, because token-credentialed endpoints (email verification,
+unsubscribe, registration confirm) carry the credential there.
 
 ### A declared alarm is not a working alarm
 

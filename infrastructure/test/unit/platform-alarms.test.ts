@@ -1,5 +1,6 @@
 import { App, Stack } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import { EcsServiceAlarms } from '../../lib/constructs/ecs-service-alarms';
 import { AlbAlarms } from '../../lib/constructs/alb-alarms';
@@ -102,13 +103,18 @@ describe('Platform alarms (#970)', () => {
     const albFullName = 'app/BATber-Servi-XlmJ3ScSHcvA/1234567890abcdef';
     const tgFullName = 'targetgroup/BATbe-Targe-ABCDEF/abcdef1234567890';
 
-    const withAlb = () => {
+    const withAlb = (opts: { logGroup?: boolean } = {}) => {
       const { stack, topic } = makeStack();
       new AlbAlarms(stack, 'AlbAlarms', {
         environment: 'staging',
         loadBalancerFullName: albFullName,
         targetGroupFullName: tgFullName,
         alarmTopic: topic,
+        apiGatewayLogGroup: opts.logGroup
+          ? new logs.LogGroup(stack, 'GatewayLogGroup', {
+              logGroupName: '/aws/ecs/BATbern-staging/api-gateway',
+            })
+          : undefined,
       });
       return Template.fromStack(stack);
     };
@@ -239,10 +245,108 @@ describe('Platform alarms (#970)', () => {
       });
     });
 
+    // ── #986: the replacement for alb-4xx ────────────────────────────────────────
+
+    test('should_countApiErrorsFromTheGatewayAccessLog_when_logGroupProvided', () => {
+      // Fed by the gateway's own marker, NOT by an ALB metric. An ALB metric cannot
+      // distinguish a request addressed to us from a scanner probing /gecko-new.php, which
+      // is what made alb-4xx unactionable.
+      const template = withAlb({ logGroup: true });
+
+      template.hasResourceProperties('AWS::Logs::MetricFilter', {
+        MetricTransformations: Match.arrayWith([
+          Match.objectLike({
+            MetricNamespace: 'BATbern/Gateway',
+            MetricName: 'ApiClientErrors',
+          }),
+        ]),
+      });
+      template.hasResourceProperties('AWS::Logs::MetricFilter', {
+        MetricTransformations: Match.arrayWith([
+          Match.objectLike({
+            MetricNamespace: 'BATbern/Gateway',
+            MetricName: 'ApiRequests',
+          }),
+        ]),
+      });
+    });
+
+    test('should_matchTheMarkerEmittedByTheGatewayFilter_when_metricFiltersCreated', () => {
+      // These literals are the contract with
+      // ClientErrorMetricsFilter.LOG_MARKER / CLIENT_ERROR_FIELD. If either side is renamed
+      // without the other, the metric silently goes to zero and the alarm goes silent with
+      // it — the failure mode is a quiet alarm, which is why it is pinned here.
+      const filters = withAlb({ logGroup: true }).findResources('AWS::Logs::MetricFilter');
+      const patterns = Object.values(filters).map((r) => r.Properties?.FilterPattern as string);
+
+      expect(patterns).toHaveLength(2);
+      for (const pattern of patterns) {
+        expect(pattern).toContain('GATEWAY_API_REQUEST');
+        // The gateway writes every event into this log group twice (LogstashEncoder JSON via
+        // stdout+awslogs, and a plain-text PatternLayout line via AwsLogsAppender). Without
+        // this term both metrics double-count.
+        expect(pattern).toContain('@timestamp');
+      }
+      expect(patterns.filter((p) => p.includes('clientError=true'))).toHaveLength(1);
+    });
+
+    test('should_alarmOnRatioNotCount_when_apiClientErrorAlarmCreated', () => {
+      // Measured /api/ requests per 5-minute window over the 24h to 2026-08-23 15:00 UTC:
+      // 12-35 through the day, and 988 / 842 / 527 from 02:40 while the nightly E2E suite
+      // runs. No constant threshold survives a 30x volume swing — high enough for 02:40 is
+      // unreachable at midday (a dead alarm, the #970 failure), low enough for midday pages
+      // every night. The nightly suite's own 4xx peak was 32 in a bin against 988 requests,
+      // about 3%, so a ratio separates them cleanly.
+      withAlb({ logGroup: true }).hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: 'batbern-staging-api-4xx-ratio',
+        Threshold: 50,
+        ComparisonOperator: 'GreaterThanThreshold',
+        TreatMissingData: 'notBreaching',
+        Metrics: Match.arrayWith([
+          Match.objectLike({
+            Expression: Match.stringLikeRegexp('errors / requests \\* 100'),
+          }),
+        ]),
+      });
+    });
+
+    test('should_requireSustainedBreach_when_apiClientErrorAlarmCreated', () => {
+      // 3 of 3 periods = 15 minutes. A rolling deploy can legitimately spoil one window
+      // while a task warms; what deserves a page is a break that does not clear.
+      withAlb({ logGroup: true }).hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: 'batbern-staging-api-4xx-ratio',
+        EvaluationPeriods: 3,
+        DatapointsToAlarm: 3,
+      });
+    });
+
+    test('should_ignoreRatioBelowMinimumTraffic_when_apiClientErrorAlarmCreated', () => {
+      // A percentage over three requests is one sample wearing a percent sign.
+      withAlb({ logGroup: true }).hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: 'batbern-staging-api-4xx-ratio',
+        Metrics: Match.arrayWith([
+          Match.objectLike({
+            Expression: Match.stringLikeRegexp('IF\\(requests >= \\d+'),
+          }),
+        ]),
+      });
+    });
+
+    test('should_notCreateApiClientErrorAlarm_when_noLogGroupProvided', () => {
+      // A stack with no gateway has no access log to count, and an alarm on a metric that
+      // is never published is worse than no alarm — it reads as coverage.
+      const template = withAlb();
+      template.resourceCountIs('AWS::Logs::MetricFilter', 0);
+      const names = Object.values(template.findResources('AWS::CloudWatch::Alarm')).map(
+        (r) => (r.Properties as { AlarmName?: string })?.AlarmName
+      );
+      expect(names).not.toContain('batbern-staging-api-4xx-ratio');
+    });
+
     test('should_neverUseBreachingMissingData_when_albAlarmsCreated', () => {
       // No ALB alarm may treat missing data as breaching. That setting is what turned
       // high-availability into a permanently red alarm nobody looked at any more.
-      const alarms = withAlb().findResources('AWS::CloudWatch::Alarm');
+      const alarms = withAlb({ logGroup: true }).findResources('AWS::CloudWatch::Alarm');
       const breaching = Object.entries(alarms).filter(
         ([, r]) => r.Properties?.TreatMissingData === 'breaching'
       );
@@ -250,7 +354,7 @@ describe('Platform alarms (#970)', () => {
     });
 
     test('should_attachAlarmAndOkActionsToEveryAlarm_when_topicProvided', () => {
-      const alarms = withAlb().findResources('AWS::CloudWatch::Alarm');
+      const alarms = withAlb({ logGroup: true }).findResources('AWS::CloudWatch::Alarm');
       expect(Object.keys(alarms).length).toBeGreaterThan(0);
       const missing = Object.entries(alarms)
         .filter(([, r]) => !r.Properties?.AlarmActions || !r.Properties?.OKActions)
