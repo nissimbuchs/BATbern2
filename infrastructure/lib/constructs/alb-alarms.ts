@@ -199,7 +199,30 @@ export class AlbAlarms extends Construct {
     let apiClientErrors: cloudwatch.Alarm | undefined;
 
     if (props.apiGatewayLogGroup) {
-      const dimensions = { Environment: env };
+      // NO `dimensions` on either transformation, and this is not a preference. Measured
+      // against the live CloudWatch Logs API on 2026-08-23 with a throwaway log group:
+      //
+      //   dimensions + defaultValue -> InvalidParameterException
+      //                                "dimensions and default value are mutually exclusive"
+      //   defaultValue alone        -> accepted
+      //   dimensions alone          -> InvalidParameterException
+      //                                "The specified filter pattern does not support dimensions"
+      //
+      // So dimensions are impossible here regardless of defaultValue: a literal-term filter
+      // pattern cannot carry them at all — that needs a structured (JSON or space-delimited
+      // named-field) pattern, and the pattern has to stay literal because only one of the two
+      // renderings of each log event is JSON.
+      //
+      // `defaultValue: 0` is the half worth keeping anyway. It makes CloudWatch Logs publish
+      // an explicit zero for every period with no match, so both metrics are continuous from
+      // the moment the filter exists. Without it a healthy system produces a metric with
+      // gaps, the ratio yields no datapoint, and the alarm is indistinguishable from one
+      // watching a metric nobody publishes — which is the #970 failure wearing a new hat.
+      //
+      // Losing the Environment dimension costs nothing today: this account holds one
+      // environment (188701360969, envName 'staging', serving production). Should a second
+      // ever share it, split by NAMESPACE — 'BATbern/Gateway/{env}' — not by dimension,
+      // because dimensions will still be unavailable.
 
       const requestsFilter = new logs.MetricFilter(this, 'ApiRequestsMetricFilter', {
         logGroup: props.apiGatewayLogGroup,
@@ -211,7 +234,6 @@ export class AlbAlarms extends Construct {
         filterPattern: logs.FilterPattern.allTerms('GATEWAY_API_REQUEST', '@timestamp'),
         metricValue: '1',
         defaultValue: 0,
-        dimensions,
       });
 
       const clientErrorsFilter = new logs.MetricFilter(this, 'ApiClientErrorsMetricFilter', {
@@ -228,14 +250,14 @@ export class AlbAlarms extends Construct {
         ),
         metricValue: '1',
         defaultValue: 0,
-        dimensions,
       });
 
+      // No dimensionsMap, matching the filters above. If these two ever disagree the alarm
+      // queries a metric that is never published and goes permanently, silently green.
       const gatewayMetric = (metricName: string) =>
         new cloudwatch.Metric({
           namespace: 'BATbern/Gateway',
           metricName,
-          dimensionsMap: dimensions,
           statistic: 'Sum',
           period,
         });
