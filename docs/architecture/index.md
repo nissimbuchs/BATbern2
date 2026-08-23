@@ -90,15 +90,27 @@ The architecture documentation has been organized into 9 comprehensive sections 
 
 ## Technology Versions
 
-The platform maintains a **single source of truth** for all technology versions in **[versions.json](../versions.json)**. This file is automatically synchronized with actual dependency files to prevent documentation drift.
+The platform maintains a **single source of truth** for all technology versions in **[versions.json](../versions.json)**. It is generated from the actual dependency files, so architecture docs cite it instead of restating version numbers that then drift.
 
 ### Version Management
 
 - **📋 Current Versions**: See [versions.json](../versions.json) for exact technology versions
 - **📝 Version Ranges**: Architecture docs use `major.x` notation (e.g., `5.x` = version 5.x+)
-- **🔄 Automatic Sync**: GitHub Actions automatically updates `versions.json` when dependencies change
-- **🛠️ Manual Updates**: Run `node scripts/update-versions.js` to manually sync versions
-- **✅ CI Validation**: Build pipeline checks for version drift between docs and dependencies
+- **🛠️ Regenerating**: after changing a dependency, run `node scripts/update-versions.js` and commit the result alongside the dependency change
+- **✅ CI Verification**: `.github/workflows/sync-versions.yml` runs `node scripts/update-versions.js --check` and fails the PR on drift
+
+**CI verifies, it does not edit.** Nothing commits `versions.json` for you, and that is deliberate
+(#991). The workflow used to run the generator and push the result onto the contributor's branch.
+Because the push was authored by `github-actions[bot]`, it re-triggered every `pull_request`
+workflow, and those re-runs land at `action_required` under this repository's approval policy — so
+the required checks attached to a commit whose runs never started and the PR silently stalled as
+`MERGEABLE` + `BLOCKED`. The commits it pushed were also usually meaningless: the generator stamps
+`lastUpdated` with today's date, that date was compared as though it were a version, and the entire
+diff was frequently just the date moving.
+
+Since nothing reads `versions.json` programmatically — it is a human-readable reference cited from
+these docs — its only requirement is being correct, and a check that fails is the right way to
+enforce that.
 
 ### Key Technologies
 

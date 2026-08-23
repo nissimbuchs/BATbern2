@@ -1,22 +1,41 @@
-name: Sync Documentation Versions
+name: Verify Documentation Versions
 
-# Automatically updates docs/versions.json when dependencies change
-# This prevents version drift between actual dependencies and architecture documentation
+# Verifies that docs/versions.json still matches the actual dependency files.
+#
+# It used to DO the sync: it ran the generator and committed the result — pushing to the
+# contributor's branch on a pull_request, or opening a PR on a push to develop/main. That shape
+# was wrong for what this file guards, and it cost more than it saved (#991).
+#
+# Why a check and not a commit:
+#
+#   * Nothing consumes docs/versions.json programmatically. No code reads it. Three documents
+#     cite it ("see versions.json for exact versions" — docs/architecture/index.md:93-99,
+#     tech-stack.md:5), so its single requirement is being CORRECT. Correctness of a checked-in
+#     generated file is enforced by a check that fails, not by a bot that rewrites branches.
+#
+#   * The bot push was actively harmful. It landed as github-actions[bot] on a human's PR
+#     branch, which re-triggered every pull_request workflow, and those re-runs land at
+#     `action_required` under this repo's approval policy. The required checks then attach to a
+#     sha whose runs never start, so the PR sits MERGEABLE + BLOCKED with `gh pr checks` showing
+#     almost nothing. That is the same mechanism that has always stalled Dependabot PRs here;
+#     it was never Dependabot-specific.
+#
+#   * The commits it pushed were usually empty of meaning. The generator stamps lastUpdated with
+#     today's date and the old comparison treated that as drift, so any run on a later day than
+#     the file's own date produced a commit whose entire diff was the date. Fixed in
+#     scripts/update-versions.js (NON_VERSION_KEYS) and pinned by
+#     scripts/update-versions.test.mjs.
+#
+#   * The trigger never matched its own comment. It said "Trigger on Dependabot PRs" but carried
+#     no actor condition, so it fired on every PR touching a dependency manifest.
+#
+# The fix for a failure here is one command, which the script prints:
+#   node scripts/update-versions.js && git add docs/versions.json
+#
+# `--check` has existed in that script since it was written and had never been wired up,
+# because the lastUpdated bug would have made it fail every day regardless of real drift.
 
 on:
-  # Trigger on dependency file changes
-  push:
-    branches:
-      - develop
-      - main
-    paths:
-      - 'web-frontend/package.json'
-      - 'api-gateway/build.gradle'
-      - 'infrastructure/package.json'
-      - 'shared-kernel/build.gradle'
-      - 'scripts/update-versions.js'
-
-  # Trigger on Dependabot PRs
   pull_request:
     branches:
       - develop
@@ -24,132 +43,71 @@ on:
     paths:
       - 'web-frontend/package.json'
       - 'api-gateway/build.gradle'
+      - 'build.gradle'
+      - 'settings.gradle'
       - 'infrastructure/package.json'
-      - 'shared-kernel/build.gradle'
+      - 'docs/versions.json'
+      - 'scripts/update-versions.js'
 
-  # Allow manual triggering
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'web-frontend/package.json'
+      - 'api-gateway/build.gradle'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'infrastructure/package.json'
+      - 'docs/versions.json'
+      - 'scripts/update-versions.js'
+
   workflow_dispatch:
 
+# Read-only. This workflow no longer writes anything, anywhere — that is the point of the
+# change, and the permissions are the half of it that does not depend on the steps staying
+# well-behaved.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
-  sync-versions:
-    name: Update versions.json
+  verify-versions:
+    name: Verify versions.json
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          # Fetch full history for proper git operations
-          fetch-depth: 0
-          # Use PAT if available for better permissions, otherwise use GITHUB_TOKEN
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '22'
 
-      - name: Extract versions from dependencies
-        id: extract
-        run: |
-          echo "Running version extraction script..."
-          node scripts/update-versions.js
+      # The generator's own logic is now load-bearing for the check, so it gets tested. Uses
+      # node:test, no dependencies, no install step.
+      - name: Test the version extractor
+        run: node --test scripts/update-versions.test.mjs
 
-          # Check if versions.json was modified
-          if git diff --quiet docs/versions.json; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "✅ No version changes detected"
+      - name: Verify versions.json matches the dependency files
+        run: |
+          if node scripts/update-versions.js --check; then
+            echo "✅ docs/versions.json matches the dependency files"
           else
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "📝 Version changes detected"
-          fi
-
-      - name: Show version changes
-        if: steps.extract.outputs.changed == 'true'
-        run: |
-          echo "Version changes:"
-          git diff docs/versions.json
-
-      # For pull requests: Add a commit to the PR branch
-      - name: Commit version changes (PR)
-        if: |
-          steps.extract.outputs.changed == 'true' &&
-          github.event_name == 'pull_request'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add docs/versions.json
-          git commit -m "chore(docs): sync versions.json with dependency updates
-
-          Automatically updated by sync-versions workflow.
-
-          This commit ensures architecture documentation stays in sync with actual dependency versions."
-
-          # Push to the PR branch
-          git push origin HEAD:${{ github.head_ref }}
-
-      # For direct pushes to develop/main: Create a PR with the changes
-      - name: Create Pull Request with version changes
-        if: |
-          steps.extract.outputs.changed == 'true' &&
-          github.event_name == 'push'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: |
-            chore(docs): sync versions.json with dependency updates
-
-            Automatically updated by sync-versions workflow.
-
-            This commit ensures architecture documentation stays in sync with actual dependency versions.
-          branch: chore/sync-versions-${{ github.run_number }}
-          delete-branch: true
-          title: 'chore(docs): sync versions.json with dependency updates'
-          body: |
-            ## 📚 Automated Documentation Update
-
-            This PR updates `docs/versions.json` to reflect recent dependency changes.
-
-            ### Changes
-            - Updated version tracking for dependencies
-            - Ensures architecture documentation stays in sync with actual dependency versions
-
-            ### Auto-generated by
-            - Workflow: `sync-versions.yml`
-            - Triggered by: Push to `${{ github.ref_name }}`
-            - Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-            ✅ Safe to merge - this only updates documentation.
-          labels: |
-            documentation
-            dependencies
-            automated
-
-      - name: Add comment to PR (Dependabot)
-        if: |
-          steps.extract.outputs.changed == 'true' &&
-          github.event_name == 'pull_request' &&
-          github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v9
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `📚 **Documentation Update**\n\nI've automatically updated \`docs/versions.json\` to reflect the dependency changes in this PR.\n\nThis ensures our architecture documentation stays in sync with actual dependency versions.\n\n✅ Review the changes to \`docs/versions.json\` in this PR.`
-            })
-
-      - name: Summary
-        run: |
-          if [ "${{ steps.extract.outputs.changed }}" == "true" ]; then
-            echo "✅ Successfully updated docs/versions.json"
-            echo "📝 Changes have been committed to the branch"
-          else
-            echo "✅ No version updates needed - documentation is already up to date"
+            {
+              echo "### ❌ docs/versions.json has drifted"
+              echo ""
+              echo "A dependency version changed but the generated file was not regenerated."
+              echo ""
+              echo '```bash'
+              echo "node scripts/update-versions.js && git add docs/versions.json"
+              echo '```'
+              echo ""
+              echo "Commit that alongside the dependency change. This workflow deliberately"
+              echo "does not commit it for you — see the comment at the top of"
+              echo ".github/workflows/sync-versions.yml (#991)."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
