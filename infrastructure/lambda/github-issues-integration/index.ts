@@ -30,16 +30,21 @@ interface CloudWatchAlarm {
  * - OK state → Closes the corresponding GitHub Issue
  *
  * Environment variables:
- * - GITHUB_OWNER: GitHub repository owner (e.g., "batbern")
- * - GITHUB_REPO: GitHub repository name (e.g., "BATbern-develop")
+ * - GITHUB_OWNER: GitHub repository owner (e.g., "nissimbuchs")
+ * - GITHUB_REPO: GitHub repository name (e.g., "BATbern2")
  * - GITHUB_TOKEN_PARAM: SSM parameter name for GitHub PAT
  */
 export const handler = async (event: SNSEvent): Promise<void> => {
   console.log('Received SNS event:', JSON.stringify(event, null, 2));
 
-  const githubOwner = process.env.GITHUB_OWNER || 'batbern';
-  const githubRepo = process.env.GITHUB_REPO || 'BATbern-develop';
-  const githubTokenParam = process.env.GITHUB_TOKEN_PARAM || '/batbern/production/github/token';
+  // Defaults match the real repository. They previously read 'batbern' / 'BATbern-develop',
+  // neither of which exists ('BATbern-develop' is a local checkout directory, not a repo), so
+  // a caller relying on them would have filed into a 404. GitHubIssuesConstruct always sets
+  // these env vars, which is why it never bit; the construct carries the same note about its
+  // own defaults, and this is the second half of that same trap.
+  const githubOwner = process.env.GITHUB_OWNER || 'nissimbuchs';
+  const githubRepo = process.env.GITHUB_REPO || 'BATbern2';
+  const githubTokenParam = process.env.GITHUB_TOKEN_PARAM || '/batbern/staging/github/token';
 
   // Get GitHub token from SSM Parameter Store
   const githubToken = await getParameter(githubTokenParam);
@@ -171,10 +176,36 @@ async function findIssueByAlarm(
 }
 
 /**
+ * The AWS region CODE for console URLs, e.g. `eu-central-1`.
+ *
+ * #987: `alarm.Region` cannot be used for this. CloudWatch populates that field with the
+ * human DISPLAY NAME — `"EU (Frankfurt)"`, with a space and parentheses — so every console
+ * link this Lambda produced read `region=EU (Frankfurt)` and none of them resolved. AWS's own
+ * notification email links `region=eu-central-1` correctly, which left the mail usable and
+ * the GitHub issue not, backwards given the issue is meant to be the primary workflow.
+ *
+ * The alarm ARN in the same payload always carries the code as its 4th colon-separated field
+ * (`arn:aws:cloudwatch:eu-central-1:188701360969:alarm:name`), so that is the authority here.
+ * `alarm.Region` is still the right thing to SHOW a human; it is only wrong inside a URL.
+ */
+function regionCode(alarm: CloudWatchAlarm): string {
+  const fromArn = alarm.AlarmArn?.split(':')[3];
+  if (fromArn) {
+    return fromArn;
+  }
+  // Last resort: a Region value that already looks like a code (no spaces) is usable.
+  if (alarm.Region && !/\s/.test(alarm.Region)) {
+    return alarm.Region;
+  }
+  return 'eu-central-1';
+}
+
+/**
  * Format the issue body with alarm details.
  */
 function formatIssueBody(alarm: CloudWatchAlarm): string {
-  const dashboardUrl = `https://console.aws.amazon.com/cloudwatch/home?region=${alarm.Region}#alarmsV2:alarm/${encodeURIComponent(alarm.AlarmName)}`;
+  const region = regionCode(alarm);
+  const dashboardUrl = `https://console.aws.amazon.com/cloudwatch/home?region=${region}#alarmsV2:alarm/${encodeURIComponent(alarm.AlarmName)}`;
 
   return `## CloudWatch Alarm Details
 
@@ -208,8 +239,8 @@ ${
 
 ### Links
 - [CloudWatch Alarm](${dashboardUrl})
-- [CloudWatch Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=${alarm.Region}#dashboards:name=BATbern-${getEnvironment(alarm.AlarmName)})
-- [Application Logs](https://console.aws.amazon.com/cloudwatch/home?region=${alarm.Region}#logsV2:log-groups/log-group/$252Faws$252Flogs$252FBATbern-${getEnvironment(alarm.AlarmName)}$252Fapplication)
+- [CloudWatch Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=${region}#dashboards:name=BATbern-${getEnvironment(alarm.AlarmName)})
+- [Application Logs](https://console.aws.amazon.com/cloudwatch/home?region=${region}#logsV2:log-groups/log-group/$252Faws$252Flogs$252FBATbern-${getEnvironment(alarm.AlarmName)}$252Fapplication)
 
 ---
 *This issue was automatically created by CloudWatch alarm integration.*
