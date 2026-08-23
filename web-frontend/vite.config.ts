@@ -415,6 +415,32 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Hard worker cap. Not a performance tuning knob — a memory one.
+    //
+    // `vitest run --coverage` with the default fan-out took the dev host (`rack`, 16 cores /
+    // 29,877 MiB) down twice on 2026-08-23. Measured during the first crash: 17 node processes
+    // (1 main + 16 workers) holding 36.6 GB between 17.5 GB resident and 19.2 GB swapped, with
+    // "Free swap = 0kB". The kernel OOM killer picked `user@1000.service`, so systemd SIGKILLed
+    // every session inside it at once. That works out to ~2.15 GB per worker under coverage,
+    // against ~1.8 GB of RAM per core on this box before anything else runs — so a per-core
+    // fan-out cannot fit by construction, whatever the machine is doing.
+    //
+    // 3 workers + main is ~8.6 GB, which fits the real budget (the host now enforces
+    // MemoryMax=14G on user.slice, less 3-5 GB of interactive baseline). 4 + main is ~10.8 GB
+    // and uncomfortably close.
+    //
+    // Keep this as an absolute, NOT a percentage: '25%' would still be 4 workers here and 8 on
+    // a 32-core machine, which is the failure mode again on bigger hardware.
+    //
+    // Since the cap is now enforced by cgroup, an over-parallel run no longer takes the host
+    // down — it gets a worker SIGKILLed mid-test (exit 137, CONSTRAINT_MEMCG) and presents as a
+    // flaky test failure, which is the more expensive outcome because it looks like our bug.
+    //
+    // Effectively a no-op in CI: `ubuntu-latest` is a 4-vCPU runner, where the default is
+    // already 3. `minWorkers` deliberately absent — it does not exist in vitest 4 (verified
+    // against the installed 4.1.10 type definitions); `maxWorkers` is the whole knob. `pool`
+    // also left alone: 'forks' is already the default in v4.
+    maxWorkers: 3,
     // 30s testTimeout + 30s hookTimeout absorb CPU-contention spikes when the full
     // 5000+-test suite runs in parallel; isolated runs of these files complete in <7s.
     testTimeout: 30000,

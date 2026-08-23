@@ -156,17 +156,33 @@ export class EcsServiceAlarms extends Construct {
     if (props.containerInsightsEnabled) {
       const logGroupName = `/aws/ecs/containerinsights/${props.clusterName}/performance`;
 
+      // The metric is named per service rather than dimensioned per service, and that is
+      // forced by the API, not a style choice. Measured against the live CloudWatch Logs API
+      // on 2026-08-23 with a throwaway log group:
+      //
+      //   dimensions + defaultValue -> InvalidParameterException
+      //                                "dimensions and default value are mutually exclusive"
+      //   dimensions alone          -> InvalidParameterException
+      //                                "The specified filter pattern does not support dimensions"
+      //
+      // A literal-term FilterPattern cannot carry dimensions at all; that needs a structured
+      // pattern with named fields, and this one greps free text for an exit code. So the only
+      // way to keep six services distinguishable is to put the service in the metric name.
+      //
+      // This shape has NEVER deployed. Container Insights is disabled on the cluster
+      // (cluster-stack.ts) and no stack passes containerInsightsEnabled, so the whole branch
+      // is dead today. It was declared invalid and would have failed the first deploy after
+      // anyone re-enabled Insights — found because the identical mistake in AlbAlarms rolled
+      // back BATbern-staging-ApiGatewayService. Fixed here rather than left for that person.
+      const oomMetricName = `OOMKills-${serviceDisplayName}`;
+
       const oomMetricFilter = new logs.MetricFilter(this, 'OOMKillMetricFilter', {
         logGroup: logs.LogGroup.fromLogGroupName(this, 'ContainerInsightsLogGroup', logGroupName),
         metricNamespace: 'BATbern/ECS',
-        metricName: 'OOMKills',
+        metricName: oomMetricName,
         filterPattern: logs.FilterPattern.allTerms(props.serviceName, 'exit', 'code', '137'),
         metricValue: '1',
         defaultValue: 0,
-        dimensions: {
-          ServiceName: props.serviceName,
-          ClusterName: props.clusterName,
-        },
       });
 
       oomKillAlarm = new cloudwatch.Alarm(this, 'OOMKillDetection', {
@@ -174,11 +190,8 @@ export class EcsServiceAlarms extends Construct {
         alarmDescription: `${serviceDisplayName} experienced OOM kill (exit code 137) - memory limit reached`,
         metric: new cloudwatch.Metric({
           namespace: 'BATbern/ECS',
-          metricName: 'OOMKills',
-          dimensionsMap: {
-            ServiceName: props.serviceName,
-            ClusterName: props.clusterName,
-          },
+          metricName: oomMetricName,
+          // No dimensionsMap — it must match the filter above, which cannot have one.
           statistic: 'Sum',
           period: cdk.Duration.minutes(5),
         }),

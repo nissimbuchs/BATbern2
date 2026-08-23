@@ -362,6 +362,10 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         targetGroupFullName: this.service.targetGroup.targetGroupFullName,
         alarmTopic: props.alarmTopic,
         isProduction: isProd,
+        // #986: the api-4xx-ratio alarm is fed by MetricFilters over this service's own
+        // access-log marker, not by an ALB metric, because an ALB metric cannot tell a
+        // request addressed to us from a scanner probing for PHP backdoors.
+        apiGatewayLogGroup: logGroup,
       });
     }
 

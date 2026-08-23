@@ -134,7 +134,8 @@ line 422 for `ApiGatewayServiceStack`).
 
 | Watched | Alarms | Defined in |
 |---|---|---|
-| ALB (platform ingress) | `alb-5xx`, `alb-4xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
+| ALB (platform ingress) | `alb-5xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
+| Gateway API surface | `api-4xx-ratio` | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-EventBridge-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
 | SES reputation | `bounce-rate-warning`, `bounce-rate-critical`, `complaint-rate-critical` | `MonitoringStack` |
@@ -149,6 +150,148 @@ the instance identifier is deterministic (`batbern-{env}-postgres`, set explicit
 **There is deliberately no cost alarm.** `AWS/Billing` is only published in us-east-1, and
 consolidated billing lives in the management account (510187933511) where finance already has
 access. Tracked in #978.
+
+### Test-runner worker caps are a memory constraint, not a tuning knob
+
+Both JS test runners in this repository pin `maxWorkers: 3`:
+`web-frontend/vite.config.ts` (`test.maxWorkers`) and `infrastructure/package.json` (jest).
+
+Neither is a performance choice. Both runners default to roughly one worker per core, and the
+development host `rack` has 16 cores against 29,877 MiB — about **1.8 GB of RAM per core before
+anything else runs**. A per-core fan-out therefore cannot fit by construction.
+
+Measured on 2026-08-23, when `vitest run --coverage` took the host down twice in 71 minutes.
+During the first crash: 17 node processes (1 main + 16 workers) holding **36.6 GB** between
+17.5 GB resident and 19.2 GB swapped, with `Free swap = 0kB`. The OOM killer chose
+`user@1000.service`, so systemd SIGKILLed every session inside it at once. That is ~2.15 GB per
+worker under coverage. Independently, `npx jest test/unit` in `infrastructure/` at its default
+15 workers was killed with exit 137 mid-run — each worker synthesises CloudFormation stacks — and
+completes cleanly at 3.
+
+3 workers plus the main process is ~8.6 GB, inside the real budget (`user.slice` now enforces
+`MemoryMax=14G`, less 3-5 GB of interactive baseline). 4 plus main is ~10.8 GB and too close.
+
+Two things to know before changing these numbers:
+
+- **Keep them absolute, not percentages.** `'25%'` is 4 workers on a 16-core box and 8 on a
+  32-core one, which is the same failure on bigger hardware.
+- **The host now kills instead of dying.** With the cgroup cap enforced, an over-parallel run no
+  longer takes the machine down — a worker is SIGKILLed mid-test (exit 137,
+  `constraint=CONSTRAINT_MEMCG`) and it presents as a **flaky test failure**. That is the more
+  expensive outcome, because it looks like a defect in our code rather than a resource limit.
+
+Effectively a no-op in CI: `ubuntu-latest` is a 4-vCPU runner where the default is already 3.
+(Inferred from GitHub's documented runner spec, not measured on a runner.)
+
+Verified, not assumed: with the cap in place, a 12-file vitest run peaked at exactly 3
+concurrent fork workers, counted through `/proc`. An earlier measurement suggesting 5 was an
+artefact of the sampler's own `grep` matching itself.
+
+`minWorkers` is deliberately absent — it does not exist in vitest 4 (checked against the
+installed 4.1.10 type definitions). `pool` is left alone too: `'forks'` is already the v4
+default, so setting it changes nothing.
+
+### Alarm to agent: the triage handoff (#986)
+
+The chain is `alarm -> SNS batbern-{env}-alarms -> batbern-{env}-github-issues Lambda -> GitHub
+issue`. That much already existed and works: it opens an issue, comments on re-trigger, and closes
+on recovery. What was missing was the last hop.
+
+`.github/workflows/claude.yml` was disabled on 2026-05-25 (`9f21453f`) and is re-enabled. It fires
+on `issues: opened` only when the body or title contains `@claude`, so the Lambda now appends a
+triage block containing that mention to every issue it **creates**.
+
+Three properties are load-bearing.
+
+**The mention is only on creation.** The re-trigger comment and the recovery comment must never
+carry it. An oscillating alarm would otherwise start one agent run per cycle, and the alarm retired
+in this same change managed six cycles in three days, two of them lasting 60 seconds. Tests pin all
+three cases.
+
+**`contents` stays `read` in the workflow's `permissions:` block.** A pull request against `develop`
+invokes `deploy-staging.yml` and ships that branch to www.batbern.ch, unmerged and unreviewed. An
+agent that "fixed" an alarm by opening a PR would be performing an unreviewed production deploy in
+response to a CloudWatch metric. Without `contents: write` there is no branch to open one from. The
+triage prompt also says not to; the permission is the half that does not depend on the model
+complying. `issues: write` and `pull-requests: write` are granted so it can reply, which needs no
+branch.
+
+**`CLAUDE_TRIAGE_ENABLED=false`** on the Lambda drops the handoff and leaves the issue otherwise
+intact. It is an environment variable rather than a bundled constant because that change is
+effective immediately: an agent storm can be stopped from the console without deploying code. Same
+convention as `FEATURES_SSO_ENABLED`.
+
+Known limitation, accepted rather than solved: a self-healing alarm can close its issue while the
+agent run is still going, so the run produces a comment on a closed issue. A poll-based trigger
+(cron over `gh issue list --label incident --state open`) would skip those naturally, since an alarm
+that clears inside the poll interval never wakes anything. That remains the better design and is not
+built.
+
+### An alarm on someone else's behaviour is not a signal (#986)
+
+`alb-4xx` was retired on 2026-08-23. It watched `HTTPCode_Target_4XX_Count > 50` per 5 minutes and
+paged six times in the preceding three days, self-resolving every time.
+
+Measured over the window the last page cited (14:35-14:50 UTC), from 808 api-gateway request log
+lines:
+
+| bucket | requests | distinct paths |
+|---|---|---|
+| `/actuator/health` | 360 | 1 |
+| `/api/v1/*` — all real traffic | 64 | 6 |
+| neither | 384 | 186 |
+
+The 384 were a webshell sweep against `api.batbern.ch`: `/gecko-new.php`, `/aa.php`,
+`/wp-content/plugins/hellopress/wp_filemanager.php`, 186 distinct nonexistent `.php` paths in
+fifteen minutes. Each is a 404 and each 404 is one `HTTPCode_Target_4XX_Count`. `api.batbern.ch`
+resolves straight to the ALB with no CloudFront and no WAF, so nothing stands between a scanner
+and a 404.
+
+The number that alarm reported was therefore a property of the internet, not of BATbern, and no
+threshold makes it actionable — raising it only chooses how large a scan has to be before it pages.
+The lesson generalises past this one alarm: **an alarm must watch something we control.** A metric
+that an anonymous third party can move at will is a noise generator, and a noisy alarm is worse
+than an absent one because it trains its reader to ignore the channel.
+
+The signal `alb-4xx` was reaching for — a deploy that starts rejecting real requests — is kept, as
+`api-4xx-ratio`.
+
+### `api-4xx-ratio`, and why it is a ratio
+
+`ClientErrorMetricsFilter` in the api-gateway logs one `GATEWAY_API_REQUEST` line per request on a
+path the gateway serves, and nothing at all for anything else. Two `logs.MetricFilter`s over that
+marker publish `BATbern/Gateway ApiRequests` and `ApiClientErrors`, and the alarm compares them:
+
+```
+IF(requests >= 10, errors / requests * 100, 0) > 50%, for 3 of 3 periods
+```
+
+Three properties are deliberate.
+
+**It counts only our own surface.** The scanner sweep produces no log line, so it enters neither
+side of the fraction. The denominator is explicitly *not* the ALB's `RequestCount`, which counts the
+sweep and would therefore inflate during exactly the noise the alarm needs to see through.
+
+**It is a ratio, not a count.** Measured `/api/` requests per 5-minute window over the 24h to
+2026-08-23 15:00 UTC: 12-35 through the day, and 988 / 842 / 527 in the three windows from 02:40
+while the nightly E2E suite runs. No constant survives a 30× swing — high enough for 02:40 is
+unreachable at midday, which is a dead alarm and the #970 failure mode; low enough for midday pages
+every night. The nightly suite's own 4xx peak measured 32 in a bin against 988 requests, about 3%,
+so a ratio separates them and a count cannot.
+
+**Both filter patterns require `@timestamp`.** The gateway's `logback-spring.xml` writes every event
+into this log group **twice** — the `LogstashEncoder` JSON line via stdout and the ECS `awslogs`
+driver, plus a plain-text `PatternLayout` line written directly by `ca.pjer.logback.AwsLogsAppender`
+to the same group. Only the JSON rendering contains `@timestamp`, so requiring that term
+deduplicates. Verified with `aws logs test-metric-filter` against both renderings: the request
+pattern matches 2 of 4 sample events and the error pattern 1 of 4, with the plain-text duplicate and
+a `SecurityHeadersFilter` DEBUG line correctly excluded. The double-write is itself a defect and is
+tracked separately.
+
+A side effect worth naming: **the gateway now has an access log.** It had none, which is why
+attributing the 4xx spike above required an Insights query over DEBUG filter-chain chatter. Query
+strings are stripped before logging, because token-credentialed endpoints (email verification,
+unsubscribe, registration confirm) carry the credential there.
 
 ### A declared alarm is not a working alarm
 
