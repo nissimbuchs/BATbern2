@@ -133,14 +133,21 @@ describe('Platform alarms (#970)', () => {
       });
     });
 
-    test('should_alarmOnClientErrors_when_albAlarmsCreated', () => {
-      withAlb().hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmName: 'batbern-staging-alb-4xx',
-        Namespace: 'AWS/ApplicationELB',
-        MetricName: 'HTTPCode_Target_4XX_Count',
-        Dimensions: [{ Name: 'LoadBalancer', Value: albFullName }],
-        TreatMissingData: 'notBreaching',
-      });
+    test('should_notAlarmOnRawTargetClientErrors_when_albAlarmsCreated', () => {
+      // #986: batbern-{env}-alb-4xx watched HTTPCode_Target_4XX_Count > 50 / 5 min and
+      // paged six times in three days, every time on a PHP webshell sweep against
+      // api.batbern.ch — 186 distinct nonexistent .php paths in one fifteen-minute window
+      // against 64 requests of real traffic. The count is a property of the internet, so
+      // the alarm is unactionable at any threshold. Do not re-add it: measure 4xx on paths
+      // the gateway serves instead.
+      const alarms = withAlb().findResources('AWS::CloudWatch::Alarm');
+      const rawTarget4xx = Object.entries(alarms).filter(
+        ([, r]) => r.Properties?.MetricName === 'HTTPCode_Target_4XX_Count'
+      );
+      expect(rawTarget4xx).toEqual([]);
+      expect(
+        Object.values(alarms).map((r) => (r.Properties as { AlarmName?: string })?.AlarmName)
+      ).not.toContain('batbern-staging-alb-4xx');
     });
 
     test('should_alarmOnP95LatencyInSeconds_when_albAlarmsCreated', () => {

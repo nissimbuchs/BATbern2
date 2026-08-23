@@ -134,7 +134,7 @@ line 422 for `ApiGatewayServiceStack`).
 
 | Watched | Alarms | Defined in |
 |---|---|---|
-| ALB (platform ingress) | `alb-5xx`, `alb-4xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
+| ALB (platform ingress) | `alb-5xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-EventBridge-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
 | SES reputation | `bounce-rate-warning`, `bounce-rate-critical`, `complaint-rate-critical` | `MonitoringStack` |
@@ -149,6 +149,35 @@ the instance identifier is deterministic (`batbern-{env}-postgres`, set explicit
 **There is deliberately no cost alarm.** `AWS/Billing` is only published in us-east-1, and
 consolidated billing lives in the management account (510187933511) where finance already has
 access. Tracked in #978.
+
+### An alarm on someone else's behaviour is not a signal (#986)
+
+`alb-4xx` was retired on 2026-08-23. It watched `HTTPCode_Target_4XX_Count > 50` per 5 minutes and
+paged six times in the preceding three days, self-resolving every time.
+
+Measured over the window the last page cited (14:35-14:50 UTC), from 808 api-gateway request log
+lines:
+
+| bucket | requests | distinct paths |
+|---|---|---|
+| `/actuator/health` | 360 | 1 |
+| `/api/v1/*` — all real traffic | 64 | 6 |
+| neither | 384 | 186 |
+
+The 384 were a webshell sweep against `api.batbern.ch`: `/gecko-new.php`, `/aa.php`,
+`/wp-content/plugins/hellopress/wp_filemanager.php`, 186 distinct nonexistent `.php` paths in
+fifteen minutes. Each is a 404 and each 404 is one `HTTPCode_Target_4XX_Count`. `api.batbern.ch`
+resolves straight to the ALB with no CloudFront and no WAF, so nothing stands between a scanner
+and a 404.
+
+The number that alarm reported was therefore a property of the internet, not of BATbern, and no
+threshold makes it actionable — raising it only chooses how large a scan has to be before it pages.
+The lesson generalises past this one alarm: **an alarm must watch something we control.** A metric
+that an anonymous third party can move at will is a noise generator, and a noisy alarm is worse
+than an absent one because it trains its reader to ignore the channel.
+
+The signal `alb-4xx` was reaching for — a deploy that starts rejecting real requests — is kept, on
+a gateway-side counter scoped to paths the gateway actually serves.
 
 ### A declared alarm is not a working alarm
 

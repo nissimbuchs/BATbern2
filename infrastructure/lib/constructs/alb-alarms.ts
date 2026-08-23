@@ -30,8 +30,6 @@ export interface AlbAlarmsProps {
   readonly thresholds?: {
     /** Target 5xx responses per 5 minutes. */
     readonly serverErrorCount?: number;
-    /** Target 4xx responses per 5 minutes. */
-    readonly clientErrorCount?: number;
     /** P95 TargetResponseTime, in SECONDS. */
     readonly latencyP95Seconds?: number;
     /**
@@ -77,7 +75,6 @@ export class AlbAlarms extends Construct {
 
     const thresholds = {
       serverErrorCount: props.thresholds?.serverErrorCount ?? (isProduction ? 5 : 10),
-      clientErrorCount: props.thresholds?.clientErrorCount ?? 50,
       // SECONDS. AWS/ApplicationELB TargetResponseTime is in seconds, unlike
       // AWS/ApiGateway Latency which is milliseconds — the alarm this replaces carried a
       // threshold of 500 written for milliseconds, i.e. a 500-second SLA had it ever run.
@@ -124,19 +121,34 @@ export class AlbAlarms extends Construct {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    // ── 4xx: clients are being rejected ────────────────────────────────────────────
-    // Deliberately looser and slower than 5xx. A burst of 401s during a token refresh
-    // storm, or 404s from a scanner, is not an incident; a sustained elevation is.
-    const clientErrors = new cloudwatch.Alarm(this, 'ClientErrors', {
-      alarmName: `batbern-${env}-alb-4xx`,
-      alarmDescription: `More than ${thresholds.clientErrorCount} target 4xx responses in 5 minutes`,
-      metric: albMetric('HTTPCode_Target_4XX_Count', 'Sum'),
-      threshold: thresholds.clientErrorCount,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
+    // ── 4xx: deliberately NOT alarmed on at the ALB (#986) ─────────────────────────
+    // There used to be a `batbern-{env}-alb-4xx` alarm on HTTPCode_Target_4XX_Count > 50
+    // per 5 minutes. It fired six times in the three days to 2026-08-23 and self-resolved
+    // every time, and the cause was never once a fault.
+    //
+    // Measured, 2026-08-23 14:35-14:50 UTC (the window the last page cited: 118 4xx at
+    // 14:40, 73 at 14:45), from 808 api-gateway request log lines:
+    //
+    //   /actuator/health   360 requests    1 distinct path
+    //   /api/v1/*           64 requests    6 distinct paths   <- all the real traffic
+    //   neither            384 requests  186 distinct paths
+    //
+    // The 384 are a webshell sweep against api.batbern.ch — /gecko-new.php, /aa.php,
+    // /wp-content/plugins/hellopress/wp_filemanager.php, /qyffk.php, 186 distinct
+    // nonexistent .php paths in fifteen minutes. Every one is a 404, and every 404 is one
+    // HTTPCode_Target_4XX_Count. api.batbern.ch resolves straight to this ALB with no
+    // CloudFront and no WAF, so there is nothing between a scanner and a 404.
+    //
+    // Raw target-4xx is therefore not an actionable signal at ANY threshold: the number it
+    // reports is a property of the internet, not of BATbern. Raising the threshold would
+    // only set the bar at "how large a scan before we care", which is not a question worth
+    // answering. Note the deleted alarm's own comment already anticipated this ("404s from
+    // a scanner is not an incident") — it just could not act on it with this metric.
+    //
+    // The signal that alarm was reaching for — a deploy that starts rejecting real
+    // requests — is worth keeping, but it has to be measured on paths the gateway actually
+    // serves rather than on everything that reaches the listener. That replacement is
+    // #986 option 2.
 
     // ── Latency ────────────────────────────────────────────────────────────────────
     // Fires only on SUSTAINED latency, because the thing that actually breaches here is a
@@ -247,7 +259,7 @@ export class AlbAlarms extends Construct {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    this.alarms.push(serverErrors, clientErrors, latency, availability, unhealthyTargets);
+    this.alarms.push(serverErrors, latency, availability, unhealthyTargets);
 
     for (const alarm of this.alarms) {
       alarm.addAlarmAction(action);
