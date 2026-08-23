@@ -21,7 +21,11 @@ const path = require('path');
 
 // File paths
 const ROOT_DIR = path.join(__dirname, '..');
-const VERSIONS_FILE = path.join(ROOT_DIR, 'docs', 'versions.json');
+// BATBERN_VERSIONS_FILE lets the test suite point the script at a temporary copy. Nothing in
+// CI or the hooks sets it; it exists so scripts/update-versions.test.mjs can exercise the real
+// script end to end without writing to the checked-in file.
+const VERSIONS_FILE = process.env.BATBERN_VERSIONS_FILE
+  || path.join(ROOT_DIR, 'docs', 'versions.json');
 const FRONTEND_PACKAGE = path.join(ROOT_DIR, 'web-frontend', 'package.json');
 const BACKEND_GRADLE = path.join(ROOT_DIR, 'api-gateway', 'build.gradle');
 // Epic 13 (SB4) moved the estate-wide pins out of the per-module build files: the Spring
@@ -220,7 +224,7 @@ function generateVersionsJson() {
 
   return {
     "$schema": "https://json-schema.org/draft-07/schema#",
-    "description": "Single source of truth for technology versions in BATbern platform. This file is automatically updated by scripts/update-versions.js when dependencies change.",
+    "description": "Single source of truth for technology versions in BATbern platform. Regenerate with scripts/update-versions.js after changing a dependency; CI verifies it with --check and never edits it for you.",
     "lastUpdated": new Date().toISOString().split('T')[0],
     "frontend": frontendVersions,
     "backend": backendVersions,
@@ -247,6 +251,23 @@ function generateVersionsJson() {
 }
 
 /**
+ * Top-level keys that describe the FILE rather than any dependency's version.
+ *
+ * #991: `lastUpdated` used to be compared like a version. The generator sets it to today, so on
+ * any day later than the file's own date the script reported drift, rewrote the file, and
+ * sync-versions.yml committed a diff whose entire content was a date bump. That bot commit
+ * landed on the contributor's PR branch, re-triggered every workflow, and stalled the PR behind
+ * `action_required` — the same mechanism that has always stalled Dependabot PRs here.
+ *
+ * It also made `--check` unusable in CI, which is why the check mode this script has shipped
+ * with since day one had never been wired up: it would have failed every day, drift or not.
+ *
+ * `$schema` and `description` are prose about the file for the same reason — an editorial edit
+ * to either is not a dependency change and must not fail the check.
+ */
+const NON_VERSION_KEYS = new Set(['$schema', 'description', 'lastUpdated']);
+
+/**
  * Compare two version objects and return differences
  */
 function compareVersions(current, updated) {
@@ -255,6 +276,11 @@ function compareVersions(current, updated) {
   function compare(currentObj, updatedObj, path = '') {
     for (const key in updatedObj) {
       const fullPath = path ? `${path}.${key}` : key;
+
+      // Only at the top level: a nested key legitimately called "description" would be data.
+      if (path === '' && NON_VERSION_KEYS.has(key)) {
+        continue;
+      }
 
       if (typeof updatedObj[key] === 'object' && updatedObj[key] !== null) {
         compare(currentObj[key] || {}, updatedObj[key], fullPath);
@@ -299,6 +325,8 @@ function main() {
     const differences = compareVersions(currentVersions, newVersions);
 
     if (differences.length === 0) {
+      // Deliberately NOT rewriting the file. The only thing that would change is lastUpdated,
+      // and a date bump carrying no information is what produced the no-op bot commits (#991).
       console.log('✅ No version changes detected. Documentation is up to date.');
       process.exit(0);
     }
