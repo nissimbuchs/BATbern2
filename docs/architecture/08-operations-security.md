@@ -151,6 +151,36 @@ the instance identifier is deterministic (`batbern-{env}-postgres`, set explicit
 consolidated billing lives in the management account (510187933511) where finance already has
 access. Tracked in #978.
 
+### Log levels are owned by application.yml, not logback (#990)
+
+`ch.batbern` is set in each service's `application.yml` and **deliberately nowhere else**. Spring
+Boot applies `logging.level.*` *after* the logback configuration is loaded and overrides it, so a
+`<logger name="ch.batbern">` element in `logback-spring.xml` is inert while looking authoritative.
+
+That is not a hypothetical. The first attempt to turn api-gateway down from DEBUG edited only
+`logback-spring.xml`, passed review, deployed — and DEBUG lines kept arriving. It was caught by
+reading the live log group afterwards, not by any test.
+
+Two production-affecting instances existed, and neither is visible from the code alone:
+
+| service | setting | why it applied to production |
+|---|---|---|
+| `api-gateway` | `ch.batbern: DEBUG` in the default profile | hardcoded; ignored the `LOG_LEVEL=INFO` the task already sets |
+| `company-user-management` | `ch.batbern: DEBUG` under the **staging** profile | the estate runs `SPRING_PROFILES_ACTIVE=staging` in the production account, so the `production: INFO` block below it is unreachable config |
+
+The second is the more instructive one: it reads as correct. A reviewer sees `production: INFO`
+and moves on. Only the deployment context reveals that block is never evaluated.
+
+Both are now `${LOG_LEVEL:INFO}`. **The default is INFO and DEBUG is opt-in** — `${LOG_LEVEL:DEBUG}`
+is safe only while every environment remembers to set the variable, which is the same implicit
+coupling that hid this. Raise it with `LOG_LEVEL=DEBUG` on the task when debugging.
+
+Guarded by `infrastructure/test/unit/log-level-hygiene.test.ts`, which walks every
+`src/main/**/application*.yml`, resolves each YAML document's profile, and fails if a non-`local`,
+non-`test` profile defaults `ch.batbern` to DEBUG. It also asserts no `<logger name="ch.batbern">`
+survives in `logback-spring.xml`, because a second owner is what caused the failed fix. Verified by
+reintroducing both defects and watching it fail on each.
+
 ### Test-runner worker caps are a memory constraint, not a tuning knob
 
 Both JS test runners in this repository pin `maxWorkers: 3`:
