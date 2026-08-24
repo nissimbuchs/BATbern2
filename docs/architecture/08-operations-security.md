@@ -268,8 +268,16 @@ IF(requests >= 10, errors / requests * 100, 0) > 50%, for 3 of 3 periods
 
 Three properties are deliberate.
 
-**It counts only our own surface.** The scanner sweep produces no log line, so it enters neither
-side of the fraction. The denominator is explicitly *not* the ALB's `RequestCount`, which counts the
+**It counts only our own surface, and only authenticated traffic.** Neither the external scanner
+sweep nor our own OWASP ZAP scan produces a log line, so neither enters either side of the
+fraction. The credential gate was added after the alarm's first real firing (#995): the weekly
+`Security Scan (OWASP ZAP)` against `api.batbern.ch` drove 59,039 unauthenticated 4xx between
+03:35 and 03:50 UTC on 2026-08-24, took the ratio to 88%, and paged. A 401 with no
+`Authorization` header is the security boundary working correctly; a 401 on a request that
+carried a token is the regression worth waking someone for. Credential-less requests are excluded
+from **both** sides — dropping them from the numerator alone would let a scan dilute the
+denominator and mask a real auth break occurring during it. Accepted cost: a 4xx regression on a
+public endpoint is invisible to this alarm. The denominator is explicitly *not* the ALB's `RequestCount`, which counts the
 sweep and would therefore inflate during exactly the noise the alarm needs to see through.
 
 **It is a ratio, not a count.** Measured `/api/` requests per 5-minute window over the 24h to

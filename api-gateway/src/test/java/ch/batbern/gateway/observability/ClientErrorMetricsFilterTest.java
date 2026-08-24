@@ -40,11 +40,30 @@ class ClientErrorMetricsFilterTest {
     }
 
     private void run(ClientErrorMetricsFilter target, String path, int status) throws Exception {
+        run(target, path, status, "Bearer test-token");
+    }
+
+    /** @param authorization the Authorization header value, or null to send none at all. */
+    private void run(ClientErrorMetricsFilter target, String path, int status, String authorization)
+            throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
         request.setRequestURI(path);
+        if (authorization != null) {
+            request.addHeader("Authorization", authorization);
+        }
         MockHttpServletResponse response = new MockHttpServletResponse();
         response.setStatus(status);
         target.doFilter(request, response, new MockFilterChain());
+    }
+
+    private void runAnonymous(String path, int status) throws Exception {
+        run(filter, path, status, null);
+    }
+
+    /** Distinct name rather than an overload: run(String, int, String) would be ambiguous with
+     *  run(ClientErrorMetricsFilter, String, int). */
+    private void runWithAuth(String path, int status, String authorization) throws Exception {
+        run(filter, path, status, authorization);
     }
 
     private double count(String metric) {
@@ -171,12 +190,92 @@ class ClientErrorMetricsFilterTest {
         assertThat(requests()).isZero();
     }
 
+    // ── #995: unauthenticated traffic is not ours to fix ──────────────────────────────
+
+    @Test
+    void should_countNothing_when_requestCarriedNoCredentials() throws Exception {
+        // A 401 on a request that presented no credentials is the security boundary working
+        // correctly. It is not a defect and there is nothing to act on.
+        runAnonymous("/api/v1/events", 401);
+
+        assertThat(errors()).isZero();
+        assertThat(requests()).isZero();
+    }
+
+    @Test
+    void should_countNothing_when_owaspZapSweepsTheApi() throws Exception {
+        // The real event, 2026-08-24 03:35-03:50 UTC. Our own scheduled OWASP ZAP scan against
+        // api.batbern.ch drove 59,039 unauthenticated 4xx (a 5,000-line sample was 4,997x 401),
+        // taking the ratio to 88% and paging at 03:49. ZAP builds requests from our OpenAPI
+        // specs, hence the unsubstituted path placeholders below.
+        for (int i = 0; i < 500; i++) {
+            runAnonymous("/api/v1/events/eventCode/sessions/sessionSlug/timing", 401);
+            runAnonymous("/api/v1/events/BATbern142/agenda-config", 401);
+        }
+
+        assertThat(errors()).isZero();
+        assertThat(requests())
+                .as("must leave the DENOMINATOR too — see the masking test below")
+                .isZero();
+    }
+
+    @Test
+    void should_stillSeeARealAuthBreak_when_itHappensDuringAScan() throws Exception {
+        // The trap in fixing this the obvious way. If unauthenticated requests were excluded from
+        // the numerator but LEFT in the denominator, ZAP's flood would drive the ratio toward
+        // zero and mask a genuine auth break happening at the same time — the alarm would be
+        // quiet exactly when it mattered most. Excluding both sides keeps the ratio a measure of
+        // authenticated traffic only.
+        for (int i = 0; i < 1000; i++) {
+            runAnonymous("/api/v1/events", 401); // the scan
+        }
+        for (int i = 0; i < 20; i++) {
+            run("/api/v1/events", 401); // real users, credentials presented, all rejected
+        }
+
+        assertThat(requests()).isEqualTo(20d);
+        assertThat(errors()).isEqualTo(20d);
+        // i.e. 100% of authenticated traffic failing, fully visible under a 1000-request scan.
+    }
+
+    @Test
+    void should_count_when_credentialsWerePresentedButRejected() throws Exception {
+        // The signal this alarm exists for: a token was sent and we refused it. Broken deploy,
+        // rotated key, regressed JWT converter.
+        runWithAuth("/api/v1/events", 401, "Bearer expired-or-broken");
+
+        assertThat(errors()).isEqualTo(1d);
+        assertThat(requests()).isEqualTo(1d);
+    }
+
+    @Test
+    void should_countNothing_when_authorizationHeaderIsBlank() throws Exception {
+        // A blank header is no credential, whatever the client intended.
+        run(filter, "/api/v1/events", 401, "   ");
+
+        assertThat(errors()).isZero();
+        assertThat(requests()).isZero();
+    }
+
+    @Test
+    void should_countNothing_when_anonymousRequestHitsAPublicEndpoint() throws Exception {
+        // Documented and accepted coverage loss: public endpoints legitimately carry no
+        // credentials, so a 4xx regression on one is invisible to THIS alarm. Closing that needs
+        // a separate public-path counter, deliberately not built (#995).
+        runAnonymous("/api/v1/public/settings/features", 500);
+        runAnonymous("/api/v1/public/settings/features", 404);
+
+        assertThat(errors()).isZero();
+        assertThat(requests()).isZero();
+    }
+
     // ── Behaviour of the filter itself ─────────────────────────────────────────────────
 
     @Test
     void should_alwaysContinueTheChain_when_invoked() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/events");
         request.setRequestURI("/api/v1/events");
+        request.addHeader("Authorization", "Bearer test-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
         response.setStatus(404);
         MockFilterChain chain = new MockFilterChain();
