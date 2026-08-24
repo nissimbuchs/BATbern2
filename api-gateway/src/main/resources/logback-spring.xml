@@ -14,39 +14,48 @@
         </encoder>
     </appender>
 
-    <!-- CloudWatch appender for centralized logging -->
-    <appender name="CLOUDWATCH" class="ca.pjer.logback.AwsLogsAppender">
-        <logGroupName>/aws/ecs/BATbern-${environment}/${applicationName}</logGroupName>
-        <logStreamName>${HOSTNAME:-localhost}</logStreamName>
-        <logRegion>eu-central-1</logRegion>
-        <maxBatchLogEvents>50</maxBatchLogEvents>
-        <maxFlushTimeMillis>30000</maxFlushTimeMillis>
-        <maxBlockTimeMillis>5000</maxBlockTimeMillis>
-        <retentionTimeDays>0</retentionTimeDays>
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n</pattern>
-        </layout>
-    </appender>
+    <!-- #990: there was a second appender here, ca.pjer.logback.AwsLogsAppender, writing
+         PatternLayout text DIRECTLY to /aws/ecs/BATbern-${environment}/${applicationName} via
+         the AWS SDK — the SAME log group the ECS awslogs driver already delivers stdout to.
+         Every event was therefore ingested TWICE: once as LogstashEncoder JSON through CONSOLE
+         and the awslogs driver, once as plain text through the SDK.
 
-    <!-- Async wrapper for CloudWatch to improve performance -->
-    <appender name="ASYNC_CLOUDWATCH" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="CLOUDWATCH"/>
-        <queueSize>500</queueSize>
-        <discardingThreshold>0</discardingThreshold>
-        <includeCallerData>false</includeCallerData>
-    </appender>
+         Verified before removing, not assumed: the api-gateway task definition
+         (BATbernstagingApiGatewayServiceTaskDef8F405B93:266) has
+         logConfiguration.logDriver = "awslogs" with awslogs-group
+         /aws/ecs/BATbern-staging/api-gateway, so the CONSOLE path alone delivers everything.
+         Both renderings of the same event, sharing a correlationId, were observable in that
+         group while both appenders were live.
 
-    <!-- Root logger -->
+         Cost of the duplicate: 2x CloudWatch Logs ingestion and storage on every request, plus
+         an AsyncAppender thread and an AWS SDK client per task, plus logs:PutLogEvents IAM
+         surface the driver already covers.
+
+         It also forced the metric filters in AlbAlarms (#986) to carry an extra "@timestamp"
+         literal term purely to match one rendering and not the other. That term still works and
+         stays: only the JSON rendering has @timestamp, and requiring it is now merely redundant
+         rather than load-bearing. Do NOT drop it in the same change as this — one deploy
+         between, so the filters are never briefly matching nothing. -->
+
+    <!-- Root logger. CONSOLE only — the ECS awslogs driver ships stdout to CloudWatch. -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <!-- CloudWatch appender enabled only in non-local and non-test environments -->
-        <springProfile name="!local &amp; !test">
-            <appender-ref ref="ASYNC_CLOUDWATCH"/>
-        </springProfile>
     </root>
 
-    <!-- Application logger -->
-    <logger name="ch.batbern" level="DEBUG"/>
+    <!-- #990: this was DEBUG, in production, doubled by the appender removed above. Every
+         request emitted several lines of filter-chain internals (SecurityHeadersFilter,
+         RateLimitingFilter). For scale: a single 24h Insights query over this one log group
+         scanned 295,644 records.
+
+         Those DEBUG lines were, by accident, the only record of what any request had asked for
+         — there was no access log anywhere — and they are what made the #986 scanner
+         attribution possible at all. That accident is no longer needed:
+         ClientErrorMetricsFilter now emits a proper GATEWAY_API_REQUEST access line at INFO
+         with method, path and status. Turning this down loses noise, not evidence.
+
+         Override per-environment with LOGGING_LEVEL_CH_BATBERN=DEBUG when debugging; do not
+         re-pin DEBUG here. -->
+    <logger name="ch.batbern" level="${LOGGING_LEVEL_CH_BATBERN:-INFO}"/>
 
     <!-- Spring Framework -->
     <logger name="org.springframework" level="INFO"/>
