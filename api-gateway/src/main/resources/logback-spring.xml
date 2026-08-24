@@ -42,20 +42,12 @@
         <appender-ref ref="CONSOLE"/>
     </root>
 
-    <!-- #990: this was DEBUG, in production, doubled by the appender removed above. Every
-         request emitted several lines of filter-chain internals (SecurityHeadersFilter,
-         RateLimitingFilter). For scale: a single 24h Insights query over this one log group
-         scanned 295,644 records.
+    <!-- The ch.batbern level is deliberately NOT set here. Spring Boot applies
+         logging.level.* from application.yml AFTER this file and overrides it, so a <logger>
+         element here is inert and merely looks authoritative — which is exactly how #990's first
+         fix attempt failed. The level lives in application.yml, in one place.
 
-         Those DEBUG lines were, by accident, the only record of what any request had asked for
-         — there was no access log anywhere — and they are what made the #986 scanner
-         attribution possible at all. That accident is no longer needed:
-         ClientErrorMetricsFilter now emits a proper GATEWAY_API_REQUEST access line at INFO
-         with method, path and status. Turning this down loses noise, not evidence.
-
-         Override per-environment with LOGGING_LEVEL_CH_BATBERN=DEBUG when debugging; do not
-         re-pin DEBUG here. -->
-    <logger name="ch.batbern" level="${LOGGING_LEVEL_CH_BATBERN:-INFO}"/>
+         Override at runtime with the LOG_LEVEL environment variable. -->
 
     <!-- Spring Framework -->
     <logger name="org.springframework" level="INFO"/>

@@ -144,7 +144,9 @@ info:
 logging:
   level:
     root: INFO
-    ch.batbern: ${LOG_LEVEL:DEBUG}
+    # Default INFO, not DEBUG: relying on LOG_LEVEL being set in every environment is the same
+    # implicit coupling that hid #990. Opt IN to DEBUG, never out of it.
+    ch.batbern: ${LOG_LEVEL:INFO}
     org.springframework.web: INFO
     org.springframework.security: DEBUG
   pattern:

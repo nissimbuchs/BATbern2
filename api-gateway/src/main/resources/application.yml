@@ -81,7 +81,16 @@ turnstile:
 
 logging:
   level:
-    ch.batbern: DEBUG
+    # #990: was a hardcoded DEBUG, in the DEFAULT profile, so it applied in production and
+    # ignored the LOG_LEVEL env var the task already sets to INFO. Every request emitted several
+    # lines of filter-chain internals; one 24h Insights query over this log group scanned 295,644
+    # records.
+    #
+    # It also silently beat the logback-spring.xml change made in the same fix: Spring Boot
+    # applies logging.level.* AFTER the logback config and overrides it, so setting the level
+    # there had no effect at all. The level is owned HERE, in one place, on purpose.
+    # partner-coordination-service already used this pattern correctly and is the model.
+    ch.batbern: ${LOG_LEVEL:INFO}
     org.springframework: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"

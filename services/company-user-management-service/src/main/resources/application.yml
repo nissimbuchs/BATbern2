@@ -181,7 +181,9 @@ info:
 logging:
   level:
     root: INFO
-    ch.batbern: ${LOG_LEVEL:DEBUG}
+    # Default INFO, not DEBUG: relying on LOG_LEVEL being set in every environment is the same
+    # implicit coupling that hid #990. Opt IN to DEBUG, never out of it.
+    ch.batbern: ${LOG_LEVEL:INFO}
     org.springframework.web: INFO
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
@@ -254,10 +256,19 @@ spring:
 logging:
   level:
     root: INFO
-    ch.batbern: DEBUG
+    # #990: was DEBUG. This estate runs SPRING_PROFILES_ACTIVE=staging IN THE PRODUCTION ACCOUNT
+    # (188701360969 serves www.batbern.ch), so this block — not the `production` block below —
+    # is what actually applies to production traffic. The production block's INFO was never
+    # reached, which is why the intent looked right and the effect was wrong.
+    ch.batbern: ${LOG_LEVEL:INFO}
 
 ---
 # Production Profile Configuration
+#
+# NOTE: this profile is NOT the one production runs. The estate was consolidated onto a single
+# account and every task sets SPRING_PROFILES_ACTIVE=staging, so the `staging` block above is what
+# governs production traffic. Kept for the day the profiles are separated again; do not assume a
+# setting here takes effect.
 spring:
   config:
     activate:
