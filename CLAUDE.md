@@ -243,7 +243,7 @@ make dev-native-up                                   # Start services natively (
 
 **Alternative: Docker Compose** (for integration testing):
 ```bash
-docker-compose up -d   # All services in containers
+docker compose up -d   # All services in containers
 ```
 
 ### Debugging and Logs
@@ -303,7 +303,7 @@ grep -i "HikariPool\|connection" /tmp/batbern-1-*.log
 grep -i "routing\|proxying" /tmp/batbern-1-api-gateway.log
 ```
 
-**Note**: Docker logs (`docker logs <container>`) are only relevant when running `docker-compose up` instead of native development.
+**Note**: Docker logs (`docker logs <container>`) are only relevant when running `docker compose up` instead of native development.
 
 ### Testing Strategy (4-Layer E2E Framework)
 
@@ -791,7 +791,7 @@ gh pr merge <PR_NUMBER> --auto --squash
 make docker-restart
 
 # View logs
-docker-compose logs -f api-gateway
+docker compose logs -f api-gateway
 
 # Database tunnel management
 make docker-tunnel-logs     # View tunnel logs
@@ -799,7 +799,7 @@ make docker-tunnel-stop     # Stop database tunnel
 
 # Clean state
 make docker-down
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Gradle Issues

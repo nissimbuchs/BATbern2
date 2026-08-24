@@ -107,13 +107,13 @@ Use Docker Compose when you need to test containerized behavior:
 
 ```bash
 # Start all services in containers
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop all services
-docker-compose down
+docker compose down
 ```
 
 **Note:** Docker Compose is useful for pre-PR integration testing, but native execution is recommended for daily development due to better performance and resource usage.
@@ -246,7 +246,7 @@ make update-deps       # Update safe dependencies (patch/minor)
 
 **Docker:**
 ```bash
-make docker-up            # Start services (same as docker-compose up -d)
+make docker-up            # Start services (same as docker compose up -d)
 make docker-down          # Stop services
 make docker-restart       # Restart all Docker services
 make docker-build         # Build Docker images
